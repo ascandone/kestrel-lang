@@ -1,0 +1,20 @@
+{
+  "name": "mini-rust",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "test:watch": "vitest",
+    "test:run": "vitest --run --coverage",
+    "ts:build": "tsc",
+    "ts:watch": "tsc --watch",
+    "format:check": "prettier --check --cache ./**/*.ts",
+    "format:write": "prettier --write --cache ./**/*.ts"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^1.2.0",
+    "prettier": "^3.2.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}
