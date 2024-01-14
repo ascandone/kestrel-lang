@@ -191,6 +191,19 @@ let _ = if b { 0 } else { 1 }
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse if expr with a let expr", () => {
+  const src = `
+let _ = if b {
+  let x = a;
+  0
+} else {
+  1
+}
+`;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];
