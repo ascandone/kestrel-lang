@@ -1,9 +1,9 @@
 {
   "name": "mini-rust",
-  "version": "1.0.0",
-  "main": "index.js",
+  "version": "0.0.1",
   "license": "MIT",
   "scripts": {
+    "generate:parser": "ohm generateBundles --withTypes src/parser/grammar.ohm",
     "test:watch": "vitest",
     "test:run": "vitest --run --coverage",
     "ts:build": "tsc",
@@ -12,7 +12,9 @@
     "format:write": "prettier --write --cache ./**/*.ts"
   },
   "devDependencies": {
+    "@ohm-js/cli": "^2.0.0",
     "@vitest/coverage-v8": "^1.2.0",
+    "ohm-js": "^17.1.0",
     "prettier": "^3.2.1",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"

@@ -21,7 +21,7 @@ export type Expr<Meta = {}> = Meta &
     | {
         type: "application";
         caller: Expr<Meta>;
-        arg: Expr<Meta>;
+        args: Expr<Meta>[];
       }
     | {
         type: "let";
@@ -37,12 +37,12 @@ export type Expr<Meta = {}> = Meta &
       }
   );
 
-export type Statement<Meta> = {
+export type Statement<Meta = {}> = Meta & {
   type: "let";
   binding: string;
   value: Expr<Meta>;
 };
 
-export type Program<Meta> = {
+export type Program<Meta = {}> = {
   statements: Statement<Meta>[];
 };

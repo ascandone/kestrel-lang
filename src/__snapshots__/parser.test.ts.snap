@@ -1,0 +1,189 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`parse * expr 1`] = `
+{
+  "statements": [
+    {
+      "binding": "_",
+      "span": [
+        0,
+        13,
+      ],
+      "type": "let",
+      "value": {
+        "args": [
+          {
+            "span": [
+              8,
+              9,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 1,
+            },
+          },
+          {
+            "span": [
+              12,
+              13,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 2,
+            },
+          },
+        ],
+        "caller": {
+          "name": "*",
+          "span": [
+            10,
+            11,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          13,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+}
+`;
+
+exports[`parse + expr 1`] = `
+{
+  "statements": [
+    {
+      "binding": "_",
+      "span": [
+        0,
+        13,
+      ],
+      "type": "let",
+      "value": {
+        "args": [
+          {
+            "span": [
+              8,
+              9,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 1,
+            },
+          },
+          {
+            "span": [
+              12,
+              13,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 2,
+            },
+          },
+        ],
+        "caller": {
+          "name": "+",
+          "span": [
+            10,
+            11,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          13,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+}
+`;
+
+exports[`parse - expr 1`] = `
+{
+  "statements": [
+    {
+      "binding": "_",
+      "span": [
+        0,
+        13,
+      ],
+      "type": "let",
+      "value": {
+        "args": [
+          {
+            "span": [
+              8,
+              9,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 1,
+            },
+          },
+          {
+            "span": [
+              12,
+              13,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 2,
+            },
+          },
+        ],
+        "caller": {
+          "name": "-",
+          "span": [
+            10,
+            11,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          13,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+}
+`;
+
+exports[`parse float 1`] = `
+{
+  "statements": [
+    {
+      "binding": "_",
+      "span": [
+        0,
+        12,
+      ],
+      "type": "let",
+      "value": {
+        "span": [
+          8,
+          12,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "float",
+          "value": 1.23,
+        },
+      },
+    },
+  ],
+}
+`;
