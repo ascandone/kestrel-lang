@@ -26,7 +26,7 @@ export type Expr<Meta = {}> = Meta &
     | {
         type: "let";
         binding: { name: string } & Meta;
-        definition: Expr<Meta>;
+        value: Expr<Meta>;
         body: Expr<Meta>;
       }
     | {

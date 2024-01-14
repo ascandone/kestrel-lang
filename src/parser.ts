@@ -63,6 +63,21 @@ semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
   },
 });
 
+type LetStatement = SpanMeta & {
+  binding: { name: string } & SpanMeta;
+  value: Expr<SpanMeta>;
+};
+
+semantics.addOperation<LetStatement>("let()", {
+  LetStatement_letStmt(_let, ident, _eq, exp) {
+    return {
+      binding: ident.ident(),
+      value: exp.expr(),
+      span: getSpan(this),
+    };
+  },
+});
+
 semantics.addOperation<Expr<SpanMeta>>("expr()", {
   number(n) {
     return {
@@ -103,15 +118,23 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
       span: getSpan(this),
     };
   },
+
+  Block(_lbracket, hdLet, _comma, expr, _rbracket) {
+    const letStmt: LetStatement = hdLet.let();
+
+    return {
+      type: "let",
+      ...letStmt,
+      body: expr.expr(),
+    };
+  },
 });
 
 semantics.addOperation<Statement<SpanMeta>>("statement()", {
-  Statement_letStmt(_let, ident, _eq, exp) {
+  LetStatement(node) {
     return {
       type: "let",
-      binding: ident.ident(),
-      value: exp.expr(),
-      span: getSpan(this),
+      ...this.let(),
     };
   },
 });

@@ -687,3 +687,60 @@ exports[`parse ident 1`] = `
   ],
 }
 `;
+
+exports[`parse let block with one let 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          5,
+          6,
+        ],
+      },
+      "span": [
+        1,
+        29,
+      ],
+      "type": "let",
+      "value": {
+        "binding": {
+          "name": "x",
+          "span": [
+            17,
+            18,
+          ],
+        },
+        "body": {
+          "span": [
+            26,
+            27,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 1,
+          },
+        },
+        "span": [
+          13,
+          22,
+        ],
+        "type": "let",
+        "value": {
+          "span": [
+            21,
+            22,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 0,
+          },
+        },
+      },
+    },
+  ],
+}
+`;

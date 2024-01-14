@@ -1,8 +1,8 @@
-Expr {
+Program {
   MAIN
-    = Statement*
+    = LetStatement*
 
-  Statement
+  LetStatement
     = "let" ident "=" Exp  -- letStmt
 
   Exp
@@ -46,8 +46,12 @@ Expr {
   PriExp
     = "(" Exp ")"  -- paren
     | PriExp "(" ListOf<Exp, ","> ")" -- apply
+    | Block
     | ident -- ident
     | number
+
+  Block
+    = "{" LetStatement ";" Exp "}"
 
   ident  (an identifier)
     = ~keyword identHead identBody*
