@@ -107,6 +107,16 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     };
   },
 
+  PriExp_if(_if, cond, _lb1, x, _rb1, _else, _lb2, y, _rb2) {
+    return {
+      type: "if",
+      condition: cond.expr(),
+      then: x.expr(),
+      else: y.expr(),
+      span: getSpan(this),
+    };
+  },
+
   BlockContent_exp(e) {
     return e.expr();
   },

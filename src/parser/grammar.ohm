@@ -48,6 +48,7 @@ Program {
     | PriExp "(" ListOf<Exp, ","> ")" -- apply
     | "{" BlockContent "}"  -- block
     | "fn" ListOf<ident, ","> "{" BlockContent "}"  -- fn
+    | "if" Exp "{" BlockContent "}" "else" "{" BlockContent "}" -- if
     | ident -- ident
     | number
 

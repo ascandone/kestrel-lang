@@ -928,6 +928,64 @@ exports[`parse ident 1`] = `
 }
 `;
 
+exports[`parse if expr 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          5,
+          6,
+        ],
+      },
+      "span": [
+        1,
+        30,
+      ],
+      "type": "let",
+      "value": {
+        "condition": {
+          "name": "b",
+          "span": [
+            12,
+            13,
+          ],
+          "type": "identifier",
+        },
+        "else": {
+          "span": [
+            27,
+            28,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 1,
+          },
+        },
+        "span": [
+          9,
+          30,
+        ],
+        "then": {
+          "span": [
+            16,
+            17,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 0,
+          },
+        },
+        "type": "if",
+      },
+    },
+  ],
+}
+`;
+
 exports[`parse let block with one let 1`] = `
 {
   "statements": [
