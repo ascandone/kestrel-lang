@@ -326,6 +326,133 @@ exports[`parse - expr 1`] = `
 }
 `;
 
+exports[`parse appl with 1 arg 1`] = `
+{
+  "statements": [
+    {
+      "binding": "_",
+      "span": [
+        0,
+        12,
+      ],
+      "type": "let",
+      "value": {
+        "args": [
+          {
+            "name": "x",
+            "span": [
+              10,
+              11,
+            ],
+            "type": "identifier",
+          },
+        ],
+        "caller": {
+          "name": "f",
+          "span": [
+            8,
+            9,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          12,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+}
+`;
+
+exports[`parse appl with 3 args 1`] = `
+{
+  "statements": [
+    {
+      "binding": "_",
+      "span": [
+        0,
+        18,
+      ],
+      "type": "let",
+      "value": {
+        "args": [
+          {
+            "name": "x",
+            "span": [
+              10,
+              11,
+            ],
+            "type": "identifier",
+          },
+          {
+            "name": "y",
+            "span": [
+              13,
+              14,
+            ],
+            "type": "identifier",
+          },
+          {
+            "name": "z",
+            "span": [
+              16,
+              17,
+            ],
+            "type": "identifier",
+          },
+        ],
+        "caller": {
+          "name": "f",
+          "span": [
+            8,
+            9,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          18,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+}
+`;
+
+exports[`parse appl with no args 1`] = `
+{
+  "statements": [
+    {
+      "binding": "_",
+      "span": [
+        0,
+        11,
+      ],
+      "type": "let",
+      "value": {
+        "args": [],
+        "caller": {
+          "name": "f",
+          "span": [
+            8,
+            9,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          11,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+}
+`;
+
 exports[`parse float 1`] = `
 {
   "statements": [
@@ -346,6 +473,29 @@ exports[`parse float 1`] = `
           "type": "float",
           "value": 1.23,
         },
+      },
+    },
+  ],
+}
+`;
+
+exports[`parse ident 1`] = `
+{
+  "statements": [
+    {
+      "binding": "_",
+      "span": [
+        0,
+        9,
+      ],
+      "type": "let",
+      "value": {
+        "name": "x",
+        "span": [
+          8,
+          9,
+        ],
+        "type": "identifier",
       },
     },
   ],

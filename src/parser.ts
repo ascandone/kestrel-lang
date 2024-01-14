@@ -44,6 +44,16 @@ function parseInfix(
   };
 }
 
+semantics.addOperation<Expr<SpanMeta>[]>("args()", {
+  EmptyListOf() {
+    return [];
+  },
+
+  NonemptyListOf(x, _comma, xs) {
+    return [x.expr(), ...xs.children.map((x) => x.expr())];
+  },
+});
+
 semantics.addOperation<Expr<SpanMeta>>("expr()", {
   number(n) {
     return {
@@ -54,6 +64,13 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   },
   PriExp_paren(_open, e, _close) {
     return e.expr();
+  },
+  ident(_hd, _tl) {
+    return {
+      type: "identifier",
+      name: this.sourceString,
+      span: getSpan(this),
+    };
   },
   CompExp_lt: parseInfix,
   CompExp_gt: parseInfix,
@@ -69,6 +86,15 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   MulExp_divide: parseInfix,
   MulExp_rem: parseInfix,
   ExpExp_power: parseInfix,
+
+  PriExp_apply(f, _lpar, args, _rpar) {
+    return {
+      type: "application",
+      caller: f.expr(),
+      args: args.args(),
+      span: getSpan(this),
+    };
+  },
 });
 
 semantics.addOperation<Statement<SpanMeta>>("statement()", {

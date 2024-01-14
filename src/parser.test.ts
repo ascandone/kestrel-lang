@@ -87,6 +87,26 @@ test("parse + and * prec with parens", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse ident", () => {
+  const src = "let _ = x";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse appl with no args", () => {
+  const src = "let _ = f()";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse appl with 1 arg", () => {
+  const src = "let _ = f(x)";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse appl with 3 args", () => {
+  const src = "let _ = f(x, y, z)";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];
