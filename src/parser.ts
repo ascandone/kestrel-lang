@@ -52,7 +52,9 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
       span: getSpan(this),
     };
   },
-
+  PriExp_paren(_open, e, _close) {
+    return e.expr();
+  },
   CompExp_lt: parseInfix,
   CompExp_gt: parseInfix,
   CompExp_gte: parseInfix,

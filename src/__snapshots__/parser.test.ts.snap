@@ -136,6 +136,88 @@ exports[`parse + and * prec 1`] = `
 }
 `;
 
+exports[`parse + and * prec with parens 1`] = `
+{
+  "statements": [
+    {
+      "binding": "_",
+      "span": [
+        0,
+        19,
+      ],
+      "type": "let",
+      "value": {
+        "args": [
+          {
+            "args": [
+              {
+                "span": [
+                  9,
+                  10,
+                ],
+                "type": "constant",
+                "value": {
+                  "type": "int",
+                  "value": 1,
+                },
+              },
+              {
+                "span": [
+                  13,
+                  14,
+                ],
+                "type": "constant",
+                "value": {
+                  "type": "int",
+                  "value": 2,
+                },
+              },
+            ],
+            "caller": {
+              "name": "-",
+              "span": [
+                11,
+                12,
+              ],
+              "type": "identifier",
+            },
+            "span": [
+              9,
+              14,
+            ],
+            "type": "application",
+          },
+          {
+            "span": [
+              18,
+              19,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 3,
+            },
+          },
+        ],
+        "caller": {
+          "name": "*",
+          "span": [
+            16,
+            17,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          19,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+}
+`;
+
 exports[`parse + expr 1`] = `
 {
   "statements": [
