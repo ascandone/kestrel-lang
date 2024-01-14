@@ -51,7 +51,7 @@ Program {
     | number
 
   Block
-    = "{" LetStatement ";" Exp "}"
+    = "{" (LetStatement ";")? Exp "}"
 
   ident  (an identifier)
     = ~keyword identHead identBody*

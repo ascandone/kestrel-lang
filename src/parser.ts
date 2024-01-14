@@ -120,11 +120,15 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   },
 
   Block(_lbracket, hdLet, _comma, expr, _rbracket) {
-    const letStmt: LetStatement = hdLet.let();
+    const letStmts = hdLet.children.map((c) => c.let() as LetStatement);
+
+    if (letStmts.length === 0) {
+      return expr.expr();
+    }
 
     return {
       type: "let",
-      ...letStmt,
+      ...letStmts[0]!,
       body: expr.expr(),
     };
   },
