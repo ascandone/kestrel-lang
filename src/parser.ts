@@ -44,16 +44,6 @@ function parseInfix(
   };
 }
 
-semantics.addOperation<Expr<SpanMeta>[]>("args()", {
-  EmptyListOf() {
-    return [];
-  },
-
-  NonemptyListOf(x, _comma, xs) {
-    return [x.expr(), ...xs.children.map((x) => x.expr())];
-  },
-});
-
 semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
   ident(_hd, _tl) {
     return {
@@ -99,7 +89,7 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     return {
       type: "application",
       caller: f.expr(),
-      args: args.args(),
+      args: args.asIteration().children.map((c) => c.expr()),
       span: getSpan(this),
     };
   },
