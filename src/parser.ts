@@ -53,9 +53,20 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     };
   },
 
+  CompExp_lt: parseInfix,
+  CompExp_gt: parseInfix,
+  CompExp_gte: parseInfix,
+  CompExp_lte: parseInfix,
+  EqExpr_eq: parseInfix,
+  EqExpr_neq: parseInfix,
+  OrExpr_or: parseInfix,
+  AndExpr_and: parseInfix,
   AddExp_plus: parseInfix,
   AddExp_minus: parseInfix,
   MulExp_times: parseInfix,
+  MulExp_divide: parseInfix,
+  MulExp_rem: parseInfix,
+  ExpExp_power: parseInfix,
 });
 
 semantics.addOperation<Statement<SpanMeta>>("statement()", {

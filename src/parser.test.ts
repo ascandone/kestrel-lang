@@ -77,6 +77,11 @@ test("parse * expr", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse + and * prec", () => {
+  const src = "let _ = 1 - 2 * 3";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];
