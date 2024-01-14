@@ -1,8 +1,8 @@
 Program {
   MAIN
-    = LetStatement*
+    = Declaration*
 
-  LetStatement
+  Declaration
     = "let" ident "=" Exp  -- letStmt
 
   Exp

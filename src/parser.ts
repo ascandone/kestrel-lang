@@ -63,21 +63,6 @@ semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
   },
 });
 
-type LetStatement = SpanMeta & {
-  binding: { name: string } & SpanMeta;
-  value: Expr<SpanMeta>;
-};
-
-semantics.addOperation<LetStatement>("let()", {
-  LetStatement_letStmt(_let, ident, _eq, exp) {
-    return {
-      binding: ident.ident(),
-      value: exp.expr(),
-      span: getSpan(this),
-    };
-  },
-});
-
 semantics.addOperation<Expr<SpanMeta>>("expr()", {
   number(n) {
     return {
@@ -139,10 +124,12 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
 });
 
 semantics.addOperation<Statement<SpanMeta>>("statement()", {
-  LetStatement(node) {
+  Declaration_letStmt(_let, ident, _eq, exp) {
     return {
       type: "let",
-      ...this.let(),
+      binding: ident.ident(),
+      value: exp.expr(),
+      span: getSpan(this),
     };
   },
 });
