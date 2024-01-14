@@ -54,6 +54,15 @@ semantics.addOperation<Expr<SpanMeta>[]>("args()", {
   },
 });
 
+semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
+  ident(_hd, _tl) {
+    return {
+      name: this.sourceString,
+      span: getSpan(this),
+    };
+  },
+});
+
 semantics.addOperation<Expr<SpanMeta>>("expr()", {
   number(n) {
     return {
@@ -101,7 +110,7 @@ semantics.addOperation<Statement<SpanMeta>>("statement()", {
   Statement_letStmt(_let, ident, _eq, exp) {
     return {
       type: "let",
-      binding: ident.sourceString,
+      binding: ident.ident(),
       value: exp.expr(),
       span: getSpan(this),
     };

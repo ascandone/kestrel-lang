@@ -15,7 +15,7 @@ export type Expr<Meta = {}> = Meta &
       }
     | {
         type: "fn";
-        param: { name: string } & Meta;
+        params: Array<{ name: string } & Meta>;
         body: Expr<Meta>;
       }
     | {
@@ -25,7 +25,7 @@ export type Expr<Meta = {}> = Meta &
       }
     | {
         type: "let";
-        binding: string;
+        binding: { name: string } & Meta;
         definition: Expr<Meta>;
         body: Expr<Meta>;
       }
@@ -39,7 +39,7 @@ export type Expr<Meta = {}> = Meta &
 
 export type Statement<Meta = {}> = Meta & {
   type: "let";
-  binding: string;
+  binding: { name: string } & Meta;
   value: Expr<Meta>;
 };
 

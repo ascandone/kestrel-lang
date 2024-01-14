@@ -4,7 +4,13 @@ exports[`parse * expr 1`] = `
 {
   "statements": [
     {
-      "binding": "_",
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
       "span": [
         0,
         13,
@@ -58,7 +64,13 @@ exports[`parse + and * prec 1`] = `
 {
   "statements": [
     {
-      "binding": "_",
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
       "span": [
         0,
         17,
@@ -140,7 +152,13 @@ exports[`parse + and * prec with parens 1`] = `
 {
   "statements": [
     {
-      "binding": "_",
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
       "span": [
         0,
         19,
@@ -222,7 +240,13 @@ exports[`parse + expr 1`] = `
 {
   "statements": [
     {
-      "binding": "_",
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
       "span": [
         0,
         13,
@@ -276,7 +300,13 @@ exports[`parse - expr 1`] = `
 {
   "statements": [
     {
-      "binding": "_",
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
       "span": [
         0,
         13,
@@ -330,7 +360,13 @@ exports[`parse appl with 1 arg 1`] = `
 {
   "statements": [
     {
-      "binding": "_",
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
       "span": [
         0,
         12,
@@ -370,7 +406,13 @@ exports[`parse appl with 3 args 1`] = `
 {
   "statements": [
     {
-      "binding": "_",
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
       "span": [
         0,
         18,
@@ -426,7 +468,13 @@ exports[`parse appl with no args 1`] = `
 {
   "statements": [
     {
-      "binding": "_",
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
       "span": [
         0,
         11,
@@ -457,7 +505,13 @@ exports[`parse float 1`] = `
 {
   "statements": [
     {
-      "binding": "_",
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
       "span": [
         0,
         12,
@@ -483,7 +537,13 @@ exports[`parse ident 1`] = `
 {
   "statements": [
     {
-      "binding": "_",
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
       "span": [
         0,
         9,

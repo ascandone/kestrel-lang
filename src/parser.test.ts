@@ -8,7 +8,7 @@ test("parsing a declaration", () => {
     statements: [
       {
         type: "let",
-        binding: "x",
+        binding: { name: "x", span: spanOf(src, "x") },
         value: {
           type: "constant",
           value: {
@@ -29,7 +29,7 @@ test("parsing two declarations", () => {
     statements: [
       {
         type: "let",
-        binding: "x",
+        binding: { name: "x", span: spanOf(src, "x") },
         value: {
           type: "constant",
           value: {
@@ -42,7 +42,7 @@ test("parsing two declarations", () => {
       },
       {
         type: "let",
-        binding: "y",
+        binding: { name: "y", span: spanOf(src, "y") },
         value: {
           type: "constant",
           value: {
