@@ -46,12 +46,13 @@ Program {
   PriExp
     = "(" Exp ")"  -- paren
     | PriExp "(" ListOf<Exp, ","> ")" -- apply
-    | Block
+    | "{" BlockContent "}"  -- block
     | ident -- ident
     | number
 
-  Block
-    = "{" (LetStatement ";")? Exp "}"
+  BlockContent
+    = Exp  -- exp
+    | "let" ident "=" Exp ";" BlockContent -- let
 
   ident  (an identifier)
     = ~keyword identHead identBody*

@@ -117,6 +117,14 @@ test("parse appl with nested parens", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse block with no let", () => {
+  const src = `
+let _ = { 1 }
+`;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 test("parse let block with one let", () => {
   const src = `
 let _ = {
@@ -128,9 +136,13 @@ let _ = {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test("parse block with no let", () => {
+test("parse let block with two let stmts", () => {
   const src = `
-let _ = { 1 }
+let _ = {
+  let x = 0;
+  let y = 1;
+  2
+}
 `;
 
   expect(unsafeParse(src)).toMatchSnapshot();

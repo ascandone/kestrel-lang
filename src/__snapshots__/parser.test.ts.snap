@@ -757,7 +757,89 @@ exports[`parse let block with one let 1`] = `
         },
         "span": [
           13,
-          22,
+          27,
+        ],
+        "type": "let",
+        "value": {
+          "span": [
+            21,
+            22,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 0,
+          },
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`parse let block with two let stmts 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          5,
+          6,
+        ],
+      },
+      "span": [
+        1,
+        42,
+      ],
+      "type": "let",
+      "value": {
+        "binding": {
+          "name": "x",
+          "span": [
+            17,
+            18,
+          ],
+        },
+        "body": {
+          "binding": {
+            "name": "y",
+            "span": [
+              30,
+              31,
+            ],
+          },
+          "body": {
+            "span": [
+              39,
+              40,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 2,
+            },
+          },
+          "span": [
+            26,
+            40,
+          ],
+          "type": "let",
+          "value": {
+            "span": [
+              34,
+              35,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 1,
+            },
+          },
+        },
+        "span": [
+          13,
+          40,
         ],
         "type": "let",
         "value": {

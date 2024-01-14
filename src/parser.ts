@@ -119,17 +119,21 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     };
   },
 
-  Block(_lbracket, hdLet, _comma, expr, _rbracket) {
-    const letStmts = hdLet.children.map((c) => c.let() as LetStatement);
+  PriExp_block(_lbracket, block, _rbracket) {
+    return block.expr();
+  },
 
-    if (letStmts.length === 0) {
-      return expr.expr();
-    }
+  BlockContent_exp(e) {
+    return e.expr();
+  },
 
+  BlockContent_let(_let, ident, _eq, value, _comma, body) {
     return {
       type: "let",
-      ...letStmts[0]!,
-      body: expr.expr(),
+      binding: ident.ident(),
+      value: value.expr(),
+      body: body.expr(),
+      span: getSpan(this),
     };
   },
 });
