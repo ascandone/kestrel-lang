@@ -172,6 +172,17 @@ let _ = fn x, y { 0 }
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse fn with let", () => {
+  const src = `
+let _ = fn {
+  let x = 0;
+  1
+}
+`;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];

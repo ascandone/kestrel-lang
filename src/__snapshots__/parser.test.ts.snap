@@ -794,6 +794,71 @@ exports[`parse fn with 2 args 1`] = `
 }
 `;
 
+exports[`parse fn with let 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          5,
+          6,
+        ],
+      },
+      "span": [
+        1,
+        32,
+      ],
+      "type": "let",
+      "value": {
+        "body": {
+          "binding": {
+            "name": "x",
+            "span": [
+              20,
+              21,
+            ],
+          },
+          "body": {
+            "span": [
+              29,
+              30,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 1,
+            },
+          },
+          "span": [
+            16,
+            30,
+          ],
+          "type": "let",
+          "value": {
+            "span": [
+              24,
+              25,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 0,
+            },
+          },
+        },
+        "params": [],
+        "span": [
+          9,
+          32,
+        ],
+        "type": "fn",
+      },
+    },
+  ],
+}
+`;
+
 exports[`parse fn with no args 1`] = `
 {
   "statements": [
