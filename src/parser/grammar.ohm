@@ -45,7 +45,7 @@ Expr {
 
   PriExp
     = "(" Exp ")"  -- paren
-    | PriExp "(" ListOf<ident, ","> ")" -- apply
+    | PriExp "(" ListOf<Exp, ","> ")" -- apply
     | ident -- ident
     | number
 

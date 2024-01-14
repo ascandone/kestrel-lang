@@ -107,6 +107,11 @@ test("parse appl with 3 args", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse appl with nested expr", () => {
+  const src = "let _ = f(1 + 2)";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];

@@ -74,11 +74,10 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   PriExp_paren(_open, e, _close) {
     return e.expr();
   },
-  ident(_hd, _tl) {
+  PriExp_ident(node) {
     return {
       type: "identifier",
-      name: this.sourceString,
-      span: getSpan(this),
+      ...node.ident(),
     };
   },
   CompExp_lt: parseInfix,
