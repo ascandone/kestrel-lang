@@ -47,6 +47,7 @@ Program {
     = "(" Exp ")"  -- paren
     | PriExp "(" ListOf<Exp, ","> ")" -- apply
     | "{" BlockContent "}"  -- block
+    | "fn" ListOf<ident, ","> "{" BlockContent "}"  -- fn
     | ident -- ident
     | number
 

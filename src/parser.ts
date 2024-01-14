@@ -108,6 +108,15 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     return block.expr();
   },
 
+  PriExp_fn(_fn, params, _lbracket, block, _rbracket) {
+    return {
+      type: "fn",
+      params: params.asIteration().children.map((c) => c.ident()),
+      body: block.expr(),
+      span: getSpan(this),
+    };
+  },
+
   BlockContent_exp(e) {
     return e.expr();
   },

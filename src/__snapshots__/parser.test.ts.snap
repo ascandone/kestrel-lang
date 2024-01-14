@@ -691,6 +691,149 @@ exports[`parse float 1`] = `
 }
 `;
 
+exports[`parse fn with 1 arg 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          5,
+          6,
+        ],
+      },
+      "span": [
+        1,
+        19,
+      ],
+      "type": "let",
+      "value": {
+        "body": {
+          "span": [
+            16,
+            17,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 0,
+          },
+        },
+        "params": [
+          {
+            "name": "x",
+            "span": [
+              12,
+              13,
+            ],
+          },
+        ],
+        "span": [
+          9,
+          19,
+        ],
+        "type": "fn",
+      },
+    },
+  ],
+}
+`;
+
+exports[`parse fn with 2 args 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          5,
+          6,
+        ],
+      },
+      "span": [
+        1,
+        22,
+      ],
+      "type": "let",
+      "value": {
+        "body": {
+          "span": [
+            19,
+            20,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 0,
+          },
+        },
+        "params": [
+          {
+            "name": "x",
+            "span": [
+              12,
+              13,
+            ],
+          },
+          {
+            "name": "y",
+            "span": [
+              15,
+              16,
+            ],
+          },
+        ],
+        "span": [
+          9,
+          22,
+        ],
+        "type": "fn",
+      },
+    },
+  ],
+}
+`;
+
+exports[`parse fn with no args 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          5,
+          6,
+        ],
+      },
+      "span": [
+        1,
+        17,
+      ],
+      "type": "let",
+      "value": {
+        "body": {
+          "span": [
+            14,
+            15,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 0,
+          },
+        },
+        "params": [],
+        "span": [
+          9,
+          17,
+        ],
+        "type": "fn",
+      },
+    },
+  ],
+}
+`;
+
 exports[`parse ident 1`] = `
 {
   "statements": [

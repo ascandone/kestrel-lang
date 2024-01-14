@@ -148,6 +148,30 @@ let _ = {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse fn with no args", () => {
+  const src = `
+let _ = fn { 0 }
+`;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse fn with 1 arg", () => {
+  const src = `
+let _ = fn x { 0 }
+`;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse fn with 2 args", () => {
+  const src = `
+let _ = fn x, y { 0 }
+`;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];
