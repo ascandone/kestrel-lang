@@ -17,6 +17,7 @@ beforeEach(() => {
 test("unifing two concrete vars when they match", () => {
   expect(unify(Int, Int)).toBeUndefined();
   expect(unify(List(Int), List(Int))).toBeUndefined();
+  expect(unify(Fn([Int], Int), Fn([Int], Int))).toBeUndefined();
 });
 
 test("unify two concrete vars that do not match", () => {
@@ -27,6 +28,10 @@ test("unify two concrete vars that do not match", () => {
   });
   expect(unify(Tuple(Int, Int), Tuple())).not.toBeUndefined();
   expect(unify(List(Int), List(Bool))).not.toBeUndefined();
+  expect(unify(Fn([Int], Int), Fn([], Int))).not.toBeUndefined();
+  expect(unify(Fn([Int], Int), Fn([Bool], Int))).not.toBeUndefined();
+  expect(unify(Fn([Int], Int), Fn([Int], Bool))).not.toBeUndefined();
+  expect(unify(Fn([], Int), Int)).not.toBeUndefined();
 });
 
 test("TypeVar is unbound initially", () => {
@@ -290,13 +295,23 @@ test("recursively linked TVars (3 steps)", () => {
   expect($a.resolve()).toEqual($c.resolve());
 });
 
-test("occurs check", () => {
+test("occurs check in named types", () => {
   const $a = TVar.fresh();
   expect(unify($a.asType(), List($a.asType()))).toEqual<UnifyError>({
     type: "occurs-check",
     left: $a.asType(),
     right: List($a.asType()),
   });
+});
+
+test("occurs check in fn args", () => {
+  const $a = TVar.fresh();
+  expect(unify($a.asType(), Fn([$a.asType()], Int))).not.toBeUndefined();
+});
+
+test("occurs check in fn ret", () => {
+  const $a = TVar.fresh();
+  expect(unify($a.asType(), Fn([], $a.asType()))).not.toBeUndefined();
 });
 
 test("occurs check of unified values", () => {
@@ -329,6 +344,26 @@ describe("generalization", () => {
     const $a = TVar.fresh();
     const poly = generalize($a.asType());
     expect((poly as any).var.resolve().type).toEqual("quantified");
+  });
+
+  test("generalize unbound var in fn args", () => {
+    const $a = TVar.fresh();
+    const poly = generalize(Fn([$a.asType()], Int));
+    if (poly.type !== "fn") {
+      throw new Error("FAIL");
+    }
+
+    expect((poly.args[0] as any).var.resolve().type).toEqual("quantified");
+  });
+
+  test("generalize unbound var in fn return", () => {
+    const $a = TVar.fresh();
+    const poly = generalize(Fn([], $a.asType()));
+    if (poly.type !== "fn") {
+      throw new Error("FAIL");
+    }
+
+    expect((poly.return as any).var.resolve().type).toEqual("quantified");
   });
 
   test("generalize many vars", () => {
@@ -409,6 +444,11 @@ describe("generalization", () => {
     expect(m).toEqual(Int);
   });
 
+  test("instantiate fn", () => {
+    const m = instantiate(Fn([Int], Bool));
+    expect(m).toEqual(Fn([Int], Bool));
+  });
+
   test("instantiate single var", () => {
     const $a = TVar.fresh();
     const $g = generalize($a.asType());
@@ -473,4 +513,8 @@ function List(p: Type) {
 
 function Tuple(...ps: Type[]): ConcreteType {
   return named("Tuple", ...ps);
+}
+
+function Fn(args: Type[], ret: Type): ConcreteType {
+  return { type: "fn", args, return: ret };
 }

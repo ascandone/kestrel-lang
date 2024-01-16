@@ -105,9 +105,28 @@ export class TVar {
           return res;
         }
       }
+
+      return;
     }
 
-    return undefined;
+    // (Fn, Fn)
+    if (t1.type === "fn" && t2.type === "fn") {
+      if (t1.args.length !== t2.args.length) {
+        return { type: "type-mismatch", left: t1, right: t2 };
+      }
+
+      for (let i = 0; i < t1.args.length; i++) {
+        const res = TVar.unify(t1.args[i]!, t2.args[i]!);
+        if (res !== undefined) {
+          return res;
+        }
+      }
+
+      return TVar.unify(t1.return, t2.return);
+    }
+
+    // (_, _)
+    return { type: "type-mismatch", left: t1, right: t2 };
   }
 
   private static unifyVars($1: TVar, $2: TVar): UnifyError | undefined {
@@ -146,7 +165,7 @@ function occursCheck(v: TVar, x: Type): boolean {
   }
 
   if (x.type === "fn") {
-    throw new Error("TODO fn occurs check");
+    return x.args.some((a) => occursCheck(v, a)) || occursCheck(v, x.return);
   }
 
   const resolvedV = v.resolve();
@@ -192,7 +211,11 @@ function* getTypeFreeVars(t: Type): Generator<number> {
   }
 
   if (t.type === "fn") {
-    throw new Error("TODO generalize fn");
+    for (const arg of t.args) {
+      yield* getTypeFreeVars(arg);
+    }
+    yield* getTypeFreeVars(t.return);
+    return;
   }
 }
 
@@ -222,7 +245,11 @@ export function generalize(t: Type, context: Context = {}): Type {
     }
 
     if (t.type === "fn") {
-      throw new Error("TODO generalize fn");
+      return {
+        type: "fn",
+        args: t.args.map(recur),
+        return: recur(t.return),
+      };
     }
 
     const resolvedT = t.var.resolve();
@@ -259,7 +286,11 @@ export function instantiate(t: Type): Type {
     }
 
     if (t.type === "fn") {
-      throw new Error("TODO instantiate fn");
+      return {
+        type: "fn",
+        args: t.args.map(recur),
+        return: recur(t.return),
+      };
     }
 
     const resolvedT = t.var.resolve();
