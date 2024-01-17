@@ -95,7 +95,10 @@ function* typecheckAnnotatedExpr<T>(
     case "let":
       yield* unifyYieldErr(ast, ast.binding.$.asType(), ast.value.$.asType());
       yield* unifyYieldErr(ast, ast.$.asType(), ast.body.$.asType());
-      yield* typecheckAnnotatedExpr(ast.value, context);
+      yield* typecheckAnnotatedExpr(ast.value, {
+        ...context,
+        [ast.binding.name]: ast.value.$.asType(),
+      });
       yield* typecheckAnnotatedExpr(ast.body, {
         ...context,
         [ast.binding.name]: ast.value.$.asType(),

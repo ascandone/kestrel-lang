@@ -242,7 +242,22 @@ test("generalize values", () => {
   });
 });
 
-test.todo("recursive let expressions");
+test("recursive let exprs", () => {
+  const [types, errs] = tc(
+    `
+    let f = {
+      let g = fn _ { g(1) };
+      g
+  }
+  `,
+  );
+
+  expect(errs).toEqual([]);
+  expect(types).toEqual({
+    f: "Fn(Int) -> t0",
+  });
+});
+
 test.todo("recursive let declarations");
 
 function tc(src: string, context: Context = {}) {
