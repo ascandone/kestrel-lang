@@ -501,10 +501,6 @@ function named(name: string, ...args: Type[]): ConcreteType {
   return { type: "named", name, args };
 }
 
-function $(): Type {
-  return { type: "var", var: TVar.fresh() };
-}
-
 const Int = named("Int");
 const Bool = named("Bool");
 function List(p: Type) {
