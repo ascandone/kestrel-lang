@@ -92,8 +92,21 @@ function* typecheckAnnotatedExpr<T>(
       yield* typecheckAnnotatedExpr(ast.caller, context);
       return;
 
-    case "let":
     case "if":
+      yield* unifyYieldErr(ast, ast.condition.$.asType(), {
+        type: "named",
+        name: "Bool",
+        args: [],
+      });
+      yield* unifyYieldErr(ast, ast.$.asType(), ast.then.$.asType());
+      yield* unifyYieldErr(ast, ast.$.asType(), ast.else.$.asType());
+
+      yield* typecheckAnnotatedExpr(ast.condition, context);
+      yield* typecheckAnnotatedExpr(ast.then, context);
+      yield* typecheckAnnotatedExpr(ast.else, context);
+      return;
+
+    case "let":
       throw new Error("TODO typecheckExpr with type: " + ast.type);
   }
 }
@@ -121,8 +134,17 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
         caller: annotateExpr(ast.caller),
         args: ast.args.map(annotateExpr),
       };
-    case "let":
+
     case "if":
+      return {
+        ...ast,
+        $: TVar.fresh(),
+        condition: annotateExpr(ast.condition),
+        then: annotateExpr(ast.then),
+        else: annotateExpr(ast.else),
+      };
+
+    case "let":
       throw new Error("TODO annotateExpr of: " + ast.type);
   }
 }

@@ -139,6 +139,65 @@ test("typecheck fn args", () => {
   });
 });
 
+test("typecheck if ret value", () => {
+  const [types] = tc(
+    `
+    let f =
+      if True {
+        0
+      } else {
+        1
+      }
+  `,
+    {
+      True: Bool,
+    },
+  );
+
+  expect(types).toEqual({
+    f: "Int",
+  });
+});
+
+test("unify if clauses", () => {
+  const [types] = tc(
+    `
+    let f = fn x {
+      if True {
+        0
+      } else {
+        x
+      }
+    }
+  `,
+    {
+      True: Bool,
+    },
+  );
+
+  expect(types).toEqual({
+    f: "Fn(Int) -> Int",
+  });
+});
+
+test("typecheck if condition", () => {
+  const [types] = tc(
+    `
+    let f = fn x {
+      if x {
+        0
+      } else {
+        0
+      }
+    }
+  `,
+  );
+
+  expect(types).toEqual({
+    f: "Fn(Bool) -> Int",
+  });
+});
+
 function tc(src: string, context: Context = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context);
