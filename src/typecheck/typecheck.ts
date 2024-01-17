@@ -23,13 +23,13 @@ export function typecheck<T = {}>(
 ): [Program<T & TypeMeta>, TypeError<Expr<T & TypeMeta>>[]] {
   TVar.resetId();
   const errors: TypeError<Expr<T & TypeMeta>>[] = [];
-  const context: Context = { ...initialContext };
+  let context: Context = { ...initialContext };
 
   const typedStatements = ast.statements.map<Statement<T & TypeMeta>>(
     (decl) => {
       const annotated = annotateExpr(decl.value);
       errors.push(...typecheckAnnotatedExpr(annotated, context));
-      // TODO save bindings in context
+      context[decl.binding.name] = annotated.$.asType();
       return {
         ...decl,
         binding: { ...decl.binding, $: annotated.$ },

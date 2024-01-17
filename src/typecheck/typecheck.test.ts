@@ -59,6 +59,19 @@ test("infer a variable not present in the context", () => {
   });
 });
 
+test("typechecking previously defined vars", () => {
+  const [types, errors] = tc(`
+    let x = 42
+    let y = x
+  `);
+
+  expect(errors).toEqual([]);
+  expect(types).toEqual({
+    x: "Int",
+    y: "Int",
+  });
+});
+
 function tc(src: string, context: Context = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context);
