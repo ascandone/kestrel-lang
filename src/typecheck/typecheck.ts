@@ -69,7 +69,26 @@ function* typecheckAnnotatedExpr<T>(
     }
 
     case "fn":
+      // TODO handle params
+      yield* unifyYieldErr(ast, ast.$.asType(), {
+        type: "fn",
+        args: [],
+        return: ast.body.$.asType(),
+      });
+      yield* typecheckAnnotatedExpr(ast.body, context);
+      return;
+
     case "application":
+      yield* unifyYieldErr(ast, ast.caller.$.asType(), {
+        type: "fn",
+        args: ast.args.map((arg) => arg.$.asType()),
+        return: ast.$.asType(),
+      });
+      // TODO typecheck args
+      yield* typecheckAnnotatedExpr(ast.caller, context);
+
+      return;
+
     case "let":
     case "if":
       throw new Error("TODO typecheckExpr with type: " + ast.type);
@@ -83,7 +102,22 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
       return { ...ast, $: TVar.fresh() };
 
     case "fn":
+      return {
+        ...ast,
+        $: TVar.fresh(),
+        body: annotateExpr(ast.body),
+        params: ast.params.map((p) => ({
+          ...p,
+          $: TVar.fresh(),
+        })),
+      };
     case "application":
+      return {
+        ...ast,
+        $: TVar.fresh(),
+        caller: annotateExpr(ast.caller),
+        args: ast.args.map(annotateExpr),
+      };
     case "let":
     case "if":
       throw new Error("TODO annotateExpr of: " + ast.type);

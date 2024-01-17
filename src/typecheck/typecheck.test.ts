@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { unsafeParse } from "../parser";
 import { typecheck, TypeError } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
-import { Context } from "./unify";
+import { ConcreteType, Context } from "./unify";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -72,6 +72,37 @@ test("typechecking previously defined vars", () => {
   });
 });
 
+test("fn returning a constant", () => {
+  const [types, errors] = tc(`
+    let f = fn { 42 }
+  `);
+
+  expect(errors).toEqual([]);
+  expect(types).toEqual({
+    f: "Fn() -> Int",
+  });
+});
+
+test("application return type", () => {
+  const [types, errors] = tc(
+    `
+    let x = 1 > 2
+  `,
+    {
+      ">": {
+        type: "fn",
+        args: [Int, Int],
+        return: Bool,
+      },
+    },
+  );
+
+  expect(errors).toEqual([]);
+  expect(types).toEqual({
+    x: "Bool",
+  });
+});
+
 function tc(src: string, context: Context = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context);
@@ -83,3 +114,6 @@ function tc(src: string, context: Context = {}) {
 
   return [Object.fromEntries(kvs), errors];
 }
+
+const Int: ConcreteType = { type: "named", name: "Int", args: [] };
+const Bool: ConcreteType = { type: "named", name: "Bool", args: [] };
