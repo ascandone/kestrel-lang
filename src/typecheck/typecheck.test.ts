@@ -103,6 +103,42 @@ test("application return type", () => {
   });
 });
 
+test("application args should be typechecked", () => {
+  const [, errors] = tc(
+    `
+    let x = 1.1 > 2
+  `,
+    {
+      ">": {
+        type: "fn",
+        args: [Int, Int],
+        return: Bool,
+      },
+    },
+  );
+
+  expect(errors).not.toEqual([]);
+});
+
+test("typecheck fn args", () => {
+  const [types] = tc(
+    `
+    let f = fn x, y { x > y }
+  `,
+    {
+      ">": {
+        type: "fn",
+        args: [Int, Int],
+        return: Bool,
+      },
+    },
+  );
+
+  expect(types).toEqual({
+    f: "Fn(Int, Int) -> Bool",
+  });
+});
+
 function tc(src: string, context: Context = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context);

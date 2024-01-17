@@ -69,13 +69,15 @@ function* typecheckAnnotatedExpr<T>(
     }
 
     case "fn":
-      // TODO handle params
       yield* unifyYieldErr(ast, ast.$.asType(), {
         type: "fn",
-        args: [],
+        args: ast.params.map((p) => p.$.asType()),
         return: ast.body.$.asType(),
       });
-      yield* typecheckAnnotatedExpr(ast.body, context);
+      yield* typecheckAnnotatedExpr(ast.body, {
+        ...context,
+        ...Object.fromEntries(ast.params.map((p) => [p.name, p.$.asType()])),
+      });
       return;
 
     case "application":
@@ -84,9 +86,10 @@ function* typecheckAnnotatedExpr<T>(
         args: ast.args.map((arg) => arg.$.asType()),
         return: ast.$.asType(),
       });
-      // TODO typecheck args
+      for (const arg of ast.args) {
+        yield* typecheckAnnotatedExpr(arg, context);
+      }
       yield* typecheckAnnotatedExpr(ast.caller, context);
-
       return;
 
     case "let":
