@@ -198,6 +198,22 @@ test("typecheck if condition", () => {
   });
 });
 
+test("typecheck let expr", () => {
+  const [types, errs] = tc(
+    `
+    let x = {
+      let y = 42;
+      y
+    }
+  `,
+  );
+
+  expect(errs).toEqual([]);
+  expect(types).toEqual({
+    x: "Int",
+  });
+});
+
 function tc(src: string, context: Context = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context);
