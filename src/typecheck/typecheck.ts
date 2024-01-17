@@ -39,7 +39,7 @@ export function typecheck<T = {}>(
     },
   );
 
-  return [{ statements: typedStatements }, []];
+  return [{ statements: typedStatements }, errors];
 }
 
 function* typecheckAnnotatedExpr<T>(
@@ -56,8 +56,14 @@ function* typecheckAnnotatedExpr<T>(
     case "identifier": {
       const lookup = context[ast.name];
       if (lookup === undefined) {
-        throw new Error("TODO undefined lookup");
+        yield {
+          type: "unbound-variable",
+          ident: ast.name,
+          node: ast,
+        };
+        return;
       }
+
       yield* unifyYieldErr(ast, ast.$.asType(), lookup);
       return;
     }

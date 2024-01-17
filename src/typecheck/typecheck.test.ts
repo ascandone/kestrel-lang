@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { unsafeParse } from "../parser";
-import { typecheck } from "./typecheck";
+import { typecheck, TypeError } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
 import { Context } from "./unify";
 
@@ -37,6 +37,25 @@ test("infer a variable present in the context", () => {
   expect(errors).toEqual([]);
   expect(types).toEqual({
     x: "Y",
+  });
+});
+
+test("infer a variable not present in the context", () => {
+  const [types, errors] = tc(
+    `
+    let x = unbound_var
+  `,
+    {},
+  );
+
+  expect(errors).toEqual<TypeError<unknown>[]>([
+    expect.objectContaining({
+      type: "unbound-variable",
+      ident: "unbound_var",
+    }),
+  ]);
+  expect(types).toEqual({
+    x: "t0",
   });
 });
 
