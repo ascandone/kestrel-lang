@@ -214,6 +214,9 @@ test("typecheck let expr", () => {
   });
 });
 
+test.todo("recursive let expressions");
+test.todo("recursive let declarations");
+
 function tc(src: string, context: Context = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context);
