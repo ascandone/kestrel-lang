@@ -214,6 +214,34 @@ test("typecheck let expr", () => {
   });
 });
 
+test("typecheck generic values", () => {
+  const [types, errs] = tc(
+    `
+    let id = fn x { x }
+  `,
+  );
+
+  expect(errs).toEqual([]);
+  expect(types).toEqual({
+    id: "Fn(t0) -> t0",
+  });
+});
+
+test("generalize values", () => {
+  const [types, errs] = tc(
+    `
+    let id = fn x { x }
+    let _ = id(42)
+  `,
+  );
+
+  expect(errs).toEqual([]);
+  expect(types).toEqual({
+    id: "Fn(t0) -> t0",
+    _: "Int",
+  });
+});
+
 test.todo("recursive let expressions");
 test.todo("recursive let declarations");
 

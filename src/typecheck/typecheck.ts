@@ -1,5 +1,5 @@
 import { ConstLiteral, Expr, Program, Statement } from "../ast";
-import { TVar, Type, unify, Context } from "./unify";
+import { TVar, Type, unify, Context, generalize, instantiate } from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
 export type TypeError<Node> =
@@ -29,7 +29,7 @@ export function typecheck<T = {}>(
     (decl) => {
       const annotated = annotateExpr(decl.value);
       errors.push(...typecheckAnnotatedExpr(annotated, context));
-      context[decl.binding.name] = annotated.$.asType();
+      context[decl.binding.name] = generalize(annotated.$.asType(), context);
       return {
         ...decl,
         binding: { ...decl.binding, $: annotated.$ },
@@ -64,7 +64,7 @@ function* typecheckAnnotatedExpr<T>(
         return;
       }
 
-      yield* unifyYieldErr(ast, ast.$.asType(), lookup);
+      yield* unifyYieldErr(ast, ast.$.asType(), instantiate(lookup));
       return;
     }
 
