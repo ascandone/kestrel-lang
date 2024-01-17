@@ -28,7 +28,12 @@ export function typecheck<T = {}>(
   const typedStatements = ast.statements.map<Statement<T & TypeMeta>>(
     (decl) => {
       const annotated = annotateExpr(decl.value);
-      errors.push(...typecheckAnnotatedExpr(annotated, context));
+      errors.push(
+        ...typecheckAnnotatedExpr(annotated, {
+          ...context,
+          [decl.binding.name]: annotated.$.asType(),
+        }),
+      );
       context[decl.binding.name] = generalize(annotated.$.asType(), context);
       return {
         ...decl,

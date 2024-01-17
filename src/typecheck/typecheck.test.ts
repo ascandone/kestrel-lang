@@ -258,7 +258,18 @@ test("recursive let exprs", () => {
   });
 });
 
-test.todo("recursive let declarations");
+test("recursive let declarations", () => {
+  const [types, errs] = tc(
+    `
+    let f = fn _ { f(42) }
+  `,
+  );
+
+  expect(errs).toEqual([]);
+  expect(types).toEqual({
+    f: "Fn(Int) -> t0",
+  });
+});
 
 function tc(src: string, context: Context = {}) {
   const parsedProgram = unsafeParse(src);
