@@ -2,15 +2,15 @@ import { ConstLiteral, Expr, Program, Statement } from "../ast";
 import { TVar, Type, unify, Context, generalize, instantiate } from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
-export type TypeError<Node> =
+export type TypeError<Meta> =
   | {
       type: "unbound-variable";
       ident: string;
-      node: Node;
+      node: Expr<Meta>;
     }
   | {
       type: UnifyErrorType;
-      node: Node;
+      node: Expr<Meta>;
       left: Type;
       right: Type;
     };
@@ -20,9 +20,9 @@ export type TypeMeta = { $: TVar };
 export function typecheck<T = {}>(
   ast: Program<T>,
   initialContext: Context = {},
-): [Program<T & TypeMeta>, TypeError<Expr<T & TypeMeta>>[]] {
+): [Program<T & TypeMeta>, TypeError<T & TypeMeta>[]] {
   TVar.resetId();
-  const errors: TypeError<Expr<T & TypeMeta>>[] = [];
+  const errors: TypeError<T & TypeMeta>[] = [];
   let context: Context = { ...initialContext };
 
   const typedStatements = ast.statements.map<Statement<T & TypeMeta>>(
@@ -50,7 +50,7 @@ export function typecheck<T = {}>(
 function* typecheckAnnotatedExpr<T>(
   ast: Expr<T & TypeMeta>,
   context: Context,
-): Generator<TypeError<Expr<T & TypeMeta>>> {
+): Generator<TypeError<T & TypeMeta>> {
   switch (ast.type) {
     case "constant": {
       const t = inferConstant(ast.value);
@@ -86,6 +86,7 @@ function* typecheckAnnotatedExpr<T>(
       return;
 
     case "application":
+      yield* typecheckAnnotatedExpr(ast.caller, context);
       yield* unifyYieldErr(ast, ast.caller.$.asType(), {
         type: "fn",
         args: ast.args.map((arg) => arg.$.asType()),
@@ -94,7 +95,6 @@ function* typecheckAnnotatedExpr<T>(
       for (const arg of ast.args) {
         yield* typecheckAnnotatedExpr(arg, context);
       }
-      yield* typecheckAnnotatedExpr(ast.caller, context);
       return;
 
     case "let":
@@ -173,7 +173,7 @@ function* unifyYieldErr<T>(
   ast: Expr<T & TypeMeta>,
   t1: Type,
   t2: Type,
-): Generator<TypeError<Expr<T & TypeMeta>>> {
+): Generator<TypeError<T & TypeMeta>> {
   const e = unify(t1, t2);
   if (e !== undefined) {
     yield { type: e.type, left: e.left, right: e.right, node: ast };
