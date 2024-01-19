@@ -78,7 +78,7 @@ Program {
   // --- Types
 
   TypeHint
-    = typeIdent  -- named
+    = typeIdent ("<" ListOf<TypeHint, ","> ">")?  -- named
     | "_" -- any
 
   typeIdent  (an identifier)

@@ -1300,6 +1300,105 @@ exports[`parses a concrete type with no args as a type hint 1`] = `
 }
 `;
 
+exports[`parses concrete type with 1 arg 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        22,
+      ],
+      "type": "let",
+      "typeHint": {
+        "args": [
+          {
+            "args": [],
+            "name": "Int",
+            "type": "named",
+          },
+        ],
+        "name": "Maybe",
+        "span": [
+          8,
+          18,
+        ],
+        "type": "named",
+      },
+      "value": {
+        "span": [
+          21,
+          22,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+}
+`;
+
+exports[`parses concrete type with 2 args 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        29,
+      ],
+      "type": "let",
+      "typeHint": {
+        "args": [
+          {
+            "args": [],
+            "name": "Int",
+            "type": "named",
+          },
+          {
+            "args": [],
+            "name": "Bool",
+            "type": "named",
+          },
+        ],
+        "name": "Result",
+        "span": [
+          8,
+          25,
+        ],
+        "type": "named",
+      },
+      "value": {
+        "span": [
+          28,
+          29,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+}
+`;
+
 exports[`parses underscore type 1`] = `
 {
   "statements": [

@@ -142,10 +142,17 @@ semantics.addOperation<TypeHint>("typeHint()", {
     return { type: "any" };
   },
 
-  TypeHint_named(ident) {
+  TypeHint_named(ident, _lbracket, args, _rbracket) {
+    let args_: TypeHint[] = [];
+    if (args.numChildren > 0) {
+      args_ = args
+        .child(0)
+        .asIteration()
+        .children.map((c) => c.typeHint());
+    }
     return {
       type: "named",
-      args: [],
+      args: args_,
       name: ident.sourceString,
     };
   },

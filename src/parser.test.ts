@@ -222,6 +222,16 @@ test("parses underscore type", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parses concrete type with 1 arg", () => {
+  const src = "let x : Maybe<Int> = 0";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parses concrete type with 2 args", () => {
+  const src = "let x : Result<Int, Bool> = 0";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];
