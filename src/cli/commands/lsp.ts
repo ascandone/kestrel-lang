@@ -5,10 +5,8 @@ import {
   TextDocuments,
   createConnection,
 } from "vscode-languageserver";
-
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { Span, SpanMeta, parse } from "../../parser";
-import { Type } from "../../typecheck/unify";
 import { typeErrorPPrint, typePPrint } from "../../typecheck/pretty-printer";
 import { TypeMeta, typecheck } from "../../typecheck/typecheck";
 import { prelude } from "../../typecheck/prelude";
@@ -21,10 +19,10 @@ function spanContains([start, end]: Span, offset: number) {
   return start <= offset && end >= offset;
 }
 
-function findTypeByOffsetE<T>(
-  ast: Expr<SpanMeta & TypeMeta & T>,
+function exprByOffset<T extends SpanMeta>(
+  ast: Expr<T>,
   offset: number,
-): Type | undefined {
+): T | undefined {
   if (!spanContains(ast.span, offset)) {
     return;
   }
@@ -32,51 +30,51 @@ function findTypeByOffsetE<T>(
   switch (ast.type) {
     case "constant":
     case "identifier":
-      return ast.$.asType();
+      return ast;
     case "application":
       for (const arg of ast.args) {
-        const t = findTypeByOffsetE(arg, offset);
+        const t = exprByOffset(arg, offset);
         if (t !== undefined) {
           return t;
         }
       }
-      return findTypeByOffsetE(ast.caller, offset);
+      return exprByOffset(ast.caller, offset) ?? ast;
 
     case "let":
       if (spanContains(ast.binding.span, offset)) {
-        return ast.binding.$.asType();
+        return ast.binding;
       }
       return (
-        findTypeByOffsetE(ast.value, offset) ??
-        findTypeByOffsetE(ast.body, offset)
+        exprByOffset(ast.value, offset) ?? exprByOffset(ast.body, offset) ?? ast
       );
 
     case "fn":
       for (const param of ast.params) {
         if (spanContains(param.span, offset)) {
-          return param.$.asType();
+          return param;
         }
       }
-      return findTypeByOffsetE(ast.body, offset);
+      return exprByOffset(ast.body, offset) ?? ast;
 
     case "if":
       return (
-        findTypeByOffsetE(ast.condition, offset) ??
-        findTypeByOffsetE(ast.then, offset) ??
-        findTypeByOffsetE(ast.else, offset)
+        exprByOffset(ast.condition, offset) ??
+        exprByOffset(ast.then, offset) ??
+        exprByOffset(ast.else, offset) ??
+        ast
       );
   }
 }
 
-function findTypeByOffsetP<T>(
-  program: Program<SpanMeta & TypeMeta & T>,
+function declByOffset<T extends SpanMeta>(
+  program: Program<T>,
   offset: number,
-): Type | undefined {
+): T | undefined {
   for (const st of program.statements) {
     if (spanContains(st.binding.span, offset)) {
-      return st.binding.$.asType();
+      return st.binding;
     }
-    const e = findTypeByOffsetE(st.value, offset);
+    const e = exprByOffset(st.value, offset);
     if (e !== undefined) {
       return e;
     }
@@ -154,13 +152,18 @@ export function lspCmd() {
     const [doc, ast] = pair;
 
     const offset = doc.offsetAt(position);
-    const $ = findTypeByOffsetP(ast, offset);
-    if ($ === undefined) {
+    const node = declByOffset(ast, offset);
+    if (node === undefined) {
       return undefined;
     }
-    const tpp = typePPrint($);
+
+    const tpp = typePPrint(node.$.asType());
 
     return {
+      range: {
+        start: doc.positionAt(node.span[0]),
+        end: doc.positionAt(node.span[1]),
+      },
       contents: {
         kind: MarkupKind.Markdown,
         value: `\`\`\`
