@@ -40,6 +40,8 @@ export const prelude: Context = {
   not: Fn([Bool], Bool),
   True: Bool,
   False: Bool,
+  Just: gen(([$a]) => Fn([$a!], Maybe($a!))),
+  Nothing: gen(([$a]) => Maybe($a!)),
   Nil: Nil,
   pair: gen(([$a, $b]) => Fn([$a!, $b!], Tuple($a!, $b!))),
 };
