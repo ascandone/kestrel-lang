@@ -1,6 +1,7 @@
 import {
   DiagnosticSeverity,
   MarkupKind,
+  SymbolKind,
   TextDocumentSyncKind,
   TextDocuments,
   createConnection,
@@ -92,6 +93,7 @@ export function lspCmd() {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Incremental,
       hoverProvider: true,
+      documentSymbolProvider: true,
       // inlayHintProvider: true,
       // codeLensProvider: {
       //   resolveProvider: true,
@@ -140,6 +142,27 @@ export function lspCmd() {
           },
         };
       }),
+    });
+  });
+
+  connection.onDocumentSymbol(({ textDocument }) => {
+    const pair = docs.get(textDocument.uri);
+
+    if (pair === undefined) {
+      return undefined;
+    }
+    const [doc, ast] = pair;
+
+    return ast.statements.map((st) => {
+      const [start, end] = st.span;
+      return {
+        kind: SymbolKind.Variable,
+        name: st.binding.name,
+        location: {
+          uri: textDocument.uri,
+          range: { start: doc.positionAt(start), end: doc.positionAt(end) },
+        },
+      };
     });
   });
 
