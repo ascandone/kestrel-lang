@@ -1,4 +1,11 @@
-import { ConstLiteral, Expr, Program, Statement, Span, SpanMeta } from "../ast";
+import {
+  ConstLiteral,
+  Expr,
+  Program,
+  Statement,
+  SpanMeta,
+  TypeHint,
+} from "../ast";
 import { TVar, Type, unify, Context, generalize, instantiate } from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
@@ -28,6 +35,13 @@ export function typecheck<T extends SpanMeta>(
   const typedStatements = ast.statements.map<Statement<T & TypeMeta>>(
     (decl) => {
       const annotated = annotateExpr(decl.value);
+      if (decl.typeHint !== undefined) {
+        const t = inferTypeHint(decl.typeHint);
+        // TODO collect error
+        // - but is it even possible to fail to unify a fresh var?
+        unify(t, annotated.$.asType());
+      }
+
       errors.push(
         ...typecheckAnnotatedExpr(annotated, {
           ...context,
@@ -208,5 +222,16 @@ function inferConstant(x: ConstLiteral): Type {
 
     case "string":
       throw new Error("TODO inferConst with type: " + x.type);
+  }
+}
+
+function inferTypeHint(hint: TypeHint): Type {
+  switch (hint.type) {
+    case "named":
+      return {
+        type: "named",
+        name: hint.name,
+        args: hint.args.map(inferTypeHint),
+      };
   }
 }

@@ -271,6 +271,14 @@ test("recursive let declarations", () => {
   });
 });
 
+test("type hints are used by typechecker", () => {
+  const [types, errs] = tc("let x: Int = 1.1");
+  expect(errs).not.toEqual([]);
+  expect(types).toEqual({
+    x: "Int",
+  });
+});
+
 function tc(src: string, context: Context = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context);
