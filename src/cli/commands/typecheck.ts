@@ -1,8 +1,9 @@
 import { readFileSync } from "fs";
-import { Span, unsafeParse } from "../../parser";
+import { unsafeParse } from "../../parser";
 import { typecheck } from "../../typecheck/typecheck";
 import { typeErrorPPrint } from "../../typecheck/pretty-printer";
 import { prelude } from "../../typecheck/prelude";
+import { Span } from "../../ast";
 
 const FgRed = "\x1b[31m";
 const Reset = "\x1b[0m";

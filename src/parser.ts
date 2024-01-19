@@ -1,14 +1,11 @@
 import grammar from "./parser/grammar.ohm-bundle";
-import { ConstLiteral, Program, Expr, Statement } from "./ast";
+import { ConstLiteral, Program, Expr, Statement, Span, SpanMeta } from "./ast";
 import type {
   MatchResult,
   NonterminalNode,
   Node as OhmNode,
   TerminalNode,
 } from "ohm-js";
-
-export type Span = [startIdx: number, endIdx: number];
-export type SpanMeta = { span: Span };
 
 function getSpan({ source }: OhmNode): Span {
   return [source.startIdx, source.endIdx];

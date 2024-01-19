@@ -7,82 +7,14 @@ import {
   createConnection,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { Span, SpanMeta, parse } from "../../parser";
+import { parse } from "../../parser";
 import { typeErrorPPrint, typePPrint } from "../../typecheck/pretty-printer";
 import { TypeMeta, typecheck } from "../../typecheck/typecheck";
 import { prelude } from "../../typecheck/prelude";
-import { Expr, Program } from "../../ast";
+import { Program, SpanMeta, declByOffset } from "../../ast";
 
 const documents = new TextDocuments(TextDocument);
 const docs = new Map<string, [TextDocument, Program<SpanMeta & TypeMeta>]>();
-
-function spanContains([start, end]: Span, offset: number) {
-  return start <= offset && end >= offset;
-}
-
-function exprByOffset<T extends SpanMeta>(
-  ast: Expr<T>,
-  offset: number,
-): T | undefined {
-  if (!spanContains(ast.span, offset)) {
-    return;
-  }
-
-  switch (ast.type) {
-    case "constant":
-    case "identifier":
-      return ast;
-    case "application":
-      for (const arg of ast.args) {
-        const t = exprByOffset(arg, offset);
-        if (t !== undefined) {
-          return t;
-        }
-      }
-      return exprByOffset(ast.caller, offset) ?? ast;
-
-    case "let":
-      if (spanContains(ast.binding.span, offset)) {
-        return ast.binding;
-      }
-      return (
-        exprByOffset(ast.value, offset) ?? exprByOffset(ast.body, offset) ?? ast
-      );
-
-    case "fn":
-      for (const param of ast.params) {
-        if (spanContains(param.span, offset)) {
-          return param;
-        }
-      }
-      return exprByOffset(ast.body, offset) ?? ast;
-
-    case "if":
-      return (
-        exprByOffset(ast.condition, offset) ??
-        exprByOffset(ast.then, offset) ??
-        exprByOffset(ast.else, offset) ??
-        ast
-      );
-  }
-}
-
-function declByOffset<T extends SpanMeta>(
-  program: Program<T>,
-  offset: number,
-): T | undefined {
-  for (const st of program.statements) {
-    if (spanContains(st.binding.span, offset)) {
-      return st.binding;
-    }
-    const e = exprByOffset(st.value, offset);
-    if (e !== undefined) {
-      return e;
-    }
-  }
-
-  return undefined;
-}
 
 export function lspCmd() {
   const connection =
@@ -94,11 +26,6 @@ export function lspCmd() {
       textDocumentSync: TextDocumentSyncKind.Incremental,
       hoverProvider: true,
       documentSymbolProvider: true,
-      // inlayHintProvider: true,
-      // codeLensProvider: {
-      //   resolveProvider: true,
-      // },
-      // documentSymbolProvider: true,
     },
   }));
 

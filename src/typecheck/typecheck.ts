@@ -1,5 +1,4 @@
-import { ConstLiteral, Expr, Program, Statement } from "../ast";
-import { Span, SpanMeta } from "../parser";
+import { ConstLiteral, Expr, Program, Statement, Span, SpanMeta } from "../ast";
 import { TVar, Type, unify, Context, generalize, instantiate } from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
