@@ -42,6 +42,14 @@ export function typeErrorPPrint(e: TypeError<unknown>) {
     case "occurs-check":
       return "Cannot construct the infinite type";
     case "type-mismatch":
+      if (
+        e.left.type === "fn" &&
+        e.right.type === "fn" &&
+        e.left.args.length !== e.right.args.length
+      ) {
+        return `Expected ${e.left.args.length} arguments, but got ${e.right.args.length}.\n`;
+      }
+
       return `Type mismatch
 
 Expected:  ${typePPrint(e.left)}
