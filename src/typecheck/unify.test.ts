@@ -9,6 +9,7 @@ import {
   instantiate,
   unify,
 } from "./unify";
+import { Bool, Int, List } from "./prelude";
 
 beforeEach(() => {
   TVar.resetId();
@@ -499,12 +500,6 @@ describe("generalization", () => {
 
 function named(name: string, ...args: Type[]): ConcreteType {
   return { type: "named", name, args };
-}
-
-const Int = named("Int");
-const Bool = named("Bool");
-function List(p: Type) {
-  return named("List", p);
 }
 
 function Tuple(...ps: Type[]): ConcreteType {

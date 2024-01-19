@@ -1,10 +1,17 @@
 import { ConcreteType, Context, TVar, Type, generalize } from "./unify";
 
-const Int: ConcreteType = { type: "named", name: "Int", args: [] };
-const Bool: ConcreteType = { type: "named", name: "Bool", args: [] };
-const Nil: ConcreteType = { type: "named", name: "Nil", args: [] };
-function Pair(...args: Type[]): ConcreteType {
-  return { type: "named", name: "Pair", args };
+export const Int: ConcreteType = { type: "named", name: "Int", args: [] };
+export const Float: ConcreteType = { type: "named", name: "Float", args: [] };
+export const Bool: ConcreteType = { type: "named", name: "Bool", args: [] };
+export const Nil: ConcreteType = { type: "named", name: "Nil", args: [] };
+export function List(arg: Type): ConcreteType {
+  return { type: "named", name: "List", args: [arg] };
+}
+export function Maybe(arg: Type): ConcreteType {
+  return { type: "named", name: "Maybe", args: [arg] };
+}
+export function Tuple(...args: Type[]): ConcreteType {
+  return { type: "named", name: "Tuple", args };
 }
 
 function Fn(args: Type[], ret: Type): ConcreteType {
@@ -34,7 +41,7 @@ export const prelude: Context = {
   True: Bool,
   False: Bool,
   Nil: Nil,
-  pair: gen(([$a, $b]) => Fn([$a!, $b!], Pair($a!, $b!))),
+  pair: gen(([$a, $b]) => Fn([$a!, $b!], Tuple($a!, $b!))),
 };
 
 function gen(f: (args: Generator<Type>) => Type): Type {

@@ -2,7 +2,8 @@ import { expect, test } from "vitest";
 import { unsafeParse } from "../parser";
 import { typecheck, TypeError } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
-import { ConcreteType, Context } from "./unify";
+import { Context } from "./unify";
+import { Int, Bool } from "./prelude";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -290,6 +291,3 @@ function tc(src: string, context: Context = {}) {
 
   return [Object.fromEntries(kvs), errors];
 }
-
-const Int: ConcreteType = { type: "named", name: "Int", args: [] };
-const Bool: ConcreteType = { type: "named", name: "Bool", args: [] };

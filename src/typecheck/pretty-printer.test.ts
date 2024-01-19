@@ -1,6 +1,7 @@
 import { expect, test, beforeEach } from "vitest";
 import { typePPrint } from "./pretty-printer";
 import { ConcreteType, TVar, Type, unify } from "./unify";
+import { Bool, Int, List, Maybe, Tuple } from "./prelude";
 
 beforeEach(() => {
   TVar.resetId();
@@ -64,24 +65,6 @@ test("n-arity type nested in a fn", () => {
   const f = Fn([List(Int)], Maybe(Bool));
   expect(typePPrint(f)).toBe("Fn(List<Int>) -> Maybe<Bool>");
 });
-
-function named(name: string, ...args: Type[]): ConcreteType {
-  return { type: "named", name, args };
-}
-
-const Int = named("Int");
-const Bool = named("Bool");
-function List(p: Type) {
-  return named("List", p);
-}
-
-function Maybe(p: Type) {
-  return named("Maybe", p);
-}
-
-function Tuple(...ps: Type[]): ConcreteType {
-  return named("Tuple", ...ps);
-}
 
 function Fn(args: Type[], ret: Type): ConcreteType {
   return { type: "fn", args, return: ret };
