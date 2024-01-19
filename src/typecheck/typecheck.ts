@@ -1,4 +1,5 @@
 import { ConstLiteral, Expr, Program, Statement } from "../ast";
+import { Span, SpanMeta } from "../parser";
 import { TVar, Type, unify, Context, generalize, instantiate } from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
@@ -17,12 +18,12 @@ export type TypeError<Meta> =
 
 export type TypeMeta = { $: TVar };
 
-export function typecheck<T = {}>(
+export function typecheck<T extends SpanMeta>(
   ast: Program<T>,
   initialContext: Context = {},
 ): [Program<T & TypeMeta>, TypeError<T & TypeMeta>[]] {
   TVar.resetId();
-  const errors: TypeError<T & TypeMeta>[] = [];
+  const errors: TypeError<T & TypeMeta & SpanMeta>[] = [];
   let context: Context = { ...initialContext };
 
   const typedStatements = ast.statements.map<Statement<T & TypeMeta>>(
@@ -44,7 +45,26 @@ export function typecheck<T = {}>(
     },
   );
 
-  return [{ statements: typedStatements }, errors];
+  const mappedErrs: typeof errors = errors.map((e) => {
+    if (e.type !== "type-mismatch") {
+      return e;
+    }
+
+    if (
+      e.left.type === "fn" &&
+      e.right.type === "fn" &&
+      e.left.args.length < e.right.args.length &&
+      e.node.type === "application"
+    ) {
+      const [start] = e.node.args[e.left.args.length]!.span;
+      const [, end] = e.node.args.at(-1)!.span;
+      return { ...e, node: { ...e.node, span: [start, end] } };
+    }
+
+    return e;
+  });
+
+  return [{ statements: typedStatements }, mappedErrs];
 }
 
 function* typecheckAnnotatedExpr<T>(
@@ -68,7 +88,6 @@ function* typecheckAnnotatedExpr<T>(
         };
         return;
       }
-
       yield* unifyYieldErr(ast, ast.$.asType(), instantiate(lookup));
       return;
     }
