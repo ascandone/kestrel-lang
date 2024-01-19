@@ -85,7 +85,7 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   MulExp_rem: parseInfix,
   ExpExp_power: parseInfix,
 
-  PriExp_apply(f, _lpar, args, _rpar) {
+  PriExp_apply(f, _lpar, args, _trailingComma, _rpar) {
     return {
       type: "application",
       caller: f.expr(),

@@ -107,6 +107,14 @@ test("parse appl with 3 args", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse appl with trailing comma", () => {
+  const src = `let _ = f(
+    x,
+    y,
+  )`;
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 test("parse appl with nested expr", () => {
   const src = "let _ = f(1 + 2)";
   expect(unsafeParse(src)).toMatchSnapshot();

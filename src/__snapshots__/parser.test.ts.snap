@@ -627,6 +627,60 @@ exports[`parse appl with no args 1`] = `
 }
 `;
 
+exports[`parse appl with trailing comma 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        28,
+      ],
+      "type": "let",
+      "value": {
+        "args": [
+          {
+            "name": "x",
+            "span": [
+              15,
+              16,
+            ],
+            "type": "identifier",
+          },
+          {
+            "name": "y",
+            "span": [
+              22,
+              23,
+            ],
+            "type": "identifier",
+          },
+        ],
+        "caller": {
+          "name": "f",
+          "span": [
+            8,
+            9,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          28,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+}
+`;
+
 exports[`parse block with no let 1`] = `
 {
   "statements": [
