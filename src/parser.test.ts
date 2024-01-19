@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
-import { Span, SpanMeta, unsafeParse } from "./parser";
-import { Program, Statement } from "./ast";
+import { unsafeParse } from "./parser";
+import { Program, Span, SpanMeta } from "./ast";
 
 test("parsing a declaration", () => {
   const src = "let x = 0";
@@ -209,6 +209,11 @@ let _ = if b {
 }
 `;
 
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parses a concrete type with no args as a type hint", () => {
+  const src = "let x : Int = 0";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 

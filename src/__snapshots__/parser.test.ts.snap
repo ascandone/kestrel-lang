@@ -1258,3 +1258,40 @@ exports[`parse let block with two let stmts 1`] = `
   ],
 }
 `;
+
+exports[`parses a concrete type with no args as a type hint 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        15,
+      ],
+      "type": "let",
+      "typeHint": {
+        "args": [],
+        "name": "Int",
+        "type": "named",
+      },
+      "value": {
+        "span": [
+          14,
+          15,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+}
+`;

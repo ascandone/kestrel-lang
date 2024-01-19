@@ -1,5 +1,13 @@
 import grammar from "./parser/grammar.ohm-bundle";
-import { ConstLiteral, Program, Expr, Statement, Span, SpanMeta } from "./ast";
+import {
+  ConstLiteral,
+  Program,
+  Expr,
+  Statement,
+  Span,
+  SpanMeta,
+  TypeHint,
+} from "./ast";
 import type {
   MatchResult,
   NonterminalNode,
@@ -129,13 +137,29 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   },
 });
 
+semantics.addOperation<TypeHint>("typeHint()", {
+  TypeHint_named(ident) {
+    return {
+      type: "named",
+      args: [],
+      name: ident.sourceString,
+    };
+  },
+});
+
 semantics.addOperation<Statement<SpanMeta>>("statement()", {
-  Declaration_letStmt(_let, ident, _eq, exp) {
+  Declaration_letStmt(_let, ident, _colon, typeHint, _eq, exp) {
+    const th =
+      typeHint.numChildren === 0
+        ? {}
+        : { typeHint: typeHint.child(0).typeHint() };
+
     return {
       type: "let",
       binding: ident.ident(),
       value: exp.expr(),
       span: getSpan(this),
+      ...th,
     };
   },
 });

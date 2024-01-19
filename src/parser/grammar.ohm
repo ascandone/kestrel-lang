@@ -3,7 +3,7 @@ Program {
     = Declaration*
 
   Declaration
-    = "let" ident "=" Exp  -- letStmt
+    = "let" ident (":" TypeHint)? "=" Exp  -- letStmt
 
   Exp
     = CompExp
@@ -74,4 +74,19 @@ Program {
     | "-" number  -- neg
 
   keyword = "let" | "fn" | "if" | "else"
+
+  // --- Types
+
+  TypeHint
+    = typeIdent  -- named
+
+  typeIdent  (an identifier)
+    = typeIdentHead typeIdentBody*
+
+  typeIdentHead
+    = upper
+
+  typeIdentBody
+    = letter
+
 }

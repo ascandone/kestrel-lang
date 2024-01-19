@@ -3,6 +3,12 @@ export type ConstLiteral =
   | { type: "float"; value: number }
   | { type: "string"; value: string };
 
+export type TypeHint = {
+  type: "named";
+  name: string;
+  args: TypeHint[];
+};
+
 export type Expr<Meta = {}> = Meta &
   (
     | {
@@ -39,6 +45,7 @@ export type Expr<Meta = {}> = Meta &
 
 export type Statement<Meta = {}> = Meta & {
   type: "let";
+  typeHint?: TypeHint;
   binding: { name: string } & Meta;
   value: Expr<Meta>;
 };
