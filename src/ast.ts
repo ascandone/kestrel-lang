@@ -9,7 +9,7 @@ export type TypeHint = {
   args: TypeHint[];
 };
 
-export type Expr<Meta = {}> = Meta &
+export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
   (
     | {
         type: "constant";
@@ -21,33 +21,33 @@ export type Expr<Meta = {}> = Meta &
       }
     | {
         type: "fn";
-        params: Array<{ name: string } & Meta>;
-        body: Expr<Meta>;
+        params: Array<{ name: string } & TypeMeta & SpanMeta>;
+        body: Expr<TypeMeta>;
       }
     | {
         type: "application";
-        caller: Expr<Meta>;
-        args: Expr<Meta>[];
+        caller: Expr<TypeMeta>;
+        args: Expr<TypeMeta>[];
       }
     | {
         type: "let";
-        binding: { name: string } & Meta;
-        value: Expr<Meta>;
-        body: Expr<Meta>;
+        binding: { name: string } & TypeMeta & SpanMeta;
+        value: Expr<TypeMeta>;
+        body: Expr<TypeMeta>;
       }
     | {
         type: "if";
-        condition: Expr<Meta>;
-        then: Expr<Meta>;
-        else: Expr<Meta>;
+        condition: Expr<TypeMeta>;
+        then: Expr<TypeMeta>;
+        else: Expr<TypeMeta>;
       }
   );
 
-export type Statement<Meta = {}> = Meta & {
+export type Statement<TypeMeta = {}> = TypeMeta & {
   type: "let";
-  typeHint?: TypeHint;
-  binding: { name: string } & Meta;
-  value: Expr<Meta>;
+  typeHint?: TypeHint & SpanMeta;
+  binding: { name: string } & SpanMeta;
+  value: Expr<TypeMeta>;
 };
 
 export type Program<Meta = {}> = {
@@ -61,10 +61,7 @@ function spanContains([start, end]: Span, offset: number) {
   return start <= offset && end >= offset;
 }
 
-function exprByOffset<T extends SpanMeta>(
-  ast: Expr<T>,
-  offset: number,
-): T | undefined {
+function exprByOffset<T>(ast: Expr<T>, offset: number): T | undefined {
   if (!spanContains(ast.span, offset)) {
     return;
   }
@@ -108,13 +105,13 @@ function exprByOffset<T extends SpanMeta>(
   }
 }
 
-export function declByOffset<T extends SpanMeta>(
+export function declByOffset<T>(
   program: Program<T>,
   offset: number,
 ): T | undefined {
   for (const st of program.statements) {
     if (spanContains(st.binding.span, offset)) {
-      return st.binding;
+      return st.value;
     }
     const e = exprByOffset(st.value, offset);
     if (e !== undefined) {

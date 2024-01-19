@@ -2,7 +2,6 @@ import { readFileSync } from "fs";
 import { parse } from "../../parser";
 import { typecheck } from "../../typecheck/typecheck";
 import { typeErrorPPrint } from "../../typecheck/pretty-printer";
-import { prelude } from "../../typecheck/prelude";
 import { Span } from "../../ast";
 
 const FgRed = "\x1b[31m";
@@ -22,7 +21,7 @@ export function typecheckCmd(path: string) {
     return;
   }
 
-  const [, errors] = typecheck(parseResult.value, prelude);
+  const [, errors] = typecheck(parseResult.value);
 
   for (const error of errors) {
     const msg = typeErrorPPrint(error);

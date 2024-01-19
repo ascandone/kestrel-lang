@@ -10,7 +10,6 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import { parse } from "../../parser";
 import { typeErrorPPrint, typePPrint } from "../../typecheck/pretty-printer";
 import { TypeMeta, typecheck } from "../../typecheck/typecheck";
-import { prelude } from "../../typecheck/prelude";
 import { Program, SpanMeta, declByOffset } from "../../ast";
 
 const documents = new TextDocuments(TextDocument);
@@ -52,7 +51,7 @@ export function lspCmd() {
       return;
     }
 
-    const [typed, errors] = typecheck(parsed.value, prelude);
+    const [typed, errors] = typecheck(parsed.value);
     docs.set(change.document.uri, [change.document, typed]);
     connection.sendDiagnostics({
       uri: change.document.uri,

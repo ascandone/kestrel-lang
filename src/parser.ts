@@ -152,7 +152,12 @@ semantics.addOperation<Statement<SpanMeta>>("statement()", {
     const th =
       typeHint.numChildren === 0
         ? {}
-        : { typeHint: typeHint.child(0).typeHint() };
+        : {
+            typeHint: {
+              ...typeHint.child(0).typeHint(),
+              span: getSpan(typeHint.child(0)),
+            },
+          };
 
     return {
       type: "let",

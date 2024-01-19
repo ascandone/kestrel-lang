@@ -1278,6 +1278,10 @@ exports[`parses a concrete type with no args as a type hint 1`] = `
       "typeHint": {
         "args": [],
         "name": "Int",
+        "span": [
+          8,
+          11,
+        ],
         "type": "named",
       },
       "value": {

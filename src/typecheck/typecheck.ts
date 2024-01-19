@@ -6,6 +6,7 @@ import {
   SpanMeta,
   TypeHint,
 } from "../ast";
+import { TypesPool, defaultTypesPool, prelude } from "./prelude";
 import { TVar, Type, unify, Context, generalize, instantiate } from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
@@ -16,6 +17,12 @@ export type TypeError<Meta> =
       node: Expr<Meta>;
     }
   | {
+      type: "unbound-type";
+      name: string;
+      arity: number;
+      node: SpanMeta;
+    }
+  | {
       type: UnifyErrorType;
       node: Expr<Meta>;
       left: Type;
@@ -24,12 +31,36 @@ export type TypeError<Meta> =
 
 export type TypeMeta = { $: TVar };
 
+function unboundTypeError<T extends SpanMeta>(
+  node: T,
+  t: Type,
+  tCtx: TypesPool,
+): TypeError<T> | undefined {
+  if (t.type !== "named") {
+    return undefined;
+  }
+
+  const arity = tCtx[t.name];
+  const expectedArity = t.args.length;
+  if (arity !== undefined && arity === expectedArity) {
+    return undefined;
+  }
+
+  return {
+    type: "unbound-type",
+    name: t.name,
+    arity: expectedArity,
+    node,
+  };
+}
+
 export function typecheck<T extends SpanMeta>(
   ast: Program<T>,
-  initialContext: Context = {},
-): [Program<T & TypeMeta>, TypeError<T & TypeMeta>[]] {
+  initialContext: Context = prelude,
+  typesContext: TypesPool = defaultTypesPool,
+): [Program<T & TypeMeta>, TypeError<SpanMeta>[]] {
   TVar.resetId();
-  const errors: TypeError<T & TypeMeta & SpanMeta>[] = [];
+  const errors: TypeError<SpanMeta>[] = [];
   let context: Context = { ...initialContext };
 
   const typedStatements = ast.statements.map<Statement<T & TypeMeta>>(
@@ -37,9 +68,15 @@ export function typecheck<T extends SpanMeta>(
       const annotated = annotateExpr(decl.value);
       if (decl.typeHint !== undefined) {
         const t = inferTypeHint(decl.typeHint);
-        // TODO collect error
-        // - but is it even possible to fail to unify a fresh var?
-        unify(t, annotated.$.asType());
+
+        const err = unboundTypeError<SpanMeta>(decl.typeHint, t, typesContext);
+        if (err) {
+          errors.push(err);
+        } else {
+          // TODO collect error
+          // - but is it even possible to fail to unify a fresh var?
+          unify(t, annotated.$.asType());
+        }
       }
 
       errors.push(

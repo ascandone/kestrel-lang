@@ -3,7 +3,7 @@ import { unsafeParse } from "../parser";
 import { typecheck, TypeError } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
 import { Context } from "./unify";
-import { Int, Bool } from "./prelude";
+import { Int, Bool, TypesPool } from "./prelude";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -273,16 +273,30 @@ test("recursive let declarations", () => {
 });
 
 test("type hints are used by typechecker", () => {
-  const [types, errs] = tc("let x: Int = 1.1");
+  const [types, errs] = tc(
+    "let x: Int = 1.1",
+    {},
+    {
+      Int: 0,
+    },
+  );
   expect(errs).not.toEqual([]);
   expect(types).toEqual({
     x: "Int",
   });
 });
 
-function tc(src: string, context: Context = {}) {
+test("unknown types are rejected", () => {
+  const [types, errs] = tc("let x: NotFound = 1", {}, {});
+  expect(errs).not.toEqual([]);
+  expect(types).toEqual({
+    x: "Int",
+  });
+});
+
+function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
   const parsedProgram = unsafeParse(src);
-  const [typed, errors] = typecheck(parsedProgram, context);
+  const [typed, errors] = typecheck(parsedProgram, context, typesContext);
 
   const kvs = typed.statements.map((decl) => [
     decl.binding.name,

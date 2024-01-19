@@ -34,13 +34,14 @@ export function typePPrint(t: Type): string {
   return pprintHelper(generalize(t));
 }
 
-export function typeErrorPPrint(e: TypeError<unknown>) {
+export function typeErrorPPrint(e: TypeError<unknown>): string {
   switch (e.type) {
     case "unbound-variable":
-      return `Unbound variable: "${e.ident}"`;
-
+      return `Unbound variable: "${e.ident}"\n`;
     case "occurs-check":
-      return "Cannot construct the infinite type";
+      return "Cannot construct the infinite type\n";
+    case "unbound-type":
+      return `Unbound type: ${e.name}/${e.arity}\n`;
     case "type-mismatch":
       if (
         e.left.type === "fn" &&

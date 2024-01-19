@@ -53,3 +53,15 @@ function gen(f: (args: Generator<Type>) => Type): Type {
   const t = f(freshVars());
   return generalize(t);
 }
+
+export type TypesPool = Record<string, number>;
+
+export const defaultTypesPool: TypesPool = {
+  Int: 0,
+  Float: 0,
+  String: 0,
+  Nil: 0,
+  Bool: 0,
+  Maybe: 1,
+  List: 1,
+};
