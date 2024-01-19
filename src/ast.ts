@@ -3,11 +3,13 @@ export type ConstLiteral =
   | { type: "float"; value: number }
   | { type: "string"; value: string };
 
-export type TypeHint = {
-  type: "named";
-  name: string;
-  args: TypeHint[];
-};
+export type TypeHint =
+  | { type: "any" }
+  | {
+      type: "named";
+      name: string;
+      args: TypeHint[];
+    };
 
 export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
   (

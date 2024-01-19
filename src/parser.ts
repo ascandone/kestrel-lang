@@ -138,6 +138,10 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
 });
 
 semantics.addOperation<TypeHint>("typeHint()", {
+  TypeHint_any(_underscore) {
+    return { type: "any" };
+  },
+
   TypeHint_named(ident) {
     return {
       type: "named",

@@ -79,6 +79,7 @@ Program {
 
   TypeHint
     = typeIdent  -- named
+    | "_" -- any
 
   typeIdent  (an identifier)
     = typeIdentHead typeIdentBody*

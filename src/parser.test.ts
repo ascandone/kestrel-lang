@@ -217,6 +217,11 @@ test("parses a concrete type with no args as a type hint", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parses underscore type", () => {
+  const src = "let x : _ = 0";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];

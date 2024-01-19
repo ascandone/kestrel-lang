@@ -1299,3 +1299,42 @@ exports[`parses a concrete type with no args as a type hint 1`] = `
   ],
 }
 `;
+
+exports[`parses underscore type 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        13,
+      ],
+      "type": "let",
+      "typeHint": {
+        "span": [
+          8,
+          9,
+        ],
+        "type": "any",
+      },
+      "value": {
+        "span": [
+          12,
+          13,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+}
+`;

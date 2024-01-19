@@ -264,6 +264,11 @@ function inferConstant(x: ConstLiteral): Type {
 
 function inferTypeHint(hint: TypeHint): Type {
   switch (hint.type) {
+    case "any":
+      return {
+        type: "var",
+        var: TVar.fresh(),
+      };
     case "named":
       return {
         type: "named",

@@ -286,6 +286,20 @@ test("type hints are used by typechecker", () => {
   });
 });
 
+test("_ type hints are ignored by typechecker", () => {
+  const [types, errs] = tc(
+    "let x: _ = 1",
+    {},
+    {
+      Int: 0,
+    },
+  );
+  expect(errs).toEqual([]);
+  expect(types).toEqual({
+    x: "Int",
+  });
+});
+
 test("unknown types are rejected", () => {
   const [types, errs] = tc("let x: NotFound = 1", {}, {});
   expect(errs).not.toEqual([]);
