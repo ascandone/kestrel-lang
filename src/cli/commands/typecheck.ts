@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { unsafeParse } from "../../parser";
+import { parse } from "../../parser";
 import { typecheck } from "../../typecheck/typecheck";
 import { typeErrorPPrint } from "../../typecheck/pretty-printer";
 import { prelude } from "../../typecheck/prelude";
@@ -14,8 +14,15 @@ export function typecheckCmd(path: string) {
   const f = readFileSync(path);
 
   const src = f.toString();
-  const untyped = unsafeParse(src);
-  const [, errors] = typecheck(untyped, prelude);
+  const parseResult = parse(src);
+  if (!parseResult.ok) {
+    console.log(
+      `${FgRed}Parsing error:${Reset} ${parseResult.matchResult.message!}`,
+    );
+    return;
+  }
+
+  const [, errors] = typecheck(parseResult.value, prelude);
 
   for (const error of errors) {
     const msg = typeErrorPPrint(error);
