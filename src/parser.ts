@@ -142,6 +142,10 @@ semantics.addOperation<TypeHint>("typeHint()", {
     return { type: "any" };
   },
 
+  TypeHint_fn(_fn, _lparens, _rparens, _arrow, ret) {
+    return { type: "fn", args: [], return: ret.typeHint() };
+  },
+
   TypeHint_named(ident, _lbracket, args, _rbracket) {
     let args_: TypeHint[] = [];
     if (args.numChildren > 0) {

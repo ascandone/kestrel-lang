@@ -1259,6 +1259,51 @@ exports[`parse let block with two let stmts 1`] = `
 }
 `;
 
+exports[`parses Fn type with no args 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        23,
+      ],
+      "type": "let",
+      "typeHint": {
+        "args": [],
+        "return": {
+          "args": [],
+          "name": "Int",
+          "type": "named",
+        },
+        "span": [
+          8,
+          19,
+        ],
+        "type": "fn",
+      },
+      "value": {
+        "span": [
+          22,
+          23,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+}
+`;
+
 exports[`parses a concrete type with no args as a type hint 1`] = `
 {
   "statements": [

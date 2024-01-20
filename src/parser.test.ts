@@ -232,6 +232,11 @@ test("parses concrete type with 2 args", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parses Fn type with no args", () => {
+  const src = "let x : Fn() -> Int = 0";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];

@@ -286,6 +286,20 @@ test("type hints are used by typechecker", () => {
   });
 });
 
+test("type hints of fns are used by typechecker", () => {
+  const [types, errs] = tc(
+    "let x: Fn() -> Int = fn { 1.1 }",
+    {},
+    {
+      Int: 0,
+    },
+  );
+  expect(errs).not.toEqual([]);
+  expect(types).toEqual({
+    x: "Fn() -> Int",
+  });
+});
+
 test("_ type hints are ignored by typechecker", () => {
   const [types, errs] = tc(
     "let x: _ = 1",

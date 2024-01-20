@@ -5,6 +5,7 @@ export type ConstLiteral =
 
 export type TypeHint =
   | { type: "any" }
+  | { type: "fn"; args: TypeHint[]; return: TypeHint }
   | {
       type: "named";
       name: string;

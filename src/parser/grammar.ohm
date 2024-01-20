@@ -78,7 +78,8 @@ Program {
   // --- Types
 
   TypeHint
-    = typeIdent ("<" ListOf<TypeHint, ","> ">")?  -- named
+    = ~"Fn" typeIdent ("<" ListOf<TypeHint, ","> ">")?  -- named
+    | "Fn" "(" ")" "->" TypeHint -- fn
     | "_" -- any
 
   typeIdent  (an identifier)

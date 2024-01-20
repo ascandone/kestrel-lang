@@ -269,6 +269,12 @@ function inferTypeHint(hint: TypeHint): Type {
         type: "var",
         var: TVar.fresh(),
       };
+    case "fn":
+      return {
+        type: "fn",
+        args: hint.args.map(inferTypeHint),
+        return: inferTypeHint(hint.return),
+      };
     case "named":
       return {
         type: "named",
