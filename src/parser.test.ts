@@ -237,6 +237,11 @@ test("parses Fn type with no args", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parses Fn type with args", () => {
+  const src = "let x : Fn(X, Y) -> Z = 0";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];

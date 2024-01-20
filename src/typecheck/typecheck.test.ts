@@ -3,7 +3,7 @@ import { unsafeParse } from "../parser";
 import { typecheck, TypeError } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
 import { Context } from "./unify";
-import { Int, Bool, TypesPool } from "./prelude";
+import { Int, Bool, TypesPool, prelude } from "./prelude";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -297,6 +297,17 @@ test("type hints of fns are used by typechecker", () => {
   expect(errs).not.toEqual([]);
   expect(types).toEqual({
     x: "Fn() -> Int",
+  });
+});
+
+test("type hints of fns are used by typechecker (args)", () => {
+  const [types, errs] = tc("let x: Fn(Bool) -> Int = fn x { x + 1 }", prelude, {
+    Int: 0,
+    Bool: 0,
+  });
+  expect(errs).not.toEqual([]);
+  expect(types).toEqual({
+    x: "Fn(Bool) -> Int",
   });
 });
 

@@ -1259,6 +1259,62 @@ exports[`parse let block with two let stmts 1`] = `
 }
 `;
 
+exports[`parses Fn type with args 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        25,
+      ],
+      "type": "let",
+      "typeHint": {
+        "args": [
+          {
+            "args": [],
+            "name": "X",
+            "type": "named",
+          },
+          {
+            "args": [],
+            "name": "Y",
+            "type": "named",
+          },
+        ],
+        "return": {
+          "args": [],
+          "name": "Z",
+          "type": "named",
+        },
+        "span": [
+          8,
+          21,
+        ],
+        "type": "fn",
+      },
+      "value": {
+        "span": [
+          24,
+          25,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+}
+`;
+
 exports[`parses Fn type with no args 1`] = `
 {
   "statements": [
