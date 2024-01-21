@@ -1,13 +1,14 @@
-import {
-  ConstLiteral,
-  Expr,
-  Program,
-  Statement,
-  SpanMeta,
-  TypeHint,
-} from "../ast";
+import { ConstLiteral, Expr, Program, SpanMeta, TypeHint } from "../ast";
 import { TypesPool, defaultTypesPool, prelude } from "./prelude";
-import { TVar, Type, unify, Context, generalize, instantiate } from "./unify";
+import {
+  TVar,
+  Type,
+  unify,
+  Context,
+  generalize,
+  instantiate,
+  Poly,
+} from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
 export type TypeError<Meta> =
@@ -63,37 +64,39 @@ export function typecheck<T extends SpanMeta>(
   const errors: TypeError<SpanMeta>[] = [];
   let context: Context = { ...initialContext };
 
-  const typedStatements = ast.statements.map<Statement<T & TypeMeta>>(
-    (decl) => {
-      const annotated = annotateExpr(decl.value);
-      if (decl.typeHint !== undefined) {
-        const t = inferTypeHint(decl.typeHint);
-
-        const err = unboundTypeError<SpanMeta>(decl.typeHint, t, typesContext);
-        if (err) {
-          errors.push(err);
-        } else {
-          // TODO collect error
-          // - but is it even possible to fail to unify a fresh var?
-          unify(t, annotated.$.asType());
-        }
-      }
-
-      errors.push(
-        ...typecheckAnnotatedExpr(annotated, {
-          ...context,
-          [decl.binding.name]: annotated.$.asType(),
-        }),
+  const typedProgram = annotateProgram(ast);
+  for (const decl of typedProgram.statements) {
+    let typeHint: Type<Poly> | undefined;
+    if (decl.typeHint !== undefined) {
+      typeHint = inferTypeHint(decl.typeHint);
+      const err = unboundTypeError<SpanMeta>(
+        decl.typeHint,
+        decl.binding.$.asType(),
+        typesContext,
       );
-      context[decl.binding.name] = generalize(annotated.$.asType(), context);
-      return {
-        ...decl,
-        binding: { ...decl.binding, $: annotated.$ },
-        value: annotated,
-        $: annotated.$,
-      };
-    },
-  );
+      if (err !== undefined) {
+        errors.push(err);
+      }
+    }
+
+    errors.push(
+      ...typecheckAnnotatedExpr(decl.value, {
+        ...context,
+        [decl.binding.name]: decl.value.$.asType(),
+      }),
+    );
+
+    errors.push(
+      ...unifyYieldErr(
+        decl.value,
+        decl.binding.$.asType(),
+        decl.value.$.asType(),
+      ),
+    );
+
+    context[decl.binding.name] =
+      typeHint ?? generalize(decl.value.$.asType(), context);
+  }
 
   const mappedErrs: typeof errors = errors.map((e) => {
     if (e.type !== "type-mismatch") {
@@ -114,7 +117,7 @@ export function typecheck<T extends SpanMeta>(
     return e;
   });
 
-  return [{ statements: typedStatements }, mappedErrs];
+  return [typedProgram, mappedErrs];
 }
 
 function* typecheckAnnotatedExpr<T>(
@@ -238,6 +241,18 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
   }
 }
 
+function annotateProgram<T>(program: Program<T>): Program<T & TypeMeta> {
+  return {
+    ...program,
+    statements: program.statements.map((decl) => ({
+      ...decl,
+      binding: { ...decl.binding, $: TVar.fresh() },
+      value: annotateExpr(decl.value),
+      $: TVar.fresh(),
+    })),
+  };
+}
+
 function* unifyYieldErr<T>(
   ast: Expr<T & TypeMeta>,
   t1: Type,
@@ -262,19 +277,25 @@ function inferConstant(x: ConstLiteral): Type {
   }
 }
 
-function inferTypeHint(hint: TypeHint): Type {
+function inferTypeHint(hint: TypeHint): Type<Poly> {
   switch (hint.type) {
     case "any":
       return {
         type: "var",
         var: TVar.fresh(),
       };
+
+    case "var": {
+      return { type: "quantified", id: hint.ident };
+    }
+
     case "fn":
       return {
         type: "fn",
         args: hint.args.map(inferTypeHint),
         return: inferTypeHint(hint.return),
       };
+
     case "named":
       return {
         type: "named",

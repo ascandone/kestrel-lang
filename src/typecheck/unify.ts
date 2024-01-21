@@ -1,26 +1,31 @@
-export type ConcreteType =
+export type ConcreteType<Poly = never> =
   | {
       type: "fn";
-      args: Type[];
-      return: Type;
+      args: Type<Poly>[];
+      return: Type<Poly>;
     }
   | {
       type: "named";
       name: string;
-      args: Type[];
+      args: Type<Poly>[];
     };
 
-export type Type =
-  | ConcreteType
+export type Poly = {
+  type: "quantified";
+  id: string;
+};
+
+export type Type<Poly = never> =
+  | ConcreteType<Poly>
   | {
       type: "var";
       var: TVar;
-    };
+    }
+  | Poly;
 
 export type TVarResolution =
   | { type: "unbound"; id: number }
-  | { type: "bound"; value: ConcreteType }
-  | { type: "quantified"; id: number };
+  | { type: "bound"; value: ConcreteType<never> };
 
 export type UnifyError = {
   type: UnifyErrorType;
@@ -35,10 +40,6 @@ export class TVar {
 
   static fresh(): TVar {
     return new TVar({ type: "unbound", id: TVar.unboundId++ });
-  }
-
-  static quantified(id: number): TVar {
-    return new TVar({ type: "quantified", id });
   }
 
   resolve(): TVarResolution {
@@ -169,18 +170,12 @@ function occursCheck(v: TVar, x: Type): boolean {
   }
 
   const resolvedV = v.resolve();
-  if (resolvedV.type === "quantified") {
-    throw new Error("[unreachable] 0");
-  }
 
   if (resolvedV.type === "bound") {
     return false;
   }
 
   const resolvedX = x.var.resolve();
-  if (resolvedX.type === "quantified") {
-    throw new Error("[unreachable] 2");
-  }
 
   if (resolvedX.type === "bound") {
     return false;
@@ -192,30 +187,34 @@ function occursCheck(v: TVar, x: Type): boolean {
 
   return false;
 }
-export type Context = Record<string, Type>;
 
-function* getTypeFreeVars(t: Type): Generator<number> {
-  if (t.type === "var") {
-    const resolved = t.var.resolve();
-    if (resolved.type === "unbound") {
-      yield resolved.id;
-    }
-    return;
-  }
+export type Context = Record<string, Type<Poly>>;
 
-  if (t.type === "named") {
-    for (const arg of t.args) {
-      yield* getTypeFreeVars(arg);
+function* getTypeFreeVars(t: Type<Poly>): Generator<number> {
+  switch (t.type) {
+    case "var": {
+      const resolved = t.var.resolve();
+      if (resolved.type === "unbound") {
+        yield resolved.id;
+      }
+      return;
     }
-    return;
-  }
 
-  if (t.type === "fn") {
-    for (const arg of t.args) {
-      yield* getTypeFreeVars(arg);
-    }
-    yield* getTypeFreeVars(t.return);
-    return;
+    case "named":
+      for (const arg of t.args) {
+        yield* getTypeFreeVars(arg);
+      }
+      return;
+
+    case "fn":
+      for (const arg of t.args) {
+        yield* getTypeFreeVars(arg);
+      }
+      yield* getTypeFreeVars(t.return);
+      return;
+
+    case "quantified":
+      return;
   }
 }
 
@@ -230,12 +229,16 @@ function getContextFreeVars(context: Context): Set<number> {
   return s;
 }
 
-export function generalize(t: Type, context: Context = {}): Type {
+function generalizedName(count: number): string {
+  return `t${count}`;
+}
+
+export function generalize(t: Type, context: Context = {}): Type<Poly> {
   const ctxFreeVars = getContextFreeVars(context);
   let nextId = 0;
   const bound = new Map<number, number>();
 
-  function recur(t: Type): Type {
+  function recur(t: Type): Type<Poly> {
     if (t.type === "named") {
       return {
         type: "named",
@@ -254,18 +257,16 @@ export function generalize(t: Type, context: Context = {}): Type {
 
     const resolvedT = t.var.resolve();
     switch (resolvedT.type) {
-      case "quantified":
-        throw new Error("[unreachable] cannot generalize polytype");
       case "bound":
         return recur(resolvedT.value);
       case "unbound": {
         if (ctxFreeVars.has(resolvedT.id)) {
           return t;
         }
-
         const thisId = bound.get(resolvedT.id) ?? nextId++;
         bound.set(resolvedT.id, thisId);
-        return TVar.quantified(thisId).asType();
+        const name = generalizedName(thisId);
+        return { type: "quantified", id: name };
       }
     }
   }
@@ -273,10 +274,10 @@ export function generalize(t: Type, context: Context = {}): Type {
   return recur(t);
 }
 
-export function instantiate(t: Type): Type {
-  const instantiated = new Map<number, TVar>();
+export function instantiate(t: Type<Poly>): Type {
+  const instantiated = new Map<string, TVar>();
 
-  function recur(t: Type): Type {
+  function recur(t: Type<Poly>): Type {
     if (t.type === "named") {
       return {
         type: "named",
@@ -293,20 +294,21 @@ export function instantiate(t: Type): Type {
       };
     }
 
+    if (t.type === "quantified") {
+      const lookup = instantiated.get(t.id);
+      if (lookup === undefined) {
+        const fresh = TVar.fresh();
+        instantiated.set(t.id, fresh);
+        return fresh.asType();
+      }
+      return lookup.asType();
+    }
+
     const resolvedT = t.var.resolve();
     switch (resolvedT.type) {
       case "bound":
       case "unbound":
         return t;
-      case "quantified": {
-        const lookup = instantiated.get(resolvedT.id);
-        if (lookup === undefined) {
-          const fresh = TVar.fresh();
-          instantiated.set(resolvedT.id, fresh);
-          return fresh.asType();
-        }
-        return lookup.asType();
-      }
     }
   }
 

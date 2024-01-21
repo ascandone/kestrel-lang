@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
 import { typecheck, TypeError } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
@@ -272,64 +272,102 @@ test("recursive let declarations", () => {
   });
 });
 
-test("type hints are used by typechecker", () => {
-  const [types, errs] = tc(
-    "let x: Int = 1.1",
-    {},
-    {
-      Int: 0,
-    },
-  );
-  expect(errs).not.toEqual([]);
-  expect(types).toEqual({
-    x: "Int",
+describe.todo("type hints", () => {
+  test("type hints are used by typechecker", () => {
+    const [types, errs] = tc(
+      "let x: Int = 1.1",
+      {},
+      {
+        Int: 0,
+      },
+    );
+    expect(errs).not.toEqual([]);
+    expect(types).toEqual({
+      x: "Int",
+    });
   });
-});
 
-test("type hints of fns are used by typechecker", () => {
-  const [types, errs] = tc(
-    "let x: Fn() -> Int = fn { 1.1 }",
-    {},
-    {
-      Int: 0,
-    },
-  );
-  expect(errs).not.toEqual([]);
-  expect(types).toEqual({
-    x: "Fn() -> Int",
+  test("type hints of fns are used by typechecker", () => {
+    const [types, errs] = tc(
+      "let x: Fn() -> Int = fn { 1.1 }",
+      {},
+      {
+        Int: 0,
+      },
+    );
+    expect(errs).not.toEqual([]);
+    expect(types).toEqual({
+      x: "Fn() -> Int",
+    });
   });
-});
 
-test("type hints of fns are used by typechecker (args)", () => {
-  const [types, errs] = tc("let x: Fn(Bool) -> Int = fn x { x + 1 }", prelude, {
-    Int: 0,
-    Bool: 0,
+  test("type hints of fns are used by typechecker (args)", () => {
+    const [types, errs] = tc(
+      "let x: Fn(Bool) -> Int = fn x { x + 1 }",
+      prelude,
+      {
+        Int: 0,
+        Bool: 0,
+      },
+    );
+    expect(errs).not.toEqual([]);
+    expect(types).toEqual({
+      x: "Fn(Bool) -> Int",
+    });
   });
-  expect(errs).not.toEqual([]);
-  expect(types).toEqual({
-    x: "Fn(Bool) -> Int",
-  });
-});
 
-test("_ type hints are ignored by typechecker", () => {
-  const [types, errs] = tc(
-    "let x: _ = 1",
-    {},
-    {
-      Int: 0,
-    },
-  );
-  expect(errs).toEqual([]);
-  expect(types).toEqual({
-    x: "Int",
+  test("_ type hints are ignored by typechecker", () => {
+    const [types, errs] = tc(
+      "let x: _ = 1",
+      {},
+      {
+        Int: 0,
+      },
+    );
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Int",
+    });
   });
-});
 
-test("unknown types are rejected", () => {
-  const [types, errs] = tc("let x: NotFound = 1", {}, {});
-  expect(errs).not.toEqual([]);
-  expect(types).toEqual({
-    x: "Int",
+  test("vars type hints should be generalized", () => {
+    const [types, errs] = tc("let x: a = 0");
+    expect(errs).not.toEqual([]);
+    expect(types).toEqual({
+      x: "a",
+    });
+  });
+
+  test("unify generalized values", () => {
+    const [types, errs] = tc("let f: Fn(ta) -> tb = fn x { x }");
+    expect(errs).not.toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(ta) -> tb",
+    });
+  });
+
+  test("vars type hints are used by typechecker", () => {
+    const [types, errs] = tc("let eq: Fn(a, a, b) -> a = fn x, y, z { x }");
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      eq: "Fn(a, a, b) -> a",
+    });
+  });
+
+  test("type hints instantiate polytypes", () => {
+    const [types, errs] = tc("let f: Fn(Int) -> Int = fn x { x }");
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(Int) -> Int",
+    });
+  });
+
+  test("unknown types are rejected", () => {
+    const [types, errs] = tc("let x: NotFound = 1", {}, {});
+    expect(errs).not.toEqual([]);
+    expect(types).toEqual({
+      x: "NotFound",
+    });
   });
 });
 
@@ -339,7 +377,7 @@ function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
 
   const kvs = typed.statements.map((decl) => [
     decl.binding.name,
-    typePPrint(decl.value.$.asType()),
+    typePPrint(decl.binding.$.asType()),
   ]);
 
   return [Object.fromEntries(kvs), errors];

@@ -1,13 +1,14 @@
-import { Type, generalize } from "./unify";
+import { Poly, Type, generalize } from "./unify";
 import { TypeError } from "./typecheck";
 
-function pprintHelper(t: Type): string {
+function pprintHelper(t: Type<Poly>): string {
   switch (t.type) {
+    case "quantified":
+      return t.id;
+
     case "var": {
       const resolved = t.var.resolve();
       switch (resolved.type) {
-        case "quantified":
-          return `t${resolved.id}`;
         case "bound":
           return pprintHelper(resolved.value);
         case "unbound":
@@ -30,7 +31,7 @@ function pprintHelper(t: Type): string {
   }
 }
 
-export function typePPrint(t: Type): string {
+export function typePPrint(t: Type<never>): string {
   return pprintHelper(generalize(t));
 }
 

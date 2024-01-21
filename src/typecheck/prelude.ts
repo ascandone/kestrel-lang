@@ -1,4 +1,4 @@
-import { ConcreteType, Context, TVar, Type, generalize } from "./unify";
+import { ConcreteType, Context, Poly, TVar, Type, generalize } from "./unify";
 
 export const Int: ConcreteType = { type: "named", name: "Int", args: [] };
 export const Float: ConcreteType = { type: "named", name: "Float", args: [] };
@@ -46,7 +46,7 @@ export const prelude: Context = {
   pair: gen(([$a, $b]) => Fn([$a!, $b!], Tuple($a!, $b!))),
 };
 
-function gen(f: (args: Generator<Type>) => Type): Type {
+function gen(f: (args: Generator<Type>) => Type): Type<Poly> {
   function* freshVars() {
     while (true) {
       yield TVar.fresh().asType();

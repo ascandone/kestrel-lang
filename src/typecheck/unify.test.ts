@@ -344,7 +344,7 @@ describe("generalization", () => {
   test("generalize single unbound var", () => {
     const $a = TVar.fresh();
     const poly = generalize($a.asType());
-    expect((poly as any).var.resolve().type).toEqual("quantified");
+    expect(poly.type).toEqual("quantified");
   });
 
   test("generalize unbound var in fn args", () => {
@@ -354,7 +354,7 @@ describe("generalization", () => {
       throw new Error("FAIL");
     }
 
-    expect((poly.args[0] as any).var.resolve().type).toEqual("quantified");
+    expect(poly.args[0].type).toEqual("quantified");
   });
 
   test("generalize unbound var in fn return", () => {
@@ -364,7 +364,7 @@ describe("generalization", () => {
       throw new Error("FAIL");
     }
 
-    expect((poly.return as any).var.resolve().type).toEqual("quantified");
+    expect(poly.return.type).toEqual("quantified");
   });
 
   test("generalize many vars", () => {
@@ -380,11 +380,8 @@ describe("generalization", () => {
 
     const [$g1, $g2] = poly.args;
 
-    expect(($g1 as any).var.resolve().type).toEqual("quantified");
-    expect(($g1 as any).var.resolve().id).toEqual("t0");
-
-    expect(($g2 as any).var.resolve().type).toEqual("quantified");
-    expect(($g2 as any).var.resolve().id).toEqual("t1");
+    expect($g1).toEqual({ type: "quantified", id: "t0" });
+    expect($g2).toEqual({ type: "quantified", id: "t1" });
   });
 
   test("generalize many vars when linked", () => {
@@ -398,11 +395,11 @@ describe("generalization", () => {
     expect(poly.name).toBe("Tuple");
     const [$g1, $g2] = poly.args;
 
-    expect(($g1 as any).var.resolve().type).toEqual("quantified");
-    expect(($g1 as any).var.resolve().id).toEqual("t0");
+    expect(($g1 as any).type).toEqual("quantified");
+    expect(($g1 as any).id).toEqual("t0");
 
-    expect(($g2 as any).var.resolve().type).toEqual("quantified");
-    expect(($g2 as any).var.resolve().id).toEqual("t0");
+    expect(($g2 as any).type).toEqual("quantified");
+    expect(($g2 as any).id).toEqual("t0");
   });
 
   test("generalize var bound to a nested type to generalize ", () => {
@@ -418,11 +415,11 @@ describe("generalization", () => {
 
     const [$g1, $g2] = poly.args;
 
-    expect(($g1 as any).var.resolve()).toEqual({
+    expect($g1).toEqual({
       type: "quantified",
       id: "t0",
     });
-    expect(($g2 as any).var.resolve()).toEqual({
+    expect($g2).toEqual({
       type: "quantified",
       id: "t0",
     });
@@ -442,7 +439,7 @@ describe("generalization", () => {
 
     expect(poly.args.length).toEqual(2);
     const [$ga, $gb] = poly.args;
-    expect(($ga as any).var.resolve()).toEqual({
+    expect($ga).toEqual({
       type: "quantified",
       id: "t0",
     });
