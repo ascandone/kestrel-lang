@@ -9,7 +9,7 @@ import {
   instantiate,
   unify,
 } from "./unify";
-import { Bool, Int, List } from "./prelude";
+import { Bool, Int, List, Tuple } from "./prelude";
 
 beforeEach(() => {
   TVar.resetId();
@@ -381,10 +381,10 @@ describe("generalization", () => {
     const [$g1, $g2] = poly.args;
 
     expect(($g1 as any).var.resolve().type).toEqual("quantified");
-    expect(($g1 as any).var.resolve().id).toEqual(0);
+    expect(($g1 as any).var.resolve().id).toEqual("t0");
 
     expect(($g2 as any).var.resolve().type).toEqual("quantified");
-    expect(($g2 as any).var.resolve().id).toEqual(1);
+    expect(($g2 as any).var.resolve().id).toEqual("t1");
   });
 
   test("generalize many vars when linked", () => {
@@ -399,10 +399,10 @@ describe("generalization", () => {
     const [$g1, $g2] = poly.args;
 
     expect(($g1 as any).var.resolve().type).toEqual("quantified");
-    expect(($g1 as any).var.resolve().id).toEqual(0);
+    expect(($g1 as any).var.resolve().id).toEqual("t0");
 
     expect(($g2 as any).var.resolve().type).toEqual("quantified");
-    expect(($g2 as any).var.resolve().id).toEqual(0);
+    expect(($g2 as any).var.resolve().id).toEqual("t0");
   });
 
   test("generalize var bound to a nested type to generalize ", () => {
@@ -418,8 +418,14 @@ describe("generalization", () => {
 
     const [$g1, $g2] = poly.args;
 
-    expect(($g1 as any).var.resolve()).toEqual({ type: "quantified", id: 0 });
-    expect(($g2 as any).var.resolve()).toEqual({ type: "quantified", id: 0 });
+    expect(($g1 as any).var.resolve()).toEqual({
+      type: "quantified",
+      id: "t0",
+    });
+    expect(($g2 as any).var.resolve()).toEqual({
+      type: "quantified",
+      id: "t0",
+    });
   });
 
   test("do not generalize vars that appear in the context", () => {
@@ -436,7 +442,10 @@ describe("generalization", () => {
 
     expect(poly.args.length).toEqual(2);
     const [$ga, $gb] = poly.args;
-    expect(($ga as any).var.resolve()).toEqual({ type: "quantified", id: 0 });
+    expect(($ga as any).var.resolve()).toEqual({
+      type: "quantified",
+      id: "t0",
+    });
     expect($gb).toEqual($b.asType());
   });
 
@@ -497,14 +506,6 @@ describe("generalization", () => {
     );
   });
 });
-
-function named(name: string, ...args: Type[]): ConcreteType {
-  return { type: "named", name, args };
-}
-
-function Tuple(...ps: Type[]): ConcreteType {
-  return named("Tuple", ...ps);
-}
 
 function Fn(args: Type[], ret: Type): ConcreteType {
   return { type: "fn", args, return: ret };
