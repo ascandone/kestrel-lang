@@ -5,6 +5,7 @@ export type ConstLiteral =
 
 export type TypeHint =
   | { type: "any" }
+  | { type: "var"; ident: string }
   | { type: "fn"; args: TypeHint[]; return: TypeHint }
   | {
       type: "named";
@@ -49,7 +50,7 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
 export type Statement<TypeMeta = {}> = TypeMeta & {
   type: "let";
   typeHint?: TypeHint & SpanMeta;
-  binding: { name: string } & SpanMeta;
+  binding: { name: string } & TypeMeta & SpanMeta;
   value: Expr<TypeMeta>;
 };
 
