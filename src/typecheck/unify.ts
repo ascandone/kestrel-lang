@@ -278,36 +278,33 @@ export function instantiate(t: Type<Poly>): Type {
   const instantiated = new Map<string, TVar>();
 
   function recur(t: Type<Poly>): Type {
-    if (t.type === "named") {
-      return {
-        type: "named",
-        name: t.name,
-        args: t.args.map(recur),
-      };
-    }
+    switch (t.type) {
+      case "named":
+        return {
+          type: "named",
+          name: t.name,
+          args: t.args.map(recur),
+        };
+      case "fn":
+        if (t.type === "fn") {
+          return {
+            type: "fn",
+            args: t.args.map(recur),
+            return: recur(t.return),
+          };
+        }
+      case "quantified":
+        if (t.type === "quantified") {
+          const lookup = instantiated.get(t.id);
+          if (lookup === undefined) {
+            const fresh = TVar.fresh();
+            instantiated.set(t.id, fresh);
+            return fresh.asType();
+          }
+          return lookup.asType();
+        }
 
-    if (t.type === "fn") {
-      return {
-        type: "fn",
-        args: t.args.map(recur),
-        return: recur(t.return),
-      };
-    }
-
-    if (t.type === "quantified") {
-      const lookup = instantiated.get(t.id);
-      if (lookup === undefined) {
-        const fresh = TVar.fresh();
-        instantiated.set(t.id, fresh);
-        return fresh.asType();
-      }
-      return lookup.asType();
-    }
-
-    const resolvedT = t.var.resolve();
-    switch (resolvedT.type) {
-      case "bound":
-      case "unbound":
+      case "var":
         return t;
     }
   }
