@@ -1500,6 +1500,46 @@ exports[`parses concrete type with 2 args 1`] = `
 }
 `;
 
+exports[`parses type vars hints 1`] = `
+{
+  "statements": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        13,
+      ],
+      "type": "let",
+      "typeHint": {
+        "ident": "a",
+        "span": [
+          8,
+          9,
+        ],
+        "type": "var",
+      },
+      "value": {
+        "span": [
+          12,
+          13,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+}
+`;
+
 exports[`parses underscore type 1`] = `
 {
   "statements": [

@@ -142,6 +142,10 @@ semantics.addOperation<TypeHint>("typeHint()", {
     return { type: "any" };
   },
 
+  TypeHint_var(ident) {
+    return { type: "var", ident: ident.sourceString };
+  },
+
   TypeHint_fn(_fn, _lparens, args, _rparens, _arrow, ret) {
     const args_ = args.asIteration().children.map((arg) => arg.typeHint());
     return { type: "fn", args: args_, return: ret.typeHint() };

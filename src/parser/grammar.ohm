@@ -78,17 +78,28 @@ Program {
   // --- Types
 
   TypeHint
-    = ~"Fn" typeIdent ("<" ListOf<TypeHint, ","> ">")?  -- named
+    = typeName ("<" ListOf<TypeHint, ","> ">")?  -- named
+    | typeVar -- var
     | "Fn" "(" ListOf<TypeHint, ","> ")" "->" TypeHint -- fn
     | "_" -- any
 
-  typeIdent  (an identifier)
-    = typeIdentHead typeIdentBody*
+  typeName  (an identifier)
+    = ~"Fn" typeNameHead typeNameBody*
 
-  typeIdentHead
+  typeNameHead
     = upper
 
-  typeIdentBody
+  typeNameBody
     = letter
+
+  typeVar
+    = ~keyword typeVarHead typeVarBody*
+
+  typeVarHead
+    = lower
+  
+  typeVarBody
+    = lower
+    | digit
 
 }
