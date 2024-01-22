@@ -1,4 +1,11 @@
-import { ConstLiteral, Expr, Program, SpanMeta, TypeAst } from "../ast";
+import {
+  ConstLiteral,
+  Expr,
+  MatchExpr,
+  Program,
+  SpanMeta,
+  TypeAst,
+} from "../ast";
 import { TypesPool, defaultTypesPool, prelude } from "./prelude";
 import {
   TVar,
@@ -310,6 +317,22 @@ function* typecheckAnnotatedExpr<T>(
   }
 }
 
+function annotateMatchExpr<T>(ast: MatchExpr<T>): MatchExpr<T & TypeMeta> {
+  switch (ast.type) {
+    case "ident":
+      return {
+        ...ast,
+        $: TVar.fresh(),
+      };
+    case "constructor":
+      return {
+        ...ast,
+        args: ast.args.map(annotateMatchExpr),
+        $: TVar.fresh(),
+      };
+  }
+}
+
 function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
   switch (ast.type) {
     case "constant":
@@ -357,7 +380,7 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
         $: TVar.fresh(),
         expr: annotateExpr(ast.expr),
         clauses: ast.clauses.map(([binding, expr]) => [
-          binding,
+          annotateMatchExpr(binding),
           annotateExpr(expr),
         ]),
       };
