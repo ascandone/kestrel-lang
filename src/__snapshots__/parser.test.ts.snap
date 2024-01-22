@@ -1331,6 +1331,10 @@ exports[`type declarations > type with a variant with complex args 1`] = `
               "args": [
                 {
                   "ident": "a",
+                  "span": [
+                    34,
+                    35,
+                  ],
                   "type": "var",
                 },
                 {
@@ -1338,14 +1342,26 @@ exports[`type declarations > type with a variant with complex args 1`] = `
                     {
                       "args": [],
                       "name": "Int",
+                      "span": [
+                        44,
+                        47,
+                      ],
                       "type": "named",
                     },
                   ],
                   "name": "Nested",
+                  "span": [
+                    37,
+                    48,
+                  ],
                   "type": "named",
                 },
               ],
               "name": "Example",
+              "span": [
+                26,
+                49,
+              ],
               "type": "named",
             },
           ],
@@ -1390,6 +1406,10 @@ exports[`type declarations > type with a variant with no args 2`] = `
             {
               "args": [],
               "name": "Arg",
+              "span": [
+                11,
+                14,
+              ],
               "type": "named",
             },
           ],
@@ -1458,17 +1478,29 @@ exports[`type hints > parses Fn type with args 1`] = `
           {
             "args": [],
             "name": "X",
+            "span": [
+              11,
+              12,
+            ],
             "type": "named",
           },
           {
             "args": [],
             "name": "Y",
+            "span": [
+              14,
+              15,
+            ],
             "type": "named",
           },
         ],
         "return": {
           "args": [],
           "name": "Z",
+          "span": [
+            20,
+            21,
+          ],
           "type": "named",
         },
         "span": [
@@ -1514,6 +1546,10 @@ exports[`type hints > parses Fn type with no args 1`] = `
         "return": {
           "args": [],
           "name": "Int",
+          "span": [
+            16,
+            19,
+          ],
           "type": "named",
         },
         "span": [
@@ -1600,6 +1636,10 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
           {
             "args": [],
             "name": "Int",
+            "span": [
+              14,
+              17,
+            ],
             "type": "named",
           },
         ],
@@ -1647,11 +1687,19 @@ exports[`type hints > parses concrete type with 2 args 1`] = `
           {
             "args": [],
             "name": "Int",
+            "span": [
+              15,
+              18,
+            ],
             "type": "named",
           },
           {
             "args": [],
             "name": "Bool",
+            "span": [
+              20,
+              24,
+            ],
             "type": "named",
           },
         ],

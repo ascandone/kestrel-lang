@@ -141,16 +141,16 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
 
 semantics.addOperation<TypeAst>("type()", {
   Type_any(_underscore) {
-    return { type: "any" };
+    return { type: "any", span: getSpan(this) };
   },
 
   Type_var(ident) {
-    return { type: "var", ident: ident.sourceString };
+    return { type: "var", ident: ident.sourceString, span: getSpan(this) };
   },
 
   Type_fn(_fn, _lparens, args, _rparens, _arrow, ret) {
     const args_ = args.asIteration().children.map((arg) => arg.type());
-    return { type: "fn", args: args_, return: ret.type() };
+    return { type: "fn", args: args_, return: ret.type(), span: getSpan(this) };
   },
 
   Type_named(ident, _lbracket, args, _rbracket) {
@@ -165,6 +165,7 @@ semantics.addOperation<TypeAst>("type()", {
       type: "named",
       args: args_,
       name: ident.sourceString,
+      span: getSpan(this),
     };
   },
 });

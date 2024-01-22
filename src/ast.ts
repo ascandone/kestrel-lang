@@ -3,23 +3,25 @@ export type ConstLiteral =
   | { type: "float"; value: number }
   | { type: "string"; value: string };
 
-export type TypeAst =
-  | {
-      type: "var";
-      ident: string;
-    }
-  | {
-      type: "fn";
-      args: TypeAst[];
-      return: TypeAst;
-    }
-  | {
-      type: "named";
-      name: string;
-      args: TypeAst[];
-    }
-  // This should only be used for type annotations, not type declarations
-  | { type: "any" };
+export type TypeAst = SpanMeta &
+  (
+    | {
+        type: "var";
+        ident: string;
+      }
+    | {
+        type: "fn";
+        args: TypeAst[];
+        return: TypeAst;
+      }
+    | {
+        type: "named";
+        name: string;
+        args: TypeAst[];
+      }
+    // This should only be used for type annotations, not type declarations
+    | { type: "any" }
+  );
 
 export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
   (
