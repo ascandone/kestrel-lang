@@ -300,7 +300,7 @@ describe("pattern matching", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test("matching a concrete type with no args", () => {
+  test("binding with identifier", () => {
     const src = `let _ = match x { a => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

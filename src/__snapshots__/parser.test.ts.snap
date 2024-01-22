@@ -1259,44 +1259,7 @@ exports[`parse let block with two let stmts 1`] = `
 }
 `;
 
-exports[`pattern matching > empty match expression 1`] = `
-{
-  "declarations": [
-    {
-      "binding": {
-        "name": "_",
-        "span": [
-          4,
-          5,
-        ],
-      },
-      "span": [
-        0,
-        18,
-      ],
-      "value": {
-        "clauses": [],
-        "expr": {
-          "name": "x",
-          "span": [
-            14,
-            15,
-          ],
-          "type": "identifier",
-        },
-        "span": [
-          8,
-          18,
-        ],
-        "type": "match",
-      },
-    },
-  ],
-  "typeDeclarations": [],
-}
-`;
-
-exports[`pattern matching > matching a concrete type with no args 1`] = `
+exports[`pattern matching > binding with identifier 1`] = `
 {
   "declarations": [
     {
@@ -1343,6 +1306,43 @@ exports[`pattern matching > matching a concrete type with no args 1`] = `
         "span": [
           8,
           28,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pattern matching > empty match expression 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        18,
+      ],
+      "value": {
+        "clauses": [],
+        "expr": {
+          "name": "x",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          18,
         ],
         "type": "match",
       },
