@@ -375,7 +375,7 @@ function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context, typesContext);
 
-  const kvs = typed.statements.map((decl) => [
+  const kvs = typed.declarations.map((decl) => [
     decl.binding.name,
     typePPrint(decl.binding.$.asType()),
   ]);

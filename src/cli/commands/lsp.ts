@@ -79,7 +79,7 @@ export function lspCmd() {
     }
     const [doc, ast] = pair;
 
-    return ast.statements.map((st) => {
+    return ast.declarations.map((st) => {
       const [start, end] = st.span;
       return {
         kind: SymbolKind.Variable,

@@ -5,9 +5,8 @@ import { Program, Span, SpanMeta } from "./ast";
 test("parsing a declaration", () => {
   const src = "let x = 0";
   expect(unsafeParse(src)).toEqual<Program<SpanMeta>>({
-    statements: [
+    declarations: [
       {
-        type: "let",
         binding: { name: "x", span: spanOf(src, "x") },
         value: {
           type: "constant",
@@ -26,9 +25,8 @@ test("parsing a declaration", () => {
 test("parsing two declarations", () => {
   const src = `let x = 0\nlet y = 1`;
   expect(unsafeParse(src)).toEqual<Program<SpanMeta>>({
-    statements: [
+    declarations: [
       {
-        type: "let",
         binding: { name: "x", span: spanOf(src, "x") },
         value: {
           type: "constant",
@@ -41,7 +39,6 @@ test("parsing two declarations", () => {
         span: spanOf(src, "let x = 0"),
       },
       {
-        type: "let",
         binding: { name: "y", span: spanOf(src, "y") },
         value: {
           type: "constant",

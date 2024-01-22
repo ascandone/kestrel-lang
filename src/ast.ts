@@ -47,15 +47,14 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
       }
   );
 
-export type Statement<TypeMeta = {}> = TypeMeta & {
-  type: "let";
+export type Declarations<TypeMeta = {}> = TypeMeta & {
   typeHint?: TypeHint & SpanMeta;
   binding: { name: string } & TypeMeta & SpanMeta;
   value: Expr<TypeMeta>;
 };
 
 export type Program<Meta = {}> = {
-  statements: Statement<Meta>[];
+  declarations: Declarations<Meta>[];
 };
 
 export type Span = [startIdx: number, endIdx: number];
@@ -113,7 +112,7 @@ export function declByOffset<T>(
   program: Program<T>,
   offset: number,
 ): T | undefined {
-  for (const st of program.statements) {
+  for (const st of program.declarations) {
     if (spanContains(st.binding.span, offset)) {
       return st.value;
     }

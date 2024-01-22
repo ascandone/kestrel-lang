@@ -65,7 +65,7 @@ export function typecheck<T extends SpanMeta>(
   let context: Context = { ...initialContext };
 
   const typedProgram = annotateProgram(ast);
-  for (const decl of typedProgram.statements) {
+  for (const decl of typedProgram.declarations) {
     let typeHint: Type<Poly> | undefined;
     if (decl.typeHint !== undefined) {
       typeHint = inferTypeHint(decl.typeHint);
@@ -244,7 +244,7 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
 function annotateProgram<T>(program: Program<T>): Program<T & TypeMeta> {
   return {
     ...program,
-    statements: program.statements.map((decl) => ({
+    declarations: program.declarations.map((decl) => ({
       ...decl,
       binding: { ...decl.binding, $: TVar.fresh() },
       value: annotateExpr(decl.value),

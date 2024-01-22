@@ -3,7 +3,7 @@ import {
   ConstLiteral,
   Program,
   Expr,
-  Statement,
+  Declarations,
   Span,
   SpanMeta,
   TypeHint,
@@ -167,7 +167,7 @@ semantics.addOperation<TypeHint>("typeHint()", {
   },
 });
 
-semantics.addOperation<Statement<SpanMeta>>("statement()", {
+semantics.addOperation<Declarations<SpanMeta>>("statement()", {
   Declaration_letStmt(_let, ident, _colon, typeHint, _eq, exp) {
     const th =
       typeHint.numChildren === 0
@@ -180,7 +180,6 @@ semantics.addOperation<Statement<SpanMeta>>("statement()", {
           };
 
     return {
-      type: "let",
       binding: ident.ident(),
       value: exp.expr(),
       span: getSpan(this),
@@ -192,7 +191,7 @@ semantics.addOperation<Statement<SpanMeta>>("statement()", {
 semantics.addOperation<Program<SpanMeta>>("parse()", {
   MAIN(statements) {
     return {
-      statements: statements.children.map((child) => child.statement()),
+      declarations: statements.children.map((child) => child.statement()),
     };
   },
 });
