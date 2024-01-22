@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, describe } from "vitest";
 import { unsafeParse } from "./parser";
 import { Program, Span, SpanMeta } from "./ast";
 
@@ -212,39 +212,41 @@ let _ = if b {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test("parses a concrete type with no args as a type hint", () => {
-  const src = "let x : Int = 0";
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
+describe("type hints", () => {
+  test("parses a concrete type with no args as a type hint", () => {
+    const src = "let x : Int = 0";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 
-test("parses underscore type", () => {
-  const src = "let x : _ = 0";
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
+  test("parses underscore type", () => {
+    const src = "let x : _ = 0";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 
-test("parses concrete type with 1 arg", () => {
-  const src = "let x : Maybe<Int> = 0";
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
+  test("parses concrete type with 1 arg", () => {
+    const src = "let x : Maybe<Int> = 0";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 
-test("parses concrete type with 2 args", () => {
-  const src = "let x : Result<Int, Bool> = 0";
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
+  test("parses concrete type with 2 args", () => {
+    const src = "let x : Result<Int, Bool> = 0";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 
-test("parses Fn type with no args", () => {
-  const src = "let x : Fn() -> Int = 0";
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
+  test("parses Fn type with no args", () => {
+    const src = "let x : Fn() -> Int = 0";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 
-test("parses Fn type with args", () => {
-  const src = "let x : Fn(X, Y) -> Z = 0";
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
+  test("parses Fn type with args", () => {
+    const src = "let x : Fn(X, Y) -> Z = 0";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 
-test("parses type vars hints", () => {
-  const src = "let x : a = 0";
-  expect(unsafeParse(src)).toMatchSnapshot();
+  test("parses type vars hints", () => {
+    const src = "let x : a = 0";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {
