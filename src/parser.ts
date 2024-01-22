@@ -70,10 +70,18 @@ semantics.addOperation<MatchExpr>("matchExpr()", {
       span: getSpan(this),
     };
   },
-  MatchExpr_constructor(ident) {
+  MatchExpr_constructor(ident, _lparent, args, _rparens) {
+    let args_: MatchExpr[] = [];
+    if (args.numChildren > 0) {
+      args_ = args
+        .child(0)
+        .asIteration()
+        .children.map((a) => a.matchExpr());
+    }
     return {
       type: "constructor",
       name: ident.sourceString,
+      args: args_,
       span: getSpan(this),
     };
   },

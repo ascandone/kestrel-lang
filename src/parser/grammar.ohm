@@ -92,7 +92,7 @@ Program {
 
   MatchExpr
     = ident  -- ident
-    | typeConstructor -- constructor
+    | typeConstructor ("(" ListOf<MatchExpr, ","> ")")? -- constructor
 
   // --- Types
 

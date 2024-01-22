@@ -24,7 +24,17 @@ export type TypeAst = SpanMeta &
   );
 
 export type MatchExpr = SpanMeta &
-  ({ type: "ident"; ident: string } | { type: "constructor"; name: string });
+  (
+    | {
+        type: "ident";
+        ident: string;
+      }
+    | {
+        type: "constructor";
+        name: string;
+        args: MatchExpr[];
+      }
+  );
 
 export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
   (

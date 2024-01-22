@@ -1371,6 +1371,7 @@ exports[`pattern matching > matching constructor with no args 1`] = `
         "clauses": [
           [
             {
+              "args": [],
               "name": "X",
               "span": [
                 18,
@@ -1399,6 +1400,72 @@ exports[`pattern matching > matching constructor with no args 1`] = `
         "span": [
           8,
           28,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pattern matching > matching constructor with one arg 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        31,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "args": [
+                {
+                  "ident": "a",
+                  "span": [
+                    20,
+                    21,
+                  ],
+                  "type": "ident",
+                },
+              ],
+              "name": "X",
+              "span": [
+                18,
+                22,
+              ],
+              "type": "constructor",
+            },
+            {
+              "name": "res",
+              "span": [
+                26,
+                29,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          31,
         ],
         "type": "match",
       },
