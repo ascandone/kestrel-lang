@@ -460,6 +460,17 @@ describe("custom types", () => {
     expect(errs).not.toEqual([]);
   });
 
+  test("add types to the type pool", () => {
+    const [types, errs] = tc(
+      `
+      type A {}
+      type B { C(A) }
+  `,
+    );
+
+    expect(errs).toEqual([]);
+  });
+
   test("handles parametric types", () => {
     const [types, errs] = tc(
       `

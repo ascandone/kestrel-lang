@@ -100,6 +100,8 @@ export function typecheck<T extends SpanMeta>(
 
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {
+    typesContext[typeDecl.name] = typeDecl.params.length;
+
     const ret: Type<Poly> = {
       type: "named",
       name: typeDecl.name,
