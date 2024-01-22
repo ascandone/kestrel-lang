@@ -509,6 +509,16 @@ describe("custom types", () => {
 
     expect(errs).not.toEqual([]);
   });
+
+  test.todo("prevents catchall to be used in type args", () => {
+    const [types, errs] = tc(
+      `
+        type T { C(_) }
+  `,
+    );
+
+    expect(errs).not.toEqual([]);
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
