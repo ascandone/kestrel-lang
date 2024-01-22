@@ -532,6 +532,13 @@ describe("custom types", () => {
   });
 });
 
+describe("pattern matching", () => {
+  test("typechecks matched expressions", () => {
+    const [types, errs] = tc(`let _ = match unbound { }`);
+    expect(errs).not.toEqual([]);
+  });
+});
+
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context, typesContext);

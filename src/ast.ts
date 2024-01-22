@@ -129,6 +129,9 @@ function exprByOffset<T>(ast: Expr<T>, offset: number): T | undefined {
         exprByOffset(ast.else, offset) ??
         ast
       );
+
+    case "match":
+      return exprByOffset(ast.expr, offset) ?? ast;
   }
 }
 

@@ -300,6 +300,9 @@ function* typecheckAnnotatedExpr<T>(
       yield* typecheckAnnotatedExpr(ast.then, context);
       yield* typecheckAnnotatedExpr(ast.else, context);
       return;
+
+    case "match":
+      yield* typecheckAnnotatedExpr(ast.expr, context);
   }
 }
 
