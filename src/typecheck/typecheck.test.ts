@@ -537,6 +537,11 @@ describe("pattern matching", () => {
     const [types, errs] = tc(`let _ = match unbound { }`);
     expect(errs).not.toEqual([]);
   });
+
+  test("typechecks clause return type", () => {
+    const [types, errs] = tc(`let _ = match 0 { _ => unbound }`);
+    expect(errs).not.toEqual([]);
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {

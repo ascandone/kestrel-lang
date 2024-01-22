@@ -303,6 +303,9 @@ function* typecheckAnnotatedExpr<T>(
 
     case "match":
       yield* typecheckAnnotatedExpr(ast.expr, context);
+      for (const [binding, expr] of ast.clauses) {
+        yield* typecheckAnnotatedExpr(expr, context);
+      }
   }
 }
 
@@ -352,8 +355,10 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
         ...ast,
         $: TVar.fresh(),
         expr: annotateExpr(ast.expr),
-        // TODO annotate clauses
-        clauses: [],
+        clauses: ast.clauses.map(([binding, expr]) => [
+          binding,
+          annotateExpr(expr),
+        ]),
       };
     }
   }
