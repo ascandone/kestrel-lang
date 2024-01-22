@@ -1296,6 +1296,61 @@ exports[`pattern matching > empty match expression 1`] = `
 }
 `;
 
+exports[`pattern matching > matching a concrete type with no args 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        28,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "span": [
+                18,
+                19,
+              ],
+              "type": "any",
+            },
+            {
+              "name": "res",
+              "span": [
+                23,
+                26,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          28,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`type declarations > many type params 1`] = `
 {
   "declarations": [],

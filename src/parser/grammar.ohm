@@ -55,7 +55,7 @@ Program {
     | "{" BlockContent "}"  -- block
     | "fn" ListOf<ident, ","> "{" BlockContent "}"  -- fn
     | "if" Exp "{" BlockContent "}" "else" "{" BlockContent "}" -- if
-    | "match" Exp "{" "}" -- match
+    | "match" Exp "{" ListOf<MatchClause, ","> "}" -- match
     | ident -- ident
     | number
 
@@ -81,6 +81,14 @@ Program {
     | "-" number  -- neg
 
   keyword = "let" | "fn" | "if" | "else"
+
+  // --- Pattern matching
+
+  MatchClause
+    = MatchExpr "=>" Exp -- clause
+
+  MatchExpr
+    = "_"
 
   // --- Types
 

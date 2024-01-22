@@ -9,6 +9,7 @@ import {
   TypeAst,
   TypeDeclaration,
   TypeVariant,
+  MatchExpr,
 } from "./ast";
 import type {
   MatchResult,
@@ -16,6 +17,7 @@ import type {
   Node as OhmNode,
   TerminalNode,
 } from "ohm-js";
+import { TypeMeta } from "./typecheck/typecheck";
 
 function getSpan({ source }: OhmNode): Span {
   return [source.startIdx, source.endIdx];
@@ -57,6 +59,12 @@ semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
       name: this.sourceString,
       span: getSpan(this),
     };
+  },
+});
+
+semantics.addOperation<[MatchExpr, Expr<TypeMeta>]>("matchClause()", {
+  MatchClause_clause(match, _arrow, expr) {
+    return [{ type: "any", span: getSpan(match) }, expr.expr()];
   },
 });
 
@@ -124,11 +132,11 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     };
   },
 
-  PriExp_match(_match, expr, _lbracket, _rbracket) {
+  PriExp_match(_match, expr, _lbracket, clauses, _rbracket) {
     return {
       type: "match",
       expr: expr.expr(),
-      clauses: [],
+      clauses: clauses.asIteration().children.map((c) => c.matchClause()),
       span: getSpan(this),
     };
   },

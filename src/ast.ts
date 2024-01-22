@@ -23,6 +23,8 @@ export type TypeAst = SpanMeta &
     | { type: "any" }
   );
 
+export type MatchExpr = SpanMeta & { type: "any" };
+
 export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
   (
     | {
@@ -58,7 +60,7 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
     | {
         type: "match";
         expr: Expr<TypeMeta>;
-        clauses: never[];
+        clauses: Array<[MatchExpr, Expr<TypeMeta>]>;
       }
   );
 
