@@ -109,7 +109,8 @@ function castType(
       }
 
       case "any":
-        throw new Error("TODO invalid use of _");
+        errors.push({ type: "invalid-catchall", node: ast });
+        return { type: "var", var: TVar.fresh() };
     }
   }
 
