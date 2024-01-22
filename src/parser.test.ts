@@ -253,6 +253,11 @@ describe("type declarations", () => {
     const src = "type Never { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("type with a variant with no args", () => {
+    const src = "type T { C }";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

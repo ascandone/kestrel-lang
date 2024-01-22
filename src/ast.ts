@@ -53,8 +53,8 @@ export type Declaration<TypeMeta = {}> = TypeMeta & {
   value: Expr<TypeMeta>;
 };
 
-export type TypeVariant = never; // TODO
-export type TypeDeclaration<Meta = {}> = {
+export type TypeVariant = { name: string; args: never[] };
+export type TypeDeclaration = {
   type: "adt";
   name: string;
   variants: TypeVariant[];

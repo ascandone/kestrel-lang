@@ -1259,6 +1259,24 @@ exports[`parse let block with two let stmts 1`] = `
 }
 `;
 
+exports[`type declarations > type with a variant with no args 1`] = `
+{
+  "declarations": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "type": "adt",
+      "variants": [
+        {
+          "args": [],
+          "name": "C",
+        },
+      ],
+    },
+  ],
+}
+`;
+
 exports[`type declarations > type with no variants 1`] = `
 {
   "declarations": [],

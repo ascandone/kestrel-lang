@@ -8,6 +8,7 @@ import {
   SpanMeta,
   TypeHint,
   TypeDeclaration,
+  TypeVariant,
 } from "./ast";
 import type {
   MatchResult,
@@ -169,14 +170,26 @@ semantics.addOperation<TypeHint>("typeHint()", {
 });
 
 type Statement =
-  | { type: "typeDeclaration"; decl: TypeDeclaration<SpanMeta> }
-  | { type: "declaration"; decl: Declaration<SpanMeta> };
+  | { type: "typeDeclaration"; decl: TypeDeclaration }
+  | { type: "declaration"; decl: Declaration };
+
+semantics.addOperation<TypeVariant>("typeVariant()", {
+  TypeVariant(name) {
+    return { name: name.sourceString, args: [] };
+  },
+});
 
 semantics.addOperation<Statement>("statement()", {
-  TypeDeclaration_typeDef(_type, typeName, _lbracket, _rbracket) {
+  TypeDeclaration_typeDef(_type, typeName, _lbracket, variants, _rbracket) {
+    const variant_ = variants.children.map<TypeVariant>((n) => n.typeVariant());
+
     return {
       type: "typeDeclaration",
-      decl: { type: "adt", name: typeName.sourceString, variants: [] },
+      decl: {
+        type: "adt",
+        name: typeName.sourceString,
+        variants: variant_,
+      },
     };
   },
   Declaration_letStmt(_let, ident, _colon, typeHint, _eq, exp) {
@@ -202,7 +215,7 @@ semantics.addOperation<Statement>("statement()", {
   },
 });
 
-semantics.addOperation<Program<SpanMeta>>("parse()", {
+semantics.addOperation<Program>("parse()", {
   MAIN(statements) {
     const statements_ = statements.children.map<Statement>((child) =>
       child.statement(),

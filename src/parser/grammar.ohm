@@ -2,14 +2,12 @@ Program {
   MAIN
     = (Declaration | TypeDeclaration)*
 
-
-
   // --- Toplevel
   Declaration
     = "let" ident (":" TypeHint)? "=" Exp  -- letStmt
 
   TypeDeclaration
-    = "type" typeName "{" "}" -- typeDef
+    = "type" typeName "{" TypeVariant* "}" -- typeDef
 
   // --- Expressions
 
@@ -84,6 +82,9 @@ Program {
   keyword = "let" | "fn" | "if" | "else"
 
   // --- Types
+
+  TypeVariant
+    = typeName
 
   TypeHint
     = typeName ("<" ListOf<TypeHint, ","> ">")?  -- named
