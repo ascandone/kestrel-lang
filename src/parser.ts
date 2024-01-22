@@ -3,10 +3,11 @@ import {
   ConstLiteral,
   Program,
   Expr,
-  Declarations,
+  Declaration,
   Span,
   SpanMeta,
   TypeHint,
+  TypeDeclaration,
 } from "./ast";
 import type {
   MatchResult,
@@ -167,7 +168,11 @@ semantics.addOperation<TypeHint>("typeHint()", {
   },
 });
 
-semantics.addOperation<Declarations<SpanMeta>>("statement()", {
+type Statement =
+  | { type: "typeDeclaration"; decl: TypeDeclaration<SpanMeta> }
+  | { type: "declaration"; decl: Declaration<SpanMeta> };
+
+semantics.addOperation<Statement>("statement()", {
   Declaration_letStmt(_let, ident, _colon, typeHint, _eq, exp) {
     const th =
       typeHint.numChildren === 0
@@ -180,18 +185,30 @@ semantics.addOperation<Declarations<SpanMeta>>("statement()", {
           };
 
     return {
-      binding: ident.ident(),
-      value: exp.expr(),
-      span: getSpan(this),
-      ...th,
+      type: "declaration",
+      decl: {
+        binding: ident.ident(),
+        value: exp.expr(),
+        span: getSpan(this),
+        ...th,
+      },
     };
   },
 });
 
 semantics.addOperation<Program<SpanMeta>>("parse()", {
   MAIN(statements) {
+    const statements_ = statements.children.map<Statement>((child) =>
+      child.statement(),
+    );
+
     return {
-      declarations: statements.children.map((child) => child.statement()),
+      typeDeclarations: statements_.flatMap((st) =>
+        st.type === "typeDeclaration" ? [st.decl] : [],
+      ),
+      declarations: statements_.flatMap((st) =>
+        st.type === "declaration" ? [st.decl] : [],
+      ),
     };
   },
 });

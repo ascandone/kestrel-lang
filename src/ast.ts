@@ -47,14 +47,21 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
       }
   );
 
-export type Declarations<TypeMeta = {}> = TypeMeta & {
+export type Declaration<TypeMeta = {}> = TypeMeta & {
   typeHint?: TypeHint & SpanMeta;
   binding: { name: string } & TypeMeta & SpanMeta;
   value: Expr<TypeMeta>;
 };
 
+export type TypeVariant = never; // TODO
+export type TypeDeclaration<Meta = {}> = {
+  type: "adt";
+  variants: TypeVariant[];
+};
+
 export type Program<Meta = {}> = {
-  declarations: Declarations<Meta>[];
+  typeDeclarations: TypeDeclaration[];
+  declarations: Declaration<Meta>[];
 };
 
 export type Span = [startIdx: number, endIdx: number];

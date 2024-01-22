@@ -56,6 +56,7 @@ exports[`parse * expr 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -143,6 +144,7 @@ exports[`parse + and * prec 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -230,6 +232,7 @@ exports[`parse + and * prec with parens 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -289,6 +292,7 @@ exports[`parse + expr 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -348,6 +352,7 @@ exports[`parse - expr 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -393,6 +398,7 @@ exports[`parse appl with 1 arg 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -454,6 +460,7 @@ exports[`parse appl with 3 args 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -530,6 +537,7 @@ exports[`parse appl with nested expr 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -578,6 +586,7 @@ exports[`parse appl with nested parens 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -614,6 +623,7 @@ exports[`parse appl with no args 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -667,6 +677,7 @@ exports[`parse appl with trailing comma 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -698,6 +709,7 @@ exports[`parse block with no let 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -729,6 +741,7 @@ exports[`parse float 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -776,6 +789,7 @@ exports[`parse fn with 1 arg 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -830,6 +844,7 @@ exports[`parse fn with 2 args 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -894,6 +909,7 @@ exports[`parse fn with let 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -933,6 +949,7 @@ exports[`parse fn with no args 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -961,6 +978,7 @@ exports[`parse ident 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1018,6 +1036,7 @@ exports[`parse if expr 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1097,6 +1116,7 @@ exports[`parse if expr with a let expr 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1153,6 +1173,7 @@ exports[`parse let block with one let 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1234,6 +1255,7 @@ exports[`parse let block with two let stmts 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1289,6 +1311,7 @@ exports[`type hints > parses Fn type with args 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1333,6 +1356,7 @@ exports[`type hints > parses Fn type with no args 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1373,6 +1397,7 @@ exports[`type hints > parses a concrete type with no args as a type hint 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1419,6 +1444,7 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1470,6 +1496,7 @@ exports[`type hints > parses concrete type with 2 args 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1509,6 +1536,7 @@ exports[`type hints > parses type vars hints 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
 
@@ -1547,5 +1575,6 @@ exports[`type hints > parses underscore type 1`] = `
       },
     },
   ],
+  "typeDeclarations": [],
 }
 `;
