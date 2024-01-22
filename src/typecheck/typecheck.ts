@@ -344,6 +344,15 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
         value: annotateExpr(ast.value),
         body: annotateExpr(ast.body),
       };
+    case "match": {
+      return {
+        ...ast,
+        $: TVar.fresh(),
+        expr: annotateExpr(ast.expr),
+        // TODO annotate clauses
+        clauses: [],
+      };
+    }
   }
 }
 

@@ -1259,6 +1259,43 @@ exports[`parse let block with two let stmts 1`] = `
 }
 `;
 
+exports[`pattern matching > empty match expression 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        18,
+      ],
+      "value": {
+        "clauses": [],
+        "expr": {
+          "name": "x",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          18,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`type declarations > many type params 1`] = `
 {
   "declarations": [],

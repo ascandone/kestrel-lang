@@ -124,6 +124,15 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     };
   },
 
+  PriExp_match(_match, expr, _lbracket, _rbracket) {
+    return {
+      type: "match",
+      expr: expr.expr(),
+      clauses: [],
+      span: getSpan(this),
+    };
+  },
+
   BlockContent_exp(e) {
     return e.expr();
   },

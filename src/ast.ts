@@ -55,6 +55,11 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
         then: Expr<TypeMeta>;
         else: Expr<TypeMeta>;
       }
+    | {
+        type: "match";
+        expr: Expr<TypeMeta>;
+        clauses: never[];
+      }
   );
 
 export type Declaration<TypeMeta = {}> = TypeMeta & {

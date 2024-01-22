@@ -294,6 +294,13 @@ describe("type declarations", () => {
   });
 });
 
+describe("pattern matching", () => {
+  test("empty match expression", () => {
+    const src = `let _ = match x {}`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];

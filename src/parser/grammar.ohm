@@ -55,6 +55,7 @@ Program {
     | "{" BlockContent "}"  -- block
     | "fn" ListOf<ident, ","> "{" BlockContent "}"  -- fn
     | "if" Exp "{" BlockContent "}" "else" "{" BlockContent "}" -- if
+    | "match" Exp "{" "}" -- match
     | ident -- ident
     | number
 
