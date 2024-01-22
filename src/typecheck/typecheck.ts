@@ -303,7 +303,8 @@ function* typecheckAnnotatedExpr<T>(
 
     case "match":
       yield* typecheckAnnotatedExpr(ast.expr, context);
-      for (const [binding, expr] of ast.clauses) {
+      for (const [_binding, expr] of ast.clauses) {
+        yield* unifyYieldErr(ast, ast.$.asType(), expr.$.asType());
         yield* typecheckAnnotatedExpr(expr, context);
       }
   }

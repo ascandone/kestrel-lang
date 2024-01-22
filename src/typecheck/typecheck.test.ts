@@ -542,6 +542,26 @@ describe("pattern matching", () => {
     const [types, errs] = tc(`let _ = match 0 { _ => unbound }`);
     expect(errs).not.toEqual([]);
   });
+
+  test("unifies clause return types", () => {
+    const [, errs] = tc(`
+      let _ = match 0 {
+        _ => 0,
+        _ => 0.0,
+      }
+    `);
+    expect(errs).not.toEqual([]);
+  });
+
+  test("infers return type", () => {
+    const [types, errs] = tc(`
+      let x = match 1.1 { _ => 0 }
+    `);
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Int",
+    });
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
