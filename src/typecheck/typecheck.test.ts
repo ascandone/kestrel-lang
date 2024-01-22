@@ -501,7 +501,7 @@ describe("custom types", () => {
     });
   });
 
-  test.todo("forbids unbound type params", () => {
+  test("forbids unbound type params", () => {
     const [types, errs] = tc(
       `
         type T { C(a) }

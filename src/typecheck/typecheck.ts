@@ -24,6 +24,11 @@ export type TypeError<Meta = {}> =
       node: SpanMeta;
     }
   | {
+      type: "unbound-type-param";
+      id: string;
+      node: SpanMeta;
+    }
+  | {
       type: UnifyErrorType;
       node: Expr<Meta>;
       left: Type;
@@ -60,7 +65,7 @@ function castType(
   onTypeCreated: (ast: TypeAst, t: Type<Poly>) => void,
 ): Type<Poly> {
   switch (ast.type) {
-    case "named":
+    case "named": {
       const t: Type<Poly> = {
         type: "named",
         name: ast.name,
@@ -68,14 +73,18 @@ function castType(
       };
       onTypeCreated(ast, t);
       return t;
+    }
     case "fn":
       return {
         type: "fn",
         args: ast.args.map((arg) => castType(arg, onTypeCreated)),
         return: castType(ast.return, onTypeCreated),
       };
-    case "var":
-      return { type: "quantified", id: ast.ident };
+    case "var": {
+      const t: Type<Poly> = { type: "quantified", id: ast.ident };
+      onTypeCreated(ast, t);
+      return t;
+    }
 
     case "any":
       throw new Error("TODO invalid use of _");
@@ -91,15 +100,23 @@ export function typecheck<T extends SpanMeta>(
   const errors: TypeError<SpanMeta>[] = [];
   let context: Context = { ...initialContext };
 
-  function onTypeCreated(ast: TypeAst, type: Type<Poly>) {
-    const e = unboundTypeError(ast, type, typesContext);
-    if (e !== undefined) {
-      errors.push(e);
-    }
-  }
-
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {
+    function onTypeCreated(ast: TypeAst, type: Type<Poly>) {
+      if (type.type === "quantified" && !typeDecl.params.includes(type.id)) {
+        errors.push({
+          type: "unbound-type-param",
+          id: type.id,
+          node: ast,
+        });
+      }
+
+      const e = unboundTypeError(ast, type, typesContext);
+      if (e !== undefined) {
+        errors.push(e);
+      }
+    }
+
     typesContext[typeDecl.name] = typeDecl.params.length;
 
     const ret: Type<Poly> = {

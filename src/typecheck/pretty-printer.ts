@@ -43,6 +43,8 @@ export function typeErrorPPrint(e: TypeError<unknown>): string {
       return "Cannot construct the infinite type\n";
     case "unbound-type":
       return `Unbound type: ${e.name}/${e.arity}\n`;
+    case "unbound-type-param":
+      return `Unbound type parameter: ${e.id}\n`;
     case "type-mismatch":
       if (
         e.left.type === "fn" &&
