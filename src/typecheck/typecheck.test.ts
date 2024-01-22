@@ -447,6 +447,18 @@ describe("custom types", () => {
       c: "Fn(Fn(A, B) -> C) -> T",
     });
   });
+
+  test.todo("handles types that do not exist", () => {
+    const [types, errs] = tc(
+      `
+    type T {
+      C(NotFound)
+    }
+  `,
+    );
+
+    expect(errs).not.toEqual([]);
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
