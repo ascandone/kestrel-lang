@@ -1315,11 +1315,12 @@ exports[`pattern matching > matching a concrete type with no args 1`] = `
         "clauses": [
           [
             {
+              "ident": "a",
               "span": [
                 18,
                 19,
               ],
-              "type": "any",
+              "type": "ident",
             },
             {
               "name": "res",

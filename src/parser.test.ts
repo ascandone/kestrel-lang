@@ -301,7 +301,7 @@ describe("pattern matching", () => {
   });
 
   test("matching a concrete type with no args", () => {
-    const src = `let _ = match x { _ => res }`;
+    const src = `let _ = match x { a => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });

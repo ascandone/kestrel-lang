@@ -62,9 +62,15 @@ semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
   },
 });
 
+semantics.addOperation<MatchExpr>("matchExpr()", {
+  MatchExpr_ident(ident) {
+    return { type: "ident", ident: ident.sourceString, span: getSpan(this) };
+  },
+});
+
 semantics.addOperation<[MatchExpr, Expr<TypeMeta>]>("matchClause()", {
   MatchClause_clause(match, _arrow, expr) {
-    return [{ type: "any", span: getSpan(match) }, expr.expr()];
+    return [match.matchExpr(), expr.expr()];
   },
 });
 

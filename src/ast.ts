@@ -23,7 +23,7 @@ export type TypeAst = SpanMeta &
     | { type: "any" }
   );
 
-export type MatchExpr = SpanMeta & { type: "any" };
+export type MatchExpr = SpanMeta & { type: "ident"; ident: string };
 
 export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
   (
