@@ -282,6 +282,16 @@ describe("type declarations", () => {
     const src = `type T { A, B, }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("single type param", () => {
+    const src = `type T<a> { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("many type params", () => {
+    const src = `type T<a, b, c> { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

@@ -191,6 +191,9 @@ semantics.addOperation<Statement>("statement()", {
   TypeDeclaration_typeDef(
     _type,
     typeName,
+    _lT,
+    params,
+    _rT,
     _lbracket,
     variants,
     _trailingComma,
@@ -200,10 +203,19 @@ semantics.addOperation<Statement>("statement()", {
       .asIteration()
       .children.map<TypeVariant>((n) => n.typeVariant());
 
+    let params_: string[] = [];
+    if (params.numChildren > 0) {
+      params_ = params
+        .child(0)
+        .asIteration()
+        .children.map((c) => c.sourceString);
+    }
+
     return {
       type: "typeDeclaration",
       decl: {
         type: "adt",
+        params: params_,
         name: typeName.sourceString,
         variants: variants_,
       },
