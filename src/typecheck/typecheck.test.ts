@@ -562,6 +562,22 @@ describe("pattern matching", () => {
       x: "Int",
     });
   });
+
+  test.todo("infers matched type", () => {
+    const [types, errs] = tc(`
+      type T { C }
+
+      let f = fn x {
+        match x {
+          C => 0,
+        }
+      }
+    `);
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(T) -> Int",
+    });
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
