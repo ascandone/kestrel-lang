@@ -33,6 +33,11 @@ export type TypeError<Meta = {}> =
       node: SpanMeta;
     }
   | {
+      type: "type-param-shadowing";
+      id: string;
+      node: SpanMeta;
+    }
+  | {
       type: UnifyErrorType;
       node: Expr<Meta>;
       left: Type;
@@ -129,8 +134,17 @@ export function typecheck<T extends SpanMeta>(
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {
     typesContext[typeDecl.name] = typeDecl.params.length;
-
-    const params = typeDecl.params.map((t) => t.name);
+    const params: string[] = [];
+    for (const param of typeDecl.params) {
+      if (params.includes(param.name)) {
+        errors.push({
+          type: "type-param-shadowing",
+          id: param.name,
+          node: param,
+        });
+      }
+      params.push(param.name);
+    }
 
     const ret: Type<Poly> = {
       type: "named",

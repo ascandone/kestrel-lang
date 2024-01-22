@@ -511,10 +511,10 @@ describe("custom types", () => {
     expect(errs).not.toEqual([]);
   });
 
-  test.todo("doesn't allow shadowing type params", () => {
+  test("doesn't allow shadowing type params", () => {
     const [types, errs] = tc(
       `
-        type Box<a, a> { C }
+        type Box<a, a> { }
   `,
     );
 
