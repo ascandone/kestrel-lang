@@ -204,12 +204,15 @@ semantics.addOperation<Statement>("statement()", {
       .asIteration()
       .children.map<TypeVariant>((n) => n.typeVariant());
 
-    let params_: string[] = [];
+    let params_: Array<{ name: string } & SpanMeta> = [];
     if (params.numChildren > 0) {
       params_ = params
         .child(0)
         .asIteration()
-        .children.map((c) => c.sourceString);
+        .children.map((c) => ({
+          name: c.sourceString,
+          span: getSpan(c),
+        }));
     }
 
     return {

@@ -66,7 +66,7 @@ export type Declaration<TypeMeta = {}> = TypeMeta & {
 export type TypeVariant = { name: string; args: TypeAst[] };
 export type TypeDeclaration = {
   type: "adt";
-  params: string[];
+  params: Array<{ name: string } & SpanMeta>;
   name: string;
   variants: TypeVariant[];
 };

@@ -130,10 +130,12 @@ export function typecheck<T extends SpanMeta>(
   for (const typeDecl of typedProgram.typeDeclarations) {
     typesContext[typeDecl.name] = typeDecl.params.length;
 
+    const params = typeDecl.params.map((t) => t.name);
+
     const ret: Type<Poly> = {
       type: "named",
       name: typeDecl.name,
-      args: typeDecl.params.map((id) => ({ type: "quantified", id })),
+      args: params.map((id) => ({ type: "quantified", id })),
     };
 
     for (const variant of typeDecl.variants) {
@@ -146,7 +148,7 @@ export function typecheck<T extends SpanMeta>(
             castType(arg, {
               errors,
               typesContext,
-              params: typeDecl.params,
+              params,
             }),
           ),
           return: ret,

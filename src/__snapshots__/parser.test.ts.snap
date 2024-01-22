@@ -1266,9 +1266,27 @@ exports[`type declarations > many type params 1`] = `
     {
       "name": "T",
       "params": [
-        "a",
-        "b",
-        "c",
+        {
+          "name": "a",
+          "span": [
+            7,
+            8,
+          ],
+        },
+        {
+          "name": "b",
+          "span": [
+            10,
+            11,
+          ],
+        },
+        {
+          "name": "c",
+          "span": [
+            13,
+            14,
+          ],
+        },
       ],
       "type": "adt",
       "variants": [],
@@ -1284,7 +1302,13 @@ exports[`type declarations > single type param 1`] = `
     {
       "name": "T",
       "params": [
-        "a",
+        {
+          "name": "a",
+          "span": [
+            7,
+            8,
+          ],
+        },
       ],
       "type": "adt",
       "variants": [],
