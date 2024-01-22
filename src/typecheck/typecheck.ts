@@ -29,6 +29,10 @@ export type TypeError<Meta = {}> =
       node: SpanMeta;
     }
   | {
+      type: "invalid-catchall";
+      node: SpanMeta;
+    }
+  | {
       type: UnifyErrorType;
       node: Expr<Meta>;
       left: Type;
@@ -62,33 +66,54 @@ function unboundTypeError<T extends SpanMeta>(
 
 function castType(
   ast: TypeAst,
-  onTypeCreated: (ast: TypeAst, t: Type<Poly>) => void,
+  args: {
+    errors: TypeError<SpanMeta>[];
+    typesContext: TypesPool;
+    params: string[];
+  },
 ): Type<Poly> {
-  switch (ast.type) {
-    case "named": {
-      const t: Type<Poly> = {
-        type: "named",
-        name: ast.name,
-        args: ast.args.map((arg) => castType(arg, onTypeCreated)),
-      };
-      onTypeCreated(ast, t);
-      return t;
-    }
-    case "fn":
-      return {
-        type: "fn",
-        args: ast.args.map((arg) => castType(arg, onTypeCreated)),
-        return: castType(ast.return, onTypeCreated),
-      };
-    case "var": {
-      const t: Type<Poly> = { type: "quantified", id: ast.ident };
-      onTypeCreated(ast, t);
-      return t;
-    }
+  const { errors, typesContext, params } = args;
 
-    case "any":
-      throw new Error("TODO invalid use of _");
+  function recur(ast: TypeAst): Type<Poly> {
+    switch (ast.type) {
+      case "named": {
+        const t: Type<Poly> = {
+          type: "named",
+          name: ast.name,
+          args: ast.args.map(recur),
+        };
+        const e = unboundTypeError(ast, t, typesContext);
+        if (e !== undefined) {
+          errors.push(e);
+        }
+        return t;
+      }
+
+      case "fn":
+        return {
+          type: "fn",
+          args: ast.args.map(recur),
+          return: recur(ast.return),
+        };
+
+      case "var": {
+        const id = ast.ident;
+        if (!params.includes(id)) {
+          errors.push({
+            type: "unbound-type-param",
+            id,
+            node: ast,
+          });
+        }
+        return { type: "quantified", id };
+      }
+
+      case "any":
+        throw new Error("TODO invalid use of _");
+    }
   }
+
+  return recur(ast);
 }
 
 export function typecheck<T extends SpanMeta>(
@@ -102,21 +127,6 @@ export function typecheck<T extends SpanMeta>(
 
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {
-    function onTypeCreated(ast: TypeAst, type: Type<Poly>) {
-      if (type.type === "quantified" && !typeDecl.params.includes(type.id)) {
-        errors.push({
-          type: "unbound-type-param",
-          id: type.id,
-          node: ast,
-        });
-      }
-
-      const e = unboundTypeError(ast, type, typesContext);
-      if (e !== undefined) {
-        errors.push(e);
-      }
-    }
-
     typesContext[typeDecl.name] = typeDecl.params.length;
 
     const ret: Type<Poly> = {
@@ -131,7 +141,13 @@ export function typecheck<T extends SpanMeta>(
       } else {
         context[variant.name] = {
           type: "fn",
-          args: variant.args.map((arg) => castType(arg, onTypeCreated)),
+          args: variant.args.map((arg) =>
+            castType(arg, {
+              errors,
+              typesContext,
+              params: typeDecl.params,
+            }),
+          ),
           return: ret,
         };
       }
