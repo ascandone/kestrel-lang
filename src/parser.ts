@@ -85,6 +85,13 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   PriExp_paren(_open, e, _close) {
     return e.expr();
   },
+  PriExp_constructor(node) {
+    return {
+      type: "identifier",
+      name: node.sourceString,
+      span: getSpan(node),
+    };
+  },
   PriExp_ident(node) {
     return {
       type: "identifier",

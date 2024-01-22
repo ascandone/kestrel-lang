@@ -57,23 +57,26 @@ Program {
     | "if" Exp "{" BlockContent "}" "else" "{" BlockContent "}" -- if
     | "match" Exp "{" ListOf<MatchClause, ","> "}" -- match
     | ident -- ident
+    | typeConstructor -- constructor
     | number
 
   BlockContent
     = Exp  -- exp
     | "let" ident "=" Exp ";" BlockContent -- let
 
-  ident  (an identifier)
+  ident
     = ~keyword identHead identBody*
 
+  typeConstructor
+    = upper identBody*
+
   identHead
-    = letter
+    = lower
     | "_"
   
   identBody
     = alnum
     | "_"
-  
 
   number  (a number)
     = digit* "." digit+  -- fract
