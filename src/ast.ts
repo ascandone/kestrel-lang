@@ -3,15 +3,23 @@ export type ConstLiteral =
   | { type: "float"; value: number }
   | { type: "string"; value: string };
 
-export type TypeHint =
-  | { type: "any" }
-  | { type: "var"; ident: string }
-  | { type: "fn"; args: TypeHint[]; return: TypeHint }
+export type TypeAst =
+  | {
+      type: "var";
+      ident: string;
+    }
+  | {
+      type: "fn";
+      args: TypeAst[];
+      return: TypeAst;
+    }
   | {
       type: "named";
       name: string;
-      args: TypeHint[];
-    };
+      args: TypeAst[];
+    }
+  // This should only be used for type annotations, not type declarations
+  | { type: "any" };
 
 export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
   (
@@ -48,12 +56,12 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
   );
 
 export type Declaration<TypeMeta = {}> = TypeMeta & {
-  typeHint?: TypeHint & SpanMeta;
+  typeHint?: TypeAst & SpanMeta;
   binding: { name: string } & TypeMeta & SpanMeta;
   value: Expr<TypeMeta>;
 };
 
-export type TypeVariant = { name: string; args: never[] };
+export type TypeVariant = { name: string; args: TypeAst[] };
 export type TypeDeclaration = {
   type: "adt";
   name: string;

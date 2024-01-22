@@ -1,4 +1,4 @@
-import { ConstLiteral, Expr, Program, SpanMeta, TypeHint } from "../ast";
+import { ConstLiteral, Expr, Program, SpanMeta, TypeAst } from "../ast";
 import { TypesPool, defaultTypesPool, prelude } from "./prelude";
 import {
   TVar,
@@ -277,7 +277,7 @@ function inferConstant(x: ConstLiteral): Type {
   }
 }
 
-function inferTypeHint(hint: TypeHint): Type<Poly> {
+function inferTypeHint(hint: TypeAst): Type<Poly> {
   switch (hint.type) {
     case "any":
       return {

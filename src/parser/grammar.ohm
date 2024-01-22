@@ -4,10 +4,10 @@ Program {
 
   // --- Toplevel
   Declaration
-    = "let" ident (":" TypeHint)? "=" Exp  -- letStmt
+    = "let" ident (":" Type)? "=" Exp  -- letStmt
 
   TypeDeclaration
-    = "type" typeName "{" TypeVariant* "}" -- typeDef
+    = "type" typeName "{" TypeVariant? "}" -- typeDef
 
   // --- Expressions
 
@@ -84,12 +84,12 @@ Program {
   // --- Types
 
   TypeVariant
-    = typeName
+    = typeName ("(" ListOf<Type, ","> ")")?
 
-  TypeHint
-    = typeName ("<" ListOf<TypeHint, ","> ">")?  -- named
+  Type
+    = typeName ("<" ListOf<Type, ","> ">")?  -- named
     | typeVar -- var
-    | "Fn" "(" ListOf<TypeHint, ","> ")" "->" TypeHint -- fn
+    | "Fn" "(" ListOf<Type, ","> ")" "->" Type -- fn
     | "_" -- any
 
   typeName  (an identifier)

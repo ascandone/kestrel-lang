@@ -258,6 +258,25 @@ describe("type declarations", () => {
     const src = "type T { C }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("type with a variant with no args", () => {
+    const src = "type T { C(Arg) }";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("type with a variant with complex args", () => {
+    const src = `
+      type T {
+        C(Example<a, Nested<Int>>)
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("type with many variants", () => {
+    const src = `type T { A, B }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

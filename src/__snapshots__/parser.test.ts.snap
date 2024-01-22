@@ -1259,6 +1259,46 @@ exports[`parse let block with two let stmts 1`] = `
 }
 `;
 
+exports[`type declarations > type with a variant with complex args 1`] = `
+{
+  "declarations": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "type": "adt",
+      "variants": [
+        {
+          "args": [
+            {
+              "args": [
+                {
+                  "ident": "a",
+                  "type": "var",
+                },
+                {
+                  "args": [
+                    {
+                      "args": [],
+                      "name": "Int",
+                      "type": "named",
+                    },
+                  ],
+                  "name": "Nested",
+                  "type": "named",
+                },
+              ],
+              "name": "Example",
+              "type": "named",
+            },
+          ],
+          "name": "C",
+        },
+      ],
+    },
+  ],
+}
+`;
+
 exports[`type declarations > type with a variant with no args 1`] = `
 {
   "declarations": [],
@@ -1269,6 +1309,30 @@ exports[`type declarations > type with a variant with no args 1`] = `
       "variants": [
         {
           "args": [],
+          "name": "C",
+        },
+      ],
+    },
+  ],
+}
+`;
+
+exports[`type declarations > type with a variant with no args 2`] = `
+{
+  "declarations": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "type": "adt",
+      "variants": [
+        {
+          "args": [
+            {
+              "args": [],
+              "name": "Arg",
+              "type": "named",
+            },
+          ],
           "name": "C",
         },
       ],

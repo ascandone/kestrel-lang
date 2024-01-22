@@ -6,7 +6,7 @@ import {
   Declaration,
   Span,
   SpanMeta,
-  TypeHint,
+  TypeAst,
   TypeDeclaration,
   TypeVariant,
 } from "./ast";
@@ -139,27 +139,27 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   },
 });
 
-semantics.addOperation<TypeHint>("typeHint()", {
-  TypeHint_any(_underscore) {
+semantics.addOperation<TypeAst>("type()", {
+  Type_any(_underscore) {
     return { type: "any" };
   },
 
-  TypeHint_var(ident) {
+  Type_var(ident) {
     return { type: "var", ident: ident.sourceString };
   },
 
-  TypeHint_fn(_fn, _lparens, args, _rparens, _arrow, ret) {
-    const args_ = args.asIteration().children.map((arg) => arg.typeHint());
-    return { type: "fn", args: args_, return: ret.typeHint() };
+  Type_fn(_fn, _lparens, args, _rparens, _arrow, ret) {
+    const args_ = args.asIteration().children.map((arg) => arg.type());
+    return { type: "fn", args: args_, return: ret.type() };
   },
 
-  TypeHint_named(ident, _lbracket, args, _rbracket) {
-    let args_: TypeHint[] = [];
+  Type_named(ident, _lbracket, args, _rbracket) {
+    let args_: TypeAst[] = [];
     if (args.numChildren > 0) {
       args_ = args
         .child(0)
         .asIteration()
-        .children.map((c) => c.typeHint());
+        .children.map((c) => c.type());
     }
     return {
       type: "named",
@@ -174,21 +174,31 @@ type Statement =
   | { type: "declaration"; decl: Declaration };
 
 semantics.addOperation<TypeVariant>("typeVariant()", {
-  TypeVariant(name) {
-    return { name: name.sourceString, args: [] };
+  TypeVariant(name, _lparens, args, _rparens) {
+    let args_: TypeAst[] = [];
+    if (args.numChildren > 0) {
+      args_ = args
+        .child(0)
+        .asIteration()
+        .children.map((c) => c.type());
+    }
+
+    return { name: name.sourceString, args: args_ };
   },
 });
 
 semantics.addOperation<Statement>("statement()", {
   TypeDeclaration_typeDef(_type, typeName, _lbracket, variants, _rbracket) {
-    const variant_ = variants.children.map<TypeVariant>((n) => n.typeVariant());
+    const variants_ = variants.children.map<TypeVariant>((n) =>
+      n.typeVariant(),
+    );
 
     return {
       type: "typeDeclaration",
       decl: {
         type: "adt",
         name: typeName.sourceString,
-        variants: variant_,
+        variants: variants_,
       },
     };
   },
@@ -198,7 +208,7 @@ semantics.addOperation<Statement>("statement()", {
         ? {}
         : {
             typeHint: {
-              ...typeHint.child(0).typeHint(),
+              ...typeHint.child(0).type(),
               span: getSpan(typeHint.child(0)),
             },
           };
