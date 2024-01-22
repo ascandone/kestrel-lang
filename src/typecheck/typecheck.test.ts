@@ -371,6 +371,84 @@ describe.todo("type hints", () => {
   });
 });
 
+describe("custom types", () => {
+  test.todo("allows to use it as type hint", () => {
+    const [types, errs] = tc(`
+    type T { }
+    let f: Fn(T) -> Int = fn _ { 0 }
+  `);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(T) -> Int",
+    });
+  });
+
+  test("handles constructor without args nor params", () => {
+    const [types, errs] = tc(`
+    type T { C }
+    let c = C
+  `);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      c: "T",
+    });
+  });
+
+  test("handles constructor with one (non-parametric) arg", () => {
+    const [types, errs] = tc(
+      `
+    type T { C(Int) }
+    let c = C
+  `,
+      {},
+      { Int: 0 },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      c: "Fn(Int) -> T",
+    });
+  });
+
+  test("handles constructor with complex arg", () => {
+    const [types, errs] = tc(
+      `
+    type T {
+      C(Maybe<Int>, Int)
+    }
+    let c = C
+  `,
+      {},
+      { Int: 0, Maybe: 1 },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      c: "Fn(Maybe<Int>, Int) -> T",
+    });
+  });
+
+  test("handles constructor wrapping a function", () => {
+    const [types, errs] = tc(
+      `
+    type T {
+      C(Fn(A, B) -> C)
+    }
+    let c = C
+  `,
+      {},
+      { A: 0, B: 0, C: 1 },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      c: "Fn(Fn(A, B) -> C) -> T",
+    });
+  });
+});
+
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context, typesContext);

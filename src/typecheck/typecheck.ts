@@ -55,6 +55,23 @@ function unboundTypeError<T extends SpanMeta>(
   };
 }
 
+function castType(ast: TypeAst): Type {
+  switch (ast.type) {
+    case "named":
+      return { type: "named", name: ast.name, args: ast.args.map(castType) };
+    case "fn":
+      return {
+        type: "fn",
+        args: ast.args.map(castType),
+        return: castType(ast.return),
+      };
+
+    case "var":
+    case "any":
+      throw new Error("TODO castType");
+  }
+}
+
 export function typecheck<T extends SpanMeta>(
   ast: Program<T>,
   initialContext: Context = prelude,
@@ -65,6 +82,24 @@ export function typecheck<T extends SpanMeta>(
   let context: Context = { ...initialContext };
 
   const typedProgram = annotateProgram(ast);
+  for (const typeDecl of typedProgram.typeDeclarations) {
+    const name = typeDecl.name;
+    const params = typeDecl.params;
+
+    const ret: Type = { type: "named", name: typeDecl.name, args: [] };
+    for (const variant of typeDecl.variants) {
+      if (variant.args.length === 0) {
+        context[variant.name] = ret;
+      } else {
+        context[variant.name] = {
+          type: "fn",
+          args: variant.args.map(castType),
+          return: ret,
+        };
+      }
+    }
+  }
+
   for (const decl of typedProgram.declarations) {
     let typeHint: Type<Poly> | undefined;
     if (decl.typeHint !== undefined) {
