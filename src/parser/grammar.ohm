@@ -55,7 +55,7 @@ Program {
     | "{" BlockContent "}"  -- block
     | "fn" ListOf<ident, ","> "{" BlockContent "}"  -- fn
     | "if" Exp "{" BlockContent "}" "else" "{" BlockContent "}" -- if
-    | "match" Exp "{" ListOf<MatchClause, ","> "}" -- match
+    | "match" Exp "{" ListOf<MatchClause, ","> ","? "}" -- match
     | ident -- ident
     | typeConstructor -- constructor
     | number

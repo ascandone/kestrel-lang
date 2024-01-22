@@ -164,7 +164,7 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     };
   },
 
-  PriExp_match(_match, expr, _lbracket, clauses, _rbracket) {
+  PriExp_match(_match, expr, _lbracket, clauses, _comma, _rbracket) {
     return {
       type: "match",
       expr: expr.expr(),
