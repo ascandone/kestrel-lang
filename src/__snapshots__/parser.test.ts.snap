@@ -1341,6 +1341,28 @@ exports[`type declarations > type with a variant with no args 2`] = `
 }
 `;
 
+exports[`type declarations > type with many variants 1`] = `
+{
+  "declarations": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "type": "adt",
+      "variants": [
+        {
+          "args": [],
+          "name": "A",
+        },
+        {
+          "args": [],
+          "name": "B",
+        },
+      ],
+    },
+  ],
+}
+`;
+
 exports[`type declarations > type with no variants 1`] = `
 {
   "declarations": [],

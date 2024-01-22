@@ -273,7 +273,7 @@ describe("type declarations", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.todo("type with many variants", () => {
+  test("type with many variants", () => {
     const src = `type T { A, B }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
