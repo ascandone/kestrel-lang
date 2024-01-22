@@ -25,13 +25,14 @@ export const prelude: Context = {
   "/": Fn([Int, Int], Int),
   "^": Fn([Int, Int], Int),
   "%": Fn([Int, Int], Int),
-  ">": Fn([Int, Int], Int),
-  ">=": Fn([Int, Int], Int),
-  "<": Fn([Int, Int], Int),
-  "<=": Fn([Int, Int], Int),
 
   "||": Fn([Bool, Bool], Bool),
   "&&": Fn([Bool, Bool], Bool),
+
+  ">": Fn([Int, Int], Bool),
+  ">=": Fn([Int, Int], Bool),
+  "<": Fn([Int, Int], Bool),
+  "<=": Fn([Int, Int], Bool),
 
   "==": gen(([$a]) => Fn([$a!, $a!], Bool)),
   "!=": gen(([$a]) => Fn([$a!, $a!], Bool)),
