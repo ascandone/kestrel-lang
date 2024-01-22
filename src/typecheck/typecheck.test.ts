@@ -473,6 +473,16 @@ describe("custom types", () => {
       a: "Box<t0, t1>",
     });
   });
+
+  test.todo("doesn't allow shadowing type params", () => {
+    const [types, errs] = tc(
+      `
+        type Box<a, a> { C }
+  `,
+    );
+
+    expect(errs).not.toEqual([]);
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
