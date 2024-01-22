@@ -188,7 +188,14 @@ semantics.addOperation<TypeVariant>("typeVariant()", {
 });
 
 semantics.addOperation<Statement>("statement()", {
-  TypeDeclaration_typeDef(_type, typeName, _lbracket, variants, _rbracket) {
+  TypeDeclaration_typeDef(
+    _type,
+    typeName,
+    _lbracket,
+    variants,
+    _trailingComma,
+    _rbracket,
+  ) {
     const variants_ = variants
       .asIteration()
       .children.map<TypeVariant>((n) => n.typeVariant());

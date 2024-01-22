@@ -7,7 +7,7 @@ Program {
     = "let" ident (":" Type)? "=" Exp  -- letStmt
 
   TypeDeclaration
-    = "type" typeName "{" ListOf<TypeVariant, ","> "}" -- typeDef
+    = "type" typeName "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef
 
   // --- Expressions
 

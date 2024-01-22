@@ -277,6 +277,11 @@ describe("type declarations", () => {
     const src = `type T { A, B }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("trailing comma after variants", () => {
+    const src = `type T { A, B, }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

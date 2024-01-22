@@ -1259,6 +1259,28 @@ exports[`parse let block with two let stmts 1`] = `
 }
 `;
 
+exports[`type declarations > trailing comma after variants 1`] = `
+{
+  "declarations": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "type": "adt",
+      "variants": [
+        {
+          "args": [],
+          "name": "A",
+        },
+        {
+          "args": [],
+          "name": "B",
+        },
+      ],
+    },
+  ],
+}
+`;
+
 exports[`type declarations > type with a variant with complex args 1`] = `
 {
   "declarations": [],
