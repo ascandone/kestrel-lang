@@ -56,6 +56,7 @@ export type Declaration<TypeMeta = {}> = TypeMeta & {
 export type TypeVariant = never; // TODO
 export type TypeDeclaration<Meta = {}> = {
   type: "adt";
+  name: string;
   variants: TypeVariant[];
 };
 

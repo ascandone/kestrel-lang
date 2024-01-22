@@ -248,6 +248,13 @@ describe("type hints", () => {
   });
 });
 
+describe("type declarations", () => {
+  test("type with no variants", () => {
+    const src = "type Never { }";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];

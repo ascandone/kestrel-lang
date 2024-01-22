@@ -173,6 +173,12 @@ type Statement =
   | { type: "declaration"; decl: Declaration<SpanMeta> };
 
 semantics.addOperation<Statement>("statement()", {
+  TypeDeclaration_typeDef(_type, typeName, _lbracket, _rbracket) {
+    return {
+      type: "typeDeclaration",
+      decl: { type: "adt", name: typeName.sourceString, variants: [] },
+    };
+  },
   Declaration_letStmt(_let, ident, _colon, typeHint, _eq, exp) {
     const th =
       typeHint.numChildren === 0

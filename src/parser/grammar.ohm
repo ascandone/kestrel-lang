@@ -1,9 +1,17 @@
 Program {
   MAIN
-    = Declaration*
+    = (Declaration | TypeDeclaration)*
 
+
+
+  // --- Toplevel
   Declaration
     = "let" ident (":" TypeHint)? "=" Exp  -- letStmt
+
+  TypeDeclaration
+    = "type" typeName "{" "}" -- typeDef
+
+  // --- Expressions
 
   Exp
     = CompExp
