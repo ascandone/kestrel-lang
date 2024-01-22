@@ -439,7 +439,7 @@ describe("custom types", () => {
     let c = C
   `,
       {},
-      { A: 0, B: 0, C: 1 },
+      { A: 0, B: 0, C: 0 },
     );
 
     expect(errs).toEqual([]);
@@ -448,7 +448,7 @@ describe("custom types", () => {
     });
   });
 
-  test.todo("handles types that do not exist", () => {
+  test("handles types that do not exist", () => {
     const [types, errs] = tc(
       `
     type T {

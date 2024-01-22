@@ -11,7 +11,7 @@ import {
 } from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
-export type TypeError<Meta> =
+export type TypeError<Meta = {}> =
   | {
       type: "unbound-variable";
       ident: string;
@@ -34,7 +34,7 @@ export type TypeMeta = { $: TVar };
 
 function unboundTypeError<T extends SpanMeta>(
   node: T,
-  t: Type,
+  t: Type<Poly>,
   tCtx: TypesPool,
 ): TypeError<T> | undefined {
   if (t.type !== "named") {
@@ -55,15 +55,24 @@ function unboundTypeError<T extends SpanMeta>(
   };
 }
 
-function castType(ast: TypeAst): Type<Poly> {
+function castType(
+  ast: TypeAst,
+  onTypeCreated: (ast: TypeAst, t: Type<Poly>) => void,
+): Type<Poly> {
   switch (ast.type) {
     case "named":
-      return { type: "named", name: ast.name, args: ast.args.map(castType) };
+      const t: Type<Poly> = {
+        type: "named",
+        name: ast.name,
+        args: ast.args.map((arg) => castType(arg, onTypeCreated)),
+      };
+      onTypeCreated(ast, t);
+      return t;
     case "fn":
       return {
         type: "fn",
-        args: ast.args.map(castType),
-        return: castType(ast.return),
+        args: ast.args.map((arg) => castType(arg, onTypeCreated)),
+        return: castType(ast.return, onTypeCreated),
       };
     case "var":
       return { type: "quantified", id: ast.ident };
@@ -82,6 +91,13 @@ export function typecheck<T extends SpanMeta>(
   const errors: TypeError<SpanMeta>[] = [];
   let context: Context = { ...initialContext };
 
+  function onTypeCreated(ast: TypeAst, type: Type<Poly>) {
+    const e = unboundTypeError(ast, type, typesContext);
+    if (e !== undefined) {
+      errors.push(e);
+    }
+  }
+
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {
     const ret: Type<Poly> = {
@@ -96,7 +112,7 @@ export function typecheck<T extends SpanMeta>(
       } else {
         context[variant.name] = {
           type: "fn",
-          args: variant.args.map(castType),
+          args: variant.args.map((arg) => castType(arg, onTypeCreated)),
           return: ret,
         };
       }
