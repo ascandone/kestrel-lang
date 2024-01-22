@@ -474,6 +474,32 @@ describe("custom types", () => {
     });
   });
 
+  test("allows using parametric types in constructors", () => {
+    const [types, errs] = tc(
+      `
+        type T<a, b> { C(b) }
+        let a = C
+        let b = C(1)
+  `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      a: "Fn(t0) -> T<t1, t0>",
+      b: "T<t0, Int>",
+    });
+  });
+
+  test.todo("forbids unbound type params", () => {
+    const [types, errs] = tc(
+      `
+        type T { C(a) }
+  `,
+    );
+
+    expect(errs).not.toEqual([]);
+  });
+
   test.todo("doesn't allow shadowing type params", () => {
     const [types, errs] = tc(
       `

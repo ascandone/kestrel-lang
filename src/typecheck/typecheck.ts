@@ -55,7 +55,7 @@ function unboundTypeError<T extends SpanMeta>(
   };
 }
 
-function castType(ast: TypeAst): Type {
+function castType(ast: TypeAst): Type<Poly> {
   switch (ast.type) {
     case "named":
       return { type: "named", name: ast.name, args: ast.args.map(castType) };
@@ -65,10 +65,11 @@ function castType(ast: TypeAst): Type {
         args: ast.args.map(castType),
         return: castType(ast.return),
       };
-
     case "var":
+      return { type: "quantified", id: ast.ident };
+
     case "any":
-      throw new Error("TODO castType");
+      throw new Error("TODO invalid use of _");
   }
 }
 
