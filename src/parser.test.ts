@@ -317,6 +317,11 @@ describe("pattern matching", () => {
     const src = `let _ = match x { a => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("matching constructor with no args", () => {
+    const src = `let _ = match x { X => res }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

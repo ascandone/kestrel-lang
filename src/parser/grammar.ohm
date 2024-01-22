@@ -92,6 +92,7 @@ Program {
 
   MatchExpr
     = ident  -- ident
+    | typeConstructor -- constructor
 
   // --- Types
 
@@ -104,7 +105,7 @@ Program {
     | "Fn" "(" ListOf<Type, ","> ")" "->" Type -- fn
     | "_" -- any
 
-  typeName  (an identifier)
+  typeName
     = ~"Fn" typeNameHead typeNameBody*
 
   typeNameHead
