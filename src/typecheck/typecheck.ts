@@ -83,10 +83,12 @@ export function typecheck<T extends SpanMeta>(
 
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {
-    const name = typeDecl.name;
-    const params = typeDecl.params;
+    const ret: Type<Poly> = {
+      type: "named",
+      name: typeDecl.name,
+      args: typeDecl.params.map((id) => ({ type: "quantified", id })),
+    };
 
-    const ret: Type = { type: "named", name: typeDecl.name, args: [] };
     for (const variant of typeDecl.variants) {
       if (variant.args.length === 0) {
         context[variant.name] = ret;

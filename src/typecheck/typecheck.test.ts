@@ -459,6 +459,20 @@ describe("custom types", () => {
 
     expect(errs).not.toEqual([]);
   });
+
+  test("handles parametric types", () => {
+    const [types, errs] = tc(
+      `
+        type Box<a, b> { C }
+        let a = C
+  `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      a: "Box<t0, t1>",
+    });
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
