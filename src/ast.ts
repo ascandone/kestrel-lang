@@ -144,7 +144,38 @@ function exprByOffset<T>(ast: Expr<T>, offset: number): T | undefined {
       );
 
     case "match":
+      for (const [binding, expr] of ast.clauses) {
+        const t =
+          matchExprByOffset(binding, offset) ?? exprByOffset(expr, offset);
+        if (t !== undefined) {
+          return t;
+        }
+      }
+
       return exprByOffset(ast.expr, offset) ?? ast;
+  }
+}
+
+function matchExprByOffset<T>(
+  ast: MatchExpr<T>,
+  offset: number,
+): T | undefined {
+  if (!spanContains(ast.span, offset)) {
+    return;
+  }
+
+  switch (ast.type) {
+    case "ident":
+      return ast;
+
+    case "constructor":
+      for (const arg of ast.args) {
+        const t = matchExprByOffset(arg, offset);
+        if (t !== undefined) {
+          return t;
+        }
+      }
+      return ast;
   }
 }
 
