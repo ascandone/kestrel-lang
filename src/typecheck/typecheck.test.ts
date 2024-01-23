@@ -647,6 +647,30 @@ describe("pattern matching", () => {
       f: "Fn(Maybe<t0>) -> Int",
     });
   });
+
+  test("use pattern matching bound vars", () => {
+    const [types, errs] = tc(`let x = match 0 { a => a }`);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Int",
+    });
+  });
+
+  test("use pattern matching bound vars in nested types", () => {
+    const [types, errs] = tc(`
+      type Boxed<a> { Boxed(a) }
+
+      let x = match Boxed(42) {
+        Boxed(a) => a
+      }
+    `);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Int",
+    });
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {

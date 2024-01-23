@@ -313,9 +313,9 @@ function* typecheckAnnotatedExpr<T>(
       yield* typecheckAnnotatedExpr(ast.expr, context);
       for (const [binding, expr] of ast.clauses) {
         yield* unifyYieldErr(ast, binding.$.asType(), ast.expr.$.asType());
-        yield* typecheckBinding(binding, context);
+        const newContext = yield* typecheckBinding(binding, context);
         yield* unifyYieldErr(ast, ast.$.asType(), expr.$.asType());
-        yield* typecheckAnnotatedExpr(expr, context);
+        yield* typecheckAnnotatedExpr(expr, newContext);
       }
   }
 }
@@ -323,10 +323,11 @@ function* typecheckAnnotatedExpr<T>(
 function* typecheckBinding<T>(
   binding: MatchExpr<T & SpanMeta & TypeMeta>,
   context: Context,
-): Generator<TypeError<T & SpanMeta & TypeMeta>> {
+): Generator<TypeError<T & SpanMeta & TypeMeta>, Context> {
   switch (binding.type) {
     case "ident":
-      break;
+      return { ...context, [binding.ident]: binding.$.asType() };
+
     case "constructor": {
       const lookup_ = context[binding.name];
       if (lookup_ === undefined) {
@@ -369,9 +370,16 @@ function* typecheckBinding<T>(
             throw new Error("TODO handle unify err");
           }
 
-          yield* typecheckBinding(binding.args[i]!, context);
+          const updatedContext = yield* typecheckBinding(
+            binding.args[i]!,
+            context,
+          );
+
+          context = { ...context, ...updatedContext };
         }
       }
+
+      return context;
     }
   }
 }
