@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { typecheckCmd } from "./commands/typecheck";
-import { lspCmd } from "./commands/lsp";
+import { checkCmd } from "./commands/checkCmd";
+import { lspCmd } from "./commands/lspCmd";
 const packageJson = require("../../package.json");
 
 const program = new Command();
@@ -10,10 +10,10 @@ const program = new Command();
 program.version(packageJson.version);
 
 program
-  .command("typecheck <path>")
+  .command("check <path>")
   .description("Infer the type of given file")
   .action((path: string) => {
-    typecheckCmd(path);
+    checkCmd(path);
   });
 
 program

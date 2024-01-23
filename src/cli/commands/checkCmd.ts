@@ -9,7 +9,7 @@ const Reset = "\x1b[0m";
 const FgBlack = "\x1b[30m";
 const BgWhite = "\x1b[47m";
 
-export function typecheckCmd(path: string) {
+export function checkCmd(path: string) {
   const f = readFileSync(path);
 
   const src = f.toString();
