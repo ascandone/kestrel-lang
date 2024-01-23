@@ -66,6 +66,11 @@ test("parse + expr", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse +. expr", () => {
+  const src = "let _ = 1 +. 2";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 test("parse - expr", () => {
   const src = "let _ = 1 - 2";
   expect(unsafeParse(src)).toMatchSnapshot();
@@ -83,6 +88,11 @@ test("parse + and * prec", () => {
 
 test("parse + and * prec with parens", () => {
   const src = "let _ = (1 - 2) * 3";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse unary ! expr", () => {
+  const src = "let _ = ! b";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 

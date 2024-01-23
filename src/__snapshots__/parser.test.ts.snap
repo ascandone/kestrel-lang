@@ -296,6 +296,66 @@ exports[`parse + expr 1`] = `
 }
 `;
 
+exports[`parse +. expr 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        14,
+      ],
+      "value": {
+        "args": [
+          {
+            "span": [
+              8,
+              9,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 1,
+            },
+          },
+          {
+            "span": [
+              13,
+              14,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 2,
+            },
+          },
+        ],
+        "caller": {
+          "name": "+.",
+          "span": [
+            10,
+            12,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          14,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse - expr 1`] = `
 {
   "declarations": [
@@ -1252,6 +1312,52 @@ exports[`parse let block with two let stmts 1`] = `
             "value": 0,
           },
         },
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`parse unary ! expr 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        11,
+      ],
+      "value": {
+        "args": [
+          {
+            "name": "b",
+            "span": [
+              10,
+              11,
+            ],
+            "type": "identifier",
+          },
+        ],
+        "caller": {
+          "name": "!",
+          "span": [
+            8,
+            9,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          11,
+        ],
+        "type": "application",
       },
     },
   ],

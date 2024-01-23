@@ -35,18 +35,26 @@ Program {
     | AddExp
 
   AddExp
-    = AddExp "+" MulExp  -- plus
-    | AddExp "-" MulExp  -- minus
+    = AddExp "+" AddExp  -- plus
+    | AddExp "+." AddExp  -- plusFloat
+    | AddExp "-" AddExp  -- minus
+    | AddExp "-." AddExp  -- minusFloat
     | MulExp
 
   MulExp
-    = MulExp "*" ExpExp  -- times
-    | MulExp "/" ExpExp  -- divide
-    | MulExp "%" ExpExp  -- rem
+    = MulExp "*" MulExp  -- mult
+    | MulExp "*." MulExp  -- multFloat
+    | MulExp "/" MulExp  -- divide
+    | MulExp "/." MulExp  -- divideFloat
+    | MulExp "%" MulExp  -- rem
     | ExpExp
 
   ExpExp
-    = PriExp "^" ExpExp  -- power
+    = ExpExp "^" ExpExp  -- power
+    | NotExp
+
+  NotExp
+    = "!" NotExp -- not
     | PriExp
 
   PriExp

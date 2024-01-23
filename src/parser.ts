@@ -53,6 +53,23 @@ function parseInfix(
   };
 }
 
+function parsePrefix(
+  this: NonterminalNode,
+  op: TerminalNode,
+  exp: NonterminalNode,
+): Expr<SpanMeta> {
+  return {
+    type: "application",
+    span: getSpan(this),
+    caller: {
+      type: "identifier",
+      name: op.sourceString,
+      span: getSpan(op),
+    },
+    args: [exp.expr()],
+  };
+}
+
 semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
   ident(_hd, _tl) {
     return {
@@ -126,11 +143,17 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   OrExpr_or: parseInfix,
   AndExpr_and: parseInfix,
   AddExp_plus: parseInfix,
+  AddExp_plusFloat: parseInfix,
   AddExp_minus: parseInfix,
-  MulExp_times: parseInfix,
+  AddExp_minusFloat: parseInfix,
+  MulExp_mult: parseInfix,
+  MulExp_multFloat: parseInfix,
   MulExp_divide: parseInfix,
+  MulExp_divideFloat: parseInfix,
   MulExp_rem: parseInfix,
   ExpExp_power: parseInfix,
+
+  NotExp_not: parsePrefix,
 
   PriExp_apply(f, _lpar, args, _trailingComma, _rpar) {
     return {
