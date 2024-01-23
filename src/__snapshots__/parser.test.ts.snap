@@ -1319,6 +1319,66 @@ exports[`parse let block with two let stmts 1`] = `
 }
 `;
 
+exports[`parse tuple 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        14,
+      ],
+      "value": {
+        "args": [
+          {
+            "span": [
+              9,
+              10,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 1,
+            },
+          },
+          {
+            "span": [
+              12,
+              13,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 2,
+            },
+          },
+        ],
+        "caller": {
+          "name": "Tuple2",
+          "span": [
+            8,
+            14,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          14,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse unary ! expr 1`] = `
 {
   "declarations": [

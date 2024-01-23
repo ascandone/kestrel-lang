@@ -59,6 +59,7 @@ Program {
 
   PriExp
     = "(" Exp ")"  -- paren
+    | "(" Exp "," Exp ")"  -- tuple2
     | PriExp "(" ListOf<Exp, ","> ","? ")" -- apply
     | "{" BlockContent "}"  -- block
     | "fn" ListOf<ident, ","> "{" BlockContent "}"  -- fn
@@ -120,7 +121,7 @@ Program {
     = upper
 
   typeNameBody
-    = letter
+    = alnum
 
   typeVar
     = ~keyword typeVarHead typeVarBody*

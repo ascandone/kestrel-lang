@@ -118,6 +118,14 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
       span: getSpan(this),
     };
   },
+  PriExp_tuple2(_lparens, x, _comma, y, _rparens) {
+    return {
+      type: "application",
+      caller: { type: "identifier", name: "Tuple2", span: getSpan(this) },
+      args: [x.expr(), y.expr()],
+      span: getSpan(this),
+    };
+  },
   PriExp_paren(_open, e, _close) {
     return e.expr();
   },

@@ -234,6 +234,11 @@ let _ = if b {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse tuple", () => {
+  const src = "let _ = (1, 2)";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 describe("type hints", () => {
   test("parses a concrete type with no args as a type hint", () => {
     const src = "let x : Int = 0";
