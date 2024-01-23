@@ -18,49 +18,44 @@ import {
 } from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
-export type TypeError =
-  | {
-      type: "unbound-variable";
-      ident: string;
-      node: SpanMeta;
-    }
-  | {
-      type: "unbound-type";
-      name: string;
-      arity: number;
-      node: SpanMeta;
-    }
-  | {
-      type: "unbound-type-param";
-      id: string;
-      node: SpanMeta;
-    }
-  | {
-      type: "invalid-catchall";
-      node: SpanMeta;
-    }
-  | {
-      type: "type-param-shadowing";
-      id: string;
-      node: SpanMeta;
-    }
-  | {
-      type: "arity-mismatch";
-      expected: number;
-      got: number;
-      node: SpanMeta;
-    }
-  | {
-      type: UnifyErrorType;
-      node: SpanMeta;
-      left: Type;
-      right: Type;
-    };
+export type TypeError = SpanMeta &
+  (
+    | {
+        type: "unbound-variable";
+        ident: string;
+      }
+    | {
+        type: "unbound-type";
+        name: string;
+        arity: number;
+      }
+    | {
+        type: "unbound-type-param";
+        id: string;
+      }
+    | {
+        type: "invalid-catchall";
+      }
+    | {
+        type: "type-param-shadowing";
+        id: string;
+      }
+    | {
+        type: "arity-mismatch";
+        expected: number;
+        got: number;
+      }
+    | {
+        type: UnifyErrorType;
+        left: Type;
+        right: Type;
+      }
+  );
 
 export type TypeMeta = { $: TVar };
 
 function unboundTypeError<T extends SpanMeta>(
-  node: T,
+  { span }: T,
   t: Type<Poly>,
   tCtx: TypesPool,
 ): TypeError | undefined {
@@ -78,7 +73,7 @@ function unboundTypeError<T extends SpanMeta>(
     type: "unbound-type",
     name: t.name,
     arity: expectedArity,
-    node,
+    span,
   };
 }
 
@@ -120,14 +115,14 @@ function castType(
           errors.push({
             type: "unbound-type-param",
             id,
-            node: ast,
+            span: ast.span,
           });
         }
         return { type: "quantified", id };
       }
 
       case "any":
-        errors.push({ type: "invalid-catchall", node: ast });
+        errors.push({ type: "invalid-catchall", span: ast.span });
         return { type: "var", var: TVar.fresh() };
     }
   }
@@ -153,7 +148,7 @@ export function typecheck<T extends SpanMeta>(
         errors.push({
           type: "type-param-shadowing",
           id: param.name,
-          node: param,
+          span: param.span,
         });
       }
       params.push(param.name);
@@ -237,7 +232,7 @@ function* typecheckAnnotatedExpr<T extends SpanMeta>(
         yield {
           type: "unbound-variable",
           ident: ast.name,
-          node: ast,
+          span: ast.span,
         };
         return;
       }
@@ -476,7 +471,7 @@ function* unifyYieldErr<T>(
         type: "arity-mismatch",
         expected: e.left.args.length,
         got: e.right.args.length,
-        node: { span: [start, end] },
+        span: [start, end],
       };
       return;
     }
@@ -489,7 +484,7 @@ function* unifyYieldErr<T>(
         type: "arity-mismatch",
         expected: e.left.args.length,
         got: e.right.args.length,
-        node: { span: [start, end] },
+        span: [start, end],
       };
 
       return;
@@ -499,7 +494,7 @@ function* unifyYieldErr<T>(
       type: "arity-mismatch",
       expected: e.left.args.length,
       got: e.right.args.length,
-      node: ast,
+      span: ast.span,
     };
   }
 
@@ -507,7 +502,7 @@ function* unifyYieldErr<T>(
     type: e.type,
     left: e.left,
     right: e.right,
-    node: ast,
+    span: ast.span,
   };
 }
 

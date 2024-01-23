@@ -26,7 +26,7 @@ export function typecheckCmd(path: string) {
   for (const error of errors) {
     const msg = typeErrorPPrint(error);
     console.log(`${FgRed}Error:${Reset} ${msg}`);
-    console.log(showErrorLine(src, error.node.span), "\n\n");
+    console.log(showErrorLine(src, error.span), "\n\n");
   }
 
   if (errors.length > 0) {

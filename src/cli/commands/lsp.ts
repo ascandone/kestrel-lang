@@ -56,7 +56,7 @@ export function lspCmd() {
     connection.sendDiagnostics({
       uri: change.document.uri,
       diagnostics: errors.map((e) => {
-        const [start, end] = e.node.span;
+        const [start, end] = e.span;
 
         return {
           message: typeErrorPPrint(e),
