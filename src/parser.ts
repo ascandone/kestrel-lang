@@ -111,13 +111,21 @@ semantics.addOperation<[MatchExpr, Expr<TypeMeta>]>("matchClause()", {
 });
 
 semantics.addOperation<Expr<SpanMeta>>("expr()", {
-  number(n) {
+  PriExp_number(n) {
     return {
       type: "constant",
       value: n.lit(),
       span: getSpan(this),
     };
   },
+  PriExp_string(node) {
+    return {
+      type: "constant",
+      value: { type: "string", value: node.sourceString },
+      span: getSpan(this),
+    };
+  },
+
   PriExp_tuple2(_lparens, x, _comma, y, _rparens) {
     return {
       type: "application",

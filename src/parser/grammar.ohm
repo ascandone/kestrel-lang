@@ -67,7 +67,8 @@ Program {
     | "match" Exp "{" ListOf<MatchClause, ","> ","? "}" -- match
     | ident -- ident
     | typeConstructor -- constructor
-    | number
+    | number -- number
+    | string -- string
 
   BlockContent
     = Exp  -- exp
@@ -87,10 +88,14 @@ Program {
     = alnum
     | "_"
 
-  number  (a number)
+  number
     = digit* "." digit+  -- fract
     | digit+             -- whole
     | "-" number  -- neg
+
+  stringDelimiter = "\""
+  string
+    = stringDelimiter (~stringDelimiter any)* stringDelimiter
 
   keyword = "let" | "fn" | "if" | "else"
 

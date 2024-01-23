@@ -61,6 +61,16 @@ test("parse float", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse empty strings", () => {
+  const src = `let _ = ""`;
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse nonempty strings", () => {
+  const src = `let _ = "abc"`;
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 test("parse + expr", () => {
   const src = "let _ = 1 + 2";
   expect(unsafeParse(src)).toMatchSnapshot();

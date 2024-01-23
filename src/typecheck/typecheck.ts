@@ -536,7 +536,7 @@ function inferConstant(x: ConstLiteral): Type {
       return { type: "named", name: "Float", args: [] };
 
     case "string":
-      throw new Error("TODO inferConst with type: " + x.type);
+      return { type: "named", name: "String", args: [] };
   }
 }
 

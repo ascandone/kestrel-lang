@@ -773,6 +773,38 @@ exports[`parse block with no let 1`] = `
 }
 `;
 
+exports[`parse empty strings 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        10,
+      ],
+      "value": {
+        "span": [
+          8,
+          10,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "string",
+          "value": """",
+        },
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse float 1`] = `
 {
   "declarations": [
@@ -1311,6 +1343,38 @@ exports[`parse let block with two let stmts 1`] = `
             "type": "int",
             "value": 0,
           },
+        },
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`parse nonempty strings 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        13,
+      ],
+      "value": {
+        "span": [
+          8,
+          13,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "string",
+          "value": ""abc"",
         },
       },
     },
