@@ -110,6 +110,12 @@ semantics.addOperation<[MatchExpr, Expr<TypeMeta>]>("matchClause()", {
   },
 });
 
+semantics.addOperation<string>("string()", {
+  string(_lDel, s, _rDel) {
+    return s.sourceString;
+  },
+});
+
 semantics.addOperation<Expr<SpanMeta>>("expr()", {
   PriExp_number(n) {
     return {
@@ -121,7 +127,7 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   PriExp_string(node) {
     return {
       type: "constant",
-      value: { type: "string", value: node.sourceString },
+      value: { type: "string", value: node.string() },
       span: getSpan(this),
     };
   },

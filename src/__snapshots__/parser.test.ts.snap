@@ -866,7 +866,7 @@ exports[`parse empty strings 1`] = `
         "type": "constant",
         "value": {
           "type": "string",
-          "value": """",
+          "value": "",
         },
       },
     },
@@ -1444,7 +1444,7 @@ exports[`parse nonempty strings 1`] = `
         "type": "constant",
         "value": {
           "type": "string",
-          "value": ""abc"",
+          "value": "abc",
         },
       },
     },
