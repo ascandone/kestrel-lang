@@ -26,25 +26,21 @@ export const prelude: Context = {
   "^": Fn([Int, Int], Int),
   "%": Fn([Int, Int], Int),
 
+  "+.": Fn([Float, Float], Float),
+  "-.": Fn([Float, Float], Float),
+  "*.": Fn([Float, Float], Float),
+  "/.": Fn([Float, Float], Float),
+
   "||": Fn([Bool, Bool], Bool),
   "&&": Fn([Bool, Bool], Bool),
+  "!": Fn([Bool], Bool),
 
-  ">": Fn([Int, Int], Bool),
-  ">=": Fn([Int, Int], Bool),
-  "<": Fn([Int, Int], Bool),
-  "<=": Fn([Int, Int], Bool),
-
+  ">": gen(([$a]) => Fn([$a!, $a!], Bool)),
+  ">=": gen(([$a]) => Fn([$a!, $a!], Bool)),
+  "<": gen(([$a]) => Fn([$a!, $a!], Bool)),
+  "<=": gen(([$a]) => Fn([$a!, $a!], Bool)),
   "==": gen(([$a]) => Fn([$a!, $a!], Bool)),
   "!=": gen(([$a]) => Fn([$a!, $a!], Bool)),
-
-  negate: Fn([Int], Int),
-  not: Fn([Bool], Bool),
-  True: Bool,
-  False: Bool,
-  Just: gen(([$a]) => Fn([$a!], Maybe($a!))),
-  Nothing: gen(([$a]) => Maybe($a!)),
-  Nil: Nil,
-  pair: gen(([$a, $b]) => Fn([$a!, $b!], Tuple($a!, $b!))),
 };
 
 function gen(f: (args: Generator<Type>) => Type): Type<Poly> {
