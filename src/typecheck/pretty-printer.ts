@@ -35,7 +35,7 @@ export function typePPrint(t: Type<never>): string {
   return pprintHelper(generalize(t));
 }
 
-export function typeErrorPPrint(e: TypeError<unknown>): string {
+export function typeErrorPPrint(e: TypeError): string {
   switch (e.type) {
     case "unbound-variable":
       return `Unbound variable: "${e.ident}"\n`;
@@ -49,16 +49,9 @@ export function typeErrorPPrint(e: TypeError<unknown>): string {
       return "Invalid use of the catchall type";
     case "type-param-shadowing":
       return `Cannot re-declare type parameter ${e.id}`;
-
+    case "arity-mismatch":
+      return `Expected ${e.expected} arguments, but got ${e.got}.\n`;
     case "type-mismatch":
-      if (
-        e.left.type === "fn" &&
-        e.right.type === "fn" &&
-        e.left.args.length !== e.right.args.length
-      ) {
-        return `Expected ${e.left.args.length} arguments, but got ${e.right.args.length}.\n`;
-      }
-
       return `Type mismatch
 
 Expected:  ${typePPrint(e.left)}

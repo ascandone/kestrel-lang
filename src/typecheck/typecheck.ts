@@ -5,7 +5,6 @@ import {
   Program,
   SpanMeta,
   TypeAst,
-  TypeDeclaration,
 } from "../ast";
 import { TypesPool, defaultTypesPool, prelude } from "./prelude";
 import {
@@ -19,11 +18,11 @@ import {
 } from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
-export type TypeError<Meta = {}> =
+export type TypeError =
   | {
       type: "unbound-variable";
       ident: string;
-      node: Expr<Meta>;
+      node: SpanMeta;
     }
   | {
       type: "unbound-type";
@@ -46,8 +45,14 @@ export type TypeError<Meta = {}> =
       node: SpanMeta;
     }
   | {
+      type: "arity-mismatch";
+      expected: number;
+      got: number;
+      node: SpanMeta;
+    }
+  | {
       type: UnifyErrorType;
-      node: Expr<Meta>;
+      node: SpanMeta;
       left: Type;
       right: Type;
     };
@@ -58,7 +63,7 @@ function unboundTypeError<T extends SpanMeta>(
   node: T,
   t: Type<Poly>,
   tCtx: TypesPool,
-): TypeError<T> | undefined {
+): TypeError | undefined {
   if (t.type !== "named") {
     return undefined;
   }
@@ -80,7 +85,7 @@ function unboundTypeError<T extends SpanMeta>(
 function castType(
   ast: TypeAst,
   args: {
-    errors: TypeError<SpanMeta>[];
+    errors: TypeError[];
     typesContext: TypesPool;
     params: string[];
   },
@@ -134,9 +139,9 @@ export function typecheck<T extends SpanMeta>(
   ast: Program<T>,
   initialContext: Context = prelude,
   typesContext: TypesPool = defaultTypesPool,
-): [Program<T & TypeMeta>, TypeError<SpanMeta>[]] {
+): [Program<T & TypeMeta>, TypeError[]] {
   TVar.resetId();
-  const errors: TypeError<SpanMeta>[] = [];
+  const errors: TypeError[] = [];
   let context: Context = { ...initialContext };
 
   const typedProgram = annotateProgram(ast);
@@ -212,32 +217,13 @@ export function typecheck<T extends SpanMeta>(
       typeHint ?? generalize(decl.value.$.asType(), context);
   }
 
-  const mappedErrs: typeof errors = errors.map((e) => {
-    if (e.type !== "type-mismatch") {
-      return e;
-    }
-
-    if (
-      e.left.type === "fn" &&
-      e.right.type === "fn" &&
-      e.left.args.length < e.right.args.length &&
-      e.node.type === "application"
-    ) {
-      const [start] = e.node.args[e.left.args.length]!.span;
-      const [, end] = e.node.args.at(-1)!.span;
-      return { ...e, node: { ...e.node, span: [start, end] } };
-    }
-
-    return e;
-  });
-
-  return [typedProgram, mappedErrs];
+  return [typedProgram, errors];
 }
 
-function* typecheckAnnotatedExpr<T>(
+function* typecheckAnnotatedExpr<T extends SpanMeta>(
   ast: Expr<T & TypeMeta>,
   context: Context,
-): Generator<TypeError<T & TypeMeta>> {
+): Generator<TypeError> {
   switch (ast.type) {
     case "constant": {
       const t = inferConstant(ast.value);
@@ -323,7 +309,7 @@ function* typecheckAnnotatedExpr<T>(
 function* typecheckBinding<T>(
   binding: MatchExpr<T & SpanMeta & TypeMeta>,
   context: Context,
-): Generator<TypeError<T & SpanMeta & TypeMeta>, Context> {
+): Generator<TypeError, Context> {
   switch (binding.type) {
     case "ident":
       return { ...context, [binding.ident]: binding.$.asType() };
@@ -471,11 +457,37 @@ function* unifyYieldErr<T>(
   ast: Expr<T & TypeMeta>,
   t1: Type,
   t2: Type,
-): Generator<TypeError<T & TypeMeta>> {
+): Generator<TypeError> {
   const e = unify(t1, t2);
-  if (e !== undefined) {
-    yield { type: e.type, left: e.left, right: e.right, node: ast };
+  if (e === undefined) {
+    return;
   }
+
+  if (
+    e.left.type === "fn" &&
+    e.right.type === "fn" &&
+    e.left.args.length !== e.right.args.length &&
+    ast.type === "application"
+  ) {
+    const [start] = ast.args[e.left.args.length]!.span;
+    const [, end] = ast.args.at(-1)!.span;
+
+    yield {
+      type: "arity-mismatch",
+      expected: e.left.args.length,
+      got: e.right.args.length,
+      node: { span: [start, end] },
+    };
+
+    return;
+  }
+
+  yield {
+    type: e.type,
+    left: e.left,
+    right: e.right,
+    node: ast,
+  };
 }
 
 function inferConstant(x: ConstLiteral): Type {
