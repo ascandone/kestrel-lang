@@ -272,7 +272,7 @@ test("recursive let declarations", () => {
   });
 });
 
-describe.todo("type hints", () => {
+describe("type hints", () => {
   test("type hints are used by typechecker", () => {
     const [types, errs] = tc(
       "let x: Int = 1.1",
@@ -330,7 +330,7 @@ describe.todo("type hints", () => {
     });
   });
 
-  test("vars type hints should be generalized", () => {
+  test.todo("vars type hints should be generalized", () => {
     const [types, errs] = tc("let x: a = 0");
     expect(errs).not.toEqual([]);
     expect(types).toEqual({
@@ -338,7 +338,7 @@ describe.todo("type hints", () => {
     });
   });
 
-  test("unify generalized values", () => {
+  test.todo("unify generalized values", () => {
     const [types, errs] = tc("let f: Fn(ta) -> tb = fn x { x }");
     expect(errs).not.toEqual([]);
     expect(types).toEqual({
@@ -346,7 +346,7 @@ describe.todo("type hints", () => {
     });
   });
 
-  test("vars type hints are used by typechecker", () => {
+  test.todo("vars type hints are used by typechecker", () => {
     const [types, errs] = tc("let eq: Fn(a, a, b) -> a = fn x, y, z { x }");
     expect(errs).toEqual([]);
     expect(types).toEqual({

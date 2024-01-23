@@ -182,7 +182,16 @@ export function typecheck<T extends SpanMeta>(
   for (const decl of typedProgram.declarations) {
     let typeHint: Type<Poly> | undefined;
     if (decl.typeHint !== undefined) {
-      typeHint = inferTypeHint(decl.typeHint);
+      const th = inferTypeHint(decl.typeHint);
+      typeHint = th;
+      errors.push(
+        ...unifyYieldErrGeneric(
+          decl.typeHint,
+          instantiate(th),
+          decl.binding.$.asType(),
+        ),
+      );
+
       const err = unboundTypeError<SpanMeta>(
         decl.typeHint,
         decl.binding.$.asType(),

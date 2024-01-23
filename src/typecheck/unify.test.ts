@@ -27,7 +27,16 @@ test("unify two concrete vars that do not match", () => {
     left: Int,
     right: Bool,
   });
-  expect(unify(Tuple(Int, Int), Tuple())).not.toBeUndefined();
+  expect(
+    unify(
+      {
+        type: "named",
+        name: "T",
+        args: [{ type: "named", name: "X", args: [] }],
+      },
+      { type: "named", name: "T", args: [] },
+    ),
+  ).not.toBeUndefined();
   expect(unify(List(Int), List(Bool))).not.toBeUndefined();
   expect(unify(Fn([Int], Int), Fn([], Int))).not.toBeUndefined();
   expect(unify(Fn([Int], Int), Fn([Bool], Int))).not.toBeUndefined();
@@ -376,7 +385,7 @@ describe("generalization", () => {
       throw new Error("fail");
     }
     expect(poly.args.length).toEqual(2);
-    expect(poly.name).toBe("Tuple");
+    expect(poly.name).toBe("Tuple2");
 
     const [$g1, $g2] = poly.args;
 
@@ -392,7 +401,7 @@ describe("generalization", () => {
       throw new Error("fail");
     }
     expect(poly.args.length).toEqual(2);
-    expect(poly.name).toBe("Tuple");
+    expect(poly.name).toBe("Tuple2");
     const [$g1, $g2] = poly.args;
 
     expect(($g1 as any).type).toEqual("quantified");
