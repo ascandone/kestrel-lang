@@ -18,6 +18,33 @@ const xc = 2;
     );
   });
 
+  test("works with file that have lines with many digits", () => {
+    // first line: 13 chars (+1)
+
+    const code = `
+
+
+
+
+
+
+
+
+
+
+const xa = 0;
+`;
+
+    const lineC = "const xa = 0;";
+    const lineE = "      ~~";
+    const startIndex = code.indexOf(lineC);
+
+    expect(showErrorLine(code, [startIndex + 6, startIndex + 6 + 2])).toBe(
+      `\x1b[47m\x1b[30m12\x1b[0m ${lineC}
+\x1b[47m  \x1b[0m \x1b[31m${lineE}\x1b[0m`,
+    );
+  });
+
   test("when it spans over two lines", () => {
     // first line: 13 chars (+1)
     // second line: 13 chars (+1)
