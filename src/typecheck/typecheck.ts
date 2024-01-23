@@ -466,20 +466,41 @@ function* unifyYieldErr<T>(
   if (
     e.left.type === "fn" &&
     e.right.type === "fn" &&
-    e.left.args.length !== e.right.args.length &&
-    ast.type === "application"
+    e.left.args.length !== e.right.args.length
   ) {
-    const [start] = ast.args[e.left.args.length]!.span;
-    const [, end] = ast.args.at(-1)!.span;
+    if (ast.type === "application" && e.left.args.length < ast.args.length) {
+      const [start] = ast.args[e.left.args.length]!.span;
+      const [, end] = ast.args.at(-1)!.span;
+
+      yield {
+        type: "arity-mismatch",
+        expected: e.left.args.length,
+        got: e.right.args.length,
+        node: { span: [start, end] },
+      };
+      return;
+    }
+
+    if (ast.type === "fn" && e.left.args.length < ast.params.length) {
+      const [start] = ast.params[e.left.args.length]!.span;
+      const [, end] = ast.params.at(-1)!.span;
+
+      yield {
+        type: "arity-mismatch",
+        expected: e.left.args.length,
+        got: e.right.args.length,
+        node: { span: [start, end] },
+      };
+
+      return;
+    }
 
     yield {
       type: "arity-mismatch",
       expected: e.left.args.length,
       got: e.right.args.length,
-      node: { span: [start, end] },
+      node: ast,
     };
-
-    return;
   }
 
   yield {
