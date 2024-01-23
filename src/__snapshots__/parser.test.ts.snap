@@ -1,5 +1,75 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`monadic let syntax sugar 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          9,
+          10,
+        ],
+      },
+      "span": [
+        5,
+        58,
+      ],
+      "value": {
+        "args": [
+          {
+            "name": "expr",
+            "span": [
+              36,
+              40,
+            ],
+            "type": "identifier",
+          },
+          {
+            "body": {
+              "name": "body",
+              "span": [
+                48,
+                52,
+              ],
+              "type": "identifier",
+            },
+            "params": [
+              {
+                "name": "x",
+                "span": [
+                  32,
+                  33,
+                ],
+              },
+            ],
+            "span": [
+              21,
+              52,
+            ],
+            "type": "fn",
+          },
+        ],
+        "caller": {
+          "name": "bind_f",
+          "span": [
+            25,
+            31,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          21,
+          52,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse * expr 1`] = `
 {
   "declarations": [

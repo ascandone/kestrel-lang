@@ -249,6 +249,35 @@ test("parse tuple", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("monadic let syntax sugar", () => {
+  const src = `
+    let _ = {
+      let#bind_f x = expr;
+      body
+    }
+  `;
+
+  // This should desugar to:
+  /*
+    let _ = bind_f(expr, fn x {
+      body
+    })
+  */
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("monadic let syntax sugar should not contain space", () => {
+  const src = `
+    let _ = {
+      let #bind_f x = expr;
+      value
+    }
+  `;
+
+  expect(() => unsafeParse(src)).toThrow();
+});
+
 describe("type hints", () => {
   test("parses a concrete type with no args as a type hint", () => {
     const src = "let x : Int = 0";

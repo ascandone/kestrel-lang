@@ -144,10 +144,10 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
       span: getSpan(node),
     };
   },
-  PriExp_ident(node) {
+  ident(_hd, _tl) {
     return {
       type: "identifier",
-      ...node.ident(),
+      ...this.ident(),
     };
   },
   CompExp_lt: parseInfix,
@@ -214,6 +214,23 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
 
   BlockContent_exp(e) {
     return e.expr();
+  },
+
+  BlockContent_monadicLet(_let, bindFIdent, ident, _eq, value, _comma, body) {
+    return {
+      type: "application",
+      caller: bindFIdent.expr(),
+      args: [
+        value.expr(),
+        {
+          type: "fn",
+          params: [ident.ident()],
+          body: body.expr(),
+          span: getSpan(this),
+        },
+      ],
+      span: getSpan(this),
+    };
   },
 
   BlockContent_let(_let, ident, _eq, value, _comma, body) {
