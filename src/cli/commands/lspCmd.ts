@@ -25,6 +25,7 @@ export function lspCmd() {
       textDocumentSync: TextDocumentSyncKind.Incremental,
       hoverProvider: true,
       documentSymbolProvider: true,
+      codeLensProvider: { resolveProvider: true },
     },
   }));
 
@@ -48,6 +49,7 @@ export function lspCmd() {
           },
         ],
       });
+
       return;
     }
 
@@ -100,6 +102,31 @@ export function lspCmd() {
       };
     });
   });
+
+  connection.onCodeLens(({ textDocument }) => {
+    const pair = docs.get(textDocument.uri);
+    if (pair === undefined) {
+      return;
+    }
+    const [doc, ast] = pair;
+
+    return ast.declarations.map(({ span: [start, end], binding }) => {
+      const startPos = doc.positionAt(start);
+      const endPos = doc.positionAt(end);
+
+      const tpp = typePPrint(binding.$.asType());
+
+      return {
+        command: { title: tpp, command: "noop" },
+        range: {
+          start: startPos,
+          end: endPos,
+        },
+      };
+    });
+  });
+
+  connection.onExecuteCommand(() => {});
 
   connection.onHover(({ textDocument, position }) => {
     const pair = docs.get(textDocument.uri);
