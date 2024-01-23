@@ -310,10 +310,68 @@ function* typecheckAnnotatedExpr<T>(
 
     case "match":
       yield* typecheckAnnotatedExpr(ast.expr, context);
-      for (const [_binding, expr] of ast.clauses) {
+      for (const [binding, expr] of ast.clauses) {
+        yield* unifyYieldErr(ast, binding.$.asType(), ast.expr.$.asType());
+        yield* typecheckBinding(binding, context);
         yield* unifyYieldErr(ast, ast.$.asType(), expr.$.asType());
         yield* typecheckAnnotatedExpr(expr, context);
       }
+  }
+}
+
+function* typecheckBinding<T>(
+  binding: MatchExpr<T & SpanMeta & TypeMeta>,
+  context: Context,
+): Generator<TypeError<T & SpanMeta & TypeMeta>> {
+  switch (binding.type) {
+    case "ident":
+      break;
+    case "constructor": {
+      const lookup_ = context[binding.name];
+      if (lookup_ === undefined) {
+        throw "TODO unbound type";
+      }
+      const lookup = instantiate(lookup_);
+
+      if (lookup.type === "named") {
+        const e = unify(
+          { type: "named", name: lookup.name, args: [] },
+          binding.$.asType(),
+        );
+
+        if (e !== undefined) {
+          throw new Error("TODO unify error on p match");
+        }
+      }
+
+      if (lookup.type === "fn") {
+        const e = unify(
+          {
+            type: "fn",
+            args: lookup.args,
+            return: binding.$.asType(),
+          },
+          lookup,
+        );
+
+        if (e !== undefined) {
+          throw new Error("TODO unify error on p match");
+        }
+
+        if (lookup.args.length !== binding.args.length) {
+          throw new Error("TODO handle wrong arity");
+        }
+
+        for (let i = 0; i < lookup.args.length; i++) {
+          const e = unify(binding.args[i]!.$.asType(), lookup.args[i]!);
+          if (e !== undefined) {
+            throw new Error("TODO handle unify err");
+          }
+
+          yield* typecheckBinding(binding.args[i]!, context);
+        }
+      }
+    }
   }
 }
 

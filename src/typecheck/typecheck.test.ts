@@ -563,7 +563,7 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo("infers matched type", () => {
+  test("infers matched type when there are no args", () => {
     const [types, errs] = tc(`
       type T { C }
 
@@ -576,6 +576,52 @@ describe("pattern matching", () => {
     expect(errs).toEqual([]);
     expect(types).toEqual({
       f: "Fn(T) -> Int",
+    });
+  });
+
+  test("infers matched type when there are concrete args", () => {
+    const [types, errs] = tc(
+      `
+      type T { C(Bool) }
+
+      let f = fn x {
+        match x {
+          C(_) => 0,
+        }
+      }
+    `,
+      {},
+      { Bool: 0 },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(T) -> Int",
+    });
+  });
+
+  test("infers nested types in p match", () => {
+    const [types, errs] = tc(
+      `
+      type Bool {
+        True,
+      }
+
+      type Box<a> {
+        Make(a),
+      }
+
+      let f = fn x {
+        match x {
+          Make(True) => 0,
+        }
+      }
+    `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(Box<Bool>) -> Int",
     });
   });
 });
