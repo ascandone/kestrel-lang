@@ -168,6 +168,7 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   MulExp_divideFloat: parseInfix,
   MulExp_rem: parseInfix,
   ExpExp_power: parseInfix,
+  AddExp_concat: parseInfix,
 
   NotExp_not: parsePrefix,
 

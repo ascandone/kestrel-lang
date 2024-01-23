@@ -2,6 +2,7 @@ import { ConcreteType, Context, Poly, TVar, Type, generalize } from "./unify";
 
 export const Int: ConcreteType = { type: "named", name: "Int", args: [] };
 export const Float: ConcreteType = { type: "named", name: "Float", args: [] };
+export const String: ConcreteType = { type: "named", name: "String", args: [] };
 export const Bool: ConcreteType = { type: "named", name: "Bool", args: [] };
 export const Nil: ConcreteType = { type: "named", name: "Nil", args: [] };
 export function List(arg: Type): ConcreteType {
@@ -46,6 +47,8 @@ export const prelude: Context = {
   "<=": gen(([$a]) => Fn([$a!, $a!], Bool)),
   "==": gen(([$a]) => Fn([$a!, $a!], Bool)),
   "!=": gen(([$a]) => Fn([$a!, $a!], Bool)),
+
+  "<>": Fn([String, String], String),
 };
 
 function gen(f: (args: Generator<Type>) => Type): Type<Poly> {

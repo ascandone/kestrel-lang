@@ -39,6 +39,7 @@ Program {
     | AddExp "+." AddExp  -- plusFloat
     | AddExp "-" AddExp  -- minus
     | AddExp "-." AddExp  -- minusFloat
+    | AddExp "<>" AddExp  -- concat
     | MulExp
 
   MulExp
