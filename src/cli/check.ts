@@ -31,7 +31,6 @@ export function check(path: string): Program<TypeMeta> | undefined {
     return undefined;
   }
 
-  console.log("Found no errors ✅");
   return program;
 }
 
