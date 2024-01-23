@@ -49,7 +49,7 @@ test("infer a variable not present in the context", () => {
     {},
   );
 
-  expect(errors).toEqual<TypeError<unknown>[]>([
+  expect(errors).toEqual<TypeError[]>([
     expect.objectContaining({
       type: "unbound-variable",
       ident: "unbound_var",
