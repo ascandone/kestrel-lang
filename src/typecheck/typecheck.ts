@@ -5,6 +5,7 @@ import {
   Program,
   SpanMeta,
   TypeAst,
+  TypeDeclaration,
 } from "../ast";
 import { TypesPool, defaultTypesPool, prelude } from "./prelude";
 import {
@@ -335,7 +336,7 @@ function* typecheckBinding<T>(
 
       if (lookup.type === "named") {
         const e = unify(
-          { type: "named", name: lookup.name, args: [] },
+          { type: "named", name: lookup.name, args: lookup.args },
           binding.$.asType(),
         );
 

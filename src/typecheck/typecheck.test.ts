@@ -624,6 +624,29 @@ describe("pattern matching", () => {
       f: "Fn(Box<Bool>) -> Int",
     });
   });
+
+  test("infers nested types in p match, matching on a zero-args variant", () => {
+    const [types, errs] = tc(
+      `
+
+      type Maybe<a> {
+        Nothing,
+        Just(a),
+      }
+
+      let f = fn x {
+        match x {
+          Nothing => 2,
+        }
+      }
+    `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(Maybe<t0>) -> Int",
+    });
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
