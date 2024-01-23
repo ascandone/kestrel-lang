@@ -312,23 +312,28 @@ function* typecheckBinding<T>(
     case "constructor": {
       const lookup_ = context[binding.name];
       if (lookup_ === undefined) {
-        throw "TODO unbound type";
+        // TODO better err
+        yield {
+          type: "unbound-variable",
+          ident: binding.name,
+          span: binding.span,
+        };
+        return context;
       }
+
       const lookup = instantiate(lookup_);
 
       if (lookup.type === "named") {
-        const e = unify(
+        yield* unifyYieldErrGeneric(
+          binding,
           { type: "named", name: lookup.name, args: lookup.args },
           binding.$.asType(),
         );
-
-        if (e !== undefined) {
-          throw new Error("TODO unify error on p match");
-        }
       }
 
       if (lookup.type === "fn") {
-        const e = unify(
+        yield* unifyYieldErrGeneric(
+          binding,
           {
             type: "fn",
             args: lookup.args,
@@ -337,19 +342,12 @@ function* typecheckBinding<T>(
           lookup,
         );
 
-        if (e !== undefined) {
-          throw new Error("TODO unify error on p match");
-        }
-
-        if (lookup.args.length !== binding.args.length) {
-          throw new Error("TODO handle wrong arity");
-        }
-
         for (let i = 0; i < lookup.args.length; i++) {
-          const e = unify(binding.args[i]!.$.asType(), lookup.args[i]!);
-          if (e !== undefined) {
-            throw new Error("TODO handle unify err");
-          }
+          yield* unifyYieldErrGeneric(
+            binding,
+            binding.args[i]!.$.asType(),
+            lookup.args[i]!,
+          );
 
           const updatedContext = yield* typecheckBinding(
             binding.args[i]!,
@@ -357,6 +355,16 @@ function* typecheckBinding<T>(
           );
 
           context = { ...context, ...updatedContext };
+        }
+
+        if (lookup.args.length !== binding.args.length) {
+          yield {
+            type: "arity-mismatch",
+            expected: lookup.args.length,
+            got: binding.args.length,
+            span: binding.span,
+          };
+          return context;
         }
       }
 
@@ -448,11 +456,7 @@ function annotateProgram<T>(program: Program<T>): Program<T & TypeMeta> {
   };
 }
 
-function* unifyYieldErr<T>(
-  ast: Expr<T & TypeMeta>,
-  t1: Type,
-  t2: Type,
-): Generator<TypeError> {
+function* unifyYieldErr(ast: Expr, t1: Type, t2: Type): Generator<TypeError> {
   const e = unify(t1, t2);
   if (e === undefined) {
     return;
@@ -498,6 +502,23 @@ function* unifyYieldErr<T>(
     };
   }
 
+  yield {
+    type: e.type,
+    left: e.left,
+    right: e.right,
+    span: ast.span,
+  };
+}
+
+function* unifyYieldErrGeneric(
+  ast: SpanMeta,
+  t1: Type,
+  t2: Type,
+): Generator<TypeError> {
+  const e = unify(t1, t2);
+  if (e === undefined) {
+    return;
+  }
   yield {
     type: e.type,
     left: e.left,

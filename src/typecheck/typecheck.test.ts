@@ -671,6 +671,29 @@ describe("pattern matching", () => {
       x: "Int",
     });
   });
+
+  test("return error on wrong matched type", () => {
+    const [types, errs] = tc(`
+      type X { X }
+      let _ = match 42 {
+        X => 0
+      }
+    `);
+
+    expect(errs).not.toEqual([]);
+  });
+
+  test("return error on unbound types", () => {
+    const [types, errs] = tc(`
+      let _ = fn x {
+        match x {
+          NotFound => 0
+        }
+      }
+    `);
+
+    expect(errs).not.toEqual([]);
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
