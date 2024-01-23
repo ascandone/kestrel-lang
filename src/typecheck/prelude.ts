@@ -10,8 +10,13 @@ export function List(arg: Type): ConcreteType {
 export function Maybe(arg: Type): ConcreteType {
   return { type: "named", name: "Maybe", args: [arg] };
 }
+const supportedTuplesArities = [2];
 export function Tuple(...args: Type[]): ConcreteType {
-  return { type: "named", name: "Tuple", args };
+  if (!supportedTuplesArities.includes(args.length)) {
+    throw new Error("Unsupported tuple arity: " + args.length);
+  }
+
+  return { type: "named", name: `Tuple${args.length}`, args };
 }
 
 function Fn(args: Type[], ret: Type): ConcreteType {
@@ -59,8 +64,4 @@ export const defaultTypesPool: TypesPool = {
   Int: 0,
   Float: 0,
   String: 0,
-  Nil: 0,
-  Bool: 0,
-  Maybe: 1,
-  List: 1,
 };

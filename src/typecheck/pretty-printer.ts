@@ -25,6 +25,11 @@ function pprintHelper(t: Type<Poly>): string {
       if (t.args.length === 0) {
         return t.name;
       }
+
+      if (t.name === "Tuple2") {
+        return `(${pprintHelper(t.args[0]!)}, ${pprintHelper(t.args[1]!)})`;
+      }
+
       const args = t.args.map(pprintHelper).join(", ");
       return `${t.name}<${args}>`;
     }

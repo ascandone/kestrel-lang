@@ -13,7 +13,7 @@ test("0-arity types", () => {
 
 test("n-arity types", () => {
   expect(typePPrint(List(Int))).toBe("List<Int>");
-  expect(typePPrint(Tuple(Int, Bool))).toBe("Tuple<Int, Bool>");
+  expect(typePPrint(Tuple(Int, Bool))).toBe("(Int, Bool)");
 });
 
 test("nested types", () => {
@@ -29,7 +29,7 @@ test("type vars", () => {
   const $a = TVar.fresh(),
     $b = TVar.fresh();
 
-  expect(typePPrint(Tuple($a.asType(), $b.asType()))).toBe("Tuple<t0, t1>");
+  expect(typePPrint(Tuple($a.asType(), $b.asType()))).toBe("(t0, t1)");
 });
 
 test("bound types", () => {
