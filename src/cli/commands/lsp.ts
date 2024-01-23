@@ -79,11 +79,20 @@ export function lspCmd() {
     }
     const [doc, ast] = pair;
 
-    return ast.declarations.map((st) => {
-      const [start, end] = st.span;
+    const decls = ast.declarations.map((st) => ({
+      name: st.binding.name,
+      span: st.span,
+    }));
+
+    const typeDecl = ast.typeDeclarations.map((st) => ({
+      name: st.name,
+      span: st.span,
+    }));
+
+    return decls.concat(typeDecl).map(({ span: [start, end], name }) => {
       return {
         kind: SymbolKind.Variable,
-        name: st.binding.name,
+        name,
         location: {
           uri: textDocument.uri,
           range: { start: doc.positionAt(start), end: doc.positionAt(end) },

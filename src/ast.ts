@@ -75,14 +75,14 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
       }
   );
 
-export type Declaration<TypeMeta = {}> = TypeMeta & {
+export type Declaration<TypeMeta = {}> = SpanMeta & {
   typeHint?: TypeAst & SpanMeta;
   binding: { name: string } & TypeMeta & SpanMeta;
   value: Expr<TypeMeta>;
 };
 
 export type TypeVariant = { name: string; args: TypeAst[] };
-export type TypeDeclaration = {
+export type TypeDeclaration = SpanMeta & {
   type: "adt";
   params: Array<{ name: string } & SpanMeta>;
   name: string;
@@ -184,13 +184,15 @@ export function declByOffset<T>(
   offset: number,
 ): T | undefined {
   for (const st of program.declarations) {
+    if (!spanContains(st.span, offset)) {
+      continue;
+    }
+
     if (spanContains(st.binding.span, offset)) {
-      return st.value;
+      return st.binding;
     }
-    const e = exprByOffset(st.value, offset);
-    if (e !== undefined) {
-      return e;
-    }
+
+    return exprByOffset(st.value, offset);
   }
 
   return undefined;

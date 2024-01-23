@@ -302,6 +302,7 @@ semantics.addOperation<Statement>("statement()", {
         params: params_,
         name: typeName.sourceString,
         variants: variants_,
+        span: getSpan(this),
       },
     };
   },
