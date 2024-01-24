@@ -1,11 +1,32 @@
 import { ConstLiteral, Declaration, Expr, Program } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 
+type CompileExprResult = {
+  return: string;
+  statements: string[];
+};
+
+type Scope = Record<string, string>;
+
 class Compiler {
-  compileExpr(expr: Expr<TypeMeta>): string {
+  scope: string[] = [];
+  enterScope(ns: string) {
+    this.scope.push(ns);
+  }
+  exitScope() {
+    this.scope.pop();
+  }
+  scopedVar(name: string) {
+    return [...this.scope, name].join("$");
+  }
+
+  compileExpr(expr: Expr<TypeMeta>, scope: Scope): CompileExprResult {
     switch (expr.type) {
       case "constant":
-        return constToString(expr.value);
+        return {
+          statements: [],
+          return: constToString(expr.value),
+        };
 
       case "application": {
         infixAppl: if (expr.caller.type === "identifier") {
@@ -15,27 +36,61 @@ class Compiler {
           }
 
           const [l, r] = expr.args;
-          const lC = this.compileExpr(l!);
-          const rC = this.compileExpr(r!);
+          const lC = this.compileExpr(l!, scope).return;
+          const rC = this.compileExpr(r!, scope).return;
 
           const precLeft = getInfixPrec(l!) ?? Infinity;
           const lCWithParens = precLeft < prec ? `(${lC})` : lC;
-          return `${lCWithParens} ${expr.caller.name} ${rC}`;
+          return {
+            statements: [],
+            return: `${lCWithParens} ${expr.caller.name} ${rC}`,
+          };
         }
 
         if (expr.caller.type === "identifier") {
-          const args = expr.args.map((arg) => this.compileExpr(arg)).join(", ");
-          return `${expr.caller.name}(${args})`;
+          const args = expr.args
+            .map((arg) => this.compileExpr(arg, scope).return)
+            .join(", ");
+          return {
+            statements: [],
+            return: `${expr.caller.name}(${args})`,
+          };
         }
 
         throw new Error("TODO handle: " + expr.type);
       }
 
       case "identifier":
-        return expr.name;
+        const lookup = scope[expr.name];
+        if (lookup === undefined) {
+          throw new Error("[unreachable] undefined identifier");
+        }
+        return {
+          statements: [],
+          return: lookup,
+        };
+
+      case "let": {
+        // TODO append current path
+        const scopedBinding = this.scopedVar(expr.binding.name);
+
+        const valueC = this.compileExpr(expr.value, scope);
+
+        console.log(valueC);
+
+        const bodyC = this.compileExpr(expr.body, {
+          ...scope,
+          [expr.binding.name]: scopedBinding,
+        });
+
+        // TODO handle body.statements
+        return {
+          statements: [`const ${scopedBinding} = ${valueC.return};`],
+          return: bodyC.return,
+        };
+      }
 
       case "fn":
-      case "let":
       case "if":
       case "match":
       default:
@@ -43,17 +98,22 @@ class Compiler {
     }
   }
 
-  compileDecl(decl: Declaration<TypeMeta>): string {
-    return `const ${decl.binding.name} = ${this.compileExpr(decl.value)};`;
-  }
-
   compile(src: Program<TypeMeta>): string {
+    const scope: Scope = {};
     const decls: string[] = [];
     for (const decl of src.declarations) {
-      const cDecl = this.compileDecl(decl);
-      decls.push(cDecl);
+      this.enterScope(decl.binding.name);
+      const compiledValue = this.compileExpr(decl.value, scope);
+
+      decls.push(
+        ...compiledValue.statements,
+        `const ${decl.binding.name} = ${compiledValue.return};\n`,
+      );
+      scope[decl.binding.name] = decl.binding.name;
+      this.exitScope();
     }
-    return decls.join("\n\n");
+
+    return decls.join("\n");
   }
 }
 

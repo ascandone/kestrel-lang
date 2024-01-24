@@ -65,6 +65,22 @@ test("function calls with args", () => {
   expect(out).toMatchSnapshot();
 });
 
+test("let expressions", () => {
+  const out = compileSrc(`
+    let x = {
+      let local = 0;
+      local + 1
+    }
+  `);
+
+  /* Should compile as:
+  const x$local = 0;  
+  const x = x$local + 1
+  */
+
+  expect(out).toMatchSnapshot();
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);
