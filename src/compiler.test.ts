@@ -177,6 +177,19 @@ test("let inside scope", () => {
 }`);
 });
 
+test("let inside arg of a function", () => {
+  const out = compileSrc(`
+  let a = f({
+    let x = 0;
+    x
+  })
+`);
+
+  expect(out).toEqual(`const a$x = 0;
+const a = f(a$x);
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

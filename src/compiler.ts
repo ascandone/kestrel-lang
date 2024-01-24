@@ -50,11 +50,10 @@ class Compiler {
         }
 
         if (expr.caller.type === "identifier") {
-          const args = expr.args
-            .map((arg) => this.compileExpr(arg, scope).return)
-            .join(", ");
+          const argsC = expr.args.map((arg) => this.compileExpr(arg, scope));
+          const args = argsC.map((a) => a.return).join(", ");
           return {
-            statements: [],
+            statements: argsC.flatMap((a) => a.statements),
             return: `${expr.caller.name}(${args})`,
           };
         }
