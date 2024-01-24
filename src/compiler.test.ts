@@ -141,6 +141,16 @@ const x = x$a$0;
 `);
 });
 
+test("toplevel fn without params", () => {
+  const out = compileSrc(`
+  let f = fn { 42 }
+`);
+
+  expect(out).toEqual(`function f() {
+  return 42;
+}`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

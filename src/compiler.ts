@@ -92,10 +92,25 @@ class Compiler {
         };
       }
 
-      case "fn":
+      case "fn": {
+        const isTopLevel = this.scope.length === 1;
+        if (isTopLevel) {
+          const [name] = this.scope;
+
+          // TODO scope
+          const ret = this.compileExpr(expr.body, {});
+
+          return {
+            statements: [],
+            return: `function ${name}() {
+  return ${ret.return};
+}`,
+          };
+        }
+      }
+
       case "if":
       case "match":
-      default:
         throw new Error("TODO handle: " + expr.type);
     }
   }
@@ -107,10 +122,12 @@ class Compiler {
       this.enterScope(decl.binding.name);
       const compiledValue = this.compileExpr(decl.value, scope);
 
-      decls.push(
-        ...compiledValue.statements,
-        `const ${decl.binding.name} = ${compiledValue.return};\n`,
-      );
+      const expr =
+        decl.value.type === "fn"
+          ? compiledValue.return
+          : `const ${decl.binding.name} = ${compiledValue.return};\n`;
+
+      decls.push(...compiledValue.statements, expr);
       scope[decl.binding.name] = decl.binding.name;
       this.exitScope();
     }
