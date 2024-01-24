@@ -216,8 +216,19 @@ function constToString(k: ConstLiteral): string {
 
 // left-to-right operators
 const precTable: Record<string, number> = {
+  "||": 3,
+  "&&": 4,
+  "==": 8,
+  "!=": 8,
+  "<": 10,
+  "<=": 10,
+  ">": 10,
+  ">=": 10,
   "+": 11,
+  "-": 11,
   "*": 12,
+  "/": 12,
+  "%": 12,
 };
 
 function getInfixPrec(expr: Expr<unknown>): number | undefined {
