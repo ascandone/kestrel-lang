@@ -11,14 +11,18 @@ type Scope = Record<string, string>;
 const IDENT_CHAR = "  ";
 
 class Compiler {
-  scope: string[] = [];
-  enterScope(ns: string) {
+  private genId = 0;
+  private getUniqueId() {
+    return `$temp__${this.genId++}`;
+  }
+  private scope: string[] = [];
+  private enterScope(ns: string) {
     this.scope.push(ns);
   }
-  exitScope() {
+  private exitScope() {
     this.scope.pop();
   }
-  scopedVar(name: string) {
+  private scopedVar(name: string) {
     return [...this.scope, name].join("$");
   }
 
@@ -124,17 +128,13 @@ class Compiler {
           });
 
           const identationLevel = 1;
-          const indentation = Array.from(
-            { length: identationLevel },
-            () => IDENT_CHAR,
-          );
 
-          const fnBody = [...ret.statements, `return ${ret.return};`]
-            .map((st) => {
-              return `${indentation}${st}`;
-            })
-            .join("\n");
+          const fnBody = indentBlock(identationLevel, [
+            ...ret.statements,
+            `return ${ret.return};`,
+          ]);
 
+          this.scope = backupScope;
           return {
             statements: [],
             return: `function ${name}(${params}) {
@@ -143,10 +143,31 @@ ${fnBody}
           };
         }
 
-        this.scope = backupScope;
+        throw new Error("[TODO] handle fns that are not top level");
       }
 
-      case "if":
+      case "if": {
+        const tempIdent = this.getUniqueId();
+        const condition = this.compileExpr(expr.condition, scope);
+
+        const thenBlock = this.compileExpr(expr.then, scope);
+        const elseBlock = this.compileExpr(expr.else, scope);
+
+        const identationLevel = 1;
+
+        return {
+          statements: [
+            `let ${tempIdent};`,
+            `if ${condition.return} {
+${indentBlock(identationLevel, [...thenBlock.statements, `${tempIdent} = ${thenBlock.return};`])}
+} else {
+${indentBlock(identationLevel, [...elseBlock.statements, `${tempIdent} = ${elseBlock.return};`])}
+}`,
+          ],
+          return: tempIdent,
+        };
+      }
+
       case "match":
         throw new Error("TODO handle: " + expr.type);
     }
@@ -199,4 +220,18 @@ function getInfixPrec(expr: Expr<unknown>): number | undefined {
   }
 
   return precTable[expr.caller.name];
+}
+
+function makeIndentation(level: number): string {
+  return Array.from({ length: level }, () => IDENT_CHAR).join("");
+}
+
+function indent(level: number, s: string): string {
+  const ident = Array.from({ length: level }, () => IDENT_CHAR);
+  ident.push(s);
+  return ident.join("");
+}
+
+function indentBlock(level: number, lines: string[]): string[] {
+  return lines.map((line) => indent(level, line)).join("\n");
 }

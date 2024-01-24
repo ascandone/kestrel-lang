@@ -206,6 +206,26 @@ const x = x$f();
 `);
 });
 
+test("if expression", () => {
+  const out = compileSrc(`
+  let x =
+    if 0 {
+      1
+    } else {
+      2
+    }
+`);
+
+  expect(out).toEqual(`let $temp__0;
+if 0 {
+  $temp__0 = 1;
+} else {
+  $temp__0 = 2;
+}
+const x = $temp__0;
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);
