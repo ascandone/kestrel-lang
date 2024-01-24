@@ -220,7 +220,7 @@ test("if expression", () => {
 `);
 
   expect(out).toEqual(`let $temp__0;
-if 0 {
+if (0) {
   $temp__0 = 1;
 } else {
   $temp__0 = 2;

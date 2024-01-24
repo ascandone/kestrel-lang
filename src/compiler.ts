@@ -158,7 +158,7 @@ class Compiler {
         return {
           statements: [
             `let ${tempIdent};`,
-            `if ${condition.return} {`,
+            `if (${condition.return}) {`,
             ...indentBlock(identationLevel, [
               ...thenBlock.statements,
               `${tempIdent} = ${thenBlock.return};`,
