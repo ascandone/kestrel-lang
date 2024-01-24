@@ -126,6 +126,21 @@ const x = x$local + 2;
 `);
 });
 
+test.todo("shadowed let exprs", () => {
+  const out = compileSrc(`
+    let x = {
+      let a = 0;
+      let a = 1;
+      a
+    }
+  `);
+
+  expect(out).toEqual(`const x$a = 0;
+const x$a$0 = 1;
+const x = x$a$0;
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);
