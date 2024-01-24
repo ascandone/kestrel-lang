@@ -8,6 +8,8 @@ type CompileExprResult = {
 
 type Scope = Record<string, string>;
 
+const IDENT_CHAR = "  ";
+
 class Compiler {
   scope: string[] = [];
   enterScope(ns: string) {
@@ -93,10 +95,12 @@ class Compiler {
       }
 
       case "fn": {
+        const backupScope = this.scope;
         const isTopLevel = this.scope.length === 1;
-        if (isTopLevel) {
-          const [name] = this.scope;
+        const [name] = this.scope;
 
+        this.scope = [];
+        if (isTopLevel) {
           const params = expr.params.map((p) => p.name).join(", ");
 
           const paramsScope = Object.fromEntries(
@@ -108,13 +112,27 @@ class Compiler {
             ...paramsScope,
           });
 
+          const identationLevel = 1;
+          const indentation = Array.from(
+            { length: identationLevel },
+            () => IDENT_CHAR,
+          );
+
+          const fnBody = [...ret.statements, `return ${ret.return};`]
+            .map((st) => {
+              return `${indentation}${st}`;
+            })
+            .join("\n");
+
           return {
             statements: [],
             return: `function ${name}(${params}) {
-  return ${ret.return};
+${fnBody}
 }`,
           };
         }
+
+        this.scope = backupScope;
       }
 
       case "if":

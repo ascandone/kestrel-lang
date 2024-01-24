@@ -161,6 +161,22 @@ test("toplevel fn with params", () => {
 }`);
 });
 
+test("let inside scope", () => {
+  const out = compileSrc(`
+  let f = fn {
+    let x = 0;
+    let y = 1;
+    x
+  }
+`);
+
+  expect(out).toEqual(`function f() {
+  const x = 0;
+  const y = 1;
+  return x;
+}`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);
