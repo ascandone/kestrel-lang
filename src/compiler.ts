@@ -197,6 +197,7 @@ class Compiler {
             );
 
             return [
+              ...condition.statements,
               `if (${condition.expr}) {`,
               ...indentBlock(identationLevel, thenBlock),
               `} else {`,
@@ -210,6 +211,7 @@ class Compiler {
             const elseBlock = this.compileAsExpr(src.else, as, scope);
 
             return [
+              ...condition.statements,
               `let ${as.name};`,
               `if (${condition.expr}) {`,
               ...indentBlock(identationLevel, [

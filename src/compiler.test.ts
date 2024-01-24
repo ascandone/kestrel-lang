@@ -249,6 +249,25 @@ test("tail position if", () => {
 `);
 });
 
+test("let expr inside if condition", () => {
+  const out = compileSrc(`
+    let x = if { let a = 0; a == 1 } {
+        "a"
+      } else {
+        "b"
+      }
+  `);
+
+  expect(out).toEqual(`const x$a = 0;
+let x;
+if (x$a == 1) {
+  x = "a";
+} else {
+  x = "b";
+}
+`);
+});
+
 test("eval if", () => {
   const out = compileSrc(`
     let is_zero = fn n {
