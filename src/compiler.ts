@@ -31,21 +31,26 @@ class Compiler {
         };
 
       case "application": {
-        infixAppl: if (expr.caller.type === "identifier") {
-          const prec = precTable[expr.caller.name];
-          if (prec === undefined) {
-            break infixAppl;
+        if (
+          expr.caller.type === "identifier" &&
+          expr.caller.name in precTable
+        ) {
+          const prec = precTable[expr.caller.name]!;
+          const [l, r] = expr.args;
+          const lC = this.compileExpr(l!, scope);
+          const rC = this.compileExpr(r!, scope);
+
+          if (lC.statements.length !== 0 || rC.statements.length !== 0) {
+            throw new Error(
+              "[TODO] complex values of infix expressions are not handled yet",
+            );
           }
 
-          const [l, r] = expr.args;
-          const lC = this.compileExpr(l!, scope).return;
-          const rC = this.compileExpr(r!, scope).return;
-
           const precLeft = getInfixPrec(l!) ?? Infinity;
-          const lCWithParens = precLeft < prec ? `(${lC})` : lC;
+          const lCWithParens = precLeft < prec ? `(${lC.return})` : lC.return;
           return {
             statements: [],
-            return: `${lCWithParens} ${expr.caller.name} ${rC}`,
+            return: `${lCWithParens} ${expr.caller.name} ${rC.return}`,
           };
         }
 
@@ -55,11 +60,16 @@ class Compiler {
           );
         }
 
+        const caller = this.compileExpr(expr.caller, scope);
+        if (caller.statements.length !== 0) {
+          throw new Error("[TODO] complex caller not handled yet");
+        }
+
         const argsC = expr.args.map((arg) => this.compileExpr(arg, scope));
         const args = argsC.map((a) => a.return).join(", ");
         return {
           statements: argsC.flatMap((a) => a.statements),
-          return: `${expr.caller.name}(${args})`,
+          return: `${caller.return}(${args})`,
         };
       }
 

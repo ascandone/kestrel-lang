@@ -179,14 +179,30 @@ test("let inside scope", () => {
 
 test("let inside arg of a function", () => {
   const out = compileSrc(`
+  let f = 0
   let a = f({
     let x = 0;
     x
   })
 `);
 
-  expect(out).toEqual(`const a$x = 0;
+  expect(out).toEqual(`const f = 0;
+
+const a$x = 0;
 const a = f(a$x);
+`);
+});
+
+test("function with a scoped identified as caller", () => {
+  const out = compileSrc(`
+  let x = {
+    let f = 0;
+    f()
+  }
+`);
+
+  expect(out).toEqual(`const x$f = 0;
+const x = x$f();
 `);
 });
 
