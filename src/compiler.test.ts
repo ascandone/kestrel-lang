@@ -148,7 +148,8 @@ test("toplevel fn without params", () => {
 
   expect(out).toEqual(`function f() {
   return 42;
-}`);
+}
+`);
 });
 
 test("toplevel fn with params", () => {
@@ -158,7 +159,8 @@ test("toplevel fn with params", () => {
 
   expect(out).toEqual(`function f(x, y) {
   return y;
-}`);
+}
+`);
 });
 
 test("let inside scope", () => {
@@ -174,7 +176,8 @@ test("let inside scope", () => {
   const x = 0;
   const y = 1;
   return x;
-}`);
+}
+`);
 });
 
 test("let inside arg of a function", () => {

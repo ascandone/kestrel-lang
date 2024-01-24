@@ -1,6 +1,8 @@
 import { ConstLiteral, Expr, Program } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 
+const UNREACHABLE = "<UNREACHABLE>";
+
 type CompileExprResult = {
   return: string;
   statements: string[];
@@ -80,7 +82,7 @@ class Compiler {
       case "identifier":
         const lookup = scope[expr.name];
         if (lookup === undefined) {
-          throw new Error("[unreachable] undefined identifier");
+          throw new Error(`[unreachable] undefined identifier (${expr.name})`);
         }
         return {
           statements: [],
@@ -136,10 +138,8 @@ class Compiler {
 
           this.scope = backupScope;
           return {
-            statements: [],
-            return: `function ${name}(${params}) {
-${fnBody}
-}`,
+            statements: [`function ${name}(${params}) {`, ...fnBody, `}`],
+            return: UNREACHABLE,
           };
         }
 
@@ -158,11 +158,17 @@ ${fnBody}
         return {
           statements: [
             `let ${tempIdent};`,
-            `if ${condition.return} {
-${indentBlock(identationLevel, [...thenBlock.statements, `${tempIdent} = ${thenBlock.return};`])}
-} else {
-${indentBlock(identationLevel, [...elseBlock.statements, `${tempIdent} = ${elseBlock.return};`])}
-}`,
+            `if ${condition.return} {`,
+            ...indentBlock(identationLevel, [
+              ...thenBlock.statements,
+              `${tempIdent} = ${thenBlock.return};`,
+            ]),
+            `} else {`,
+            ...indentBlock(identationLevel, [
+              ...elseBlock.statements,
+              `${tempIdent} = ${elseBlock.return};`,
+            ]),
+            `}`,
           ],
           return: tempIdent,
         };
@@ -182,7 +188,7 @@ ${indentBlock(identationLevel, [...elseBlock.statements, `${tempIdent} = ${elseB
 
       const expr =
         decl.value.type === "fn"
-          ? compiledValue.return
+          ? ""
           : `const ${decl.binding.name} = ${compiledValue.return};\n`;
 
       decls.push(...compiledValue.statements, expr);
@@ -233,5 +239,5 @@ function indent(level: number, s: string): string {
 }
 
 function indentBlock(level: number, lines: string[]): string[] {
-  return lines.map((line) => indent(level, line)).join("\n");
+  return lines.map((line) => indent(level, line));
 }
