@@ -49,16 +49,18 @@ class Compiler {
           };
         }
 
-        if (expr.caller.type === "identifier") {
-          const argsC = expr.args.map((arg) => this.compileExpr(arg, scope));
-          const args = argsC.map((a) => a.return).join(", ");
-          return {
-            statements: argsC.flatMap((a) => a.statements),
-            return: `${expr.caller.name}(${args})`,
-          };
+        if (expr.caller.type !== "identifier") {
+          throw new Error(
+            `[TODO] ${expr.type} as a caller is not supported yet`,
+          );
         }
 
-        throw new Error("TODO handle: " + expr.type);
+        const argsC = expr.args.map((arg) => this.compileExpr(arg, scope));
+        const args = argsC.map((a) => a.return).join(", ");
+        return {
+          statements: argsC.flatMap((a) => a.statements),
+          return: `${expr.caller.name}(${args})`,
+        };
       }
 
       case "identifier":
