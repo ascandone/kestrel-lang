@@ -1,10 +1,8 @@
 import { ConstLiteral, Expr, Program } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 
-const UNREACHABLE = "<UNREACHABLE>";
-
 type CompileExprResult = {
-  return: string;
+  expr: string;
   statements: string[];
 };
 
@@ -12,32 +10,9 @@ type Scope = Record<string, string>;
 
 const IDENT_CHAR = "  ";
 
-type Action =
+type CompilationMode =
   | { type: "declare_var"; name: string }
-  | { type: "return" }
-  | { type: "expr" };
-
-function wrapExpr(e: string, action: Action, statements: string[] = []) {
-  switch (action.type) {
-    case "declare_var":
-      return {
-        statements: [...statements, `const ${action.name} = ${e};`],
-        return: UNREACHABLE,
-      };
-
-    case "return":
-      return {
-        statements: [...statements, `return ${e};`],
-        return: UNREACHABLE,
-      };
-
-    case "expr":
-      return {
-        statements,
-        return: e,
-      };
-  }
-}
+  | { type: "return" };
 
 class Compiler {
   private genId = 0;
@@ -59,26 +34,35 @@ class Compiler {
     return [...this.scope].join("$");
   }
 
-  compileExpr(
-    expr: Expr<TypeMeta>,
-    action: Action,
+  compileAsExpr(
+    src: Expr<TypeMeta>,
+    as: CompilationMode,
     scope: Scope,
   ): CompileExprResult {
-    switch (expr.type) {
-      case "constant": {
-        const s = constToString(expr.value);
-        return wrapExpr(s, action);
+    switch (src.type) {
+      case "constant":
+        return {
+          statements: [],
+          expr: constToString(src.value),
+        };
+
+      case "identifier": {
+        const lookup = scope[src.name];
+        if (lookup === undefined) {
+          throw new Error(`[unreachable] undefined identifier (${src.name})`);
+        }
+        return {
+          statements: [],
+          expr: lookup,
+        };
       }
 
       case "application": {
-        if (
-          expr.caller.type === "identifier" &&
-          expr.caller.name in precTable
-        ) {
-          const prec = precTable[expr.caller.name]!;
-          const [l, r] = expr.args;
-          const lC = this.compileExpr(l!, { type: "expr" }, scope);
-          const rC = this.compileExpr(r!, { type: "expr" }, scope);
+        if (src.caller.type === "identifier" && src.caller.name in precTable) {
+          const prec = precTable[src.caller.name]!;
+          const [l, r] = src.args;
+          const lC = this.compileAsExpr(l!, as, scope);
+          const rC = this.compileAsExpr(r!, as, scope);
 
           if (lC.statements.length !== 0 || rC.statements.length !== 0) {
             throw new Error(
@@ -87,63 +71,84 @@ class Compiler {
           }
 
           const precLeft = getInfixPrec(l!) ?? Infinity;
-          const lCWithParens = precLeft < prec ? `(${lC.return})` : lC.return;
+          const lCWithParens = precLeft < prec ? `(${lC.expr})` : lC.expr;
 
-          return wrapExpr(
-            `${lCWithParens} ${expr.caller.name} ${rC.return}`,
-            action,
-          );
+          return {
+            statements: [],
+            expr: `${lCWithParens} ${src.caller.name} ${rC.expr}`,
+          };
         }
 
-        if (expr.caller.type !== "identifier") {
+        if (src.caller.type !== "identifier") {
           throw new Error(
-            `[TODO] ${expr.type} as a caller is not supported yet`,
+            `[TODO] ${src.type} as a caller is not supported yet`,
           );
         }
 
-        const caller = this.compileExpr(expr.caller, { type: "expr" }, scope);
+        const caller = this.compileAsExpr(src.caller, as, scope);
         if (caller.statements.length !== 0) {
           throw new Error("[TODO] complex caller not handled yet");
         }
 
-        const argsC = expr.args.map((arg) =>
-          this.compileExpr(arg, { type: "expr" }, scope),
-        );
-        const args = argsC.map((a) => a.return).join(", ");
-        return wrapExpr(
-          `${caller.return}(${args})`,
-          action,
-          argsC.flatMap((a) => a.statements),
-        );
+        const argsC = src.args.map((arg) => this.compileAsExpr(arg, as, scope));
+        const args = argsC.map((a) => a.expr).join(", ");
+
+        return {
+          statements: argsC.flatMap((a) => a.statements),
+          expr: `${caller.expr}(${args})`,
+        };
       }
 
-      case "identifier":
-        const lookup = scope[expr.name];
-        if (lookup === undefined) {
-          throw new Error(`[unreachable] undefined identifier (${expr.name})`);
-        }
-        return wrapExpr(lookup, action);
-
       case "let": {
-        const scopedBinding = this.scopedVar(expr.binding.name);
+        const scopedBinding = this.scopedVar(src.binding.name);
 
-        this.enterScope(expr.binding.name);
-        const valueC = this.compileExpr(
-          expr.value,
+        this.enterScope(src.binding.name);
+        const valueC = this.compileAsStatements(
+          src.value,
           { type: "declare_var", name: scopedBinding },
           scope,
         );
         this.exitScope();
 
-        const bodyC = this.compileExpr(expr.body, action, {
+        const bodyC = this.compileAsExpr(src.body, as, {
           ...scope,
-          [expr.binding.name]: scopedBinding,
+          [src.binding.name]: scopedBinding,
         });
 
+        // TODO expr: scopedBinding expr
+
         return {
-          statements: [...valueC.statements, ...bodyC.statements],
-          return: scopedBinding,
+          statements: [...valueC, ...bodyC.statements],
+          expr: bodyC.expr,
         };
+      }
+
+      case "if":
+      case "fn":
+      case "match":
+      default:
+        throw new Error("TODO not hanlding: " + src.type);
+    }
+  }
+
+  compileAsStatements(
+    src: Expr<TypeMeta>,
+    as: CompilationMode,
+    scope: Scope,
+  ): string[] {
+    switch (src.type) {
+      case "application":
+      case "identifier":
+      case "let":
+      case "constant": {
+        const { statements, expr } = this.compileAsExpr(src, as, scope);
+        switch (as.type) {
+          case "declare_var":
+            return [...statements, `const ${as.name} = ${expr};`];
+
+          case "return":
+            return [...statements, `return ${expr};`];
+        }
       }
 
       case "fn": {
@@ -151,14 +156,14 @@ class Compiler {
         const name = this.caller();
         this.scope = [];
 
-        const params = expr.params.map((p) => p.name).join(", ");
+        const params = src.params.map((p) => p.name).join(", ");
         const paramsScope = Object.fromEntries(
-          expr.params.map((p) => [p.name, p.name]),
+          src.params.map((p) => [p.name, p.name]),
         );
 
         // TODO outer scope
-        const ret = this.compileExpr(
-          expr.body,
+        const ret = this.compileAsStatements(
+          src.body,
           { type: "return" },
           {
             ...paramsScope,
@@ -166,90 +171,64 @@ class Compiler {
         );
 
         const identationLevel = 1;
-        const fnBody = indentBlock(identationLevel, [...ret.statements]);
+        const fnBody = indentBlock(identationLevel, ret);
 
         this.scope = backupScope;
-        return {
-          statements: [`function ${name}(${params}) {`, ...fnBody, `}`],
-          return: "",
-        };
+        return [`function ${name}(${params}) {`, ...fnBody, `}`];
       }
 
       case "if": {
         const identationLevel = 1;
 
-        const condition = this.compileExpr(
-          expr.condition,
-          { type: "expr" },
-          scope,
-        );
+        const condition = this.compileAsExpr(src.condition, as, scope);
 
-        switch (action.type) {
-          case "expr": {
-            const tempIdent = this.getUniqueId();
-            throw new Error("[TODO] not yet supported: expr if");
-          }
-
+        switch (as.type) {
           case "return": {
-            const thenBlock = this.compileExpr(
-              expr.then,
+            const thenBlock = this.compileAsStatements(
+              src.then,
               { type: "return" },
               scope,
             );
 
-            const elseBlock = this.compileExpr(
-              expr.else,
+            const elseBlock = this.compileAsStatements(
+              src.else,
               { type: "return" },
               scope,
             );
 
-            return {
-              statements: [
-                `if (${condition.return}) {`,
-                ...indentBlock(identationLevel, thenBlock.statements),
-                `} else {`,
-                ...indentBlock(identationLevel, elseBlock.statements),
-                `}`,
-              ],
-              return: "",
-            };
+            return [
+              `if (${condition.expr}) {`,
+              ...indentBlock(identationLevel, thenBlock),
+              `} else {`,
+              ...indentBlock(identationLevel, elseBlock),
+              `}`,
+            ];
           }
 
           case "declare_var": {
-            const thenBlock = this.compileExpr(
-              expr.then,
-              { type: "expr" },
-              scope,
-            );
-            const elseBlock = this.compileExpr(
-              expr.else,
-              { type: "expr" },
-              scope,
-            );
+            const thenBlock = this.compileAsExpr(src.then, as, scope);
+            const elseBlock = this.compileAsExpr(src.else, as, scope);
 
-            return {
-              statements: [
-                `let ${action.name};`,
-                `if (${condition.return}) {`,
-                ...indentBlock(identationLevel, [
-                  ...thenBlock.statements,
-                  `${action.name} = ${thenBlock.return};`,
-                ]),
-                `} else {`,
-                ...indentBlock(identationLevel, [
-                  ...elseBlock.statements,
-                  `${action.name} = ${elseBlock.return};`,
-                ]),
-                `}`,
-              ],
-              return: "",
-            };
+            return [
+              `let ${as.name};`,
+              `if (${condition.expr}) {`,
+              ...indentBlock(identationLevel, [
+                ...thenBlock.statements,
+                `${as.name} = ${thenBlock.expr};`,
+              ]),
+              `} else {`,
+              ...indentBlock(identationLevel, [
+                ...elseBlock.statements,
+                `${as.name} = ${elseBlock.expr};`,
+              ]),
+              `}`,
+            ];
           }
         }
       }
 
       case "match":
-        throw new Error("TODO handle: " + expr.type);
+        throw new Error("TODO handle: " + src.type);
     }
   }
 
@@ -258,13 +237,13 @@ class Compiler {
     const decls: string[] = [];
     for (const decl of src.declarations) {
       this.enterScope(decl.binding.name);
-      const compiledValue = this.compileExpr(
+      const statements = this.compileAsStatements(
         decl.value,
         { type: "declare_var", name: decl.binding.name },
         scope,
       );
 
-      decls.push(...compiledValue.statements, "");
+      decls.push(...statements, "");
       scope[decl.binding.name] = decl.binding.name;
       this.exitScope();
     }
@@ -310,10 +289,6 @@ function getInfixPrec(expr: Expr<unknown>): number | undefined {
   }
 
   return precTable[expr.caller.name];
-}
-
-function makeIndentation(level: number): string {
-  return Array.from({ length: level }, () => IDENT_CHAR).join("");
 }
 
 function indent(level: number, s: string): string {
