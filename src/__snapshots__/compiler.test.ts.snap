@@ -40,6 +40,13 @@ const x = x$local + 1;
 "
 `;
 
+exports[`let expressions with multiple vars 1`] = `
+"const x$local1 = 0;
+const x$local2 = 1;
+const x = x$local1 + x$local2;
+"
+`;
+
 exports[`precedence between * and + (2) 1`] = `
 "const x = 1 + 2 * 3;
 "

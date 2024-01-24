@@ -81,6 +81,24 @@ test("let expressions", () => {
   expect(out).toMatchSnapshot();
 });
 
+test("let expressions with multiple vars", () => {
+  const out = compileSrc(`
+    let x = {
+      let local1 = 0;
+      let local2 = 1;
+      local1 + local2
+    }
+  `);
+
+  /* Should compile as:
+  const x$local1 = 0;
+  const x$local2 = 1;
+  const x = x$local1 + x$local2;
+  */
+
+  expect(out).toMatchSnapshot();
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

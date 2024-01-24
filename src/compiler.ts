@@ -71,21 +71,20 @@ class Compiler {
         };
 
       case "let": {
-        // TODO append current path
         const scopedBinding = this.scopedVar(expr.binding.name);
 
         const valueC = this.compileExpr(expr.value, scope);
-
-        console.log(valueC);
 
         const bodyC = this.compileExpr(expr.body, {
           ...scope,
           [expr.binding.name]: scopedBinding,
         });
 
-        // TODO handle body.statements
         return {
-          statements: [`const ${scopedBinding} = ${valueC.return};`],
+          statements: [
+            `const ${scopedBinding} = ${valueC.return};`,
+            ...bodyC.statements,
+          ],
           return: bodyC.return,
         };
       }
