@@ -151,6 +151,16 @@ test("toplevel fn without params", () => {
 }`);
 });
 
+test("toplevel fn with params", () => {
+  const out = compileSrc(`
+  let f = fn x, y { y }
+`);
+
+  expect(out).toEqual(`function f(x, y) {
+  return y;
+}`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

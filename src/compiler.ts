@@ -97,12 +97,20 @@ class Compiler {
         if (isTopLevel) {
           const [name] = this.scope;
 
-          // TODO scope
-          const ret = this.compileExpr(expr.body, {});
+          const params = expr.params.map((p) => p.name).join(", ");
+
+          const paramsScope = Object.fromEntries(
+            expr.params.map((p) => [p.name, p.name]),
+          );
+
+          // TODO outer scope
+          const ret = this.compileExpr(expr.body, {
+            ...paramsScope,
+          });
 
           return {
             statements: [],
-            return: `function ${name}() {
+            return: `function ${name}(${params}) {
   return ${ret.return};
 }`,
           };
