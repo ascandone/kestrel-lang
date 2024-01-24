@@ -229,6 +229,23 @@ const x = $temp__0;
 `);
 });
 
+test("eval if", () => {
+  const out = compileSrc(`
+    let is_zero = fn n {
+      if n == 0 {
+        "yes"
+      } else {
+        "nope"
+      }
+    }
+  `);
+
+  const isZero = new Function(`${out}; return is_zero`)();
+
+  expect(isZero(0)).toEqual("yes");
+  expect(isZero(42)).toEqual("nope");
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);
