@@ -1453,6 +1453,39 @@ exports[`parse nonempty strings 1`] = `
 }
 `;
 
+exports[`parse strings with newlines 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "span": [
+        0,
+        15,
+      ],
+      "value": {
+        "span": [
+          8,
+          15,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "string",
+          "value": "ab
+c",
+        },
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse tuple 1`] = `
 {
   "declarations": [

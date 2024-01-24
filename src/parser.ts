@@ -112,7 +112,7 @@ semantics.addOperation<[MatchExpr, Expr<TypeMeta>]>("matchClause()", {
 
 semantics.addOperation<string>("string()", {
   string(_lDel, s, _rDel) {
-    return s.sourceString;
+    return JSON.parse(this.sourceString);
   },
 });
 
