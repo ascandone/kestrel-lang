@@ -1,10 +1,7 @@
 import { ConstLiteral, Expr, Program } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 
-type CompileExprResult = {
-  expr: string;
-  statements: string[];
-};
+type CompileExprResult = [statements: string[], expr: string];
 
 type Scope = Record<string, string>;
 
@@ -41,42 +38,33 @@ class Compiler {
   ): CompileExprResult {
     switch (src.type) {
       case "constant":
-        return {
-          statements: [],
-          expr: constToString(src.value),
-        };
+        return [[], constToString(src.value)];
 
       case "identifier": {
         const lookup = scope[src.name];
         if (lookup === undefined) {
           throw new Error(`[unreachable] undefined identifier (${src.name})`);
         }
-        return {
-          statements: [],
-          expr: lookup,
-        };
+        return [[], lookup];
       }
 
       case "application": {
         if (src.caller.type === "identifier" && src.caller.name in precTable) {
           const prec = precTable[src.caller.name]!;
           const [l, r] = src.args;
-          const lC = this.compileAsExpr(l!, as, scope);
-          const rC = this.compileAsExpr(r!, as, scope);
+          const [lStatements, lExpr] = this.compileAsExpr(l!, as, scope);
+          const [rStatements, rExpr] = this.compileAsExpr(r!, as, scope);
 
-          if (lC.statements.length !== 0 || rC.statements.length !== 0) {
+          if (lStatements.length !== 0 || rStatements.length !== 0) {
             throw new Error(
               "[TODO] complex values of infix expressions are not handled yet",
             );
           }
 
           const precLeft = getInfixPrec(l!) ?? Infinity;
-          const lCWithParens = precLeft < prec ? `(${lC.expr})` : lC.expr;
+          const lCWithParens = precLeft < prec ? `(${lExpr})` : lExpr;
 
-          return {
-            statements: [],
-            expr: `${lCWithParens} ${src.caller.name} ${rC.expr}`,
-          };
+          return [[], `${lCWithParens} ${src.caller.name} ${rExpr}`];
         }
 
         if (src.caller.type !== "identifier") {
@@ -85,18 +73,23 @@ class Compiler {
           );
         }
 
-        const caller = this.compileAsExpr(src.caller, as, scope);
-        if (caller.statements.length !== 0) {
+        const [callerStatemens, callerExpr] = this.compileAsExpr(
+          src.caller,
+          as,
+          scope,
+        );
+        if (callerStatemens.length !== 0) {
           throw new Error("[TODO] complex caller not handled yet");
         }
 
-        const argsC = src.args.map((arg) => this.compileAsExpr(arg, as, scope));
-        const args = argsC.map((a) => a.expr).join(", ");
-
-        return {
-          statements: argsC.flatMap((a) => a.statements),
-          expr: `${caller.expr}(${args})`,
-        };
+        const statements: string[] = [];
+        const args: string[] = [];
+        for (const arg of src.args) {
+          const [argStatements, argExpr] = this.compileAsExpr(arg, as, scope);
+          args.push(argExpr);
+          statements.push(...argStatements);
+        }
+        return [statements, `${callerExpr}(${args.join(", ")})`];
       }
 
       case "let": {
@@ -110,17 +103,12 @@ class Compiler {
         );
         this.exitScope();
 
-        const bodyC = this.compileAsExpr(src.body, as, {
+        const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body, as, {
           ...scope,
           [src.binding.name]: scopedBinding,
         });
 
-        // TODO expr: scopedBinding expr
-
-        return {
-          statements: [...valueC, ...bodyC.statements],
-          expr: bodyC.expr,
-        };
+        return [[...valueC, ...bodyStatements], bodyExpr];
       }
 
       case "if":
@@ -141,7 +129,7 @@ class Compiler {
       case "identifier":
       case "let":
       case "constant": {
-        const { statements, expr } = this.compileAsExpr(src, as, scope);
+        const [statements, expr] = this.compileAsExpr(src, as, scope);
         switch (as.type) {
           case "declare_var":
             return [...statements, `const ${as.name} = ${expr};`];
@@ -180,7 +168,11 @@ class Compiler {
       case "if": {
         const identationLevel = 1;
 
-        const condition = this.compileAsExpr(src.condition, as, scope);
+        const [conditionStatements, conditionExpr] = this.compileAsExpr(
+          src.condition,
+          as,
+          scope,
+        );
 
         switch (as.type) {
           case "return": {
@@ -197,8 +189,8 @@ class Compiler {
             );
 
             return [
-              ...condition.statements,
-              `if (${condition.expr}) {`,
+              ...conditionStatements,
+              `if (${conditionExpr}) {`,
               ...indentBlock(identationLevel, thenBlock),
               `} else {`,
               ...indentBlock(identationLevel, elseBlock),
@@ -207,21 +199,29 @@ class Compiler {
           }
 
           case "declare_var": {
-            const thenBlock = this.compileAsExpr(src.then, as, scope);
-            const elseBlock = this.compileAsExpr(src.else, as, scope);
+            const [thenStatements, thenExpr] = this.compileAsExpr(
+              src.then,
+              as,
+              scope,
+            );
+            const [elseStatements, elseExpr] = this.compileAsExpr(
+              src.else,
+              as,
+              scope,
+            );
 
             return [
-              ...condition.statements,
+              ...conditionStatements,
               `let ${as.name};`,
-              `if (${condition.expr}) {`,
+              `if (${conditionExpr}) {`,
               ...indentBlock(identationLevel, [
-                ...thenBlock.statements,
-                `${as.name} = ${thenBlock.expr};`,
+                ...thenStatements,
+                `${as.name} = ${thenExpr};`,
               ]),
               `} else {`,
               ...indentBlock(identationLevel, [
-                ...elseBlock.statements,
-                `${as.name} = ${elseBlock.expr};`,
+                ...elseStatements,
+                `${as.name} = ${elseExpr};`,
               ]),
               `}`,
             ];
