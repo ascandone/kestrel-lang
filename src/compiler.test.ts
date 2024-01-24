@@ -5,32 +5,32 @@ import { unsafeParse } from "./parser";
 
 test("compile int constants", () => {
   const out = compileSrc(`let x = 42`);
-  expect(out).toEqual("const x = 42;");
+  expect(out).toMatchSnapshot();
 });
 
 test("compile float constants", () => {
   const out = compileSrc(`let x = "abc"`);
-  expect(out).toEqual(`const x = "abc";`);
+  expect(out).toMatchSnapshot();
 });
 
 test("compile + of ints", () => {
   const out = compileSrc(`let x = 1 + 2`);
-  expect(out).toEqual(`const x = 1 + 2;`);
+  expect(out).toMatchSnapshot();
 });
 
 test("compile * of ints", () => {
   const out = compileSrc(`let x = 1 * 2`);
-  expect(out).toEqual(`const x = 1 * 2;`);
+  expect(out).toMatchSnapshot();
 });
 
 test("precedence between * and +", () => {
   const out = compileSrc(`let x = (1 + 2) * 3`);
-  expect(out).toEqual(`const x = (1 + 2) * 3;`);
+  expect(out).toMatchSnapshot();
 });
 
 test("precedence between * and + (2)", () => {
   const out = compileSrc(`let x = 1 + 2 * 3`);
-  expect(out).toEqual(`const x = 1 + 2 * 3;`);
+  expect(out).toMatchSnapshot();
 });
 
 test("math expr should have same semantics as js", () => {
@@ -46,7 +46,7 @@ test("refer to previously defined idents", () => {
     let x = 0
     let y = x
   `);
-  expect(out).toEqual(`const x = 0;\nconst y = x;`);
+  expect(out).toMatchSnapshot();
 });
 
 test("function calls with no args", () => {
@@ -54,7 +54,7 @@ test("function calls with no args", () => {
     let f = 0
     let y = f()
   `);
-  expect(out).toEqual(`const f = 0;\nconst y = f();`);
+  expect(out).toMatchSnapshot();
 });
 
 test("function calls with args", () => {
@@ -62,7 +62,7 @@ test("function calls with args", () => {
     let f = 0
     let y = f(1, 2)
   `);
-  expect(out).toEqual(`const f = 0;\nconst y = f(1, 2);`);
+  expect(out).toMatchSnapshot();
 });
 
 function compileSrc(src: string) {

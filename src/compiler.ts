@@ -53,7 +53,7 @@ class Compiler {
       const cDecl = this.compileDecl(decl);
       decls.push(cDecl);
     }
-    return decls.join("\n");
+    return decls.join("\n\n");
   }
 }
 
