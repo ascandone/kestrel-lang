@@ -246,6 +246,22 @@ test("eval if", () => {
   expect(isZero(42)).toEqual("nope");
 });
 
+test("fn inside let", () => {
+  const out = compileSrc(`
+    let x = {
+      let f = fn { 0 };
+      f(1)
+    }
+`);
+
+  expect(out).toEqual(`function x$f() {
+  return 0;
+}
+
+const x = x$f(1);
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

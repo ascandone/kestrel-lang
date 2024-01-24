@@ -28,6 +28,10 @@ class Compiler {
     return [...this.scope, name].join("$");
   }
 
+  private caller() {
+    return [...this.scope].join("$");
+  }
+
   compileExpr(expr: Expr<TypeMeta>, scope: Scope): CompileExprResult {
     switch (expr.type) {
       case "constant":
@@ -104,7 +108,9 @@ class Compiler {
         return {
           statements: [
             ...valueC.statements,
-            `const ${scopedBinding} = ${valueC.return};`,
+            expr.value.type === "fn"
+              ? ""
+              : `const ${scopedBinding} = ${valueC.return};`,
             ...bodyC.statements,
           ],
           return: bodyC.return,
@@ -113,37 +119,30 @@ class Compiler {
 
       case "fn": {
         const backupScope = this.scope;
-        const isTopLevel = this.scope.length === 1;
-        const [name] = this.scope;
-
+        const name = this.caller();
         this.scope = [];
-        if (isTopLevel) {
-          const params = expr.params.map((p) => p.name).join(", ");
 
-          const paramsScope = Object.fromEntries(
-            expr.params.map((p) => [p.name, p.name]),
-          );
+        const params = expr.params.map((p) => p.name).join(", ");
+        const paramsScope = Object.fromEntries(
+          expr.params.map((p) => [p.name, p.name]),
+        );
 
-          // TODO outer scope
-          const ret = this.compileExpr(expr.body, {
-            ...paramsScope,
-          });
+        // TODO outer scope
+        const ret = this.compileExpr(expr.body, {
+          ...paramsScope,
+        });
 
-          const identationLevel = 1;
+        const identationLevel = 1;
+        const fnBody = indentBlock(identationLevel, [
+          ...ret.statements,
+          `return ${ret.return};`,
+        ]);
 
-          const fnBody = indentBlock(identationLevel, [
-            ...ret.statements,
-            `return ${ret.return};`,
-          ]);
-
-          this.scope = backupScope;
-          return {
-            statements: [`function ${name}(${params}) {`, ...fnBody, `}`],
-            return: UNREACHABLE,
-          };
-        }
-
-        throw new Error("[TODO] handle fns that are not top level");
+        this.scope = backupScope;
+        return {
+          statements: [`function ${name}(${params}) {`, ...fnBody, `}`],
+          return: UNREACHABLE,
+        };
       }
 
       case "if": {
