@@ -12,6 +12,33 @@ type Scope = Record<string, string>;
 
 const IDENT_CHAR = "  ";
 
+type Action =
+  | { type: "declare_var"; name: string }
+  | { type: "return" }
+  | { type: "expr" };
+
+function wrapExpr(e: string, action: Action, statements: string[] = []) {
+  switch (action.type) {
+    case "declare_var":
+      return {
+        statements: [...statements, `const ${action.name} = ${e};`],
+        return: UNREACHABLE,
+      };
+
+    case "return":
+      return {
+        statements: [...statements, `return ${e};`],
+        return: UNREACHABLE,
+      };
+
+    case "expr":
+      return {
+        statements,
+        return: e,
+      };
+  }
+}
+
 class Compiler {
   private genId = 0;
   private getUniqueId() {
@@ -32,13 +59,16 @@ class Compiler {
     return [...this.scope].join("$");
   }
 
-  compileExpr(expr: Expr<TypeMeta>, scope: Scope): CompileExprResult {
+  compileExpr(
+    expr: Expr<TypeMeta>,
+    action: Action,
+    scope: Scope,
+  ): CompileExprResult {
     switch (expr.type) {
-      case "constant":
-        return {
-          statements: [],
-          return: constToString(expr.value),
-        };
+      case "constant": {
+        const s = constToString(expr.value);
+        return wrapExpr(s, action);
+      }
 
       case "application": {
         if (
@@ -47,8 +77,8 @@ class Compiler {
         ) {
           const prec = precTable[expr.caller.name]!;
           const [l, r] = expr.args;
-          const lC = this.compileExpr(l!, scope);
-          const rC = this.compileExpr(r!, scope);
+          const lC = this.compileExpr(l!, { type: "expr" }, scope);
+          const rC = this.compileExpr(r!, { type: "expr" }, scope);
 
           if (lC.statements.length !== 0 || rC.statements.length !== 0) {
             throw new Error(
@@ -58,10 +88,11 @@ class Compiler {
 
           const precLeft = getInfixPrec(l!) ?? Infinity;
           const lCWithParens = precLeft < prec ? `(${lC.return})` : lC.return;
-          return {
-            statements: [],
-            return: `${lCWithParens} ${expr.caller.name} ${rC.return}`,
-          };
+
+          return wrapExpr(
+            `${lCWithParens} ${expr.caller.name} ${rC.return}`,
+            action,
+          );
         }
 
         if (expr.caller.type !== "identifier") {
@@ -70,17 +101,20 @@ class Compiler {
           );
         }
 
-        const caller = this.compileExpr(expr.caller, scope);
+        const caller = this.compileExpr(expr.caller, { type: "expr" }, scope);
         if (caller.statements.length !== 0) {
           throw new Error("[TODO] complex caller not handled yet");
         }
 
-        const argsC = expr.args.map((arg) => this.compileExpr(arg, scope));
+        const argsC = expr.args.map((arg) =>
+          this.compileExpr(arg, { type: "expr" }, scope),
+        );
         const args = argsC.map((a) => a.return).join(", ");
-        return {
-          statements: argsC.flatMap((a) => a.statements),
-          return: `${caller.return}(${args})`,
-        };
+        return wrapExpr(
+          `${caller.return}(${args})`,
+          action,
+          argsC.flatMap((a) => a.statements),
+        );
       }
 
       case "identifier":
@@ -88,32 +122,27 @@ class Compiler {
         if (lookup === undefined) {
           throw new Error(`[unreachable] undefined identifier (${expr.name})`);
         }
-        return {
-          statements: [],
-          return: lookup,
-        };
+        return wrapExpr(lookup, action);
 
       case "let": {
         const scopedBinding = this.scopedVar(expr.binding.name);
 
         this.enterScope(expr.binding.name);
-        const valueC = this.compileExpr(expr.value, scope);
+        const valueC = this.compileExpr(
+          expr.value,
+          { type: "declare_var", name: scopedBinding },
+          scope,
+        );
         this.exitScope();
 
-        const bodyC = this.compileExpr(expr.body, {
+        const bodyC = this.compileExpr(expr.body, action, {
           ...scope,
           [expr.binding.name]: scopedBinding,
         });
 
         return {
-          statements: [
-            ...valueC.statements,
-            expr.value.type === "fn"
-              ? ""
-              : `const ${scopedBinding} = ${valueC.return};`,
-            ...bodyC.statements,
-          ],
-          return: bodyC.return,
+          statements: [...valueC.statements, ...bodyC.statements],
+          return: scopedBinding,
         };
       }
 
@@ -128,49 +157,95 @@ class Compiler {
         );
 
         // TODO outer scope
-        const ret = this.compileExpr(expr.body, {
-          ...paramsScope,
-        });
+        const ret = this.compileExpr(
+          expr.body,
+          { type: "return" },
+          {
+            ...paramsScope,
+          },
+        );
 
         const identationLevel = 1;
-        const fnBody = indentBlock(identationLevel, [
-          ...ret.statements,
-          `return ${ret.return};`,
-        ]);
+        const fnBody = indentBlock(identationLevel, [...ret.statements]);
 
         this.scope = backupScope;
         return {
           statements: [`function ${name}(${params}) {`, ...fnBody, `}`],
-          return: UNREACHABLE,
+          return: "",
         };
       }
 
       case "if": {
-        const tempIdent = this.getUniqueId();
-        const condition = this.compileExpr(expr.condition, scope);
-
-        const thenBlock = this.compileExpr(expr.then, scope);
-        const elseBlock = this.compileExpr(expr.else, scope);
-
         const identationLevel = 1;
 
-        return {
-          statements: [
-            `let ${tempIdent};`,
-            `if (${condition.return}) {`,
-            ...indentBlock(identationLevel, [
-              ...thenBlock.statements,
-              `${tempIdent} = ${thenBlock.return};`,
-            ]),
-            `} else {`,
-            ...indentBlock(identationLevel, [
-              ...elseBlock.statements,
-              `${tempIdent} = ${elseBlock.return};`,
-            ]),
-            `}`,
-          ],
-          return: tempIdent,
-        };
+        const condition = this.compileExpr(
+          expr.condition,
+          { type: "expr" },
+          scope,
+        );
+
+        switch (action.type) {
+          case "expr": {
+            const tempIdent = this.getUniqueId();
+            throw new Error("[TODO] not yet supported: expr if");
+          }
+
+          case "return": {
+            const thenBlock = this.compileExpr(
+              expr.then,
+              { type: "return" },
+              scope,
+            );
+
+            const elseBlock = this.compileExpr(
+              expr.else,
+              { type: "return" },
+              scope,
+            );
+
+            return {
+              statements: [
+                `if (${condition.return}) {`,
+                ...indentBlock(identationLevel, thenBlock.statements),
+                `} else {`,
+                ...indentBlock(identationLevel, elseBlock.statements),
+                `}`,
+              ],
+              return: "",
+            };
+          }
+
+          case "declare_var": {
+            const thenBlock = this.compileExpr(
+              expr.then,
+              { type: "expr" },
+              scope,
+            );
+            const elseBlock = this.compileExpr(
+              expr.else,
+              { type: "expr" },
+              scope,
+            );
+
+            return {
+              statements: [
+                `let ${action.name};`,
+                `if (${condition.return}) {`,
+                ...indentBlock(identationLevel, [
+                  ...thenBlock.statements,
+                  `${action.name} = ${thenBlock.return};`,
+                ]),
+                `} else {`,
+                ...indentBlock(identationLevel, [
+                  ...elseBlock.statements,
+                  `${action.name} = ${elseBlock.return};`,
+                ]),
+                `}`,
+              ],
+              return: "",
+            };
+          }
+        }
       }
 
       case "match":
@@ -183,14 +258,13 @@ class Compiler {
     const decls: string[] = [];
     for (const decl of src.declarations) {
       this.enterScope(decl.binding.name);
-      const compiledValue = this.compileExpr(decl.value, scope);
+      const compiledValue = this.compileExpr(
+        decl.value,
+        { type: "declare_var", name: decl.binding.name },
+        scope,
+      );
 
-      const expr =
-        decl.value.type === "fn"
-          ? ""
-          : `const ${decl.binding.name} = ${compiledValue.return};\n`;
-
-      decls.push(...compiledValue.statements, expr);
+      decls.push(...compiledValue.statements, "");
       scope[decl.binding.name] = decl.binding.name;
       this.exitScope();
     }

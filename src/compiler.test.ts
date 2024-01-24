@@ -219,13 +219,33 @@ test("if expression", () => {
     }
 `);
 
-  expect(out).toEqual(`let $temp__0;
+  expect(out).toEqual(`let x;
 if (0) {
-  $temp__0 = 1;
+  x = 1;
 } else {
-  $temp__0 = 2;
+  x = 2;
 }
-const x = $temp__0;
+`);
+});
+
+test("tail position if", () => {
+  const out = compileSrc(`
+    let is_zero = fn n {
+      if n == 0 {
+        "yes"
+      } else {
+        "nope"
+      }
+    }
+  `);
+
+  expect(out).toEqual(`function is_zero(n) {
+  if (n == 0) {
+    return "yes";
+  } else {
+    return "nope";
+  }
+}
 `);
 });
 
@@ -257,7 +277,6 @@ test("fn inside let", () => {
   expect(out).toEqual(`function x$f() {
   return 0;
 }
-
 const x = x$f(1);
 `);
 });
