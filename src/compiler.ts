@@ -1,4 +1,4 @@
-import { ConstLiteral, Declaration, Expr, Program } from "./ast";
+import { ConstLiteral, Expr, Program } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 
 type CompileExprResult = {
