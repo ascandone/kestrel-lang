@@ -73,7 +73,9 @@ class Compiler {
       case "let": {
         const scopedBinding = this.scopedVar(expr.binding.name);
 
+        this.enterScope(expr.binding.name);
         const valueC = this.compileExpr(expr.value, scope);
+        this.exitScope();
 
         const bodyC = this.compileExpr(expr.body, {
           ...scope,
@@ -82,6 +84,7 @@ class Compiler {
 
         return {
           statements: [
+            ...valueC.statements,
             `const ${scopedBinding} = ${valueC.return};`,
             ...bodyC.statements,
           ],

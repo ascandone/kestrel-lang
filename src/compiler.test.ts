@@ -5,32 +5,38 @@ import { unsafeParse } from "./parser";
 
 test("compile int constants", () => {
   const out = compileSrc(`let x = 42`);
-  expect(out).toMatchSnapshot();
+  expect(out).toEqual(`const x = 42;
+`);
 });
 
 test("compile float constants", () => {
   const out = compileSrc(`let x = "abc"`);
-  expect(out).toMatchSnapshot();
+  expect(out).toEqual(`const x = "abc";
+`);
 });
 
 test("compile + of ints", () => {
   const out = compileSrc(`let x = 1 + 2`);
-  expect(out).toMatchSnapshot();
+  expect(out).toEqual(`const x = 1 + 2;
+`);
 });
 
 test("compile * of ints", () => {
   const out = compileSrc(`let x = 1 * 2`);
-  expect(out).toMatchSnapshot();
+  expect(out).toEqual(`const x = 1 * 2;
+`);
 });
 
 test("precedence between * and +", () => {
   const out = compileSrc(`let x = (1 + 2) * 3`);
-  expect(out).toMatchSnapshot();
+  expect(out).toEqual(`const x = (1 + 2) * 3;
+`);
 });
 
 test("precedence between * and + (2)", () => {
   const out = compileSrc(`let x = 1 + 2 * 3`);
-  expect(out).toMatchSnapshot();
+  expect(out).toEqual(`const x = 1 + 2 * 3;
+`);
 });
 
 test("math expr should have same semantics as js", () => {
@@ -46,7 +52,10 @@ test("refer to previously defined idents", () => {
     let x = 0
     let y = x
   `);
-  expect(out).toMatchSnapshot();
+  expect(out).toEqual(`const x = 0;
+
+const y = x;
+`);
 });
 
 test("function calls with no args", () => {
@@ -54,7 +63,10 @@ test("function calls with no args", () => {
     let f = 0
     let y = f()
   `);
-  expect(out).toMatchSnapshot();
+  expect(out).toEqual(`const f = 0;
+
+const y = f();
+`);
 });
 
 test("function calls with args", () => {
@@ -62,7 +74,11 @@ test("function calls with args", () => {
     let f = 0
     let y = f(1, 2)
   `);
-  expect(out).toMatchSnapshot();
+
+  expect(out).toEqual(`const f = 0;
+
+const y = f(1, 2);
+`);
 });
 
 test("let expressions", () => {
@@ -73,12 +89,9 @@ test("let expressions", () => {
     }
   `);
 
-  /* Should compile as:
-  const x$local = 0;  
-  const x = x$local + 1
-  */
-
-  expect(out).toMatchSnapshot();
+  expect(out).toEqual(`const x$local = 0;
+const x = x$local + 1;
+`);
 });
 
 test("let expressions with multiple vars", () => {
@@ -90,13 +103,27 @@ test("let expressions with multiple vars", () => {
     }
   `);
 
-  /* Should compile as:
-  const x$local1 = 0;
-  const x$local2 = 1;
-  const x = x$local1 + x$local2;
-  */
+  expect(out).toEqual(`const x$local1 = 0;
+const x$local2 = 1;
+const x = x$local1 + x$local2;
+`);
+});
 
-  expect(out).toMatchSnapshot();
+test("nested let exprs", () => {
+  const out = compileSrc(`
+    let x = {
+      let local = {
+        let nested = 0;
+        nested + 1
+      };
+      local + 2
+    }
+  `);
+
+  expect(out).toEqual(`const x$local$nested = 0;
+const x$local = x$local$nested + 1;
+const x = x$local + 2;
+`);
 });
 
 function compileSrc(src: string) {
