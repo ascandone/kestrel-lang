@@ -1,5 +1,6 @@
 import {
   ConstLiteral,
+  Declaration,
   Expr,
   MatchExpr,
   Program,
@@ -184,45 +185,7 @@ export function typecheck<T extends SpanMeta>(
   }
 
   for (const decl of typedProgram.declarations) {
-    let typeHint: Type<Poly> | undefined;
-    if (decl.typeHint !== undefined) {
-      const th = inferTypeHint(decl.typeHint);
-      typeHint = th;
-      errors.push(
-        ...unifyYieldErrGeneric(
-          decl.typeHint,
-          instantiate(th),
-          decl.binding.$.asType(),
-        ),
-      );
-
-      const err = unboundTypeError<SpanMeta>(
-        decl.typeHint,
-        decl.binding.$.asType(),
-        typesContext,
-      );
-      if (err !== undefined) {
-        errors.push(err);
-      }
-    }
-
-    errors.push(
-      ...typecheckAnnotatedExpr(decl.value, {
-        ...context,
-        [decl.binding.name]: decl.value.$.asType(),
-      }),
-    );
-
-    errors.push(
-      ...unifyYieldErr(
-        decl.value,
-        decl.binding.$.asType(),
-        decl.value.$.asType(),
-      ),
-    );
-
-    context[decl.binding.name] =
-      typeHint ?? generalize(decl.value.$.asType(), context);
+    errors.push(...typecheckDecl(decl, typesContext, context));
   }
 
   return [typedProgram, errors];
@@ -553,7 +516,47 @@ function inferConstant(x: ConstLiteral): Type {
   }
 }
 
-function inferTypeHint(hint: TypeAst): Type<Poly> {
+function* typecheckDecl(
+  decl: Declaration<TypeMeta>,
+  typesContext: TypesPool,
+  /* mut */ context: Context,
+): Generator<TypeError> {
+  let typeHint: Type<Poly> | undefined;
+  if (decl.typeHint !== undefined) {
+    const th = yield* inferTypeHint(decl.typeHint);
+
+    yield* unifyYieldErrGeneric(
+      decl.typeHint,
+      instantiate(th),
+      decl.binding.$.asType(),
+    );
+
+    const err = unboundTypeError<SpanMeta>(
+      decl.typeHint,
+      decl.binding.$.asType(),
+      typesContext,
+    );
+    if (err !== undefined) {
+      yield err;
+    }
+  }
+
+  yield* typecheckAnnotatedExpr(decl.value, {
+    ...context,
+    [decl.binding.name]: decl.value.$.asType(),
+  });
+
+  yield* unifyYieldErr(
+    decl.value,
+    decl.binding.$.asType(),
+    decl.value.$.asType(),
+  );
+
+  context[decl.binding.name] =
+    typeHint ?? generalize(decl.value.$.asType(), context);
+}
+
+function* inferTypeHint(hint: TypeAst): Generator<TypeError, Type<Poly>> {
   switch (hint.type) {
     case "any":
       return {
@@ -565,18 +568,29 @@ function inferTypeHint(hint: TypeAst): Type<Poly> {
       return { type: "quantified", id: hint.ident };
     }
 
-    case "fn":
+    case "fn": {
+      const args: Array<Type<Poly>> = [];
+      for (const arg of hint.args) {
+        args.push(yield* inferTypeHint(arg));
+      }
+
       return {
         type: "fn",
-        args: hint.args.map(inferTypeHint),
-        return: inferTypeHint(hint.return),
+        args,
+        return: yield* inferTypeHint(hint.return),
       };
+    }
 
     case "named":
+      const args: Array<Type<Poly>> = [];
+      for (const arg of hint.args) {
+        args.push(yield* inferTypeHint(arg));
+      }
+
       return {
         type: "named",
         name: hint.name,
-        args: hint.args.map(inferTypeHint),
+        args,
       };
   }
 }
