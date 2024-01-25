@@ -87,9 +87,9 @@ export type TypeDeclaration = SpanMeta & {
   params: Array<{ name: string } & SpanMeta>;
 } & ({ type: "adt"; variants: TypeVariant[] } | { type: "extern" });
 
-export type Program<Meta = {}> = {
+export type Program<TypeMeta = {}> = {
   typeDeclarations: TypeDeclaration[];
-  declarations: Declaration<Meta>[];
+  declarations: Declaration<TypeMeta>[];
 };
 
 export type Span = [startIdx: number, endIdx: number];
