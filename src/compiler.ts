@@ -303,7 +303,24 @@ class Compiler {
       False: "false",
       Nil: "null",
     };
+
     const decls: string[] = [];
+    for (const typeDecl of src.typeDeclarations) {
+      for (const variant of typeDecl.variants) {
+        if (variant.args.length === 0) {
+          scope[variant.name] = `{ type: "${variant.name}" }`;
+        } else {
+          const fnDef = `function ${variant.name}(a1, a2) {
+  return { type: "${variant.name}", a1, a2 };
+}`;
+
+          decls.push(fnDef);
+
+          scope[variant.name] = variant.name;
+        }
+      }
+    }
+
     for (const decl of src.declarations) {
       this.frames.push(new Frame({ type: "let", name: decl.binding.name }));
 

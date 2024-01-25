@@ -442,6 +442,32 @@ test("represent Nil as null", () => {
 `);
 });
 
+test("allow custom types with zero args", () => {
+  const out = compileSrc(`
+    type T { X }
+
+    let x = X
+  `);
+
+  expect(out).toEqual(`const x = { type: "X" };
+`);
+});
+
+// TODO inlining?
+test("allow custom types with two args", () => {
+  const out = compileSrc(`
+    type T { X(Int) }
+
+    let x = X
+  `);
+
+  expect(out).toEqual(`function X(a1, a2) {
+  return { type: "X", a1, a2 };
+}
+const x = X;
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);
