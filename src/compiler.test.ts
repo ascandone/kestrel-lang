@@ -546,6 +546,43 @@ if (x$GEN__0.type === "C") {
 `);
 });
 
+test("pattern matching bool values", () => {
+  const out = compileSrc(`
+  let x = match True {
+    True => 0,
+    False => 1,
+  }
+`);
+
+  expect(out).toEqual(`const x$GEN__0 = true;
+let x;
+if (x$GEN__0) {
+  x = 0;
+} else if (!x$GEN__0) {
+  x = 1;
+} else {
+  throw new Error("[non exhaustive match]")
+}
+`);
+});
+
+test("pattern matching Nil values", () => {
+  const out = compileSrc(`
+  let x = match Nil {
+    Nil => 0,
+  }
+`);
+
+  expect(out).toEqual(`const x$GEN__0 = null;
+let x;
+if (true) {
+  x = 0;
+} else {
+  throw new Error("[non exhaustive match]")
+}
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

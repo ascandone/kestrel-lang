@@ -339,7 +339,7 @@ class Compiler {
         });
 
         return {
-          condition: `${matchingIdent}.type === "${pattern.name}"`,
+          condition: matchCondition(matchingIdent, pattern.name),
           statements: [...statements, `${as.name} = ${expr};`],
         };
       }
@@ -495,5 +495,21 @@ function getVariantImpl({ name, args }: TypeVariant): string {
     return `function ${name}(${argsList}) {
   return { type: "${name}", ${argsList} };
 }`;
+  }
+}
+
+function matchCondition(matchingIdent: string, patternName: string): string {
+  switch (patternName) {
+    case "True":
+      return `${matchingIdent}`;
+
+    case "False":
+      return `!${matchingIdent}`;
+
+    case "Nil":
+      return "true";
+
+    default:
+      return `${matchingIdent}.type === "${patternName}"`;
   }
 }
