@@ -9,11 +9,13 @@
     "gen:parser": "ohm generateBundles --withTypes src/parser/grammar.ohm",
     "test:watch": "vitest",
     "test:run": "vitest --run --coverage",
+    "assets:build": "cp src/Prelude.mrs dist/Prelude.mrs",
     "ts:build": "tsc --project tsconfig.build.json",
     "ts:watch": "tsc --watch",
     "format:check": "prettier --check --cache ./**/*.ts",
     "format:write": "prettier --write --cache ./**/*.ts",
-    "linter:check": "eslint ."
+    "linter:check": "eslint .",
+    "build": "npm run ts:build && npm run assets:build"
   },
   "dependencies": {
     "commander": "^11.1.0",

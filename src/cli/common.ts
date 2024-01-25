@@ -5,14 +5,14 @@ import { Context } from "../typecheck/unify";
 import { parse } from "../parser";
 import { typeErrorPPrint } from "../typecheck/pretty-printer";
 import { Program, Span } from "../ast";
+import { exit } from "node:process";
+import { Compiler } from "../compiler";
+import { EXTERNS_PATH, PRELUDE_PATH } from "./paths";
 
 export const FgRed = "\x1b[31m";
 export const Reset = "\x1b[0m";
 export const FgBlack = "\x1b[30m";
 export const BgWhite = "\x1b[47m";
-
-// __dirname is src/dist/cli
-const PRELUDE_PATH = `${__dirname}/../../src/prelude.mrs`;
 
 export function readPrelude(): {
   types: TypesPool;
@@ -137,4 +137,26 @@ function offsetToPosition(src: string, offset: number): Position {
 
 function repeatN(ch: string, times: number) {
   return Array.from({ length: times }, () => ch).join("");
+}
+
+export function compilePath(path: string): string {
+  const output = check(path);
+  if (output === undefined) {
+    exit(1);
+  }
+
+  const externsBuf = readFileSync(EXTERNS_PATH);
+
+  const compiler = new Compiler();
+  const prelude = compiler.compile(output.prelude);
+  const main = compiler.compile(output.main);
+
+  const hasMain = output.main.declarations.some(
+    (d) => d.binding.name === "main",
+  );
+
+  const execMain = hasMain ? `main.run(() => {})` : "";
+
+  const program = [externsBuf.toString(), prelude, main, execMain, ""];
+  return program.join("\n");
 }
