@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
-import { typecheck, TypeError } from "./typecheck";
+import { typecheck, TypeError, TypesPool } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
 import { Context } from "./unify";
-import { Int, Bool, TypesPool, prelude } from "./prelude";
+import { Int, Bool, Fn } from "../__test__/types";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -303,8 +303,8 @@ describe("type hints", () => {
 
   test("type hints of fns are used by typechecker (args)", () => {
     const [types, errs] = tc(
-      "let x: Fn(Bool) -> Int = fn x { x + 1 }",
-      prelude,
+      "let x: Fn(Bool) -> Int = fn x { !x }",
+      { "!": Fn([Bool], Bool) },
       {
         Int: 0,
         Bool: 0,

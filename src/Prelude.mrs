@@ -1,0 +1,63 @@
+extern type Int
+
+extern type Float
+
+extern type Bool
+
+extern type Nil
+
+extern let (+): Fn(Int, Int) -> Int
+extern let (+.): Fn(Float, Float) -> Float
+
+extern let (-): Fn(Int, Int) -> Int
+extern let (-.): Fn(Float, Float) -> Float
+
+extern let (*): Fn(Int, Int) -> Int
+extern let (*.): Fn(Float, Float) -> Float
+
+extern let (/): Fn(Int, Int) -> Int
+extern let (/.): Fn(Float, Float) -> Float
+
+extern let (^): Fn(Int, Int) -> Int
+
+extern let (%): Fn(Int, Int) -> Int
+
+
+extern let (&&): Fn(Bool, Bool) -> Bool
+extern let (||): Fn(Bool, Bool) -> Bool
+
+extern let (!): Fn(Bool) -> Bool
+
+
+extern let (==): Fn(a, a) -> Bool
+extern let (!=): Fn(a, a) -> Bool
+extern let (>): Fn(a, a) -> Bool
+extern let (>=): Fn(a, a) -> Bool
+extern let (<): Fn(a, a) -> Bool
+extern let (<=): Fn(a, a) -> Bool
+
+
+extern let (<>): Fn(String, String) -> String
+
+
+type Maybe<a> {
+  Just(a),
+  Nothing,
+}
+
+type Result<a, err> {
+  Ok(a),
+  Err(err)
+}
+
+type Tuple2<a, b> {
+  Tuple2(a, b)
+}
+
+type Tuple3<a, b, c> {
+  Tuple3(a, b, c)
+}
+
+type Tuple4<a, b, c, d> {
+  Tuple4(a, b, c, d)
+}

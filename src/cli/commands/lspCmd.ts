@@ -11,6 +11,9 @@ import { parse } from "../../parser";
 import { typeErrorPPrint, typePPrint } from "../../typecheck/pretty-printer";
 import { TypeMeta, typecheck } from "../../typecheck/typecheck";
 import { Program, SpanMeta, declByOffset } from "../../ast";
+import { readPrelude } from "../readprelude";
+
+const { types, context } = readPrelude();
 
 const documents = new TextDocuments(TextDocument);
 const docs = new Map<string, [TextDocument, Program<SpanMeta & TypeMeta>]>();
@@ -53,7 +56,11 @@ export function lspCmd() {
       return;
     }
 
-    const [typed, errors] = typecheck(parsed.value);
+    const [typed, errors] = typecheck(
+      parsed.value,
+      { ...context },
+      { ...types },
+    );
     docs.set(change.document.uri, [change.document, typed]);
     connection.sendDiagnostics({
       uri: change.document.uri,

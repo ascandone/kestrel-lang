@@ -7,7 +7,6 @@ import {
   SpanMeta,
   TypeAst,
 } from "../ast";
-import { TypesPool, prelude } from "./prelude";
 import {
   TVar,
   Type,
@@ -17,6 +16,8 @@ import {
   instantiate,
   Poly,
 } from "./unify";
+
+export type TypesPool = Record<string, number>;
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
 export type TypeError = SpanMeta &
@@ -133,12 +134,11 @@ function castType(
 
 export function typecheck<T extends SpanMeta>(
   ast: Program<T>,
-  initialContext: Context = prelude,
-  typesContext: TypesPool = {},
+  /* mut */ context: Context = {},
+  /* mut */ typesContext: TypesPool = {},
 ): [Program<T & TypeMeta>, TypeError[]] {
   TVar.resetId();
   const errors: TypeError[] = [];
-  const context: Context = { ...initialContext };
 
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {

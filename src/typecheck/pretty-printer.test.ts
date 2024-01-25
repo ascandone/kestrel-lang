@@ -1,7 +1,7 @@
 import { expect, test, beforeEach } from "vitest";
 import { typePPrint } from "./pretty-printer";
 import { ConcreteType, TVar, Type, unify } from "./unify";
-import { Bool, Int, List, Maybe, Tuple } from "./prelude";
+import { Bool, Int, List, Maybe, Tuple } from "../__test__/types";
 
 beforeEach(() => {
   TVar.resetId();

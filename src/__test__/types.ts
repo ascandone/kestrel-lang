@@ -1,4 +1,4 @@
-import { ConcreteType, Context, Poly, TVar, Type, generalize } from "./unify";
+import { ConcreteType, Poly, TVar, Type, generalize } from "../typecheck/unify";
 
 export const Int: ConcreteType = { type: "named", name: "Int", args: [] };
 export const Float: ConcreteType = { type: "named", name: "Float", args: [] };
@@ -20,38 +20,11 @@ export function Tuple(...args: Type[]): ConcreteType {
   return { type: "named", name: `Tuple${args.length}`, args };
 }
 
-function Fn(args: Type[], ret: Type): ConcreteType {
+export function Fn(args: Type[], ret: Type): ConcreteType {
   return { type: "fn", args, return: ret };
 }
 
-export const prelude: Context = {
-  "+": Fn([Int, Int], Int),
-  "-": Fn([Int, Int], Int),
-  "*": Fn([Int, Int], Int),
-  "/": Fn([Int, Int], Int),
-  "^": Fn([Int, Int], Int),
-  "%": Fn([Int, Int], Int),
-
-  "+.": Fn([Float, Float], Float),
-  "-.": Fn([Float, Float], Float),
-  "*.": Fn([Float, Float], Float),
-  "/.": Fn([Float, Float], Float),
-
-  "||": Fn([Bool, Bool], Bool),
-  "&&": Fn([Bool, Bool], Bool),
-  "!": Fn([Bool], Bool),
-
-  ">": gen(([$a]) => Fn([$a!, $a!], Bool)),
-  ">=": gen(([$a]) => Fn([$a!, $a!], Bool)),
-  "<": gen(([$a]) => Fn([$a!, $a!], Bool)),
-  "<=": gen(([$a]) => Fn([$a!, $a!], Bool)),
-  "==": gen(([$a]) => Fn([$a!, $a!], Bool)),
-  "!=": gen(([$a]) => Fn([$a!, $a!], Bool)),
-
-  "<>": Fn([String, String], String),
-};
-
-function gen(f: (args: Generator<Type>) => Type): Type<Poly> {
+export function gen(f: (args: Generator<Type>) => Type): Type<Poly> {
   function* freshVars() {
     while (true) {
       yield TVar.fresh().asType();
@@ -60,5 +33,3 @@ function gen(f: (args: Generator<Type>) => Type): Type<Poly> {
   const t = f(freshVars());
   return generalize(t);
 }
-
-export type TypesPool = Record<string, number>;

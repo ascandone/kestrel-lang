@@ -4,10 +4,12 @@ import { TypeMeta, typecheck } from "../typecheck/typecheck";
 import { typeErrorPPrint } from "../typecheck/pretty-printer";
 import { Program, Span } from "../ast";
 import { BgWhite, FgBlack, FgRed, Reset } from "./colors";
+import { readPrelude } from "./readprelude";
 
 export function check(path: string): Program<TypeMeta> | undefined {
-  const f = readFileSync(path);
+  const { types, context } = readPrelude();
 
+  const f = readFileSync(path);
   const src = f.toString();
   const parseResult = parse(src);
   if (!parseResult.ok) {
@@ -17,7 +19,7 @@ export function check(path: string): Program<TypeMeta> | undefined {
     return undefined;
   }
 
-  const [program, errors] = typecheck(parseResult.value);
+  const [program, errors] = typecheck(parseResult.value, context, types);
 
   for (const error of errors) {
     const msg = typeErrorPPrint(error);

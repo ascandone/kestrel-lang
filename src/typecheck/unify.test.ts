@@ -9,7 +9,7 @@ import {
   instantiate,
   unify,
 } from "./unify";
-import { Bool, Int, List, Tuple } from "./prelude";
+import { Bool, Int, List, Tuple } from "../__test__/types";
 
 beforeEach(() => {
   TVar.resetId();
