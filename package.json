@@ -9,7 +9,7 @@
     "gen:parser": "ohm generateBundles --withTypes src/parser/grammar.ohm",
     "test:watch": "vitest",
     "test:run": "vitest --run --coverage",
-    "ts:build": "tsc",
+    "ts:build": "tsc --project tsconfig.build.json",
     "ts:watch": "tsc --watch",
     "format:check": "prettier --check --cache ./**/*.ts",
     "format:write": "prettier --write --cache ./**/*.ts",

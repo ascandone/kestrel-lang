@@ -363,7 +363,7 @@ describe("generalization", () => {
       throw new Error("FAIL");
     }
 
-    expect(poly.args[0].type).toEqual("quantified");
+    expect(poly.args[0]!.type).toEqual("quantified");
   });
 
   test("generalize unbound var in fn return", () => {
