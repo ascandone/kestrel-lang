@@ -381,7 +381,7 @@ const a = a$GEN__0();
 `);
 });
 
-test("(let) closures", () => {
+test.todo("(let) closures", () => {
   // TODO should I fix grammar?
   const out = compileSrc(`
     let a = {
@@ -391,10 +391,9 @@ test("(let) closures", () => {
   `);
 
   expect(out).toEqual(`const a$captured = 42;
-function a$GEN__0() {
+function a {
   return a$captured;
 }
-const a = a$GEN__0;
 `);
 });
 

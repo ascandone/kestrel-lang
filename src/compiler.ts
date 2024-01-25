@@ -134,8 +134,7 @@ class Compiler {
       case "fn": {
         const currentFrame = this.getCurrentFrame();
         const name = currentFrame.getUniqueName(this.getBlockNs());
-        const statements = this.compileFn(name, src, scope);
-        return [statements, name];
+        return this.compileFn({ type: "declare_var", name }, src, scope);
       }
 
       case "if": {
@@ -176,7 +175,12 @@ class Compiler {
 
       case "fn": {
         const name = this.getBlockNs();
-        return this.compileFn(name, src, scope);
+        const [statements, _] = this.compileFn(
+          { type: "declare_var", name },
+          src,
+          scope,
+        );
+        return statements;
       }
 
       case "if": {
@@ -249,11 +253,16 @@ class Compiler {
   }
 
   private compileFn(
-    name: string,
+    as: CompilationMode,
     src: Expr<TypeMeta> & { type: "fn" },
     scope: Scope,
-  ): string[] {
+  ): CompileExprResult {
     this.frames.push(new Frame({ type: "fn" }));
+
+    const name =
+      as.type === "declare_var"
+        ? as.name
+        : this.getCurrentFrame().getUniqueName(this.getBlockNs());
 
     const params = src.params.map((p) => p.name).join(", ");
     const paramsScope = Object.fromEntries(
@@ -273,7 +282,7 @@ class Compiler {
     const fnBody = indentBlock(identationLevel, ret);
 
     this.frames.pop();
-    return [`function ${name}(${params}) {`, ...fnBody, `}`];
+    return [[`function ${name}(${params}) {`, ...fnBody, `}`], name];
   }
 
   compile(src: Program<TypeMeta>): string {
