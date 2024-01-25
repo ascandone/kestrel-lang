@@ -361,7 +361,13 @@ class Compiler {
 
     for (const decl of src.declarations) {
       if (decl.extern) {
-        throw new Error("[TODO] handle externs compilation");
+        if (isInfix(decl.binding.name)) {
+          // skip the infix operators
+          // as they are already handled by the compiler
+          continue;
+        }
+
+        throw new Error("TODO extern: " + decl.binding.name);
       }
 
       this.frames.push(new Frame({ type: "let", name: decl.binding.name }));
@@ -431,10 +437,15 @@ function constToString(k: ConstLiteral): string {
 
 const mapToJsInfix: Record<string, string> = {
   "<>": "+",
+  "+.": "+",
+  "-.": "-",
+  "*.": "*",
+  "/.": "/",
+  "^": "**",
 };
 
 // left-to-right operators
-const precTable: Record<string, number> = {
+const infixPrecTable: Record<string, number> = {
   "||": 3,
   "&&": 4,
   "==": 8,
@@ -448,7 +459,21 @@ const precTable: Record<string, number> = {
   "*": 12,
   "/": 12,
   "%": 12,
+  // TODO this is right associative
+  // compilation might be wrong
+  "**": 13,
 };
+
+// TODO fix compilation
+const prefixPrecTable: Record<string, number> = {
+  "!": 14,
+};
+
+function isInfix(name: string) {
+  return (
+    name in infixPrecTable || name in prefixPrecTable || name in mapToJsInfix
+  );
+}
 
 function getInfixPrecAndName(
   expr: Expr<unknown>,
@@ -462,7 +487,7 @@ function getInfixPrecAndName(
 function getInfixPrecAndNameByOp(
   op: string,
 ): { prec: number; jsName: string } | undefined {
-  const lookup = precTable[op];
+  const lookup = infixPrecTable[op];
   if (lookup !== undefined) {
     return {
       prec: lookup,

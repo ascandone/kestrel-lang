@@ -10,13 +10,19 @@ export type Options = {
 
 export function compileCmd(
   path: string,
-  { out = DEFAULT_OUTPUT_FILE }: Options,
+  { out: outPath = DEFAULT_OUTPUT_FILE }: Options,
 ) {
-  const program = check(path);
-  if (program === undefined) {
+  const output = check(path);
+  if (output === undefined) {
     exit(1);
   }
 
-  const src = compile(program);
-  writeFile(out, src);
+  const prelude = compile(output.prelude);
+  const main = compile(output.main);
+  if (prelude === "") {
+    // TODO remove this
+    writeFile(outPath, main);
+  } else {
+    writeFile(outPath, `${prelude}\n\n\n${main}`);
+  }
 }

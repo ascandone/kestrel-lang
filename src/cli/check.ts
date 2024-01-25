@@ -6,8 +6,13 @@ import { Program, Span } from "../ast";
 import { BgWhite, FgBlack, FgRed, Reset } from "./colors";
 import { readPrelude } from "./readprelude";
 
-export function check(path: string): Program<TypeMeta> | undefined {
-  const { types, context } = readPrelude();
+type CheckResult = {
+  main: Program<TypeMeta>;
+  prelude: Program<TypeMeta>;
+};
+
+export function check(path: string): CheckResult | undefined {
+  const { types, context, prelude } = readPrelude();
 
   const f = readFileSync(path);
   const src = f.toString();
@@ -33,7 +38,7 @@ export function check(path: string): Program<TypeMeta> | undefined {
     return undefined;
   }
 
-  return program;
+  return { main: program, prelude };
 }
 
 export function showErrorLine(src: string, [start, end]: Span): string {
