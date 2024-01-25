@@ -30,6 +30,8 @@ module.exports = {
   rules: {
     "no-fallthrough": "off",
     "@typescript-eslint/ban-ts-comment": "off",
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": "off",
   },
   ignorePatterns: ["*.ohm-bundle.*", "**/dist/*"],
 };
