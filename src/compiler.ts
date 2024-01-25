@@ -106,18 +106,19 @@ class Compiler {
       }
 
       case "application": {
-        if (src.caller.type === "identifier" && src.caller.name in precTable) {
-          const prec = precTable[src.caller.name]!;
+        const infix = getInfixPrecAndName(src);
+        if (infix !== undefined) {
           const [l, r] = src.args;
           const [lStatements, lExpr] = this.compileAsExpr(l!, scope);
           const [rStatements, rExpr] = this.compileAsExpr(r!, scope);
 
-          const precLeft = getInfixPrec(l!) ?? Infinity;
-          const lCWithParens = precLeft < prec ? `(${lExpr})` : lExpr;
+          const infixLeft = getInfixPrecAndName(l!);
+          const lCWithParens =
+            (infixLeft?.prec ?? Infinity) < infix.prec ? `(${lExpr})` : lExpr;
 
           return [
             [...lStatements, ...rStatements],
-            `${lCWithParens} ${src.caller.name} ${rExpr}`,
+            `${lCWithParens} ${infix.jsName} ${rExpr}`,
           ];
         }
 
@@ -353,6 +354,10 @@ function constToString(k: ConstLiteral): string {
   }
 }
 
+const mapToJsInfix: Record<string, string> = {
+  "<>": "+",
+};
+
 // left-to-right operators
 const precTable: Record<string, number> = {
   "||": 3,
@@ -370,12 +375,32 @@ const precTable: Record<string, number> = {
   "%": 12,
 };
 
-function getInfixPrec(expr: Expr<unknown>): number | undefined {
+function getInfixPrecAndName(
+  expr: Expr<unknown>,
+): { prec: number; jsName: string } | undefined {
   if (expr.type !== "application" || expr.caller.type !== "identifier") {
     return;
   }
+  return getInfixPrecAndNameByOp(expr.caller.name);
+}
 
-  return precTable[expr.caller.name];
+function getInfixPrecAndNameByOp(
+  op: string,
+): { prec: number; jsName: string } | undefined {
+  const lookup = precTable[op];
+  if (lookup !== undefined) {
+    return {
+      prec: lookup,
+      jsName: op,
+    };
+  }
+
+  const mapped = mapToJsInfix[op];
+  if (mapped === undefined) {
+    return undefined;
+  }
+
+  return getInfixPrecAndNameByOp(mapped);
 }
 
 function indent(level: number, s: string): string {

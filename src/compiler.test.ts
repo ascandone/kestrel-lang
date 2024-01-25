@@ -468,6 +468,12 @@ const x = X;
 `);
 });
 
+test("allow non-js operators", () => {
+  const out = compileSrc(`let x = "a" <> "b"`);
+  expect(out).toEqual(`const x = "a" + "b";
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);
