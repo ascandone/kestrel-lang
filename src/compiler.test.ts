@@ -490,6 +490,37 @@ test("allow non-js operators", () => {
 `);
 });
 
+test("pattern matching (flat)", () => {
+  const out = compileSrc(`
+
+  type T {
+    A,
+    B(Int),
+  }
+
+  let x = match B(42) {
+    A => 0,
+    B(_) => 1,
+  }
+`);
+  // TODO whitepace
+  expect(out).toEqual(`const A = { type: "A" };
+
+function B(a0) {
+  return { type: "B", a0 };
+}
+const x$GEN__0 = B(42);
+let x;
+if (x$GEN__0.type === "A") {
+  x = 0;
+} else if (x$GEN__0.type === "B") {
+  x = 1;
+} else {
+  throw new Error("[non exhaustive match]")
+}
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

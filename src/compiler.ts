@@ -1,4 +1,4 @@
-import { ConstLiteral, Expr, Program, TypeVariant } from "./ast";
+import { ConstLiteral, Expr, MatchExpr, Program, TypeVariant } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 
 type CompileExprResult = [statements: string[], expr: string];
@@ -265,8 +265,72 @@ class Compiler {
         }
       }
 
-      case "match":
-        throw new Error("TODO handle: " + src.type);
+      case "match": {
+        if (as.type === "return") {
+          throw new Error("[TODO] handle return from match");
+        }
+
+        const matched = this.getUniqueName();
+        const statements = this.compileAsStatements(
+          src.expr,
+          { type: "declare_var", name: matched },
+          scope,
+        );
+
+        const compiledMatchExpr: string[] = [...statements, `let ${as.name};`];
+
+        let first = true;
+        for (const [pattern, ret] of src.clauses) {
+          const { condition, statements } = this.getMatchClauses(
+            matched,
+            pattern,
+            ret,
+            as,
+            scope,
+          );
+
+          compiledMatchExpr.push(
+            first ? `if (${condition}) {` : `} else if (${condition}) {`,
+            // TODO unhardcode 0
+            ...indentBlock(1, statements),
+          );
+          first = false;
+        }
+
+        compiledMatchExpr.push(
+          `} else {`,
+          ...indentBlock(1, [`throw new Error("[non exhaustive match]")`]),
+          `}`,
+        );
+
+        return compiledMatchExpr;
+      }
+    }
+  }
+
+  getMatchClauses(
+    matchingIdent: string,
+    pattern: MatchExpr,
+    ret: Expr<TypeMeta>,
+    as: CompilationMode,
+    scope: Scope,
+  ): CompiledClause {
+    if (as.type === "return") {
+      throw new Error("[TODO] handle p match in return position");
+    }
+
+    switch (pattern.type) {
+      case "ident":
+        throw new Error("[TODO] ident pattern");
+
+      case "constructor": {
+        // TODO scope
+        const [statements, expr] = this.compileAsExpr(ret, scope);
+        return {
+          condition: `${matchingIdent}.type === "${pattern.name}"`,
+          statements: [...statements, `${as.name} = ${expr};`],
+        };
+      }
     }
   }
 
@@ -331,6 +395,11 @@ class Compiler {
     return decls.join("\n");
   }
 }
+
+type CompiledClause = {
+  condition: string;
+  statements: string[];
+};
 
 export function compile(ast: Program<TypeMeta>): string {
   return new Compiler().compile(ast);
