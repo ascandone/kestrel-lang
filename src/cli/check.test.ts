@@ -75,8 +75,6 @@ const xc = 2;
 in 0
   `;
 
-    const span = [19, 20];
-
     const l1 = "  if a";
     const e1 = "     ~";
 

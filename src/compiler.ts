@@ -44,7 +44,7 @@ class Compiler {
   }
 
   private getBlockNs(): string | undefined {
-    let ns: string[] = [];
+    const ns: string[] = [];
     for (let i = this.frames.length - 1; i >= 0; i--) {
       const frame = this.frames[i]!;
 

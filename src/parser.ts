@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import grammar from "./parser/grammar.ohm-bundle";
 import {
   ConstLiteral,

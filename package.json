@@ -12,7 +12,8 @@
     "ts:build": "tsc",
     "ts:watch": "tsc --watch",
     "format:check": "prettier --check --cache ./**/*.ts",
-    "format:write": "prettier --write --cache ./**/*.ts"
+    "format:write": "prettier --write --cache ./**/*.ts",
+    "linter:check": "eslint ."
   },
   "dependencies": {
     "commander": "^11.1.0",
@@ -21,8 +22,11 @@
   "devDependencies": {
     "@ohm-js/cli": "^2.0.0",
     "@types/node": "^20.11.5",
+    "@typescript-eslint/eslint-plugin": "^6.19.1",
+    "@typescript-eslint/parser": "^6.19.1",
     "@vitest/coverage-v8": "^1.2.0",
     "@vitest/ui": "^1.2.1",
+    "eslint": "^8.56.0",
     "ohm-js": "^17.1.0",
     "prettier": "^3.2.1",
     "typescript": "^5.3.3",

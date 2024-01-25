@@ -138,7 +138,7 @@ export function typecheck<T extends SpanMeta>(
 ): [Program<T & TypeMeta>, TypeError[]] {
   TVar.resetId();
   const errors: TypeError[] = [];
-  let context: Context = { ...initialContext };
+  const context: Context = { ...initialContext };
 
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {
@@ -610,7 +610,7 @@ function* inferTypeHint(
       };
     }
 
-    case "named":
+    case "named": {
       const args: Array<Type<Poly>> = [];
       for (const arg of hint.args) {
         args.push(yield* inferTypeHint(arg, typesPool));
@@ -621,5 +621,6 @@ function* inferTypeHint(
         name: hint.name,
         args,
       };
+    }
   }
 }

@@ -450,7 +450,7 @@ describe("custom types", () => {
   });
 
   test("handles types that do not exist", () => {
-    const [types, errs] = tc(
+    const [, errs] = tc(
       `
     type T {
       C(NotFound)
@@ -462,7 +462,7 @@ describe("custom types", () => {
   });
 
   test("add types to the type pool", () => {
-    const [types, errs] = tc(
+    const [, errs] = tc(
       `
       type A {}
       type B { C(A) }
@@ -503,7 +503,7 @@ describe("custom types", () => {
   });
 
   test("forbids unbound type params", () => {
-    const [types, errs] = tc(
+    const [, errs] = tc(
       `
         type T { C(a) }
   `,
@@ -513,7 +513,7 @@ describe("custom types", () => {
   });
 
   test("doesn't allow shadowing type params", () => {
-    const [types, errs] = tc(
+    const [, errs] = tc(
       `
         type Box<a, a> { }
   `,
@@ -523,7 +523,7 @@ describe("custom types", () => {
   });
 
   test("prevents catchall to be used in type args", () => {
-    const [types, errs] = tc(
+    const [, errs] = tc(
       `
         type T { C(_) }
   `,
@@ -535,12 +535,12 @@ describe("custom types", () => {
 
 describe("pattern matching", () => {
   test("typechecks matched expressions", () => {
-    const [types, errs] = tc(`let _ = match unbound { }`);
+    const [, errs] = tc(`let _ = match unbound { }`);
     expect(errs).not.toEqual([]);
   });
 
   test("typechecks clause return type", () => {
-    const [types, errs] = tc(`let _ = match 0 { _ => unbound }`);
+    const [, errs] = tc(`let _ = match 0 { _ => unbound }`);
     expect(errs).not.toEqual([]);
   });
 
@@ -674,7 +674,7 @@ describe("pattern matching", () => {
   });
 
   test("return error on wrong matched type", () => {
-    const [types, errs] = tc(`
+    const [, errs] = tc(`
       type X { X }
       let _ = match 42 {
         X => 0
@@ -685,7 +685,7 @@ describe("pattern matching", () => {
   });
 
   test("return error on unbound types", () => {
-    const [types, errs] = tc(`
+    const [, errs] = tc(`
       let _ = fn x {
         match x {
           NotFound => 0

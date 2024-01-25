@@ -23,7 +23,7 @@ export type TypeAst = SpanMeta &
     | { type: "any" }
   );
 
-export type MatchExpr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
+export type MatchExpr<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
   (
     | {
         type: "ident";
@@ -36,9 +36,10 @@ export type MatchExpr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
       }
   );
 
-export type Binding<TypeMeta = {}> = { name: string } & TypeMeta & SpanMeta;
+export type Binding<TypeMeta = unknown> = { name: string } & TypeMeta &
+  SpanMeta;
 
-export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
+export type Expr<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
   (
     | {
         type: "constant";
@@ -77,7 +78,7 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
       }
   );
 
-export type Declaration<TypeMeta = {}> = SpanMeta & {
+export type Declaration<TypeMeta = unknown> = SpanMeta & {
   binding: Binding<TypeMeta>;
 } & (
     | {
@@ -97,7 +98,7 @@ export type TypeDeclaration = SpanMeta & {
   params: Array<{ name: string } & SpanMeta>;
 } & ({ type: "adt"; variants: TypeVariant[] } | { type: "extern" });
 
-export type Program<TypeMeta = {}> = {
+export type Program<TypeMeta = unknown> = {
   typeDeclarations: TypeDeclaration[];
   declarations: Declaration<TypeMeta>[];
 };

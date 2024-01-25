@@ -1,5 +1,5 @@
+import { expect, test } from "vitest";
 import { compile } from "./compiler";
-import { describe, expect, test } from "vitest";
 import { typecheck } from "./typecheck/typecheck";
 import { unsafeParse } from "./parser";
 

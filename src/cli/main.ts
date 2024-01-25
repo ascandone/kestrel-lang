@@ -5,6 +5,7 @@ import { checkCmd } from "./commands/checkCmd";
 import { lspCmd } from "./commands/lspCmd";
 import { compileCmd } from "./commands/compileCmd";
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require("../../package.json");
 
 const program = new Command();
