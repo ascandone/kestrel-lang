@@ -139,6 +139,8 @@ function repeatN(ch: string, times: number) {
   return Array.from({ length: times }, () => ch).join("");
 }
 
+const executor = `main.run(() => {});`;
+
 export function compilePath(path: string): string {
   const output = check(path);
   if (output === undefined) {
@@ -155,7 +157,7 @@ export function compilePath(path: string): string {
     (d) => d.binding.name === "main",
   );
 
-  const execMain = hasMain ? `main.run(() => {})` : "";
+  const execMain = hasMain ? executor : "";
 
   const program = [externsBuf.toString(), prelude, main, execMain, ""];
   return program.join("\n");

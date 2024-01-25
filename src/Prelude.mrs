@@ -4,7 +4,9 @@ extern type Float
 
 extern type Bool
 
-extern type Nil
+extern type String
+
+type Nil { Nil }
 
 extern let (+): Fn(Int, Int) -> Int
 extern let (+.): Fn(Float, Float) -> Float
@@ -39,6 +41,7 @@ extern let (<=): Fn(a, a) -> Bool
 
 extern let (<>): Fn(String, String) -> String
 
+extern let int_to_string: Fn(Int) -> String
 
 type Maybe<a> {
   Just(a),
@@ -65,4 +68,11 @@ type Tuple4<a, b, c, d> {
 
 extern type Task<a>
 
+extern let task_of: Fn(a) -> Task<a>
+
+extern let await: Fn(Task<a>, Fn(a) -> Task<b>) -> Task<b>
+
 extern let println: Fn(String) -> Task<Nil>
+extern let print: Fn(String) -> Task<Nil>
+
+extern let readline: Task<String>
