@@ -73,6 +73,12 @@ function parsePrefix(
 }
 
 semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
+  infixIdent(_lparens, ident, _rparens) {
+    return {
+      name: ident.sourceString,
+      span: getSpan(this),
+    };
+  },
   ident(_hd, _tl) {
     return {
       name: this.sourceString,
@@ -113,7 +119,7 @@ semantics.addOperation<[MatchExpr, Expr<TypeMeta>]>("matchClause()", {
 });
 
 semantics.addOperation<string>("string()", {
-  string(_lDel, s, _rDel) {
+  string(_lDel, _s, _rDel) {
     return JSON.parse(this.sourceString);
   },
 });
@@ -152,6 +158,7 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
       span: getSpan(node),
     };
   },
+
   ident(_hd, _tl) {
     return {
       type: "identifier",

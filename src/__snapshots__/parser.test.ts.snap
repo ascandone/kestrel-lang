@@ -31,6 +31,37 @@ exports[`extern bindings > let decls 1`] = `
 }
 `;
 
+exports[`extern bindings > let decls defining infix operators 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": ">=>",
+        "span": [
+          18,
+          23,
+        ],
+      },
+      "extern": true,
+      "span": [
+        7,
+        36,
+      ],
+      "typeHint": {
+        "args": [],
+        "name": "ExampleType",
+        "span": [
+          25,
+          36,
+        ],
+        "type": "named",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`extern bindings > types 1`] = `
 {
   "declarations": [],

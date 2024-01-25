@@ -407,6 +407,14 @@ describe("extern bindings", () => {
 
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("let decls defining infix operators", () => {
+    const src = `
+      extern let (>=>): ExampleType
+    `;
+
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {
