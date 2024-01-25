@@ -7,7 +7,7 @@ import {
   SpanMeta,
   TypeAst,
 } from "../ast";
-import { TypesPool, defaultTypesPool, prelude } from "./prelude";
+import { TypesPool, prelude } from "./prelude";
 import {
   TVar,
   Type,
@@ -134,7 +134,7 @@ function castType(
 export function typecheck<T extends SpanMeta>(
   ast: Program<T>,
   initialContext: Context = prelude,
-  typesContext: TypesPool = defaultTypesPool,
+  typesContext: TypesPool = {},
 ): [Program<T & TypeMeta>, TypeError[]] {
   TVar.resetId();
   const errors: TypeError[] = [];
@@ -142,12 +142,9 @@ export function typecheck<T extends SpanMeta>(
 
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {
-    if (typeDecl.type === "extern") {
-      throw new Error("[TODO] handle extern types");
-    }
-
     typesContext[typeDecl.name] = typeDecl.params.length;
     const params: string[] = [];
+
     for (const param of typeDecl.params) {
       if (params.includes(param.name)) {
         errors.push({
@@ -165,21 +162,23 @@ export function typecheck<T extends SpanMeta>(
       args: params.map((id) => ({ type: "quantified", id })),
     };
 
-    for (const variant of typeDecl.variants) {
-      if (variant.args.length === 0) {
-        context[variant.name] = ret;
-      } else {
-        context[variant.name] = {
-          type: "fn",
-          args: variant.args.map((arg) =>
-            castType(arg, {
-              errors,
-              typesContext,
-              params,
-            }),
-          ),
-          return: ret,
-        };
+    if (typeDecl.type === "adt") {
+      for (const variant of typeDecl.variants) {
+        if (variant.args.length === 0) {
+          context[variant.name] = ret;
+        } else {
+          context[variant.name] = {
+            type: "fn",
+            args: variant.args.map((arg) =>
+              castType(arg, {
+                errors,
+                typesContext,
+                params,
+              }),
+            ),
+            return: ret,
+          };
+        }
       }
     }
   }

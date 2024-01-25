@@ -697,6 +697,26 @@ describe("pattern matching", () => {
   });
 });
 
+describe("prelude", () => {
+  test("intrinsics' types are not visible by default", () => {
+    const [, errs] = tc(`
+     let x : Int = 0
+    `);
+
+    expect(errs).not.toEqual([]);
+    expect(errs[0].type).toEqual("unbound-type");
+  });
+
+  test("checks extern types", () => {
+    const [, errs] = tc(`
+     extern type Int
+     let x : Int = 0
+    `);
+
+    expect(errs).toEqual([]);
+  });
+});
+
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
   const parsedProgram = unsafeParse(src);
   const [typed, errors] = typecheck(parsedProgram, context, typesContext);

@@ -62,9 +62,3 @@ function gen(f: (args: Generator<Type>) => Type): Type<Poly> {
 }
 
 export type TypesPool = Record<string, number>;
-
-export const defaultTypesPool: TypesPool = {
-  Int: 0,
-  Float: 0,
-  String: 0,
-};
