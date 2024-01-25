@@ -317,6 +317,23 @@ const x = x$f(1);
 `);
 });
 
+test("fn as expr", () => {
+  const out = compileSrc(`
+    let f = 0
+    let x = f(fn {
+      1
+    })
+`);
+
+  expect(out).toEqual(`const f = 0;
+
+function x$GEN__0() {
+  return 1;
+}
+const x = f(x$GEN__0);
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

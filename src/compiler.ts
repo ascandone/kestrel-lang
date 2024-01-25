@@ -27,6 +27,11 @@ class Frame {
     this.usedVars.set(name, timesUsed + 1);
     return `${name}$${timesUsed}`;
   }
+
+  private nextId = 0;
+  getUniqueName(ns: string) {
+    return `${ns}$GEN__${this.nextId++}`;
+  }
 }
 
 class Compiler {
@@ -134,8 +139,17 @@ class Compiler {
         return [[...valueC, ...bodyStatements], bodyExpr];
       }
 
-      case "if":
       case "fn":
+        const currentFrame = this.frames.at(-1);
+        if (currentFrame === undefined) {
+          throw new Error("[unreachable] empty frames stack");
+        }
+
+        const name = currentFrame.getUniqueName(this.getBlockNs());
+        const statements = this.compileFn(name, src);
+        return [statements, name];
+
+      case "if":
       case "match":
       default:
         throw new Error("TODO not hanlding: " + src.type);
@@ -164,28 +178,7 @@ class Compiler {
 
       case "fn": {
         const name = this.getBlockNs();
-
-        this.frames.push(new Frame({ type: "fn" }));
-
-        const params = src.params.map((p) => p.name).join(", ");
-        const paramsScope = Object.fromEntries(
-          src.params.map((p) => [p.name, p.name]),
-        );
-
-        // TODO outer scope
-        const ret = this.compileAsStatements(
-          src.body,
-          { type: "return" },
-          {
-            ...paramsScope,
-          },
-        );
-
-        const identationLevel = 1;
-        const fnBody = indentBlock(identationLevel, ret);
-
-        this.frames.pop();
-        return [`function ${name}(${params}) {`, ...fnBody, `}`];
+        return this.compileFn(name, src);
       }
 
       case "if": {
@@ -255,6 +248,33 @@ class Compiler {
       case "match":
         throw new Error("TODO handle: " + src.type);
     }
+  }
+
+  private compileFn(
+    name: string,
+    src: Expr<TypeMeta> & { type: "fn" },
+  ): string[] {
+    this.frames.push(new Frame({ type: "fn" }));
+
+    const params = src.params.map((p) => p.name).join(", ");
+    const paramsScope = Object.fromEntries(
+      src.params.map((p) => [p.name, p.name]),
+    );
+
+    // TODO outer scope
+    const ret = this.compileAsStatements(
+      src.body,
+      { type: "return" },
+      {
+        ...paramsScope,
+      },
+    );
+
+    const identationLevel = 1;
+    const fnBody = indentBlock(identationLevel, ret);
+
+    this.frames.pop();
+    return [`function ${name}(${params}) {`, ...fnBody, `}`];
   }
 
   compile(src: Program<TypeMeta>): string {
