@@ -381,6 +381,23 @@ const a = a$GEN__0();
 `);
 });
 
+test("(let) closures", () => {
+  // TODO should I fix grammar?
+  const out = compileSrc(`
+    let a = {
+      let captured = 42;
+      fn { captured }
+    }
+  `);
+
+  expect(out).toEqual(`const a$captured = 42;
+function a$GEN__0() {
+  return a$captured;
+}
+const a = a$GEN__0;
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

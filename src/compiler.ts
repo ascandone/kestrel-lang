@@ -134,7 +134,7 @@ class Compiler {
       case "fn": {
         const currentFrame = this.getCurrentFrame();
         const name = currentFrame.getUniqueName(this.getBlockNs());
-        const statements = this.compileFn(name, src);
+        const statements = this.compileFn(name, src, scope);
         return [statements, name];
       }
 
@@ -176,7 +176,7 @@ class Compiler {
 
       case "fn": {
         const name = this.getBlockNs();
-        return this.compileFn(name, src);
+        return this.compileFn(name, src, scope);
       }
 
       case "if": {
@@ -251,6 +251,7 @@ class Compiler {
   private compileFn(
     name: string,
     src: Expr<TypeMeta> & { type: "fn" },
+    scope: Scope,
   ): string[] {
     this.frames.push(new Frame({ type: "fn" }));
 
@@ -259,11 +260,11 @@ class Compiler {
       src.params.map((p) => [p.name, p.name]),
     );
 
-    // TODO outer scope
     const ret = this.compileAsStatements(
       src.body,
       { type: "return" },
       {
+        ...scope,
         ...paramsScope,
       },
     );
