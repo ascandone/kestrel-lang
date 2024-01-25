@@ -397,6 +397,24 @@ function a() {
 `);
 });
 
+test("fn closures", () => {
+  const out = compileSrc(`
+    let a = fn {
+      fn {
+        100
+      }
+    }
+  `);
+
+  expect(out).toEqual(`function a() {
+  function GEN__0() {
+    return 100;
+  }
+  return GEN__0;
+}
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

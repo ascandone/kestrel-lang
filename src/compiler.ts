@@ -29,8 +29,10 @@ class Frame {
   }
 
   private nextId = 0;
-  getUniqueName(ns: string) {
-    return `${ns}$GEN__${this.nextId++}`;
+
+  getUniqueName(ns?: string) {
+    const namespace = ns === undefined ? "" : `${ns}$`;
+    return `${namespace}GEN__${this.nextId++}`;
   }
 }
 
@@ -47,6 +49,10 @@ class Compiler {
       }
 
       ns.push(frame.data.name);
+    }
+
+    if (ns.length === 0) {
+      throw new Error("[unreachable] empty namespace");
     }
 
     ns.reverse();
@@ -134,6 +140,7 @@ class Compiler {
       case "fn": {
         const currentFrame = this.getCurrentFrame();
         const name = currentFrame.getUniqueName(this.getBlockNs());
+
         return [this.compileNamedFn(src, scope, name), name];
       }
 
@@ -182,9 +189,13 @@ class Compiler {
       }
 
       case "fn": {
-        // TODO take name from CompilationMode
-        const name = this.getBlockNs();
-        return this.compileNamedFn(src, scope, name);
+        if (as.type === "return") {
+          const name = this.getCurrentFrame().getUniqueName();
+          const statements = this.compileNamedFn(src, scope, name);
+          return [...statements, `return ${name};`];
+        } else {
+          return this.compileNamedFn(src, scope, as.name);
+        }
       }
 
       case "if": {
