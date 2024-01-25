@@ -449,20 +449,36 @@ test("allow custom types with zero args", () => {
     let x = X
   `);
 
-  expect(out).toEqual(`const x = { type: "X" };
+  expect(out).toEqual(`const X = { type: "X" };
+
+const x = X;
 `);
 });
 
-// TODO inlining?
-test("allow custom types with two args", () => {
+test("allow custom types with one arg", () => {
   const out = compileSrc(`
     type T { X(Int) }
 
     let x = X
   `);
 
-  expect(out).toEqual(`function X(a1, a2) {
-  return { type: "X", a1, a2 };
+  expect(out).toEqual(`function X(a0) {
+  return { type: "X", a0 };
+}
+const x = X;
+`);
+});
+
+// TODO inlining?
+test("allow custom types with two args", () => {
+  const out = compileSrc(`
+    type T { X(Int, Int) }
+
+    let x = X
+  `);
+
+  expect(out).toEqual(`function X(a0, a1) {
+  return { type: "X", a0, a1 };
 }
 const x = X;
 `);

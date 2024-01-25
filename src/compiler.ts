@@ -1,4 +1,4 @@
-import { ConstLiteral, Expr, Program } from "./ast";
+import { ConstLiteral, Expr, Program, TypeVariant } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 
 type CompileExprResult = [statements: string[], expr: string];
@@ -308,17 +308,9 @@ class Compiler {
     const decls: string[] = [];
     for (const typeDecl of src.typeDeclarations) {
       for (const variant of typeDecl.variants) {
-        if (variant.args.length === 0) {
-          scope[variant.name] = `{ type: "${variant.name}" }`;
-        } else {
-          const fnDef = `function ${variant.name}(a1, a2) {
-  return { type: "${variant.name}", a1, a2 };
-}`;
-
-          decls.push(fnDef);
-
-          scope[variant.name] = variant.name;
-        }
+        const def = getVariantImpl(variant);
+        decls.push(def);
+        scope[variant.name] = variant.name;
       }
     }
 
@@ -411,4 +403,16 @@ function indent(level: number, s: string): string {
 
 function indentBlock(level: number, lines: string[]): string[] {
   return lines.map((line) => indent(level, line));
+}
+
+function getVariantImpl({ name, args }: TypeVariant): string {
+  if (args.length === 0) {
+    return `const ${name} = { type: "${name}" };
+`;
+  } else {
+    const argsList = args.map((_t, i) => `a${i}`).join(", ");
+    return `function ${name}(${argsList}) {
+  return { type: "${name}", ${argsList} };
+}`;
+  }
 }
