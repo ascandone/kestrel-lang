@@ -126,18 +126,18 @@ const x = x$local + 2;
 `);
 });
 
-test.todo("shadowed let exprs", () => {
+test.skip("shadowed let exprs", () => {
   const out = compileSrc(`
     let x = {
       let a = 0;
-      let a = 1;
+      let a = a;
       a
     }
   `);
 
   expect(out).toEqual(`const x$a = 0;
-const x$a$0 = 1;
-const x = x$a$0;
+const x$a$1 = x$a;
+const x = x$a$1;
 `);
 });
 

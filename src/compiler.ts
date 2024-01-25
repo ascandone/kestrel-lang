@@ -11,24 +11,28 @@ type CompilationMode =
   | { type: "declare_var"; name: string }
   | { type: "return" };
 
-class Compiler {
-  private genId = 0;
-  private getUniqueId() {
-    return `$temp__${this.genId++}`;
-  }
-  private scope: string[] = [];
-  private enterScope(ns: string) {
-    this.scope.push(ns);
-  }
-  private exitScope() {
-    this.scope.pop();
-  }
-  private scopedVar(name: string) {
-    return [...this.scope, name].join("$");
-  }
+class Frame {
+  constructor(
+    public readonly ns: string,
+    public readonly isJsBlock: boolean = false,
+  ) {}
+}
 
-  private caller() {
-    return [...this.scope].join("$");
+class Compiler {
+  private frames: Frame[] = [];
+
+  private getBlockNs(): string {
+    let ns: string[] = [];
+    for (let i = this.frames.length - 1; i >= 0; i--) {
+      const frame = this.frames[i]!;
+      if (frame.isJsBlock) {
+        break;
+      }
+      ns.push(frame.ns);
+    }
+
+    ns.reverse();
+    return ns.join("$");
   }
 
   compileAsExpr(
@@ -93,15 +97,15 @@ class Compiler {
       }
 
       case "let": {
-        const scopedBinding = this.scopedVar(src.binding.name);
+        this.frames.push(new Frame(src.binding.name));
+        const scopedBinding = this.getBlockNs();
 
-        this.enterScope(src.binding.name);
         const valueC = this.compileAsStatements(
           src.value,
           { type: "declare_var", name: scopedBinding },
           scope,
         );
-        this.exitScope();
+        this.frames.pop();
 
         const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body, as, {
           ...scope,
@@ -140,9 +144,9 @@ class Compiler {
       }
 
       case "fn": {
-        const backupScope = this.scope;
-        const name = this.caller();
-        this.scope = [];
+        const name = this.getBlockNs();
+
+        this.frames.push(new Frame("TODO", true));
 
         const params = src.params.map((p) => p.name).join(", ");
         const paramsScope = Object.fromEntries(
@@ -161,7 +165,7 @@ class Compiler {
         const identationLevel = 1;
         const fnBody = indentBlock(identationLevel, ret);
 
-        this.scope = backupScope;
+        this.frames.pop();
         return [`function ${name}(${params}) {`, ...fnBody, `}`];
       }
 
@@ -238,7 +242,7 @@ class Compiler {
     const scope: Scope = {};
     const decls: string[] = [];
     for (const decl of src.declarations) {
-      this.enterScope(decl.binding.name);
+      this.frames.push(new Frame(decl.binding.name));
       const statements = this.compileAsStatements(
         decl.value,
         { type: "declare_var", name: decl.binding.name },
@@ -247,7 +251,7 @@ class Compiler {
 
       decls.push(...statements, "");
       scope[decl.binding.name] = decl.binding.name;
-      this.exitScope();
+      this.frames.pop();
     }
 
     return decls.join("\n");
