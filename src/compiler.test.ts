@@ -1,5 +1,5 @@
 import { compile } from "./compiler";
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { typecheck } from "./typecheck/typecheck";
 import { unsafeParse } from "./parser";
 
@@ -412,6 +412,33 @@ test("fn closures", () => {
   }
   return GEN__0;
 }
+`);
+});
+
+test("represent True as true", () => {
+  const out = compileSrc(`
+    let x = True
+  `);
+
+  expect(out).toEqual(`const x = true;
+`);
+});
+
+test("represent False as false", () => {
+  const out = compileSrc(`
+    let x = False
+  `);
+
+  expect(out).toEqual(`const x = false;
+`);
+});
+
+test("represent Nil as null", () => {
+  const out = compileSrc(`
+    let x = Nil
+  `);
+
+  expect(out).toEqual(`const x = null;
 `);
 });
 

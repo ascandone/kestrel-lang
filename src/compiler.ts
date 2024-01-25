@@ -98,6 +98,18 @@ class Compiler {
         return [[], constToString(src.value)];
 
       case "identifier": {
+        if (src.name === "True") {
+          return [[], "true"];
+        }
+
+        if (src.name === "False") {
+          return [[], "false"];
+        }
+
+        if (src.name === "Nil") {
+          return [[], "null"];
+        }
+
         const lookup = scope[src.name];
         if (lookup === undefined) {
           throw new Error(`[unreachable] undefined identifier (${src.name})`);
