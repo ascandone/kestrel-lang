@@ -375,7 +375,10 @@ export class Compiler {
       const statements = this.compileAsStatements(
         decl.value,
         { type: "declare_var", name: decl.binding.name },
-        this.globalScope,
+        {
+          ...this.globalScope,
+          [decl.binding.name]: decl.binding.name,
+        },
       );
 
       decls.push(...statements, "");
