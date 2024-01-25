@@ -36,12 +36,18 @@ class Frame {
   }
 }
 
-class Compiler {
+export class Compiler {
   private frames: Frame[] = [];
 
   private getUniqueName() {
     return this.getCurrentFrame().getUniqueName(this.getBlockNs());
   }
+
+  private globalScope: Scope = {
+    True: "true",
+    False: "false",
+    Nil: "null",
+  };
 
   private getBlockNs(): string | undefined {
     const ns: string[] = [];
@@ -92,7 +98,7 @@ class Compiler {
     return { value, scopedBinding };
   }
 
-  compileAsExpr(src: Expr<TypeMeta>, scope: Scope): CompileExprResult {
+  private compileAsExpr(src: Expr<TypeMeta>, scope: Scope): CompileExprResult {
     switch (src.type) {
       case "constant":
         return [[], constToString(src.value)];
@@ -166,7 +172,7 @@ class Compiler {
     }
   }
 
-  compileAsStatements(
+  private compileAsStatements(
     src: Expr<TypeMeta>,
     as: CompilationMode,
     scope: Scope,
@@ -340,22 +346,16 @@ class Compiler {
   }
 
   compile(src: Program<TypeMeta>): string {
-    const scope: Scope = {
-      True: "true",
-      False: "false",
-      Nil: "null",
-    };
-
     const decls: string[] = [];
     for (const typeDecl of src.typeDeclarations) {
       if (typeDecl.type === "extern") {
-        break;
+        continue;
       }
 
       for (const variant of typeDecl.variants) {
         const def = getVariantImpl(variant);
         decls.push(def);
-        scope[variant.name] = variant.name;
+        this.globalScope[variant.name] = variant.name;
       }
     }
 
@@ -375,11 +375,11 @@ class Compiler {
       const statements = this.compileAsStatements(
         decl.value,
         { type: "declare_var", name: decl.binding.name },
-        scope,
+        this.globalScope,
       );
 
       decls.push(...statements, "");
-      scope[decl.binding.name] = decl.binding.name;
+      this.globalScope[decl.binding.name] = decl.binding.name;
       this.frames.pop();
     }
 

@@ -1,8 +1,11 @@
+import { readFileSync } from "node:fs";
 import { exit } from "process";
 import { check } from "../check";
 import { writeFile } from "node:fs/promises";
-import { compile } from "../../compiler";
+import { Compiler } from "../../compiler";
 const DEFAULT_OUTPUT_FILE = "./out.js";
+
+const EXTERNS_PATH = `${__dirname}/../../externs/Prelude.js`;
 
 export type Options = {
   out?: string;
@@ -17,12 +20,10 @@ export function compileCmd(
     exit(1);
   }
 
-  const prelude = compile(output.prelude);
-  const main = compile(output.main);
-  if (prelude === "") {
-    // TODO remove this
-    writeFile(outPath, main);
-  } else {
-    writeFile(outPath, `${prelude}\n\n\n${main}`);
-  }
+  const externsBuf = readFileSync(EXTERNS_PATH);
+
+  const compiler = new Compiler();
+  const prelude = compiler.compile(output.prelude);
+  const main = compiler.compile(output.main);
+  writeFile(outPath, `${externsBuf}\n${prelude}\n${main}`);
 }
