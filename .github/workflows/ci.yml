@@ -12,6 +12,6 @@ jobs:
       - run: yarn install --frozen-lockfile --prefer-offline
       - run: yarn format:check
       - run: yarn linter:check
-      - run: yarn generate:parser
+      - run: yarn gen:parser
       - run: yarn ts:build
       - run: yarn test:run
