@@ -715,6 +715,39 @@ describe("prelude", () => {
 
     expect(errs).toEqual([]);
   });
+
+  test("typechecks extern values", () => {
+    const [types, errs] = tc(
+      `
+     extern let x : Nil
+    `,
+      {},
+      { Nil: 0 },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Nil",
+    });
+  });
+
+  test("typechecks extern values", () => {
+    const [types, errs] = tc(
+      `
+     extern let x : Nil
+     let y = x
+    `,
+      {},
+      { Nil: 0 },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual(
+      expect.objectContaining({
+        y: "Nil",
+      }),
+    );
+  });
 });
 
 function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {

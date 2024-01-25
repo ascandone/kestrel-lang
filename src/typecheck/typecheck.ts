@@ -536,11 +536,6 @@ function* typecheckDecl(
   typesPool: TypesPool,
   /* mut */ context: Context,
 ): Generator<TypeError> {
-  if (decl.extern) {
-    throw new Error("[TODO] handle extern");
-  }
-
-  let typeHint: Type<Poly> | undefined;
   if (decl.typeHint !== undefined) {
     const th = yield* inferTypeHint(decl.typeHint, typesPool);
     // TODO this should be moved above
@@ -564,6 +559,14 @@ function* typecheckDecl(
     if (err !== undefined) {
       yield err;
     }
+
+    if (decl.extern) {
+      context[decl.binding.name] = th;
+    }
+  }
+
+  if (decl.extern) {
+    return;
   }
 
   yield* typecheckAnnotatedExpr(decl.value, {
@@ -577,8 +580,7 @@ function* typecheckDecl(
     decl.value.$.asType(),
   );
 
-  context[decl.binding.name] =
-    typeHint ?? generalize(decl.value.$.asType(), context);
+  context[decl.binding.name] = generalize(decl.value.$.asType(), context);
 }
 
 function* inferTypeHint(
