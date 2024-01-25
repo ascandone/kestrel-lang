@@ -324,8 +324,20 @@ class Compiler {
         throw new Error("[TODO] ident pattern");
 
       case "constructor": {
-        // TODO scope
-        const [statements, expr] = this.compileAsExpr(ret, scope);
+        const bindings = pattern.args.map((arg, index) => {
+          if (arg.type === "constructor") {
+            throw new Error("[TODO] nested pattern matching");
+          }
+          return [arg.ident, `${matchingIdent}.a${index}`];
+        });
+
+        const newScope = Object.fromEntries(bindings);
+
+        const [statements, expr] = this.compileAsExpr(ret, {
+          ...scope,
+          ...newScope,
+        });
+
         return {
           condition: `${matchingIdent}.type === "${pattern.name}"`,
           statements: [...statements, `${as.name} = ${expr};`],

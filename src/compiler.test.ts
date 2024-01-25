@@ -521,6 +521,31 @@ if (x$GEN__0.type === "A") {
 `);
 });
 
+test("pattern matching (ident)", () => {
+  const out = compileSrc(`
+
+  type T {
+    C(Int),
+  }
+
+  let x = match C(42) {
+    C(y) => y,
+  }
+`);
+  // TODO whitepace
+  expect(out).toEqual(`function C(a0) {
+  return { type: "C", a0 };
+}
+const x$GEN__0 = C(42);
+let x;
+if (x$GEN__0.type === "C") {
+  x = x$GEN__0.a0;
+} else {
+  throw new Error("[non exhaustive match]")
+}
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);
