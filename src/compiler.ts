@@ -61,11 +61,32 @@ class Compiler {
     return currentFrame;
   }
 
-  compileAsExpr(
-    src: Expr<TypeMeta>,
+  compileLet(
+    src: Expr<TypeMeta> & { type: "let" },
     as: CompilationMode,
     scope: Scope,
-  ): CompileExprResult {
+  ): string[] {
+    const currentFrame = this.getCurrentFrame();
+    const name = currentFrame.preventShadow(src.binding.name);
+
+    this.frames.push(new Frame({ type: "let", name }));
+    const scopedBinding = this.getBlockNs();
+    const valueC = this.compileAsStatements(
+      src.value,
+      { type: "declare_var", name: scopedBinding },
+      scope,
+    );
+    this.frames.pop();
+
+    const bodyStatements = this.compileAsStatements(src.body, as, {
+      ...scope,
+      [src.binding.name]: scopedBinding,
+    });
+
+    return [...valueC, ...bodyStatements];
+  }
+
+  compileAsExpr(src: Expr<TypeMeta>, scope: Scope): CompileExprResult {
     switch (src.type) {
       case "constant":
         return [[], constToString(src.value)];
@@ -82,8 +103,8 @@ class Compiler {
         if (src.caller.type === "identifier" && src.caller.name in precTable) {
           const prec = precTable[src.caller.name]!;
           const [l, r] = src.args;
-          const [lStatements, lExpr] = this.compileAsExpr(l!, as, scope);
-          const [rStatements, rExpr] = this.compileAsExpr(r!, as, scope);
+          const [lStatements, lExpr] = this.compileAsExpr(l!, scope);
+          const [rStatements, rExpr] = this.compileAsExpr(r!, scope);
 
           const precLeft = getInfixPrec(l!) ?? Infinity;
           const lCWithParens = precLeft < prec ? `(${lExpr})` : lExpr;
@@ -96,14 +117,13 @@ class Compiler {
 
         const [callerStatemens, callerExpr] = this.compileAsExpr(
           src.caller,
-          as,
           scope,
         );
 
         const statements: string[] = [...callerStatemens];
         const args: string[] = [];
         for (const arg of src.args) {
-          const [argStatements, argExpr] = this.compileAsExpr(arg, as, scope);
+          const [argStatements, argExpr] = this.compileAsExpr(arg, scope);
           args.push(argExpr);
           statements.push(...argStatements);
         }
@@ -123,7 +143,7 @@ class Compiler {
         );
         this.frames.pop();
 
-        const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body, as, {
+        const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body, {
           ...scope,
           [src.binding.name]: scopedBinding,
         });
@@ -134,7 +154,7 @@ class Compiler {
       case "fn": {
         const currentFrame = this.getCurrentFrame();
         const name = currentFrame.getUniqueName(this.getBlockNs());
-        return this.compileFn({ type: "declare_var", name }, src, scope);
+        return [this.compileNamedFn(src, scope, name), name];
       }
 
       case "if": {
@@ -161,9 +181,8 @@ class Compiler {
     switch (src.type) {
       case "application":
       case "identifier":
-      case "let":
       case "constant": {
-        const [statements, expr] = this.compileAsExpr(src, as, scope);
+        const [statements, expr] = this.compileAsExpr(src, scope);
         switch (as.type) {
           case "declare_var":
             return [...statements, `const ${as.name} = ${expr};`];
@@ -173,14 +192,14 @@ class Compiler {
         }
       }
 
+      case "let": {
+        return this.compileLet(src, as, scope);
+      }
+
       case "fn": {
+        // TODO take name from CompilationMode
         const name = this.getBlockNs();
-        const [statements, _] = this.compileFn(
-          { type: "declare_var", name },
-          src,
-          scope,
-        );
-        return statements;
+        return this.compileNamedFn(src, scope, name);
       }
 
       case "if": {
@@ -188,7 +207,6 @@ class Compiler {
 
         const [conditionStatements, conditionExpr] = this.compileAsExpr(
           src.condition,
-          as,
           scope,
         );
 
@@ -219,12 +237,10 @@ class Compiler {
           case "declare_var": {
             const [thenStatements, thenExpr] = this.compileAsExpr(
               src.then,
-              as,
               scope,
             );
             const [elseStatements, elseExpr] = this.compileAsExpr(
               src.else,
-              as,
               scope,
             );
 
@@ -252,17 +268,12 @@ class Compiler {
     }
   }
 
-  private compileFn(
-    as: CompilationMode,
+  private compileNamedFn(
     src: Expr<TypeMeta> & { type: "fn" },
     scope: Scope,
-  ): CompileExprResult {
+    name: string,
+  ): string[] {
     this.frames.push(new Frame({ type: "fn" }));
-
-    const name =
-      as.type === "declare_var"
-        ? as.name
-        : this.getCurrentFrame().getUniqueName(this.getBlockNs());
 
     const params = src.params.map((p) => p.name).join(", ");
     const paramsScope = Object.fromEntries(
@@ -282,7 +293,7 @@ class Compiler {
     const fnBody = indentBlock(identationLevel, ret);
 
     this.frames.pop();
-    return [[`function ${name}(${params}) {`, ...fnBody, `}`], name];
+    return [`function ${name}(${params}) {`, ...fnBody, `}`];
   }
 
   compile(src: Program<TypeMeta>): string {
