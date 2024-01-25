@@ -361,13 +361,13 @@ export class Compiler {
 
     for (const decl of src.declarations) {
       if (decl.extern) {
-        if (isInfix(decl.binding.name)) {
-          // skip the infix operators
-          // as they are already handled by the compiler
-          continue;
+        // skip the infix operators
+        // as they are already handled by the compiler
+        if (!isInfix(decl.binding.name)) {
+          this.globalScope[decl.binding.name] = decl.binding.name;
         }
 
-        throw new Error("TODO extern: " + decl.binding.name);
+        continue;
       }
 
       this.frames.push(new Frame({ type: "let", name: decl.binding.name }));

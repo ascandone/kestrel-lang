@@ -61,3 +61,8 @@ type Tuple3<a, b, c> {
 type Tuple4<a, b, c, d> {
   Tuple4(a, b, c, d)
 }
+
+
+extern type Task<a>
+
+extern let println: Fn(String) -> Task<Nil>

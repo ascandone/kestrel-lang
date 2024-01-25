@@ -25,5 +25,15 @@ export function compileCmd(
   const compiler = new Compiler();
   const prelude = compiler.compile(output.prelude);
   const main = compiler.compile(output.main);
-  writeFile(outPath, `${externsBuf}\n${prelude}\n${main}`);
+
+  const hasMain = output.main.declarations.some(
+    (d) => d.binding.name === "main",
+  );
+
+  const execMain = hasMain ? `main.run(() => {})` : "";
+
+  const program = [externsBuf.toString(), prelude, main, execMain, ""];
+  const compilationResult = program.join("\n");
+
+  writeFile(outPath, compilationResult);
 }
