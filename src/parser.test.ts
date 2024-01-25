@@ -399,6 +399,14 @@ describe("extern bindings", () => {
 
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("let decls", () => {
+    const src = `
+      extern let x: Int
+    `;
+
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

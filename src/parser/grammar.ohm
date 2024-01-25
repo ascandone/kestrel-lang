@@ -5,6 +5,7 @@ Program {
   // --- Toplevel
   Declaration
     = "let" ident (":" Type)? "=" Exp  -- letStmt
+    | "extern" "let" ident ":" Type -- externLetStmt
 
   TypeDeclaration
     = "type" typeName ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef

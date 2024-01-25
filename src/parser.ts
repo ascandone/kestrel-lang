@@ -353,6 +353,20 @@ semantics.addOperation<Statement>("statement()", {
       },
     };
   },
+  Declaration_externLetStmt(_extern, _let, ident, _colon, typeHint) {
+    return {
+      type: "declaration",
+      decl: {
+        extern: true,
+        binding: ident.ident(),
+        span: getSpan(this),
+        typeHint: {
+          ...typeHint.type(),
+          span: getSpan(typeHint.child(0)),
+        },
+      },
+    };
+  },
   Declaration_letStmt(_let, ident, _colon, typeHint, _eq, exp) {
     const th =
       typeHint.numChildren === 0

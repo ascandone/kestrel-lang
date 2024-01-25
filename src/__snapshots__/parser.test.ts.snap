@@ -1,5 +1,36 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`extern bindings > let decls 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          18,
+          19,
+        ],
+      },
+      "extern": true,
+      "span": [
+        7,
+        24,
+      ],
+      "typeHint": {
+        "args": [],
+        "name": "Int",
+        "span": [
+          21,
+          24,
+        ],
+        "type": "named",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`extern bindings > types 1`] = `
 {
   "declarations": [],
