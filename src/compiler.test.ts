@@ -583,6 +583,47 @@ if (true) {
 `);
 });
 
+test("toplevel ident in p matching", () => {
+  const out = compileSrc(`
+  let x = match 42 {
+    a => a,
+  }
+`);
+  // TODO whitepace
+  expect(out).toEqual(`const x$GEN__0 = 42;
+let x;
+if (true) {
+  x = x$GEN__0;
+} else {
+  throw new Error("[non exhaustive match]")
+}
+`);
+});
+
+test("pattern matching nested value", () => {
+  const out = compileSrc(`
+  type T {
+    C(Bool),
+  }
+
+  let x = match C(True) {
+    C(True) => 0,
+  }
+`);
+  // TODO whitepace
+  expect(out).toEqual(`function C(a0) {
+  return { type: "C", a0 };
+}
+const x$GEN__0 = C(true);
+let x;
+if (x$GEN__0.type === "C" && x$GEN__0.a0) {
+  x = 0;
+} else {
+  throw new Error("[non exhaustive match]")
+}
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

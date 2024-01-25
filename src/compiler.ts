@@ -281,18 +281,21 @@ class Compiler {
 
         let first = true;
         for (const [pattern, ret] of src.clauses) {
-          const { condition, statements } = this.getMatchClauses(
-            matched,
-            pattern,
-            ret,
-            as,
-            scope,
-          );
+          const compiled = compilePattern(matched, pattern);
+
+          const [retStatements, retExpr] = this.compileAsExpr(ret, {
+            ...scope,
+            ...compiled.newScope,
+          });
+
+          const condition =
+            compiled.conditions.length === 0
+              ? "true"
+              : compiled.conditions.join(" && ");
 
           compiledMatchExpr.push(
             first ? `if (${condition}) {` : `} else if (${condition}) {`,
-            // TODO unhardcode 0
-            ...indentBlock(1, statements),
+            ...indentBlock(1, [...retStatements, `${as.name} = ${retExpr};`]),
           );
           first = false;
         }
@@ -304,44 +307,6 @@ class Compiler {
         );
 
         return compiledMatchExpr;
-      }
-    }
-  }
-
-  getMatchClauses(
-    matchingIdent: string,
-    pattern: MatchExpr,
-    ret: Expr<TypeMeta>,
-    as: CompilationMode,
-    scope: Scope,
-  ): CompiledClause {
-    if (as.type === "return") {
-      throw new Error("[TODO] handle p match in return position");
-    }
-
-    switch (pattern.type) {
-      case "ident":
-        throw new Error("[TODO] ident pattern");
-
-      case "constructor": {
-        const bindings = pattern.args.map((arg, index) => {
-          if (arg.type === "constructor") {
-            throw new Error("[TODO] nested pattern matching");
-          }
-          return [arg.ident, `${matchingIdent}.a${index}`];
-        });
-
-        const newScope = Object.fromEntries(bindings);
-
-        const [statements, expr] = this.compileAsExpr(ret, {
-          ...scope,
-          ...newScope,
-        });
-
-        return {
-          condition: matchCondition(matchingIdent, pattern.name),
-          statements: [...statements, `${as.name} = ${expr};`],
-        };
       }
     }
   }
@@ -408,10 +373,39 @@ class Compiler {
   }
 }
 
-type CompiledClause = {
-  condition: string;
-  statements: string[];
+type CompiledPatternResult = {
+  conditions: string[];
+  newScope: Scope;
 };
+
+function compilePattern(
+  matchSubject: string,
+  pattern: MatchExpr,
+): CompiledPatternResult {
+  // TODO move static?
+
+  switch (pattern.type) {
+    case "ident":
+      return {
+        conditions: [],
+        newScope: { [pattern.ident]: matchSubject },
+      };
+    case "constructor": {
+      const conditions: string[] = [matchCondition(matchSubject, pattern.name)];
+      let newScope: Scope = {};
+
+      let i = 0;
+      for (const nested of pattern.args) {
+        const index = i++;
+        const compiled = compilePattern(`${matchSubject}.a${index}`, nested);
+        conditions.push(...compiled.conditions);
+        newScope = { ...newScope, ...compiled.newScope };
+      }
+
+      return { conditions, newScope };
+    }
+  }
+}
 
 export function compile(ast: Program<TypeMeta>): string {
   return new Compiler().compile(ast);
