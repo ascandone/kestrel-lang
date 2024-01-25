@@ -28,6 +28,7 @@ exports[`monadic let syntax sugar 1`] = `
           10,
         ],
       },
+      "extern": false,
       "span": [
         5,
         58,
@@ -98,6 +99,7 @@ exports[`parse * expr 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         13,
@@ -158,6 +160,7 @@ exports[`parse + and * prec 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         17,
@@ -246,6 +249,7 @@ exports[`parse + and * prec with parens 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         19,
@@ -334,6 +338,7 @@ exports[`parse + expr 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         13,
@@ -394,6 +399,7 @@ exports[`parse +. expr 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         14,
@@ -454,6 +460,7 @@ exports[`parse - expr 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         13,
@@ -514,6 +521,7 @@ exports[`parse appl with 1 arg 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         12,
@@ -560,6 +568,7 @@ exports[`parse appl with 3 args 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         18,
@@ -622,6 +631,7 @@ exports[`parse appl with nested expr 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         16,
@@ -699,6 +709,7 @@ exports[`parse appl with nested parens 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         14,
@@ -748,6 +759,7 @@ exports[`parse appl with no args 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         11,
@@ -785,6 +797,7 @@ exports[`parse appl with trailing comma 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         28,
@@ -839,6 +852,7 @@ exports[`parse block with no let 1`] = `
           6,
         ],
       },
+      "extern": false,
       "span": [
         1,
         14,
@@ -871,6 +885,7 @@ exports[`parse empty strings 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         10,
@@ -903,6 +918,7 @@ exports[`parse float 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         12,
@@ -935,6 +951,7 @@ exports[`parse fn with 1 arg 1`] = `
           6,
         ],
       },
+      "extern": false,
       "span": [
         1,
         19,
@@ -983,6 +1000,7 @@ exports[`parse fn with 2 args 1`] = `
           6,
         ],
       },
+      "extern": false,
       "span": [
         1,
         22,
@@ -1038,6 +1056,7 @@ exports[`parse fn with let 1`] = `
           6,
         ],
       },
+      "extern": false,
       "span": [
         1,
         32,
@@ -1103,6 +1122,7 @@ exports[`parse fn with no args 1`] = `
           6,
         ],
       },
+      "extern": false,
       "span": [
         1,
         17,
@@ -1143,6 +1163,7 @@ exports[`parse ident 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         9,
@@ -1172,6 +1193,7 @@ exports[`parse if expr 1`] = `
           6,
         ],
       },
+      "extern": false,
       "span": [
         1,
         30,
@@ -1230,6 +1252,7 @@ exports[`parse if expr with a let expr 1`] = `
           6,
         ],
       },
+      "extern": false,
       "span": [
         1,
         47,
@@ -1310,6 +1333,7 @@ exports[`parse let block with one let 1`] = `
           6,
         ],
       },
+      "extern": false,
       "span": [
         1,
         29,
@@ -1367,6 +1391,7 @@ exports[`parse let block with two let stmts 1`] = `
           6,
         ],
       },
+      "extern": false,
       "span": [
         1,
         42,
@@ -1449,6 +1474,7 @@ exports[`parse nonempty strings 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         13,
@@ -1481,6 +1507,7 @@ exports[`parse strings with newlines 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         15,
@@ -1514,6 +1541,7 @@ exports[`parse tuple 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         14,
@@ -1574,6 +1602,7 @@ exports[`parse unary ! expr 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         11,
@@ -1620,6 +1649,7 @@ exports[`pattern matching > binding with identifier 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         28,
@@ -1676,6 +1706,7 @@ exports[`pattern matching > empty match expression 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         18,
@@ -1713,6 +1744,7 @@ exports[`pattern matching > matching constructor with no args 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         28,
@@ -1770,6 +1802,7 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         31,
@@ -2091,6 +2124,7 @@ exports[`type hints > parses Fn type with args 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         25,
@@ -2159,6 +2193,7 @@ exports[`type hints > parses Fn type with no args 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         23,
@@ -2208,6 +2243,7 @@ exports[`type hints > parses a concrete type with no args as a type hint 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         15,
@@ -2249,6 +2285,7 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         22,
@@ -2300,6 +2337,7 @@ exports[`type hints > parses concrete type with 2 args 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         29,
@@ -2360,6 +2398,7 @@ exports[`type hints > parses type vars hints 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         13,
@@ -2400,6 +2439,7 @@ exports[`type hints > parses underscore type 1`] = `
           5,
         ],
       },
+      "extern": false,
       "span": [
         0,
         13,

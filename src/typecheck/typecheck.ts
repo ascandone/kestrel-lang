@@ -1,4 +1,5 @@
 import {
+  Binding,
   ConstLiteral,
   Declaration,
   Expr,
@@ -422,12 +423,27 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
 function annotateProgram<T>(program: Program<T>): Program<T & TypeMeta> {
   return {
     ...program,
-    declarations: program.declarations.map((decl) => ({
-      ...decl,
-      binding: { ...decl.binding, $: TVar.fresh() },
-      value: annotateExpr(decl.value),
-      $: TVar.fresh(),
-    })),
+    declarations: program.declarations.map((decl) => {
+      const valueMeta = decl.extern
+        ? ({
+            extern: true,
+            typeHint: decl.typeHint,
+          } as const)
+        : ({
+            extern: false,
+            typeHint: decl.typeHint,
+            value: annotateExpr(decl.value),
+          } as const);
+
+      return {
+        ...decl,
+        ...valueMeta,
+        binding: {
+          ...decl.binding,
+          $: TVar.fresh(),
+        },
+      };
+    }),
   };
 }
 
@@ -520,6 +536,10 @@ function* typecheckDecl(
   typesPool: TypesPool,
   /* mut */ context: Context,
 ): Generator<TypeError> {
+  if (decl.extern) {
+    throw new Error("[TODO] handle extern");
+  }
+
   let typeHint: Type<Poly> | undefined;
   if (decl.typeHint !== undefined) {
     const th = yield* inferTypeHint(decl.typeHint, typesPool);

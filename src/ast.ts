@@ -36,6 +36,8 @@ export type MatchExpr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
       }
   );
 
+export type Binding<TypeMeta = {}> = { name: string } & TypeMeta & SpanMeta;
+
 export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
   (
     | {
@@ -48,7 +50,7 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
       }
     | {
         type: "fn";
-        params: Array<{ name: string } & TypeMeta & SpanMeta>;
+        params: Binding<TypeMeta>[];
         body: Expr<TypeMeta>;
       }
     | {
@@ -58,7 +60,7 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
       }
     | {
         type: "let";
-        binding: { name: string } & TypeMeta & SpanMeta;
+        binding: Binding<TypeMeta>;
         value: Expr<TypeMeta>;
         body: Expr<TypeMeta>;
       }
@@ -76,10 +78,18 @@ export type Expr<TypeMeta = {}> = (TypeMeta & SpanMeta) &
   );
 
 export type Declaration<TypeMeta = {}> = SpanMeta & {
-  typeHint?: TypeAst & SpanMeta;
-  binding: { name: string } & TypeMeta & SpanMeta;
-  value: Expr<TypeMeta>;
-};
+  binding: Binding<TypeMeta>;
+} & (
+    | {
+        extern: false;
+        typeHint?: TypeAst & SpanMeta;
+        value: Expr<TypeMeta>;
+      }
+    | {
+        extern: true;
+        typeHint: TypeAst & SpanMeta;
+      }
+  );
 
 export type TypeVariant = { name: string; args: TypeAst[] };
 export type TypeDeclaration = SpanMeta & {
@@ -190,7 +200,7 @@ export function declByOffset<T>(
       return st.binding;
     }
 
-    return exprByOffset(st.value, offset);
+    return st.extern ? undefined : exprByOffset(st.value, offset);
   }
 
   return undefined;

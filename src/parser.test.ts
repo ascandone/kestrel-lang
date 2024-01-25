@@ -8,6 +8,7 @@ test("parsing a declaration", () => {
     typeDeclarations: [],
     declarations: [
       {
+        extern: false,
         binding: { name: "x", span: spanOf(src, "x") },
         value: {
           type: "constant",
@@ -29,6 +30,7 @@ test("parsing two declarations", () => {
     typeDeclarations: [],
     declarations: [
       {
+        extern: false,
         binding: { name: "x", span: spanOf(src, "x") },
         value: {
           type: "constant",
@@ -41,6 +43,7 @@ test("parsing two declarations", () => {
         span: spanOf(src, "let x = 0"),
       },
       {
+        extern: false,
         binding: { name: "y", span: spanOf(src, "y") },
         value: {
           type: "constant",

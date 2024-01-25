@@ -360,6 +360,10 @@ class Compiler {
     }
 
     for (const decl of src.declarations) {
+      if (decl.extern) {
+        throw new Error("[TODO] handle externs compilation");
+      }
+
       this.frames.push(new Frame({ type: "let", name: decl.binding.name }));
 
       const statements = this.compileAsStatements(

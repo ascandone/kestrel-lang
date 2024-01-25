@@ -367,6 +367,7 @@ semantics.addOperation<Statement>("statement()", {
     return {
       type: "declaration",
       decl: {
+        extern: false,
         binding: ident.ident(),
         value: exp.expr(),
         span: getSpan(this),
