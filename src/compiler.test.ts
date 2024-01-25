@@ -368,6 +368,19 @@ const a = a$x + a$x$1;
 `);
 });
 
+test("iifs", () => {
+  // TODO should I fix grammar?
+  const out = compileSrc(`
+    let a = fn { 42 } ()
+  `);
+
+  expect(out).toEqual(`function a$GEN__0() {
+  return 42;
+}
+const a = a$GEN__0();
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

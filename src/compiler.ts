@@ -94,22 +94,13 @@ class Compiler {
           ];
         }
 
-        if (src.caller.type !== "identifier") {
-          throw new Error(
-            `[TODO] ${src.type} as a caller is not supported yet`,
-          );
-        }
-
         const [callerStatemens, callerExpr] = this.compileAsExpr(
           src.caller,
           as,
           scope,
         );
-        if (callerStatemens.length !== 0) {
-          throw new Error("[TODO] complex caller not handled yet");
-        }
 
-        const statements: string[] = [];
+        const statements: string[] = [...callerStatemens];
         const args: string[] = [];
         for (const arg of src.args) {
           const [argStatements, argExpr] = this.compileAsExpr(arg, as, scope);
@@ -159,7 +150,6 @@ class Compiler {
       }
 
       case "match":
-      default:
         throw new Error("TODO not hanlding: " + src.type);
     }
   }
