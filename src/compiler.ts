@@ -61,29 +61,21 @@ class Compiler {
     return currentFrame;
   }
 
-  compileLet(
+  private compileLetValue(
     src: Expr<TypeMeta> & { type: "let" },
-    as: CompilationMode,
     scope: Scope,
-  ): string[] {
+  ): { value: string[]; scopedBinding: string } {
     const currentFrame = this.getCurrentFrame();
     const name = currentFrame.preventShadow(src.binding.name);
-
     this.frames.push(new Frame({ type: "let", name }));
     const scopedBinding = this.getBlockNs();
-    const valueC = this.compileAsStatements(
+    const value = this.compileAsStatements(
       src.value,
       { type: "declare_var", name: scopedBinding },
       scope,
     );
     this.frames.pop();
-
-    const bodyStatements = this.compileAsStatements(src.body, as, {
-      ...scope,
-      [src.binding.name]: scopedBinding,
-    });
-
-    return [...valueC, ...bodyStatements];
+    return { value, scopedBinding };
   }
 
   compileAsExpr(src: Expr<TypeMeta>, scope: Scope): CompileExprResult {
@@ -131,24 +123,12 @@ class Compiler {
       }
 
       case "let": {
-        const currentFrame = this.getCurrentFrame();
-        const name = currentFrame.preventShadow(src.binding.name);
-
-        this.frames.push(new Frame({ type: "let", name }));
-        const scopedBinding = this.getBlockNs();
-        const valueC = this.compileAsStatements(
-          src.value,
-          { type: "declare_var", name: scopedBinding },
-          scope,
-        );
-        this.frames.pop();
-
+        const { value, scopedBinding } = this.compileLetValue(src, scope);
         const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body, {
           ...scope,
           [src.binding.name]: scopedBinding,
         });
-
-        return [[...valueC, ...bodyStatements], bodyExpr];
+        return [[...value, ...bodyStatements], bodyExpr];
       }
 
       case "fn": {
@@ -193,7 +173,12 @@ class Compiler {
       }
 
       case "let": {
-        return this.compileLet(src, as, scope);
+        const { value, scopedBinding } = this.compileLetValue(src, scope);
+        const bodyStatements = this.compileAsStatements(src.body, as, {
+          ...scope,
+          [src.binding.name]: scopedBinding,
+        });
+        return [...value, ...bodyStatements];
       }
 
       case "fn": {
