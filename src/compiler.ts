@@ -98,18 +98,6 @@ class Compiler {
         return [[], constToString(src.value)];
 
       case "identifier": {
-        if (src.name === "True") {
-          return [[], "true"];
-        }
-
-        if (src.name === "False") {
-          return [[], "false"];
-        }
-
-        if (src.name === "Nil") {
-          return [[], "null"];
-        }
-
         const lookup = scope[src.name];
         if (lookup === undefined) {
           throw new Error(`[unreachable] undefined identifier (${src.name})`);
@@ -310,7 +298,11 @@ class Compiler {
   }
 
   compile(src: Program<TypeMeta>): string {
-    const scope: Scope = {};
+    const scope: Scope = {
+      True: "true",
+      False: "false",
+      Nil: "null",
+    };
     const decls: string[] = [];
     for (const decl of src.declarations) {
       this.frames.push(new Frame({ type: "let", name: decl.binding.name }));
