@@ -2,14 +2,21 @@ import { exit } from "process";
 import { check } from "../check";
 import { writeFile } from "node:fs/promises";
 import { compile } from "../../compiler";
-const OUTPUT_FILE = "./out.js";
+const DEFAULT_OUTPUT_FILE = "./out.js";
 
-export function compileCmd(path: string) {
+export type Options = {
+  out?: string;
+};
+
+export function compileCmd(
+  path: string,
+  { out = DEFAULT_OUTPUT_FILE }: Options,
+) {
   const program = check(path);
   if (program === undefined) {
     exit(1);
   }
 
   const src = compile(program);
-  writeFile(OUTPUT_FILE, src);
+  writeFile(out, src);
 }

@@ -14,22 +14,14 @@ program.version(packageJson.version);
 program
   .command("check <path>")
   .description("Infer the type of given file")
-  .action((path: string) => {
-    checkCmd(path);
-  });
+  .action(checkCmd);
 
 program
   .command("compile <path>")
+  .option("--out <path>")
   .description("Compile the file into a js file")
-  .action((path: string) => {
-    compileCmd(path);
-  });
+  .action(compileCmd);
 
-program
-  .command("lsp")
-  .description("Run the language server")
-  .action(() => {
-    lspCmd();
-  });
+program.command("lsp").description("Run the language server").action(lspCmd);
 
 program.parse();
