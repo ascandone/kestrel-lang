@@ -53,6 +53,14 @@ class Compiler {
     return ns.join("$");
   }
 
+  private getCurrentFrame(): Frame {
+    const currentFrame = this.frames.at(-1);
+    if (currentFrame === undefined) {
+      throw new Error("[unreachable] empty frames stack");
+    }
+    return currentFrame;
+  }
+
   compileAsExpr(
     src: Expr<TypeMeta>,
     as: CompilationMode,
@@ -115,11 +123,7 @@ class Compiler {
       }
 
       case "let": {
-        const currentFrame = this.frames.at(-1);
-        if (currentFrame === undefined) {
-          throw new Error("[unreachable] empty frames stack");
-        }
-
+        const currentFrame = this.getCurrentFrame();
         const name = currentFrame.preventShadow(src.binding.name);
 
         this.frames.push(new Frame({ type: "let", name }));
@@ -139,17 +143,24 @@ class Compiler {
         return [[...valueC, ...bodyStatements], bodyExpr];
       }
 
-      case "fn":
-        const currentFrame = this.frames.at(-1);
-        if (currentFrame === undefined) {
-          throw new Error("[unreachable] empty frames stack");
-        }
-
+      case "fn": {
+        const currentFrame = this.getCurrentFrame();
         const name = currentFrame.getUniqueName(this.getBlockNs());
         const statements = this.compileFn(name, src);
         return [statements, name];
+      }
 
-      case "if":
+      case "if": {
+        const currentFrame = this.getCurrentFrame();
+        const name = currentFrame.getUniqueName(this.getBlockNs());
+        const statements = this.compileAsStatements(
+          src,
+          { type: "declare_var", name },
+          scope,
+        );
+        return [statements, name];
+      }
+
       case "match":
       default:
         throw new Error("TODO not hanlding: " + src.type);
