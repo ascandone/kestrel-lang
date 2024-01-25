@@ -365,6 +365,7 @@ describe("type hints", () => {
   test("unknown types are rejected", () => {
     const [types, errs] = tc("let x: NotFound = 1", {}, {});
     expect(errs).not.toEqual([]);
+    expect(errs[0].type).toBe("unbound-type");
     expect(types).toEqual({
       x: "NotFound",
     });

@@ -55,7 +55,7 @@ export type TypeError = SpanMeta &
 
 export type TypeMeta = { $: TVar };
 
-function unboundTypeError<T extends SpanMeta>(
+function checkUnboundTypeError<T extends SpanMeta>(
   { span }: T,
   t: Type<Poly>,
   tCtx: TypesPool,
@@ -96,7 +96,7 @@ function castType(
           name: ast.name,
           args: ast.args.map(recur),
         };
-        const e = unboundTypeError(ast, t, typesContext);
+        const e = checkUnboundTypeError(ast, t, typesContext);
         if (e !== undefined) {
           errors.push(e);
         }
@@ -518,12 +518,18 @@ function inferConstant(x: ConstLiteral): Type {
 
 function* typecheckDecl(
   decl: Declaration<TypeMeta>,
-  typesContext: TypesPool,
+  typesPool: TypesPool,
   /* mut */ context: Context,
 ): Generator<TypeError> {
   let typeHint: Type<Poly> | undefined;
   if (decl.typeHint !== undefined) {
-    const th = yield* inferTypeHint(decl.typeHint);
+    const th = yield* inferTypeHint(decl.typeHint, typesPool);
+    // TODO this should be moved above
+    // This way is not pointing to the right node
+    const e = checkUnboundTypeError(decl.typeHint, th, typesPool);
+    if (e !== undefined) {
+      yield e;
+    }
 
     yield* unifyYieldErrGeneric(
       decl.typeHint,
@@ -531,10 +537,10 @@ function* typecheckDecl(
       decl.binding.$.asType(),
     );
 
-    const err = unboundTypeError<SpanMeta>(
+    const err = checkUnboundTypeError<SpanMeta>(
       decl.typeHint,
       decl.binding.$.asType(),
-      typesContext,
+      typesPool,
     );
     if (err !== undefined) {
       yield err;
@@ -556,7 +562,10 @@ function* typecheckDecl(
     typeHint ?? generalize(decl.value.$.asType(), context);
 }
 
-function* inferTypeHint(hint: TypeAst): Generator<TypeError, Type<Poly>> {
+function* inferTypeHint(
+  hint: TypeAst,
+  typesPool: TypesPool,
+): Generator<TypeError, Type<Poly>> {
   switch (hint.type) {
     case "any":
       return {
@@ -571,20 +580,20 @@ function* inferTypeHint(hint: TypeAst): Generator<TypeError, Type<Poly>> {
     case "fn": {
       const args: Array<Type<Poly>> = [];
       for (const arg of hint.args) {
-        args.push(yield* inferTypeHint(arg));
+        args.push(yield* inferTypeHint(arg, typesPool));
       }
 
       return {
         type: "fn",
         args,
-        return: yield* inferTypeHint(hint.return),
+        return: yield* inferTypeHint(hint.return, typesPool),
       };
     }
 
     case "named":
       const args: Array<Type<Poly>> = [];
       for (const arg of hint.args) {
-        args.push(yield* inferTypeHint(arg));
+        args.push(yield* inferTypeHint(arg, typesPool));
       }
 
       return {
