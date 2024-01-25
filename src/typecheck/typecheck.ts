@@ -141,6 +141,10 @@ export function typecheck<T extends SpanMeta>(
 
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {
+    if (typeDecl.type === "extern") {
+      throw new Error("[TODO] handle extern types");
+    }
+
     typesContext[typeDecl.name] = typeDecl.params.length;
     const params: string[] = [];
     for (const param of typeDecl.params) {

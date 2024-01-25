@@ -348,6 +348,10 @@ class Compiler {
 
     const decls: string[] = [];
     for (const typeDecl of src.typeDeclarations) {
+      if (typeDecl.type === "extern") {
+        throw new Error("[TODO] handle extern types");
+      }
+
       for (const variant of typeDecl.variants) {
         const def = getVariantImpl(variant);
         decls.push(def);
