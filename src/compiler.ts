@@ -13,9 +13,20 @@ type CompilationMode =
 
 class Frame {
   constructor(
-    public readonly ns: string,
-    public readonly isJsBlock: boolean = false,
+    public readonly data: { type: "let"; name: string } | { type: "fn" },
   ) {}
+
+  private usedVars = new Map<string, number>();
+
+  preventShadow(name: string): string {
+    const timesUsed = this.usedVars.get(name);
+    if (timesUsed === undefined) {
+      this.usedVars.set(name, 1);
+      return name;
+    }
+    this.usedVars.set(name, timesUsed + 1);
+    return `${name}$${timesUsed}`;
+  }
 }
 
 class Compiler {
@@ -25,10 +36,12 @@ class Compiler {
     let ns: string[] = [];
     for (let i = this.frames.length - 1; i >= 0; i--) {
       const frame = this.frames[i]!;
-      if (frame.isJsBlock) {
+
+      if (frame.data.type === "fn") {
         break;
       }
-      ns.push(frame.ns);
+
+      ns.push(frame.data.name);
     }
 
     ns.reverse();
@@ -97,9 +110,15 @@ class Compiler {
       }
 
       case "let": {
-        this.frames.push(new Frame(src.binding.name));
-        const scopedBinding = this.getBlockNs();
+        const currentFrame = this.frames.at(-1);
+        if (currentFrame === undefined) {
+          throw new Error("[unreachable] empty frames stack");
+        }
 
+        const name = currentFrame.preventShadow(src.binding.name);
+
+        this.frames.push(new Frame({ type: "let", name }));
+        const scopedBinding = this.getBlockNs();
         const valueC = this.compileAsStatements(
           src.value,
           { type: "declare_var", name: scopedBinding },
@@ -146,7 +165,7 @@ class Compiler {
       case "fn": {
         const name = this.getBlockNs();
 
-        this.frames.push(new Frame("TODO", true));
+        this.frames.push(new Frame({ type: "fn" }));
 
         const params = src.params.map((p) => p.name).join(", ");
         const paramsScope = Object.fromEntries(
@@ -242,7 +261,8 @@ class Compiler {
     const scope: Scope = {};
     const decls: string[] = [];
     for (const decl of src.declarations) {
-      this.frames.push(new Frame(decl.binding.name));
+      this.frames.push(new Frame({ type: "let", name: decl.binding.name }));
+
       const statements = this.compileAsStatements(
         decl.value,
         { type: "declare_var", name: decl.binding.name },

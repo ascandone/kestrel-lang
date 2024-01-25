@@ -126,7 +126,7 @@ const x = x$local + 2;
 `);
 });
 
-test.skip("shadowed let exprs", () => {
+test("shadowed let exprs", () => {
   const out = compileSrc(`
     let x = {
       let a = 0;
@@ -138,6 +138,23 @@ test.skip("shadowed let exprs", () => {
   expect(out).toEqual(`const x$a = 0;
 const x$a$1 = x$a;
 const x = x$a$1;
+`);
+});
+
+test("two let as fn args, shadowing", () => {
+  const out = compileSrc(`
+    let f = 0
+    let x = f(
+      { let a = 0; a },
+      { let a = 1; a },
+    )
+`);
+
+  expect(out).toEqual(`const f = 0;
+
+const x$a = 0;
+const x$a$1 = 1;
+const x = f(x$a, x$a$1);
 `);
 });
 
