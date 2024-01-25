@@ -11,7 +11,7 @@ import { parse } from "../../parser";
 import { typeErrorPPrint, typePPrint } from "../../typecheck/pretty-printer";
 import { TypeMeta, typecheck } from "../../typecheck/typecheck";
 import { Program, SpanMeta, declByOffset } from "../../ast";
-import { readPrelude } from "../readprelude";
+import { readPrelude } from "../common";
 
 const { types, context } = readPrelude();
 

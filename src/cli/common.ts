@@ -1,10 +1,39 @@
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
+import { unsafeParse } from "../parser";
+import { typecheck, TypeMeta, TypesPool } from "../typecheck/typecheck";
+import { Context } from "../typecheck/unify";
 import { parse } from "../parser";
-import { TypeMeta, typecheck } from "../typecheck/typecheck";
 import { typeErrorPPrint } from "../typecheck/pretty-printer";
 import { Program, Span } from "../ast";
-import { BgWhite, FgBlack, FgRed, Reset } from "./colors";
-import { readPrelude } from "./readprelude";
+
+export const FgRed = "\x1b[31m";
+export const Reset = "\x1b[0m";
+export const FgBlack = "\x1b[30m";
+export const BgWhite = "\x1b[47m";
+
+// __dirname is src/dist/cli
+const PRELUDE_PATH = `${__dirname}/../../src/prelude.mrs`;
+
+export function readPrelude(): {
+  types: TypesPool;
+  context: Context;
+  prelude: Program<TypeMeta>;
+} {
+  const f = readFileSync(PRELUDE_PATH);
+  const src = f.toString();
+
+  const parsed = unsafeParse(src);
+
+  const context: Context = {};
+  const types: TypesPool = {};
+
+  const [prelude, errors] = typecheck(parsed, context, types);
+  if (errors.length !== 0) {
+    throw new Error("[unreachable] errors compiling prelude");
+  }
+
+  return { types, context, prelude };
+}
 
 type CheckResult = {
   main: Program<TypeMeta>;

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { exit } from "process";
-import { check } from "../check";
+import { check } from "../common";
 import { writeFile } from "node:fs/promises";
 import { Compiler } from "../../compiler";
 const DEFAULT_OUTPUT_FILE = "./out.js";

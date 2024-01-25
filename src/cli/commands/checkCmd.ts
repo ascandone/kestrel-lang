@@ -1,4 +1,4 @@
-import { check } from "../check";
+import { check } from "../common";
 
 export function checkCmd(path: string) {
   const program = check(path);
