@@ -624,6 +624,38 @@ if (x$GEN__0.type === "C" && x$GEN__0.a0) {
 `);
 });
 
+test("eval complex match", () => {
+  const out = compileSrc(`
+    type Maybe<a> {
+      Nothing,
+      Just(a),
+    }
+    
+    type Result<a, b> {
+      Ok(a),
+      Err(b),
+    }
+    
+    type Data {
+      A,
+      B(Int),
+      Z(Maybe<String>, Result<Maybe<String>, String>),
+    }
+    
+    let x = Z(
+      Just("abc"),
+      Ok(Just("def"))
+    )
+
+    let m = match x {
+      Z(Just(s1), Ok(Just(s2))) => s1 <> s2,
+    }
+  `);
+
+  const r = new Function(`${out}; return m`)();
+  expect(r).toEqual("abcdef");
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);
