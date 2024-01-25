@@ -12,6 +12,7 @@ import {
   MatchExpr,
 } from "./ast";
 import type {
+  IterationNode,
   MatchResult,
   NonterminalNode,
   Node as OhmNode,
@@ -300,7 +301,32 @@ semantics.addOperation<TypeVariant>("typeVariant()", {
   },
 });
 
+function parseParams(params: IterationNode) {
+  let params_: Array<{ name: string } & SpanMeta> = [];
+  if (params.numChildren > 0) {
+    params_ = params
+      .child(0)
+      .asIteration()
+      .children.map((c) => ({
+        name: c.sourceString,
+        span: getSpan(c),
+      }));
+  }
+  return params_;
+}
 semantics.addOperation<Statement>("statement()", {
+  TypeDeclaration_externType(_extern, _type, typeName, _lT, params, _rT) {
+    return {
+      type: "typeDeclaration",
+      decl: {
+        type: "extern",
+        params: parseParams(params),
+        name: typeName.sourceString,
+        span: getSpan(this),
+      },
+    };
+  },
+
   TypeDeclaration_typeDef(
     _type,
     typeName,
@@ -316,22 +342,11 @@ semantics.addOperation<Statement>("statement()", {
       .asIteration()
       .children.map<TypeVariant>((n) => n.typeVariant());
 
-    let params_: Array<{ name: string } & SpanMeta> = [];
-    if (params.numChildren > 0) {
-      params_ = params
-        .child(0)
-        .asIteration()
-        .children.map((c) => ({
-          name: c.sourceString,
-          span: getSpan(c),
-        }));
-    }
-
     return {
       type: "typeDeclaration",
       decl: {
         type: "adt",
-        params: params_,
+        params: parseParams(params),
         name: typeName.sourceString,
         variants: variants_,
         span: getSpan(this),

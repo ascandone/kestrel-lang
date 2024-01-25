@@ -8,6 +8,7 @@ Program {
 
   TypeDeclaration
     = "type" typeName ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef
+    | "extern" "type" typeName ("<" NonemptyListOf<typeVar, ","> ">")? -- externType
 
   // --- Expressions
 

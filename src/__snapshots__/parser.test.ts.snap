@@ -1,5 +1,22 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`extern bindings > types 1`] = `
+{
+  "declarations": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "params": [],
+      "span": [
+        7,
+        20,
+      ],
+      "type": "extern",
+    },
+  ],
+}
+`;
+
 exports[`monadic let syntax sugar 1`] = `
 {
   "declarations": [

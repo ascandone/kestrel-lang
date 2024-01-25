@@ -388,6 +388,16 @@ describe("pattern matching", () => {
   });
 });
 
+describe("extern bindings", () => {
+  test("types", () => {
+    const src = `
+      extern type T
+    `;
+
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];
