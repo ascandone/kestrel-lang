@@ -357,6 +357,17 @@ const x = f(x$GEN__0);
 `);
 });
 
+test("infix exprs producing statements", () => {
+  const out = compileSrc(`
+    let a = { let x = 0; x } + { let x = 1; x }
+  `);
+
+  expect(out).toEqual(`const a$x = 0;
+const a$x$1 = 1;
+const a = a$x + a$x$1;
+`);
+});
+
 function compileSrc(src: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);

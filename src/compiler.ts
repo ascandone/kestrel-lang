@@ -85,16 +85,13 @@ class Compiler {
           const [lStatements, lExpr] = this.compileAsExpr(l!, as, scope);
           const [rStatements, rExpr] = this.compileAsExpr(r!, as, scope);
 
-          if (lStatements.length !== 0 || rStatements.length !== 0) {
-            throw new Error(
-              "[TODO] complex values of infix expressions are not handled yet",
-            );
-          }
-
           const precLeft = getInfixPrec(l!) ?? Infinity;
           const lCWithParens = precLeft < prec ? `(${lExpr})` : lExpr;
 
-          return [[], `${lCWithParens} ${src.caller.name} ${rExpr}`];
+          return [
+            [...lStatements, ...rStatements],
+            `${lCWithParens} ${src.caller.name} ${rExpr}`,
+          ];
         }
 
         if (src.caller.type !== "identifier") {
