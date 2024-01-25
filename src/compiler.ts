@@ -39,7 +39,11 @@ class Frame {
 class Compiler {
   private frames: Frame[] = [];
 
-  private getBlockNs(): string {
+  private getUniqueName() {
+    return this.getCurrentFrame().getUniqueName(this.getBlockNs());
+  }
+
+  private getBlockNs(): string | undefined {
     let ns: string[] = [];
     for (let i = this.frames.length - 1; i >= 0; i--) {
       const frame = this.frames[i]!;
@@ -52,7 +56,7 @@ class Compiler {
     }
 
     if (ns.length === 0) {
-      throw new Error("[unreachable] empty namespace");
+      return undefined;
     }
 
     ns.reverse();
@@ -75,6 +79,10 @@ class Compiler {
     const name = currentFrame.preventShadow(src.binding.name);
     this.frames.push(new Frame({ type: "let", name }));
     const scopedBinding = this.getBlockNs();
+    if (scopedBinding === undefined) {
+      throw new Error("[unreachable] empty ns stack");
+    }
+
     const value = this.compileAsStatements(
       src.value,
       { type: "declare_var", name: scopedBinding },
@@ -138,15 +146,12 @@ class Compiler {
       }
 
       case "fn": {
-        const currentFrame = this.getCurrentFrame();
-        const name = currentFrame.getUniqueName(this.getBlockNs());
-
+        const name = this.getUniqueName();
         return [this.compileNamedFn(src, scope, name), name];
       }
 
       case "if": {
-        const currentFrame = this.getCurrentFrame();
-        const name = currentFrame.getUniqueName(this.getBlockNs());
+        const name = this.getUniqueName();
         const statements = this.compileAsStatements(
           src,
           { type: "declare_var", name },
@@ -190,7 +195,7 @@ class Compiler {
 
       case "fn": {
         if (as.type === "return") {
-          const name = this.getCurrentFrame().getUniqueName();
+          const name = this.getUniqueName();
           const statements = this.compileNamedFn(src, scope, name);
           return [...statements, `return ${name};`];
         } else {
