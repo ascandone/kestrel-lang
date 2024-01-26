@@ -8,7 +8,7 @@ type Scope = Record<string, string>;
 const IDENT_CHAR = "  ";
 
 type CompilationMode =
-  | { type: "declare_var"; name: string }
+  | { type: "assign_var"; name: string; declare: boolean }
   | { type: "return" };
 
 class Frame {
@@ -91,7 +91,7 @@ export class Compiler {
 
     const value = this.compileAsStatements(
       src.value,
-      { type: "declare_var", name: scopedBinding },
+      { type: "assign_var", name: scopedBinding, declare: true },
       scope,
     );
     this.frames.pop();
@@ -161,7 +161,7 @@ export class Compiler {
         const name = this.getUniqueName();
         const statements = this.compileAsStatements(
           src,
-          { type: "declare_var", name },
+          { type: "assign_var", name, declare: true },
           scope,
         );
         return [statements, name];
@@ -183,8 +183,10 @@ export class Compiler {
       case "constant": {
         const [statements, expr] = this.compileAsExpr(src, scope);
         switch (as.type) {
-          case "declare_var":
-            return [...statements, `const ${as.name} = ${expr};`];
+          case "assign_var": {
+            const constModifier = as.declare ? "const " : "";
+            return [...statements, `${constModifier}${as.name} = ${expr};`];
+          }
 
           case "return":
             return [...statements, `return ${expr};`];
@@ -242,29 +244,33 @@ export class Compiler {
             ];
           }
 
-          case "declare_var": {
-            const [thenStatements, thenExpr] = this.compileAsExpr(
+          case "assign_var": {
+            const nestedAs: CompilationMode =
+              as.type === "assign_var" ? { ...as, declare: false } : as;
+
+            const thenStatements = this.compileAsStatements(
               src.then,
+              nestedAs,
               scope,
             );
-            const [elseStatements, elseExpr] = this.compileAsExpr(
+
+            const elseStatements = this.compileAsStatements(
               src.else,
+              nestedAs,
               scope,
             );
+
+            if (as.type === "assign_var" && !as.declare) {
+              throw new Error("TODO remove var declaration");
+            }
 
             return [
               ...conditionStatements,
               `let ${as.name};`,
               `if (${conditionExpr}) {`,
-              ...indentBlock(identationLevel, [
-                ...thenStatements,
-                `${as.name} = ${thenExpr};`,
-              ]),
+              ...indentBlock(identationLevel, thenStatements),
               `} else {`,
-              ...indentBlock(identationLevel, [
-                ...elseStatements,
-                `${as.name} = ${elseExpr};`,
-              ]),
+              ...indentBlock(identationLevel, elseStatements),
               `}`,
             ];
           }
@@ -275,20 +281,22 @@ export class Compiler {
         const matched = this.getUniqueName();
         const statements = this.compileAsStatements(
           src.expr,
-          { type: "declare_var", name: matched },
+          { type: "assign_var", name: matched, declare: true },
           scope,
         );
 
         const compiledMatchExpr: string[] = [...statements];
-        if (as.type === "declare_var") {
+        if (as.type === "assign_var" && as.declare) {
           compiledMatchExpr.push(`let ${as.name};`);
         }
+        const nestedAs: CompilationMode =
+          as.type === "assign_var" ? { ...as, declare: false } : as;
 
         let first = true;
         for (const [pattern, ret] of src.clauses) {
           const compiled = compilePattern(matched, pattern);
 
-          const [retStatements, retExpr] = this.compileAsExpr(ret, {
+          const retStatements = this.compileAsStatements(ret, nestedAs, {
             ...scope,
             ...compiled.newScope,
           });
@@ -298,14 +306,9 @@ export class Compiler {
               ? "true"
               : compiled.conditions.join(" && ");
 
-          const endStatement =
-            as.type === "declare_var"
-              ? `${as.name} = ${retExpr};`
-              : `return ${retExpr};`;
-
           compiledMatchExpr.push(
             first ? `if (${condition}) {` : `} else if (${condition}) {`,
-            ...indentBlock(1, [...retStatements, endStatement]),
+            ...indentBlock(1, retStatements),
           );
           first = false;
         }
@@ -378,7 +381,7 @@ export class Compiler {
 
       const statements = this.compileAsStatements(
         decl.value,
-        { type: "declare_var", name: decl.binding.name },
+        { type: "assign_var", name: decl.binding.name, declare: true },
         {
           ...this.globalScope,
           [decl.binding.name]: decl.binding.name,
