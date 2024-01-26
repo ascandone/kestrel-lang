@@ -138,11 +138,19 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     };
   },
 
-  PriExp_tuple2(_lparens, x, _comma, y, _rparens) {
+  PriExp_tuple(_lparens, x, _comma, xs, _rparens) {
+    const xs_ = xs.asIteration().children.map((x) => x.expr());
+
+    const count = 1 + xs_.length;
+
     return {
       type: "application",
-      caller: { type: "identifier", name: "Tuple2", span: getSpan(this) },
-      args: [x.expr(), y.expr()],
+      caller: {
+        type: "identifier",
+        name: `Tuple${count}`,
+        span: getSpan(this),
+      },
+      args: [x.expr(), ...xs_],
       span: getSpan(this),
     };
   },
