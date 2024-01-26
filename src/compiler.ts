@@ -167,8 +167,15 @@ export class Compiler {
         return [statements, name];
       }
 
-      case "match":
-        throw new Error("TODO not hanlding: " + src.type);
+      case "match": {
+        const name = this.getUniqueName();
+        const statements = this.compileAsStatements(
+          src,
+          { type: "assign_var", name, declare: true },
+          scope,
+        );
+        return [statements, name];
+      }
     }
   }
 

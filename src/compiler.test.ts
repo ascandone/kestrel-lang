@@ -666,6 +666,27 @@ function f() {
 `);
 });
 
+test("pattern matching as fn arg", () => {
+  const out = compileSrc(`
+  let f = 0
+  let x = f(match 42 {
+    _ => 0,
+  })
+`);
+
+  expect(out).toEqual(`const f = 0;
+
+const x$GEN__1 = 42;
+let x$GEN__0;
+if (true) {
+  x$GEN__0 = 0;
+} else {
+  throw new Error("[non exhaustive match]")
+}
+const x = f(x$GEN__0);
+`);
+});
+
 test("eval complex match", () => {
   const out = compileSrc(`
     type Maybe<a> {
