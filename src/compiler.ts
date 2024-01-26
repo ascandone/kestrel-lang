@@ -213,8 +213,6 @@ export class Compiler {
       }
 
       case "if": {
-        const identationLevel = 1;
-
         const [conditionStatements, conditionExpr] = this.compileAsExpr(
           src.condition,
           scope,
@@ -236,9 +234,9 @@ export class Compiler {
           ...conditionStatements,
           ...declarationStatements(as),
           `if (${conditionExpr}) {`,
-          ...indentBlock(identationLevel, thenBlock),
+          ...indentBlock(thenBlock),
           `} else {`,
-          ...indentBlock(identationLevel, elseBlock),
+          ...indentBlock(elseBlock),
           `}`,
         ];
       }
@@ -276,14 +274,14 @@ export class Compiler {
 
           compiledMatchExpr.push(
             first ? `if (${condition}) {` : `} else if (${condition}) {`,
-            ...indentBlock(1, retStatements),
+            ...indentBlock(retStatements),
           );
           first = false;
         }
 
         compiledMatchExpr.push(
           `} else {`,
-          ...indentBlock(1, [`throw new Error("[non exhaustive match]")`]),
+          ...indentBlock([`throw new Error("[non exhaustive match]")`]),
           `}`,
         );
 
@@ -313,11 +311,8 @@ export class Compiler {
       },
     );
 
-    const identationLevel = 1;
-    const fnBody = indentBlock(identationLevel, ret);
-
     this.frames.pop();
-    return [`function ${name}(${params}) {`, ...fnBody, `}`];
+    return [`function ${name}(${params}) {`, ...indentBlock(ret), `}`];
   }
 
   compile(src: Program<TypeMeta>): string {
@@ -481,14 +476,8 @@ function getInfixPrecAndNameByOp(
   return getInfixPrecAndNameByOp(mapped);
 }
 
-function indent(level: number, s: string): string {
-  const ident = Array.from({ length: level }, () => IDENT_CHAR);
-  ident.push(s);
-  return ident.join("");
-}
-
-function indentBlock(level: number, lines: string[]): string[] {
-  return lines.map((line) => indent(level, line));
+function indentBlock(lines: string[]): string[] {
+  return lines.map((line) => `${IDENT_CHAR}${line}`);
 }
 
 function getVariantImpl({ name, args }: TypeVariant): string {
