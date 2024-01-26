@@ -81,8 +81,7 @@ export class Compiler {
     src: Expr<TypeMeta> & { type: "let" },
     scope: Scope,
   ): { value: string[]; scopedBinding: string } {
-    const currentFrame = this.getCurrentFrame();
-    const name = currentFrame.preventShadow(src.binding.name);
+    const name = this.getCurrentFrame().preventShadow(src.binding.name);
     this.frames.push(new Frame({ type: "let", name }));
     const scopedBinding = this.getBlockNs();
     if (scopedBinding === undefined) {

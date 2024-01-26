@@ -382,7 +382,6 @@ const a = a$GEN__0();
 });
 
 test("(let) closures", () => {
-  // TODO should I fix grammar?
   const out = compileSrc(`
     let a = {
       let captured = 42;
@@ -717,6 +716,27 @@ test("eval complex match", () => {
 
   const r = new Function(`${out}; return m`)();
   expect(r).toEqual("abcdef");
+});
+
+test("two fns as args", () => {
+  const out = compileSrc(`
+    let f = 0
+    let x = f(
+      fn { 0 },
+      fn { 1 },
+    )
+`);
+
+  expect(out).toEqual(`const f = 0;
+
+function x$GEN__0() {
+  return 0;
+}
+function x$GEN__1() {
+  return 1;
+}
+const x = f(x$GEN__0, x$GEN__1);
+`);
 });
 
 function compileSrc(src: string) {
