@@ -157,16 +157,7 @@ export class Compiler {
         return [this.compileNamedFn(src, scope, name), name];
       }
 
-      case "if": {
-        const name = this.getUniqueName();
-        const statements = this.compileAsStatements(
-          src,
-          { type: "assign_var", name, declare: true },
-          scope,
-        );
-        return [statements, name];
-      }
-
+      case "if":
       case "match": {
         const name = this.getUniqueName();
         const statements = this.compileAsStatements(
