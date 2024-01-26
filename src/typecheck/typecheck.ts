@@ -277,24 +277,24 @@ function* typecheckAnnotatedExpr<T extends SpanMeta>(
 }
 
 function* typecheckPattern<T>(
-  binding: MatchPattern<T & SpanMeta & TypeMeta>,
+  pattern: MatchPattern<T & SpanMeta & TypeMeta>,
   context: Context,
 ): Generator<TypeError, Context> {
-  switch (binding.type) {
+  switch (pattern.type) {
     case "lit":
       return context;
 
     case "ident":
-      return { ...context, [binding.ident]: binding.$.asType() };
+      return { ...context, [pattern.ident]: pattern.$.asType() };
 
     case "constructor": {
-      const lookup_ = context[binding.name];
+      const lookup_ = context[pattern.name];
       if (lookup_ === undefined) {
         // TODO better err
         yield {
           type: "unbound-variable",
-          ident: binding.name,
-          span: binding.span,
+          ident: pattern.name,
+          span: pattern.span,
         };
         return context;
       }
@@ -303,44 +303,44 @@ function* typecheckPattern<T>(
 
       if (lookup.type === "named") {
         yield* unifyYieldErrGeneric(
-          binding,
+          pattern,
           { type: "named", name: lookup.name, args: lookup.args },
-          binding.$.asType(),
+          pattern.$.asType(),
         );
       }
 
       if (lookup.type === "fn") {
         yield* unifyYieldErrGeneric(
-          binding,
+          pattern,
           {
             type: "fn",
             args: lookup.args,
-            return: binding.$.asType(),
+            return: pattern.$.asType(),
           },
           lookup,
         );
 
         for (let i = 0; i < lookup.args.length; i++) {
           yield* unifyYieldErrGeneric(
-            binding,
-            binding.args[i]!.$.asType(),
+            pattern,
+            pattern.args[i]!.$.asType(),
             lookup.args[i]!,
           );
 
           const updatedContext = yield* typecheckPattern(
-            binding.args[i]!,
+            pattern.args[i]!,
             context,
           );
 
           context = { ...context, ...updatedContext };
         }
 
-        if (lookup.args.length !== binding.args.length) {
+        if (lookup.args.length !== pattern.args.length) {
           yield {
             type: "arity-mismatch",
             expected: lookup.args.length,
-            got: binding.args.length,
-            span: binding.span,
+            got: pattern.args.length,
+            span: pattern.span,
           };
           return context;
         }
