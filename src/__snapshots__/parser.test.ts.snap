@@ -2100,6 +2100,81 @@ exports[`pattern matching > matching str literals 1`] = `
 }
 `;
 
+exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "span": [
+        0,
+        33,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "args": [
+                {
+                  "ident": "x",
+                  "span": [
+                    19,
+                    20,
+                  ],
+                  "type": "ident",
+                },
+                {
+                  "ident": "y",
+                  "span": [
+                    22,
+                    23,
+                  ],
+                  "type": "ident",
+                },
+              ],
+              "name": "Tuple2",
+              "span": [
+                18,
+                24,
+              ],
+              "type": "constructor",
+            },
+            {
+              "name": "res",
+              "span": [
+                28,
+                31,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          33,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`type declarations > many type params 1`] = `
 {
   "declarations": [],

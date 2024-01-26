@@ -404,6 +404,11 @@ describe("pattern matching", () => {
     const src = `let _ = match x { "abc" => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("matching tuples literal (syntax sugar)", () => {
+    const src = `let _ = match x { (x, y) => res }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("extern bindings", () => {

@@ -106,6 +106,19 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
       span: getSpan(this),
     };
   },
+
+  MatchPattern_tuple(_lparens, x, _comma, xs, _rparens) {
+    const xs_ = xs.asIteration().children.map((c) => c.matchPattern());
+
+    const count = 1 + xs_.length;
+    const name = `Tuple${count}`;
+    return {
+      type: "constructor",
+      name,
+      args: [x.matchPattern(), ...xs_],
+      span: getSpan(this),
+    };
+  },
   MatchPattern_constructor(ident, _lparent, args, _rparens) {
     let args_: MatchPattern[] = [];
     if (args.numChildren > 0) {

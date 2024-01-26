@@ -114,6 +114,7 @@ Program {
   MatchPattern
     = ident  -- ident
     | lit -- lit
+    | "(" MatchPattern "," NonemptyListOf<MatchPattern, ","> ")" -- tuple
     | typeConstructor ("(" ListOf<MatchPattern, ","> ")")? -- constructor
 
   // --- Types
