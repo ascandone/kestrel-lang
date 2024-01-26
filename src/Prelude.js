@@ -38,9 +38,16 @@ function println(str) {
 }
 
 function print(str) {
-  return new Task(function print(resolve) {
+  return new Task((resolve) => {
     process.stdout.write(str);
     resolve(null);
+  });
+}
+
+function sleep(ms) {
+  return new Task((resolve) => {
+    const id = setTimeout(resolve, ms, null);
+    return () => clearTimeout(id);
   });
 }
 

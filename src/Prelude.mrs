@@ -76,3 +76,5 @@ extern let println: Fn(String) -> Task<Nil>
 extern let print: Fn(String) -> Task<Nil>
 
 extern let readline: Task<String>
+
+extern let sleep: Fn(Int) -> Task<Nil>
