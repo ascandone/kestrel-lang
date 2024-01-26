@@ -10,7 +10,7 @@ import {
   TypeAst,
   TypeDeclaration,
   TypeVariant,
-  MatchExpr,
+  MatchPattern,
 } from "./ast";
 import type {
   IterationNode,
@@ -87,7 +87,7 @@ semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
   },
 });
 
-semantics.addOperation<MatchExpr>("matchExpr()", {
+semantics.addOperation<MatchPattern>("matchExpr()", {
   MatchExpr_ident(ident) {
     return {
       type: "ident",
@@ -96,7 +96,7 @@ semantics.addOperation<MatchExpr>("matchExpr()", {
     };
   },
   MatchExpr_constructor(ident, _lparent, args, _rparens) {
-    let args_: MatchExpr[] = [];
+    let args_: MatchPattern[] = [];
     if (args.numChildren > 0) {
       args_ = args
         .child(0)
@@ -112,7 +112,7 @@ semantics.addOperation<MatchExpr>("matchExpr()", {
   },
 });
 
-semantics.addOperation<[MatchExpr, Expr<TypeMeta>]>("matchClause()", {
+semantics.addOperation<[MatchPattern, Expr<TypeMeta>]>("matchClause()", {
   MatchClause_clause(match, _arrow, expr) {
     return [match.matchExpr(), expr.expr()];
   },

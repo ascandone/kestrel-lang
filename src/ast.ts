@@ -23,7 +23,7 @@ export type TypeAst = SpanMeta &
     | { type: "any" }
   );
 
-export type MatchExpr<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
+export type MatchPattern<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
   (
     | {
         type: "ident";
@@ -32,7 +32,7 @@ export type MatchExpr<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
     | {
         type: "constructor";
         name: string;
-        args: MatchExpr<TypeMeta>[];
+        args: MatchPattern<TypeMeta>[];
       }
   );
 
@@ -74,7 +74,7 @@ export type Expr<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
     | {
         type: "match";
         expr: Expr<TypeMeta>;
-        clauses: Array<[MatchExpr<TypeMeta>, Expr<TypeMeta>]>;
+        clauses: Array<[MatchPattern<TypeMeta>, Expr<TypeMeta>]>;
       }
   );
 
@@ -166,7 +166,7 @@ function exprByOffset<T>(ast: Expr<T>, offset: number): T | undefined {
 }
 
 function matchExprByOffset<T>(
-  ast: MatchExpr<T>,
+  ast: MatchPattern<T>,
   offset: number,
 ): T | undefined {
   if (!spanContains(ast.span, offset)) {

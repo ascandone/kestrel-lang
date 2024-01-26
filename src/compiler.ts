@@ -1,4 +1,4 @@
-import { ConstLiteral, Expr, MatchExpr, Program, TypeVariant } from "./ast";
+import { ConstLiteral, Expr, MatchPattern, Program, TypeVariant } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 
 type CompileExprResult = [statements: string[], expr: string];
@@ -352,7 +352,7 @@ type CompiledPatternResult = {
 
 function compilePattern(
   matchSubject: string,
-  pattern: MatchExpr,
+  pattern: MatchPattern,
 ): CompiledPatternResult {
   // TODO move static?
 

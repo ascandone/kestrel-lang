@@ -2,7 +2,7 @@ import {
   ConstLiteral,
   Declaration,
   Expr,
-  MatchExpr,
+  MatchPattern,
   Program,
   SpanMeta,
   TypeAst,
@@ -277,7 +277,7 @@ function* typecheckAnnotatedExpr<T extends SpanMeta>(
 }
 
 function* typecheckBinding<T>(
-  binding: MatchExpr<T & SpanMeta & TypeMeta>,
+  binding: MatchPattern<T & SpanMeta & TypeMeta>,
   context: Context,
 ): Generator<TypeError, Context> {
   switch (binding.type) {
@@ -348,7 +348,9 @@ function* typecheckBinding<T>(
   }
 }
 
-function annotateMatchExpr<T>(ast: MatchExpr<T>): MatchExpr<T & TypeMeta> {
+function annotateMatchExpr<T>(
+  ast: MatchPattern<T>,
+): MatchPattern<T & TypeMeta> {
   switch (ast.type) {
     case "ident":
       return {
