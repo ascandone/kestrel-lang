@@ -99,6 +99,13 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
       span: getSpan(this),
     };
   },
+  MatchPattern_lit(lit) {
+    return {
+      type: "lit",
+      literal: lit.lit(),
+      span: getSpan(this),
+    };
+  },
   MatchPattern_constructor(ident, _lparent, args, _rparens) {
     let args_: MatchPattern[] = [];
     if (args.numChildren > 0) {

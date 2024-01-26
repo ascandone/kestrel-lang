@@ -1920,6 +1920,186 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
 }
 `;
 
+exports[`pattern matching > matching float literals 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "span": [
+        0,
+        30,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "literal": {
+                "type": "float",
+                "value": 1.1,
+              },
+              "span": [
+                18,
+                21,
+              ],
+              "type": "lit",
+            },
+            {
+              "name": "res",
+              "span": [
+                25,
+                28,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          30,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pattern matching > matching int literals 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "span": [
+        0,
+        29,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "literal": {
+                "type": "int",
+                "value": 42,
+              },
+              "span": [
+                18,
+                20,
+              ],
+              "type": "lit",
+            },
+            {
+              "name": "res",
+              "span": [
+                24,
+                27,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          29,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pattern matching > matching str literals 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "span": [
+        0,
+        32,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "literal": {
+                "type": "string",
+                "value": "abc",
+              },
+              "span": [
+                18,
+                23,
+              ],
+              "type": "lit",
+            },
+            {
+              "name": "res",
+              "span": [
+                27,
+                30,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          32,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`type declarations > many type params 1`] = `
 {
   "declarations": [],

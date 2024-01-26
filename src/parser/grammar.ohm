@@ -113,6 +113,7 @@ Program {
 
   MatchPattern
     = ident  -- ident
+    | lit -- lit
     | typeConstructor ("(" ListOf<MatchPattern, ","> ")")? -- constructor
 
   // --- Types

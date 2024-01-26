@@ -389,6 +389,21 @@ describe("pattern matching", () => {
     const src = `let _ = match x { X(a) => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("matching int literals", () => {
+    const src = `let _ = match x { 42 => res }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("matching float literals", () => {
+    const src = `let _ = match x { 1.1 => res }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("matching str literals", () => {
+    const src = `let _ = match x { "abc" => res }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("extern bindings", () => {
