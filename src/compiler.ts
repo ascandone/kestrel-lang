@@ -5,8 +5,6 @@ type CompileExprResult = [statements: string[], expr: string];
 
 type Scope = Record<string, string>;
 
-const IDENT_CHAR = "  ";
-
 type CompilationMode =
   | { type: "assign_var"; name: string; declare: boolean }
   | { type: "return" };
@@ -465,7 +463,7 @@ function getInfixPrecAndNameByOp(
 }
 
 function indentBlock(lines: string[]): string[] {
-  return lines.map((line) => `${IDENT_CHAR}${line}`);
+  return lines.map((line) => `  ${line}`);
 }
 
 function getVariantImpl({ name, args }: TypeVariant): string {
