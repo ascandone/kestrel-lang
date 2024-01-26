@@ -267,16 +267,16 @@ function* typecheckAnnotatedExpr<T extends SpanMeta>(
 
     case "match":
       yield* typecheckAnnotatedExpr(ast.expr, context);
-      for (const [binding, expr] of ast.clauses) {
-        yield* unifyYieldErr(ast, binding.$.asType(), ast.expr.$.asType());
-        const newContext = yield* typecheckBinding(binding, context);
+      for (const [pattern, expr] of ast.clauses) {
+        yield* unifyYieldErr(ast, pattern.$.asType(), ast.expr.$.asType());
+        const newContext = yield* typecheckPattern(pattern, context);
         yield* unifyYieldErr(ast, ast.$.asType(), expr.$.asType());
         yield* typecheckAnnotatedExpr(expr, newContext);
       }
   }
 }
 
-function* typecheckBinding<T>(
+function* typecheckPattern<T>(
   binding: MatchPattern<T & SpanMeta & TypeMeta>,
   context: Context,
 ): Generator<TypeError, Context> {
@@ -327,7 +327,7 @@ function* typecheckBinding<T>(
             lookup.args[i]!,
           );
 
-          const updatedContext = yield* typecheckBinding(
+          const updatedContext = yield* typecheckPattern(
             binding.args[i]!,
             context,
           );
