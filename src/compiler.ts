@@ -356,7 +356,10 @@ function compilePattern(
 ): CompiledPatternResult {
   switch (pattern.type) {
     case "lit":
-      throw new Error("[TODO] handle lit");
+      return {
+        conditions: [`${matchSubject} === ${constToString(pattern.literal)}`],
+        newScope: {},
+      };
     case "ident":
       return {
         conditions: [],

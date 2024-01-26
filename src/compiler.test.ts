@@ -567,6 +567,23 @@ if (x$GEN__0.type === "C") {
 `);
 });
 
+test("pattern matching literals", () => {
+  const out = compileSrc(`
+  let x = match "subject" {
+    "constraint" => 0,
+  }
+`);
+
+  expect(out).toEqual(`const x$GEN__0 = "subject";
+let x;
+if (x$GEN__0 === "constraint") {
+  x = 0;
+} else {
+  throw new Error("[non exhaustive match]")
+}
+`);
+});
+
 test("pattern matching bool values", () => {
   const out = compileSrc(`
   let x = match True {
