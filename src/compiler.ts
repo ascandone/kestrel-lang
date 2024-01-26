@@ -354,9 +354,9 @@ function compilePattern(
   matchSubject: string,
   pattern: MatchPattern,
 ): CompiledPatternResult {
-  // TODO move static?
-
   switch (pattern.type) {
+    case "lit":
+      throw new Error("[TODO] handle lit");
     case "ident":
       return {
         conditions: [],

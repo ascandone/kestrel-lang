@@ -281,6 +281,9 @@ function* typecheckBinding<T>(
   context: Context,
 ): Generator<TypeError, Context> {
   switch (binding.type) {
+    case "lit":
+      return context;
+
     case "ident":
       return { ...context, [binding.ident]: binding.$.asType() };
 
@@ -352,6 +355,7 @@ function annotateMatchExpr<T>(
   ast: MatchPattern<T>,
 ): MatchPattern<T & TypeMeta> {
   switch (ast.type) {
+    case "lit":
     case "ident":
       return {
         ...ast,

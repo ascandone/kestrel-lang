@@ -30,6 +30,10 @@ export type MatchPattern<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
         ident: string;
       }
     | {
+        type: "lit";
+        literal: ConstLiteral;
+      }
+    | {
         type: "constructor";
         name: string;
         args: MatchPattern<TypeMeta>[];
