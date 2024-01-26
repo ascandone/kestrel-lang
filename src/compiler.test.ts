@@ -624,6 +624,48 @@ if (x$GEN__0.type === "C" && x$GEN__0.a0) {
 `);
 });
 
+test("simple pattern matching in tail position", () => {
+  const out = compileSrc(`
+  let f = fn {
+    match 42 { x => x }
+  }
+`);
+
+  expect(out).toEqual(`function f() {
+  const GEN__0 = 42;
+  if (true) {
+    return GEN__0;
+  } else {
+    throw new Error("[non exhaustive match]")
+  }
+}
+`);
+});
+
+test("pattern matching in tail position (match constructor)", () => {
+  const out = compileSrc(`
+  type Box { Box(Int) }
+  let f = fn {
+    match Box(42) {
+      Box(x) => x + 1
+    }
+  }
+`);
+
+  expect(out).toEqual(`function Box(a0) {
+  return { type: "Box", a0 };
+}
+function f() {
+  const GEN__0 = Box(42);
+  if (GEN__0.type === "Box") {
+    return GEN__0.a0 + 1;
+  } else {
+    throw new Error("[non exhaustive match]")
+  }
+}
+`);
+});
+
 test("eval complex match", () => {
   const out = compileSrc(`
     type Maybe<a> {

@@ -272,10 +272,6 @@ export class Compiler {
       }
 
       case "match": {
-        if (as.type === "return") {
-          throw new Error("[TODO] handle return from match");
-        }
-
         const matched = this.getUniqueName();
         const statements = this.compileAsStatements(
           src.expr,
@@ -283,7 +279,10 @@ export class Compiler {
           scope,
         );
 
-        const compiledMatchExpr: string[] = [...statements, `let ${as.name};`];
+        const compiledMatchExpr: string[] = [...statements];
+        if (as.type === "declare_var") {
+          compiledMatchExpr.push(`let ${as.name};`);
+        }
 
         let first = true;
         for (const [pattern, ret] of src.clauses) {
@@ -299,9 +298,14 @@ export class Compiler {
               ? "true"
               : compiled.conditions.join(" && ");
 
+          const endStatement =
+            as.type === "declare_var"
+              ? `${as.name} = ${retExpr};`
+              : `return ${retExpr};`;
+
           compiledMatchExpr.push(
             first ? `if (${condition}) {` : `} else if (${condition}) {`,
-            ...indentBlock(1, [...retStatements, `${as.name} = ${retExpr};`]),
+            ...indentBlock(1, [...retStatements, endStatement]),
           );
           first = false;
         }
