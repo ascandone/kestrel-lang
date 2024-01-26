@@ -288,6 +288,36 @@ test("tail position if", () => {
 `);
 });
 
+test("nested ifs", () => {
+  // TODO switch this to if-else syntax
+  const out = compileSrc(`
+    let is_zero = fn n {
+      if n == 0 {
+        "zero"
+      } else {
+        if n == 1 {
+          "one"
+        } else {
+          "other"
+        }
+      }
+    }
+  `);
+
+  expect(out).toEqual(`function is_zero(n) {
+  if (n == 0) {
+    return "zero";
+  } else {
+    if (n == 1) {
+      return "one";
+    } else {
+      return "other";
+    }
+  }
+}
+`);
+});
+
 test("let expr inside if condition", () => {
   const out = compileSrc(`
     let x = if { let a = 0; a == 1 } {
