@@ -91,21 +91,21 @@ semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
   },
 });
 
-semantics.addOperation<MatchPattern>("matchExpr()", {
-  MatchExpr_ident(ident) {
+semantics.addOperation<MatchPattern>("matchPattern()", {
+  MatchPattern_ident(ident) {
     return {
       type: "ident",
       ident: ident.sourceString,
       span: getSpan(this),
     };
   },
-  MatchExpr_constructor(ident, _lparent, args, _rparens) {
+  MatchPattern_constructor(ident, _lparent, args, _rparens) {
     let args_: MatchPattern[] = [];
     if (args.numChildren > 0) {
       args_ = args
         .child(0)
         .asIteration()
-        .children.map((a) => a.matchExpr());
+        .children.map((a) => a.matchPattern());
     }
     return {
       type: "constructor",
@@ -118,7 +118,7 @@ semantics.addOperation<MatchPattern>("matchExpr()", {
 
 semantics.addOperation<[MatchPattern, Expr<TypeMeta>]>("matchClause()", {
   MatchClause_clause(match, _arrow, expr) {
-    return [match.matchExpr(), expr.expr()];
+    return [match.matchPattern(), expr.expr()];
   },
 });
 

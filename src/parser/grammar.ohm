@@ -109,11 +109,11 @@ Program {
   // --- Pattern matching
 
   MatchClause
-    = MatchExpr "=>" Exp -- clause
+    = MatchPattern "=>" Exp -- clause
 
-  MatchExpr
+  MatchPattern
     = ident  -- ident
-    | typeConstructor ("(" ListOf<MatchExpr, ","> ")")? -- constructor
+    | typeConstructor ("(" ListOf<MatchPattern, ","> ")")? -- constructor
 
   // --- Types
 
