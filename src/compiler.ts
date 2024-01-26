@@ -220,61 +220,27 @@ export class Compiler {
           scope,
         );
 
-        switch (as.type) {
-          case "return": {
-            const thenBlock = this.compileAsStatements(
-              src.then,
-              { type: "return" },
-              scope,
-            );
+        const thenBlock = this.compileAsStatements(
+          src.then,
+          doNotDeclare(as),
+          scope,
+        );
 
-            const elseBlock = this.compileAsStatements(
-              src.else,
-              { type: "return" },
-              scope,
-            );
+        const elseBlock = this.compileAsStatements(
+          src.else,
+          doNotDeclare(as),
+          scope,
+        );
 
-            return [
-              ...conditionStatements,
-              `if (${conditionExpr}) {`,
-              ...indentBlock(identationLevel, thenBlock),
-              `} else {`,
-              ...indentBlock(identationLevel, elseBlock),
-              `}`,
-            ];
-          }
-
-          case "assign_var": {
-            const nestedAs: CompilationMode =
-              as.type === "assign_var" ? { ...as, declare: false } : as;
-
-            const thenStatements = this.compileAsStatements(
-              src.then,
-              nestedAs,
-              scope,
-            );
-
-            const elseStatements = this.compileAsStatements(
-              src.else,
-              nestedAs,
-              scope,
-            );
-
-            if (as.type === "assign_var" && !as.declare) {
-              throw new Error("TODO remove var declaration");
-            }
-
-            return [
-              ...conditionStatements,
-              `let ${as.name};`,
-              `if (${conditionExpr}) {`,
-              ...indentBlock(identationLevel, thenStatements),
-              `} else {`,
-              ...indentBlock(identationLevel, elseStatements),
-              `}`,
-            ];
-          }
-        }
+        return [
+          ...conditionStatements,
+          ...declarationStatements(as),
+          `if (${conditionExpr}) {`,
+          ...indentBlock(identationLevel, thenBlock),
+          `} else {`,
+          ...indentBlock(identationLevel, elseBlock),
+          `}`,
+        ];
       }
 
       case "match": {
@@ -285,21 +251,23 @@ export class Compiler {
           scope,
         );
 
-        const compiledMatchExpr: string[] = [...statements];
-        if (as.type === "assign_var" && as.declare) {
-          compiledMatchExpr.push(`let ${as.name};`);
-        }
-        const nestedAs: CompilationMode =
-          as.type === "assign_var" ? { ...as, declare: false } : as;
+        const compiledMatchExpr: string[] = [
+          ...statements,
+          ...declarationStatements(as),
+        ];
 
         let first = true;
         for (const [pattern, ret] of src.clauses) {
           const compiled = compilePattern(matched, pattern);
 
-          const retStatements = this.compileAsStatements(ret, nestedAs, {
-            ...scope,
-            ...compiled.newScope,
-          });
+          const retStatements = this.compileAsStatements(
+            ret,
+            doNotDeclare(as),
+            {
+              ...scope,
+              ...compiled.newScope,
+            },
+          );
 
           const condition =
             compiled.conditions.length === 0
@@ -549,4 +517,12 @@ function matchCondition(matchingIdent: string, patternName: string): string {
     default:
       return `${matchingIdent}.type === "${patternName}"`;
   }
+}
+
+function doNotDeclare(as: CompilationMode): CompilationMode {
+  return as.type === "assign_var" ? { ...as, declare: false } : as;
+}
+
+function declarationStatements(as: CompilationMode): string[] {
+  return as.type === "assign_var" && as.declare ? [`let ${as.name};`] : [];
 }
