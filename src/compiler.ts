@@ -152,11 +152,7 @@ export class Compiler {
         return [[...value, ...bodyStatements], bodyExpr];
       }
 
-      case "fn": {
-        const name = this.getUniqueName();
-        return [this.compileNamedFn(src, scope, name), name];
-      }
-
+      case "fn":
       case "if":
       case "match": {
         const name = this.getUniqueName();
@@ -180,15 +176,7 @@ export class Compiler {
       case "identifier":
       case "constant": {
         const [statements, expr] = this.compileAsExpr(src, scope);
-        switch (as.type) {
-          case "assign_var": {
-            const constModifier = as.declare ? "const " : "";
-            return [...statements, `${constModifier}${as.name} = ${expr};`];
-          }
-
-          case "return":
-            return [...statements, `return ${expr};`];
-        }
+        return [...statements, wrapJsExpr(expr, as)];
       }
 
       case "let": {
@@ -201,13 +189,37 @@ export class Compiler {
       }
 
       case "fn": {
-        if (as.type === "return") {
-          const name = this.getUniqueName();
-          const statements = this.compileNamedFn(src, scope, name);
-          return [...statements, `return ${name};`];
-        } else {
-          return this.compileNamedFn(src, scope, as.name);
+        if (as.type === "assign_var" && !as.declare) {
+          throw new Error("TODO anonymous function");
         }
+
+        const name = as.type === "return" ? this.getUniqueName() : as.name;
+
+        this.frames.push(new Frame({ type: "fn" }));
+
+        const params = src.params.map((p) => p.name).join(", ");
+        const paramsScope = Object.fromEntries(
+          src.params.map((p) => [p.name, p.name]),
+        );
+
+        const fnBody = this.compileAsStatements(
+          src.body,
+          { type: "return" },
+          {
+            ...scope,
+            ...paramsScope,
+          },
+        );
+
+        this.frames.pop();
+
+        return [
+          //
+          `function ${name}(${params}) {`,
+          ...indentBlock(fnBody),
+          `}`,
+          ...(as.type === "return" ? [wrapJsExpr(name, as)] : []),
+        ];
       }
 
       case "if": {
@@ -286,31 +298,6 @@ export class Compiler {
         return compiledMatchExpr;
       }
     }
-  }
-
-  private compileNamedFn(
-    src: Expr<TypeMeta> & { type: "fn" },
-    scope: Scope,
-    name: string,
-  ): string[] {
-    this.frames.push(new Frame({ type: "fn" }));
-
-    const params = src.params.map((p) => p.name).join(", ");
-    const paramsScope = Object.fromEntries(
-      src.params.map((p) => [p.name, p.name]),
-    );
-
-    const ret = this.compileAsStatements(
-      src.body,
-      { type: "return" },
-      {
-        ...scope,
-        ...paramsScope,
-      },
-    );
-
-    this.frames.pop();
-    return [`function ${name}(${params}) {`, ...indentBlock(ret), `}`];
   }
 
   compile(src: Program<TypeMeta>): string {
@@ -512,4 +499,16 @@ function doNotDeclare(as: CompilationMode): CompilationMode {
 
 function declarationStatements(as: CompilationMode): string[] {
   return as.type === "assign_var" && as.declare ? [`let ${as.name};`] : [];
+}
+
+function wrapJsExpr(expr: string, as: CompilationMode) {
+  switch (as.type) {
+    case "assign_var": {
+      const constModifier = as.declare ? "const " : "";
+      return `${constModifier}${as.name} = ${expr};`;
+    }
+
+    case "return":
+      return `return ${expr};`;
+  }
 }
