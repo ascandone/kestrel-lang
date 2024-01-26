@@ -188,11 +188,10 @@ export class Compiler {
       }
 
       case "fn": {
-        if (as.type === "assign_var" && !as.declare) {
-          throw new Error("TODO anonymous function");
-        }
-
-        const name = as.type === "return" ? this.getUniqueName() : as.name;
+        const name =
+          as.type === "assign_var" && as.declare
+            ? as.name
+            : this.getUniqueName();
 
         this.frames.push(new Frame({ type: "fn" }));
 
@@ -217,7 +216,9 @@ export class Compiler {
           `function ${name}(${params}) {`,
           ...indentBlock(fnBody),
           `}`,
-          ...(as.type === "return" ? [wrapJsExpr(name, as)] : []),
+          ...(as.type === "assign_var" && as.declare
+            ? []
+            : [wrapJsExpr(name, as)]),
         ];
       }
 

@@ -180,6 +180,28 @@ test("toplevel fn with params", () => {
 `);
 });
 
+test("fn inside if return", () => {
+  const out = compileSrc(`
+  let f =
+    if 0 {
+      fn { 1 }
+    } else {
+      2
+    }
+`);
+
+  expect(out).toEqual(`let f;
+if (0) {
+  function f$GEN__0() {
+    return 1;
+  }
+  f = f$GEN__0;
+} else {
+  f = 2;
+}
+`);
+});
+
 test("let inside scope", () => {
   const out = compileSrc(`
   let f = fn {
