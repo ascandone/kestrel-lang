@@ -564,6 +564,21 @@ describe("pattern matching", () => {
     });
   });
 
+  test("infers matched type when is a lit", () => {
+    const [types, errs] = tc(`
+      let f = fn x {
+        match x {
+          42 => 0,
+        }
+      }
+    `);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(Int) -> Int",
+    });
+  });
+
   test("infers matched type when there are no args", () => {
     const [types, errs] = tc(`
       type T { C }

@@ -281,8 +281,11 @@ function* typecheckPattern<T>(
   context: Context,
 ): Generator<TypeError, Context> {
   switch (pattern.type) {
-    case "lit":
+    case "lit": {
+      const t = inferConstant(pattern.literal);
+      yield* unifyYieldErrGeneric(pattern, pattern.$.asType(), t);
       return context;
+    }
 
     case "ident":
       return { ...context, [pattern.ident]: pattern.$.asType() };
