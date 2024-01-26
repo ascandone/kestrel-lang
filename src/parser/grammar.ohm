@@ -70,8 +70,11 @@ Program {
     | "match" Exp "{" ListOf<MatchClause, ","> ","? "}" -- match
     | ident -- ident
     | typeConstructor -- constructor
-    | number -- number
-    | string -- string
+    | lit -- literal
+
+  lit
+    = number
+    | string
 
   BlockContent
     = Exp  -- exp

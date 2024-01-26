@@ -35,6 +35,10 @@ semantics.addOperation<ConstLiteral>("lit()", {
   number_fract(_intPart, _comma, _floatPart) {
     return { type: "float", value: Number(this.sourceString) };
   },
+
+  string(_lDel, _s, _rDel) {
+    return { type: "string", value: JSON.parse(this.sourceString) };
+  },
 });
 
 function parseInfix(
@@ -118,24 +122,11 @@ semantics.addOperation<[MatchPattern, Expr<TypeMeta>]>("matchClause()", {
   },
 });
 
-semantics.addOperation<string>("string()", {
-  string(_lDel, _s, _rDel) {
-    return JSON.parse(this.sourceString);
-  },
-});
-
 semantics.addOperation<Expr<SpanMeta>>("expr()", {
-  PriExp_number(n) {
+  PriExp_literal(n) {
     return {
       type: "constant",
       value: n.lit(),
-      span: getSpan(this),
-    };
-  },
-  PriExp_string(node) {
-    return {
-      type: "constant",
-      value: { type: "string", value: node.string() },
       span: getSpan(this),
     };
   },
