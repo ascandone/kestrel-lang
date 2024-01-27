@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { compile } from "./compiler";
 import { typecheck } from "./typecheck/typecheck";
 import { unsafeParse } from "./parser";
@@ -466,6 +466,26 @@ test("fn closures", () => {
 `);
 });
 
+test("recursion in closures", () => {
+  const out = compileSrc(`
+    let f = {
+      let x = fn { fn { x() } };
+      0
+    }
+`);
+
+  expect(out).toEqual(
+    `function f$x() {
+  function GEN__0() {
+    return f$x();
+  }
+  return GEN__0;
+}
+const f = 0;
+`,
+  );
+});
+
 test("represent True as true", () => {
   const out = compileSrc(`
     let x = True
@@ -806,6 +826,109 @@ function x$GEN__1() {
 }
 const x = f(x$GEN__0, x$GEN__1);
 `);
+});
+
+describe("TCO", () => {
+  test("does not apply inside infix application", () => {
+    const out = compileSrc(`
+    let loop = fn {
+      1 + loop()
+    }
+`);
+
+    expect(out).toEqual(`function loop() {
+  return 1 + loop();
+}
+`);
+  });
+
+  test("does not apply inside application", () => {
+    const out = compileSrc(`
+    let a = 0
+    let loop = fn {
+      a(loop())
+    }
+`);
+
+    expect(out).toEqual(`const a = 0;
+
+function loop() {
+  return a(loop());
+}
+`);
+  });
+
+  test("does not apply to let value", () => {
+    const out = compileSrc(`
+    let f = fn x {
+      let a = f(x + 1);
+      a
+    }
+    
+    `);
+
+    expect(out).toEqual(`function f(x) {
+  const a = f(x + 1);
+  return a;
+}
+`);
+  });
+
+  test("toplevel, no args", () => {
+    const out = compileSrc(`
+      let loop = fn {
+        loop()
+      }
+  `);
+
+    expect(out).toEqual(`function loop() {
+  while (true) {
+  }
+}
+`);
+  });
+
+  test("toplevel with args", () => {
+    const out = compileSrc(`
+      let loop = fn x, y {
+        loop(x + 1, y)
+      }
+  `);
+
+    expect(out).toEqual(`function loop(GEN__0, GEN__1) {
+  while (true) {
+    const x = GEN__0;
+    const y = GEN__1;
+    GEN__0 = x + 1;
+    GEN__1 = y;
+  }
+}
+`);
+  });
+
+  test("inside if", () => {
+    const out = compileSrc(`
+      let to_zero = fn x {
+        if x == 0 {
+          x
+        } else {
+          to_zero(x - 1)
+        }
+      }
+  `);
+
+    expect(out).toEqual(`function to_zero(GEN__0) {
+  while (true) {
+    const x = GEN__0;
+    if (x == 0) {
+      return x;
+    } else {
+      GEN__0 = x - 1;
+    }
+  }
+}
+`);
+  });
 });
 
 function compileSrc(src: string) {

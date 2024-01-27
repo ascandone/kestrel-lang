@@ -34,6 +34,11 @@ class Frame {
   }
 }
 
+type TailPositionData = {
+  ident: string;
+  params: string[];
+};
+
 export class Compiler {
   private frames: Frame[] = [];
 
@@ -86,16 +91,26 @@ export class Compiler {
       throw new Error("[unreachable] empty ns stack");
     }
 
+    const updatedScope =
+      src.value.type === "fn"
+        ? { ...scope, [src.binding.name]: scopedBinding }
+        : scope;
+
     const value = this.compileAsStatements(
       src.value,
       { type: "assign_var", name: scopedBinding, declare: true },
-      scope,
+      updatedScope,
+      undefined,
     );
     this.frames.pop();
     return { value, scopedBinding };
   }
 
-  private compileAsExpr(src: Expr<TypeMeta>, scope: Scope): CompileExprResult {
+  private compileAsExpr(
+    src: Expr<TypeMeta>,
+    scope: Scope,
+    tailPosData: TailPositionData | undefined,
+  ): CompileExprResult {
     switch (src.type) {
       case "constant":
         return [[], constToString(src.value)];
@@ -112,8 +127,8 @@ export class Compiler {
         const infix = getInfixPrecAndName(src);
         if (infix !== undefined) {
           const [l, r] = src.args;
-          const [lStatements, lExpr] = this.compileAsExpr(l!, scope);
-          const [rStatements, rExpr] = this.compileAsExpr(r!, scope);
+          const [lStatements, lExpr] = this.compileAsExpr(l!, scope, undefined);
+          const [rStatements, rExpr] = this.compileAsExpr(r!, scope, undefined);
 
           const infixLeft = getInfixPrecAndName(l!);
           const lCWithParens =
@@ -128,12 +143,17 @@ export class Compiler {
         const [callerStatemens, callerExpr] = this.compileAsExpr(
           src.caller,
           scope,
+          undefined,
         );
 
         const statements: string[] = [...callerStatemens];
         const args: string[] = [];
         for (const arg of src.args) {
-          const [argStatements, argExpr] = this.compileAsExpr(arg, scope);
+          const [argStatements, argExpr] = this.compileAsExpr(
+            arg,
+            scope,
+            undefined,
+          );
           args.push(argExpr);
           statements.push(...argStatements);
         }
@@ -142,10 +162,14 @@ export class Compiler {
 
       case "let": {
         const { value, scopedBinding } = this.compileLetValue(src, scope);
-        const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body, {
-          ...scope,
-          [src.binding.name]: scopedBinding,
-        });
+        const [bodyStatements, bodyExpr] = this.compileAsExpr(
+          src.body,
+          {
+            ...scope,
+            [src.binding.name]: scopedBinding,
+          },
+          tailPosData,
+        );
         return [[...value, ...bodyStatements], bodyExpr];
       }
 
@@ -157,6 +181,7 @@ export class Compiler {
           src,
           { type: "assign_var", name, declare: true },
           scope,
+          undefined,
         );
         return [statements, name];
       }
@@ -167,21 +192,47 @@ export class Compiler {
     src: Expr<TypeMeta>,
     as: CompilationMode,
     scope: Scope,
+    tailPosData: TailPositionData | undefined,
   ): string[] {
     switch (src.type) {
       case "application":
+        if (
+          src.caller.type === "identifier" &&
+          tailPosData !== undefined &&
+          tailPosData.ident === src.caller.name
+        ) {
+          const ret: string[] = [];
+          let i = 0;
+          for (const arg of src.args) {
+            const [statements, expr] = this.compileAsExpr(
+              arg,
+              scope,
+              undefined,
+            );
+            ret.push(...statements);
+            ret.push(`${tailPosData.params[i]!} = ${expr};`);
+            i++;
+          }
+          return ret;
+        }
+
       case "identifier":
       case "constant": {
-        const [statements, expr] = this.compileAsExpr(src, scope);
+        const [statements, expr] = this.compileAsExpr(src, scope, tailPosData);
         return [...statements, wrapJsExpr(expr, as)];
       }
 
       case "let": {
         const { value, scopedBinding } = this.compileLetValue(src, scope);
-        const bodyStatements = this.compileAsStatements(src.body, as, {
-          ...scope,
-          [src.binding.name]: scopedBinding,
-        });
+        const bodyStatements = this.compileAsStatements(
+          src.body,
+          as,
+          {
+            ...scope,
+            [src.binding.name]: scopedBinding,
+          },
+          tailPosData,
+        );
         return [...value, ...bodyStatements];
       }
 
@@ -191,13 +242,16 @@ export class Compiler {
             ? as.name
             : this.getUniqueName();
 
-        this.frames.push(new Frame({ type: "fn" }));
+        const isTailRec = isTailRecursive(name, src.body);
 
-        const params = src.params.map((p) => p.name).join(", ");
+        this.frames.push(new Frame({ type: "fn" }));
+        const params = isTailRec
+          ? src.params.map(() => this.getUniqueName())
+          : src.params.map((p) => p.name);
+
         const paramsScope = Object.fromEntries(
           src.params.map((p) => [p.name, p.name]),
         );
-
         const fnBody = this.compileAsStatements(
           src.body,
           { type: "return" },
@@ -205,14 +259,25 @@ export class Compiler {
             ...scope,
             ...paramsScope,
           },
+          { ident: name, params },
         );
-
         this.frames.pop();
+
+        const wrappedFnBody = isTailRec
+          ? [
+              "while (true) {",
+              ...indentBlock([
+                ...params.map((p, i) => `const ${src.params[i]!.name} = ${p};`),
+                ...fnBody,
+              ]),
+              "}",
+            ]
+          : fnBody;
 
         return [
           //
-          `function ${name}(${params}) {`,
-          ...indentBlock(fnBody),
+          `function ${name}(${params.join(", ")}) {`,
+          ...indentBlock(wrappedFnBody),
           `}`,
           ...(as.type === "assign_var" && as.declare
             ? []
@@ -224,18 +289,21 @@ export class Compiler {
         const [conditionStatements, conditionExpr] = this.compileAsExpr(
           src.condition,
           scope,
+          undefined,
         );
 
         const thenBlock = this.compileAsStatements(
           src.then,
           doNotDeclare(as),
           scope,
+          tailPosData,
         );
 
         const elseBlock = this.compileAsStatements(
           src.else,
           doNotDeclare(as),
           scope,
+          tailPosData,
         );
 
         return [
@@ -255,6 +323,7 @@ export class Compiler {
           src.expr,
           { type: "assign_var", name: matched, declare: true },
           scope,
+          undefined,
         );
 
         const compiledMatchExpr: string[] = [
@@ -273,6 +342,7 @@ export class Compiler {
               ...scope,
               ...compiled.newScope,
             },
+            tailPosData,
           );
 
           const condition =
@@ -332,6 +402,7 @@ export class Compiler {
           ...this.globalScope,
           [decl.binding.name]: decl.binding.name,
         },
+        undefined,
       );
 
       decls.push(...statements, "");
@@ -511,5 +582,28 @@ function wrapJsExpr(expr: string, as: CompilationMode) {
 
     case "return":
       return `return ${expr};`;
+  }
+}
+
+/**
+ * Returns true when at least a recursive tail call is present
+ * Used to wrap the whole body in a while(true) loop
+ */
+function isTailRecursive(ident: string, expr: Expr): boolean {
+  switch (expr.type) {
+    case "constant":
+    case "identifier":
+    case "fn":
+      return false;
+    case "application":
+      return expr.caller.type === "identifier" && expr.caller.name === ident;
+    case "if":
+      return (
+        isTailRecursive(ident, expr.then) || isTailRecursive(ident, expr.else)
+      );
+    case "let":
+      return isTailRecursive(ident, expr.body);
+    case "match":
+      return expr.clauses.some(([_pat, body]) => isTailRecursive(ident, body));
   }
 }
