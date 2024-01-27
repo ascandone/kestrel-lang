@@ -457,6 +457,11 @@ describe("pattern matching", () => {
     const src = `let _ = match x { (x, y) => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("matching cons literal (syntax sugar)", () => {
+    const src = `let _ = match x { hd :: tl => res }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("extern bindings", () => {

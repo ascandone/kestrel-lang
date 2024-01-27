@@ -107,6 +107,15 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
     };
   },
 
+  ConsPattern_cons(l, cons, r) {
+    return {
+      type: "constructor",
+      name: cons.sourceString,
+      args: [l.matchPattern(), r.matchPattern()],
+      span: getSpan(this),
+    };
+  },
+
   MatchPattern_tuple(_lparens, x, _comma, xs, _rparens) {
     const xs_ = xs.asIteration().children.map((c) => c.matchPattern());
 

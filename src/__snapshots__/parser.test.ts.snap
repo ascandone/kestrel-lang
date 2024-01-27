@@ -2114,6 +2114,81 @@ exports[`pattern matching > empty match expression 1`] = `
 }
 `;
 
+exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "span": [
+        0,
+        35,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "args": [
+                {
+                  "ident": "hd",
+                  "span": [
+                    18,
+                    20,
+                  ],
+                  "type": "ident",
+                },
+                {
+                  "ident": "tl",
+                  "span": [
+                    24,
+                    26,
+                  ],
+                  "type": "ident",
+                },
+              ],
+              "name": "::",
+              "span": [
+                18,
+                26,
+              ],
+              "type": "constructor",
+            },
+            {
+              "name": "res",
+              "span": [
+                30,
+                33,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          35,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`pattern matching > matching constructor with no args 1`] = `
 {
   "declarations": [
