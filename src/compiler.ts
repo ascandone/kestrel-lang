@@ -36,11 +36,11 @@ class Frame {
 
 type TailPositionData = {
   ident: string;
-  params: string[];
 };
 
 export class Compiler {
   private frames: Frame[] = [];
+  private tailCall = false;
 
   private getUniqueName() {
     return this.getCurrentFrame().getUniqueName(this.getBlockNs());
@@ -201,6 +201,7 @@ export class Compiler {
           tailPosData !== undefined &&
           tailPosData.ident === src.caller.name
         ) {
+          this.tailCall = true;
           const ret: string[] = [];
           let i = 0;
           for (const arg of src.args) {
@@ -210,7 +211,8 @@ export class Compiler {
               undefined,
             );
             ret.push(...statements);
-            ret.push(`${tailPosData.params[i]!} = ${expr};`);
+            // TODO is it safe to rely on this?
+            ret.push(`GEN__${i} = ${expr};`);
             i++;
           }
           return ret;
@@ -242,13 +244,7 @@ export class Compiler {
             ? as.name
             : this.getUniqueName();
 
-        const isTailRec = isTailRecursive(name, src.body);
-
         this.frames.push(new Frame({ type: "fn" }));
-        const params = isTailRec
-          ? src.params.map(() => this.getUniqueName())
-          : src.params.map((p) => p.name);
-
         const paramsScope = Object.fromEntries(
           src.params.map((p) => [p.name, p.name]),
         );
@@ -259,8 +255,15 @@ export class Compiler {
             ...scope,
             ...paramsScope,
           },
-          { ident: name, params },
+          { ident: name },
         );
+
+        const isTailRec = this.tailCall;
+        this.tailCall = false;
+        const params = isTailRec
+          ? src.params.map(() => this.getUniqueName())
+          : src.params.map((p) => p.name);
+
         this.frames.pop();
 
         const wrappedFnBody = isTailRec
@@ -582,28 +585,5 @@ function wrapJsExpr(expr: string, as: CompilationMode) {
 
     case "return":
       return `return ${expr};`;
-  }
-}
-
-/**
- * Returns true when at least a recursive tail call is present
- * Used to wrap the whole body in a while(true) loop
- */
-function isTailRecursive(ident: string, expr: Expr): boolean {
-  switch (expr.type) {
-    case "constant":
-    case "identifier":
-    case "fn":
-      return false;
-    case "application":
-      return expr.caller.type === "identifier" && expr.caller.name === ident;
-    case "if":
-      return (
-        isTailRecursive(ident, expr.then) || isTailRecursive(ident, expr.else)
-      );
-    case "let":
-      return isTailRecursive(ident, expr.body);
-    case "match":
-      return expr.clauses.some(([_pat, body]) => isTailRecursive(ident, body));
   }
 }
