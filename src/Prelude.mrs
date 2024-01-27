@@ -70,6 +70,10 @@ type Tuple4<a, b, c, d> {
   Tuple4(a, b, c, d)
 }
 
+type List<a> {
+  Nil,
+  Cons(a, List<a>),
+}
 
 extern type Task<a>
 
