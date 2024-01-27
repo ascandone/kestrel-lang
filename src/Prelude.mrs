@@ -2,11 +2,16 @@ extern type Int
 
 extern type Float
 
-extern type Bool
-
 extern type String
 
-type Nil { Nil }
+type Bool {
+  True,
+  False,  
+}
+
+type Nil {
+  Nil
+}
 
 extern let (+): Fn(Int, Int) -> Int
 extern let (+.): Fn(Float, Float) -> Float

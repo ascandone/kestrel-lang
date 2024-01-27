@@ -1,6 +1,12 @@
 import { ConstLiteral, Expr, MatchPattern, Program, TypeVariant } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 
+const builtinValues: Scope = {
+  True: "true",
+  False: "false",
+  Nil: "null",
+};
+
 type CompileExprResult = [statements: string[], expr: string];
 
 type Scope = Record<string, string>;
@@ -46,11 +52,7 @@ export class Compiler {
     return this.getCurrentFrame().getUniqueName(this.getBlockNs());
   }
 
-  private globalScope: Scope = {
-    True: "true",
-    False: "false",
-    Nil: "null",
-  };
+  private globalScope: Scope = {};
 
   private getBlockNs(): string | undefined {
     const ns: string[] = [];
@@ -116,7 +118,7 @@ export class Compiler {
         return [[], constToString(src.value)];
 
       case "identifier": {
-        const lookup = scope[src.name];
+        const lookup = builtinValues[src.name] ?? scope[src.name];
         if (lookup === undefined) {
           throw new Error(`[unreachable] undefined identifier (${src.name})`);
         }
@@ -379,6 +381,9 @@ export class Compiler {
       }
 
       for (const variant of typeDecl.variants) {
+        if (variant.name in builtinValues) {
+          break;
+        }
         const def = getVariantImpl(variant);
         decls.push(def);
         this.globalScope[variant.name] = variant.name;
