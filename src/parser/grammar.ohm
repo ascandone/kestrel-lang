@@ -21,15 +21,15 @@ Program {
     | CompExp
 
   CompExp
-    = CompExp "<" CompExp -- lt
-    | CompExp "<=" CompExp -- lte
-    | CompExp ">" CompExp -- gt
-    | CompExp ">=" CompExp -- gte
+    = CompExp "<" EqExpr -- lt
+    | CompExp "<=" EqExpr -- lte
+    | CompExp ">" EqExpr -- gt
+    | CompExp ">=" EqExpr -- gte
     | EqExpr
 
   EqExpr
-    = EqExpr "==" EqExpr -- eq
-    | EqExpr "!=" EqExpr -- neq
+    = EqExpr "==" AndExpr -- eq
+    | EqExpr "!=" AndExpr -- neq
     | AndExpr
 
   AndExpr
@@ -37,7 +37,7 @@ Program {
     | OrExpr
 
   OrExpr
-    = OrExpr "||" OrExpr -- or
+    = OrExpr "||" ConsExpr -- or
     | ConsExpr
 
   ConsExpr
@@ -45,19 +45,19 @@ Program {
     | AddExp
 
   AddExp
-    = AddExp "+" AddExp  -- plus
-    | AddExp "+." AddExp  -- plusFloat
-    | AddExp "-" AddExp  -- minus
-    | AddExp "-." AddExp  -- minusFloat
-    | AddExp "<>" AddExp  -- concat
+    = AddExp "+" MulExp  -- plus
+    | AddExp "+." MulExp  -- plusFloat
+    | AddExp "-" MulExp  -- minus
+    | AddExp "-." MulExp  -- minusFloat
+    | AddExp "<>" MulExp  -- concat
     | MulExp
 
   MulExp
-    = MulExp "*" MulExp  -- mult
-    | MulExp "*." MulExp  -- multFloat
-    | MulExp "/" MulExp  -- divide
-    | MulExp "/." MulExp  -- divideFloat
-    | MulExp "%" MulExp  -- rem
+    = MulExp "*" ExpExp  -- mult
+    | MulExp "*." ExpExp  -- multFloat
+    | MulExp "/" ExpExp  -- divide
+    | MulExp "/." ExpExp  -- divideFloat
+    | MulExp "%" ExpExp  -- rem
     | ExpExp
 
   ExpExp
