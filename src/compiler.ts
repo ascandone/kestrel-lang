@@ -4,7 +4,7 @@ import { TypeMeta } from "./typecheck/typecheck";
 const builtinValues: Scope = {
   True: "true",
   False: "false",
-  Nil: "null",
+  Unit: "null",
 };
 
 type CompileExprResult = [statements: string[], expr: string];
@@ -565,7 +565,7 @@ function matchCondition(matchingIdent: string, patternName: string): string {
     case "False":
       return `!${matchingIdent}`;
 
-    case "Nil":
+    case "Unit":
       return "true";
 
     default:

@@ -734,32 +734,32 @@ describe("prelude", () => {
   test("typechecks extern values", () => {
     const [types, errs] = tc(
       `
-     extern let x : Nil
+     extern let x : Unit
     `,
       {},
-      { Nil: 0 },
+      { Unit: 0 },
     );
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      x: "Nil",
+      x: "Unit",
     });
   });
 
   test("typechecks extern values", () => {
     const [types, errs] = tc(
       `
-     extern let x : Nil
+     extern let x : Unit
      let y = x
     `,
       {},
-      { Nil: 0 },
+      { Unit: 0 },
     );
 
     expect(errs).toEqual([]);
     expect(types).toEqual(
       expect.objectContaining({
-        y: "Nil",
+        y: "Unit",
       }),
     );
   });

@@ -504,9 +504,9 @@ test("represent False as false", () => {
 `);
 });
 
-test("represent Nil as null", () => {
+test("represent Unit as null", () => {
   const out = compileSrc(`
-    let x = Nil
+    let x = Unit
   `);
 
   expect(out).toEqual(`const x = null;
@@ -654,10 +654,10 @@ if (x$GEN__0) {
 `);
 });
 
-test("pattern matching Nil values", () => {
+test("pattern matching Unit values", () => {
   const out = compileSrc(`
-  let x = match Nil {
-    Nil => 0,
+  let x = match Unit {
+    Unit => 0,
   }
 `);
 

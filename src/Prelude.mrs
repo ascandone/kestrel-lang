@@ -9,8 +9,8 @@ type Bool {
   False,  
 }
 
-type Nil {
-  Nil
+type Unit {
+  Unit
 }
 
 extern let (+): Fn(Int, Int) -> Int
@@ -77,9 +77,9 @@ extern let task_of: Fn(a) -> Task<a>
 
 extern let await: Fn(Task<a>, Fn(a) -> Task<b>) -> Task<b>
 
-extern let println: Fn(String) -> Task<Nil>
-extern let print: Fn(String) -> Task<Nil>
+extern let println: Fn(String) -> Task<Unit>
+extern let print: Fn(String) -> Task<Unit>
 
 extern let readline: Task<String>
 
-extern let sleep: Fn(Int) -> Task<Nil>
+extern let sleep: Fn(Int) -> Task<Unit>
