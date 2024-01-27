@@ -1031,6 +1031,141 @@ exports[`parse block with no let 1`] = `
 }
 `;
 
+exports[`parse cons operator is right-associative 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "span": [
+        0,
+        21,
+      ],
+      "value": {
+        "args": [
+          {
+            "name": "a",
+            "span": [
+              8,
+              9,
+            ],
+            "type": "identifier",
+          },
+          {
+            "args": [
+              {
+                "name": "b",
+                "span": [
+                  13,
+                  14,
+                ],
+                "type": "identifier",
+              },
+              {
+                "name": "Nil",
+                "span": [
+                  18,
+                  21,
+                ],
+                "type": "identifier",
+              },
+            ],
+            "caller": {
+              "name": "Cons",
+              "span": [
+                15,
+                17,
+              ],
+              "type": "identifier",
+            },
+            "span": [
+              13,
+              21,
+            ],
+            "type": "application",
+          },
+        ],
+        "caller": {
+          "name": "Cons",
+          "span": [
+            10,
+            12,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          21,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`parse conslist sugar 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "span": [
+        0,
+        16,
+      ],
+      "value": {
+        "args": [
+          {
+            "name": "hd",
+            "span": [
+              8,
+              10,
+            ],
+            "type": "identifier",
+          },
+          {
+            "name": "tl",
+            "span": [
+              14,
+              16,
+            ],
+            "type": "identifier",
+          },
+        ],
+        "caller": {
+          "name": "Cons",
+          "span": [
+            11,
+            13,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          16,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse empty strings 1`] = `
 {
   "declarations": [
@@ -1687,7 +1822,7 @@ c",
 }
 `;
 
-exports[`parse tuple 1`] = `
+exports[`parse tuple sugar 1`] = `
 {
   "declarations": [
     {

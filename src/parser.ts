@@ -159,6 +159,19 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     };
   },
 
+  ConsExpr_cons(hd, cons, tl) {
+    return {
+      type: "application",
+      span: getSpan(this),
+      caller: {
+        type: "identifier",
+        name: "Cons",
+        span: getSpan(cons),
+      },
+      args: [hd.expr(), tl.expr()],
+    };
+  },
+
   PriExp_tuple(_lparens, x, _comma, xs, _rparens) {
     const xs_ = xs.asIteration().children.map((x) => x.expr());
 

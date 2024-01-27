@@ -38,6 +38,10 @@ Program {
 
   OrExpr
     = OrExpr "||" OrExpr -- or
+    | ConsExpr
+
+  ConsExpr
+    = ConsExpr "::" ConsExpr -- cons
     | AddExp
 
   AddExp

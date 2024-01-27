@@ -252,8 +252,18 @@ let _ = if b {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test("parse tuple", () => {
+test("parse tuple sugar", () => {
   const src = "let _ = (1, 2)";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse conslist sugar", () => {
+  const src = "let _ = hd :: tl";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse cons operator is right-associative", () => {
+  const src = "let _ = a :: b :: Nil";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
