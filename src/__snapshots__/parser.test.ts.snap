@@ -1934,8 +1934,7 @@ exports[`parse strings with newlines 1`] = `
         "type": "constant",
         "value": {
           "type": "string",
-          "value": "ab
-c",
+          "value": "ab\\nc",
         },
       },
     },

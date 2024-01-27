@@ -9,9 +9,15 @@ test("compile int constants", () => {
 `);
 });
 
-test("compile float constants", () => {
+test("compile string constants", () => {
   const out = compileSrc(`let x = "abc"`);
   expect(out).toEqual(`const x = "abc";
+`);
+});
+
+test("compile string constants with newlines", () => {
+  const out = compileSrc(`let x = "ab\nc"`);
+  expect(out).toEqual(`const x = "ab\nc";
 `);
 });
 

@@ -36,8 +36,8 @@ semantics.addOperation<ConstLiteral>("lit()", {
     return { type: "float", value: Number(this.sourceString) };
   },
 
-  string(_lDel, _s, _rDel) {
-    return { type: "string", value: JSON.parse(this.sourceString) };
+  string(_lDel, s, _rDel) {
+    return { type: "string", value: s.sourceString };
   },
 });
 
