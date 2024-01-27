@@ -168,6 +168,39 @@ exports[`extern bindings > types 1`] = `
 }
 `;
 
+exports[`ignoring comments 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          34,
+          35,
+        ],
+      },
+      "extern": false,
+      "span": [
+        30,
+        40,
+      ],
+      "value": {
+        "span": [
+          38,
+          40,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 42,
+        },
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`it should be possible to mix pipe with infix 1`] = `
 {
   "declarations": [

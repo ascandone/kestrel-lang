@@ -334,6 +334,15 @@ test("it should be possible to mix pipe with infix", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("ignoring comments", () => {
+  const src = `
+    // ignoring comments
+    let _ = 42
+  `;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 describe("type hints", () => {
   test("parses a concrete type with no args as a type hint", () => {
     const src = "let x : Int = 0";
