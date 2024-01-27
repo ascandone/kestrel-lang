@@ -14,7 +14,11 @@ Program {
   // --- Expressions
 
   Exp
-    = CompExp
+    = PipeExp
+
+  PipeExp
+    = PipeExp "|>" ident "(" ListOf<Exp, ","> ","? ")"  -- pipe
+    | CompExp
 
   CompExp
     = CompExp "<" CompExp -- lt

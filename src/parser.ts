@@ -143,6 +143,14 @@ semantics.addOperation<[MatchPattern, Expr<TypeMeta>]>("matchClause()", {
 });
 
 semantics.addOperation<Expr<SpanMeta>>("expr()", {
+  PipeExp_pipe(left, _pipe, caller, _lparens, args, _trailingComma, _rparens) {
+    return {
+      type: "application",
+      caller: caller.expr(),
+      args: [left.expr(), ...args.asIteration().children.map((c) => c.expr())],
+      span: getSpan(this),
+    };
+  },
   PriExp_literal(n) {
     return {
       type: "constant",

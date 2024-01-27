@@ -79,6 +79,101 @@ exports[`extern bindings > types 1`] = `
 }
 `;
 
+exports[`it should be possible to mix pipe with infix 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          9,
+          10,
+        ],
+      },
+      "extern": false,
+      "span": [
+        5,
+        32,
+      ],
+      "value": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "span": [
+                      13,
+                      14,
+                    ],
+                    "type": "constant",
+                    "value": {
+                      "type": "int",
+                      "value": 1,
+                    },
+                  },
+                  {
+                    "span": [
+                      17,
+                      18,
+                    ],
+                    "type": "constant",
+                    "value": {
+                      "type": "int",
+                      "value": 2,
+                    },
+                  },
+                ],
+                "caller": {
+                  "name": "+",
+                  "span": [
+                    15,
+                    16,
+                  ],
+                  "type": "identifier",
+                },
+                "span": [
+                  13,
+                  18,
+                ],
+                "type": "application",
+              },
+            ],
+            "caller": {
+              "name": "f",
+              "span": [
+                22,
+                23,
+              ],
+              "type": "identifier",
+            },
+            "span": [
+              13,
+              25,
+            ],
+            "type": "application",
+          },
+        ],
+        "caller": {
+          "name": "g",
+          "span": [
+            29,
+            30,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          13,
+          32,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`monadic let syntax sugar 1`] = `
 {
   "declarations": [
@@ -2168,6 +2263,133 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
           33,
         ],
         "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pipe syntax sugar 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          9,
+          10,
+        ],
+      },
+      "extern": false,
+      "span": [
+        5,
+        25,
+      ],
+      "value": {
+        "args": [
+          {
+            "name": "a",
+            "span": [
+              13,
+              14,
+            ],
+            "type": "identifier",
+          },
+          {
+            "name": "x",
+            "span": [
+              20,
+              21,
+            ],
+            "type": "identifier",
+          },
+          {
+            "name": "y",
+            "span": [
+              23,
+              24,
+            ],
+            "type": "identifier",
+          },
+        ],
+        "caller": {
+          "name": "f",
+          "span": [
+            18,
+            19,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          13,
+          25,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pipe syntax sugar should be chainable 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          9,
+          10,
+        ],
+      },
+      "extern": false,
+      "span": [
+        5,
+        28,
+      ],
+      "value": {
+        "args": [
+          {
+            "args": [
+              {
+                "name": "a",
+                "span": [
+                  13,
+                  14,
+                ],
+                "type": "identifier",
+              },
+            ],
+            "caller": {
+              "name": "f",
+              "span": [
+                18,
+                19,
+              ],
+              "type": "identifier",
+            },
+            "span": [
+              13,
+              21,
+            ],
+            "type": "application",
+          },
+        ],
+        "caller": {
+          "name": "g",
+          "span": [
+            25,
+            26,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          13,
+          28,
+        ],
+        "type": "application",
       },
     },
   ],

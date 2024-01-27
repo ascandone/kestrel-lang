@@ -286,6 +286,39 @@ test("monadic let syntax sugar should not contain space", () => {
   expect(() => unsafeParse(src)).toThrow();
 });
 
+test("pipe syntax sugar", () => {
+  const src = `
+    let _ = a |> f(x, y)
+  `;
+
+  // This should desugar to:
+  //  f(a, x, y)
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("pipe syntax sugar should be chainable", () => {
+  const src = `
+    let _ = a |> f() |> g()
+  `;
+
+  // This should desugar to:
+  //  g(f(a))
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("it should be possible to mix pipe with infix", () => {
+  const src = `
+    let _ = 1 + 2 |> f() |> g()
+  `;
+
+  // This should desugar to:
+  //  g(f(1 + 2))
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 describe("type hints", () => {
   test("parses a concrete type with no args as a type hint", () => {
     const src = "let x : Int = 0";
