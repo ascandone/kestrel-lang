@@ -107,10 +107,10 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
     };
   },
 
-  ConsPattern_cons(l, cons, r) {
+  ConsPattern_cons(l, _cons, r) {
     return {
       type: "constructor",
-      name: cons.sourceString,
+      name: "Cons",
       args: [l.matchPattern(), r.matchPattern()],
       span: getSpan(this),
     };

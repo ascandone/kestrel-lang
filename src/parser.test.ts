@@ -462,6 +462,11 @@ describe("pattern matching", () => {
     const src = `let _ = match x { hd :: tl => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("matching cons literal is right assoc", () => {
+    const src = `let _ = match x { hd :: tl :: Nil => res }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("extern bindings", () => {

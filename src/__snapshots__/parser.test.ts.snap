@@ -2152,7 +2152,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
                   "type": "ident",
                 },
               ],
-              "name": "::",
+              "name": "Cons",
               "span": [
                 18,
                 26,
@@ -2180,6 +2180,100 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
         "span": [
           8,
           35,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pattern matching > matching cons literal is right assoc 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "span": [
+        0,
+        42,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "args": [
+                {
+                  "ident": "hd",
+                  "span": [
+                    18,
+                    20,
+                  ],
+                  "type": "ident",
+                },
+                {
+                  "args": [
+                    {
+                      "ident": "tl",
+                      "span": [
+                        24,
+                        26,
+                      ],
+                      "type": "ident",
+                    },
+                    {
+                      "args": [],
+                      "name": "Nil",
+                      "span": [
+                        30,
+                        33,
+                      ],
+                      "type": "constructor",
+                    },
+                  ],
+                  "name": "Cons",
+                  "span": [
+                    24,
+                    33,
+                  ],
+                  "type": "constructor",
+                },
+              ],
+              "name": "Cons",
+              "span": [
+                18,
+                33,
+              ],
+              "type": "constructor",
+            },
+            {
+              "name": "res",
+              "span": [
+                37,
+                40,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          42,
         ],
         "type": "match",
       },
