@@ -745,8 +745,7 @@ import Tuple.{Tuple2(..)}
 
 const defaultImports: Import[] = [
   {
-    module: "Prelude",
-    path: [],
+    ns: "Prelude",
     exposing: [
       // Basics
       { type: "value", name: "==" },
