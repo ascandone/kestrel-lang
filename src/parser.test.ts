@@ -523,7 +523,7 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.todo("parse pub(..) modifier on types", () => {
+  test("parse pub(..) modifier on types", () => {
     const src = "pub(..) type T { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

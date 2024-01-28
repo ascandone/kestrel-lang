@@ -309,6 +309,25 @@ exports[`imports > parse pub modifier on types 1`] = `
 }
 `;
 
+exports[`imports > parse pub(..) modifier on types 1`] = `
+{
+  "declarations": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "params": [],
+      "pub": "..",
+      "span": [
+        0,
+        18,
+      ],
+      "type": "adt",
+      "variants": [],
+    },
+  ],
+}
+`;
+
 exports[`it should be possible to mix pipe with infix 1`] = `
 {
   "declarations": [

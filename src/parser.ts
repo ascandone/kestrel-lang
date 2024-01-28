@@ -397,6 +397,7 @@ semantics.addOperation<Statement>("statement()", {
 
   TypeDeclaration_typeDef(
     pubOpt,
+    nestedPubOpt,
     _type,
     typeName,
     _lT,
@@ -416,7 +417,7 @@ semantics.addOperation<Statement>("statement()", {
       type: "typeDeclaration",
       decl: {
         type: "adt",
-        pub,
+        pub: pub && nestedPubOpt.child(0).numChildren === 1 ? ".." : pub,
         params: parseParams(params),
         name: typeName.sourceString,
         variants: variants_,
