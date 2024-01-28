@@ -1,9 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
-import { typecheck, TypeError, TypesPool } from "./typecheck";
+import { typecheck, TypeError } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
-import { Context } from "./unify";
-import { Int, Bool, Fn } from "../__test__/types";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -30,14 +28,15 @@ test("infer float", () => {
 test("infer a variable present in the context", () => {
   const [types, errors] = tc(
     `
-    let x = y
+    let x = 42
+    let y = x
   `,
-    { y: { type: "named", name: "Y", args: [] } },
   );
 
   expect(errors).toEqual([]);
   expect(types).toEqual({
-    x: "Y",
+    x: "Int",
+    y: "Int",
   });
 });
 
@@ -46,7 +45,6 @@ test("infer a variable not present in the context", () => {
     `
     let x = unbound_var
   `,
-    {},
   );
 
   expect(errors).toEqual<TypeError[]>([
@@ -87,35 +85,25 @@ test("fn returning a constant", () => {
 test("application return type", () => {
   const [types, errors] = tc(
     `
+    extern let (>): Fn(a, a) -> Bool
     let x = 1 > 2
   `,
-    {
-      ">": {
-        type: "fn",
-        args: [Int, Int],
-        return: Bool,
-      },
-    },
   );
 
   expect(errors).toEqual([]);
-  expect(types).toEqual({
-    x: "Bool",
-  });
+  expect(types).toEqual(
+    expect.objectContaining({
+      x: "Bool",
+    }),
+  );
 });
 
 test("application args should be typechecked", () => {
   const [, errors] = tc(
     `
+    extern let (>): Fn(Int, Int) -> Bool
     let x = 1.1 > 2
   `,
-    {
-      ">": {
-        type: "fn",
-        args: [Int, Int],
-        return: Bool,
-      },
-    },
   );
 
   expect(errors).not.toEqual([]);
@@ -124,25 +112,22 @@ test("application args should be typechecked", () => {
 test("typecheck fn args", () => {
   const [types] = tc(
     `
+    extern let (>): Fn(Int, Int) -> Bool
     let f = fn x, y { x > y }
   `,
-    {
-      ">": {
-        type: "fn",
-        args: [Int, Int],
-        return: Bool,
-      },
-    },
   );
 
-  expect(types).toEqual({
-    f: "Fn(Int, Int) -> Bool",
-  });
+  expect(types).toEqual(
+    expect.objectContaining({
+      f: "Fn(Int, Int) -> Bool",
+    }),
+  );
 });
 
 test("typecheck if ret value", () => {
   const [types] = tc(
     `
+    type Bool { True }
     let f =
       if True {
         0
@@ -150,9 +135,6 @@ test("typecheck if ret value", () => {
         1
       }
   `,
-    {
-      True: Bool,
-    },
   );
 
   expect(types).toEqual({
@@ -163,6 +145,7 @@ test("typecheck if ret value", () => {
 test("unify if clauses", () => {
   const [types] = tc(
     `
+    type Bool { True }
     let f = fn x {
       if True {
         0
@@ -171,9 +154,6 @@ test("unify if clauses", () => {
       }
     }
   `,
-    {
-      True: Bool,
-    },
   );
 
   expect(types).toEqual({
@@ -275,11 +255,10 @@ test("recursive let declarations", () => {
 describe("type hints", () => {
   test("type hints are used by typechecker", () => {
     const [types, errs] = tc(
-      "let x: Int = 1.1",
-      {},
-      {
-        Int: 0,
-      },
+      `
+        extern type Int
+        let x: Int = 1.1
+      `,
     );
     expect(errs).not.toEqual([]);
     expect(types).toEqual({
@@ -289,40 +268,39 @@ describe("type hints", () => {
 
   test("type hints of fns are used by typechecker", () => {
     const [types, errs] = tc(
-      "let x: Fn() -> Int = fn { 1.1 }",
-      {},
-      {
-        Int: 0,
-      },
+      `
+        extern type Int
+        let x: Fn() -> Int = fn { 1.1 }
+        `,
     );
     expect(errs).not.toEqual([]);
-    expect(types).toEqual({
-      x: "Fn() -> Int",
-    });
+    expect(types).toEqual(
+      expect.objectContaining({
+        x: "Fn() -> Int",
+      }),
+    );
   });
 
   test("type hints of fns are used by typechecker (args)", () => {
     const [types, errs] = tc(
-      "let x: Fn(Bool) -> Int = fn x { !x }",
-      { "!": Fn([Bool], Bool) },
-      {
-        Int: 0,
-        Bool: 0,
-      },
+      `
+      extern let (!): Fn(Bool) -> Bool
+      let x: Fn(Bool) -> Int = fn x { !x }
+      `,
     );
     expect(errs).not.toEqual([]);
-    expect(types).toEqual({
-      x: "Fn(Bool) -> Int",
-    });
+    expect(types).toEqual(
+      expect.objectContaining({
+        x: "Fn(Bool) -> Int",
+      }),
+    );
   });
 
   test("_ type hints are ignored by typechecker", () => {
     const [types, errs] = tc(
-      "let x: _ = 1",
-      {},
-      {
-        Int: 0,
-      },
+      `
+      extern type Int
+      let x: _ = 1`,
     );
     expect(errs).toEqual([]);
     expect(types).toEqual({
@@ -363,7 +341,7 @@ describe("type hints", () => {
   });
 
   test("unknown types are rejected", () => {
-    const [types, errs] = tc("let x: NotFound = 1", {}, {});
+    const [types, errs] = tc("let x: NotFound = 1");
     expect(errs).not.toEqual([]);
     expect(errs[0].type).toBe("unbound-type");
     expect(types).toEqual({
@@ -400,11 +378,10 @@ describe("custom types", () => {
   test("handles constructor with one (non-parametric) arg", () => {
     const [types, errs] = tc(
       `
+    extern type Int
     type T { C(Int) }
     let c = C
   `,
-      {},
-      { Int: 0 },
     );
 
     expect(errs).toEqual([]);
@@ -416,13 +393,13 @@ describe("custom types", () => {
   test("handles constructor with complex arg", () => {
     const [types, errs] = tc(
       `
+    extern type Int
+    type Maybe<a> { }
     type T {
       C(Maybe<Int>, Int)
     }
     let c = C
   `,
-      {},
-      { Int: 0, Maybe: 1 },
     );
 
     expect(errs).toEqual([]);
@@ -434,13 +411,14 @@ describe("custom types", () => {
   test("handles constructor wrapping a function", () => {
     const [types, errs] = tc(
       `
+    type A {}
+    type B {}
+    type C {}
     type T {
       C(Fn(A, B) -> C)
     }
     let c = C
   `,
-      {},
-      { A: 0, B: 0, C: 0 },
     );
 
     expect(errs).toEqual([]);
@@ -598,6 +576,7 @@ describe("pattern matching", () => {
   test("infers matched type when there are concrete args", () => {
     const [types, errs] = tc(
       `
+      type Bool { }
       type T { C(Bool) }
 
       let f = fn x {
@@ -606,8 +585,6 @@ describe("pattern matching", () => {
         }
       }
     `,
-      {},
-      { Bool: 0 },
     );
 
     expect(errs).toEqual([]);
@@ -734,10 +711,9 @@ describe("prelude", () => {
   test("typechecks extern values", () => {
     const [types, errs] = tc(
       `
+     type Unit {}
      extern let x : Unit
     `,
-      {},
-      { Unit: 0 },
     );
 
     expect(errs).toEqual([]);
@@ -749,11 +725,10 @@ describe("prelude", () => {
   test("typechecks extern values", () => {
     const [types, errs] = tc(
       `
+     type Unit { }
      extern let x : Unit
      let y = x
     `,
-      {},
-      { Unit: 0 },
     );
 
     expect(errs).toEqual([]);
@@ -765,9 +740,9 @@ describe("prelude", () => {
   });
 });
 
-function tc(src: string, context: Context = {}, typesContext: TypesPool = {}) {
+function tc(src: string) {
   const parsedProgram = unsafeParse(src);
-  const [typed, errors] = typecheck(parsedProgram, context, typesContext);
+  const [typed, errors] = typecheck(parsedProgram);
 
   const kvs = typed.declarations.map((decl) => [
     decl.binding.name,
