@@ -161,6 +161,7 @@ exports[`extern bindings > types 1`] = `
     {
       "name": "T",
       "params": [],
+      "pub": false,
       "span": [
         7,
         20,
@@ -2965,6 +2966,7 @@ exports[`type declarations > many type params 1`] = `
           ],
         },
       ],
+      "pub": false,
       "span": [
         0,
         19,
@@ -2991,6 +2993,7 @@ exports[`type declarations > single type param 1`] = `
           ],
         },
       ],
+      "pub": false,
       "span": [
         0,
         13,
@@ -3009,6 +3012,7 @@ exports[`type declarations > trailing comma after variants 1`] = `
     {
       "name": "T",
       "params": [],
+      "pub": false,
       "span": [
         0,
         16,
@@ -3036,6 +3040,7 @@ exports[`type declarations > type with a variant with complex args 1`] = `
     {
       "name": "T",
       "params": [],
+      "pub": false,
       "span": [
         7,
         58,
@@ -3097,6 +3102,7 @@ exports[`type declarations > type with a variant with no args 1`] = `
     {
       "name": "T",
       "params": [],
+      "pub": false,
       "span": [
         0,
         12,
@@ -3120,6 +3126,7 @@ exports[`type declarations > type with a variant with no args 2`] = `
     {
       "name": "T",
       "params": [],
+      "pub": false,
       "span": [
         0,
         17,
@@ -3153,6 +3160,7 @@ exports[`type declarations > type with many variants 1`] = `
     {
       "name": "T",
       "params": [],
+      "pub": false,
       "span": [
         0,
         15,
@@ -3180,6 +3188,7 @@ exports[`type declarations > type with no variants 1`] = `
     {
       "name": "Never",
       "params": [],
+      "pub": false,
       "span": [
         0,
         14,

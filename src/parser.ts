@@ -377,6 +377,7 @@ semantics.addOperation<Statement>("statement()", {
       type: "typeDeclaration",
       decl: {
         type: "extern",
+        pub: false,
         params: parseParams(params),
         name: typeName.sourceString,
         span: getSpan(this),
@@ -403,6 +404,7 @@ semantics.addOperation<Statement>("statement()", {
       type: "typeDeclaration",
       decl: {
         type: "adt",
+        pub: false,
         params: parseParams(params),
         name: typeName.sourceString,
         variants: variants_,

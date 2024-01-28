@@ -102,7 +102,10 @@ export type TypeVariant = { name: string; args: TypeAst[] };
 export type TypeDeclaration = SpanMeta & {
   name: string;
   params: Array<{ name: string } & SpanMeta>;
-} & ({ type: "adt"; variants: TypeVariant[] } | { type: "extern" });
+} & (
+    | { type: "adt"; variants: TypeVariant[]; pub: boolean | ".." }
+    | { type: "extern"; pub: boolean }
+  );
 
 export type Exposing =
   | { type: "type"; name: string; exposeImpl: boolean }
