@@ -372,12 +372,22 @@ function parseParams(params: IterationNode) {
   return params_;
 }
 semantics.addOperation<Statement>("statement()", {
-  TypeDeclaration_externType(_extern, _type, typeName, _lT, params, _rT) {
+  TypeDeclaration_externType(
+    _extern,
+    pubOpt,
+    _type,
+    typeName,
+    _lT,
+    params,
+    _rT,
+  ) {
+    const pub = pubOpt.numChildren === 1;
+
     return {
       type: "typeDeclaration",
       decl: {
         type: "extern",
-        pub: false,
+        pub,
         params: parseParams(params),
         name: typeName.sourceString,
         span: getSpan(this),
@@ -386,6 +396,7 @@ semantics.addOperation<Statement>("statement()", {
   },
 
   TypeDeclaration_typeDef(
+    pubOpt,
     _type,
     typeName,
     _lT,
@@ -396,6 +407,7 @@ semantics.addOperation<Statement>("statement()", {
     _trailingComma,
     _rbracket,
   ) {
+    const pub = pubOpt.numChildren === 1;
     const variants_ = variants
       .asIteration()
       .children.map<TypeVariant>((n) => n.typeVariant());
@@ -404,7 +416,7 @@ semantics.addOperation<Statement>("statement()", {
       type: "typeDeclaration",
       decl: {
         type: "adt",
-        pub: false,
+        pub,
         params: parseParams(params),
         name: typeName.sourceString,
         variants: variants_,

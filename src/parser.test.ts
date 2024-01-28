@@ -517,6 +517,21 @@ describe("imports", () => {
     const src = "extern pub let _: Int";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("parse pub modifier on types", () => {
+    const src = "pub type T { }";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("parse pub(..) modifier on types", () => {
+    const src = "pub(..) type T { }";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("parse pub modifier on extern types", () => {
+    const src = "extern pub type T";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

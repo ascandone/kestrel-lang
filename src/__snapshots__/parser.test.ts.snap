@@ -240,6 +240,24 @@ exports[`imports > parse pub modifier 1`] = `
 }
 `;
 
+exports[`imports > parse pub modifier on extern types 1`] = `
+{
+  "declarations": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "params": [],
+      "pub": true,
+      "span": [
+        0,
+        17,
+      ],
+      "type": "extern",
+    },
+  ],
+}
+`;
+
 exports[`imports > parse pub modifier on extern values 1`] = `
 {
   "declarations": [
@@ -269,6 +287,25 @@ exports[`imports > parse pub modifier on extern values 1`] = `
     },
   ],
   "typeDeclarations": [],
+}
+`;
+
+exports[`imports > parse pub modifier on types 1`] = `
+{
+  "declarations": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "params": [],
+      "pub": true,
+      "span": [
+        0,
+        14,
+      ],
+      "type": "adt",
+      "variants": [],
+    },
+  ],
 }
 `;
 

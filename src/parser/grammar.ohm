@@ -8,8 +8,8 @@ Program {
     | "extern" "pub"? "let" (ident | infixIdent) ":" Type -- externLetStmt
 
   TypeDeclaration
-    = "type" typeName ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef
-    | "extern" "type" typeName ("<" NonemptyListOf<typeVar, ","> ">")? -- externType
+    = "pub"? "type" typeName ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef
+    | "extern" "pub"? "type" typeName ("<" NonemptyListOf<typeVar, ","> ">")? -- externType
 
   // --- Expressions
 
