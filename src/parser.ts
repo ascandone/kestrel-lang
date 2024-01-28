@@ -410,11 +410,13 @@ semantics.addOperation<Statement>("statement()", {
       },
     };
   },
-  Declaration_externLetStmt(_extern, _let, ident, _colon, typeHint) {
+  Declaration_externLetStmt(_extern, pubOpt, _let, ident, _colon, typeHint) {
+    const pub = pubOpt.numChildren === 1;
+
     return {
       type: "declaration",
       decl: {
-        pub: false,
+        pub,
         extern: true,
         binding: ident.ident(),
         span: getSpan(this),
@@ -425,7 +427,9 @@ semantics.addOperation<Statement>("statement()", {
       },
     };
   },
-  Declaration_letStmt(_let, ident, _colon, typeHint, _eq, exp) {
+  Declaration_letStmt(pubOpt, _let, ident, _colon, typeHint, _eq, exp) {
+    const pub = pubOpt.numChildren === 1;
+
     const th =
       typeHint.numChildren === 0
         ? {}
@@ -439,7 +443,7 @@ semantics.addOperation<Statement>("statement()", {
     return {
       type: "declaration",
       decl: {
-        pub: false,
+        pub,
         extern: false,
         binding: ident.ident(),
         value: exp.expr(),

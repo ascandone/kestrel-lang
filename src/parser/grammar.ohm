@@ -4,8 +4,8 @@ Program {
 
   // --- Toplevel
   Declaration
-    = "let" ident (":" Type)? "=" Exp  -- letStmt
-    | "extern" "let" (ident | infixIdent) ":" Type -- externLetStmt
+    = "pub"? "let" ident (":" Type)? "=" Exp  -- letStmt
+    | "extern" "pub"? "let" (ident | infixIdent) ":" Type -- externLetStmt
 
   TypeDeclaration
     = "type" typeName ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef

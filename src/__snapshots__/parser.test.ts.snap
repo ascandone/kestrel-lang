@@ -205,6 +205,72 @@ exports[`ignoring comments 1`] = `
 }
 `;
 
+exports[`imports > parse pub modifier 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          8,
+          9,
+        ],
+      },
+      "extern": false,
+      "pub": true,
+      "span": [
+        0,
+        16,
+      ],
+      "value": {
+        "span": [
+          12,
+          16,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "float",
+          "value": 1.23,
+        },
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`imports > parse pub modifier on extern values 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          15,
+          16,
+        ],
+      },
+      "extern": true,
+      "pub": true,
+      "span": [
+        0,
+        21,
+      ],
+      "typeHint": {
+        "args": [],
+        "name": "Int",
+        "span": [
+          18,
+          21,
+        ],
+        "type": "named",
+      },
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`it should be possible to mix pipe with infix 1`] = `
 {
   "declarations": [

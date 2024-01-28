@@ -67,11 +67,6 @@ test("parse float", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.todo("parse pub modifier", () => {
-  const src = "pub let _ = 1.23";
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
-
 test("parse empty strings", () => {
   const src = `let _ = ""`;
   expect(unsafeParse(src)).toMatchSnapshot();
@@ -508,6 +503,18 @@ describe("extern bindings", () => {
       extern let (>=>): ExampleType
     `;
 
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+});
+
+describe("imports", () => {
+  test("parse pub modifier", () => {
+    const src = "pub let _ = 1.23";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("parse pub modifier on extern values", () => {
+    const src = "extern pub let _: Int";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });
