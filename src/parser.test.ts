@@ -5,6 +5,7 @@ import { Program, Span, SpanMeta } from "./ast";
 test("parsing a declaration", () => {
   const src = "let x = 0";
   expect(unsafeParse(src)).toEqual<Program<SpanMeta>>({
+    imports: [],
     typeDeclarations: [],
     declarations: [
       {
@@ -28,6 +29,7 @@ test("parsing a declaration", () => {
 test("parsing two declarations", () => {
   const src = `let x = 0\nlet y = 1`;
   expect(unsafeParse(src)).toEqual<Program<SpanMeta>>({
+    imports: [],
     typeDeclarations: [],
     declarations: [
       {
@@ -530,6 +532,11 @@ describe("imports", () => {
 
   test("parse pub modifier on extern types", () => {
     const src = "extern pub type T";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("import single module", () => {
+    const src = "import A";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });

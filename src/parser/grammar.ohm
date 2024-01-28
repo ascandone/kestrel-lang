@@ -1,6 +1,9 @@
 Program {
   MAIN
-    = (Declaration | TypeDeclaration)*
+    = Import* (Declaration | TypeDeclaration)*
+
+  Import
+    = "import" typeConstructor
 
   // --- Toplevel
   Declaration

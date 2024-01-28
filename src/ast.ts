@@ -112,13 +112,12 @@ export type Exposing =
   | { type: "value"; name: string };
 
 export type Import = {
-  path: string[];
-  module: string;
+  ns: string;
   exposing: Exposing[];
 };
 
 export type Program<TypeMeta = unknown> = {
-  imports?: Import[];
+  imports: Import[];
   typeDeclarations: TypeDeclaration[];
   declarations: Declaration<TypeMeta>[];
 };

@@ -86,6 +86,7 @@ exports[`+ is left-associative 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -118,6 +119,7 @@ exports[`extern bindings > let decls 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -150,6 +152,7 @@ exports[`extern bindings > let decls defining infix operators 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -157,6 +160,7 @@ exports[`extern bindings > let decls defining infix operators 1`] = `
 exports[`extern bindings > types 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -202,6 +206,20 @@ exports[`ignoring comments 1`] = `
       },
     },
   ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`imports > import single module 1`] = `
+{
+  "declarations": [],
+  "imports": [
+    {
+      "exposing": [],
+      "ns": "A",
+    },
+  ],
   "typeDeclarations": [],
 }
 `;
@@ -236,6 +254,7 @@ exports[`imports > parse pub modifier 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -243,6 +262,7 @@ exports[`imports > parse pub modifier 1`] = `
 exports[`imports > parse pub modifier on extern types 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -286,6 +306,7 @@ exports[`imports > parse pub modifier on extern values 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -293,6 +314,7 @@ exports[`imports > parse pub modifier on extern values 1`] = `
 exports[`imports > parse pub modifier on types 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -312,6 +334,7 @@ exports[`imports > parse pub modifier on types 1`] = `
 exports[`imports > parse pub(..) modifier on types 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -420,6 +443,7 @@ exports[`it should be possible to mix pipe with infix 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -492,6 +516,7 @@ exports[`monadic let syntax sugar 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -554,6 +579,7 @@ exports[`parse * expr 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -644,6 +670,7 @@ exports[`parse + and * prec 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -734,6 +761,7 @@ exports[`parse + and * prec with parens 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -796,6 +824,7 @@ exports[`parse + expr 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -858,6 +887,7 @@ exports[`parse +. expr 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -920,6 +950,7 @@ exports[`parse - expr 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -968,6 +999,7 @@ exports[`parse appl with 1 arg 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1032,6 +1064,7 @@ exports[`parse appl with 3 args 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1111,6 +1144,7 @@ exports[`parse appl with nested expr 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1162,6 +1196,7 @@ exports[`parse appl with nested parens 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1201,6 +1236,7 @@ exports[`parse appl with no args 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1257,6 +1293,7 @@ exports[`parse appl with trailing comma 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1291,6 +1328,7 @@ exports[`parse block with no let 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1372,6 +1410,7 @@ exports[`parse cons operator is right-associative 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1428,6 +1467,7 @@ exports[`parse conslist sugar 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1462,6 +1502,7 @@ exports[`parse empty strings 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1496,6 +1537,7 @@ exports[`parse float 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1546,6 +1588,7 @@ exports[`parse fn with 1 arg 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1603,6 +1646,7 @@ exports[`parse fn with 2 args 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1670,6 +1714,7 @@ exports[`parse fn with let 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1712,6 +1757,7 @@ exports[`parse fn with no args 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1743,6 +1789,7 @@ exports[`parse ident 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1803,6 +1850,7 @@ exports[`parse if expr 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1885,6 +1933,7 @@ exports[`parse if expr with a let expr 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -1944,6 +1993,7 @@ exports[`parse let block with one let 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2028,6 +2078,7 @@ exports[`parse let block with two let stmts 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2062,6 +2113,7 @@ exports[`parse nonempty strings 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2096,6 +2148,7 @@ exports[`parse strings with newlines 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2158,6 +2211,7 @@ exports[`parse tuple sugar 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2206,6 +2260,7 @@ exports[`parse unary ! expr 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2264,6 +2319,7 @@ exports[`pattern matching > binding with identifier 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2303,6 +2359,7 @@ exports[`pattern matching > empty match expression 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2379,6 +2436,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2474,6 +2532,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2533,6 +2592,7 @@ exports[`pattern matching > matching constructor with no args 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2601,6 +2661,7 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2662,6 +2723,7 @@ exports[`pattern matching > matching float literals 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2723,6 +2785,7 @@ exports[`pattern matching > matching int literals 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2784,6 +2847,7 @@ exports[`pattern matching > matching str literals 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2860,6 +2924,7 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2924,6 +2989,7 @@ exports[`pipe syntax sugar 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2989,6 +3055,7 @@ exports[`pipe syntax sugar should be chainable 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -2996,6 +3063,7 @@ exports[`pipe syntax sugar should be chainable 1`] = `
 exports[`type declarations > many type params 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -3037,6 +3105,7 @@ exports[`type declarations > many type params 1`] = `
 exports[`type declarations > single type param 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -3064,6 +3133,7 @@ exports[`type declarations > single type param 1`] = `
 exports[`type declarations > trailing comma after variants 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -3092,6 +3162,7 @@ exports[`type declarations > trailing comma after variants 1`] = `
 exports[`type declarations > type with a variant with complex args 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -3154,6 +3225,7 @@ exports[`type declarations > type with a variant with complex args 1`] = `
 exports[`type declarations > type with a variant with no args 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -3178,6 +3250,7 @@ exports[`type declarations > type with a variant with no args 1`] = `
 exports[`type declarations > type with a variant with no args 2`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -3212,6 +3285,7 @@ exports[`type declarations > type with a variant with no args 2`] = `
 exports[`type declarations > type with many variants 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -3240,6 +3314,7 @@ exports[`type declarations > type with many variants 1`] = `
 exports[`type declarations > type with no variants 1`] = `
 {
   "declarations": [],
+  "imports": [],
   "typeDeclarations": [
     {
       "name": "Never",
@@ -3322,6 +3397,7 @@ exports[`type hints > parses Fn type with args 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -3373,6 +3449,7 @@ exports[`type hints > parses Fn type with no args 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -3416,6 +3493,7 @@ exports[`type hints > parses a concrete type with no args as a type hint 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -3469,6 +3547,7 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -3531,6 +3610,7 @@ exports[`type hints > parses concrete type with 2 args 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -3573,6 +3653,7 @@ exports[`type hints > parses type vars hints 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -3614,6 +3695,7 @@ exports[`type hints > parses underscore type 1`] = `
       },
     },
   ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;

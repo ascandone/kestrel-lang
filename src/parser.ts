@@ -11,6 +11,7 @@ import {
   TypeDeclaration,
   TypeVariant,
   MatchPattern,
+  Import,
 } from "./ast";
 import type {
   IterationNode,
@@ -371,6 +372,7 @@ function parseParams(params: IterationNode) {
   }
   return params_;
 }
+
 semantics.addOperation<Statement>("statement()", {
   TypeDeclaration_externType(
     _extern,
@@ -469,13 +471,23 @@ semantics.addOperation<Statement>("statement()", {
   },
 });
 
+semantics.addOperation<Import>("import_()", {
+  Import(_import, mod) {
+    return {
+      ns: mod.sourceString,
+      exposing: [],
+    };
+  },
+});
+
 semantics.addOperation<Program>("parse()", {
-  MAIN(statements) {
+  MAIN(imports, statements) {
     const statements_ = statements.children.map<Statement>((child) =>
       child.statement(),
     );
 
     return {
+      imports: imports.children.map((c) => c.import_()),
       typeDeclarations: statements_.flatMap((st) =>
         st.type === "typeDeclaration" ? [st.decl] : [],
       ),
