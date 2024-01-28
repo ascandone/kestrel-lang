@@ -539,6 +539,11 @@ describe("imports", () => {
     const src = "import A";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("import nested modules", () => {
+    const src = "import A.B.C";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

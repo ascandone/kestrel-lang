@@ -3,7 +3,7 @@ Program {
     = Import* (Declaration | TypeDeclaration)*
 
   Import
-    = "import" typeConstructor
+    = "import" NonemptyListOf<typeConstructor, ".">
 
   // --- Toplevel
   Declaration
