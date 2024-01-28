@@ -84,6 +84,7 @@ export type Expr<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
   );
 
 export type Declaration<TypeMeta = unknown> = SpanMeta & {
+  pub: boolean;
   binding: Binding<TypeMeta>;
 } & (
     | {

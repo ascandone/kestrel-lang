@@ -8,6 +8,7 @@ test("parsing a declaration", () => {
     typeDeclarations: [],
     declarations: [
       {
+        pub: false,
         extern: false,
         binding: { name: "x", span: spanOf(src, "x") },
         value: {
@@ -30,6 +31,7 @@ test("parsing two declarations", () => {
     typeDeclarations: [],
     declarations: [
       {
+        pub: false,
         extern: false,
         binding: { name: "x", span: spanOf(src, "x") },
         value: {
@@ -43,6 +45,7 @@ test("parsing two declarations", () => {
         span: spanOf(src, "let x = 0"),
       },
       {
+        pub: false,
         extern: false,
         binding: { name: "y", span: spanOf(src, "y") },
         value: {
@@ -61,6 +64,11 @@ test("parsing two declarations", () => {
 
 test("parse float", () => {
   const src = "let _ = 1.23";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test.todo("parse pub modifier", () => {
+  const src = "pub let _ = 1.23";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 

@@ -414,6 +414,7 @@ semantics.addOperation<Statement>("statement()", {
     return {
       type: "declaration",
       decl: {
+        pub: false,
         extern: true,
         binding: ident.ident(),
         span: getSpan(this),
@@ -438,6 +439,7 @@ semantics.addOperation<Statement>("statement()", {
     return {
       type: "declaration",
       decl: {
+        pub: false,
         extern: false,
         binding: ident.ident(),
         value: exp.expr(),
