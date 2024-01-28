@@ -13,12 +13,12 @@ import { TypeMeta, typecheck } from "../../typecheck/typecheck";
 import { Program, SpanMeta, declByOffset } from "../../ast";
 import { readPrelude } from "../common";
 
-const { types, context } = readPrelude();
-
 const documents = new TextDocuments(TextDocument);
 const docs = new Map<string, [TextDocument, Program<SpanMeta & TypeMeta>]>();
 
 export function lspCmd() {
+  const Prelude = readPrelude();
+
   const connection =
     // @ts-ignore
     createConnection();
@@ -56,11 +56,7 @@ export function lspCmd() {
       return;
     }
 
-    const [typed, errors] = typecheck(
-      parsed.value,
-      { ...context },
-      { ...types },
-    );
+    const [typed, errors] = typecheck(parsed.value, { Prelude });
     docs.set(change.document.uri, [change.document, typed]);
     connection.sendDiagnostics({
       uri: change.document.uri,

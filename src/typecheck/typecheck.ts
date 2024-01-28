@@ -6,6 +6,9 @@ import {
   Program,
   SpanMeta,
   TypeAst,
+  Import,
+  TypeVariant,
+  TypeDeclaration,
 } from "../ast";
 import {
   TVar,
@@ -79,72 +82,182 @@ function checkUnboundTypeError<T extends SpanMeta>(
   };
 }
 
-function castType(
+function* castType(
   ast: TypeAst,
   args: {
-    errors: TypeError[];
-    typesContext: TypesPool;
+    typesScope: TypesPool;
     params: string[];
   },
-): Type<Poly> {
-  const { errors, typesContext, params } = args;
+): Generator<TypeError, Type<Poly>> {
+  const { params, typesScope } = args;
 
-  function recur(ast: TypeAst): Type<Poly> {
+  function* recur(ast: TypeAst): Generator<TypeError, Type<Poly>> {
     switch (ast.type) {
       case "named": {
+        const args: Array<Type<Poly>> = [];
+        for (const arg of ast.args) {
+          args.push(yield* recur(arg));
+        }
+
         const t: Type<Poly> = {
           type: "named",
           name: ast.name,
-          args: ast.args.map(recur),
+          args,
         };
-        const e = checkUnboundTypeError(ast, t, typesContext);
+
+        const e = checkUnboundTypeError(ast, t, typesScope);
         if (e !== undefined) {
-          errors.push(e);
+          yield e;
         }
         return t;
       }
 
-      case "fn":
+      case "fn": {
+        const args: Array<Type<Poly>> = [];
+        for (const arg of ast.args) {
+          args.push(yield* recur(arg));
+        }
         return {
           type: "fn",
-          args: ast.args.map(recur),
-          return: recur(ast.return),
+          args,
+          return: yield* recur(ast.return),
         };
+      }
 
       case "var": {
         const id = ast.ident;
         if (!params.includes(id)) {
-          errors.push({
+          yield {
             type: "unbound-type-param",
             id,
             span: ast.span,
-          });
+          };
         }
         return { type: "quantified", id };
       }
 
       case "any":
-        errors.push({ type: "invalid-catchall", span: ast.span });
+        yield { type: "invalid-catchall", span: ast.span };
         return { type: "var", var: TVar.fresh() };
     }
   }
 
-  return recur(ast);
+  return yield* recur(ast);
 }
 
-export function typecheck<T extends SpanMeta>(
+// Record from namespace (e.g. "A.B.C" ) to the module
+
+export type Deps = Record<string, Program<TypeMeta>>;
+
+export function runImports(
+  import_: Import,
+  deps: Deps,
+  /* mut */ scope: Context,
+  /* mut */ typesScope: TypesPool,
+) {
+  const namespace = [...import_.path, import_.module].join(".");
+  const dep = deps[namespace];
+
+  if (dep === undefined) {
+    // TODO emit err
+    return;
+  }
+
+  for (const exposed of import_.exposing) {
+    switch (exposed.type) {
+      case "value": {
+        const lookup = dep.declarations.find(
+          (dec) => dec.binding.name === exposed.name,
+        );
+
+        if (lookup === undefined) {
+          // TODO emit err
+          continue;
+        }
+
+        scope[exposed.name] = lookup.binding.$.asType();
+        break;
+      }
+
+      case "type": {
+        const typeDecl = dep.typeDeclarations.find(
+          (t) => t.name === exposed.name,
+        );
+
+        if (typeDecl === undefined) {
+          // TODO emit err
+          continue;
+        }
+
+        typesScope[typeDecl.name] = typeDecl.params.length;
+        if (typeDecl.type === "adt" && exposed.exposeImpl) {
+          for (const variant of typeDecl.variants) {
+            // ignoring errs
+            [...addVariantTypesToScope(typeDecl, variant, scope, typesScope)];
+          }
+        }
+        break;
+      }
+    }
+  }
+}
+
+function* addVariantTypesToScope(
+  typeDecl: TypeDeclaration & { type: "adt" },
+  variant: TypeVariant,
+  /* mut */ scope: Context,
+  /* mut */ typesScope: TypesPool,
+): Generator<TypeError> {
+  const ret: Type<Poly> = {
+    type: "named",
+    name: typeDecl.name,
+    args: typeDecl.params.map((param) => ({
+      type: "quantified",
+      id: param.name,
+    })),
+  };
+
+  if (variant.args.length === 0) {
+    scope[variant.name] = ret;
+  } else {
+    const args: Type<Poly>[] = [];
+    for (const arg of variant.args) {
+      const a = yield* castType(arg, {
+        typesScope,
+        params: typeDecl.params.map((p) => p.name),
+      });
+      args.push(a);
+    }
+
+    scope[variant.name] = {
+      type: "fn",
+      args,
+      return: ret,
+    };
+  }
+}
+
+export function typecheck<T>(
   ast: Program<T>,
-  /* mut */ context: Context = {},
-  /* mut */ typesContext: TypesPool = {},
+  deps: Deps = {},
+  prelude: Import[] = defaultImports,
 ): [Program<T & TypeMeta>, TypeError[]] {
   TVar.resetId();
-  const errors: TypeError[] = [];
+  const scope: Context = {};
+  const typesScope: TypesPool = {};
 
+  // ----- Collect imports into scope
+  const imports = [...prelude, ...(ast.imports ?? [])];
+  for (const import_ of imports) {
+    runImports(import_, deps, scope, typesScope);
+  }
+
+  // ---- Typecheck this module
+  const errors: TypeError[] = [];
   const typedProgram = annotateProgram(ast);
   for (const typeDecl of typedProgram.typeDeclarations) {
-    typesContext[typeDecl.name] = typeDecl.params.length;
+    typesScope[typeDecl.name] = typeDecl.params.length;
     const params: string[] = [];
-
     for (const param of typeDecl.params) {
       if (params.includes(param.name)) {
         errors.push({
@@ -156,35 +269,17 @@ export function typecheck<T extends SpanMeta>(
       params.push(param.name);
     }
 
-    const ret: Type<Poly> = {
-      type: "named",
-      name: typeDecl.name,
-      args: params.map((id) => ({ type: "quantified", id })),
-    };
-
     if (typeDecl.type === "adt") {
       for (const variant of typeDecl.variants) {
-        if (variant.args.length === 0) {
-          context[variant.name] = ret;
-        } else {
-          context[variant.name] = {
-            type: "fn",
-            args: variant.args.map((arg) =>
-              castType(arg, {
-                errors,
-                typesContext,
-                params,
-              }),
-            ),
-            return: ret,
-          };
-        }
+        errors.push(
+          ...addVariantTypesToScope(typeDecl, variant, scope, typesScope),
+        );
       }
     }
   }
 
   for (const decl of typedProgram.declarations) {
-    errors.push(...typecheckDecl(decl, typesContext, context));
+    errors.push(...typecheckDecl(decl, scope, typesScope));
   }
 
   return [typedProgram, errors];
@@ -192,7 +287,7 @@ export function typecheck<T extends SpanMeta>(
 
 function* typecheckAnnotatedExpr<T extends SpanMeta>(
   ast: Expr<T & TypeMeta>,
-  context: Context,
+  scope: Context,
 ): Generator<TypeError> {
   switch (ast.type) {
     case "constant": {
@@ -202,7 +297,7 @@ function* typecheckAnnotatedExpr<T extends SpanMeta>(
     }
 
     case "identifier": {
-      const lookup = context[ast.name];
+      const lookup = scope[ast.name];
       if (lookup === undefined) {
         yield {
           type: "unbound-variable",
@@ -222,20 +317,20 @@ function* typecheckAnnotatedExpr<T extends SpanMeta>(
         return: ast.body.$.asType(),
       });
       yield* typecheckAnnotatedExpr(ast.body, {
-        ...context,
+        ...scope,
         ...Object.fromEntries(ast.params.map((p) => [p.name, p.$.asType()])),
       });
       return;
 
     case "application":
-      yield* typecheckAnnotatedExpr(ast.caller, context);
+      yield* typecheckAnnotatedExpr(ast.caller, scope);
       yield* unifyYieldErr(ast, ast.caller.$.asType(), {
         type: "fn",
         args: ast.args.map((arg) => arg.$.asType()),
         return: ast.$.asType(),
       });
       for (const arg of ast.args) {
-        yield* typecheckAnnotatedExpr(arg, context);
+        yield* typecheckAnnotatedExpr(arg, scope);
       }
       return;
 
@@ -243,11 +338,11 @@ function* typecheckAnnotatedExpr<T extends SpanMeta>(
       yield* unifyYieldErr(ast, ast.binding.$.asType(), ast.value.$.asType());
       yield* unifyYieldErr(ast, ast.$.asType(), ast.body.$.asType());
       yield* typecheckAnnotatedExpr(ast.value, {
-        ...context,
+        ...scope,
         [ast.binding.name]: ast.value.$.asType(),
       });
       yield* typecheckAnnotatedExpr(ast.body, {
-        ...context,
+        ...scope,
         [ast.binding.name]: ast.value.$.asType(),
       });
       return;
@@ -260,16 +355,16 @@ function* typecheckAnnotatedExpr<T extends SpanMeta>(
       });
       yield* unifyYieldErr(ast, ast.$.asType(), ast.then.$.asType());
       yield* unifyYieldErr(ast, ast.$.asType(), ast.else.$.asType());
-      yield* typecheckAnnotatedExpr(ast.condition, context);
-      yield* typecheckAnnotatedExpr(ast.then, context);
-      yield* typecheckAnnotatedExpr(ast.else, context);
+      yield* typecheckAnnotatedExpr(ast.condition, scope);
+      yield* typecheckAnnotatedExpr(ast.then, scope);
+      yield* typecheckAnnotatedExpr(ast.else, scope);
       return;
 
     case "match":
-      yield* typecheckAnnotatedExpr(ast.expr, context);
+      yield* typecheckAnnotatedExpr(ast.expr, scope);
       for (const [pattern, expr] of ast.clauses) {
         yield* unifyYieldErr(ast, pattern.$.asType(), ast.expr.$.asType());
-        const newContext = yield* typecheckPattern(pattern, context);
+        const newContext = yield* typecheckPattern(pattern, scope);
         yield* unifyYieldErr(ast, ast.$.asType(), expr.$.asType());
         yield* typecheckAnnotatedExpr(expr, newContext);
       }
@@ -431,6 +526,7 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
 function annotateProgram<T>(program: Program<T>): Program<T & TypeMeta> {
   return {
     ...program,
+
     declarations: program.declarations.map((decl) => {
       const valueMeta = decl.extern
         ? ({
@@ -541,8 +637,8 @@ function inferConstant(x: ConstLiteral): Type {
 
 function* typecheckDecl(
   decl: Declaration<TypeMeta>,
+  /* mut */ scope: Context,
   typesPool: TypesPool,
-  /* mut */ context: Context,
 ): Generator<TypeError> {
   if (decl.typeHint !== undefined) {
     const th = yield* inferTypeHint(decl.typeHint, typesPool);
@@ -569,7 +665,7 @@ function* typecheckDecl(
     }
 
     if (decl.extern) {
-      context[decl.binding.name] = th;
+      scope[decl.binding.name] = th;
     }
   }
 
@@ -578,7 +674,7 @@ function* typecheckDecl(
   }
 
   yield* typecheckAnnotatedExpr(decl.value, {
-    ...context,
+    ...scope,
     [decl.binding.name]: decl.value.$.asType(),
   });
 
@@ -588,7 +684,7 @@ function* typecheckDecl(
     decl.value.$.asType(),
   );
 
-  context[decl.binding.name] = generalize(decl.value.$.asType(), context);
+  scope[decl.binding.name] = generalize(decl.value.$.asType(), scope);
 }
 
 function* inferTypeHint(
@@ -633,3 +729,76 @@ function* inferTypeHint(
     }
   }
 }
+
+/*
+// Prelude imports:
+
+import Int.{Int, (+), (-)} // ecc
+import Float.{Float}
+import Bool.{Bool(..), (&&), (||), (!)}
+import Unit.{Unit}
+import String.{String, (<>)}
+import List.{List, Cons}
+import Maybe.{Maybe(..)}
+import Result.{Result(..)}
+import Tuple.{Tuple2(..)}
+*/
+
+const defaultImports: Import[] = [
+  {
+    module: "Prelude",
+    path: [],
+    exposing: [
+      // Basics
+      { type: "value", name: "==" },
+      { type: "value", name: "!=" },
+      { type: "value", name: ">" },
+      { type: "value", name: "<" },
+      { type: "value", name: ">=" },
+      { type: "value", name: "<=" },
+
+      // Int
+      { type: "type", name: "Int", exposeImpl: false },
+      { type: "value", name: "+" },
+      { type: "value", name: "-" },
+      { type: "value", name: "*" },
+      { type: "value", name: "/" },
+      { type: "value", name: "^" },
+      { type: "value", name: "&" },
+
+      // Float
+      { type: "type", name: "Float", exposeImpl: false },
+      { type: "value", name: "+." },
+      { type: "value", name: "-." },
+      { type: "value", name: "*." },
+      { type: "value", name: "/." },
+
+      // String
+      { type: "type", name: "String", exposeImpl: false },
+      { type: "value", name: "<>" },
+
+      // Unit
+      { type: "type", name: "Unit", exposeImpl: true },
+
+      // Bool
+      { type: "type", name: "Bool", exposeImpl: true },
+      { type: "value", name: "&&" },
+      { type: "value", name: "||" },
+      { type: "value", name: "!" },
+
+      // List
+      { type: "type", name: "List", exposeImpl: true },
+
+      // Maybe
+      { type: "type", name: "Maybe", exposeImpl: true },
+
+      // Tuple
+      { type: "type", name: "Tuple2", exposeImpl: true },
+      { type: "type", name: "Tuple3", exposeImpl: true },
+      { type: "type", name: "Tuple4", exposeImpl: true },
+
+      // Task
+      { type: "type", name: "Task", exposeImpl: false },
+    ],
+  },
+];

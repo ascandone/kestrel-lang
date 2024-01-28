@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { unsafeParse } from "../parser";
-import { typecheck, TypeMeta, TypesPool } from "../typecheck/typecheck";
-import { Context } from "../typecheck/unify";
+import { typecheck, TypeMeta } from "../typecheck/typecheck";
 import { parse } from "../parser";
 import { typeErrorPPrint } from "../typecheck/pretty-printer";
 import { Program, Span } from "../ast";
@@ -14,25 +13,18 @@ export const Reset = "\x1b[0m";
 export const FgBlack = "\x1b[30m";
 export const BgWhite = "\x1b[47m";
 
-export function readPrelude(): {
-  types: TypesPool;
-  context: Context;
-  prelude: Program<TypeMeta>;
-} {
+export function readPrelude() {
   const f = readFileSync(PRELUDE_PATH);
   const src = f.toString();
 
   const parsed = unsafeParse(src);
 
-  const context: Context = {};
-  const types: TypesPool = {};
-
-  const [prelude, errors] = typecheck(parsed, context, types);
+  const [prelude, errors] = typecheck(parsed);
   if (errors.length !== 0) {
     throw new Error("[unreachable] errors compiling prelude");
   }
 
-  return { types, context, prelude };
+  return prelude;
 }
 
 type CheckResult = {
@@ -41,7 +33,7 @@ type CheckResult = {
 };
 
 export function check(path: string): CheckResult | undefined {
-  const { types, context, prelude } = readPrelude();
+  const Prelude = readPrelude();
 
   const f = readFileSync(path);
   const src = f.toString();
@@ -53,7 +45,7 @@ export function check(path: string): CheckResult | undefined {
     return undefined;
   }
 
-  const [program, errors] = typecheck(parseResult.value, context, types);
+  const [program, errors] = typecheck(parseResult.value, { Prelude });
 
   for (const error of errors) {
     const msg = typeErrorPPrint(error);
@@ -67,7 +59,7 @@ export function check(path: string): CheckResult | undefined {
     return undefined;
   }
 
-  return { main: program, prelude };
+  return { main: program, prelude: Prelude };
 }
 
 export function showErrorLine(src: string, [start, end]: Span): string {

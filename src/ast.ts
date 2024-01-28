@@ -51,6 +51,7 @@ export type Expr<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
       }
     | {
         type: "identifier";
+        namespace?: string;
         name: string;
       }
     | {
@@ -102,7 +103,18 @@ export type TypeDeclaration = SpanMeta & {
   params: Array<{ name: string } & SpanMeta>;
 } & ({ type: "adt"; variants: TypeVariant[] } | { type: "extern" });
 
+export type Exposing =
+  | { type: "type"; name: string; exposeImpl: boolean }
+  | { type: "value"; name: string };
+
+export type Import = {
+  path: string[];
+  module: string;
+  exposing: Exposing[];
+};
+
 export type Program<TypeMeta = unknown> = {
+  imports?: Import[];
   typeDeclarations: TypeDeclaration[];
   declarations: Declaration<TypeMeta>[];
 };

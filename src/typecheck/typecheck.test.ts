@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
-import { typecheck, TypeError } from "./typecheck";
+import { Deps, typecheck, TypeError } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
+import { Import } from "../ast";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -343,7 +344,7 @@ describe("type hints", () => {
   test("unknown types are rejected", () => {
     const [types, errs] = tc("let x: NotFound = 1");
     expect(errs).not.toEqual([]);
-    expect(errs[0].type).toBe("unbound-type");
+    expect(errs[0]!.type).toBe("unbound-type");
     expect(types).toEqual({
       x: "NotFound",
     });
@@ -696,7 +697,7 @@ describe("prelude", () => {
     `);
 
     expect(errs).not.toEqual([]);
-    expect(errs[0].type).toEqual("unbound-type");
+    expect(errs[0]!.type).toEqual("unbound-type");
   });
 
   test("checks extern types", () => {
@@ -740,14 +741,97 @@ describe("prelude", () => {
   });
 });
 
-function tc(src: string) {
+describe("modules", () => {
+  test("implicitly imports values of the modules in the prelude", () => {
+    const [A] = tcProgram(`
+      let x = 42
+    `);
+
+    const [moduleB] = tc(
+      `
+      let y = x
+    `,
+      { A },
+      [
+        {
+          module: "A",
+          path: [],
+          exposing: [{ type: "value", name: "x" }],
+        },
+      ],
+    );
+
+    expect(moduleB).toEqual({
+      y: "Int",
+    });
+  });
+
+  test("implicitly imports types of the modules in the prelude", () => {
+    const [A] = tcProgram(`
+      type MyType {}
+    `);
+
+    const [, errs] = tc(
+      `
+      let x: Fn(MyType) -> MyType = fn x { x }
+    `,
+      { A },
+      [
+        {
+          module: "A",
+          path: [],
+          exposing: [{ type: "type", name: "MyType", exposeImpl: false }],
+        },
+      ],
+    );
+    expect(errs).toEqual(errs);
+  });
+
+  test("implicitly imports variants of the modules in the prelude", () => {
+    const [A] = tcProgram(`
+      type MyType { A, B(Int) }
+    `);
+
+    const [types, errs] = tc(
+      `
+
+      let x = A
+      let y = B(42)
+    `,
+      { A },
+      [
+        {
+          module: "A",
+          path: [],
+          exposing: [{ type: "type", name: "MyType", exposeImpl: true }],
+        },
+      ],
+    );
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "MyType",
+      y: "MyType",
+    });
+  });
+
+  test.todo("error when importing a non-existing type");
+  test.todo("error when importing a non-existing value");
+  test.todo("error when expose impl is run on a extern type");
+  test.todo("error when expose impl is run on a opaque type");
+});
+
+function tcProgram(src: string, deps: Deps = {}, prelude: Import[] = []) {
   const parsedProgram = unsafeParse(src);
-  const [typed, errors] = typecheck(parsedProgram);
+  return typecheck(parsedProgram, deps, prelude);
+}
+
+function tc(src: string, deps: Deps = {}, prelude: Import[] = []) {
+  const [typed, errors] = tcProgram(src, deps, prelude);
 
   const kvs = typed.declarations.map((decl) => [
     decl.binding.name,
     typePPrint(decl.binding.$.asType()),
   ]);
 
-  return [Object.fromEntries(kvs), errors];
+  return [Object.fromEntries(kvs) as Record<string, string>, errors] as const;
 }
