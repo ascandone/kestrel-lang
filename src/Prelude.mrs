@@ -1,89 +1,89 @@
-extern type Int
+extern pub type Int
 
-extern type Float
+extern pub type Float
 
-extern type String
+extern pub type String
 
-type Bool {
+pub(..) type Bool {
   True,
   False,  
 }
 
-type Unit {
+pub(..) type Unit {
   Unit
 }
 
-extern let (+): Fn(Int, Int) -> Int
-extern let (+.): Fn(Float, Float) -> Float
+extern pub let (+): Fn(Int, Int) -> Int
+extern pub let (+.): Fn(Float, Float) -> Float
 
-extern let (-): Fn(Int, Int) -> Int
-extern let (-.): Fn(Float, Float) -> Float
+extern pub let (-): Fn(Int, Int) -> Int
+extern pub let (-.): Fn(Float, Float) -> Float
 
-extern let (*): Fn(Int, Int) -> Int
-extern let (*.): Fn(Float, Float) -> Float
+extern pub let (*): Fn(Int, Int) -> Int
+extern pub let (*.): Fn(Float, Float) -> Float
 
-extern let (/): Fn(Int, Int) -> Int
-extern let (/.): Fn(Float, Float) -> Float
+extern pub let (/): Fn(Int, Int) -> Int
+extern pub let (/.): Fn(Float, Float) -> Float
 
-extern let (^): Fn(Int, Int) -> Int
+extern pub let (^): Fn(Int, Int) -> Int
 
-extern let (%): Fn(Int, Int) -> Int
-
-
-extern let (&&): Fn(Bool, Bool) -> Bool
-extern let (||): Fn(Bool, Bool) -> Bool
-
-extern let (!): Fn(Bool) -> Bool
+extern pub let (%): Fn(Int, Int) -> Int
 
 
-extern let (==): Fn(a, a) -> Bool
-extern let (!=): Fn(a, a) -> Bool
-extern let (>): Fn(a, a) -> Bool
-extern let (>=): Fn(a, a) -> Bool
-extern let (<): Fn(a, a) -> Bool
-extern let (<=): Fn(a, a) -> Bool
+extern pub let (&&): Fn(Bool, Bool) -> Bool
+extern pub let (||): Fn(Bool, Bool) -> Bool
+
+extern pub let (!): Fn(Bool) -> Bool
 
 
-extern let (<>): Fn(String, String) -> String
+extern pub let (==): Fn(a, a) -> Bool
+extern pub let (!=): Fn(a, a) -> Bool
+extern pub let (>): Fn(a, a) -> Bool
+extern pub let (>=): Fn(a, a) -> Bool
+extern pub let (<): Fn(a, a) -> Bool
+extern pub let (<=): Fn(a, a) -> Bool
 
-extern let int_to_string: Fn(Int) -> String
 
-type Maybe<a> {
+extern pub let (<>): Fn(String, String) -> String
+
+extern pub let int_to_string: Fn(Int) -> String
+
+pub(..) type Maybe<a> {
   Just(a),
   Nothing,
 }
 
-type Result<a, err> {
+pub(..) type Result<a, err> {
   Ok(a),
   Err(err)
 }
 
-type Tuple2<a, b> {
+pub(..) type Tuple2<a, b> {
   Tuple2(a, b)
 }
 
-type Tuple3<a, b, c> {
+pub(..) type Tuple3<a, b, c> {
   Tuple3(a, b, c)
 }
 
-type Tuple4<a, b, c, d> {
+pub(..) type Tuple4<a, b, c, d> {
   Tuple4(a, b, c, d)
 }
 
-type List<a> {
+pub(..) type List<a> {
   Nil,
   Cons(a, List<a>),
 }
 
-extern type Task<a>
+extern pub type Task<a>
 
-extern let task_of: Fn(a) -> Task<a>
+extern pub let task_of: Fn(a) -> Task<a>
 
-extern let await: Fn(Task<a>, Fn(a) -> Task<b>) -> Task<b>
+extern pub let await: Fn(Task<a>, Fn(a) -> Task<b>) -> Task<b>
 
-extern let println: Fn(String) -> Task<Unit>
-extern let print: Fn(String) -> Task<Unit>
+extern pub let println: Fn(String) -> Task<Unit>
+extern pub let print: Fn(String) -> Task<Unit>
 
-extern let readline: Task<String>
+extern pub let readline: Task<String>
 
-extern let sleep: Fn(Int) -> Task<Unit>
+extern pub let sleep: Fn(Int) -> Task<Unit>
