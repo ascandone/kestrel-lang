@@ -754,8 +754,7 @@ describe("modules", () => {
       { A },
       [
         {
-          module: "A",
-          path: [],
+          ns: "A",
           exposing: [{ type: "value", name: "x" }],
         },
       ],
@@ -778,8 +777,7 @@ describe("modules", () => {
       { A },
       [
         {
-          module: "A",
-          path: [],
+          ns: "A",
           exposing: [{ type: "type", name: "MyType", exposeImpl: false }],
         },
       ],
@@ -801,8 +799,7 @@ describe("modules", () => {
       { A },
       [
         {
-          module: "A",
-          path: [],
+          ns: "A",
           exposing: [{ type: "type", name: "MyType", exposeImpl: true }],
         },
       ],

@@ -155,8 +155,7 @@ export function runImports(
   /* mut */ scope: Context,
   /* mut */ typesScope: TypesPool,
 ) {
-  const namespace = [...import_.path, import_.module].join(".");
-  const dep = deps[namespace];
+  const dep = deps[import_.ns];
 
   if (dep === undefined) {
     // TODO emit err
