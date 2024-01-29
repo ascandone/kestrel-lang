@@ -1,7 +1,11 @@
 /* eslint-disable no-constant-condition */
 export type DepsMap = Record<string, string[]>;
 
-export class CyclicDepError extends Error {}
+export class CyclicDepError extends Error {
+  constructor() {
+    super("Cyclic deps detected");
+  }
+}
 
 export function topologicalSort(
   dependencies: Record<string, string[]>,
@@ -15,31 +19,27 @@ export function topologicalSort(
 
   // Now `sources` only contains nodes without deps
 
+  const visited = new Set<string>();
   const sorted: string[] = [];
-  for (const source of sources) {
-    const stack = [source];
-    const visited = new Set<string>();
 
-    while (true) {
-      const popped = stack.pop();
-      if (popped === undefined) {
-        break;
-      }
-      sorted.push(popped);
-      visited.add(popped);
-
-      const adjs = dependencies[popped] ?? [];
-      for (const dep of adjs) {
-        if (!visited.has(dep)) {
-          stack.push(dep);
-        }
+  function visit(node: string) {
+    visited.add(node);
+    const adjs = dependencies[node] ?? [];
+    for (const adj of adjs) {
+      if (!visited.has(adj)) {
+        visit(adj);
       }
     }
+    sorted.push(node);
+  }
+
+  for (const source of sources) {
+    visit(source);
   }
 
   if (sorted.length !== Object.keys(dependencies).length) {
     throw new CyclicDepError();
   }
-  sorted.reverse();
+
   return sorted;
 }

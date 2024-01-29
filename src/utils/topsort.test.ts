@@ -24,6 +24,13 @@ test("two deps", () => {
   expect(res[2]).toEqual("x");
 });
 
+test("does not visit twice", () => {
+  const deps: DepsMap = { x: ["y", "z"], y: ["z"], z: [] };
+  const res = topologicalSort(deps);
+
+  expect(res).toEqual([..."zyx"]);
+});
+
 test("throws on cyclic deps", () => {
   const deps: DepsMap = { x: ["y"], y: ["z"], z: ["x"] };
 
