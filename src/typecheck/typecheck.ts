@@ -150,229 +150,284 @@ function* castType(
 
 export type Deps = Record<string, Program<TypeMeta>>;
 
-export function runImports(
-  import_: Import,
-  deps: Deps,
-  /* mut */ scope: Context,
-  /* mut */ typesScope: TypesPool,
-) {
-  const dep = deps[import_.ns];
-
-  if (dep === undefined) {
-    // TODO emit err
-    return;
-  }
-
-  for (const exposed of import_.exposing) {
-    switch (exposed.type) {
-      case "value": {
-        const lookup = dep.declarations.find(
-          (dec) => dec.binding.name === exposed.name,
-        );
-
-        if (lookup === undefined) {
-          // TODO emit err
-          continue;
-        }
-
-        scope[exposed.name] = lookup.binding.$.asType();
-        break;
-      }
-
-      case "type": {
-        const typeDecl = dep.typeDeclarations.find(
-          (t) => t.name === exposed.name,
-        );
-
-        if (typeDecl === undefined) {
-          // TODO emit err
-          continue;
-        }
-
-        typesScope[typeDecl.name] = typeDecl.params.length;
-        if (typeDecl.type === "adt" && exposed.exposeImpl) {
-          for (const variant of typeDecl.variants) {
-            // ignoring errs
-            [...addVariantTypesToScope(typeDecl, variant, scope, typesScope)];
-          }
-        }
-        break;
-      }
-    }
-  }
-}
-
-function* addVariantTypesToScope(
-  typeDecl: TypeDeclaration & { type: "adt" },
-  variant: TypeVariant,
-  /* mut */ scope: Context,
-  /* mut */ typesScope: TypesPool,
-): Generator<TypeError> {
-  const ret: Type<Poly> = {
-    type: "named",
-    name: typeDecl.name,
-    args: typeDecl.params.map((param) => ({
-      type: "quantified",
-      id: param.name,
-    })),
-  };
-
-  if (variant.args.length === 0) {
-    scope[variant.name] = ret;
-  } else {
-    const args: Type<Poly>[] = [];
-    for (const arg of variant.args) {
-      const a = yield* castType(arg, {
-        typesScope,
-        params: typeDecl.params.map((p) => p.name),
-      });
-      args.push(a);
-    }
-
-    scope[variant.name] = {
-      type: "fn",
-      args,
-      return: ret,
-    };
-  }
-}
-
 export function typecheck<T>(
   ast: Program<T>,
   deps: Deps = {},
   implicitImports: Import[] = defaultImports,
 ): [Program<T & TypeMeta>, TypeError[]] {
-  TVar.resetId();
-  const scope: Context = {};
-  const typesScope: TypesPool = {};
-
-  // ----- Collect imports into scope
-  const imports = [...implicitImports, ...ast.imports];
-  for (const import_ of imports) {
-    runImports(import_, deps, scope, typesScope);
-  }
-
-  // ---- Typecheck this module
-  const typedProgram = annotateProgram(ast);
-
-  const errors: TypeError[] = [];
-  for (const typeDecl of typedProgram.typeDeclarations) {
-    errors.push(...typecheckTypeDeclarations(typeDecl, scope, typesScope));
-  }
-  for (const decl of typedProgram.declarations) {
-    errors.push(...typecheckAnnotatedDecl(decl, scope, typesScope));
-  }
-  return [typedProgram, errors];
+  return new Typechecker(deps).run(ast, implicitImports);
 }
 
-function* typecheckTypeDeclarations(
-  typeDecl: TypeDeclaration,
-  /* mut */ scope: Context,
-  /* mut */ typesScope: TypesPool,
-): Generator<TypeError> {
-  typesScope[typeDecl.name] = typeDecl.params.length;
-  const params: string[] = [];
-  for (const param of typeDecl.params) {
-    if (params.includes(param.name)) {
-      yield {
-        type: "type-param-shadowing",
+class Typechecker {
+  private globals: Context = {};
+  private types: TypesPool = {};
+
+  constructor(private deps: Deps) {}
+
+  run<T>(
+    program: Program<T>,
+    implicitImports: Import[] = defaultImports,
+  ): [Program<T & TypeMeta>, TypeError[]] {
+    TVar.resetId();
+    // ----- Collect imports into scope
+    const imports = [...implicitImports, ...program.imports];
+    for (const import_ of imports) {
+      this.runImports(import_);
+    }
+
+    // ---- Typecheck this module
+    const typedProgram = annotateProgram(program);
+
+    const errors: TypeError[] = [];
+    for (const typeDecl of typedProgram.typeDeclarations) {
+      errors.push(...this.typecheckTypeDeclarations(typeDecl));
+    }
+    for (const decl of typedProgram.declarations) {
+      errors.push(...this.typecheckAnnotatedDecl(decl));
+    }
+    return [typedProgram, errors];
+  }
+
+  private runImports(import_: Import) {
+    const dep = this.deps[import_.ns];
+
+    if (dep === undefined) {
+      // TODO emit err
+      return;
+    }
+
+    for (const exposed of import_.exposing) {
+      switch (exposed.type) {
+        case "value": {
+          const lookup = dep.declarations.find(
+            (dec) => dec.binding.name === exposed.name,
+          );
+
+          if (lookup === undefined) {
+            // TODO emit err
+            continue;
+          }
+
+          this.globals[exposed.name] = lookup.binding.$.asType();
+          break;
+        }
+
+        case "type": {
+          const typeDecl = dep.typeDeclarations.find(
+            (t) => t.name === exposed.name,
+          );
+
+          if (typeDecl === undefined) {
+            // TODO emit err
+            continue;
+          }
+
+          this.types[typeDecl.name] = typeDecl.params.length;
+          if (typeDecl.type === "adt" && exposed.exposeImpl) {
+            for (const variant of typeDecl.variants) {
+              // ignoring errs
+              [...this.addVariantTypesToScope(typeDecl, variant)];
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  private *typecheckTypeDeclarations(
+    typeDecl: TypeDeclaration,
+  ): Generator<TypeError> {
+    this.types[typeDecl.name] = typeDecl.params.length;
+    const params: string[] = [];
+    for (const param of typeDecl.params) {
+      if (params.includes(param.name)) {
+        yield {
+          type: "type-param-shadowing",
+          id: param.name,
+          span: param.span,
+        };
+      }
+      params.push(param.name);
+    }
+
+    if (typeDecl.type === "adt") {
+      for (const variant of typeDecl.variants) {
+        yield* this.addVariantTypesToScope(typeDecl, variant);
+      }
+    }
+  }
+
+  private *addVariantTypesToScope(
+    typeDecl: TypeDeclaration & { type: "adt" },
+    variant: TypeVariant,
+  ): Generator<TypeError> {
+    const ret: Type<Poly> = {
+      type: "named",
+      name: typeDecl.name,
+      args: typeDecl.params.map((param) => ({
+        type: "quantified",
         id: param.name,
-        span: param.span,
+      })),
+    };
+
+    if (variant.args.length === 0) {
+      this.globals[variant.name] = ret;
+    } else {
+      const args: Type<Poly>[] = [];
+      for (const arg of variant.args) {
+        const a = yield* castType(arg, {
+          typesScope: this.types,
+          params: typeDecl.params.map((p) => p.name),
+        });
+        args.push(a);
+      }
+
+      this.globals[variant.name] = {
+        type: "fn",
+        args,
+        return: ret,
       };
     }
-    params.push(param.name);
   }
 
-  if (typeDecl.type === "adt") {
-    for (const variant of typeDecl.variants) {
-      yield* addVariantTypesToScope(typeDecl, variant, scope, typesScope);
+  private *typecheckAnnotatedDecl(
+    decl: Declaration<TypeMeta>,
+  ): Generator<TypeError> {
+    if (decl.typeHint !== undefined) {
+      const th = yield* inferTypeHint(decl.typeHint, this.types);
+      // TODO this should be moved above
+      // This way is not pointing to the right node
+      const e = checkUnboundTypeError(decl.typeHint, th, this.types);
+      if (e !== undefined) {
+        yield e;
+      }
+
+      yield* unifyYieldErrGeneric(
+        decl.typeHint,
+        instantiate(th),
+        decl.binding.$.asType(),
+      );
+
+      const err = checkUnboundTypeError<SpanMeta>(
+        decl.typeHint,
+        decl.binding.$.asType(),
+        this.types,
+      );
+      if (err !== undefined) {
+        yield err;
+      }
+
+      if (decl.extern) {
+        this.globals[decl.binding.name] = th;
+      }
     }
-  }
-}
 
-function* typecheckAnnotatedExpr<T extends SpanMeta>(
-  ast: Expr<T & TypeMeta>,
-  scope: Context,
-): Generator<TypeError> {
-  switch (ast.type) {
-    case "constant": {
-      const t = inferConstant(ast.value);
-      yield* unifyYieldErr(ast, ast.$.asType(), t);
+    if (decl.extern) {
       return;
     }
 
-    case "identifier": {
-      const lookup = scope[ast.name];
-      if (lookup === undefined) {
-        yield {
-          type: "unbound-variable",
-          ident: ast.name,
-          span: ast.span,
-        };
+    yield* this.typecheckAnnotatedExpr(decl.value, {
+      ...this.globals,
+      [decl.binding.name]: decl.value.$.asType(),
+    });
+
+    yield* unifyYieldErr(
+      decl.value,
+      decl.binding.$.asType(),
+      decl.value.$.asType(),
+    );
+
+    this.globals[decl.binding.name] = generalize(
+      decl.value.$.asType(),
+      this.globals,
+    );
+  }
+
+  private *typecheckAnnotatedExpr<T extends SpanMeta>(
+    ast: Expr<T & TypeMeta>,
+    scope: Context,
+  ): Generator<TypeError> {
+    switch (ast.type) {
+      case "constant": {
+        const t = inferConstant(ast.value);
+        yield* unifyYieldErr(ast, ast.$.asType(), t);
         return;
       }
-      yield* unifyYieldErr(ast, ast.$.asType(), instantiate(lookup));
-      return;
+
+      case "identifier": {
+        const lookup = scope[ast.name];
+        if (lookup === undefined) {
+          yield {
+            type: "unbound-variable",
+            ident: ast.name,
+            span: ast.span,
+          };
+          return;
+        }
+        yield* unifyYieldErr(ast, ast.$.asType(), instantiate(lookup));
+        return;
+      }
+
+      case "fn":
+        yield* unifyYieldErr(ast, ast.$.asType(), {
+          type: "fn",
+          args: ast.params.map((p) => p.$.asType()),
+          return: ast.body.$.asType(),
+        });
+        yield* this.typecheckAnnotatedExpr(ast.body, {
+          ...scope,
+          ...Object.fromEntries(ast.params.map((p) => [p.name, p.$.asType()])),
+        });
+        return;
+
+      case "application":
+        yield* this.typecheckAnnotatedExpr(ast.caller, scope);
+        yield* unifyYieldErr(ast, ast.caller.$.asType(), {
+          type: "fn",
+          args: ast.args.map((arg) => arg.$.asType()),
+          return: ast.$.asType(),
+        });
+        for (const arg of ast.args) {
+          yield* this.typecheckAnnotatedExpr(arg, scope);
+        }
+        return;
+
+      case "let":
+        yield* unifyYieldErr(ast, ast.binding.$.asType(), ast.value.$.asType());
+        yield* unifyYieldErr(ast, ast.$.asType(), ast.body.$.asType());
+        yield* this.typecheckAnnotatedExpr(ast.value, {
+          ...scope,
+          [ast.binding.name]: ast.value.$.asType(),
+        });
+        yield* this.typecheckAnnotatedExpr(ast.body, {
+          ...scope,
+          [ast.binding.name]: ast.value.$.asType(),
+        });
+        return;
+
+      case "if":
+        yield* unifyYieldErr(ast, ast.condition.$.asType(), {
+          type: "named",
+          name: "Bool",
+          args: [],
+        });
+        yield* unifyYieldErr(ast, ast.$.asType(), ast.then.$.asType());
+        yield* unifyYieldErr(ast, ast.$.asType(), ast.else.$.asType());
+        yield* this.typecheckAnnotatedExpr(ast.condition, scope);
+        yield* this.typecheckAnnotatedExpr(ast.then, scope);
+        yield* this.typecheckAnnotatedExpr(ast.else, scope);
+        return;
+
+      case "match":
+        yield* this.typecheckAnnotatedExpr(ast.expr, scope);
+        for (const [pattern, expr] of ast.clauses) {
+          yield* unifyYieldErr(ast, pattern.$.asType(), ast.expr.$.asType());
+          const newContext = yield* typecheckPattern(pattern, scope);
+          yield* unifyYieldErr(ast, ast.$.asType(), expr.$.asType());
+          yield* this.typecheckAnnotatedExpr(expr, newContext);
+        }
     }
-
-    case "fn":
-      yield* unifyYieldErr(ast, ast.$.asType(), {
-        type: "fn",
-        args: ast.params.map((p) => p.$.asType()),
-        return: ast.body.$.asType(),
-      });
-      yield* typecheckAnnotatedExpr(ast.body, {
-        ...scope,
-        ...Object.fromEntries(ast.params.map((p) => [p.name, p.$.asType()])),
-      });
-      return;
-
-    case "application":
-      yield* typecheckAnnotatedExpr(ast.caller, scope);
-      yield* unifyYieldErr(ast, ast.caller.$.asType(), {
-        type: "fn",
-        args: ast.args.map((arg) => arg.$.asType()),
-        return: ast.$.asType(),
-      });
-      for (const arg of ast.args) {
-        yield* typecheckAnnotatedExpr(arg, scope);
-      }
-      return;
-
-    case "let":
-      yield* unifyYieldErr(ast, ast.binding.$.asType(), ast.value.$.asType());
-      yield* unifyYieldErr(ast, ast.$.asType(), ast.body.$.asType());
-      yield* typecheckAnnotatedExpr(ast.value, {
-        ...scope,
-        [ast.binding.name]: ast.value.$.asType(),
-      });
-      yield* typecheckAnnotatedExpr(ast.body, {
-        ...scope,
-        [ast.binding.name]: ast.value.$.asType(),
-      });
-      return;
-
-    case "if":
-      yield* unifyYieldErr(ast, ast.condition.$.asType(), {
-        type: "named",
-        name: "Bool",
-        args: [],
-      });
-      yield* unifyYieldErr(ast, ast.$.asType(), ast.then.$.asType());
-      yield* unifyYieldErr(ast, ast.$.asType(), ast.else.$.asType());
-      yield* typecheckAnnotatedExpr(ast.condition, scope);
-      yield* typecheckAnnotatedExpr(ast.then, scope);
-      yield* typecheckAnnotatedExpr(ast.else, scope);
-      return;
-
-    case "match":
-      yield* typecheckAnnotatedExpr(ast.expr, scope);
-      for (const [pattern, expr] of ast.clauses) {
-        yield* unifyYieldErr(ast, pattern.$.asType(), ast.expr.$.asType());
-        const newContext = yield* typecheckPattern(pattern, scope);
-        yield* unifyYieldErr(ast, ast.$.asType(), expr.$.asType());
-        yield* typecheckAnnotatedExpr(expr, newContext);
-      }
   }
 }
 
@@ -638,58 +693,6 @@ function inferConstant(x: ConstLiteral): Type {
     case "string":
       return { type: "named", name: "String", args: [] };
   }
-}
-
-function* typecheckAnnotatedDecl(
-  decl: Declaration<TypeMeta>,
-  /* mut */ scope: Context,
-  typesPool: TypesPool,
-): Generator<TypeError> {
-  if (decl.typeHint !== undefined) {
-    const th = yield* inferTypeHint(decl.typeHint, typesPool);
-    // TODO this should be moved above
-    // This way is not pointing to the right node
-    const e = checkUnboundTypeError(decl.typeHint, th, typesPool);
-    if (e !== undefined) {
-      yield e;
-    }
-
-    yield* unifyYieldErrGeneric(
-      decl.typeHint,
-      instantiate(th),
-      decl.binding.$.asType(),
-    );
-
-    const err = checkUnboundTypeError<SpanMeta>(
-      decl.typeHint,
-      decl.binding.$.asType(),
-      typesPool,
-    );
-    if (err !== undefined) {
-      yield err;
-    }
-
-    if (decl.extern) {
-      scope[decl.binding.name] = th;
-    }
-  }
-
-  if (decl.extern) {
-    return;
-  }
-
-  yield* typecheckAnnotatedExpr(decl.value, {
-    ...scope,
-    [decl.binding.name]: decl.value.$.asType(),
-  });
-
-  yield* unifyYieldErr(
-    decl.value,
-    decl.binding.$.asType(),
-    decl.value.$.asType(),
-  );
-
-  scope[decl.binding.name] = generalize(decl.value.$.asType(), scope);
 }
 
 function* inferTypeHint(
