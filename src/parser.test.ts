@@ -249,6 +249,14 @@ let _ = if b { 0 } else { 1 }
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test.todo("parse if-else syntax sugar", () => {
+  const src = `
+    let _ = if b { 0 } else if { 1 } else { 2 }
+  `;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 test("parse if expr with a let expr", () => {
   const src = `
 let _ = if b {
