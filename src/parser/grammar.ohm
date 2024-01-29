@@ -3,7 +3,7 @@ Program {
     = Import* (Declaration | TypeDeclaration)*
 
   Import
-    = "import" NonemptyListOf<moduleName, "."> ("." "{" NonemptyListOf<Exposing, ","> "}")?
+    = "import" NonemptyListOf<moduleName, "/"> ("." "{" NonemptyListOf<Exposing, ","> "}")?
 
   Exposing
     = ident -- value
@@ -24,7 +24,7 @@ Program {
     = PipeExp
 
   PipeExp
-    = PipeExp "|>" QualifiedIdent "(" ListOf<Exp, ","> ","? ")"  -- pipe
+    = PipeExp "|>" QualifiedName "(" ListOf<Exp, ","> ","? ")"  -- pipe
     | CompExp
 
   CompExp
@@ -83,8 +83,7 @@ Program {
     | "fn" ListOf<ident, ","> "{" BlockContent "}"  -- fn
     | "if" Exp "{" BlockContent "}" "else" "{" BlockContent "}" -- if
     | "match" Exp "{" ListOf<MatchClause, ","> ","? "}" -- match
-    | QualifiedIdent -- ident
-    | typeConstructor -- constructor
+    | QualifiedName -- qualified
     | lit -- literal
 
   lit
@@ -93,7 +92,7 @@ Program {
 
   BlockContent
     = Exp  -- exp
-    | "let#" QualifiedIdent ident "=" Exp ";" BlockContent -- monadicLet
+    | "let#" QualifiedName ident "=" Exp ";" BlockContent -- monadicLet
     | "let" ident "=" Exp ";" BlockContent -- let
 
   ident
@@ -105,8 +104,8 @@ Program {
   moduleName
     = upper alnum*
 
-  QualifiedIdent
-    = (ListOf<moduleName, "."> ".")? ident
+  QualifiedName
+    = (ListOf<moduleName, "/"> ".")? (ident | typeConstructor)
 
   identHead
     = lower

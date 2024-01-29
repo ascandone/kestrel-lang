@@ -560,32 +560,37 @@ describe("imports", () => {
   });
 
   test("import nested modules", () => {
-    const src = "import A.B.C";
+    const src = "import A/B/C";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("unqualified import of a value", () => {
-    const src = "import A.B.C.{imported}";
+    const src = "import A/B/C.{imported}";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("unqualified import of values", () => {
-    const src = "import A.B.C.{x, y, z}";
+    const src = "import A/B/C.{x, y, z}";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("unqualified import of types", () => {
-    const src = "import A.B.C.{T1, T2}";
+    const src = "import A/B/C.{T1, T2}";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("unqualified import of types (non-opaque)", () => {
-    const src = "import A.B.C.{T1(..)}";
+    const src = "import A/B/C.{T1(..)}";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("identifiers can be qualified", () => {
-    const src = "let x = A.B.name";
+    const src = "let x = A/B.name";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("type constructors can be qualified", () => {
+    const src = "let x = A/B.Name";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });

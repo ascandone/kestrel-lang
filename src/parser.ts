@@ -202,13 +202,6 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   PriExp_paren(_open, e, _close) {
     return e.expr();
   },
-  PriExp_constructor(node) {
-    return {
-      type: "identifier",
-      name: node.sourceString,
-      span: getSpan(node),
-    };
-  },
 
   ident(_hd, _tl) {
     return {
@@ -218,7 +211,7 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     };
   },
 
-  QualifiedIdent(ns, _dot, id) {
+  QualifiedName(ns, _dot, id) {
     const namespace =
       ns.numChildren === 0
         ? undefined
@@ -226,13 +219,13 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
             .child(0)
             .asIteration()
             .children.map((c) => c.sourceString)
-            .join(".");
+            .join("/");
 
     return {
       type: "identifier",
       span: getSpan(this),
       namespace,
-      ...id.ident(),
+      name: id.sourceString,
     };
   },
 

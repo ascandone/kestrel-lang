@@ -230,9 +230,9 @@ exports[`imports > identifiers can be qualified 1`] = `
       ],
       "value": {
         "name": "name",
-        "namespace": "A.B",
+        "namespace": "A/B",
         "span": [
-          12,
+          8,
           16,
         ],
         "type": "identifier",
@@ -250,7 +250,7 @@ exports[`imports > import nested modules 1`] = `
   "imports": [
     {
       "exposing": [],
-      "ns": "A.B.C",
+      "ns": "A/B/C",
     },
   ],
   "typeDeclarations": [],
@@ -397,6 +397,39 @@ exports[`imports > parse pub(..) modifier on types 1`] = `
 }
 `;
 
+exports[`imports > type constructors can be qualified 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        16,
+      ],
+      "value": {
+        "name": "Name",
+        "namespace": "A/B",
+        "span": [
+          8,
+          16,
+        ],
+        "type": "identifier",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`imports > unqualified import of a value 1`] = `
 {
   "declarations": [],
@@ -408,7 +441,7 @@ exports[`imports > unqualified import of a value 1`] = `
           "type": "value",
         },
       ],
-      "ns": "A.B.C",
+      "ns": "A/B/C",
     },
   ],
   "typeDeclarations": [],
@@ -427,7 +460,7 @@ exports[`imports > unqualified import of types (non-opaque) 1`] = `
           "type": "type",
         },
       ],
-      "ns": "A.B.C",
+      "ns": "A/B/C",
     },
   ],
   "typeDeclarations": [],
@@ -451,7 +484,7 @@ exports[`imports > unqualified import of types 1`] = `
           "type": "type",
         },
       ],
-      "ns": "A.B.C",
+      "ns": "A/B/C",
     },
   ],
   "typeDeclarations": [],
@@ -477,7 +510,7 @@ exports[`imports > unqualified import of values 1`] = `
           "type": "value",
         },
       ],
-      "ns": "A.B.C",
+      "ns": "A/B/C",
     },
   ],
   "typeDeclarations": [],
@@ -717,7 +750,7 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
           "name": "bind",
           "namespace": "Task",
           "span": [
-            30,
+            25,
             34,
           ],
           "type": "identifier",
@@ -1600,6 +1633,7 @@ exports[`parse cons operator is right-associative 1`] = `
               },
               {
                 "name": "Nil",
+                "namespace": undefined,
                 "span": [
                   18,
                   21,
@@ -3334,7 +3368,7 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
             "name": "a",
             "namespace": "Mod",
             "span": [
-              17,
+              13,
               18,
             ],
             "type": "identifier",
