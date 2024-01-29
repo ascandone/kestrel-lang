@@ -817,6 +817,25 @@ describe("modules", () => {
     });
   });
 
+  test("handles variants imports", () => {
+    const [A] = tcProgram(`
+      pub type MyType { Constr }
+    `);
+
+    const [types, errs] = tc(
+      `
+      import A
+      let x = A.Constr
+    `,
+      { A },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "MyType",
+    });
+  });
+
   test.todo("error when importing a non-existing type");
   test.todo("error when importing a non-existing value");
   test.todo("error when expose impl is run on a extern type");

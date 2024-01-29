@@ -258,10 +258,10 @@ class Typechecker {
     }
   }
 
-  private *addVariantTypesToScope(
+  private *getVariantType(
     typeDecl: TypeDeclaration & { type: "adt" },
     variant: TypeVariant,
-  ): Generator<TypeError> {
+  ): Generator<TypeError, Type<Poly>> {
     const ret: Type<Poly> = {
       type: "named",
       name: typeDecl.name,
@@ -272,7 +272,7 @@ class Typechecker {
     };
 
     if (variant.args.length === 0) {
-      this.globals[variant.name] = ret;
+      return ret;
     } else {
       const args: Type<Poly>[] = [];
       for (const arg of variant.args) {
@@ -283,12 +283,19 @@ class Typechecker {
         args.push(a);
       }
 
-      this.globals[variant.name] = {
+      return {
         type: "fn",
         args,
         return: ret,
       };
     }
+  }
+
+  private *addVariantTypesToScope(
+    typeDecl: TypeDeclaration & { type: "adt" },
+    variant: TypeVariant,
+  ): Generator<TypeError> {
+    this.globals[variant.name] = yield* this.getVariantType(typeDecl, variant);
   }
 
   private *typecheckAnnotatedDecl(
@@ -344,15 +351,29 @@ class Typechecker {
     );
   }
 
-  private lookupIdent(
+  private *lookupIdent(
     ns: string | undefined,
     name: string,
     scope: Context,
-  ): Type<Poly> | undefined {
+  ): Generator<TypeError, Type<Poly> | undefined> {
     if (ns !== undefined) {
-      return this.deps[ns]?.declarations
+      const decl = this.deps[ns]?.declarations
         .find((decl) => decl.binding.name === name)
         ?.binding.$.asType();
+
+      if (decl !== undefined) {
+        return decl;
+      }
+
+      for (const tDecl of this.deps[ns]?.typeDeclarations ?? []) {
+        if (tDecl.type === "adt") {
+          for (const variant of tDecl.variants) {
+            if (variant.name === name) {
+              return yield* this.getVariantType(tDecl, variant);
+            }
+          }
+        }
+      }
     }
 
     return scope[name];
@@ -370,7 +391,7 @@ class Typechecker {
       }
 
       case "identifier": {
-        const lookup = this.lookupIdent(ast.namespace, ast.name, scope);
+        const lookup = yield* this.lookupIdent(ast.namespace, ast.name, scope);
         if (lookup === undefined) {
           yield {
             type: "unbound-variable",
