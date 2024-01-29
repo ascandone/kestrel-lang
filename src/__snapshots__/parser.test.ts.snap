@@ -211,6 +211,39 @@ exports[`ignoring comments 1`] = `
 }
 `;
 
+exports[`imports > identifiers can be qualified 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        16,
+      ],
+      "value": {
+        "name": "name",
+        "namespace": "A.B",
+        "span": [
+          12,
+          16,
+        ],
+        "type": "identifier",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`imports > import nested modules 1`] = `
 {
   "declarations": [],
@@ -514,6 +547,7 @@ exports[`it should be possible to mix pipe with infix 1`] = `
             ],
             "caller": {
               "name": "f",
+              "namespace": undefined,
               "span": [
                 22,
                 23,
@@ -529,6 +563,7 @@ exports[`it should be possible to mix pipe with infix 1`] = `
         ],
         "caller": {
           "name": "g",
+          "namespace": undefined,
           "span": [
             29,
             30,
@@ -569,6 +604,7 @@ exports[`monadic let syntax sugar 1`] = `
         "args": [
           {
             "name": "expr",
+            "namespace": undefined,
             "span": [
               36,
               40,
@@ -578,6 +614,7 @@ exports[`monadic let syntax sugar 1`] = `
           {
             "body": {
               "name": "body",
+              "namespace": undefined,
               "span": [
                 48,
                 52,
@@ -602,6 +639,7 @@ exports[`monadic let syntax sugar 1`] = `
         ],
         "caller": {
           "name": "bind_f",
+          "namespace": undefined,
           "span": [
             25,
             31,
@@ -611,6 +649,82 @@ exports[`monadic let syntax sugar 1`] = `
         "span": [
           21,
           52,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`monadic let syntax sugar should handle qualified names 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          9,
+          10,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        5,
+        61,
+      ],
+      "value": {
+        "args": [
+          {
+            "name": "expr",
+            "namespace": undefined,
+            "span": [
+              39,
+              43,
+            ],
+            "type": "identifier",
+          },
+          {
+            "body": {
+              "name": "body",
+              "namespace": undefined,
+              "span": [
+                51,
+                55,
+              ],
+              "type": "identifier",
+            },
+            "params": [
+              {
+                "name": "x",
+                "span": [
+                  35,
+                  36,
+                ],
+              },
+            ],
+            "span": [
+              21,
+              55,
+            ],
+            "type": "fn",
+          },
+        ],
+        "caller": {
+          "name": "bind",
+          "namespace": "Task",
+          "span": [
+            30,
+            34,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          21,
+          55,
         ],
         "type": "application",
       },
@@ -1076,6 +1190,7 @@ exports[`parse appl with 1 arg 1`] = `
         "args": [
           {
             "name": "x",
+            "namespace": undefined,
             "span": [
               10,
               11,
@@ -1085,6 +1200,7 @@ exports[`parse appl with 1 arg 1`] = `
         ],
         "caller": {
           "name": "f",
+          "namespace": undefined,
           "span": [
             8,
             9,
@@ -1125,6 +1241,7 @@ exports[`parse appl with 3 args 1`] = `
         "args": [
           {
             "name": "x",
+            "namespace": undefined,
             "span": [
               10,
               11,
@@ -1133,6 +1250,7 @@ exports[`parse appl with 3 args 1`] = `
           },
           {
             "name": "y",
+            "namespace": undefined,
             "span": [
               13,
               14,
@@ -1141,6 +1259,7 @@ exports[`parse appl with 3 args 1`] = `
           },
           {
             "name": "z",
+            "namespace": undefined,
             "span": [
               16,
               17,
@@ -1150,6 +1269,7 @@ exports[`parse appl with 3 args 1`] = `
         ],
         "caller": {
           "name": "f",
+          "namespace": undefined,
           "span": [
             8,
             9,
@@ -1230,6 +1350,7 @@ exports[`parse appl with nested expr 1`] = `
         ],
         "caller": {
           "name": "f",
+          "namespace": undefined,
           "span": [
             8,
             9,
@@ -1282,6 +1403,7 @@ exports[`parse appl with nested parens 1`] = `
         ],
         "caller": {
           "name": "f",
+          "namespace": undefined,
           "span": [
             8,
             9,
@@ -1322,6 +1444,7 @@ exports[`parse appl with no args 1`] = `
         "args": [],
         "caller": {
           "name": "f",
+          "namespace": undefined,
           "span": [
             8,
             9,
@@ -1362,6 +1485,7 @@ exports[`parse appl with trailing comma 1`] = `
         "args": [
           {
             "name": "x",
+            "namespace": undefined,
             "span": [
               15,
               16,
@@ -1370,6 +1494,7 @@ exports[`parse appl with trailing comma 1`] = `
           },
           {
             "name": "y",
+            "namespace": undefined,
             "span": [
               22,
               23,
@@ -1379,6 +1504,7 @@ exports[`parse appl with trailing comma 1`] = `
         ],
         "caller": {
           "name": "f",
+          "namespace": undefined,
           "span": [
             8,
             9,
@@ -1454,6 +1580,7 @@ exports[`parse cons operator is right-associative 1`] = `
         "args": [
           {
             "name": "a",
+            "namespace": undefined,
             "span": [
               8,
               9,
@@ -1464,6 +1591,7 @@ exports[`parse cons operator is right-associative 1`] = `
             "args": [
               {
                 "name": "b",
+                "namespace": undefined,
                 "span": [
                   13,
                   14,
@@ -1536,6 +1664,7 @@ exports[`parse conslist sugar 1`] = `
         "args": [
           {
             "name": "hd",
+            "namespace": undefined,
             "span": [
               8,
               10,
@@ -1544,6 +1673,7 @@ exports[`parse conslist sugar 1`] = `
           },
           {
             "name": "tl",
+            "namespace": undefined,
             "span": [
               14,
               16,
@@ -1881,6 +2011,7 @@ exports[`parse ident 1`] = `
       ],
       "value": {
         "name": "x",
+        "namespace": undefined,
         "span": [
           8,
           9,
@@ -1914,6 +2045,7 @@ exports[`parse if expr 1`] = `
       "value": {
         "condition": {
           "name": "b",
+          "namespace": undefined,
           "span": [
             12,
             13,
@@ -1975,6 +2107,7 @@ exports[`parse if expr with a let expr 1`] = `
       "value": {
         "condition": {
           "name": "b",
+          "namespace": undefined,
           "span": [
             12,
             13,
@@ -2022,6 +2155,7 @@ exports[`parse if expr with a let expr 1`] = `
           "type": "let",
           "value": {
             "name": "a",
+            "namespace": undefined,
             "span": [
               26,
               27,
@@ -2283,17 +2417,7 @@ exports[`parse tuple sugar 1`] = `
               "value": 1,
             },
           },
-          {
-            "span": [
-              12,
-              13,
-            ],
-            "type": "constant",
-            "value": {
-              "type": "int",
-              "value": 2,
-            },
-          },
+          "2",
         ],
         "caller": {
           "name": "Tuple2",
@@ -2337,6 +2461,7 @@ exports[`parse unary ! expr 1`] = `
         "args": [
           {
             "name": "b",
+            "namespace": undefined,
             "span": [
               10,
               11,
@@ -2395,6 +2520,7 @@ exports[`pattern matching > binding with identifier 1`] = `
             },
             {
               "name": "res",
+              "namespace": undefined,
               "span": [
                 23,
                 26,
@@ -2405,6 +2531,7 @@ exports[`pattern matching > binding with identifier 1`] = `
         ],
         "expr": {
           "name": "x",
+          "namespace": undefined,
           "span": [
             14,
             15,
@@ -2445,6 +2572,7 @@ exports[`pattern matching > empty match expression 1`] = `
         "clauses": [],
         "expr": {
           "name": "x",
+          "namespace": undefined,
           "span": [
             14,
             15,
@@ -2512,6 +2640,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
             },
             {
               "name": "res",
+              "namespace": undefined,
               "span": [
                 30,
                 33,
@@ -2522,6 +2651,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
         ],
         "expr": {
           "name": "x",
+          "namespace": undefined,
           "span": [
             14,
             15,
@@ -2608,6 +2738,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
             },
             {
               "name": "res",
+              "namespace": undefined,
               "span": [
                 37,
                 40,
@@ -2618,6 +2749,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
         ],
         "expr": {
           "name": "x",
+          "namespace": undefined,
           "span": [
             14,
             15,
@@ -2668,6 +2800,7 @@ exports[`pattern matching > matching constructor with no args 1`] = `
             },
             {
               "name": "res",
+              "namespace": undefined,
               "span": [
                 23,
                 26,
@@ -2678,6 +2811,7 @@ exports[`pattern matching > matching constructor with no args 1`] = `
         ],
         "expr": {
           "name": "x",
+          "namespace": undefined,
           "span": [
             14,
             15,
@@ -2737,6 +2871,7 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
             },
             {
               "name": "res",
+              "namespace": undefined,
               "span": [
                 26,
                 29,
@@ -2747,6 +2882,7 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
         ],
         "expr": {
           "name": "x",
+          "namespace": undefined,
           "span": [
             14,
             15,
@@ -2799,6 +2935,7 @@ exports[`pattern matching > matching float literals 1`] = `
             },
             {
               "name": "res",
+              "namespace": undefined,
               "span": [
                 25,
                 28,
@@ -2809,6 +2946,7 @@ exports[`pattern matching > matching float literals 1`] = `
         ],
         "expr": {
           "name": "x",
+          "namespace": undefined,
           "span": [
             14,
             15,
@@ -2861,6 +2999,7 @@ exports[`pattern matching > matching int literals 1`] = `
             },
             {
               "name": "res",
+              "namespace": undefined,
               "span": [
                 24,
                 27,
@@ -2871,6 +3010,7 @@ exports[`pattern matching > matching int literals 1`] = `
         ],
         "expr": {
           "name": "x",
+          "namespace": undefined,
           "span": [
             14,
             15,
@@ -2923,6 +3063,7 @@ exports[`pattern matching > matching str literals 1`] = `
             },
             {
               "name": "res",
+              "namespace": undefined,
               "span": [
                 27,
                 30,
@@ -2933,6 +3074,7 @@ exports[`pattern matching > matching str literals 1`] = `
         ],
         "expr": {
           "name": "x",
+          "namespace": undefined,
           "span": [
             14,
             15,
@@ -3000,6 +3142,7 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
             },
             {
               "name": "res",
+              "namespace": undefined,
               "span": [
                 28,
                 31,
@@ -3010,6 +3153,7 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
         ],
         "expr": {
           "name": "x",
+          "namespace": undefined,
           "span": [
             14,
             15,
@@ -3050,6 +3194,7 @@ exports[`pipe syntax sugar 1`] = `
         "args": [
           {
             "name": "a",
+            "namespace": undefined,
             "span": [
               13,
               14,
@@ -3058,6 +3203,7 @@ exports[`pipe syntax sugar 1`] = `
           },
           {
             "name": "x",
+            "namespace": undefined,
             "span": [
               20,
               21,
@@ -3066,6 +3212,7 @@ exports[`pipe syntax sugar 1`] = `
           },
           {
             "name": "y",
+            "namespace": undefined,
             "span": [
               23,
               24,
@@ -3075,6 +3222,7 @@ exports[`pipe syntax sugar 1`] = `
         ],
         "caller": {
           "name": "f",
+          "namespace": undefined,
           "span": [
             18,
             19,
@@ -3117,6 +3265,7 @@ exports[`pipe syntax sugar should be chainable 1`] = `
             "args": [
               {
                 "name": "a",
+                "namespace": undefined,
                 "span": [
                   13,
                   14,
@@ -3126,6 +3275,7 @@ exports[`pipe syntax sugar should be chainable 1`] = `
             ],
             "caller": {
               "name": "f",
+              "namespace": undefined,
               "span": [
                 18,
                 19,
@@ -3141,6 +3291,7 @@ exports[`pipe syntax sugar should be chainable 1`] = `
         ],
         "caller": {
           "name": "g",
+          "namespace": undefined,
           "span": [
             25,
             26,
@@ -3150,6 +3301,75 @@ exports[`pipe syntax sugar should be chainable 1`] = `
         "span": [
           13,
           28,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pipe syntax sugar should handle qualified names 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          9,
+          10,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        5,
+        29,
+      ],
+      "value": {
+        "args": [
+          {
+            "name": "a",
+            "namespace": "Mod",
+            "span": [
+              17,
+              18,
+            ],
+            "type": "identifier",
+          },
+          {
+            "name": "x",
+            "namespace": undefined,
+            "span": [
+              24,
+              25,
+            ],
+            "type": "identifier",
+          },
+          {
+            "name": "y",
+            "namespace": undefined,
+            "span": [
+              27,
+              28,
+            ],
+            "type": "identifier",
+          },
+        ],
+        "caller": {
+          "name": "f",
+          "namespace": undefined,
+          "span": [
+            22,
+            23,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          13,
+          29,
         ],
         "type": "application",
       },

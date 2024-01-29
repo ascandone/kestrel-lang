@@ -184,7 +184,7 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   },
 
   PriExp_tuple(_lparens, x, _comma, xs, _rparens) {
-    const xs_ = xs.asIteration().children.map((x) => x.expr());
+    const xs_ = xs.asIteration().children.map((m) => m.sourceString);
 
     const count = 1 + xs_.length;
 
@@ -213,9 +213,29 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   ident(_hd, _tl) {
     return {
       type: "identifier",
+      span: getSpan(this),
       ...this.ident(),
     };
   },
+
+  QualifiedIdent(ns, _dot, id) {
+    const namespace =
+      ns.numChildren === 0
+        ? undefined
+        : ns
+            .child(0)
+            .asIteration()
+            .children.map((c) => c.sourceString)
+            .join(".");
+
+    return {
+      type: "identifier",
+      span: getSpan(this),
+      namespace,
+      ...id.ident(),
+    };
+  },
+
   CompExp_lt: parseInfix,
   CompExp_gt: parseInfix,
   CompExp_gte: parseInfix,

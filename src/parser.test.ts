@@ -295,6 +295,17 @@ test("monadic let syntax sugar", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("monadic let syntax sugar should handle qualified names", () => {
+  const src = `
+    let _ = {
+      let#Task.bind x = expr;
+      body
+    }
+  `;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 test("monadic let syntax sugar should not contain space", () => {
   const src = `
     let _ = {
@@ -313,6 +324,14 @@ test("pipe syntax sugar", () => {
 
   // This should desugar to:
   //  f(a, x, y)
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("pipe syntax sugar should handle qualified names", () => {
+  const src = `
+    let _ = Mod.a |> f(x, y)
+  `;
 
   expect(unsafeParse(src)).toMatchSnapshot();
 });
@@ -562,6 +581,11 @@ describe("imports", () => {
 
   test("unqualified import of types (non-opaque)", () => {
     const src = "import A.B.C.{T1(..)}";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("identifiers can be qualified", () => {
+    const src = "let x = A.B.name";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });
