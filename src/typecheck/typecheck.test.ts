@@ -750,7 +750,7 @@ describe("prelude", () => {
 describe("modules", () => {
   test("implicitly imports values of the modules in the prelude", () => {
     const [A] = tcProgram(`
-      let x = 42
+      pub let x = 42
     `);
 
     const [moduleB] = tc(
@@ -793,7 +793,7 @@ describe("modules", () => {
 
   test("implicitly imports variants of the modules in the prelude", () => {
     const [A] = tcProgram(`
-      type MyType { A, B(Int) }
+      pub type MyType { A, B(Int) }
     `);
 
     const [types, errs] = tc(
@@ -856,6 +856,31 @@ describe("typecheck project", () => {
       y: "Int",
     });
   });
+
+  test("qualified imports", () => {
+    const project = typecheckProject(
+      {
+        A: unsafeParse(`
+        pub let x = 42
+      `),
+        B: unsafeParse(`
+        import A
+        let y = A.x
+      `),
+      },
+      [],
+    );
+
+    expect(project.B).not.toBeUndefined();
+    const [pB, errB] = project.B!;
+    expect(errB).toEqual([]);
+    expect(programTypes(pB)).toEqual({
+      y: "Int",
+    });
+  });
+
+  test.todo("qualified imports should only work if module was imported");
+  test.todo("qualified imports should not work on priv functions");
 });
 
 function tcProgram(src: string, deps: Deps = {}, prelude: Import[] = []) {

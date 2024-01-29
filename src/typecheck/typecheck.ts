@@ -344,6 +344,20 @@ class Typechecker {
     );
   }
 
+  private lookupIdent(
+    ns: string | undefined,
+    name: string,
+    scope: Context,
+  ): Type<Poly> | undefined {
+    if (ns !== undefined) {
+      return this.deps[ns]?.declarations
+        .find((decl) => decl.binding.name === name)
+        ?.binding.$.asType();
+    }
+
+    return scope[name];
+  }
+
   private *typecheckAnnotatedExpr<T extends SpanMeta>(
     ast: Expr<T & TypeMeta>,
     scope: Context,
@@ -356,7 +370,7 @@ class Typechecker {
       }
 
       case "identifier": {
-        const lookup = scope[ast.name];
+        const lookup = this.lookupIdent(ast.namespace, ast.name, scope);
         if (lookup === undefined) {
           yield {
             type: "unbound-variable",
