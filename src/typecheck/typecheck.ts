@@ -362,7 +362,7 @@ class Typechecker {
         ?.binding.$.asType();
 
       if (decl !== undefined) {
-        return decl;
+        return generalize(decl);
       }
 
       for (const tDecl of this.deps[ns]?.typeDeclarations ?? []) {
