@@ -3,7 +3,11 @@ Program {
     = Import* (Declaration | TypeDeclaration)*
 
   Import
-    = "import" NonemptyListOf<typeConstructor, ".">
+    = "import" NonemptyListOf<typeConstructor, "."> ("." "{" NonemptyListOf<Exposing, ","> "}")?
+
+  Exposing
+    = ident -- value
+    | typeConstructor ("(" ".." ")")? -- type
 
   // --- Toplevel
   Declaration

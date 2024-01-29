@@ -12,6 +12,7 @@ import {
   TypeVariant,
   MatchPattern,
   Import,
+  Exposing,
 } from "./ast";
 import type {
   IterationNode,
@@ -471,11 +472,36 @@ semantics.addOperation<Statement>("statement()", {
   },
 });
 
+semantics.addOperation<Exposing>("exposing()", {
+  Exposing_value(ident) {
+    return {
+      type: "value",
+      name: ident.sourceString,
+    };
+  },
+  Exposing_type(ident, _parens, dots, _rparens) {
+    const exposeImpl = dots.numChildren === 1;
+
+    return {
+      type: "type",
+      exposeImpl,
+      name: ident.sourceString,
+    };
+  },
+});
+
 semantics.addOperation<Import>("import_()", {
-  Import(_import, mod) {
+  Import(_import, mod, _dot, _lparens, exposing, _rparens) {
+    const exposing_ =
+      exposing.numChildren === 0
+        ? []
+        : exposing
+            .child(0)
+            .asIteration()
+            .children.map((c) => c.exposing());
     return {
       ns: mod.sourceString,
-      exposing: [],
+      exposing: exposing_,
     };
   },
 });

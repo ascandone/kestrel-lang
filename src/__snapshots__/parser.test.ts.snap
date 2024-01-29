@@ -364,6 +364,93 @@ exports[`imports > parse pub(..) modifier on types 1`] = `
 }
 `;
 
+exports[`imports > unqualified import of a value 1`] = `
+{
+  "declarations": [],
+  "imports": [
+    {
+      "exposing": [
+        {
+          "name": "imported",
+          "type": "value",
+        },
+      ],
+      "ns": "A.B.C",
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`imports > unqualified import of types (non-opaque) 1`] = `
+{
+  "declarations": [],
+  "imports": [
+    {
+      "exposing": [
+        {
+          "exposeImpl": true,
+          "name": "T1",
+          "type": "type",
+        },
+      ],
+      "ns": "A.B.C",
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`imports > unqualified import of types 1`] = `
+{
+  "declarations": [],
+  "imports": [
+    {
+      "exposing": [
+        {
+          "exposeImpl": false,
+          "name": "T1",
+          "type": "type",
+        },
+        {
+          "exposeImpl": false,
+          "name": "T2",
+          "type": "type",
+        },
+      ],
+      "ns": "A.B.C",
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`imports > unqualified import of values 1`] = `
+{
+  "declarations": [],
+  "imports": [
+    {
+      "exposing": [
+        {
+          "name": "x",
+          "type": "value",
+        },
+        {
+          "name": "y",
+          "type": "value",
+        },
+        {
+          "name": "z",
+          "type": "value",
+        },
+      ],
+      "ns": "A.B.C",
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`it should be possible to mix pipe with infix 1`] = `
 {
   "declarations": [

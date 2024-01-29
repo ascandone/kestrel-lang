@@ -544,6 +544,26 @@ describe("imports", () => {
     const src = "import A.B.C";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("unqualified import of a value", () => {
+    const src = "import A.B.C.{imported}";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("unqualified import of values", () => {
+    const src = "import A.B.C.{x, y, z}";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("unqualified import of types", () => {
+    const src = "import A.B.C.{T1, T2}";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("unqualified import of types (non-opaque)", () => {
+    const src = "import A.B.C.{T1(..)}";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {
