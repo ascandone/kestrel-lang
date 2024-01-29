@@ -1,9 +1,6 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { stdin } = require("node:process");
 const { createInterface } = require("node:readline");
-
-function int_to_string(x) {
-  return x.toString();
-}
 
 class Task {
   constructor(run) {

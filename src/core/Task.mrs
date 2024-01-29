@@ -1,0 +1,15 @@
+import Basics.{Int, Unit}
+
+extern pub type Task<a>
+
+extern pub let of: Fn(a) -> Task<a>
+
+extern pub let await: Fn(Task<a>, Fn(a) -> Task<b>) -> Task<b>
+
+extern pub let println: Fn(String) -> Task<Unit>
+
+extern pub let print: Fn(String) -> Task<Unit>
+
+extern pub let readline: Task<String>
+
+extern pub let sleep: Fn(Int) -> Task<Unit>

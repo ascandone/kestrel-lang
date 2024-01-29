@@ -1,39 +1,44 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { unsafeParse } from "../parser";
-import { typecheck, TypeMeta } from "../typecheck/typecheck";
+import { typecheckProject, TypeMeta } from "../typecheck/typecheck";
 import { parse } from "../parser";
 import { typeErrorPPrint } from "../typecheck/pretty-printer";
 import { Program, Span } from "../ast";
 import { exit } from "node:process";
 import { Compiler } from "../compiler";
-import { EXTERNS_PATH, PRELUDE_PATH } from "./paths";
+import { CORE_FOLDER_PATH } from "./paths";
+import { topSortedModules } from "../project";
 
 export const FgRed = "\x1b[31m";
 export const Reset = "\x1b[0m";
 export const FgBlack = "\x1b[30m";
 export const BgWhite = "\x1b[47m";
 
-export function readPrelude() {
-  const f = readFileSync(PRELUDE_PATH);
-  const src = f.toString();
+const EXTENSION = "mrs";
 
-  const parsed = unsafeParse(src);
+type Core = Record<string, Program>;
+export function readCore(): Core {
+  const paths = readdirSync(CORE_FOLDER_PATH);
+  const untypedProject: Record<string, Program> = {};
+  for (const fileName of paths) {
+    const [moduleName, ext] = fileName.split(".");
+    if (ext !== EXTENSION) {
+      continue;
+    }
 
-  const [prelude, errors] = typecheck(parsed);
-  if (errors.length !== 0) {
-    throw new Error("[unreachable] errors compiling prelude");
+    const fileBuf = readFileSync(`${CORE_FOLDER_PATH}/${fileName}`);
+
+    const parsed = unsafeParse(fileBuf.toString());
+
+    untypedProject[moduleName!] = parsed;
   }
 
-  return prelude;
+  return untypedProject;
 }
 
-type CheckResult = {
-  main: Program<TypeMeta>;
-  prelude: Program<TypeMeta>;
-};
-
-export function check(path: string): CheckResult | undefined {
-  const Prelude = readPrelude();
+export type TypedProject = Record<string, Program<TypeMeta>>;
+export function check(path: string): TypedProject | undefined {
+  const core = readCore();
 
   const f = readFileSync(path);
   const src = f.toString();
@@ -42,24 +47,35 @@ export function check(path: string): CheckResult | undefined {
     console.log(
       `${FgRed}Parsing error:${Reset} ${parseResult.matchResult.message!}`,
     );
+    exit(1);
+  }
+
+  const typedProject = typecheckProject({
+    // TODO actual name
+    Main: parseResult.value,
+    ...core,
+  });
+
+  const res: TypedProject = {};
+  let errorCount = 0;
+  for (const [ns, [program, errors]] of Object.entries(typedProject)) {
+    res[ns] = program;
+    for (const error of errors) {
+      errorCount++;
+      const msg = typeErrorPPrint(error);
+      console.log(`${FgRed}Error:${Reset} ${msg}`);
+      // TODO fix src
+      console.log(showErrorLine(src, error.span), "\n\n");
+    }
+  }
+
+  if (errorCount > 0) {
+    const plErr = errorCount === 1 ? "error" : "errors";
+    console.log(`[Found ${errorCount} ${plErr}]\n`);
     return undefined;
   }
 
-  const [program, errors] = typecheck(parseResult.value, { Prelude });
-
-  for (const error of errors) {
-    const msg = typeErrorPPrint(error);
-    console.log(`${FgRed}Error:${Reset} ${msg}`);
-    console.log(showErrorLine(src, error.span), "\n\n");
-  }
-
-  if (errors.length > 0) {
-    const plErr = errors.length === 1 ? "error" : "errors";
-    console.log(`[Found ${errors.length} ${plErr}]\n`);
-    return undefined;
-  }
-
-  return { main: program, prelude: Prelude };
+  return res;
 }
 
 export function showErrorLine(src: string, [start, end]: Span): string {
@@ -134,23 +150,37 @@ function repeatN(ch: string, times: number) {
 const executor = `main.run(() => {});`;
 
 export function compilePath(path: string): string {
-  const output = check(path);
-  if (output === undefined) {
+  const project = check(path);
+  if (project === undefined) {
     exit(1);
   }
 
-  const externsBuf = readFileSync(EXTERNS_PATH);
+  const sorted = topSortedModules(project);
 
+  const buf: string[] = [];
   const compiler = new Compiler();
-  const prelude = compiler.compile(output.prelude);
-  const main = compiler.compile(output.main);
+  for (const ns of sorted) {
+    try {
+      const externBuf = readFileSync(`${CORE_FOLDER_PATH}/${ns}.js`);
+      buf.push(externBuf.toString());
+    } catch {
+      // Assume file did not exist
+    }
 
-  const hasMain = output.main.declarations.some(
-    (d) => d.binding.name === "main",
-  );
+    const mod = project[ns]!;
+    const compiled = compiler.compile(mod);
+
+    if (compiled.trim() !== "") {
+      buf.push(compiled);
+    }
+  }
+
+  const main = project.Main;
+
+  const hasMain =
+    main?.declarations.some((d) => d.binding.name === "main") ?? false;
 
   const execMain = hasMain ? executor : "";
-
-  const program = [externsBuf.toString(), prelude, main, execMain, ""];
-  return program.join("\n");
+  buf.push(execMain);
+  return buf.join("\n");
 }

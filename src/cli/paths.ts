@@ -1,3 +1,2 @@
 // __dirname is src/dist/cli
-export const PRELUDE_PATH = `${__dirname}/../Prelude.mrs`;
-export const EXTERNS_PATH = `${__dirname}/../Prelude.js`;
+export const CORE_FOLDER_PATH = `${__dirname}/../core`;

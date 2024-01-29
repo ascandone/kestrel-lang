@@ -10,7 +10,7 @@ import {
   TypeVariant,
   TypeDeclaration,
 } from "../ast";
-import { topologicalSort } from "../utils/topsort";
+import { defaultImports, topSortedModules } from "../project";
 import {
   TVar,
   Type,
@@ -240,14 +240,14 @@ function* addVariantTypesToScope(
 export function typecheck<T>(
   ast: Program<T>,
   deps: Deps = {},
-  prelude: Import[] = defaultImports,
+  implicitImports: Import[] = defaultImports,
 ): [Program<T & TypeMeta>, TypeError[]] {
   TVar.resetId();
   const scope: Context = {};
   const typesScope: TypesPool = {};
 
   // ----- Collect imports into scope
-  const imports = [...prelude, ...ast.imports];
+  const imports = [...implicitImports, ...ast.imports];
   for (const import_ of imports) {
     runImports(import_, deps, scope, typesScope);
   }
@@ -737,17 +737,9 @@ function* inferTypeHint(
 
 export function typecheckProject<T>(
   project: Record<string, Program<T>>,
-  implicitImports: Import[] = [],
+  implicitImports: Import[] = defaultImports,
 ): ProjectTypeCheckResult<T> {
-  const implNsImports = implicitImports.map((i) => i.ns);
-
-  const dependencyGraph: Record<string, string[]> = {};
-  for (const [ns, program] of Object.entries(project)) {
-    const deps = [...implNsImports, ...getDependencies(program)];
-    dependencyGraph[ns] = deps;
-  }
-
-  const sortedPrograms = topologicalSort(dependencyGraph);
+  const sortedPrograms = topSortedModules(project, implicitImports);
 
   const projectResult: ProjectTypeCheckResult<T> = {};
   const deps: Deps = {};
@@ -760,82 +752,6 @@ export function typecheckProject<T>(
 
   return projectResult;
 }
-
-function getDependencies(_program: Program): string[] {
-  return [];
-}
-
-/*
-// Prelude imports:
-
-import Int.{Int, (+), (-)} // ecc
-import Float.{Float}
-import Bool.{Bool(..), (&&), (||), (!)}
-import Unit.{Unit}
-import String.{String, (<>)}
-import List.{List, Cons}
-import Maybe.{Maybe(..)}
-import Result.{Result(..)}
-import Tuple.{Tuple2(..)}
-*/
-
-const defaultImports: Import[] = [
-  {
-    ns: "Prelude",
-    exposing: [
-      // Basics
-      { type: "value", name: "==" },
-      { type: "value", name: "!=" },
-      { type: "value", name: ">" },
-      { type: "value", name: "<" },
-      { type: "value", name: ">=" },
-      { type: "value", name: "<=" },
-
-      // Int
-      { type: "type", name: "Int", exposeImpl: false },
-      { type: "value", name: "+" },
-      { type: "value", name: "-" },
-      { type: "value", name: "*" },
-      { type: "value", name: "/" },
-      { type: "value", name: "^" },
-      { type: "value", name: "&" },
-
-      // Float
-      { type: "type", name: "Float", exposeImpl: false },
-      { type: "value", name: "+." },
-      { type: "value", name: "-." },
-      { type: "value", name: "*." },
-      { type: "value", name: "/." },
-
-      // String
-      { type: "type", name: "String", exposeImpl: false },
-      { type: "value", name: "<>" },
-
-      // Unit
-      { type: "type", name: "Unit", exposeImpl: true },
-
-      // Bool
-      { type: "type", name: "Bool", exposeImpl: true },
-      { type: "value", name: "&&" },
-      { type: "value", name: "||" },
-      { type: "value", name: "!" },
-
-      // List
-      { type: "type", name: "List", exposeImpl: true },
-
-      // Maybe
-      { type: "type", name: "Maybe", exposeImpl: true },
-
-      // Tuple
-      { type: "type", name: "Tuple2", exposeImpl: true },
-      { type: "type", name: "Tuple3", exposeImpl: true },
-      { type: "type", name: "Tuple4", exposeImpl: true },
-
-      // Task
-      { type: "type", name: "Task", exposeImpl: false },
-    ],
-  },
-];
 
 export type ProjectTypeCheckResult<T> = Record<
   string,

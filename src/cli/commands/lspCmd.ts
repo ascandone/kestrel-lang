@@ -9,15 +9,15 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parse } from "../../parser";
 import { typeErrorPPrint, typePPrint } from "../../typecheck/pretty-printer";
-import { TypeMeta, typecheck } from "../../typecheck/typecheck";
+import { TypeMeta, typecheckProject } from "../../typecheck/typecheck";
 import { Program, SpanMeta, declByOffset } from "../../ast";
-import { readPrelude } from "../common";
+import { readCore } from "../common";
 
 const documents = new TextDocuments(TextDocument);
 const docs = new Map<string, [TextDocument, Program<SpanMeta & TypeMeta>]>();
 
 export function lspCmd() {
-  const Prelude = readPrelude();
+  const core = readCore();
 
   const connection =
     // @ts-ignore
@@ -56,7 +56,14 @@ export function lspCmd() {
       return;
     }
 
-    const [typed, errors] = typecheck(parsed.value, { Prelude });
+    const moduleName = "Main";
+    const tc = typecheckProject({
+      [moduleName]: parsed.value,
+      ...core,
+    });
+
+    const [typed, errors] = tc[moduleName]!;
+
     docs.set(change.document.uri, [change.document, typed]);
     connection.sendDiagnostics({
       uri: change.document.uri,
