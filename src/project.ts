@@ -65,6 +65,10 @@ export const defaultImports: Import[] = [
     exposing: [{ type: "type", name: "Maybe", exposeImpl: true }],
   },
   {
+    ns: "Result",
+    exposing: [{ type: "type", name: "Result", exposeImpl: true }],
+  },
+  {
     ns: "Tuple",
     exposing: [
       { type: "type", name: "Tuple2", exposeImpl: true },
