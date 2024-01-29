@@ -1,4 +1,12 @@
-import { ConstLiteral, Expr, MatchPattern, Program, TypeVariant } from "./ast";
+import {
+  ConstLiteral,
+  Expr,
+  Import,
+  MatchPattern,
+  Program,
+  TypeVariant,
+} from "./ast";
+import { defaultImports } from "./project";
 import { TypeMeta } from "./typecheck/typecheck";
 
 const builtinValues: Scope = {
@@ -118,6 +126,10 @@ export class Compiler {
         return [[], constToString(src.value)];
 
       case "identifier": {
+        if (src.namespace !== undefined) {
+          return [[], `${src.namespace}$${src.name}`];
+        }
+
         const lookup = builtinValues[src.name] ?? scope[src.name];
         if (lookup === undefined) {
           throw new Error(`[unreachable] undefined identifier (${src.name})`);
@@ -373,8 +385,22 @@ export class Compiler {
     }
   }
 
-  compile(src: Program<TypeMeta>): string {
+  compile(
+    src: Program<TypeMeta>,
+    ns: string | undefined,
+    implicitImports: Import[] = defaultImports,
+  ): string {
     const decls: string[] = [];
+
+    for (const import_ of src.imports.concat(implicitImports)) {
+      for (const exposed of import_.exposing) {
+        this.globalScope[exposed.name] = moduleNamespacedBinding(
+          exposed.name,
+          import_.ns,
+        );
+      }
+    }
+
     for (const typeDecl of src.typeDeclarations) {
       if (typeDecl.type === "extern") {
         continue;
@@ -384,7 +410,7 @@ export class Compiler {
         if (variant.name in builtinValues) {
           break;
         }
-        const def = getVariantImpl(variant);
+        const def = getVariantImpl(variant, ns);
         decls.push(def);
         this.globalScope[variant.name] = variant.name;
       }
@@ -401,20 +427,24 @@ export class Compiler {
         continue;
       }
 
-      this.frames.push(new Frame({ type: "let", name: decl.binding.name }));
+      this.frames.push(
+        new Frame({
+          type: "let",
+          name: moduleNamespacedBinding(decl.binding.name, ns),
+        }),
+      );
+
+      const nameSpacedBinding = moduleNamespacedBinding(decl.binding.name, ns);
+      this.globalScope[decl.binding.name] = nameSpacedBinding;
 
       const statements = this.compileAsStatements(
         decl.value,
-        { type: "assign_var", name: decl.binding.name, declare: true },
-        {
-          ...this.globalScope,
-          [decl.binding.name]: decl.binding.name,
-        },
+        { type: "assign_var", name: nameSpacedBinding, declare: true },
+        this.globalScope,
         undefined,
       );
 
       decls.push(...statements, "");
-      this.globalScope[decl.binding.name] = decl.binding.name;
       this.frames.pop();
     }
 
@@ -457,10 +487,6 @@ function compilePattern(
       return { conditions, newScope };
     }
   }
-}
-
-export function compile(ast: Program<TypeMeta>): string {
-  return new Compiler().compile(ast);
 }
 
 function constToString(k: ConstLiteral): string {
@@ -545,13 +571,18 @@ function indentBlock(lines: string[]): string[] {
   return lines.map((line) => `  ${line}`);
 }
 
-function getVariantImpl({ name, args }: TypeVariant): string {
+function getVariantImpl(
+  { name, args }: TypeVariant,
+  ns: string | undefined,
+): string {
+  const nsName = moduleNamespacedBinding(name, ns);
+
   if (args.length === 0) {
-    return `const ${name} = { type: "${name}" };
+    return `const ${nsName} = { type: "${name}" };
 `;
   } else {
     const argsList = args.map((_t, i) => `a${i}`).join(", ");
-    return `function ${name}(${argsList}) {
+    return `function ${nsName}(${argsList}) {
   return { type: "${name}", ${argsList} };
 }`;
   }
@@ -591,4 +622,8 @@ function wrapJsExpr(expr: string, as: CompilationMode) {
     case "return":
       return `return ${expr};`;
   }
+}
+
+function moduleNamespacedBinding(name: string, ns: string | undefined): string {
+  return ns === undefined ? name : `${ns}$${name}`;
 }

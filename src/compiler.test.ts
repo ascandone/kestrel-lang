@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { compile } from "./compiler";
+import { Compiler } from "./compiler";
 import { typecheck } from "./typecheck/typecheck";
 import { unsafeParse } from "./parser";
 
@@ -937,9 +937,61 @@ function loop() {
   });
 });
 
-function compileSrc(src: string) {
+describe("modules", () => {
+  test("variables from modules different than Main are namespaced", () => {
+    const out = compileSrc(`let a = 42`, "ExampleModule");
+    expect(out).toEqual(`const ExampleModule$a = 42;\n`);
+  });
+
+  test("local variables from modules different than Main are namespaced", () => {
+    const out = compileSrc(`let a = { let b = 42; b}`, "ExampleModule");
+    expect(out).toEqual(`const ExampleModule$a$b = 42;
+const ExampleModule$a = ExampleModule$a$b;
+`);
+  });
+
+  test("variants from modules different than Main are namespaced", () => {
+    const out = compileSrc(`type MyType { C1, C2(Int) }`, "MyModule");
+    expect(out).toEqual(`const MyModule$C1 = { type: "C1" };
+
+function MyModule$C2(a0) {
+  return { type: "C2", a0 };
+}`);
+  });
+
+  test("values imported with unqualfied imports are resolved with the right namespace", () => {
+    const out = compileSrc(`
+      import ExampleModule.{value_name}
+      let a = value_name
+      `);
+    expect(out).toEqual(`const a = ExampleModule$value_name;\n`);
+  });
+
+  test("values imported from another module are resolved with the right namespace", () => {
+    const out = compileSrc(`
+      import ExampleModule
+      let a = ExampleModule.value_name
+    `);
+    expect(out).toEqual(`const a = ExampleModule$value_name;\n`);
+  });
+
+  test("constructors imported with unqualfied imports are resolved with the right namespace", () => {
+    const out = compileSrc(`
+      import ExampleModule.{Constr}
+      let a = Constr
+      `);
+    expect(out).toEqual(`const a = ExampleModule$Constr;\n`);
+  });
+
+  test("constructors imported with qualified imports are resolved with the right namespace", () => {
+    const out = compileSrc(`let a = ExampleModule.Constr`);
+    expect(out).toEqual(`const a = ExampleModule$Constr;\n`);
+  });
+});
+
+function compileSrc(src: string, ns?: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(parsed);
-  const out = compile(program);
+  const out = new Compiler().compile(program, ns);
   return out;
 }

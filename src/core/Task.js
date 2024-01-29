@@ -2,20 +2,20 @@
 const { stdin } = require("node:process");
 const { createInterface } = require("node:readline");
 
-class Task {
+class Task$Task {
   constructor(run) {
     this.run = run;
   }
 }
 
-function task_of(x) {
-  return new Task((resolve) => {
+function Task$task_of(x) {
+  return new Task$Task((resolve) => {
     resolve(x);
   });
 }
 
-function await(t, f) {
-  return new Task((resolveV) => {
+function Task$await(t, f) {
+  return new Task$Task((resolveV) => {
     const c1 = t.run((valueA) => {
       const newTask = f(valueA);
       const c2 = newTask.run((valueB) => {
@@ -27,28 +27,28 @@ function await(t, f) {
   });
 }
 
-function println(str) {
-  return new Task((resolve) => {
+function Task$println(str) {
+  return new Task$Task((resolve) => {
     console.log(str);
     resolve(null);
   });
 }
 
-function print(str) {
-  return new Task((resolve) => {
+function Task$print(str) {
+  return new Task$Task((resolve) => {
     process.stdout.write(str);
     resolve(null);
   });
 }
 
-function sleep(ms) {
-  return new Task((resolve) => {
+function Task$sleep(ms) {
+  return new Task$Task((resolve) => {
     const id = setTimeout(resolve, ms, null);
     return () => clearTimeout(id);
   });
 }
 
-const readline = new Task((resolve) => {
+const Task$readline = new Task$Task((resolve) => {
   const rl = createInterface({ input: stdin });
   rl.question("", (line) => {
     rl.close();

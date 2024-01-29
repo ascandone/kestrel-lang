@@ -146,8 +146,7 @@ function offsetToPosition(src: string, offset: number): Position {
 function repeatN(ch: string, times: number) {
   return Array.from({ length: times }, () => ch).join("");
 }
-
-const executor = `main.run(() => {});`;
+const MAIN_MODULE = "Main";
 
 export function compilePath(path: string): string {
   const project = check(path);
@@ -168,7 +167,7 @@ export function compilePath(path: string): string {
     }
 
     const mod = project[ns]!;
-    const compiled = compiler.compile(mod);
+    const compiled = compiler.compile(mod, ns);
 
     if (compiled.trim() !== "") {
       buf.push(compiled);
@@ -180,6 +179,7 @@ export function compilePath(path: string): string {
   const hasMain =
     main?.declarations.some((d) => d.binding.name === "main") ?? false;
 
+  const executor = `${MAIN_MODULE}$main.run(() => {});`;
   const execMain = hasMain ? executor : "";
   buf.push(execMain);
   return buf.join("\n");
