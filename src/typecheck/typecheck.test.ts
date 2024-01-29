@@ -1,8 +1,14 @@
 import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
-import { Deps, typecheck, TypeError } from "./typecheck";
+import {
+  Deps,
+  typecheck,
+  typecheckProject,
+  TypeError,
+  TypeMeta,
+} from "./typecheck";
 import { typePPrint } from "./pretty-printer";
-import { Import } from "../ast";
+import { Import, Program } from "../ast";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -817,6 +823,41 @@ describe("modules", () => {
   test.todo("error when expose impl is run on a opaque type");
 });
 
+describe("typecheck project", () => {
+  test("single import", () => {
+    const project = typecheckProject(
+      {
+        A: unsafeParse(`
+        let x = 42
+      `),
+        B: unsafeParse(`
+        let y = x
+      `),
+      },
+      [
+        {
+          ns: "A",
+          exposing: [{ type: "value", name: "x" }],
+        },
+      ],
+    );
+
+    expect(project.A).not.toBeUndefined();
+    const [pA, errA] = project.A!;
+    expect(errA).toEqual([]);
+    expect(programTypes(pA)).toEqual({
+      x: "Int",
+    });
+
+    expect(project.B).not.toBeUndefined();
+    const [pB, errB] = project.B!;
+    expect(errB).toEqual([]);
+    expect(programTypes(pB)).toEqual({
+      y: "Int",
+    });
+  });
+});
+
 function tcProgram(src: string, deps: Deps = {}, prelude: Import[] = []) {
   const parsedProgram = unsafeParse(src);
   return typecheck(parsedProgram, deps, prelude);
@@ -824,11 +865,14 @@ function tcProgram(src: string, deps: Deps = {}, prelude: Import[] = []) {
 
 function tc(src: string, deps: Deps = {}, prelude: Import[] = []) {
   const [typed, errors] = tcProgram(src, deps, prelude);
+  return [programTypes(typed) as Record<string, string>, errors] as const;
+}
 
+function programTypes(typed: Program<TypeMeta>): Record<string, string> {
   const kvs = typed.declarations.map((decl) => [
     decl.binding.name,
     typePPrint(decl.binding.$.asType()),
   ]);
 
-  return [Object.fromEntries(kvs) as Record<string, string>, errors] as const;
+  return Object.fromEntries(kvs);
 }

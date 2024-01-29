@@ -10,6 +10,7 @@ import {
   TypeVariant,
   TypeDeclaration,
 } from "../ast";
+import { topologicalSort } from "../utils/topsort";
 import {
   TVar,
   Type,
@@ -246,42 +247,47 @@ export function typecheck<T>(
   const typesScope: TypesPool = {};
 
   // ----- Collect imports into scope
-  const imports = [...prelude, ...(ast.imports ?? [])];
+  const imports = [...prelude, ...ast.imports];
   for (const import_ of imports) {
     runImports(import_, deps, scope, typesScope);
   }
 
   // ---- Typecheck this module
-  const errors: TypeError[] = [];
   const typedProgram = annotateProgram(ast);
+
+  const errors: TypeError[] = [];
   for (const typeDecl of typedProgram.typeDeclarations) {
-    typesScope[typeDecl.name] = typeDecl.params.length;
-    const params: string[] = [];
-    for (const param of typeDecl.params) {
-      if (params.includes(param.name)) {
-        errors.push({
-          type: "type-param-shadowing",
-          id: param.name,
-          span: param.span,
-        });
-      }
-      params.push(param.name);
-    }
-
-    if (typeDecl.type === "adt") {
-      for (const variant of typeDecl.variants) {
-        errors.push(
-          ...addVariantTypesToScope(typeDecl, variant, scope, typesScope),
-        );
-      }
-    }
+    errors.push(...typecheckTypeDeclarations(typeDecl, scope, typesScope));
   }
-
   for (const decl of typedProgram.declarations) {
-    errors.push(...typecheckDecl(decl, scope, typesScope));
+    errors.push(...typecheckAnnotatedDecl(decl, scope, typesScope));
+  }
+  return [typedProgram, errors];
+}
+
+function* typecheckTypeDeclarations(
+  typeDecl: TypeDeclaration,
+  /* mut */ scope: Context,
+  /* mut */ typesScope: TypesPool,
+): Generator<TypeError> {
+  typesScope[typeDecl.name] = typeDecl.params.length;
+  const params: string[] = [];
+  for (const param of typeDecl.params) {
+    if (params.includes(param.name)) {
+      yield {
+        type: "type-param-shadowing",
+        id: param.name,
+        span: param.span,
+      };
+    }
+    params.push(param.name);
   }
 
-  return [typedProgram, errors];
+  if (typeDecl.type === "adt") {
+    for (const variant of typeDecl.variants) {
+      yield* addVariantTypesToScope(typeDecl, variant, scope, typesScope);
+    }
+  }
 }
 
 function* typecheckAnnotatedExpr<T extends SpanMeta>(
@@ -634,7 +640,7 @@ function inferConstant(x: ConstLiteral): Type {
   }
 }
 
-function* typecheckDecl(
+function* typecheckAnnotatedDecl(
   decl: Declaration<TypeMeta>,
   /* mut */ scope: Context,
   typesPool: TypesPool,
@@ -729,6 +735,36 @@ function* inferTypeHint(
   }
 }
 
+export function typecheckProject<T>(
+  project: Record<string, Program<T>>,
+  implicitImports: Import[] = [],
+): ProjectTypeCheckResult<T> {
+  const implNsImports = implicitImports.map((i) => i.ns);
+
+  const dependencyGraph: Record<string, string[]> = {};
+  for (const [ns, program] of Object.entries(project)) {
+    const deps = [...implNsImports, ...getDependencies(program)];
+    dependencyGraph[ns] = deps;
+  }
+
+  const sortedPrograms = topologicalSort(dependencyGraph);
+
+  const projectResult: ProjectTypeCheckResult<T> = {};
+  const deps: Deps = {};
+  for (const ns of sortedPrograms) {
+    const program = project[ns]!;
+    const tc = typecheck(program, deps, implicitImports);
+    projectResult[ns] = tc;
+    deps[ns] = tc[0];
+  }
+
+  return projectResult;
+}
+
+function getDependencies(_program: Program): string[] {
+  return [];
+}
+
 /*
 // Prelude imports:
 
@@ -800,3 +836,8 @@ const defaultImports: Import[] = [
     ],
   },
 ];
+
+export type ProjectTypeCheckResult<T> = Record<
+  string,
+  [Program<T & TypeMeta>, TypeError[]]
+>;
