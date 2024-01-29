@@ -16,8 +16,8 @@ import { readCore } from "../common";
 const documents = new TextDocuments(TextDocument);
 const docs = new Map<string, [TextDocument, Program<SpanMeta & TypeMeta>]>();
 
-export function lspCmd() {
-  const core = readCore();
+export async function lspCmd() {
+  const core = await readCore();
 
   const connection =
     // @ts-ignore
