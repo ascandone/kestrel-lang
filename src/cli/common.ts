@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFile, readdir } from "node:fs/promises";
 import { unsafeParse } from "../parser";
 import { typecheckProject, TypeMeta } from "../typecheck/typecheck";
 import { parse } from "../parser";
@@ -17,8 +17,8 @@ export const BgWhite = "\x1b[47m";
 const EXTENSION = "mrs";
 
 type Core = Record<string, Program>;
-export function readCore(): Core {
-  const paths = readdirSync(CORE_FOLDER_PATH);
+export async function readCore(): Promise<Core> {
+  const paths = await readdir(CORE_FOLDER_PATH);
   const untypedProject: Record<string, Program> = {};
   for (const fileName of paths) {
     const [moduleName, ext] = fileName.split(".");
@@ -26,10 +26,8 @@ export function readCore(): Core {
       continue;
     }
 
-    const fileBuf = readFileSync(`${CORE_FOLDER_PATH}/${fileName}`);
-
+    const fileBuf = await readFile(`${CORE_FOLDER_PATH}/${fileName}`);
     const parsed = unsafeParse(fileBuf.toString());
-
     untypedProject[moduleName!] = parsed;
   }
 
@@ -37,10 +35,10 @@ export function readCore(): Core {
 }
 
 export type TypedProject = Record<string, Program<TypeMeta>>;
-export function check(path: string): TypedProject | undefined {
-  const core = readCore();
+export async function check(path: string): Promise<TypedProject | undefined> {
+  const core = await readCore();
 
-  const f = readFileSync(path);
+  const f = await readFile(path);
   const src = f.toString();
   const parseResult = parse(src);
   if (!parseResult.ok) {
@@ -148,8 +146,8 @@ function repeatN(ch: string, times: number) {
 }
 const MAIN_MODULE = "Main";
 
-export function compilePath(path: string): string {
-  const project = check(path);
+export async function compilePath(path: string): Promise<string> {
+  const project = await check(path);
   if (project === undefined) {
     exit(1);
   }
@@ -160,7 +158,7 @@ export function compilePath(path: string): string {
   const compiler = new Compiler();
   for (const ns of sorted) {
     try {
-      const externBuf = readFileSync(`${CORE_FOLDER_PATH}/${ns}.js`);
+      const externBuf = await readFile(`${CORE_FOLDER_PATH}/${ns}.js`);
       buf.push(externBuf.toString());
     } catch {
       // Assume file did not exist
