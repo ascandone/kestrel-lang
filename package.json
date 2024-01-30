@@ -1,9 +1,9 @@
 {
-  "name": "mini-rust",
+  "name": "kestrel-lang",
   "version": "0.0.1",
   "license": "MIT",
   "bin": {
-    "mini-rs": "./dist/cli/main.js"
+    "kestrel": "./dist/cli/main.js"
   },
   "scripts": {
     "gen:parser": "ohm generateBundles --withTypes src/parser/grammar.ohm",

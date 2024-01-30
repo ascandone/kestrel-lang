@@ -14,7 +14,7 @@ export const Reset = "\x1b[0m";
 export const FgBlack = "\x1b[30m";
 export const BgWhite = "\x1b[47m";
 
-const EXTENSION = "mrs";
+const EXTENSION = "ks";
 
 type Core = Record<string, Program>;
 export async function readCore(): Promise<Core> {
