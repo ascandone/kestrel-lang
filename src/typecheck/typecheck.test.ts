@@ -836,6 +836,25 @@ describe("modules", () => {
     });
   });
 
+  test("handles nested imports", () => {
+    const [Mod] = tcProgram(`
+      pub let x = 42
+    `);
+
+    const [types, errs] = tc(
+      `
+      import A/B/C
+      let x = A/B/C.x
+    `,
+      { "A/B/C": Mod },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Int",
+    });
+  });
+
   test.todo("error when importing a non-existing type");
   test.todo("error when importing a non-existing value");
   test.todo("error when expose impl is run on a extern type");
