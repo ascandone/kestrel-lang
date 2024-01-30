@@ -625,5 +625,6 @@ function wrapJsExpr(expr: string, as: CompilationMode) {
 }
 
 function moduleNamespacedBinding(name: string, ns: string | undefined): string {
-  return ns === undefined ? name : `${ns}$${name}`;
+  const ns_ = ns?.replace(/\//g, "$");
+  return ns_ === undefined ? name : `${ns_}$${name}`;
 }

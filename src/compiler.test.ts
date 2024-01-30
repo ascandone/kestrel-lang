@@ -943,6 +943,11 @@ describe("modules", () => {
     expect(out).toEqual(`const ExampleModule$a = 42;\n`);
   });
 
+  test("nested modules are handled", () => {
+    const out = compileSrc(`let a = 42`, "A/B/C");
+    expect(out).toEqual(`const A$B$C$a = 42;\n`);
+  });
+
   test("local variables from modules different than Main are namespaced", () => {
     const out = compileSrc(`let a = { let b = 42; b}`, "ExampleModule");
     expect(out).toEqual(`const ExampleModule$a$b = 42;
