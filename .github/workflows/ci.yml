@@ -13,5 +13,5 @@ jobs:
       - run: yarn format:check
       - run: yarn linter:check
       - run: yarn gen:parser
-      - run: yarn ts:build
+      - run: yarn ts:check
       - run: yarn test:run
