@@ -211,7 +211,7 @@ class Typechecker {
     } else {
       return {
         type: "fn",
-        args: variant.args.map((arg) => this.castType(arg, params)),
+        args: variant.args.map((arg) => this.typeHintToType(arg, params)),
         return: ret,
       };
     }
@@ -299,7 +299,7 @@ class Typechecker {
     });
   }
 
-  private castType(ast: TypeAst, params: string[]): Type<Poly> {
+  private typeHintToType(ast: TypeAst, params: string[]): Type<Poly> {
     const recur = (ast: TypeAst): Type<Poly> => {
       switch (ast.type) {
         case "named": {
