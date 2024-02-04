@@ -12,6 +12,7 @@
     "assets:build": "cp -r src/core dist",
     "ts:build": "tsc --project tsconfig.build.json",
     "ts:watch": "tsc --watch",
+    "ts:check": "tsc --noEmit",
     "format:check": "prettier --check --cache ./**/*.ts",
     "format:write": "prettier --write --cache ./**/*.ts",
     "linter:check": "eslint .",
