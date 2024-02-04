@@ -331,10 +331,8 @@ class Typechecker {
     },
   ): Type<Poly> {
     const { params, typesScope } = args;
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const self = this;
 
-    function recur(ast: TypeAst): Type<Poly> {
+    const recur = (ast: TypeAst): Type<Poly> => {
       switch (ast.type) {
         case "named": {
           const t: Type<Poly> = {
@@ -345,7 +343,7 @@ class Typechecker {
 
           const e = checkUnboundTypeError(ast, t, typesScope);
           if (e !== undefined) {
-            self.errors.push(e);
+            this.errors.push(e);
           }
 
           return t;
@@ -361,7 +359,7 @@ class Typechecker {
         case "var": {
           const id = ast.ident;
           if (!params.includes(id)) {
-            self.errors.push({
+            this.errors.push({
               type: "unbound-type-param",
               id,
               span: ast.span,
@@ -371,10 +369,10 @@ class Typechecker {
         }
 
         case "any":
-          self.errors.push({ type: "invalid-catchall", span: ast.span });
+          this.errors.push({ type: "invalid-catchall", span: ast.span });
           return { type: "var", var: TVar.fresh() };
       }
-    }
+    };
 
     return recur(ast);
   }
