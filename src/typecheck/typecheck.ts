@@ -5,8 +5,10 @@ import {
   MatchPattern,
   SpanMeta,
   TypeAst,
+  UntypedDeclaration,
   UntypedImport,
   UntypedModule,
+  UntypedTypeDeclaration,
 } from "../ast";
 import { defaultImports, topSortedModules } from "../project";
 import {
@@ -119,15 +121,24 @@ class Typechecker {
     }
 
     // ---- Typecheck this module
-    const typedProgram = annotateModule(module);
+    const annotatedTypeDeclrs = annotateTypeDeclrs(module.typeDeclarations);
+    const annotatedDeclrs = annotateDeclarations(module.declarations);
 
-    for (const typeDecl of typedProgram.typeDeclarations) {
+    for (const typeDecl of annotatedTypeDeclrs) {
       this.typecheckTypeDeclarations(typeDecl);
     }
-    for (const decl of typedProgram.declarations) {
+    for (const decl of annotatedDeclrs) {
       this.typecheckAnnotatedDecl(decl);
     }
-    return [typedProgram, this.errors];
+
+    return [
+      {
+        imports: module.imports,
+        declarations: annotatedDeclrs,
+        typeDeclarations: annotatedTypeDeclrs,
+      },
+      this.errors,
+    ];
   }
 
   private runImports(import_: UntypedImport) {
@@ -700,52 +711,54 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
   }
 }
 
-function annotateModule(module: UntypedModule): TypedModule {
-  return {
-    ...module,
-
-    typeDeclarations: module.typeDeclarations.map((td) => {
-      switch (td.type) {
-        case "extern":
-          return {
-            $: TVar.fresh(),
-            ...td,
-          } as TypedTypeDeclaration;
-
-        case "adt":
-          return {
-            $: TVar.fresh(),
-            ...td,
-            variants: td.variants.map((variant) => ({
-              ...variant,
-              $: TVar.fresh(),
-            })),
-          } as TypedTypeDeclaration;
-      }
-    }),
-
-    declarations: module.declarations.map<TypedDeclaration>((decl) => {
-      const valueMeta = decl.extern
-        ? ({
-            extern: true,
-            typeHint: decl.typeHint,
-          } as const)
-        : ({
-            extern: false,
-            typeHint: decl.typeHint,
-            value: annotateExpr(decl.value),
-          } as const);
-
-      return {
-        ...decl,
-        ...valueMeta,
-        binding: {
-          ...decl.binding,
+function annotateTypeDeclrs(
+  decls: UntypedTypeDeclaration[],
+): TypedTypeDeclaration[] {
+  return decls.map((td) => {
+    switch (td.type) {
+      case "extern":
+        return {
           $: TVar.fresh(),
-        },
-      };
-    }),
-  };
+          ...td,
+        } as TypedTypeDeclaration;
+
+      case "adt":
+        return {
+          $: TVar.fresh(),
+          ...td,
+          variants: td.variants.map((variant) => ({
+            ...variant,
+            $: TVar.fresh(),
+          })),
+        } as TypedTypeDeclaration;
+    }
+  });
+}
+
+function annotateDeclarations(
+  declrs: UntypedDeclaration[],
+): TypedDeclaration[] {
+  return declrs.map<TypedDeclaration>((decl) => {
+    const valueMeta = decl.extern
+      ? ({
+          extern: true,
+          typeHint: decl.typeHint,
+        } as const)
+      : ({
+          extern: false,
+          typeHint: decl.typeHint,
+          value: annotateExpr(decl.value),
+        } as const);
+
+    return {
+      ...decl,
+      ...valueMeta,
+      binding: {
+        ...decl.binding,
+        $: TVar.fresh(),
+      },
+    };
+  });
 }
 
 function inferConstant(x: ConstLiteral): Type {
