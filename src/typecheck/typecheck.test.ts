@@ -444,6 +444,8 @@ describe("custom types", () => {
     );
 
     expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("unbound-type");
   });
 
   test("add types to the type pool", () => {

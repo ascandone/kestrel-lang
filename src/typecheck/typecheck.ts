@@ -155,7 +155,7 @@ class Typechecker {
 
           if (typeDecl.type === "adt" && exposed.exposeImpl) {
             for (const variant of typeDecl.variants) {
-              this.addVariantTypesToScope(typeDecl, variant);
+              this.globals[variant.name] = variant.polyType;
             }
           }
           break;
@@ -166,7 +166,6 @@ class Typechecker {
 
   private makeVariantType(
     typeDecl: UntypedTypeDeclaration & { type: "adt" },
-
     variant: UntypedTypeVariant,
   ): Type<Poly> {
     const ret: Type<Poly> = {
@@ -290,22 +289,10 @@ class Typechecker {
     }
   }
 
-  private addVariantTypesToScope(
-    typeDecl: UntypedTypeDeclaration & { type: "adt" },
-    variant: UntypedTypeVariant,
-  ) {
-    this.globals[variant.name] = this.makeVariantType(typeDecl, variant);
-  }
-
   private typecheckAnnotatedDecl(decl: Declaration<TypeMeta>) {
     if (decl.typeHint !== undefined) {
       const th = this.typeAstToType(decl.typeHint, { type: "type-hint" });
       this.unifyNode(decl.typeHint, instantiate(th), decl.binding.$.asType());
-
-      this.checkUnboundTypeError<SpanMeta>(
-        decl.typeHint,
-        decl.binding.$.asType(),
-      );
 
       if (decl.extern) {
         this.globals[decl.binding.name] = th;
@@ -347,7 +334,7 @@ class Typechecker {
         if (tDecl.type === "adt") {
           for (const variant of tDecl.variants) {
             if (variant.name === name) {
-              return this.makeVariantType(tDecl, variant);
+              return variant.polyType;
             }
           }
         }
@@ -581,8 +568,7 @@ class Typechecker {
           ...typeDecl,
           variants: typeDecl.variants.map((variant) => {
             const t = this.makeVariantType(typeDecl, variant);
-            this.addVariantTypesToScope(typeDecl, variant);
-
+            this.globals[variant.name] = t;
             return {
               ...variant,
               polyType: t,
