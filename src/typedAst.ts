@@ -8,7 +8,6 @@ import {
   TypeDeclaration,
   TypeVariant,
   UntypedImport,
-  UntypedTypeDeclaration,
 } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 import { Poly, Type } from "./typecheck/unify";
@@ -20,12 +19,11 @@ export type TypedExposing = ExposedValue<
   { type: Type<Poly> }
 >;
 
-// TODO add typeMeta
-export type TypedTypeVariant = TypeVariant<unknown>;
 // export type TypedImport = Import<TypedExposing, { module: string | undefined }>;
 export type TypedImport = UntypedImport; // TEMP
-// export type TypedTypeDeclaration = TypeDeclaration<TypeMeta>;
-export type TypedTypeDeclaration = UntypedTypeDeclaration; // TEMP
+
+export type TypedTypeVariant = TypeVariant<TypeMeta>;
+export type TypedTypeDeclaration = TypeDeclaration<TypeMeta>;
 export type TypedDeclaration = Declaration<TypeMeta>;
 
 export type TypedModule = {

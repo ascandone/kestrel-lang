@@ -704,6 +704,26 @@ function annotateModule(module: UntypedModule): TypedModule {
   return {
     ...module,
 
+    typeDeclarations: module.typeDeclarations.map((td) => {
+      switch (td.type) {
+        case "extern":
+          return {
+            $: TVar.fresh(),
+            ...td,
+          } as TypedTypeDeclaration;
+
+        case "adt":
+          return {
+            $: TVar.fresh(),
+            ...td,
+            variants: td.variants.map((variant) => ({
+              ...variant,
+              $: TVar.fresh(),
+            })),
+          } as TypedTypeDeclaration;
+      }
+    }),
+
     declarations: module.declarations.map<TypedDeclaration>((decl) => {
       const valueMeta = decl.extern
         ? ({
