@@ -73,7 +73,7 @@ export function typecheck(
   deps: Deps = {},
   implicitImports: UntypedImport[] = defaultImports,
 ): [TypedModule, TypeError[]] {
-  return new Typechecker(module, deps, implicitImports).run();
+  return new Typechecker(deps).run(module, implicitImports);
 }
 
 class Typechecker {
@@ -82,22 +82,16 @@ class Typechecker {
 
   private errors: TypeError[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
-  private imports: UntypedImport[];
 
-  constructor(
-    // TODO remove module field
-    private module: UntypedModule,
-    private deps: Deps,
+  constructor(private deps: Deps) {}
+
+  run(
+    module: UntypedModule,
     implicitImports: UntypedImport[] = defaultImports,
-  ) {
-    this.imports = [...implicitImports, ...module.imports];
-  }
-
-  run(): [TypedModule, TypeError[]] {
-    const module = this.module;
+  ): [TypedModule, TypeError[]] {
     TVar.resetId();
     // ----- Collect imports into scope
-    for (const import_ of this.imports) {
+    for (const import_ of [...implicitImports, ...module.imports]) {
       this.runImports(import_);
     }
 
@@ -117,7 +111,7 @@ class Typechecker {
 
     return [
       {
-        imports: this.imports,
+        imports: module.imports,
         declarations: annotatedDeclrs,
         typeDeclarations: this.typeDeclarations,
       },
