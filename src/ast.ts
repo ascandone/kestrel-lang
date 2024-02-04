@@ -104,8 +104,9 @@ export type TypeVariant<TypeMeta> = TypeMeta & {
   args: TypeAst[];
 };
 
+export type UntypedTypeVariant = TypeVariant<unknown>;
 export type UntypedTypeDeclaration = TypeDeclaration<unknown>;
-export type TypeDeclaration<TypeMeta> = (TypeMeta & SpanMeta) & {
+export type TypeDeclaration<TypeMeta> = SpanMeta & {
   name: string;
   params: Array<{ name: string } & SpanMeta>;
 } & (

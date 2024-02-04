@@ -9,13 +9,13 @@ import {
   UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
+  UntypedTypeVariant,
 } from "../ast";
 import { defaultImports, topSortedModules } from "../project";
 import {
   TypedDeclaration,
   TypedModule,
   TypedTypeDeclaration,
-  TypedTypeVariant,
 } from "../typedAst";
 import {
   TVar,
@@ -121,12 +121,17 @@ class Typechecker {
     }
 
     // ---- Typecheck this module
-    const annotatedTypeDeclrs = annotateTypeDeclrs(module.typeDeclarations);
-    const annotatedDeclrs = annotateDeclarations(module.declarations);
-
-    for (const typeDecl of annotatedTypeDeclrs) {
+    for (const typeDecl of module.typeDeclarations) {
+      // TODO deprecate this and fetch directly from imports or local typeDeclrs instead
       this.typecheckTypeDeclarations(typeDecl);
     }
+
+    const annotatedTypeDeclrs = module.typeDeclarations.map(
+      this.annotateTypeDeclaration.bind(this),
+    );
+
+    const annotatedDeclrs = annotateDeclarations(module.declarations);
+
     for (const decl of annotatedDeclrs) {
       this.typecheckAnnotatedDecl(decl);
     }
@@ -187,7 +192,7 @@ class Typechecker {
     }
   }
 
-  private typecheckTypeDeclarations(typeDecl: TypedTypeDeclaration) {
+  private typecheckTypeDeclarations(typeDecl: UntypedTypeDeclaration) {
     this.types[typeDecl.name] = typeDecl.params.length;
     const params: string[] = [];
     for (const param of typeDecl.params) {
@@ -209,8 +214,8 @@ class Typechecker {
   }
 
   private getVariantType(
-    typeDecl: TypedTypeDeclaration & { type: "adt" },
-    variant: TypedTypeVariant,
+    typeDecl: UntypedTypeDeclaration & { type: "adt" },
+    variant: UntypedTypeVariant,
   ): Type<Poly> {
     const ret: Type<Poly> = {
       type: "named",
@@ -378,8 +383,8 @@ class Typechecker {
   }
 
   private addVariantTypesToScope(
-    typeDecl: TypedTypeDeclaration & { type: "adt" },
-    variant: TypedTypeVariant,
+    typeDecl: UntypedTypeDeclaration & { type: "adt" },
+    variant: UntypedTypeVariant,
   ) {
     this.globals[variant.name] = this.getVariantType(typeDecl, variant);
   }
@@ -633,6 +638,31 @@ class Typechecker {
       span: ast.span,
     });
   }
+
+  annotateTypeDeclrs(decls: UntypedTypeDeclaration[]): TypedTypeDeclaration[] {
+    return decls.map((td) => {
+      return this.annotateTypeDeclaration(td);
+    });
+  }
+
+  annotateTypeDeclaration(
+    typeDecl: UntypedTypeDeclaration,
+  ): TypedTypeDeclaration {
+    switch (typeDecl.type) {
+      case "extern": {
+        return typeDecl;
+      }
+      case "adt": {
+        return {
+          ...typeDecl,
+          variants: typeDecl.variants.map((variant) => ({
+            ...variant,
+            polyType: this.getVariantType(typeDecl, variant),
+          })),
+        } as TypedTypeDeclaration;
+      }
+    }
+  }
 }
 
 function annotateMatchExpr<T>(
@@ -707,30 +737,6 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
       };
     }
   }
-}
-
-function annotateTypeDeclrs(
-  decls: UntypedTypeDeclaration[],
-): TypedTypeDeclaration[] {
-  return decls.map((td) => {
-    switch (td.type) {
-      case "extern":
-        return {
-          $: TVar.fresh(),
-          ...td,
-        } as TypedTypeDeclaration;
-
-      case "adt":
-        return {
-          $: TVar.fresh(),
-          ...td,
-          variants: td.variants.map((variant) => ({
-            ...variant,
-            $: TVar.fresh(),
-          })),
-        } as TypedTypeDeclaration;
-    }
-  });
 }
 
 function annotateDeclarations(

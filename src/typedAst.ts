@@ -22,8 +22,8 @@ export type TypedExposing = ExposedValue<
 // export type TypedImport = Import<TypedExposing, { module: string | undefined }>;
 export type TypedImport = UntypedImport; // TEMP
 
-export type TypedTypeVariant = TypeVariant<TypeMeta>;
-export type TypedTypeDeclaration = TypeDeclaration<TypeMeta>;
+export type TypedTypeVariant = TypeVariant<{ polyType: Type<Poly> }>;
+export type TypedTypeDeclaration = TypeDeclaration<{ polyType: Type<Poly> }>;
 export type TypedDeclaration = Declaration<TypeMeta>;
 
 export type TypedModule = {
