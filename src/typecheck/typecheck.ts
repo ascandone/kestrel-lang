@@ -119,7 +119,7 @@ class Typechecker {
     }
 
     // ---- Typecheck this module
-    const typedProgram = annotateProgram(module);
+    const typedProgram = annotateModule(module);
 
     for (const typeDecl of typedProgram.typeDeclarations) {
       this.typecheckTypeDeclarations(typeDecl);
@@ -700,11 +700,11 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
   }
 }
 
-function annotateProgram(program: UntypedModule): TypedModule {
+function annotateModule(module: UntypedModule): TypedModule {
   return {
-    ...program,
+    ...module,
 
-    declarations: program.declarations.map<TypedDeclaration>((decl) => {
+    declarations: module.declarations.map<TypedDeclaration>((decl) => {
       const valueMeta = decl.extern
         ? ({
             extern: true,
