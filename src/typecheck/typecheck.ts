@@ -778,13 +778,13 @@ export function typecheckProject(
   project: Record<string, UntypedModule>,
   implicitImports: UntypedImport[] = defaultImports,
 ): ProjectTypeCheckResult {
-  const sortedPrograms = topSortedModules(project, implicitImports);
+  const sortedModules = topSortedModules(project, implicitImports);
 
   const projectResult: ProjectTypeCheckResult = {};
   const deps: Deps = {};
-  for (const ns of sortedPrograms) {
-    const program = project[ns]!;
-    const tc = typecheck(program, deps, implicitImports);
+  for (const ns of sortedModules) {
+    const module = project[ns]!;
+    const tc = typecheck(module, deps, implicitImports);
     projectResult[ns] = tc;
     deps[ns] = tc[0];
   }
