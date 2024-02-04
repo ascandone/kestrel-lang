@@ -66,29 +66,6 @@ export type TypeError = SpanMeta &
 
 export type TypeMeta = { $: TVar };
 
-function checkUnboundTypeError<T extends SpanMeta>(
-  { span }: T,
-  t: Type<Poly>,
-  tCtx: TypesPool,
-): TypeError | undefined {
-  if (t.type !== "named") {
-    return undefined;
-  }
-
-  const arity = tCtx[t.name];
-  const expectedArity = t.args.length;
-  if (arity !== undefined && arity === expectedArity) {
-    return undefined;
-  }
-
-  return {
-    type: "unbound-type",
-    name: t.name,
-    arity: expectedArity,
-    span,
-  };
-}
-
 // Record from namespace (e.g. "A.B.C" ) to the module
 
 export type Deps = Record<string, TypedModule>;
@@ -102,6 +79,7 @@ export function typecheck(
 }
 
 class Typechecker {
+  // TODO remove globals and lookup import/declrs directly
   private globals: Context = {};
   private types: TypesPool = {};
 
@@ -331,10 +309,7 @@ class Typechecker {
             args: ast.args.map(recur),
           };
 
-          const e = checkUnboundTypeError(ast, t, this.types);
-          if (e !== undefined) {
-            this.errors.push(e);
-          }
+          this.checkUnboundTypeError(ast, t);
 
           return t;
         }
@@ -379,22 +354,13 @@ class Typechecker {
       const th = this.inferTypeHint(decl.typeHint, this.types);
       // TODO this should be moved above
       // This way is not pointing to the right node
-      const e = checkUnboundTypeError(decl.typeHint, th, this.types);
-
-      if (e !== undefined) {
-        this.errors.push(e);
-      }
-
+      this.checkUnboundTypeError(decl.typeHint, th);
       this.unifyNode(decl.typeHint, instantiate(th), decl.binding.$.asType());
 
-      const err = checkUnboundTypeError<SpanMeta>(
+      this.checkUnboundTypeError<SpanMeta>(
         decl.typeHint,
         decl.binding.$.asType(),
-        this.types,
       );
-      if (err !== undefined) {
-        this.errors.push(err);
-      }
 
       if (decl.extern) {
         this.globals[decl.binding.name] = th;
@@ -640,13 +606,36 @@ class Typechecker {
       case "adt": {
         return {
           ...typeDecl,
-          variants: typeDecl.variants.map((variant) => ({
-            ...variant,
-            polyType: this.getVariantType(typeDecl, variant),
-          })),
+          variants: typeDecl.variants.map((variant) => {
+            const t = this.getVariantType(typeDecl, variant);
+            this.addVariantTypesToScope(typeDecl, variant);
+            return {
+              ...variant,
+              polyType: t,
+            };
+          }),
         } as TypedTypeDeclaration;
       }
     }
+  }
+
+  checkUnboundTypeError<T extends SpanMeta>({ span }: T, t: Type<Poly>) {
+    if (t.type !== "named") {
+      return undefined;
+    }
+
+    const arity = this.types[t.name];
+    const expectedArity = t.args.length;
+    if (arity !== undefined && arity === expectedArity) {
+      return undefined;
+    }
+
+    this.errors.push({
+      type: "unbound-type",
+      name: t.name,
+      arity: expectedArity,
+      span,
+    });
   }
 }
 
