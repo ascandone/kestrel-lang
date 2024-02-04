@@ -1,10 +1,10 @@
 import { expect, test, describe } from "vitest";
 import { unsafeParse } from "./parser";
-import { Program, Span, SpanMeta } from "./ast";
+import { Span, UntypedModule } from "./ast";
 
 test("parsing a declaration", () => {
   const src = "let x = 0";
-  expect(unsafeParse(src)).toEqual<Program<SpanMeta>>({
+  expect(unsafeParse(src)).toEqual<UntypedModule>({
     imports: [],
     typeDeclarations: [],
     declarations: [
@@ -28,7 +28,7 @@ test("parsing a declaration", () => {
 
 test("parsing two declarations", () => {
   const src = `let x = 0\nlet y = 1`;
-  expect(unsafeParse(src)).toEqual<Program<SpanMeta>>({
+  expect(unsafeParse(src)).toEqual<UntypedModule>({
     imports: [],
     typeDeclarations: [],
     declarations: [

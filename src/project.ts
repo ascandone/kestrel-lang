@@ -1,4 +1,4 @@
-import { Import, Program } from "./ast";
+import { UntypedImport, UntypedModule } from "./ast";
 import { topologicalSort } from "./utils/topsort";
 
 /*
@@ -15,7 +15,7 @@ import Result.{Result(..)}
 import Tuple.{Tuple2(..)}
 */
 
-export const defaultImports: Import[] = [
+export const defaultImports: UntypedImport[] = [
   {
     ns: "Basics",
     exposing: [
@@ -86,9 +86,9 @@ export const defaultImports: Import[] = [
   },
 ];
 
-export function topSortedModules<T>(
-  project: Record<string, Program<T>>,
-  implicitImports: Import[] = defaultImports,
+export function topSortedModules(
+  project: Record<string, UntypedModule>,
+  implicitImports: UntypedImport[] = defaultImports,
 ): string[] {
   const implNsImports = implicitImports.map((i) => i.ns);
 
@@ -104,7 +104,7 @@ export function topSortedModules<T>(
   return topologicalSort(dependencyGraph);
 }
 
-function getDependencies(program: Program): string[] {
+function getDependencies(program: UntypedModule): string[] {
   return program.imports.map((i) => i.ns);
 }
 

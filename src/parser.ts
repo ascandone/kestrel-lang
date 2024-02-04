@@ -2,17 +2,17 @@
 import grammar from "./parser/grammar.ohm-bundle";
 import {
   ConstLiteral,
-  Program,
   Expr,
-  Declaration,
   Span,
   SpanMeta,
   TypeAst,
-  TypeDeclaration,
   TypeVariant,
   MatchPattern,
-  Import,
-  Exposing,
+  UntypedModule,
+  UntypedTypeDeclaration,
+  UntypedDeclaration,
+  UntypedExposedValue,
+  UntypedImport,
 } from "./ast";
 import type {
   IterationNode,
@@ -356,10 +356,10 @@ semantics.addOperation<TypeAst>("type()", {
 });
 
 type Statement =
-  | { type: "typeDeclaration"; decl: TypeDeclaration }
-  | { type: "declaration"; decl: Declaration };
+  | { type: "typeDeclaration"; decl: UntypedTypeDeclaration }
+  | { type: "declaration"; decl: UntypedDeclaration };
 
-semantics.addOperation<TypeVariant>("typeVariant()", {
+semantics.addOperation<TypeVariant<unknown>>("typeVariant()", {
   TypeVariant(name, _lparens, args, _rparens) {
     let args_: TypeAst[] = [];
     if (args.numChildren > 0) {
@@ -427,7 +427,7 @@ semantics.addOperation<Statement>("statement()", {
     const pub = pubOpt.numChildren === 1;
     const variants_ = variants
       .asIteration()
-      .children.map<TypeVariant>((n) => n.typeVariant());
+      .children.map<TypeVariant<unknown>>((n) => n.typeVariant());
 
     return {
       type: "typeDeclaration",
@@ -485,7 +485,7 @@ semantics.addOperation<Statement>("statement()", {
   },
 });
 
-semantics.addOperation<Exposing>("exposing()", {
+semantics.addOperation<UntypedExposedValue>("exposing()", {
   Exposing_value(ident) {
     return {
       type: "value",
@@ -503,7 +503,7 @@ semantics.addOperation<Exposing>("exposing()", {
   },
 });
 
-semantics.addOperation<Import>("import_()", {
+semantics.addOperation<UntypedImport>("import_()", {
   Import(_import, mod, _dot, _lparens, exposing, _rparens) {
     const exposing_ =
       exposing.numChildren === 0
@@ -519,7 +519,7 @@ semantics.addOperation<Import>("import_()", {
   },
 });
 
-semantics.addOperation<Program>("parse()", {
+semantics.addOperation<UntypedModule>("parse()", {
   MAIN(imports, statements) {
     const statements_ = statements.children.map<Statement>((child) =>
       child.statement(),
@@ -541,7 +541,7 @@ export type ParseResult<T> =
   | { ok: true; value: T }
   | { ok: false; matchResult: MatchResult };
 
-export function parse(input: string): ParseResult<Program<SpanMeta>> {
+export function parse(input: string): ParseResult<UntypedModule> {
   const matchResult = grammar.match(input);
   if (matchResult.failed()) {
     return { ok: false, matchResult };
@@ -550,7 +550,7 @@ export function parse(input: string): ParseResult<Program<SpanMeta>> {
   return { ok: true, value: semantics(matchResult).parse() };
 }
 
-export function unsafeParse(input: string): Program<SpanMeta> {
+export function unsafeParse(input: string): UntypedModule {
   const res = parse(input);
   if (res.ok) {
     return res.value;

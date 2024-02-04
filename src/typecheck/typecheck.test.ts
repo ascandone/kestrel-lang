@@ -1,14 +1,9 @@
 import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
-import {
-  Deps,
-  typecheck,
-  typecheckProject,
-  TypeError,
-  TypeMeta,
-} from "./typecheck";
+import { Deps, typecheck, typecheckProject, TypeError } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
-import { Import, Program } from "../ast";
+import { UntypedImport } from "../ast";
+import { TypedModule } from "../typedAst";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -921,17 +916,21 @@ describe("typecheck project", () => {
   test.todo("qualified imports should not work on priv functions");
 });
 
-function tcProgram(src: string, deps: Deps = {}, prelude: Import[] = []) {
+function tcProgram(
+  src: string,
+  deps: Deps = {},
+  prelude: UntypedImport[] = [],
+) {
   const parsedProgram = unsafeParse(src);
   return typecheck(parsedProgram, deps, prelude);
 }
 
-function tc(src: string, deps: Deps = {}, prelude: Import[] = []) {
+function tc(src: string, deps: Deps = {}, prelude: UntypedImport[] = []) {
   const [typed, errors] = tcProgram(src, deps, prelude);
   return [programTypes(typed) as Record<string, string>, errors] as const;
 }
 
-function programTypes(typed: Program<TypeMeta>): Record<string, string> {
+function programTypes(typed: TypedModule): Record<string, string> {
   const kvs = typed.declarations.map((decl) => [
     decl.binding.name,
     typePPrint(decl.binding.$.asType()),

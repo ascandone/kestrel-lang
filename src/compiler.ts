@@ -1,13 +1,13 @@
 import {
   ConstLiteral,
   Expr,
-  Import,
   MatchPattern,
-  Program,
   TypeVariant,
+  UntypedImport,
 } from "./ast";
 import { defaultImports } from "./project";
 import { TypeMeta } from "./typecheck/typecheck";
+import { TypedModule } from "./typedAst";
 
 const builtinValues: Scope = {
   True: "true",
@@ -386,9 +386,9 @@ export class Compiler {
   }
 
   compile(
-    src: Program<TypeMeta>,
+    src: TypedModule,
     ns: string | undefined,
-    implicitImports: Import[] = defaultImports,
+    implicitImports: UntypedImport[] = defaultImports,
   ): string {
     const decls: string[] = [];
 
@@ -572,7 +572,7 @@ function indentBlock(lines: string[]): string[] {
 }
 
 function getVariantImpl(
-  { name, args }: TypeVariant,
+  { name, args }: TypeVariant<unknown>,
   ns: string | undefined,
 ): string {
   const nsName = moduleNamespacedBinding(name, ns);

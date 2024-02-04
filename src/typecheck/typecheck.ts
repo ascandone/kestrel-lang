@@ -3,14 +3,18 @@ import {
   Declaration,
   Expr,
   MatchPattern,
-  Program,
   SpanMeta,
   TypeAst,
-  Import,
-  TypeVariant,
-  TypeDeclaration,
+  UntypedImport,
+  UntypedModule,
 } from "../ast";
 import { defaultImports, topSortedModules } from "../project";
+import {
+  TypedDeclaration,
+  TypedModule,
+  TypedTypeDeclaration,
+  TypedTypeVariant,
+} from "../typedAst";
 import {
   TVar,
   Type,
@@ -148,13 +152,13 @@ function* castType(
 
 // Record from namespace (e.g. "A.B.C" ) to the module
 
-export type Deps = Record<string, Program<TypeMeta>>;
+export type Deps = Record<string, TypedModule>;
 
-export function typecheck<T>(
-  ast: Program<T>,
+export function typecheck(
+  ast: UntypedModule,
   deps: Deps = {},
-  implicitImports: Import[] = defaultImports,
-): [Program<T & TypeMeta>, TypeError[]] {
+  implicitImports: UntypedImport[] = defaultImports,
+): [TypedModule, TypeError[]] {
   return new Typechecker(deps).run(ast, implicitImports);
 }
 
@@ -164,19 +168,19 @@ class Typechecker {
 
   constructor(private deps: Deps) {}
 
-  run<T>(
-    program: Program<T>,
-    implicitImports: Import[] = defaultImports,
-  ): [Program<T & TypeMeta>, TypeError[]] {
+  run(
+    module: UntypedModule,
+    implicitImports: UntypedImport[] = defaultImports,
+  ): [TypedModule, TypeError[]] {
     TVar.resetId();
     // ----- Collect imports into scope
-    const imports = [...implicitImports, ...program.imports];
+    const imports = [...implicitImports, ...module.imports];
     for (const import_ of imports) {
       this.runImports(import_);
     }
 
     // ---- Typecheck this module
-    const typedProgram = annotateProgram(program);
+    const typedProgram = annotateProgram(module);
 
     const errors: TypeError[] = [];
     for (const typeDecl of typedProgram.typeDeclarations) {
@@ -188,7 +192,7 @@ class Typechecker {
     return [typedProgram, errors];
   }
 
-  private runImports(import_: Import) {
+  private runImports(import_: UntypedImport) {
     const dep = this.deps[import_.ns];
 
     if (dep === undefined) {
@@ -236,7 +240,7 @@ class Typechecker {
   }
 
   private *typecheckTypeDeclarations(
-    typeDecl: TypeDeclaration,
+    typeDecl: TypedTypeDeclaration,
   ): Generator<TypeError> {
     this.types[typeDecl.name] = typeDecl.params.length;
     const params: string[] = [];
@@ -259,8 +263,8 @@ class Typechecker {
   }
 
   private *getVariantType(
-    typeDecl: TypeDeclaration & { type: "adt" },
-    variant: TypeVariant,
+    typeDecl: TypedTypeDeclaration & { type: "adt" },
+    variant: TypedTypeVariant,
   ): Generator<TypeError, Type<Poly>> {
     const ret: Type<Poly> = {
       type: "named",
@@ -292,8 +296,8 @@ class Typechecker {
   }
 
   private *addVariantTypesToScope(
-    typeDecl: TypeDeclaration & { type: "adt" },
-    variant: TypeVariant,
+    typeDecl: TypedTypeDeclaration & { type: "adt" },
+    variant: TypedTypeVariant,
   ): Generator<TypeError> {
     this.globals[variant.name] = yield* this.getVariantType(typeDecl, variant);
   }
@@ -618,11 +622,11 @@ function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
   }
 }
 
-function annotateProgram<T>(program: Program<T>): Program<T & TypeMeta> {
+function annotateProgram(program: UntypedModule): TypedModule {
   return {
     ...program,
 
-    declarations: program.declarations.map((decl) => {
+    declarations: program.declarations.map<TypedDeclaration>((decl) => {
       const valueMeta = decl.extern
         ? ({
             extern: true,
@@ -773,13 +777,13 @@ function* inferTypeHint(
   }
 }
 
-export function typecheckProject<T>(
-  project: Record<string, Program<T>>,
-  implicitImports: Import[] = defaultImports,
-): ProjectTypeCheckResult<T> {
+export function typecheckProject(
+  project: Record<string, UntypedModule>,
+  implicitImports: UntypedImport[] = defaultImports,
+): ProjectTypeCheckResult {
   const sortedPrograms = topSortedModules(project, implicitImports);
 
-  const projectResult: ProjectTypeCheckResult<T> = {};
+  const projectResult: ProjectTypeCheckResult = {};
   const deps: Deps = {};
   for (const ns of sortedPrograms) {
     const program = project[ns]!;
@@ -791,7 +795,4 @@ export function typecheckProject<T>(
   return projectResult;
 }
 
-export type ProjectTypeCheckResult<T> = Record<
-  string,
-  [Program<T & TypeMeta>, TypeError[]]
->;
+export type ProjectTypeCheckResult = Record<string, [TypedModule, TypeError[]]>;

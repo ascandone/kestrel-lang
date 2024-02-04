@@ -1,13 +1,14 @@
 import { readFile, readdir } from "node:fs/promises";
 import { unsafeParse } from "../parser";
-import { typecheckProject, TypeMeta } from "../typecheck/typecheck";
+import { typecheckProject } from "../typecheck/typecheck";
 import { parse } from "../parser";
 import { typeErrorPPrint } from "../typecheck/pretty-printer";
-import { Program, Span } from "../ast";
+import { Span, UntypedModule } from "../ast";
 import { exit } from "node:process";
 import { Compiler } from "../compiler";
 import { CORE_FOLDER_PATH } from "./paths";
 import { topSortedModules } from "../project";
+import { TypedModule } from "../typedAst";
 
 export const FgRed = "\x1b[31m";
 export const Reset = "\x1b[0m";
@@ -16,10 +17,10 @@ export const BgWhite = "\x1b[47m";
 
 const EXTENSION = "ks";
 
-type Core = Record<string, Program>;
+type Core = Record<string, UntypedModule>;
 export async function readCore(): Promise<Core> {
   const paths = await readdir(CORE_FOLDER_PATH);
-  const untypedProject: Record<string, Program> = {};
+  const untypedProject: Record<string, UntypedModule> = {};
   for (const fileName of paths) {
     const [moduleName, ext] = fileName.split(".");
     if (ext !== EXTENSION) {
@@ -34,7 +35,7 @@ export async function readCore(): Promise<Core> {
   return untypedProject;
 }
 
-export type TypedProject = Record<string, Program<TypeMeta>>;
+export type TypedProject = Record<string, TypedModule>;
 export async function check(path: string): Promise<TypedProject | undefined> {
   const core = await readCore();
 

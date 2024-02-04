@@ -9,12 +9,12 @@ import {
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parse } from "../../parser";
 import { typeErrorPPrint, typePPrint } from "../../typecheck/pretty-printer";
-import { TypeMeta, typecheckProject } from "../../typecheck/typecheck";
-import { Program, SpanMeta, declByOffset } from "../../ast";
+import { typecheckProject } from "../../typecheck/typecheck";
 import { readCore } from "../common";
+import { TypedModule, declByOffset } from "../../typedAst";
 
 const documents = new TextDocuments(TextDocument);
-const docs = new Map<string, [TextDocument, Program<SpanMeta & TypeMeta>]>();
+const docs = new Map<string, [TextDocument, TypedModule]>();
 
 export async function lspCmd() {
   const core = await readCore();
