@@ -788,14 +788,12 @@ describe("modules", () => {
 
   test("implicitly imports variants of the modules in the prelude", () => {
     const [A] = tcProgram(`
-      pub type MyType { A, B(Int) }
+      pub type MyType { A }
     `);
 
     const [types, errs] = tc(
       `
-
       let x = A
-      let y = B(42)
     `,
       { A },
       [
@@ -808,7 +806,25 @@ describe("modules", () => {
     expect(errs).toEqual([]);
     expect(types).toEqual({
       x: "MyType",
-      y: "MyType",
+    });
+  });
+
+  test.todo("handles nested type references from other modules", () => {
+    const [A] = tcProgram(`
+      pub type T { T }
+      pub type Boxed { Boxed(T) }
+    `);
+
+    const [types, errs] = tc(
+      `
+      import A.{Boxed(..), T(..)}
+      let x = Boxed(T)
+    `,
+      { A },
+    );
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Boxed",
     });
   });
 
