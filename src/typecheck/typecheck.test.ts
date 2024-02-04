@@ -87,6 +87,7 @@ test("fn returning a constant", () => {
 test("application return type", () => {
   const [types, errors] = tc(
     `
+    extern type Bool
     extern let (>): Fn(a, a) -> Bool
     let x = 1 > 2
   `,
@@ -335,7 +336,10 @@ describe("type hints", () => {
   });
 
   test("type hints instantiate polytypes", () => {
-    const [types, errs] = tc("let f: Fn(Int) -> Int = fn x { x }");
+    const [types, errs] = tc(`
+      extern type Int
+      let f: Fn(Int) -> Int = fn x { x }
+    `);
     expect(errs).toEqual([]);
     expect(types).toEqual({
       f: "Fn(Int) -> Int",

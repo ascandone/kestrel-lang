@@ -27,8 +27,6 @@ import {
   Poly,
 } from "./unify";
 
-export type TypesPool = Record<string, number>;
-
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
 export type TypeError = SpanMeta &
   (
@@ -71,42 +69,45 @@ export type TypeMeta = { $: TVar };
 export type Deps = Record<string, TypedModule>;
 
 export function typecheck(
-  ast: UntypedModule,
+  module: UntypedModule,
   deps: Deps = {},
   implicitImports: UntypedImport[] = defaultImports,
 ): [TypedModule, TypeError[]] {
-  return new Typechecker(deps).run(ast, implicitImports);
+  return new Typechecker(module, deps, implicitImports).run();
 }
 
 class Typechecker {
   // TODO remove globals and lookup import/declrs directly
   private globals: Context = {};
-  private types: TypesPool = {};
 
   private errors: TypeError[] = [];
+  private typeDeclarations: TypedTypeDeclaration[] = [];
+  private imports: UntypedImport[];
 
-  constructor(private deps: Deps) {}
-
-  run(
-    module: UntypedModule,
+  constructor(
+    // TODO remove module field
+    private module: UntypedModule,
+    private deps: Deps,
     implicitImports: UntypedImport[] = defaultImports,
-  ): [TypedModule, TypeError[]] {
+  ) {
+    this.imports = [...implicitImports, ...module.imports];
+  }
+
+  run(): [TypedModule, TypeError[]] {
+    const module = this.module;
     TVar.resetId();
     // ----- Collect imports into scope
-    const imports = [...implicitImports, ...module.imports];
-    for (const import_ of imports) {
+    for (const import_ of this.imports) {
       this.runImports(import_);
     }
 
     // ---- Typecheck this module
-    for (const typeDecl of module.typeDeclarations) {
-      // TODO deprecate this and fetch directly from imports or local typeDeclrs instead
-      this.typecheckTypeDeclarations(typeDecl);
-    }
 
-    const annotatedTypeDeclrs = module.typeDeclarations.map(
-      this.annotateTypeDeclaration.bind(this),
-    );
+    for (const typeDeclaration of module.typeDeclarations) {
+      // Warning: do not use Array.map, as we need to seed results asap
+      const annotated = this.annotateTypeDeclaration(typeDeclaration);
+      this.typeDeclarations.push(annotated);
+    }
 
     const annotatedDeclrs = annotateDeclarations(module.declarations);
 
@@ -116,9 +117,9 @@ class Typechecker {
 
     return [
       {
-        imports: module.imports,
+        imports: this.imports,
         declarations: annotatedDeclrs,
-        typeDeclarations: annotatedTypeDeclrs,
+        typeDeclarations: this.typeDeclarations,
       },
       this.errors,
     ];
@@ -158,7 +159,6 @@ class Typechecker {
             continue;
           }
 
-          this.types[typeDecl.name] = typeDecl.params.length;
           if (typeDecl.type === "adt" && exposed.exposeImpl) {
             for (const variant of typeDecl.variants) {
               this.addVariantTypesToScope(typeDecl, variant);
@@ -170,29 +170,9 @@ class Typechecker {
     }
   }
 
-  private typecheckTypeDeclarations(typeDecl: UntypedTypeDeclaration) {
-    this.types[typeDecl.name] = typeDecl.params.length;
-    const params: string[] = [];
-    for (const param of typeDecl.params) {
-      if (params.includes(param.name)) {
-        this.errors.push({
-          type: "type-param-shadowing",
-          id: param.name,
-          span: param.span,
-        });
-      }
-      params.push(param.name);
-    }
-
-    if (typeDecl.type === "adt") {
-      for (const variant of typeDecl.variants) {
-        this.addVariantTypesToScope(typeDecl, variant);
-      }
-    }
-  }
-
-  private getVariantType(
+  private makeVariantType(
     typeDecl: UntypedTypeDeclaration & { type: "adt" },
+
     variant: UntypedTypeVariant,
   ): Type<Poly> {
     const ret: Type<Poly> = {
@@ -211,37 +191,11 @@ class Typechecker {
     } else {
       return {
         type: "fn",
-        args: variant.args.map((arg) => this.typeHintToType(arg, params)),
+        args: variant.args.map((arg) =>
+          this.typeAstToType(arg, { type: "constructor-arg", params }),
+        ),
         return: ret,
       };
-    }
-  }
-
-  private inferTypeHint(hint: TypeAst, typesPool: TypesPool): Type<Poly> {
-    switch (hint.type) {
-      case "any":
-        return {
-          type: "var",
-          var: TVar.fresh(),
-        };
-
-      case "var": {
-        return { type: "quantified", id: hint.ident };
-      }
-
-      case "fn":
-        return {
-          type: "fn",
-          args: hint.args.map((arg) => this.inferTypeHint(arg, typesPool)),
-          return: this.inferTypeHint(hint.return, typesPool),
-        };
-
-      case "named":
-        return {
-          type: "named",
-          name: hint.name,
-          args: hint.args.map((arg) => this.inferTypeHint(arg, typesPool)),
-        };
     }
   }
 
@@ -299,62 +253,59 @@ class Typechecker {
     });
   }
 
-  private typeHintToType(ast: TypeAst, params: string[]): Type<Poly> {
-    const recur = (ast: TypeAst): Type<Poly> => {
-      switch (ast.type) {
-        case "named": {
-          const t: Type<Poly> = {
-            type: "named",
-            name: ast.name,
-            args: ast.args.map(recur),
-          };
-
-          this.checkUnboundTypeError(ast, t);
-
-          return t;
-        }
-
-        case "fn":
-          return {
-            type: "fn",
-            args: ast.args.map(recur),
-            return: recur(ast.return),
-          };
-
-        case "var": {
-          const id = ast.ident;
-          if (!params.includes(id)) {
-            this.errors.push({
-              type: "unbound-type-param",
-              id,
-              span: ast.span,
-            });
-          }
-          return { type: "quantified", id };
-        }
-
-        case "any":
-          this.errors.push({ type: "invalid-catchall", span: ast.span });
-          return { type: "var", var: TVar.fresh() };
+  /**
+   * Used to parse args of ADT constructors
+   */
+  private typeAstToType(ast: TypeAst, opts: TypeAstConversionType): Type<Poly> {
+    switch (ast.type) {
+      case "named": {
+        const t: Type<Poly> = {
+          type: "named",
+          name: ast.name,
+          args: ast.args.map((arg) => this.typeAstToType(arg, opts)),
+        };
+        this.checkUnboundTypeError(ast, t);
+        return t;
       }
-    };
 
-    return recur(ast);
+      case "fn":
+        return {
+          type: "fn",
+          args: ast.args.map((arg) => this.typeAstToType(arg, opts)),
+          return: this.typeAstToType(ast.return, opts),
+        };
+
+      case "var":
+        if (
+          opts.type === "constructor-arg" &&
+          !opts.params.includes(ast.ident)
+        ) {
+          this.errors.push({
+            type: "unbound-type-param",
+            id: ast.ident,
+            span: ast.span,
+          });
+        }
+        return { type: "quantified", id: ast.ident };
+
+      case "any":
+        if (opts.type === "constructor-arg") {
+          this.errors.push({ type: "invalid-catchall", span: ast.span });
+        }
+        return { type: "var", var: TVar.fresh() };
+    }
   }
 
   private addVariantTypesToScope(
     typeDecl: UntypedTypeDeclaration & { type: "adt" },
     variant: UntypedTypeVariant,
   ) {
-    this.globals[variant.name] = this.getVariantType(typeDecl, variant);
+    this.globals[variant.name] = this.makeVariantType(typeDecl, variant);
   }
 
   private typecheckAnnotatedDecl(decl: Declaration<TypeMeta>) {
     if (decl.typeHint !== undefined) {
-      const th = this.inferTypeHint(decl.typeHint, this.types);
-      // TODO this should be moved above
-      // This way is not pointing to the right node
-      this.checkUnboundTypeError(decl.typeHint, th);
+      const th = this.typeAstToType(decl.typeHint, { type: "type-hint" });
       this.unifyNode(decl.typeHint, instantiate(th), decl.binding.$.asType());
 
       this.checkUnboundTypeError<SpanMeta>(
@@ -402,7 +353,7 @@ class Typechecker {
         if (tDecl.type === "adt") {
           for (const variant of tDecl.variants) {
             if (variant.name === name) {
-              return this.getVariantType(tDecl, variant);
+              return this.makeVariantType(tDecl, variant);
             }
           }
         }
@@ -590,15 +541,43 @@ class Typechecker {
     });
   }
 
-  annotateTypeDeclrs(decls: UntypedTypeDeclaration[]): TypedTypeDeclaration[] {
-    return decls.map((td) => {
-      return this.annotateTypeDeclaration(td);
+  private checkUnboundTypeError<T extends SpanMeta>(
+    { span }: T,
+    t: Type<Poly>,
+  ) {
+    if (t.type !== "named") {
+      return undefined;
+    }
+
+    const expectedArity = t.args.length;
+    const resolved = this.resolveType(t.name);
+    if (resolved !== undefined && resolved.arity === expectedArity) {
+      return;
+    }
+
+    this.errors.push({
+      type: "unbound-type",
+      name: t.name,
+      arity: expectedArity,
+      span,
     });
   }
 
-  annotateTypeDeclaration(
+  private annotateTypeDeclaration(
     typeDecl: UntypedTypeDeclaration,
   ): TypedTypeDeclaration {
+    const usedParams = new Set();
+    for (const param of typeDecl.params) {
+      if (usedParams.has(param.name)) {
+        this.errors.push({
+          type: "type-param-shadowing",
+          id: param.name,
+          span: param.span,
+        });
+      }
+      usedParams.add(param.name);
+    }
+
     switch (typeDecl.type) {
       case "extern": {
         return typeDecl;
@@ -607,8 +586,9 @@ class Typechecker {
         return {
           ...typeDecl,
           variants: typeDecl.variants.map((variant) => {
-            const t = this.getVariantType(typeDecl, variant);
+            const t = this.makeVariantType(typeDecl, variant);
             this.addVariantTypesToScope(typeDecl, variant);
+
             return {
               ...variant,
               polyType: t,
@@ -619,25 +599,20 @@ class Typechecker {
     }
   }
 
-  checkUnboundTypeError<T extends SpanMeta>({ span }: T, t: Type<Poly>) {
-    if (t.type !== "named") {
-      return undefined;
+  // TODO handle ns
+  private resolveType(typeName: string): TypeResolutionData | undefined {
+    for (const typeDecl of this.typeDeclarations) {
+      if (typeDecl.name === typeName) {
+        return { arity: typeDecl.params.length };
+      }
     }
-
-    const arity = this.types[t.name];
-    const expectedArity = t.args.length;
-    if (arity !== undefined && arity === expectedArity) {
-      return undefined;
-    }
-
-    this.errors.push({
-      type: "unbound-type",
-      name: t.name,
-      arity: expectedArity,
-      span,
-    });
+    return undefined;
   }
 }
+
+type TypeResolutionData = {
+  arity: number;
+};
 
 function annotateMatchExpr<T>(
   ast: MatchPattern<T>,
@@ -751,6 +726,10 @@ function inferConstant(x: ConstLiteral): Type {
       return { type: "named", name: "String", args: [] };
   }
 }
+
+type TypeAstConversionType =
+  | { type: "type-hint" }
+  | { type: "constructor-arg"; params: string[] };
 
 export function typecheckProject(
   project: Record<string, UntypedModule>,
