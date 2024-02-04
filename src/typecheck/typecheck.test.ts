@@ -357,8 +357,9 @@ describe("type hints", () => {
 });
 
 describe("custom types", () => {
-  test.todo("allows to use it as type hint", () => {
+  test("allows to use it as type hint", () => {
     const [types, errs] = tc(`
+    extern type Int
     type T { }
     let f: Fn(T) -> Int = fn _ { 0 }
   `);
