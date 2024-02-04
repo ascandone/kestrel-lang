@@ -226,21 +226,14 @@ class Typechecker {
       })),
     };
 
+    const params = typeDecl.params.map((p) => p.name);
+
     if (variant.args.length === 0) {
       return ret;
     } else {
-      const args: Type<Poly>[] = [];
-      for (const arg of variant.args) {
-        const a = this.castType(arg, {
-          typesScope: this.types,
-          params: typeDecl.params.map((p) => p.name),
-        });
-        args.push(a);
-      }
-
       return {
         type: "fn",
-        args,
+        args: variant.args.map((arg) => this.castType(arg, params)),
         return: ret,
       };
     }
@@ -328,15 +321,7 @@ class Typechecker {
     });
   }
 
-  private castType(
-    ast: TypeAst,
-    args: {
-      typesScope: TypesPool;
-      params: string[];
-    },
-  ): Type<Poly> {
-    const { params, typesScope } = args;
-
+  private castType(ast: TypeAst, params: string[]): Type<Poly> {
     const recur = (ast: TypeAst): Type<Poly> => {
       switch (ast.type) {
         case "named": {
@@ -346,7 +331,7 @@ class Typechecker {
             args: ast.args.map(recur),
           };
 
-          const e = checkUnboundTypeError(ast, t, typesScope);
+          const e = checkUnboundTypeError(ast, t, this.types);
           if (e !== undefined) {
             this.errors.push(e);
           }
