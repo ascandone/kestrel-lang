@@ -431,18 +431,17 @@ class Typechecker {
       for (const import_ of this.imports) {
         for (const exposing of import_.exposing) {
           switch (exposing.type) {
-            case "type":
-              {
-                // TODO error when using (..) on extern types
-                if (exposing.exposeImpl && exposing.resolved.type === "adt") {
-                  for (const variant of exposing.resolved.variants) {
-                    if (exposing.name === name) {
-                      return variant.polyType;
-                    }
+            case "type": {
+              // TODO error when using (..) on extern types
+              if (exposing.exposeImpl && exposing.resolved.type === "adt") {
+                for (const variant of exposing.resolved.variants) {
+                  if (exposing.name === name) {
+                    return variant.polyType;
                   }
                 }
               }
               break;
+            }
 
             case "value":
               if (exposing.name === name) {
