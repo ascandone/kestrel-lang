@@ -826,7 +826,7 @@ describe("modules", () => {
     });
   });
 
-  test.todo("handles nested type references from other modules", () => {
+  test("handles nested type references from other modules", () => {
     const [A] = tcProgram(`
       pub type T { T }
       pub type Boxed { Boxed(T) }
