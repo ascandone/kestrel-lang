@@ -397,17 +397,17 @@ class Typechecker {
     scope: Context,
   ): Type<Poly> | undefined {
     if (ns !== undefined) {
-      const decl = this.deps[ns]?.declarations
+      const dep = this.deps[ns];
+      if (dep === undefined) {
+        return undefined;
+      }
+
+      const decl = dep.declarations
         .find((decl) => decl.binding.name === name && decl.pub)
         ?.binding.$.asType();
 
       if (decl !== undefined) {
         return generalize(decl);
-      }
-
-      const dep = this.deps[ns];
-      if (dep === undefined) {
-        return undefined;
       }
 
       for (const tDecl of dep.typeDeclarations) {
