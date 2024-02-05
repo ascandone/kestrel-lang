@@ -308,15 +308,25 @@ class Typechecker {
 
         if (
           !isSelfRec &&
-          (resolved === undefined || resolved.arity !== expectedArity)
+          (resolved === undefined ||
+            resolved.arity !== expectedArity ||
+            !resolved.pub)
         ) {
-          // TODO better error for wrong arity
-          this.errors.push({
-            type: "unbound-type",
-            name: ast.name,
-            arity: expectedArity,
-            span: ast.span,
-          });
+          this.errors.push(
+            resolved?.pub === false
+              ? {
+                  type: "non-existing-import",
+                  name: ast.name,
+                  span: ast.span,
+                }
+              : {
+                  // TODO better error for wrong arity
+                  type: "unbound-type",
+                  name: ast.name,
+                  arity: expectedArity,
+                  span: ast.span,
+                },
+          );
         }
 
         return {
@@ -673,7 +683,7 @@ class Typechecker {
 
       for (const typeDecl of dep.typeDeclarations) {
         if (typeDecl.name === typeName) {
-          return { arity: typeDecl.params.length };
+          return { arity: typeDecl.params.length, pub: Boolean(typeDecl.pub) };
         }
       }
 
@@ -682,13 +692,14 @@ class Typechecker {
 
     for (const typeDecl of this.typeDeclarations) {
       if (typeDecl.name === typeName) {
-        return { arity: typeDecl.params.length };
+        return { arity: typeDecl.params.length, pub: true };
       }
     }
     for (const import_ of this.imports) {
       for (const exposed of import_.exposing) {
         if (exposed.type === "type" && exposed.resolved.name === typeName) {
-          return { arity: exposed.resolved.params.length };
+          // TODO pub=true?
+          return { arity: exposed.resolved.params.length, pub: true };
         }
       }
     }
@@ -698,6 +709,7 @@ class Typechecker {
 
 type TypeResolutionData = {
   arity: number;
+  pub: boolean;
 };
 
 function annotateMatchExpr<T>(

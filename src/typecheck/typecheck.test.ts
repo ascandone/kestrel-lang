@@ -997,6 +997,21 @@ describe("modules", () => {
     expect(errs[0]!.type).toBe("non-existing-import");
   });
 
+  test("qualified imports should not work on priv types", () => {
+    const [Mod] = tcProgram(`type PrivateType {}`);
+    const [, errs] = tc(
+      `
+      import Mod
+      extern let x: Mod.PrivateType
+    `,
+      { Mod },
+    );
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("non-existing-import");
+  });
+
   test("error when expose impl is run on a extern type", () => {
     const [Mod] = tcProgram(`extern pub type ExternType`);
     const [, errs] = tc(`import Mod.{ExternType(..)}`, { Mod });
