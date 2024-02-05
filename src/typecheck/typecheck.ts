@@ -252,13 +252,22 @@ class Typechecker {
   private typeAstToType(ast: TypeAst, opts: TypeAstConversionType): Type<Poly> {
     switch (ast.type) {
       case "named": {
-        const t: Type<Poly> = {
+        const expectedArity = ast.args.length;
+        const resolved = this.resolveType(ast.name);
+        if (resolved === undefined || resolved.arity !== expectedArity) {
+          this.errors.push({
+            type: "unbound-type",
+            name: ast.name,
+            arity: expectedArity,
+            span: ast.span,
+          });
+        }
+
+        return {
           type: "named",
           name: ast.name,
           args: ast.args.map((arg) => this.typeAstToType(arg, opts)),
         };
-        this.checkUnboundTypeError(ast, t);
-        return t;
       }
 
       case "fn":
@@ -519,28 +528,6 @@ class Typechecker {
       left: e.left,
       right: e.right,
       span: ast.span,
-    });
-  }
-
-  private checkUnboundTypeError<T extends SpanMeta>(
-    { span }: T,
-    t: Type<Poly>,
-  ) {
-    if (t.type !== "named") {
-      return undefined;
-    }
-
-    const expectedArity = t.args.length;
-    const resolved = this.resolveType(t.name);
-    if (resolved !== undefined && resolved.arity === expectedArity) {
-      return;
-    }
-
-    this.errors.push({
-      type: "unbound-type",
-      name: t.name,
-      arity: expectedArity,
-      span,
     });
   }
 
