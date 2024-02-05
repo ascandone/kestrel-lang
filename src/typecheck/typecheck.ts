@@ -12,7 +12,7 @@ import {
   UntypedTypeDeclaration,
   UntypedTypeVariant,
 } from "../ast";
-import { defaultImports, topSortedModules } from "../project";
+import { CORE_MODULES, defaultImports, topSortedModules } from "../project";
 import {
   TypedDeclaration,
   TypedExposing,
@@ -883,7 +883,12 @@ export function typecheckProject(
       // A module might import a module that do not exist
       continue;
     }
-    const tc = typecheck(ns, module, deps, implicitImports);
+    const tc = typecheck(
+      ns,
+      module,
+      deps,
+      CORE_MODULES.includes(ns) ? [] : implicitImports,
+    );
     projectResult[ns] = tc;
     deps[ns] = tc[0];
   }

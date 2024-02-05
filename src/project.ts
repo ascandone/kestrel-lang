@@ -123,7 +123,7 @@ function getDependencies(program: UntypedModule): string[] {
   return program.imports.map((i) => i.ns);
 }
 
-const CORE_MODULES = [
+export const CORE_MODULES = [
   "Basics",
   "List",
   "Maybe",

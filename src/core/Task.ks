@@ -1,5 +1,6 @@
 import Basics.{Int, Unit}
 import Result.{Result(..)}
+import String.{String}
 
 extern pub type Task<a>
 
