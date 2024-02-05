@@ -854,7 +854,7 @@ describe("modules", () => {
 
   test("handles variants imports", () => {
     const [A] = tcProgram(`
-      pub type MyType { Constr }
+      pub(..) type MyType { Constr }
     `);
 
     const [types, errs] = tc(
@@ -988,6 +988,21 @@ describe("modules", () => {
       `
       import Mod
       let _ = Mod.not_found
+    `,
+      { Mod },
+    );
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("non-existing-import");
+  });
+
+  test("qualified imports should not work on priv constructors", () => {
+    const [Mod] = tcProgram(`pub type T { A }`);
+    const [, errs] = tc(
+      `
+      import Mod
+      let _ = Mod.A
     `,
       { Mod },
     );

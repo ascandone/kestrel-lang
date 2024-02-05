@@ -406,7 +406,7 @@ class Typechecker {
       }
 
       for (const tDecl of this.deps[ns]?.typeDeclarations ?? []) {
-        if (tDecl.type === "adt") {
+        if (tDecl.type === "adt" && tDecl.pub === "..") {
           for (const variant of tDecl.variants) {
             if (variant.name === name) {
               return variant.polyType;
