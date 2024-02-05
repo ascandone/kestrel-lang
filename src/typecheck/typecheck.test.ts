@@ -883,8 +883,8 @@ describe("modules", () => {
     });
   });
 
-  test.todo("allow importing types (unqualified)", () => {
-    const [Mod] = tcProgram(`type Example { }`);
+  test("allow importing types (unqualified)", () => {
+    const [Mod] = tcProgram(`pub type Example { }`);
 
     const [types, errs] = tc(
       `

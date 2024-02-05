@@ -94,9 +94,10 @@ class Typechecker {
   ): [TypedModule, TypeError[]] {
     TVar.resetId();
     // ----- Collect imports into scope
-    const annotatedImplicitImports = this.annotateImports(implicitImports);
-    const annotatedImports = this.annotateImports(module.imports);
-    this.imports = [...annotatedImplicitImports, ...annotatedImports];
+    this.imports = [
+      ...this.annotateImports(implicitImports),
+      ...this.annotateImports(module.imports),
+    ];
 
     // TODo remove
     for (const import_ of [...implicitImports, ...module.imports]) {
@@ -674,6 +675,13 @@ class Typechecker {
     for (const typeDecl of this.typeDeclarations) {
       if (typeDecl.name === typeName) {
         return { arity: typeDecl.params.length };
+      }
+    }
+    for (const import_ of this.imports) {
+      for (const exposed of import_.exposing) {
+        if (exposed.type === "type" && exposed.resolved.name === typeName) {
+          return { arity: exposed.resolved.params.length };
+        }
       }
     }
     return undefined;
