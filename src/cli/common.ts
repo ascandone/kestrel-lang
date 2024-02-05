@@ -1,12 +1,11 @@
 import { readFile, readdir } from "node:fs/promises";
 import { unsafeParse, parse } from "../parser";
-import { typecheckProject } from "../typecheck/typecheck";
-import { typeErrorPPrint } from "../typecheck/pretty-printer";
+import { typecheckProject, typeErrorPPrint } from "../typecheck";
 import { Span, UntypedModule } from "../ast";
 import { exit } from "node:process";
 import { Compiler } from "../compiler";
 import { CORE_FOLDER_PATH } from "./paths";
-import { topSortedModules } from "../project";
+import { topSortedModules } from "../typecheck/project";
 import { TypedModule } from "../typedAst";
 
 export const FgRed = "\x1b[31m";

@@ -12,7 +12,6 @@ import {
   UntypedTypeDeclaration,
   UntypedTypeVariant,
 } from "../ast";
-import { CORE_MODULES, defaultImports, topSortedModules } from "../project";
 import {
   TypedDeclaration,
   TypedExposing,
@@ -20,6 +19,8 @@ import {
   TypedModule,
   TypedTypeDeclaration,
 } from "../typedAst";
+import { CORE_MODULES, defaultImports } from "./defaultImports";
+import { topSortedModules } from "./project";
 import {
   TVar,
   Type,

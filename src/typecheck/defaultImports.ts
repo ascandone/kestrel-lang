@@ -1,10 +1,8 @@
-import { Span, UntypedImport, UntypedModule } from "./ast";
-import { topologicalSort } from "./utils/topsort";
+import { Span, UntypedImport } from "../ast";
 
 const dummySpan: Span = [0, 0];
-/*
-// Prelude imports:
 
+/*
 import Int.{Int, (+), (-)} // ecc
 import Float.{Float}
 import Bool.{Bool(..), (&&), (||), (!)}
@@ -15,7 +13,6 @@ import Maybe.{Maybe(..)}
 import Result.{Result(..)}
 import Tuple.{Tuple2(..)}
 */
-
 export const defaultImports: UntypedImport[] = [
   {
     span: dummySpan,
@@ -100,28 +97,6 @@ export const defaultImports: UntypedImport[] = [
     ],
   },
 ];
-
-export function topSortedModules(
-  project: Record<string, UntypedModule>,
-  implicitImports: UntypedImport[] = defaultImports,
-): string[] {
-  const implNsImports = implicitImports.map((i) => i.ns);
-
-  const dependencyGraph: Record<string, string[]> = {};
-  for (const [ns, program] of Object.entries(project)) {
-    const deps = CORE_MODULES.includes(ns)
-      ? getDependencies(program)
-      : [...implNsImports, ...getDependencies(program)];
-
-    dependencyGraph[ns] = deps;
-  }
-
-  return topologicalSort(dependencyGraph);
-}
-
-function getDependencies(program: UntypedModule): string[] {
-  return program.imports.map((i) => i.ns);
-}
 
 export const CORE_MODULES = [
   "Basics",
