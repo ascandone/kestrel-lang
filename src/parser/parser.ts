@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import grammar from "./parser/grammar.ohm-bundle";
+import grammar from "./grammar.ohm-bundle";
 import {
   ConstLiteral,
   Expr,
@@ -13,7 +12,7 @@ import {
   UntypedDeclaration,
   UntypedExposedValue,
   UntypedImport,
-} from "./ast";
+} from "../ast";
 import type {
   IterationNode,
   MatchResult,
@@ -21,7 +20,7 @@ import type {
   Node as OhmNode,
   TerminalNode,
 } from "ohm-js";
-import { TypeMeta } from "./typecheck/typecheck";
+import { TypeMeta } from "../typecheck/typecheck";
 
 function getSpan({ source }: OhmNode): Span {
   return [source.startIdx, source.endIdx];

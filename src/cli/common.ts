@@ -1,7 +1,6 @@
 import { readFile, readdir } from "node:fs/promises";
-import { unsafeParse } from "../parser";
+import { unsafeParse, parse } from "../parser";
 import { typecheckProject } from "../typecheck/typecheck";
-import { parse } from "../parser";
 import { typeErrorPPrint } from "../typecheck/pretty-printer";
 import { Span, UntypedModule } from "../ast";
 import { exit } from "node:process";

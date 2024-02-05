@@ -1,6 +1,6 @@
 import { expect, test, describe } from "vitest";
 import { unsafeParse } from "./parser";
-import { Span, UntypedModule } from "./ast";
+import { Span, UntypedModule } from "../ast";
 
 test("parsing a declaration", () => {
   const src = "let x = 0";
