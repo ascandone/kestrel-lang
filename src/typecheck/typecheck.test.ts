@@ -1037,7 +1037,7 @@ describe("modules", () => {
   });
 
   test("error when expose impl is run on a opaque type", () => {
-    // Not it is `pub` instead of `pub(..)`
+    // Note it is `pub` instead of `pub(..)`
     const [Mod] = tcProgram(`pub type T {}`);
     const [, errs] = tc(`import Mod.{T(..)}`, { Mod });
 
