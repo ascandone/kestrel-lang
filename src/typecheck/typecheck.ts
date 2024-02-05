@@ -76,11 +76,12 @@ export type TypeMeta = { $: TVar };
 export type Deps = Record<string, TypedModule>;
 
 export function typecheck(
+  ns: string,
   module: UntypedModule,
   deps: Deps = {},
   implicitImports: UntypedImport[] = defaultImports,
 ): [TypedModule, TypecheckError[]] {
-  return new Typechecker(deps).run(module, implicitImports);
+  return new Typechecker(ns, deps).run(module, implicitImports);
 }
 
 class Typechecker {
@@ -91,7 +92,10 @@ class Typechecker {
   private imports: TypedImport[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
 
-  constructor(private deps: Deps) {}
+  constructor(
+    private ns: string,
+    private deps: Deps,
+  ) {}
 
   run(
     module: UntypedModule,
@@ -214,6 +218,7 @@ class Typechecker {
   ): Type<Poly> {
     const ret: Type<Poly> = {
       type: "named",
+      moduleName: this.ns,
       name: typeDecl.name,
       args: typeDecl.params.map((param) => ({
         type: "quantified",
@@ -333,6 +338,8 @@ class Typechecker {
 
         return {
           type: "named",
+          // TODO double check
+          moduleName: this.ns,
           name: ast.name,
           args: ast.args.map((arg) => this.typeAstToType(arg, opts)),
         };
@@ -492,11 +499,7 @@ class Typechecker {
         const lookup = instantiate(lookup_);
 
         if (lookup.type === "named") {
-          this.unifyNode(
-            pattern,
-            { type: "named", name: lookup.name, args: lookup.args },
-            pattern.$.asType(),
-          );
+          this.unifyNode(pattern, lookup, pattern.$.asType());
         }
 
         if (lookup.type === "fn") {
@@ -618,11 +621,7 @@ class Typechecker {
         return;
 
       case "if":
-        this.unifyExpr(ast, ast.condition.$.asType(), {
-          type: "named",
-          name: "Bool",
-          args: [],
-        });
+        this.unifyExpr(ast, ast.condition.$.asType(), Bool);
         this.unifyExpr(ast, ast.$.asType(), ast.then.$.asType());
         this.unifyExpr(ast, ast.$.asType(), ast.else.$.asType());
         this.typecheckAnnotatedExpr(ast.condition, scope);
@@ -837,15 +836,16 @@ function annotateDeclarations(
 }
 
 function inferConstant(x: ConstLiteral): Type {
+  // Keep this in sync with core
   switch (x.type) {
     case "int":
-      return { type: "named", name: "Int", args: [] };
+      return { moduleName: "Basics", type: "named", name: "Int", args: [] };
 
     case "float":
-      return { type: "named", name: "Float", args: [] };
+      return { moduleName: "Basics", type: "named", name: "Float", args: [] };
 
     case "string":
-      return { type: "named", name: "String", args: [] };
+      return { moduleName: "String", type: "named", name: "String", args: [] };
   }
 }
 
@@ -871,7 +871,7 @@ export function typecheckProject(
       // A module might import a module that do not exist
       continue;
     }
-    const tc = typecheck(module, deps, implicitImports);
+    const tc = typecheck(ns, module, deps, implicitImports);
     projectResult[ns] = tc;
     deps[ns] = tc[0];
   }
@@ -883,3 +883,11 @@ export type ProjectTypeCheckResult = Record<
   string,
   [TypedModule, TypecheckError[]]
 >;
+
+// Keep this in sync with core
+const Bool: Type = {
+  type: "named",
+  moduleName: "Basics",
+  name: "Bool",
+  args: [],
+};

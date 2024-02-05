@@ -21,6 +21,12 @@ test("unifing two concrete vars when they match", () => {
   expect(unify(Fn([Int], Int), Fn([Int], Int))).toBeUndefined();
 });
 
+test("do not unify concrete types from different modules", () => {
+  expect(
+    unify(Int, { ...Int, moduleName: "AnotherModule" } as any),
+  ).not.toBeUndefined();
+});
+
 test("unify two concrete vars that do not match", () => {
   expect(unify(Int, Bool)).toEqual<UnifyError>({
     type: "type-mismatch",
@@ -30,11 +36,12 @@ test("unify two concrete vars that do not match", () => {
   expect(
     unify(
       {
+        moduleName: "Mod",
         type: "named",
         name: "T",
-        args: [{ type: "named", name: "X", args: [] }],
+        args: [{ moduleName: "Mod", type: "named", name: "X", args: [] }],
       },
-      { type: "named", name: "T", args: [] },
+      { moduleName: "Mod", type: "named", name: "T", args: [] },
     ),
   ).not.toBeUndefined();
   expect(unify(List(Int), List(Bool))).not.toBeUndefined();

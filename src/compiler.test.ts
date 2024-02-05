@@ -1006,7 +1006,7 @@ function MyModule$C2(a0) {
 
 function compileSrc(src: string, ns?: string) {
   const parsed = unsafeParse(src);
-  const [program] = typecheck(parsed, {}, []);
+  const [program] = typecheck(ns ?? "Main", parsed, {}, []);
   const out = new Compiler().compile(program, ns);
   return out;
 }

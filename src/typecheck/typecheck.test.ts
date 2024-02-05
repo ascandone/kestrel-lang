@@ -358,15 +358,20 @@ describe("type hints", () => {
 
 describe("custom types", () => {
   test("allows to use it as type hint", () => {
-    const [types, errs] = tc(`
-    extern type Int
+    const [types, errs] = tc(
+      `
+    extern type X
+    extern let x: X
+
     type T { }
-    let f: Fn(T) -> Int = fn _ { 0 }
-  `);
+    let f: Fn(T) -> X = fn _ { x }
+  `,
+    );
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(T) -> Int",
+      f: "Fn(T) -> X",
+      x: "X",
     });
   });
 
@@ -720,8 +725,9 @@ describe("prelude", () => {
 
   test("checks extern types", () => {
     const [, errs] = tc(`
-     extern type Int
-     let x : Int = 0
+     extern type ExtType
+     extern let x : ExtType
+     let y: ExtType = x
     `);
 
     expect(errs).toEqual([]);
@@ -761,9 +767,12 @@ describe("prelude", () => {
 
 describe("modules", () => {
   test("implicitly imports values of the modules in the prelude", () => {
-    const [A] = tcProgram(`
+    const [A] = tcProgram(
+      "A",
+      `
       pub let x = 42
-    `);
+    `,
+    );
 
     const [moduleB] = tc(
       `
@@ -785,9 +794,12 @@ describe("modules", () => {
   });
 
   test("implicitly imports types of the modules in the prelude", () => {
-    const [A] = tcProgram(`
+    const [A] = tcProgram(
+      "A",
+      `
       type MyType {}
-    `);
+    `,
+    );
 
     const [, errs] = tc(
       `
@@ -808,9 +820,12 @@ describe("modules", () => {
   });
 
   test("implicitly imports variants of the modules in the prelude", () => {
-    const [A] = tcProgram(`
+    const [A] = tcProgram(
+      "A",
+      `
       pub(..) type MyType { A }
-    `);
+    `,
+    );
 
     const [types, errs] = tc(
       `
@@ -834,10 +849,13 @@ describe("modules", () => {
   });
 
   test("handles nested type references from other modules", () => {
-    const [A] = tcProgram(`
+    const [A] = tcProgram(
+      "A",
+      `
       pub(..) type T { T }
       pub(..) type Boxed { Boxed(T) }
-    `);
+    `,
+    );
 
     const [types, errs] = tc(
       `
@@ -853,9 +871,12 @@ describe("modules", () => {
   });
 
   test("handles variants imports", () => {
-    const [A] = tcProgram(`
+    const [A] = tcProgram(
+      "A",
+      `
       pub(..) type MyType { Constr }
-    `);
+    `,
+    );
 
     const [types, errs] = tc(
       `
@@ -872,9 +893,12 @@ describe("modules", () => {
   });
 
   test("handles nested imports", () => {
-    const [Mod] = tcProgram(`
+    const [Mod] = tcProgram(
+      "Mod",
+      `
       pub let x = 42
-    `);
+    `,
+    );
 
     const [types, errs] = tc(
       `
@@ -891,7 +915,7 @@ describe("modules", () => {
   });
 
   test("allow importing types (unqualified)", () => {
-    const [Mod] = tcProgram(`pub type Example { }`);
+    const [Mod] = tcProgram("Mod", `pub type Example { }`);
 
     const [types, errs] = tc(
       `
@@ -908,7 +932,7 @@ describe("modules", () => {
   });
 
   test("allow importing types (qualified)", () => {
-    const [Mod] = tcProgram(`pub type Example { }`);
+    const [Mod] = tcProgram("Mod", `pub type Example { }`);
     const [types, errs] = tc(
       `
       import Mod
@@ -924,7 +948,7 @@ describe("modules", () => {
   });
 
   test("allow using imported types in match patterns", () => {
-    const [Mod] = tcProgram(`pub(..) type T { Constr }`);
+    const [Mod] = tcProgram("Mod", `pub(..) type T { Constr }`);
     const [, errs] = tc(
       `
       import Mod.{T(..)}
@@ -947,7 +971,7 @@ describe("modules", () => {
   });
 
   test("error when importing a non-existing type", () => {
-    const [Mod] = tcProgram(``);
+    const [Mod] = tcProgram("Mod", ``);
     const [, errs] = tc(`import Mod.{NotFound}`, { Mod });
 
     expect(errs).not.toEqual([]);
@@ -956,7 +980,7 @@ describe("modules", () => {
   });
 
   test("error when importing a type the is not pub", () => {
-    const [Mod] = tcProgram(`type PrivateType {}`);
+    const [Mod] = tcProgram("Mod", `type PrivateType {}`);
     const [, errs] = tc(`import Mod.{PrivateType}`, { Mod });
 
     expect(errs).not.toEqual([]);
@@ -965,7 +989,7 @@ describe("modules", () => {
   });
 
   test("error when importing a non-existing value", () => {
-    const [Mod] = tcProgram(``);
+    const [Mod] = tcProgram("Mod", ``);
     const [, errs] = tc(`import Mod.{not_found}`, { Mod });
 
     expect(errs).not.toEqual([]);
@@ -974,7 +998,7 @@ describe("modules", () => {
   });
 
   test("error when importing a private value", () => {
-    const [Mod] = tcProgram(`let not_found = 42`);
+    const [Mod] = tcProgram("Mod", `let not_found = 42`);
     const [, errs] = tc(`import Mod.{not_found}`, { Mod });
 
     expect(errs).not.toEqual([]);
@@ -983,7 +1007,7 @@ describe("modules", () => {
   });
 
   test("qualified imports should not work on priv functions", () => {
-    const [Mod] = tcProgram(`let not_found = 42`);
+    const [Mod] = tcProgram("Mod", `let not_found = 42`);
     const [, errs] = tc(
       `
       import Mod
@@ -998,7 +1022,7 @@ describe("modules", () => {
   });
 
   test("qualified imports should not work on priv constructors", () => {
-    const [Mod] = tcProgram(`pub type T { A }`);
+    const [Mod] = tcProgram("Mod", `pub type T { A }`);
     const [, errs] = tc(
       `
       import Mod
@@ -1013,7 +1037,7 @@ describe("modules", () => {
   });
 
   test("qualified imports should not work on priv types", () => {
-    const [Mod] = tcProgram(`type PrivateType {}`);
+    const [Mod] = tcProgram("Mod", `type PrivateType {}`);
     const [, errs] = tc(
       `
       import Mod
@@ -1028,7 +1052,7 @@ describe("modules", () => {
   });
 
   test("error when expose impl is run on a extern type", () => {
-    const [Mod] = tcProgram(`extern pub type ExternType`);
+    const [Mod] = tcProgram("Mod", `extern pub type ExternType`);
     const [, errs] = tc(`import Mod.{ExternType(..)}`, { Mod });
 
     expect(errs).not.toEqual([]);
@@ -1038,7 +1062,7 @@ describe("modules", () => {
 
   test("error when expose impl is run on a opaque type", () => {
     // Note it is `pub` instead of `pub(..)`
-    const [Mod] = tcProgram(`pub type T {}`);
+    const [Mod] = tcProgram("Mod", `pub type T {}`);
     const [, errs] = tc(`import Mod.{T(..)}`, { Mod });
 
     expect(errs).not.toEqual([]);
@@ -1052,6 +1076,22 @@ describe("modules", () => {
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]!.type).toBe("unimported-module");
+  });
+
+  test("types from different modules with the same name aren't treated the same", () => {
+    const [Mod] = tcProgram("Mod", `pub(..) type T { Constr }`);
+    const [, errs] = tc(
+      `
+      import Mod
+      type T { Constr }
+      let t: T = Mod.Constr
+    `,
+      { Mod },
+    );
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("type-mismatch");
   });
 });
 
@@ -1109,16 +1149,17 @@ describe("typecheck project", () => {
 });
 
 function tcProgram(
+  ns: string,
   src: string,
   deps: Deps = {},
   prelude: UntypedImport[] = [],
 ) {
   const parsedProgram = unsafeParse(src);
-  return typecheck(parsedProgram, deps, prelude);
+  return typecheck(ns, parsedProgram, deps, prelude);
 }
 
 function tc(src: string, deps: Deps = {}, prelude: UntypedImport[] = []) {
-  const [typed, errors] = tcProgram(src, deps, prelude);
+  const [typed, errors] = tcProgram("Main", src, deps, prelude);
   return [programTypes(typed) as Record<string, string>, errors] as const;
 }
 

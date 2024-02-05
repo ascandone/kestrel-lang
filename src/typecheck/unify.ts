@@ -6,6 +6,7 @@ export type ConcreteType<Poly = never> =
     }
   | {
       type: "named";
+      moduleName: string;
       name: string;
       args: Type<Poly>[];
     };
@@ -96,7 +97,11 @@ export class TVar {
 
     // (Named, Named)
     if (t1.type === "named" && t2.type === "named") {
-      if (t1.name !== t2.name || t1.args.length !== t2.args.length) {
+      if (
+        t1.name !== t2.name ||
+        t1.moduleName !== t2.moduleName ||
+        t1.args.length !== t2.args.length
+      ) {
         return { type: "type-mismatch", left: t1, right: t2 };
       }
 
@@ -241,8 +246,7 @@ export function generalize(t: Type, context: Context = {}): Type<Poly> {
   function recur(t: Type): Type<Poly> {
     if (t.type === "named") {
       return {
-        type: "named",
-        name: t.name,
+        ...t,
         args: t.args.map(recur),
       };
     }
@@ -281,8 +285,7 @@ export function instantiate(t: Type<Poly>): Type {
     switch (t.type) {
       case "named":
         return {
-          type: "named",
-          name: t.name,
+          ...t,
           args: t.args.map(recur),
         };
       case "fn":
