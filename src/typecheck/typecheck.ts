@@ -99,11 +99,6 @@ class Typechecker {
       ...this.annotateImports(module.imports),
     ];
 
-    // TODo remove
-    for (const import_ of [...implicitImports, ...module.imports]) {
-      this.runImports(import_);
-    }
-
     // ---- Typecheck this module
 
     for (const typeDeclaration of module.typeDeclarations) {
@@ -183,51 +178,6 @@ class Typechecker {
         }
       }),
     };
-  }
-
-  private runImports(import_: UntypedImport) {
-    const dep = this.deps[import_.ns];
-
-    if (dep === undefined) {
-      // TODO emit err
-      return;
-    }
-
-    for (const exposed of import_.exposing) {
-      switch (exposed.type) {
-        case "value": {
-          const lookup = dep.declarations.find(
-            (dec) => dec.binding.name === exposed.name,
-          );
-
-          if (lookup === undefined) {
-            // TODO emit err
-            continue;
-          }
-
-          this.globals[exposed.name] = lookup.binding.$.asType();
-          break;
-        }
-
-        case "type": {
-          const typeDecl = dep.typeDeclarations.find(
-            (t) => t.name === exposed.name,
-          );
-
-          if (typeDecl === undefined) {
-            // TODO emit err
-            continue;
-          }
-
-          if (typeDecl.type === "adt" && exposed.exposeImpl) {
-            for (const variant of typeDecl.variants) {
-              this.globals[variant.name] = variant.polyType;
-            }
-          }
-          break;
-        }
-      }
-    }
   }
 
   private makeVariantType(
@@ -435,7 +385,7 @@ class Typechecker {
               // TODO error when using (..) on extern types
               if (exposing.exposeImpl && exposing.resolved.type === "adt") {
                 for (const variant of exposing.resolved.variants) {
-                  if (exposing.name === name) {
+                  if (variant.name === name) {
                     return variant.polyType;
                   }
                 }
