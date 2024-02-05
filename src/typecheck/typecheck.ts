@@ -95,9 +95,6 @@ class Typechecker {
     implicitImports: UntypedImport[] = defaultImports,
   ): [TypedModule, TypecheckError[]] {
     TVar.resetId();
-    if (module === undefined) {
-      throw new Error("UNDEF MODULE");
-    }
 
     this.imports = [
       ...this.annotateImports(implicitImports),
