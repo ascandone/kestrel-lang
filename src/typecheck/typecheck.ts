@@ -336,10 +336,13 @@ class Typechecker {
           );
         }
 
+        if (resolved === undefined) {
+          return TVar.fresh().asType();
+        }
+
         return {
           type: "named",
-          // TODO double check
-          moduleName: this.ns,
+          moduleName: resolved.namespace,
           name: ast.name,
           args: ast.args.map((arg) => this.typeAstToType(arg, opts)),
         };
@@ -706,7 +709,11 @@ class Typechecker {
 
       for (const typeDecl of dep.typeDeclarations) {
         if (typeDecl.name === typeName) {
-          return { arity: typeDecl.params.length, pub: Boolean(typeDecl.pub) };
+          return {
+            arity: typeDecl.params.length,
+            pub: Boolean(typeDecl.pub),
+            namespace: ns,
+          };
         }
       }
 
@@ -715,14 +722,18 @@ class Typechecker {
 
     for (const typeDecl of this.typeDeclarations) {
       if (typeDecl.name === typeName) {
-        return { arity: typeDecl.params.length, pub: true };
+        return { arity: typeDecl.params.length, pub: true, namespace: this.ns };
       }
     }
     for (const import_ of this.imports) {
       for (const exposed of import_.exposing) {
         if (exposed.type === "type" && exposed.resolved.name === typeName) {
           // TODO pub=true?
-          return { arity: exposed.resolved.params.length, pub: true };
+          return {
+            arity: exposed.resolved.params.length,
+            pub: true,
+            namespace: import_.ns,
+          };
         }
       }
     }
@@ -733,6 +744,7 @@ class Typechecker {
 type TypeResolutionData = {
   arity: number;
   pub: boolean;
+  namespace: string;
 };
 
 function annotateMatchExpr<T>(

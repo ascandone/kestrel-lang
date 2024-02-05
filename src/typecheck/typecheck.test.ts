@@ -104,17 +104,23 @@ test("application return type", () => {
 test("application args should be typechecked", () => {
   const [, errors] = tc(
     `
-    extern let (>): Fn(Int, Int) -> Bool
-    let x = 1.1 > 2
+    type T { C }
+    type Ret {}
+
+    extern let f: Fn(T, T) -> Ret
+    let x = f(42, C)
   `,
   );
 
   expect(errors).not.toEqual([]);
+  expect(errors[0]?.type).toBe("type-mismatch");
 });
 
 test("typecheck fn args", () => {
   const [types] = tc(
     `
+    extern type Int
+    extern type Bool
     extern let (>): Fn(Int, Int) -> Bool
     let f = fn x, y { x > y }
   `,
@@ -272,14 +278,14 @@ describe("type hints", () => {
   test("type hints of fns are used by typechecker", () => {
     const [types, errs] = tc(
       `
-        extern type Int
-        let x: Fn() -> Int = fn { 1.1 }
+        type T { C }
+        let x: Fn() -> T = fn { 42 }
         `,
     );
     expect(errs).not.toEqual([]);
     expect(types).toEqual(
       expect.objectContaining({
-        x: "Fn() -> Int",
+        x: "Fn() -> T",
       }),
     );
   });
@@ -287,6 +293,8 @@ describe("type hints", () => {
   test("type hints of fns are used by typechecker (args)", () => {
     const [types, errs] = tc(
       `
+      extern type Bool
+      extern type Int
       extern let (!): Fn(Bool) -> Bool
       let x: Fn(Bool) -> Int = fn x { !x }
       `,
@@ -346,12 +354,12 @@ describe("type hints", () => {
     });
   });
 
-  test("unknown types are rejected", () => {
+  test("unknown types are ignored", () => {
     const [types, errs] = tc("let x: NotFound = 1");
     expect(errs).not.toEqual([]);
     expect(errs[0]!.type).toBe("unbound-type");
     expect(types).toEqual({
-      x: "NotFound",
+      x: "Int",
     });
   });
 });
