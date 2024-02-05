@@ -64,11 +64,22 @@ export function typeErrorPPrint(e: TypecheckError): string {
       return `The module does not expose the following value: ${e.name}`;
     case "bad-import":
       return "This type doesn't have constructors to expose";
-    case "type-mismatch":
+    case "type-mismatch": {
+      const expected = typePPrint(e.left);
+      const got = typePPrint(e.right);
+      const qualify = expected === got;
+
+      const nsLeft =
+        qualify && e.left.type === "named" ? `${e.left.moduleName}/` : "";
+
+      const nsRight =
+        qualify && e.right.type === "named" ? `${e.right.moduleName}/` : "";
+
       return `Type mismatch
 
-Expected:  ${typePPrint(e.left)}
-     Got:  ${typePPrint(e.right)}
+Expected:  ${nsLeft}${expected}
+     Got:  ${nsRight}${got}
 `;
+    }
   }
 }
