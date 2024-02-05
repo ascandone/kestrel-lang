@@ -425,20 +425,21 @@ class Typechecker {
 
   private typecheckPattern<T>(
     pattern: MatchPattern<T & SpanMeta & TypeMeta>,
-    context: Context,
+    scope: Context,
   ): Context {
     switch (pattern.type) {
       case "lit": {
         const t = inferConstant(pattern.literal);
         this.unifyNode(pattern, pattern.$.asType(), t);
-        return context;
+        return scope;
       }
 
       case "ident":
-        return { ...context, [pattern.ident]: pattern.$.asType() };
+        return { ...scope, [pattern.ident]: pattern.$.asType() };
 
       case "constructor": {
-        const lookup_ = context[pattern.name];
+        // TODO handle ns
+        const lookup_ = this.lookupIdent(undefined, pattern.name, scope);
         if (lookup_ === undefined) {
           // TODO better err
           this.errors.push({
@@ -446,7 +447,7 @@ class Typechecker {
             ident: pattern.name,
             span: pattern.span,
           });
-          return context;
+          return scope;
         }
 
         const lookup = instantiate(lookup_);
@@ -479,10 +480,10 @@ class Typechecker {
 
             const updatedContext = this.typecheckPattern(
               pattern.args[i]!,
-              context,
+              scope,
             );
 
-            context = { ...context, ...updatedContext };
+            scope = { ...scope, ...updatedContext };
           }
 
           if (lookup.args.length !== pattern.args.length) {
@@ -492,11 +493,11 @@ class Typechecker {
               got: pattern.args.length,
               span: pattern.span,
             });
-            return context;
+            return scope;
           }
         }
 
-        return context;
+        return scope;
       }
     }
   }

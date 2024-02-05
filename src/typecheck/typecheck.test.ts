@@ -923,6 +923,21 @@ describe("modules", () => {
     });
   });
 
+  test("allow using imported types in match patterns", () => {
+    const [Mod] = tcProgram(`pub type T { Constr }`);
+    const [, errs] = tc(
+      `
+      import Mod.{T(..)}
+      let x = match Constr {
+        Constr => 0,
+      }
+    `,
+      { Mod },
+    );
+
+    expect(errs).toEqual([]);
+  });
+
   test("error when import a non-existing module", () => {
     const [, errs] = tc(`import ModuleNotFound`);
 

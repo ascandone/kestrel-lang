@@ -58,6 +58,8 @@ export function typeErrorPPrint(e: TypecheckError): string {
       return `Cannot re-declare type parameter ${e.id}`;
     case "arity-mismatch":
       return `Expected ${e.expected} arguments, but got ${e.got}.\n`;
+    case "non-existing-import":
+      return `The module does not expose the following value: ${e.name}`;
     case "type-mismatch":
       return `Type mismatch
 
