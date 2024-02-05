@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "commander": "^11.1.0",
+    "ts-decode": "^0.0.12",
     "vscode-languageserver": "^9.0.1"
   },
   "devDependencies": {
