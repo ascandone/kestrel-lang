@@ -16,6 +16,7 @@ export type TypeAst = SpanMeta &
       }
     | {
         type: "named";
+        namespace?: string;
         name: string;
         args: TypeAst[];
       }

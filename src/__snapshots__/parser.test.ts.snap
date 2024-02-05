@@ -430,6 +430,40 @@ exports[`imports > type constructors can be qualified 1`] = `
 }
 `;
 
+exports[`imports > type defs can be qualified 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": true,
+      "pub": false,
+      "span": [
+        0,
+        24,
+      ],
+      "typeHint": {
+        "args": [],
+        "name": "MyType",
+        "namespace": "A/B",
+        "span": [
+          14,
+          24,
+        ],
+        "type": "named",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`imports > unqualified import of a value 1`] = `
 {
   "declarations": [],

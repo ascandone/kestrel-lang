@@ -597,6 +597,11 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
+  test("type defs can be qualified", () => {
+    const src = "extern let x: A/B.MyType";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
   test("type constructors can be qualified", () => {
     const src = "let x = A/B.Name";
     expect(unsafeParse(src)).toMatchSnapshot();

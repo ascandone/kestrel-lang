@@ -342,6 +342,20 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   },
 });
 
+semantics.addOperation<{ namespace?: string; name: string }>(
+  "qualifiedTypeAst()",
+  {
+    QualifiedTypeIdent(namespace, _dot, name) {
+      return {
+        name: name.sourceString,
+        ...(namespace.numChildren === 0
+          ? {}
+          : { namespace: namespace.child(0).sourceString }),
+      };
+    },
+  },
+);
+
 semantics.addOperation<TypeAst>("type()", {
   Type_any(_underscore) {
     return { type: "any", span: getSpan(this) };
@@ -367,8 +381,8 @@ semantics.addOperation<TypeAst>("type()", {
     return {
       type: "named",
       args: args_,
-      name: ident.sourceString,
       span: getSpan(this),
+      ...ident.qualifiedTypeAst(),
     };
   },
 });

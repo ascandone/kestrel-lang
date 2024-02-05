@@ -104,6 +104,9 @@ Program {
   QualifiedIdent
     = (Qualifier ".")? ident
 
+  QualifiedTypeIdent
+    = (Qualifier ".")? typeIdent
+
   QualifiedName
     = (Qualifier ".")? (ident | typeIdent)
 
@@ -150,7 +153,7 @@ Program {
     = typeIdent ("(" ListOf<Type, ","> ")")?
 
   Type
-    = typeIdent ("<" ListOf<Type, ","> ">")?  -- named
+    = QualifiedTypeIdent ("<" ListOf<Type, ","> ">")?  -- named
     | typeVar -- var
     | "Fn" "(" ListOf<Type, ","> ")" "->" Type -- fn
     | "_" -- any
