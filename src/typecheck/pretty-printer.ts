@@ -70,10 +70,10 @@ export function typeErrorPPrint(e: TypecheckError): string {
       const qualify = expected === got;
 
       const nsLeft =
-        qualify && e.left.type === "named" ? `${e.left.moduleName}/` : "";
+        qualify && e.left.type === "named" ? `${e.left.moduleName}.` : "";
 
       const nsRight =
-        qualify && e.right.type === "named" ? `${e.right.moduleName}/` : "";
+        qualify && e.right.type === "named" ? `${e.right.moduleName}.` : "";
 
       return `Type mismatch
 
