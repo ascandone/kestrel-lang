@@ -1,6 +1,7 @@
-import { UntypedImport, UntypedModule } from "./ast";
+import { Span, UntypedImport, UntypedModule } from "./ast";
 import { topologicalSort } from "./utils/topsort";
 
+const dummySpan: Span = [0, 0];
 /*
 // Prelude imports:
 
@@ -17,79 +18,87 @@ import Tuple.{Tuple2(..)}
 
 export const defaultImports: UntypedImport[] = [
   {
-    span: [0, 0],
+    span: dummySpan,
     ns: "Basics",
     exposing: [
       // Int
-      { type: "type", name: "Int", exposeImpl: false },
-      { type: "value", name: "+" },
-      { type: "value", name: "-" },
-      { type: "value", name: "*" },
-      { type: "value", name: "/" },
-      { type: "value", name: "^" },
-      { type: "value", name: "&" },
+      { type: "type", name: "Int", exposeImpl: false, span: dummySpan },
+      { type: "value", name: "+", span: dummySpan },
+      { type: "value", name: "-", span: dummySpan },
+      { type: "value", name: "*", span: dummySpan },
+      { type: "value", name: "/", span: dummySpan },
+      { type: "value", name: "^", span: dummySpan },
+      { type: "value", name: "&", span: dummySpan },
 
       // Float
-      { type: "type", name: "Float", exposeImpl: false },
-      { type: "value", name: "+." },
-      { type: "value", name: "-." },
-      { type: "value", name: "*." },
-      { type: "value", name: "/." },
+      { type: "type", name: "Float", exposeImpl: false, span: dummySpan },
+      { type: "value", name: "+.", span: dummySpan },
+      { type: "value", name: "-.", span: dummySpan },
+      { type: "value", name: "*.", span: dummySpan },
+      { type: "value", name: "/.", span: dummySpan },
 
       // Bool
-      { type: "type", name: "Bool", exposeImpl: true },
-      { type: "value", name: "&&" },
-      { type: "value", name: "||" },
-      { type: "value", name: "!" },
+      { type: "type", name: "Bool", exposeImpl: true, span: dummySpan },
+      { type: "value", name: "&&", span: dummySpan },
+      { type: "value", name: "||", span: dummySpan },
+      { type: "value", name: "!", span: dummySpan },
 
       // Comp
-      { type: "value", name: "==" },
-      { type: "value", name: "!=" },
-      { type: "value", name: ">" },
-      { type: "value", name: "<" },
-      { type: "value", name: ">=" },
-      { type: "value", name: "<=" },
+      { type: "value", name: "==", span: dummySpan },
+      { type: "value", name: "!=", span: dummySpan },
+      { type: "value", name: ">", span: dummySpan },
+      { type: "value", name: "<", span: dummySpan },
+      { type: "value", name: ">=", span: dummySpan },
+      { type: "value", name: "<=", span: dummySpan },
 
       // Unit
-      { type: "type", name: "Unit", exposeImpl: true },
+      { type: "type", name: "Unit", exposeImpl: true, span: dummySpan },
     ],
   },
   {
-    span: [0, 0],
+    span: dummySpan,
     ns: "String",
     exposing: [
-      { type: "type", name: "String", exposeImpl: false },
-      { type: "value", name: "<>" },
+      { type: "type", name: "String", exposeImpl: false, span: dummySpan },
+      { type: "value", name: "<>", span: dummySpan },
     ],
   },
   {
-    span: [0, 0],
+    span: dummySpan,
     ns: "Maybe",
-    exposing: [{ type: "type", name: "Maybe", exposeImpl: true }],
+    exposing: [
+      { type: "type", name: "Maybe", exposeImpl: true, span: dummySpan },
+    ],
   },
   {
-    span: [0, 0],
+    span: dummySpan,
     ns: "Result",
-    exposing: [{ type: "type", name: "Result", exposeImpl: true }],
+    exposing: [
+      { type: "type", name: "Result", exposeImpl: true, span: dummySpan },
+    ],
   },
   {
-    span: [0, 0],
+    span: dummySpan,
     ns: "Tuple",
     exposing: [
-      { type: "type", name: "Tuple2", exposeImpl: true },
-      { type: "type", name: "Tuple3", exposeImpl: true },
-      { type: "type", name: "Tuple4", exposeImpl: true },
+      { type: "type", name: "Tuple2", exposeImpl: true, span: dummySpan },
+      { type: "type", name: "Tuple3", exposeImpl: true, span: dummySpan },
+      { type: "type", name: "Tuple4", exposeImpl: true, span: dummySpan },
     ],
   },
   {
-    span: [0, 0],
+    span: dummySpan,
     ns: "List",
-    exposing: [{ type: "type", name: "List", exposeImpl: true }],
+    exposing: [
+      { type: "type", name: "List", exposeImpl: true, span: dummySpan },
+    ],
   },
   {
-    span: [0, 0],
+    span: dummySpan,
     ns: "Task",
-    exposing: [{ type: "type", name: "Task", exposeImpl: false }],
+    exposing: [
+      { type: "type", name: "Task", exposeImpl: false, span: dummySpan },
+    ],
   },
 ];
 

@@ -522,6 +522,7 @@ semantics.addOperation<UntypedExposedValue>("exposing()", {
     return {
       type: "value",
       name: ident.sourceString,
+      span: getSpan(this),
     };
   },
   Exposing_type(ident, _parens, dots, _rparens) {
@@ -531,6 +532,7 @@ semantics.addOperation<UntypedExposedValue>("exposing()", {
       type: "type",
       exposeImpl,
       name: ident.sourceString,
+      span: getSpan(this),
     };
   },
 });

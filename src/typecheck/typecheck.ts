@@ -58,6 +58,7 @@ export type TypecheckError = SpanMeta &
         got: number;
       }
     | { type: "unbound-module"; moduleName: string }
+    | { type: "non-existing-import"; name: string }
     | {
         type: UnifyErrorType;
         left: Type;
@@ -157,8 +158,11 @@ class Typechecker {
             );
 
             if (resolved === undefined) {
-              // TODO proper error
-              // throw new Error("TODO handle unbound import type");
+              this.errors.push({
+                type: "non-existing-import",
+                name: exposing.name,
+                span: exposing.span,
+              });
             }
 
             return {
@@ -173,8 +177,11 @@ class Typechecker {
             );
 
             if (decl === undefined) {
-              // TODO proper error
-              // throw new Error("TODO handle unbound import value");
+              this.errors.push({
+                type: "non-existing-import",
+                name: exposing.name,
+                span: exposing.span,
+              });
             }
 
             const poly = decl === undefined ? TVar.fresh() : decl.binding.$;

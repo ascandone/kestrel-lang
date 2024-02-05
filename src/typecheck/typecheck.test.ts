@@ -774,7 +774,7 @@ describe("modules", () => {
         {
           span: [0, 0],
           ns: "A",
-          exposing: [{ type: "value", name: "x" }],
+          exposing: [{ type: "value", name: "x", span: [0, 0] }],
         },
       ],
     );
@@ -798,7 +798,9 @@ describe("modules", () => {
         {
           span: [0, 0],
           ns: "A",
-          exposing: [{ type: "type", name: "MyType", exposeImpl: false }],
+          exposing: [
+            { type: "type", name: "MyType", exposeImpl: false, span: [0, 0] },
+          ],
         },
       ],
     );
@@ -819,7 +821,9 @@ describe("modules", () => {
         {
           span: [0, 0],
           ns: "A",
-          exposing: [{ type: "type", name: "MyType", exposeImpl: true }],
+          exposing: [
+            { type: "type", name: "MyType", exposeImpl: true, span: [0, 0] },
+          ],
         },
       ],
     );
@@ -927,8 +931,24 @@ describe("modules", () => {
     expect(errs[0]!.type).toBe("unbound-module");
   });
 
-  test.todo("error when importing a non-existing type");
-  test.todo("error when importing a non-existing value");
+  test("error when importing a non-existing type", () => {
+    const [Mod] = tcProgram(``);
+    const [, errs] = tc(`import Mod.{NotFound}`, { Mod });
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("non-existing-import");
+  });
+
+  test("error when importing a non-existing value", () => {
+    const [Mod] = tcProgram(``);
+    const [, errs] = tc(`import Mod.{not_found}`, { Mod });
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("non-existing-import");
+  });
+
   test.todo("error when expose impl is run on a extern type");
   test.todo("error when expose impl is run on a opaque type");
 });

@@ -116,16 +116,18 @@ export type TypeDeclaration<TypeMeta> = SpanMeta & {
   );
 
 export type UntypedExposedValue = ExposedValue<unknown, unknown>;
-export type ExposedValue<ResolvedTypeMeta, ResolvedValueMeta> =
-  | ({
-      type: "type";
-      name: string;
-      exposeImpl: boolean;
-    } & ResolvedTypeMeta)
-  | ({
-      type: "value";
-      name: string;
-    } & ResolvedValueMeta);
+export type ExposedValue<ResolvedTypeMeta, ResolvedValueMeta> = SpanMeta &
+  (
+    | ({
+        type: "type";
+        name: string;
+        exposeImpl: boolean;
+      } & ResolvedTypeMeta)
+    | ({
+        type: "value";
+        name: string;
+      } & ResolvedValueMeta)
+  );
 
 export type UntypedImport = Import<UntypedExposedValue>;
 export type Import<Exposing> = SpanMeta & {

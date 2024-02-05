@@ -480,6 +480,10 @@ exports[`imports > unqualified import of a value 1`] = `
       "exposing": [
         {
           "name": "imported",
+          "span": [
+            14,
+            22,
+          ],
           "type": "value",
         },
       ],
@@ -503,6 +507,10 @@ exports[`imports > unqualified import of types (non-opaque) 1`] = `
         {
           "exposeImpl": true,
           "name": "T1",
+          "span": [
+            14,
+            20,
+          ],
           "type": "type",
         },
       ],
@@ -526,11 +534,19 @@ exports[`imports > unqualified import of types 1`] = `
         {
           "exposeImpl": false,
           "name": "T1",
+          "span": [
+            14,
+            16,
+          ],
           "type": "type",
         },
         {
           "exposeImpl": false,
           "name": "T2",
+          "span": [
+            18,
+            20,
+          ],
           "type": "type",
         },
       ],
@@ -553,14 +569,26 @@ exports[`imports > unqualified import of values 1`] = `
       "exposing": [
         {
           "name": "x",
+          "span": [
+            14,
+            15,
+          ],
           "type": "value",
         },
         {
           "name": "y",
+          "span": [
+            17,
+            18,
+          ],
           "type": "value",
         },
         {
           "name": "z",
+          "span": [
+            20,
+            21,
+          ],
           "type": "value",
         },
       ],
