@@ -973,6 +973,15 @@ describe("modules", () => {
     expect(errs[0]!.type).toBe("non-existing-import");
   });
 
+  test("error when importing a private value", () => {
+    const [Mod] = tcProgram(`let not_found = 42`);
+    const [, errs] = tc(`import Mod.{not_found}`, { Mod });
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("non-existing-import");
+  });
+
   test("error when expose impl is run on a extern type", () => {
     const [Mod] = tcProgram(`extern pub type ExternType`);
     const [, errs] = tc(`import Mod.{ExternType(..)}`, { Mod });
@@ -998,7 +1007,7 @@ describe("typecheck project", () => {
     const project = typecheckProject(
       {
         A: unsafeParse(`
-        let x = 42
+        pub let x = 42
       `),
         B: unsafeParse(`
         import A.{x}

@@ -186,7 +186,7 @@ class Typechecker {
               (decl) => decl.binding.name === exposing.name,
             );
 
-            if (decl === undefined) {
+            if (decl === undefined || !decl.pub) {
               this.errors.push({
                 type: "non-existing-import",
                 name: exposing.name,
