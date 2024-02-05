@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { Compiler } from "./compiler";
-import { typecheck, typecheckProject } from "./typecheck/typecheck";
-import { unsafeParse } from "./parser";
+import { typecheck, typecheckProject } from "../typecheck";
+import { unsafeParse } from "../parser";
 
 test("compile int constants", () => {
   const out = compileSrc(`let x = 42`);
