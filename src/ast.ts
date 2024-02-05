@@ -128,7 +128,7 @@ export type ExposedValue<ResolvedTypeMeta, ResolvedValueMeta> =
     } & ResolvedValueMeta);
 
 export type UntypedImport = Import<UntypedExposedValue>;
-export type Import<Exposing> = {
+export type Import<Exposing> = SpanMeta & {
   ns: string;
   exposing: Exposing[];
 };

@@ -17,6 +17,7 @@ import Tuple.{Tuple2(..)}
 
 export const defaultImports: UntypedImport[] = [
   {
+    span: [0, 0],
     ns: "Basics",
     exposing: [
       // Int
@@ -54,6 +55,7 @@ export const defaultImports: UntypedImport[] = [
     ],
   },
   {
+    span: [0, 0],
     ns: "String",
     exposing: [
       { type: "type", name: "String", exposeImpl: false },
@@ -61,14 +63,17 @@ export const defaultImports: UntypedImport[] = [
     ],
   },
   {
+    span: [0, 0],
     ns: "Maybe",
     exposing: [{ type: "type", name: "Maybe", exposeImpl: true }],
   },
   {
+    span: [0, 0],
     ns: "Result",
     exposing: [{ type: "type", name: "Result", exposeImpl: true }],
   },
   {
+    span: [0, 0],
     ns: "Tuple",
     exposing: [
       { type: "type", name: "Tuple2", exposeImpl: true },
@@ -77,10 +82,12 @@ export const defaultImports: UntypedImport[] = [
     ],
   },
   {
+    span: [0, 0],
     ns: "List",
     exposing: [{ type: "type", name: "List", exposeImpl: true }],
   },
   {
+    span: [0, 0],
     ns: "Task",
     exposing: [{ type: "type", name: "Task", exposeImpl: false }],
   },

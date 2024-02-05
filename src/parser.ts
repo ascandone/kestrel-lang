@@ -547,6 +547,7 @@ semantics.addOperation<UntypedImport>("import_()", {
     return {
       ns: mod.sourceString,
       exposing: exposing_,
+      span: getSpan(this),
     };
   },
 });

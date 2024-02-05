@@ -772,6 +772,7 @@ describe("modules", () => {
       { A },
       [
         {
+          span: [0, 0],
           ns: "A",
           exposing: [{ type: "value", name: "x" }],
         },
@@ -795,6 +796,7 @@ describe("modules", () => {
       { A },
       [
         {
+          span: [0, 0],
           ns: "A",
           exposing: [{ type: "type", name: "MyType", exposeImpl: false }],
         },
@@ -815,6 +817,7 @@ describe("modules", () => {
       { A },
       [
         {
+          span: [0, 0],
           ns: "A",
           exposing: [{ type: "type", name: "MyType", exposeImpl: true }],
         },
@@ -935,6 +938,7 @@ describe("typecheck project", () => {
       },
       [
         {
+          span: [0, 0],
           ns: "A",
           exposing: [{ type: "value", name: "x" }],
         },
