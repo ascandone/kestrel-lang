@@ -8,6 +8,7 @@
   "scripts": {
     "gen:parser": "ohm generateBundles --withTypes src/parser/grammar.ohm",
     "test:watch": "vitest",
+    "test:w": "npm run test:watch",
     "test:run": "vitest --run --coverage",
     "assets:build": "cp -r src/core dist",
     "ts:build": "tsc --project tsconfig.build.json",
