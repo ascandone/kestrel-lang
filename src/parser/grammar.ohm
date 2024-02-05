@@ -105,7 +105,10 @@ Program {
     = upper alnum*
 
   QualifiedName
-    = (ListOf<moduleName, "/"> ".")? (ident | typeConstructor)
+    = (Qualifier ".")? (ident | typeConstructor)
+
+  Qualifier
+    = ListOf<moduleName, "/">
 
   identHead
     = lower
