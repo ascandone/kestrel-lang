@@ -1,11 +1,4 @@
-import {
-  ConstLiteral,
-  Expr,
-  MatchPattern,
-  TypeVariant,
-  UntypedImport,
-} from "./ast";
-import { defaultImports } from "./project";
+import { ConstLiteral, Expr, MatchPattern, TypeVariant } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 import { TypedModule } from "./typedAst";
 
@@ -385,19 +378,30 @@ export class Compiler {
     }
   }
 
-  compile(
-    src: TypedModule,
-    ns: string | undefined,
-    implicitImports: UntypedImport[] = defaultImports,
-  ): string {
+  compile(src: TypedModule, ns: string | undefined): string {
     const decls: string[] = [];
 
-    for (const import_ of src.imports.concat(implicitImports)) {
+    for (const import_ of src.imports) {
       for (const exposed of import_.exposing) {
-        this.globalScope[exposed.name] = moduleNamespacedBinding(
-          exposed.name,
-          import_.ns,
-        );
+        switch (exposed.type) {
+          case "type":
+            if (exposed.resolved.type === "adt" && exposed.exposeImpl) {
+              for (const variant of exposed.resolved.variants) {
+                this.globalScope[variant.name] = moduleNamespacedBinding(
+                  variant.name,
+                  import_.ns,
+                );
+              }
+            }
+
+            break;
+          case "value":
+            this.globalScope[exposed.name] = moduleNamespacedBinding(
+              exposed.name,
+              import_.ns,
+            );
+            break;
+        }
       }
     }
 

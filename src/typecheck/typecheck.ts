@@ -14,6 +14,8 @@ import {
 import { defaultImports, topSortedModules } from "../project";
 import {
   TypedDeclaration,
+  TypedExposing,
+  TypedImport,
   TypedModule,
   TypedTypeDeclaration,
 } from "../typedAst";
@@ -81,6 +83,7 @@ class Typechecker {
   private globals: Context = {};
 
   private errors: TypeError[] = [];
+  private imports: TypedImport[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
 
   constructor(private deps: Deps) {}
@@ -91,6 +94,11 @@ class Typechecker {
   ): [TypedModule, TypeError[]] {
     TVar.resetId();
     // ----- Collect imports into scope
+    const annotatedImplicitImports = this.annotateImports(implicitImports);
+    const annotatedImports = this.annotateImports(module.imports);
+    this.imports = [...annotatedImplicitImports, ...annotatedImports];
+
+    // TODo remove
     for (const import_ of [...implicitImports, ...module.imports]) {
       this.runImports(import_);
     }
@@ -111,12 +119,69 @@ class Typechecker {
 
     return [
       {
-        imports: module.imports,
+        imports: this.imports,
         declarations: annotatedDeclrs,
         typeDeclarations: this.typeDeclarations,
       },
       this.errors,
     ];
+  }
+
+  private annotateImports(imports: UntypedImport[]): TypedImport[] {
+    return imports.flatMap((import_) => {
+      const importedModule = this.deps[import_.ns];
+      if (importedModule === undefined) {
+        // TODO proper error
+        // throw new Error("TODO handle unbound import: " + import_.ns);
+        return [];
+      }
+
+      return [this.annotateImport(import_, importedModule)];
+    });
+  }
+
+  private annotateImport(
+    import_: UntypedImport,
+    importedModule: TypedModule,
+  ): TypedImport {
+    return {
+      ...import_,
+      exposing: import_.exposing.map((exposing) => {
+        switch (exposing.type) {
+          case "type": {
+            const resolved = importedModule.typeDeclarations.find(
+              (decl) => decl.name === exposing.name,
+            );
+
+            if (resolved === undefined) {
+              // TODO proper error
+              throw new Error("TODO handle unbound import type");
+            }
+
+            return {
+              ...exposing,
+              resolved,
+            } as TypedExposing;
+          }
+
+          case "value": {
+            const decl = importedModule.declarations.find(
+              (decl) => decl.binding.name === exposing.name,
+            );
+
+            if (decl === undefined) {
+              // TODO proper error
+              throw new Error("TODO handle unbound import value");
+            }
+
+            return {
+              ...exposing,
+              poly: decl.binding.$.asType(),
+            } as TypedExposing;
+          }
+        }
+      }),
+    };
   }
 
   private runImports(import_: UntypedImport) {
@@ -361,9 +426,34 @@ class Typechecker {
           }
         }
       }
-    }
+    } else {
+      for (const import_ of this.imports) {
+        for (const exposing of import_.exposing) {
+          switch (exposing.type) {
+            case "type":
+              {
+                // TODO error when using (..) on extern types
+                if (exposing.exposeImpl && exposing.resolved.type === "adt") {
+                  for (const variant of exposing.resolved.variants) {
+                    if (exposing.name === name) {
+                      return variant.polyType;
+                    }
+                  }
+                }
+              }
+              break;
 
-    return scope[name];
+            case "value":
+              if (exposing.name === name) {
+                return exposing.poly;
+              }
+              break;
+          }
+        }
+      }
+
+      return scope[name];
+    }
   }
 
   private typecheckPattern<T>(

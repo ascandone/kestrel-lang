@@ -2,12 +2,12 @@ import {
   Declaration,
   ExposedValue,
   Expr,
+  Import,
   MatchPattern,
   Span,
   SpanMeta,
   TypeDeclaration,
   TypeVariant,
-  UntypedImport,
 } from "./ast";
 import { TypeMeta } from "./typecheck/typecheck";
 import { Poly, Type } from "./typecheck/unify";
@@ -15,15 +15,15 @@ import { Poly, Type } from "./typecheck/unify";
 export type TypedExpr = Expr<TypeMeta>;
 
 export type TypedExposing = ExposedValue<
-  { resolved: TypeDeclaration<TypeMeta> },
-  { type: Type<Poly> }
+  { resolved: TypedTypeDeclaration },
+  { poly: Type<Poly> }
 >;
 
-// export type TypedImport = Import<TypedExposing, { module: string | undefined }>;
-export type TypedImport = UntypedImport; // TEMP
+export type TypedImport = Import<TypedExposing>;
 
 export type TypedTypeVariant = TypeVariant<{ polyType: Type<Poly> }>;
 export type TypedTypeDeclaration = TypeDeclaration<{ polyType: Type<Poly> }>;
+
 export type TypedDeclaration = Declaration<TypeMeta>;
 
 export type TypedModule = {

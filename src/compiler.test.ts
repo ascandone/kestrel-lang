@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { Compiler } from "./compiler";
-import { typecheck } from "./typecheck/typecheck";
+import { typecheck, typecheckProject } from "./typecheck/typecheck";
 import { unsafeParse } from "./parser";
 
 test("compile int constants", () => {
@@ -965,11 +965,14 @@ function MyModule$C2(a0) {
   });
 
   test("values imported with unqualfied imports are resolved with the right namespace", () => {
-    const out = compileSrc(`
-      import ExampleModule.{value_name}
-      let a = value_name
-      `);
-    expect(out).toEqual(`const a = ExampleModule$value_name;\n`);
+    const out = compileProject({
+      ExampleModule: `let value_name = 42`,
+      Main: `
+        import ExampleModule.{value_name}
+        let a = value_name
+      `,
+    });
+    expect(out).toEqual(`const Main$a = ExampleModule$value_name;\n`);
   });
 
   test("values imported from another module are resolved with the right namespace", () => {
@@ -981,11 +984,15 @@ function MyModule$C2(a0) {
   });
 
   test("constructors imported with unqualfied imports are resolved with the right namespace", () => {
-    const out = compileSrc(`
-      import ExampleModule.{Constr}
+    const out = compileProject({
+      ExampleModule: `pub type T { Constr }`,
+      Main: `
+      import ExampleModule.{T(..)}
       let a = Constr
-      `);
-    expect(out).toEqual(`const a = ExampleModule$Constr;\n`);
+      `,
+    });
+
+    expect(out).toEqual(`const Main$a = ExampleModule$Constr;\n`);
   });
 
   test("constructors imported with qualified imports are resolved with the right namespace", () => {
@@ -999,4 +1006,18 @@ function compileSrc(src: string, ns?: string) {
   const [program] = typecheck(parsed);
   const out = new Compiler().compile(program, ns);
   return out;
+}
+
+// Returns Main
+function compileProject(project: Record<string, string>): string {
+  const res = typecheckProject(
+    Object.fromEntries(
+      Object.entries(project).map(([ns, src]) => [ns, unsafeParse(src)]),
+    ),
+    [],
+  );
+
+  const Main = res.Main!;
+
+  return new Compiler().compile(Main[0], "Main");
 }
