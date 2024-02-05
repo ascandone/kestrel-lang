@@ -1,9 +1,13 @@
 import { describe, expect, test } from "vitest";
-import { unsafeParse } from "../parser";
-import { Deps, typecheck, typecheckProject, TypecheckError } from "./typecheck";
-import { typePPrint } from "./pretty-printer";
-import { UntypedImport } from "../ast";
-import { TypedModule } from "../typedAst";
+import { unsafeParse, UntypedImport } from "../parser";
+import {
+  Deps,
+  typecheck,
+  typecheckProject,
+  TypecheckError,
+  typePPrint,
+  TypedModule,
+} from ".";
 
 test("infer int", () => {
   const [types, errors] = tc(`

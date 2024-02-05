@@ -1,4 +1,4 @@
-import { Span, UntypedImport } from "../ast";
+import { Span, UntypedImport } from "../parser";
 
 const dummySpan: Span = [0, 0];
 

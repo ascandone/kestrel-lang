@@ -11,14 +11,14 @@ import {
   UntypedModule,
   UntypedTypeDeclaration,
   UntypedTypeVariant,
-} from "../ast";
+} from "../parser/ast";
 import {
   TypedDeclaration,
   TypedExposing,
   TypedImport,
   TypedModule,
   TypedTypeDeclaration,
-} from "../typedAst";
+} from "./typedAst";
 import { CORE_MODULES, defaultImports } from "./defaultImports";
 import { topSortedModules } from "./project";
 import {

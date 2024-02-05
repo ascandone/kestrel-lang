@@ -1,4 +1,4 @@
-import { UntypedImport, UntypedModule } from "../ast";
+import { UntypedImport, UntypedModule } from "../parser";
 import { topologicalSort } from "../utils/topsort";
 import { CORE_MODULES, defaultImports } from "./defaultImports";
 

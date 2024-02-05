@@ -12,7 +12,7 @@ import {
   UntypedDeclaration,
   UntypedExposedValue,
   UntypedImport,
-} from "../ast";
+} from "./ast";
 import type {
   IterationNode,
   MatchResult,
@@ -20,7 +20,7 @@ import type {
   Node as OhmNode,
   TerminalNode,
 } from "ohm-js";
-import { TypeMeta } from "../typecheck/typecheck";
+import { TypeMeta } from "../typecheck";
 
 function getSpan({ source }: OhmNode): Span {
   return [source.startIdx, source.endIdx];

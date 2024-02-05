@@ -1,6 +1,5 @@
-import { ConstLiteral, Expr, MatchPattern, TypeVariant } from "./ast";
-import { TypeMeta } from "./typecheck/typecheck";
-import { TypedModule } from "./typedAst";
+import { ConstLiteral, Expr, MatchPattern, TypeVariant } from "./parser";
+import { TypeMeta, TypedModule } from "./typecheck";
 
 const builtinValues: Scope = {
   True: "true",

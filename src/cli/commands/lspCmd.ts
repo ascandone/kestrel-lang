@@ -8,10 +8,14 @@ import {
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { parse } from "../../parser";
-import { typeErrorPPrint, typePPrint } from "../../typecheck/pretty-printer";
-import { typecheckProject } from "../../typecheck/typecheck";
+import {
+  typecheckProject,
+  typeErrorPPrint,
+  typePPrint,
+  TypedModule,
+  declByOffset,
+} from "../../typecheck";
 import { readCore } from "../common";
-import { TypedModule, declByOffset } from "../../typedAst";
 
 const documents = new TextDocuments(TextDocument);
 const docs = new Map<string, [TextDocument, TypedModule]>();

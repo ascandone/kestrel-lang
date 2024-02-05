@@ -8,9 +8,9 @@ import {
   SpanMeta,
   TypeDeclaration,
   TypeVariant,
-} from "./ast";
-import { TypeMeta } from "./typecheck/typecheck";
-import { Poly, Type } from "./typecheck/unify";
+} from "../parser";
+import { TypeMeta } from "./typecheck";
+import { Poly, Type } from "./unify";
 
 export type TypedExpr = Expr<TypeMeta>;
 
