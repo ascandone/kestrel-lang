@@ -93,7 +93,6 @@ class Typechecker {
     implicitImports: UntypedImport[] = defaultImports,
   ): [TypedModule, TypeError[]] {
     TVar.resetId();
-    // ----- Collect imports into scope
     this.imports = [
       ...this.annotateImports(implicitImports),
       ...this.annotateImports(module.imports),
