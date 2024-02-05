@@ -59,6 +59,7 @@ export type TypecheckError = SpanMeta &
       }
     | { type: "unbound-module"; moduleName: string }
     | { type: "non-existing-import"; name: string }
+    | { type: "bad-import" }
     | {
         type: UnifyErrorType;
         left: Type;
@@ -100,8 +101,6 @@ class Typechecker {
       ...this.annotateImports(implicitImports),
       ...this.annotateImports(module.imports),
     ];
-
-    // ---- Typecheck this module
 
     for (const typeDeclaration of module.typeDeclarations) {
       // Warning: do not use Array.map, as we need to seed results asap
@@ -158,6 +157,11 @@ class Typechecker {
               this.errors.push({
                 type: "non-existing-import",
                 name: exposing.name,
+                span: exposing.span,
+              });
+            } else if (resolved.type === "extern" && exposing.exposeImpl) {
+              this.errors.push({
+                type: "bad-import",
                 span: exposing.span,
               });
             }

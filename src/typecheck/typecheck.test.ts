@@ -964,8 +964,24 @@ describe("modules", () => {
     expect(errs[0]!.type).toBe("non-existing-import");
   });
 
-  test.todo("error when expose impl is run on a extern type");
-  test.todo("error when expose impl is run on a opaque type");
+  test("error when expose impl is run on a extern type", () => {
+    const [Mod] = tcProgram(`extern pub type ExternType`);
+    const [, errs] = tc(`import Mod.{ExternType(..)}`, { Mod });
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("bad-import");
+  });
+
+  test.todo("error when expose impl is run on a opaque type", () => {
+    // Not it is `pub` instead of `pub(..)`
+    const [Mod] = tcProgram(`pub type T {}`);
+    const [, errs] = tc(`import Mod.{T(..)}`, { Mod });
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("bad-import");
+  });
 });
 
 describe("typecheck project", () => {
