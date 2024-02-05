@@ -7,7 +7,7 @@ Program {
 
   Exposing
     = ident -- value
-    | typeName ("(" ".." ")")? -- type
+    | typeIdent ("(" ".." ")")? -- type
 
   // --- Toplevel
   Declaration
@@ -15,8 +15,8 @@ Program {
     | "extern" "pub"? "let" (ident | infixIdent) ":" Type -- externLetStmt
 
   TypeDeclaration
-    = ("pub" "(..)"?)? "type" typeName ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef
-    | "extern" "pub"? "type" typeName ("<" NonemptyListOf<typeVar, ","> ">")? -- externType
+    = ("pub" "(..)"?)? "type" typeIdent ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef
+    | "extern" "pub"? "type" typeIdent ("<" NonemptyListOf<typeVar, ","> ">")? -- externType
 
   // --- Expressions
 
@@ -105,7 +105,7 @@ Program {
     = (Qualifier ".")? ident
 
   QualifiedName
-    = (Qualifier ".")? (ident | typeName)
+    = (Qualifier ".")? (ident | typeIdent)
 
   Qualifier
     = ListOf<moduleName, "/">
@@ -142,26 +142,26 @@ Program {
     = ident  -- ident
     | lit -- lit
     | "(" MatchPattern "," NonemptyListOf<MatchPattern, ","> ")" -- tuple
-    | typeName ("(" ListOf<MatchPattern, ","> ")")? -- constructor
+    | typeIdent ("(" ListOf<MatchPattern, ","> ")")? -- constructor
 
   // --- Types
 
   TypeVariant
-    = typeName ("(" ListOf<Type, ","> ")")?
+    = typeIdent ("(" ListOf<Type, ","> ")")?
 
   Type
-    = typeName ("<" ListOf<Type, ","> ">")?  -- named
+    = typeIdent ("<" ListOf<Type, ","> ">")?  -- named
     | typeVar -- var
     | "Fn" "(" ListOf<Type, ","> ")" "->" Type -- fn
     | "_" -- any
 
-  typeName
-    = ~"Fn" typeNameHead typeNameBody*
+  typeIdent
+    = ~"Fn" typeIdentHead typeIdentBody*
 
-  typeNameHead
+  typeIdentHead
     = upper
 
-  typeNameBody
+  typeIdentBody
     = alnum
 
   typeVar
