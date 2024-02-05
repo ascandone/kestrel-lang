@@ -809,7 +809,7 @@ describe("modules", () => {
 
   test("implicitly imports variants of the modules in the prelude", () => {
     const [A] = tcProgram(`
-      pub type MyType { A }
+      pub(..) type MyType { A }
     `);
 
     const [types, errs] = tc(
@@ -835,8 +835,8 @@ describe("modules", () => {
 
   test("handles nested type references from other modules", () => {
     const [A] = tcProgram(`
-      pub type T { T }
-      pub type Boxed { Boxed(T) }
+      pub(..) type T { T }
+      pub(..) type Boxed { Boxed(T) }
     `);
 
     const [types, errs] = tc(
@@ -924,7 +924,7 @@ describe("modules", () => {
   });
 
   test("allow using imported types in match patterns", () => {
-    const [Mod] = tcProgram(`pub type T { Constr }`);
+    const [Mod] = tcProgram(`pub(..) type T { Constr }`);
     const [, errs] = tc(
       `
       import Mod.{T(..)}
@@ -955,6 +955,15 @@ describe("modules", () => {
     expect(errs[0]!.type).toBe("non-existing-import");
   });
 
+  test("error when importing a type the is not pub", () => {
+    const [Mod] = tcProgram(`type PrivateType {}`);
+    const [, errs] = tc(`import Mod.{PrivateType}`, { Mod });
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("non-existing-import");
+  });
+
   test("error when importing a non-existing value", () => {
     const [Mod] = tcProgram(``);
     const [, errs] = tc(`import Mod.{not_found}`, { Mod });
@@ -973,7 +982,7 @@ describe("modules", () => {
     expect(errs[0]!.type).toBe("bad-import");
   });
 
-  test.todo("error when expose impl is run on a opaque type", () => {
+  test("error when expose impl is run on a opaque type", () => {
     // Not it is `pub` instead of `pub(..)`
     const [Mod] = tcProgram(`pub type T {}`);
     const [, errs] = tc(`import Mod.{T(..)}`, { Mod });

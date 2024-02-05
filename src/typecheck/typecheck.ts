@@ -153,13 +153,22 @@ class Typechecker {
               (decl) => decl.name === exposing.name,
             );
 
-            if (resolved === undefined) {
+            if (resolved === undefined || !resolved.pub) {
               this.errors.push({
                 type: "non-existing-import",
                 name: exposing.name,
                 span: exposing.span,
               });
             } else if (resolved.type === "extern" && exposing.exposeImpl) {
+              this.errors.push({
+                type: "bad-import",
+                span: exposing.span,
+              });
+            } else if (
+              resolved.type === "adt" &&
+              exposing.exposeImpl &&
+              resolved.pub !== ".."
+            ) {
               this.errors.push({
                 type: "bad-import",
                 span: exposing.span,
