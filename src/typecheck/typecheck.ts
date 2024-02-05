@@ -391,7 +391,7 @@ class Typechecker {
     );
   }
 
-  private lookupIdent(
+  private resolveIdent(
     ns: string | undefined,
     name: string,
     scope: Context,
@@ -405,7 +405,12 @@ class Typechecker {
         return generalize(decl);
       }
 
-      for (const tDecl of this.deps[ns]?.typeDeclarations ?? []) {
+      const dep = this.deps[ns];
+      if (dep === undefined) {
+        return undefined;
+      }
+
+      for (const tDecl of dep.typeDeclarations) {
         if (tDecl.type === "adt" && tDecl.pub === "..") {
           for (const variant of tDecl.variants) {
             if (variant.name === name) {
@@ -459,7 +464,7 @@ class Typechecker {
 
       case "constructor": {
         // TODO handle ns
-        const lookup_ = this.lookupIdent(undefined, pattern.name, scope);
+        const lookup_ = this.resolveIdent(undefined, pattern.name, scope);
         if (lookup_ === undefined) {
           // TODO better err
           this.errors.push({
@@ -534,7 +539,7 @@ class Typechecker {
       }
 
       case "identifier": {
-        const lookup = this.lookupIdent(ast.namespace, ast.name, scope);
+        const lookup = this.resolveIdent(ast.namespace, ast.name, scope);
         if (lookup === undefined) {
           this.errors.push(
             ast.namespace === undefined
