@@ -1,5 +1,6 @@
 import { ConstLiteral, Expr, MatchPattern, TypeVariant } from "../parser";
 import { TypeMeta, TypedModule } from "../typecheck";
+import { ConcreteType } from "../typecheck/unify";
 
 const builtinValues: Scope = {
   True: "true",
@@ -630,4 +631,47 @@ function wrapJsExpr(expr: string, as: CompilationMode) {
 function moduleNamespacedBinding(name: string, ns: string | undefined): string {
   const ns_ = ns?.replace(/\//g, "$");
   return ns_ === undefined ? name : `${ns_}$${name}`;
+}
+
+export type CompileOptions = {
+  entrypoint: {
+    module: string;
+    type: ConcreteType<never>;
+  };
+};
+
+export function compileProject(
+  typedProject: Record<string, TypedModule>,
+  options: CompileOptions,
+): string {
+  const compiler = new Compiler();
+  const visited = new Set<string>();
+
+  const buf: string[] = [];
+
+  function visit(ns: string) {
+    if (visited.has(ns)) {
+      return;
+    }
+
+    visited.add(ns);
+    const module = typedProject[ns];
+    if (module === undefined) {
+      throw new Error("[unreachable] module not found: " + ns);
+    }
+
+    for (const import_ of module.imports) {
+      visit(import_.ns);
+    }
+
+    const out = compiler.compile(module, ns);
+    buf.push(out);
+  }
+
+  visit(options.entrypoint.module);
+
+  const entryPointMod = options.entrypoint.module.replace(/\//g, "$");
+  buf.push(`${entryPointMod}$main.run(() => {});\n`);
+
+  return buf.join("\n\n");
 }

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { Compiler } from "./compiler";
-import { typecheck, typecheckProject } from "../typecheck";
+import { CompileOptions, Compiler, compileProject } from "./compiler";
+import { TypedModule, typecheck, typecheckProject } from "../typecheck";
 import { UntypedModule, unsafeParse } from "../parser";
 
 test("compile int constants", () => {
@@ -1004,6 +1004,98 @@ function MyModule$C2(a0) {
   });
 });
 
+describe("project compilation", () => {
+  test("compile single module with main value", () => {
+    const out = compileRawProject(
+      {
+        Main: `let main = "main"`,
+      },
+      {
+        entrypoint: defaultEntryPoint,
+      },
+    );
+
+    expect(out).toBe(`const Main$main = "main";
+
+
+Main$main.run(() => {});
+`);
+  });
+
+  test("handles nested modules as entrypoint", () => {
+    const out = compileRawProject(
+      {
+        "Nested/Entrypoint/Mod": `let main = "main"`,
+      },
+      {
+        entrypoint: {
+          ...defaultEntryPoint,
+          module: "Nested/Entrypoint/Mod",
+        },
+      },
+    );
+
+    expect(out).toBe(`const Nested$Entrypoint$Mod$main = "main";
+
+
+Nested$Entrypoint$Mod$main.run(() => {});
+`);
+  });
+
+  test("compile a module importing another module", () => {
+    const out = compileRawProject(
+      {
+        ModA: `pub let x = "main"`,
+        Main: `
+          import ModA
+          let main = ModA.x
+        `,
+      },
+      {
+        entrypoint: defaultEntryPoint,
+      },
+    );
+
+    expect(out).toBe(`const ModA$x = "main";
+
+
+const Main$main = ModA$x;
+
+
+Main$main.run(() => {});
+`);
+  });
+
+  test("if two modules import a module, it has to be compiled only once", () => {
+    const out = compileRawProject(
+      {
+        ModA: `pub let a = "a"`,
+        ModB: `import ModA\nlet b = "b"`,
+        Main: `
+          import ModA
+          import ModB
+          let main = "main"
+        `,
+      },
+      {
+        entrypoint: defaultEntryPoint,
+      },
+    );
+
+    expect(out).toBe(`const ModA$a = "a";
+
+
+const ModB$b = "b";
+
+
+const Main$main = "main";
+
+
+Main$main.run(() => {});
+`);
+  });
+});
+
 function compileSrc(src: string, ns?: string) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(ns ?? "Main", parsed, {}, []);
@@ -1024,4 +1116,35 @@ function parseProject(
   return Object.fromEntries(
     Object.entries(rawProject).map(([ns, src]) => [ns, unsafeParse(src)]),
   );
+}
+
+const defaultEntryPoint: CompileOptions["entrypoint"] = {
+  module: "Main",
+  type: {
+    type: "named",
+    name: "String",
+    moduleName: "String",
+    args: [],
+  },
+};
+
+function compileRawProject(
+  rawProject: Record<string, string>,
+  options: CompileOptions,
+): string {
+  const untypedProject = parseProject(rawProject);
+  const typecheckResult = typecheckProject(untypedProject, []);
+
+  const typedProject: Record<string, TypedModule> = {};
+  for (const [ns, [typedModule, errs]] of Object.entries(typecheckResult)) {
+    if (errs.length !== 0) {
+      throw new Error(
+        "Got errors while type checking: \n" + JSON.stringify(errs, null, 2),
+      );
+    }
+
+    typedProject[ns] = typedModule;
+  }
+
+  return compileProject(typedProject, options);
 }
