@@ -933,16 +933,11 @@ describe("typecheck project", () => {
         let x = 42
       `),
         B: unsafeParse(`
+        import A.{x}
         let y = x
       `),
       },
-      [
-        {
-          span: [0, 0],
-          ns: "A",
-          exposing: [{ type: "value", name: "x" }],
-        },
-      ],
+      [],
     );
 
     expect(project.A).not.toBeUndefined();

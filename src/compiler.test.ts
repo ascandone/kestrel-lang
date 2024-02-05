@@ -976,11 +976,14 @@ function MyModule$C2(a0) {
   });
 
   test("values imported from another module are resolved with the right namespace", () => {
-    const out = compileSrc(`
+    const out = compileProject({
+      ExampleModule: "let value_name = 42",
+      Main: `
       import ExampleModule
       let a = ExampleModule.value_name
-    `);
-    expect(out).toEqual(`const a = ExampleModule$value_name;\n`);
+    `,
+    });
+    expect(out).toEqual(`const Main$a = ExampleModule$value_name;\n`);
   });
 
   test("constructors imported with unqualfied imports are resolved with the right namespace", () => {
@@ -1003,7 +1006,7 @@ function MyModule$C2(a0) {
 
 function compileSrc(src: string, ns?: string) {
   const parsed = unsafeParse(src);
-  const [program] = typecheck(parsed);
+  const [program] = typecheck(parsed, {}, []);
   const out = new Compiler().compile(program, ns);
   return out;
 }
