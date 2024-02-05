@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
-import { Deps, typecheck, typecheckProject, TypeError } from "./typecheck";
+import { Deps, typecheck, typecheckProject, TypecheckError } from "./typecheck";
 import { typePPrint } from "./pretty-printer";
 import { UntypedImport } from "../ast";
 import { TypedModule } from "../typedAst";
@@ -49,7 +49,7 @@ test("infer a variable not present in the context", () => {
   `,
   );
 
-  expect(errors).toEqual<TypeError[]>([
+  expect(errors).toEqual<TypecheckError[]>([
     expect.objectContaining({
       type: "unbound-variable",
       ident: "unbound_var",

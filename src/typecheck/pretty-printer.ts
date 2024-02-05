@@ -1,5 +1,5 @@
 import { Poly, Type, generalize } from "./unify";
-import { TypeError } from "./typecheck";
+import { TypecheckError } from "./typecheck";
 
 function pprintHelper(t: Type<Poly>): string {
   switch (t.type) {
@@ -40,7 +40,7 @@ export function typePPrint(t: Type<never>): string {
   return pprintHelper(generalize(t));
 }
 
-export function typeErrorPPrint(e: TypeError): string {
+export function typeErrorPPrint(e: TypecheckError): string {
   switch (e.type) {
     case "unbound-variable":
       return `Unbound variable: "${e.ident}"\n`;

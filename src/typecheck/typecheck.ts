@@ -30,7 +30,7 @@ import {
 } from "./unify";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
-export type TypeError = SpanMeta &
+export type TypecheckError = SpanMeta &
   (
     | {
         type: "unbound-variable";
@@ -74,7 +74,7 @@ export function typecheck(
   module: UntypedModule,
   deps: Deps = {},
   implicitImports: UntypedImport[] = defaultImports,
-): [TypedModule, TypeError[]] {
+): [TypedModule, TypecheckError[]] {
   return new Typechecker(deps).run(module, implicitImports);
 }
 
@@ -82,7 +82,7 @@ class Typechecker {
   // TODO remove globals and lookup import/declrs directly
   private globals: Context = {};
 
-  private errors: TypeError[] = [];
+  private errors: TypecheckError[] = [];
   private imports: TypedImport[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
 
@@ -91,7 +91,7 @@ class Typechecker {
   run(
     module: UntypedModule,
     implicitImports: UntypedImport[] = defaultImports,
-  ): [TypedModule, TypeError[]] {
+  ): [TypedModule, TypecheckError[]] {
     TVar.resetId();
     this.imports = [
       ...this.annotateImports(implicitImports),
@@ -803,4 +803,7 @@ export function typecheckProject(
   return projectResult;
 }
 
-export type ProjectTypeCheckResult = Record<string, [TypedModule, TypeError[]]>;
+export type ProjectTypeCheckResult = Record<
+  string,
+  [TypedModule, TypecheckError[]]
+>;
