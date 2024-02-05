@@ -518,6 +518,16 @@ describe("custom types", () => {
 
     expect(errs).not.toEqual([]);
   });
+
+  test("allows self-recursive type", () => {
+    const [, errs] = tc(
+      `
+        type T { C(T) }
+      `,
+    );
+
+    expect(errs).toEqual([]);
+  });
 });
 
 describe("pattern matching", () => {

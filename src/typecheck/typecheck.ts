@@ -185,7 +185,11 @@ class Typechecker {
       return {
         type: "fn",
         args: variant.args.map((arg) =>
-          this.typeAstToType(arg, { type: "constructor-arg", params }),
+          this.typeAstToType(arg, {
+            type: "constructor-arg",
+            params,
+            returning: ret,
+          }),
         ),
         return: ret,
       };
@@ -253,8 +257,17 @@ class Typechecker {
     switch (ast.type) {
       case "named": {
         const expectedArity = ast.args.length;
+        const isSelfRec =
+          opts.type === "constructor-arg" &&
+          opts.returning.name === ast.name &&
+          opts.returning.args.length === expectedArity;
+
         const resolved = this.resolveType(ast.name);
-        if (resolved === undefined || resolved.arity !== expectedArity) {
+        if (
+          !isSelfRec &&
+          (resolved === undefined || resolved.arity !== expectedArity)
+        ) {
+          // TODO better error for wrong arity
           this.errors.push({
             type: "unbound-type",
             name: ast.name,
@@ -696,7 +709,11 @@ function inferConstant(x: ConstLiteral): Type {
 
 type TypeAstConversionType =
   | { type: "type-hint" }
-  | { type: "constructor-arg"; params: string[] };
+  | {
+      type: "constructor-arg";
+      params: string[];
+      returning: Type<Poly> & { type: "named" };
+    };
 
 export function typecheckProject(
   project: Record<string, UntypedModule>,
