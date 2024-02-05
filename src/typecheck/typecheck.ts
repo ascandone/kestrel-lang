@@ -277,7 +277,8 @@ class Typechecker {
           opts.returning.name === ast.name &&
           opts.returning.args.length === expectedArity;
 
-        const resolved = this.resolveType(ast.name);
+        const resolved = this.resolveType(ast.namespace, ast.name);
+
         if (
           !isSelfRec &&
           (resolved === undefined || resolved.arity !== expectedArity)
@@ -619,7 +620,30 @@ class Typechecker {
   }
 
   // TODO handle ns
-  private resolveType(typeName: string): TypeResolutionData | undefined {
+  private resolveType(
+    ns: string | undefined,
+    typeName: string,
+  ): TypeResolutionData | undefined {
+    if (ns !== undefined) {
+      const import_ = this.imports.find((import_) => import_.ns === ns);
+      if (import_ === undefined) {
+        return undefined;
+      }
+
+      const dep = this.deps[import_.ns];
+      if (dep === undefined) {
+        return undefined;
+      }
+
+      for (const typeDecl of dep.typeDeclarations) {
+        if (typeDecl.name === typeName) {
+          return { arity: typeDecl.params.length };
+        }
+      }
+
+      return undefined;
+    }
+
     for (const typeDecl of this.typeDeclarations) {
       if (typeDecl.name === typeName) {
         return { arity: typeDecl.params.length };

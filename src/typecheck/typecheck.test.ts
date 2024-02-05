@@ -900,9 +900,8 @@ describe("modules", () => {
     });
   });
 
-  test.todo("allow importing types (qualified)", () => {
-    const [Mod] = tcProgram(`type Example { }`);
-
+  test("allow importing types (qualified)", () => {
+    const [Mod] = tcProgram(`pub type Example { }`);
     const [types, errs] = tc(
       `
       import Mod
