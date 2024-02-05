@@ -883,6 +883,40 @@ describe("modules", () => {
     });
   });
 
+  test.todo("allow importing types (unqualified)", () => {
+    const [Mod] = tcProgram(`type Example { }`);
+
+    const [types, errs] = tc(
+      `
+      import Mod.{Example}
+      extern let x: Example
+    `,
+      { Mod },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Example",
+    });
+  });
+
+  test.todo("allow importing types (qualified)", () => {
+    const [Mod] = tcProgram(`type Example { }`);
+
+    const [types, errs] = tc(
+      `
+      import Mod
+      extern let x: Mod.Example
+    `,
+      { Mod },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Example",
+    });
+  });
+
   test.todo("error when importing a non-existing type");
   test.todo("error when importing a non-existing value");
   test.todo("error when expose impl is run on a extern type");
