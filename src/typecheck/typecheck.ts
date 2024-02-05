@@ -57,6 +57,7 @@ export type TypecheckError = SpanMeta &
         expected: number;
         got: number;
       }
+    | { type: "unbound-module"; moduleName: string }
     | {
         type: UnifyErrorType;
         left: Type;
@@ -93,6 +94,10 @@ class Typechecker {
     implicitImports: UntypedImport[] = defaultImports,
   ): [TypedModule, TypecheckError[]] {
     TVar.resetId();
+    if (module === undefined) {
+      throw new Error("UNDEF MODULE");
+    }
+
     this.imports = [
       ...this.annotateImports(implicitImports),
       ...this.annotateImports(module.imports),
@@ -126,8 +131,11 @@ class Typechecker {
     return imports.flatMap((import_) => {
       const importedModule = this.deps[import_.ns];
       if (importedModule === undefined) {
-        // TODO proper error
-        // throw new Error("TODO handle unbound import: " + import_.ns);
+        this.errors.push({
+          type: "unbound-module",
+          moduleName: import_.ns,
+          span: import_.span,
+        });
         return [];
       }
 
@@ -150,7 +158,7 @@ class Typechecker {
 
             if (resolved === undefined) {
               // TODO proper error
-              throw new Error("TODO handle unbound import type");
+              // throw new Error("TODO handle unbound import type");
             }
 
             return {
@@ -166,12 +174,14 @@ class Typechecker {
 
             if (decl === undefined) {
               // TODO proper error
-              throw new Error("TODO handle unbound import value");
+              // throw new Error("TODO handle unbound import value");
             }
+
+            const poly = decl === undefined ? TVar.fresh() : decl.binding.$;
 
             return {
               ...exposing,
-              poly: decl.binding.$.asType(),
+              poly: poly.asType(),
             } as TypedExposing;
           }
         }
@@ -794,7 +804,11 @@ export function typecheckProject(
   const projectResult: ProjectTypeCheckResult = {};
   const deps: Deps = {};
   for (const ns of sortedModules) {
-    const module = project[ns]!;
+    const module = project[ns];
+    if (module === undefined) {
+      // A module might import a module that do not exist
+      continue;
+    }
     const tc = typecheck(module, deps, implicitImports);
     projectResult[ns] = tc;
     deps[ns] = tc[0];

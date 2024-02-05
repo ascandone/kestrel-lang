@@ -919,6 +919,14 @@ describe("modules", () => {
     });
   });
 
+  test("error when import a non-existing module", () => {
+    const [, errs] = tc(`import ModuleNotFound`);
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("unbound-module");
+  });
+
   test.todo("error when importing a non-existing type");
   test.todo("error when importing a non-existing value");
   test.todo("error when expose impl is run on a extern type");

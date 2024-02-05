@@ -2,7 +2,10 @@
 export type DepsMap = Record<string, string[]>;
 
 export class CyclicDepError extends Error {
-  constructor() {
+  constructor(
+    public sorted: string[],
+    public deps: string[],
+  ) {
     super("Cyclic deps detected");
   }
 }
@@ -37,8 +40,8 @@ export function topologicalSort(
     visit(source);
   }
 
-  if (sorted.length !== Object.keys(dependencies).length) {
-    throw new CyclicDepError();
+  if (sorted.length < Object.keys(dependencies).length) {
+    throw new CyclicDepError(sorted, Object.keys(dependencies));
   }
 
   return sorted;
