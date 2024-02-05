@@ -388,7 +388,7 @@ class Typechecker {
   ): Type<Poly> | undefined {
     if (ns !== undefined) {
       const decl = this.deps[ns]?.declarations
-        .find((decl) => decl.binding.name === name)
+        .find((decl) => decl.binding.name === name && decl.pub)
         ?.binding.$.asType();
 
       if (decl !== undefined) {
@@ -526,11 +526,19 @@ class Typechecker {
       case "identifier": {
         const lookup = this.lookupIdent(ast.namespace, ast.name, scope);
         if (lookup === undefined) {
-          this.errors.push({
-            type: "unbound-variable",
-            ident: ast.name,
-            span: ast.span,
-          });
+          this.errors.push(
+            ast.namespace === undefined
+              ? {
+                  type: "unbound-variable",
+                  ident: ast.name,
+                  span: ast.span,
+                }
+              : {
+                  type: "non-existing-import",
+                  name: ast.name,
+                  span: ast.span,
+                },
+          );
           return;
         }
         this.unifyExpr(ast, ast.$.asType(), instantiate(lookup));
