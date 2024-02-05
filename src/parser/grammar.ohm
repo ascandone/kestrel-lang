@@ -7,7 +7,7 @@ Program {
 
   Exposing
     = ident -- value
-    | typeConstructor ("(" ".." ")")? -- type
+    | typeName ("(" ".." ")")? -- type
 
   // --- Toplevel
   Declaration
@@ -98,14 +98,11 @@ Program {
   ident
     = ~keyword identHead identBody*
 
-  typeConstructor
-    = upper identBody*
-
   moduleName
     = upper alnum*
 
   QualifiedName
-    = (Qualifier ".")? (ident | typeConstructor)
+    = (Qualifier ".")? (ident | typeName)
 
   Qualifier
     = ListOf<moduleName, "/">
@@ -142,7 +139,7 @@ Program {
     = ident  -- ident
     | lit -- lit
     | "(" MatchPattern "," NonemptyListOf<MatchPattern, ","> ")" -- tuple
-    | typeConstructor ("(" ListOf<MatchPattern, ","> ")")? -- constructor
+    | typeName ("(" ListOf<MatchPattern, ","> ")")? -- constructor
 
   // --- Types
 
