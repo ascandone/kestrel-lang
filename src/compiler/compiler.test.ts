@@ -965,7 +965,7 @@ function MyModule$C2(a0) {
   });
 
   test("values imported with unqualfied imports are resolved with the right namespace", () => {
-    const out = compileRawProject({
+    const out = compileSrcWithDeps({
       ExampleModule: `let value_name = 42`,
       Main: `
         import ExampleModule.{value_name}
@@ -976,7 +976,7 @@ function MyModule$C2(a0) {
   });
 
   test("values imported from another module are resolved with the right namespace", () => {
-    const out = compileRawProject({
+    const out = compileSrcWithDeps({
       ExampleModule: "let value_name = 42",
       Main: `
       import ExampleModule
@@ -987,7 +987,7 @@ function MyModule$C2(a0) {
   });
 
   test("constructors imported with unqualfied imports are resolved with the right namespace", () => {
-    const out = compileRawProject({
+    const out = compileSrcWithDeps({
       ExampleModule: `pub type T { Constr }`,
       Main: `
       import ExampleModule.{T(..)}
@@ -1012,7 +1012,7 @@ function compileSrc(src: string, ns?: string) {
 }
 
 // Returns Main
-function compileRawProject(rawProject: Record<string, string>): string {
+function compileSrcWithDeps(rawProject: Record<string, string>): string {
   const res = typecheckProject(parseProject(rawProject), []);
   const Main = res.Main!;
   return new Compiler().compile(Main[0], "Main");
