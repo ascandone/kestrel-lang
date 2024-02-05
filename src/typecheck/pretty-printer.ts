@@ -52,6 +52,8 @@ export function typeErrorPPrint(e: TypecheckError): string {
       return `Unbound type parameter: ${e.id}\n`;
     case "unbound-module":
       return `Unbound module: "${e.moduleName}"`;
+    case "unimported-module":
+      return `This module was not imported: ${e.moduleName}`;
     case "invalid-catchall":
       return "Invalid use of the catchall type";
     case "type-param-shadowing":

@@ -1045,6 +1045,14 @@ describe("modules", () => {
     expect(errs).toHaveLength(1);
     expect(errs[0]!.type).toBe("bad-import");
   });
+
+  test("error when qualifier is not an imported module", () => {
+    const [, errs] = tc(`let x = NotImported.value`);
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.type).toBe("unimported-module");
+  });
 });
 
 describe("typecheck project", () => {
@@ -1098,8 +1106,6 @@ describe("typecheck project", () => {
       y: "Int",
     });
   });
-
-  test.todo("qualified imports should only work if module was imported");
 });
 
 function tcProgram(

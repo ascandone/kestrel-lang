@@ -3,6 +3,7 @@ import {
   Declaration,
   Expr,
   MatchPattern,
+  Span,
   SpanMeta,
   TypeAst,
   UntypedDeclaration,
@@ -58,6 +59,7 @@ export type TypecheckError = SpanMeta &
         got: number;
       }
     | { type: "unbound-module"; moduleName: string }
+    | { type: "unimported-module"; moduleName: string }
     | { type: "non-existing-import"; name: string }
     | { type: "bad-import" }
     | {
@@ -395,8 +397,15 @@ class Typechecker {
     ns: string | undefined,
     name: string,
     scope: Context,
+    span: Span,
   ): Type<Poly> | undefined {
     if (ns !== undefined) {
+      const import_ = this.imports.find((import_) => import_.ns === ns);
+      if (import_ === undefined) {
+        this.errors.push({ type: "unimported-module", moduleName: ns, span });
+        return TVar.fresh().asType();
+      }
+
       const dep = this.deps[ns];
       if (dep === undefined) {
         return undefined;
@@ -464,7 +473,12 @@ class Typechecker {
 
       case "constructor": {
         // TODO handle ns
-        const lookup_ = this.resolveIdent(undefined, pattern.name, scope);
+        const lookup_ = this.resolveIdent(
+          undefined,
+          pattern.name,
+          scope,
+          pattern.span,
+        );
         if (lookup_ === undefined) {
           // TODO better err
           this.errors.push({
@@ -539,7 +553,12 @@ class Typechecker {
       }
 
       case "identifier": {
-        const lookup = this.resolveIdent(ast.namespace, ast.name, scope);
+        const lookup = this.resolveIdent(
+          ast.namespace,
+          ast.name,
+          scope,
+          ast.span,
+        );
         if (lookup === undefined) {
           this.errors.push(
             ast.namespace === undefined
