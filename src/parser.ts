@@ -211,6 +211,24 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
     };
   },
 
+  QualifiedIdent(ns, _dot, id) {
+    const namespace =
+      ns.numChildren === 0
+        ? undefined
+        : ns
+            .child(0)
+            .asIteration()
+            .children.map((c) => c.sourceString)
+            .join("/");
+
+    return {
+      type: "identifier",
+      span: getSpan(this),
+      namespace,
+      name: id.sourceString,
+    };
+  },
+
   QualifiedName(ns, _dot, id) {
     const namespace =
       ns.numChildren === 0

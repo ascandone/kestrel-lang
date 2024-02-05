@@ -92,7 +92,7 @@ Program {
 
   BlockContent
     = Exp  -- exp
-    | "let#" QualifiedName ident "=" Exp ";" BlockContent -- monadicLet
+    | "let#" QualifiedIdent ident "=" Exp ";" BlockContent -- monadicLet
     | "let" ident "=" Exp ";" BlockContent -- let
 
   ident
@@ -100,6 +100,9 @@ Program {
 
   moduleName
     = upper alnum*
+
+  QualifiedIdent
+    = (Qualifier ".")? ident
 
   QualifiedName
     = (Qualifier ".")? (ident | typeName)
