@@ -56,21 +56,44 @@ export async function readProject(
   return res;
 }
 
-export async function readCore(): Promise<Core> {
+export async function readCoreRaw(): Promise<Record<string, RawModule>> {
   const paths = await readdir(CORE_FOLDER_PATH);
-  const untypedProject: Record<string, UntypedModule> = {};
+  const untypedProject: Record<string, RawModule> = {};
   for (const fileName of paths) {
     const [moduleName, ext] = fileName.split(".");
     if (ext !== EXTENSION) {
       continue;
     }
 
-    const fileBuf = await readFile(`${CORE_FOLDER_PATH}/${fileName}`);
-    const parsed = unsafeParse(fileBuf.toString());
-    untypedProject[moduleName!] = parsed;
+    const path = `${CORE_FOLDER_PATH}/${fileName}`;
+
+    const contentBuf = await readFile(path);
+    let extern: string | undefined;
+    try {
+      const externBuf = await readFile(`${CORE_FOLDER_PATH}/${moduleName}.js`);
+      extern = externBuf.toString();
+    } catch {
+      // Assume file did not exist
+    }
+
+    untypedProject[moduleName!] = {
+      path,
+      content: contentBuf.toString(),
+      extern,
+    };
   }
 
   return untypedProject;
+}
+
+export async function readCore(): Promise<Core> {
+  const rawCore = await readCoreRaw();
+
+  const core: Core = {};
+  for (const [ns, rawModule] of Object.entries(rawCore)) {
+    core[ns] = unsafeParse(rawModule.content);
+  }
+  return core;
 }
 
 export type TypedProject = Record<string, TypedModule>;
