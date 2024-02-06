@@ -640,9 +640,21 @@ export type CompileOptions = {
   };
 };
 
+export const defaultCompileOption: CompileOptions = {
+  entrypoint: {
+    module: "Main",
+    type: {
+      type: "named",
+      moduleName: "Task",
+      name: "Task",
+      args: [{ type: "named", name: "Unit", moduleName: "Basics", args: [] }],
+    },
+  },
+};
+
 export function compileProject(
   typedProject: Record<string, TypedModule>,
-  options: CompileOptions,
+  options: CompileOptions = defaultCompileOption,
 ): string {
   const compiler = new Compiler();
   const visited = new Set<string>();
