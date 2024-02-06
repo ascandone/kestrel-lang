@@ -1011,7 +1011,7 @@ describe("project compilation", () => {
         Main: `let main = "main"`,
       },
       {
-        entrypoint: defaultEntryPoint,
+        entrypoint: testEntryPoint,
       },
     );
 
@@ -1029,7 +1029,7 @@ Main$main.run(() => {});
       },
       {
         entrypoint: {
-          ...defaultEntryPoint,
+          ...testEntryPoint,
           module: "Nested/Entrypoint/Mod",
         },
       },
@@ -1052,7 +1052,7 @@ Nested$Entrypoint$Mod$main.run(() => {});
         `,
       },
       {
-        entrypoint: defaultEntryPoint,
+        entrypoint: testEntryPoint,
       },
     );
 
@@ -1078,7 +1078,7 @@ Main$main.run(() => {});
         `,
       },
       {
-        entrypoint: defaultEntryPoint,
+        entrypoint: testEntryPoint,
       },
     );
 
@@ -1094,6 +1094,8 @@ const Main$main = "main";
 Main$main.run(() => {});
 `);
   });
+
+  test.todo("compilation error when main has the wrong type");
 });
 
 function compileSrc(src: string, ns?: string) {
@@ -1118,7 +1120,7 @@ function parseProject(
   );
 }
 
-const defaultEntryPoint: CompileOptions["entrypoint"] = {
+const testEntryPoint: CompileOptions["entrypoint"] = {
   module: "Main",
   type: {
     type: "named",
