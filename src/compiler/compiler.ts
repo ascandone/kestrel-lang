@@ -120,7 +120,7 @@ export class Compiler {
 
       case "identifier": {
         if (src.namespace !== undefined) {
-          return [[], `${src.namespace}$${src.name}`];
+          return [[], `${sanitizeNamespace(src.namespace)}$${src.name}`];
         }
 
         const lookup = builtinValues[src.name] ?? scope[src.name];
@@ -629,7 +629,7 @@ function wrapJsExpr(expr: string, as: CompilationMode) {
 }
 
 function moduleNamespacedBinding(name: string, ns: string | undefined): string {
-  const ns_ = ns?.replace(/\//g, "$");
+  const ns_ = ns === undefined ? ns : sanitizeNamespace(ns);
   return ns_ === undefined ? name : `${ns_}$${name}`;
 }
 
@@ -686,8 +686,12 @@ export function compileProject(
 
   visit(entrypoint.module);
 
-  const entryPointMod = entrypoint.module.replace(/\//g, "$");
+  const entryPointMod = sanitizeNamespace(entrypoint.module);
   buf.push(`${entryPointMod}$main.run(() => {});\n`);
 
   return buf.join("\n\n");
+}
+
+function sanitizeNamespace(ns: string): string {
+  return ns?.replace(/\//g, "$");
 }

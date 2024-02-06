@@ -943,7 +943,7 @@ describe("modules", () => {
     expect(out).toEqual(`const ExampleModule$a = 42;\n`);
   });
 
-  test("nested modules are handled", () => {
+  test("variables are scoped in nested modules", () => {
     const out = compileSrc(`let a = 42`, "A/B/C");
     expect(out).toEqual(`const A$B$C$a = 42;\n`);
   });
@@ -973,6 +973,28 @@ function MyModule$C2(a0) {
       `,
     });
     expect(out).toEqual(`const Main$a = ExampleModule$value_name;\n`);
+  });
+
+  test("values imported with unqualfied imports in nested modules are resolved with the right namespace", () => {
+    const out = compileSrcWithDeps({
+      "Nested/Mod": `let value_name = 42`,
+      Main: `
+        import Nested/Mod.{value_name}
+        let a = value_name
+      `,
+    });
+    expect(out).toEqual(`const Main$a = Nested$Mod$value_name;\n`);
+  });
+
+  test("values imported with ualfied imports in nested modules are resolved with the right namespace", () => {
+    const out = compileSrcWithDeps({
+      "Nested/Mod": `let value_name = 42`,
+      Main: `
+        import Nested/Mod
+        let a = Nested/Mod.value_name
+      `,
+    });
+    expect(out).toEqual(`const Main$a = Nested$Mod$value_name;\n`);
   });
 
   test("values imported from another module are resolved with the right namespace", () => {
