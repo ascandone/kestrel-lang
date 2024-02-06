@@ -2,9 +2,8 @@ import { readFile, readdir } from "node:fs/promises";
 import { unsafeParse, parse, Span, UntypedModule } from "../parser";
 import { typecheckProject, typeErrorPPrint, TypedModule } from "../typecheck";
 import { exit } from "node:process";
-import { Compiler } from "../compiler";
+import { compileProject } from "../compiler";
 import { CORE_FOLDER_PATH } from "./paths";
-import { topSortedModules } from "../typecheck/project";
 
 export const FgRed = "\x1b[31m";
 export const Reset = "\x1b[0m";
@@ -141,41 +140,22 @@ function offsetToPosition(src: string, offset: number): Position {
 function repeatN(ch: string, times: number) {
   return Array.from({ length: times }, () => ch).join("");
 }
-const MAIN_MODULE = "Main";
 
 export async function compilePath(path: string): Promise<string> {
-  const project = await check(path);
-  if (project === undefined) {
+  const typedProject = await check(path);
+  if (typedProject === undefined) {
     exit(1);
   }
 
-  const sorted = topSortedModules(project);
-
-  const buf: string[] = [];
-  const compiler = new Compiler();
-  for (const ns of sorted) {
+  const externs: Record<string, string> = {};
+  for (const ns in typedProject) {
     try {
       const externBuf = await readFile(`${CORE_FOLDER_PATH}/${ns}.js`);
-      buf.push(externBuf.toString());
+      externs[ns] = externBuf.toString();
     } catch {
       // Assume file did not exist
     }
-
-    const mod = project[ns]!;
-    const compiled = compiler.compile(mod, ns);
-
-    if (compiled.trim() !== "") {
-      buf.push(compiled);
-    }
   }
 
-  const main = project.Main;
-
-  const hasMain =
-    main?.declarations.some((d) => d.binding.name === "main") ?? false;
-
-  const executor = `${MAIN_MODULE}$main.run(() => {});`;
-  const execMain = hasMain ? executor : "";
-  buf.push(execMain);
-  return buf.join("\n");
+  return compileProject(typedProject, { externs });
 }

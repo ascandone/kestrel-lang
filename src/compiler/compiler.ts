@@ -635,27 +635,25 @@ function moduleNamespacedBinding(name: string, ns: string | undefined): string {
 
 export type CompileOptions = {
   externs?: Record<string, string>;
-  entrypoint: {
+  entrypoint?: {
     module: string;
     type: ConcreteType<never>;
   };
 };
 
-export const defaultCompileOption: CompileOptions = {
-  entrypoint: {
-    module: "Main",
-    type: {
-      type: "named",
-      moduleName: "Task",
-      name: "Task",
-      args: [{ type: "named", name: "Unit", moduleName: "Basics", args: [] }],
-    },
+export const defaultEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
+  module: "Main",
+  type: {
+    type: "named",
+    moduleName: "Task",
+    name: "Task",
+    args: [{ type: "named", name: "Unit", moduleName: "Basics", args: [] }],
   },
 };
 
 export function compileProject(
   typedProject: Record<string, TypedModule>,
-  { entrypoint, externs = {} }: CompileOptions = defaultCompileOption,
+  { entrypoint = defaultEntryPoint, externs = {} }: CompileOptions = {},
 ): string {
   const compiler = new Compiler();
   const visited = new Set<string>();
