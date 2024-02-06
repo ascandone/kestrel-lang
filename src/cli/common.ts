@@ -5,11 +5,57 @@ import { exit } from "node:process";
 import { compileProject } from "../compiler";
 import { CORE_FOLDER_PATH } from "./paths";
 import { showErrorLine } from "./utils/showErrorLine";
-import { FgRed, Reset } from "./utils/colors";
+import { FgBlue, FgRed, Reset } from "./utils/colors";
+import { Config, readConfig } from "./config";
+import { join } from "node:path";
 
 const EXTENSION = "ks";
 
 type Core = Record<string, UntypedModule>;
+
+export type RawModule = {
+  path: string;
+  content: string;
+  extern: string | undefined;
+};
+
+export async function readProject(
+  path: string,
+  config: Config,
+): Promise<Record<string, RawModule>> {
+  const res: Record<string, RawModule> = {};
+  for (const sourceDir of config["source-directories"]) {
+    const files = await readdir(sourceDir, { recursive: true });
+    // TODo is the file relative path?
+    for (const file of files) {
+      const [moduleName, ext] = file.split(".");
+      if (ext !== EXTENSION) {
+        continue;
+      }
+
+      const filePath = join(path, sourceDir, file);
+      const fileBuf = await readFile(filePath);
+
+      let extern: string | undefined = undefined;
+      try {
+        const externPath = join(path, sourceDir, `${moduleName}.js`);
+        const externBuf = await readFile(externPath);
+        extern = externBuf.toString();
+      } catch {
+        // Assume file did not exist
+      }
+
+      res[moduleName!] = {
+        path: filePath,
+        content: fileBuf.toString(),
+        extern,
+      };
+    }
+  }
+
+  return res;
+}
+
 export async function readCore(): Promise<Core> {
   const paths = await readdir(CORE_FOLDER_PATH);
   const untypedProject: Record<string, UntypedModule> = {};
@@ -28,22 +74,31 @@ export async function readCore(): Promise<Core> {
 }
 
 export type TypedProject = Record<string, TypedModule>;
-export async function check(path: string): Promise<TypedProject | undefined> {
-  const core = await readCore();
+export async function check(
+  path: string,
+  config?: Config,
+): Promise<TypedProject | undefined> {
+  if (config === undefined) {
+    config = await readConfig(path);
+  }
 
-  const f = await readFile(path);
-  const src = f.toString();
-  const parseResult = parse(src);
-  if (!parseResult.ok) {
-    console.log(
-      `${FgRed}Parsing error:${Reset} ${parseResult.matchResult.message!}`,
-    );
-    exit(1);
+  const core = await readCore();
+  const rawProject = await readProject(path, config);
+
+  const untypedProject: Record<string, UntypedModule> = {};
+  for (const [ns, info] of Object.entries(rawProject)) {
+    const parseResult = parse(info.content);
+    if (!parseResult.ok) {
+      console.log(
+        `${FgRed}Parsing error:${Reset} ${parseResult.matchResult.message!}`,
+      );
+      exit(1);
+    }
+    untypedProject[ns] = parseResult.value;
   }
 
   const typedProject = typecheckProject({
-    // TODO actual name
-    Main: parseResult.value,
+    ...untypedProject,
     ...core,
   });
 
@@ -51,12 +106,15 @@ export async function check(path: string): Promise<TypedProject | undefined> {
   let errorCount = 0;
   for (const [ns, [program, errors]] of Object.entries(typedProject)) {
     res[ns] = program;
+    if (errors.length !== 0) {
+      console.log(`${FgBlue}-------- ${ns}.${EXTENSION}${Reset}\n`);
+    }
+
     for (const error of errors) {
       errorCount++;
       const msg = typeErrorPPrint(error);
       console.log(`${FgRed}Error:${Reset} ${msg}`);
-      // TODO fix src
-      console.log(showErrorLine(src, error.span), "\n\n");
+      console.log(showErrorLine(rawProject[ns]!.content, error.span), "\n\n");
     }
   }
 
