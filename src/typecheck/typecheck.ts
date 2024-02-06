@@ -201,11 +201,14 @@ class Typechecker {
               });
             }
 
-            const poly = decl === undefined ? TVar.fresh() : decl.binding.$;
+            const poly =
+              decl === undefined
+                ? TVar.fresh().asType()
+                : generalize(decl.binding.$.asType());
 
             return {
               ...exposing,
-              poly: poly.asType(),
+              poly,
             } as TypedExposing;
           }
         }
