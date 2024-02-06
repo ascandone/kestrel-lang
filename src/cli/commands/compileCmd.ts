@@ -7,12 +7,11 @@ export type Options = {
   out?: string;
 };
 
-export async function compileCmd(
-  path: string,
-  { out: outPath = DEFAULT_OUTPUT_FILE }: Options,
-) {
+export async function compileCmd({
+  out: outPath = DEFAULT_OUTPUT_FILE,
+}: Options) {
   const start = Date.now();
-  const compiled = await compilePath(path);
+  const compiled = await compilePath(process.cwd());
   writeFile(outPath, compiled);
   const end = Date.now();
   console.log(`Done in ${end - start}ms ✨`);

@@ -1,7 +1,7 @@
 import { check } from "../common";
 
-export async function checkCmd(path: string) {
-  const program = await check(path);
+export async function checkCmd() {
+  const program = await check(process.cwd());
   if (program === undefined) {
     return;
   }

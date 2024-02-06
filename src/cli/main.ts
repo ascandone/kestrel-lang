@@ -17,20 +17,17 @@ program.version(packageJson.version);
 program.command("init").description("Init a kestrel program").action(initCmd);
 
 program
-  .command("check <path>")
+  .command("check")
   .description("Infer the type of given file")
   .action(checkCmd);
 
 program
-  .command("compile <path>")
+  .command("compile")
   .option("--out <path>")
   .description("Compile the file into a js file")
   .action(compileCmd);
 
-program
-  .command("run <path>")
-  .description("Evaluate the given file")
-  .action(runCmd);
+program.command("run").description("Evaluate the given file").action(runCmd);
 
 program.command("lsp").description("Run the language server").action(lspCmd);
 
