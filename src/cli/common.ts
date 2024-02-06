@@ -1,14 +1,11 @@
 import { readFile, readdir } from "node:fs/promises";
-import { unsafeParse, parse, Span, UntypedModule } from "../parser";
+import { unsafeParse, parse, UntypedModule } from "../parser";
 import { typecheckProject, typeErrorPPrint, TypedModule } from "../typecheck";
 import { exit } from "node:process";
 import { compileProject } from "../compiler";
 import { CORE_FOLDER_PATH } from "./paths";
-
-export const FgRed = "\x1b[31m";
-export const Reset = "\x1b[0m";
-export const FgBlack = "\x1b[30m";
-export const BgWhite = "\x1b[47m";
+import { showErrorLine } from "./utils/showErrorLine";
+import { FgRed, Reset } from "./utils/colors";
 
 const EXTENSION = "ks";
 
@@ -70,75 +67,6 @@ export async function check(path: string): Promise<TypedProject | undefined> {
   }
 
   return res;
-}
-
-export function showErrorLine(src: string, [start, end]: Span): string {
-  const startPos = offsetToPosition(src, start);
-  const endPos = offsetToPosition(src, end);
-  const lines = src.split("\n");
-
-  function showLine(line: number) {
-    const codeLine = lines[line]!;
-    const lineNum = `${BgWhite}${FgBlack}${line + 1}${Reset}`;
-    return `${lineNum} ${codeLine}`;
-  }
-
-  function showErr(
-    currentLine: number,
-    [start, end]: [start: number, end: number],
-  ) {
-    const lineDigits = currentLine.toString().length;
-    const digitsPadding = repeatN(" ", lineDigits);
-
-    const errPadding = repeatN(" ", start);
-    const errHighlight = repeatN("~", end - start);
-    return `${BgWhite}${digitsPadding}${Reset} ${FgRed}${errPadding}${errHighlight}${Reset}`;
-  }
-
-  const ret: string[] = [];
-  for (
-    let currentLine = startPos.line;
-    currentLine <= endPos.line;
-    currentLine++
-  ) {
-    const startChar = currentLine === startPos.line ? startPos.character : 0;
-
-    const endChar =
-      currentLine === endPos.line
-        ? endPos.character
-        : lines[currentLine]!.length;
-
-    ret.push(showLine(currentLine), showErr(currentLine, [startChar, endChar]));
-  }
-
-  return ret.join("\n");
-}
-
-type Position = { line: number; character: number };
-
-function offsetToPosition(src: string, offset: number): Position {
-  let line = 0,
-    character = 0;
-
-  for (const ch of src) {
-    if (offset === 0) {
-      break;
-    }
-
-    offset--;
-    if (ch === "\n") {
-      line++;
-      character = 0;
-    } else {
-      character++;
-    }
-  }
-
-  return { line, character };
-}
-
-function repeatN(ch: string, times: number) {
-  return Array.from({ length: times }, () => ch).join("");
 }
 
 export async function compilePath(path: string): Promise<string> {

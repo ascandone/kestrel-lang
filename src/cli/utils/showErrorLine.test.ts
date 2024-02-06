@@ -1,5 +1,5 @@
 import { expect, test, describe } from "vitest";
-import { showErrorLine } from "./common";
+import { showErrorLine } from "./showErrorLine";
 
 describe("showErrorLine", () => {
   test("when it spans over a single line", () => {
