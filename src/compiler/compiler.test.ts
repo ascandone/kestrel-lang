@@ -1006,14 +1006,9 @@ function MyModule$C2(a0) {
 
 describe("project compilation", () => {
   test("compile single module with main value", () => {
-    const out = compileRawProject(
-      {
-        Main: `let main = "main"`,
-      },
-      {
-        entrypoint: testEntryPoint,
-      },
-    );
+    const out = compileRawProject({
+      Main: `let main = "main"`,
+    });
 
     expect(out).toBe(`const Main$main = "main";
 
@@ -1043,18 +1038,13 @@ Nested$Entrypoint$Mod$main.run(() => {});
   });
 
   test("compile a module importing another module", () => {
-    const out = compileRawProject(
-      {
-        ModA: `pub let x = "main"`,
-        Main: `
+    const out = compileRawProject({
+      ModA: `pub let x = "main"`,
+      Main: `
           import ModA
           let main = ModA.x
         `,
-      },
-      {
-        entrypoint: testEntryPoint,
-      },
-    );
+    });
 
     expect(out).toBe(`const ModA$x = "main";
 
@@ -1067,20 +1057,15 @@ Main$main.run(() => {});
   });
 
   test("if two modules import a module, it has to be compiled only once", () => {
-    const out = compileRawProject(
-      {
-        ModA: `pub let a = "a"`,
-        ModB: `import ModA\nlet b = "b"`,
-        Main: `
+    const out = compileRawProject({
+      ModA: `pub let a = "a"`,
+      ModB: `import ModA\nlet b = "b"`,
+      Main: `
           import ModA
           import ModB
           let main = "main"
         `,
-      },
-      {
-        entrypoint: testEntryPoint,
-      },
-    );
+    });
 
     expect(out).toBe(`const ModA$a = "a";
 
@@ -1095,7 +1080,28 @@ Main$main.run(() => {});
 `);
   });
 
+  test("compiling externs", () => {
+    const out = compileRawProject(
+      {
+        Main: `let main = "main"`,
+      },
+      {
+        entrypoint: testEntryPoint,
+        externs: { Main: "<extern>" },
+      },
+    );
+
+    expect(out).toBe(`<extern>
+
+const Main$main = "main";
+
+
+Main$main.run(() => {});
+`);
+  });
+
   test.todo("compilation error when main has the wrong type");
+  test.todo("error when extern types are not found");
 });
 
 function compileSrc(src: string, ns?: string) {
@@ -1132,7 +1138,7 @@ const testEntryPoint: CompileOptions["entrypoint"] = {
 
 function compileRawProject(
   rawProject: Record<string, string>,
-  options: CompileOptions,
+  options: CompileOptions = { entrypoint: testEntryPoint },
 ): string {
   const untypedProject = parseProject(rawProject);
   const typecheckResult = typecheckProject(untypedProject, []);

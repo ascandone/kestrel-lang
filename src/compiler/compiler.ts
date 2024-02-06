@@ -634,6 +634,7 @@ function moduleNamespacedBinding(name: string, ns: string | undefined): string {
 }
 
 export type CompileOptions = {
+  externs?: Record<string, string>;
   entrypoint: {
     module: string;
     type: ConcreteType<never>;
@@ -654,7 +655,7 @@ export const defaultCompileOption: CompileOptions = {
 
 export function compileProject(
   typedProject: Record<string, TypedModule>,
-  options: CompileOptions = defaultCompileOption,
+  { entrypoint, externs = {} }: CompileOptions = defaultCompileOption,
 ): string {
   const compiler = new Compiler();
   const visited = new Set<string>();
@@ -676,13 +677,18 @@ export function compileProject(
       visit(import_.ns);
     }
 
+    const extern = externs[ns];
+    if (extern !== undefined) {
+      buf.push(extern);
+    }
+
     const out = compiler.compile(module, ns);
     buf.push(out);
   }
 
-  visit(options.entrypoint.module);
+  visit(entrypoint.module);
 
-  const entryPointMod = options.entrypoint.module.replace(/\//g, "$");
+  const entryPointMod = entrypoint.module.replace(/\//g, "$");
   buf.push(`${entryPointMod}$main.run(() => {});\n`);
 
   return buf.join("\n\n");
