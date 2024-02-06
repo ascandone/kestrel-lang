@@ -1126,7 +1126,7 @@ function parseProject(
   );
 }
 
-const testEntryPoint: CompileOptions["entrypoint"] = {
+const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   module: "Main",
   type: {
     type: "named",
