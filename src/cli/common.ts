@@ -1,5 +1,5 @@
 import { readFile, readdir } from "node:fs/promises";
-import { unsafeParse, parse, UntypedModule } from "../parser";
+import { parse, UntypedModule } from "../parser";
 import { typecheckProject, TypedModule } from "../typecheck";
 import { exit } from "node:process";
 import { compileProject } from "../compiler";
@@ -11,21 +11,36 @@ import { join } from "node:path";
 
 const EXTENSION = "ks";
 
-type Core = Record<string, UntypedModule>;
-
 export type RawModule = {
   path: string;
   content: string;
   extern: string | undefined;
 };
 
-export async function readProject(
+export async function readProjectWithDeps(
+  path: string,
+  config: Config,
+): Promise<Record<string, RawModule>> {
+  let rawProject: Record<string, RawModule> = await readProject(path, config);
+  if (config.type === "application") {
+    for (const [_name, depInfo] of Object.entries(config.dependencies ?? {})) {
+      const path = depInfo.path;
+      const depConfig = await readConfig(path);
+      const dep = await readProject(depInfo.path, depConfig);
+      rawProject = { ...rawProject, ...dep };
+    }
+  }
+  return rawProject;
+}
+
+async function readProject(
   path: string,
   config: Config,
 ): Promise<Record<string, RawModule>> {
   const res: Record<string, RawModule> = {};
   for (const sourceDir of config["source-directories"]) {
-    const files = await readdir(sourceDir, { recursive: true });
+    const files = await readdir(join(path, sourceDir), { recursive: true });
+
     // TODo is the file relative path?
     for (const file of files) {
       const [moduleName, ext] = file.split(".");
@@ -56,47 +71,8 @@ export async function readProject(
   return res;
 }
 
-export async function readCoreRaw(): Promise<Record<string, RawModule>> {
-  const paths = await readdir(CORE_FOLDER_PATH);
-  const untypedProject: Record<string, RawModule> = {};
-  for (const fileName of paths) {
-    const [moduleName, ext] = fileName.split(".");
-    if (ext !== EXTENSION) {
-      continue;
-    }
-
-    const path = `${CORE_FOLDER_PATH}/${fileName}`;
-
-    const contentBuf = await readFile(path);
-    let extern: string | undefined;
-    try {
-      const externBuf = await readFile(`${CORE_FOLDER_PATH}/${moduleName}.js`);
-      extern = externBuf.toString();
-    } catch {
-      // Assume file did not exist
-    }
-
-    untypedProject[moduleName!] = {
-      path,
-      content: contentBuf.toString(),
-      extern,
-    };
-  }
-
-  return untypedProject;
-}
-
-export async function readCore(): Promise<Core> {
-  const rawCore = await readCoreRaw();
-
-  const core: Core = {};
-  for (const [ns, rawModule] of Object.entries(rawCore)) {
-    core[ns] = unsafeParse(rawModule.content);
-  }
-  return core;
-}
-
 export type TypedProject = Record<string, TypedModule>;
+
 export async function check(
   path: string,
   config?: Config,
@@ -105,8 +81,7 @@ export async function check(
     config = await readConfig(path);
   }
 
-  const core = await readCore();
-  const rawProject = await readProject(path, config);
+  const rawProject = await readProjectWithDeps(path, config);
 
   const untypedProject: Record<string, UntypedModule> = {};
   for (const [ns, info] of Object.entries(rawProject)) {
@@ -120,10 +95,7 @@ export async function check(
     untypedProject[ns] = parseResult.value;
   }
 
-  const typedProject = typecheckProject({
-    ...untypedProject,
-    ...core,
-  });
+  const typedProject = typecheckProject(untypedProject);
 
   const res: TypedProject = {};
   let errorCount = 0;

@@ -16,7 +16,7 @@ import {
   declByOffset,
   TypedModule,
 } from "../../typecheck";
-import { readCoreRaw, readProject } from "../common";
+import { readProjectWithDeps } from "../common";
 import { readConfig } from "../config";
 
 type Connection = _Connection;
@@ -150,10 +150,9 @@ class State {
 
 async function initProject(connection: Connection, state: State) {
   const config = await readConfig();
-  const rawCore = await readCoreRaw();
-  const rawProject = await readProject(process.cwd(), config);
+  const rawProject = await readProjectWithDeps(process.cwd(), config);
 
-  for (const [ns, raw] of Object.entries({ ...rawCore, ...rawProject })) {
+  for (const [ns, raw] of Object.entries(rawProject)) {
     const uri = `file://${raw.path}`;
     const textDoc = TextDocument.create(uri, "kestrel", 1, raw.content);
     const result = state.addDocument(ns, textDoc);

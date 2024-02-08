@@ -10,18 +10,17 @@
     "test:watch": "vitest",
     "test:w": "npm run test:watch",
     "test:run": "vitest --run --coverage",
-    "assets:build": "cp -r src/core dist",
     "ts:build": "tsc --project tsconfig.build.json",
     "ts:watch": "tsc --watch",
     "ts:check": "tsc --noEmit",
     "format:check": "prettier --check --cache ./**/*.ts",
     "format:write": "prettier --write --cache ./**/*.ts",
     "linter:check": "eslint .",
-    "build": "npm run ts:build && npm run assets:build"
+    "build": "npm run ts:build"
   },
   "dependencies": {
     "commander": "^11.1.0",
-    "ts-decode": "^0.0.12",
+    "ts-decode": "^0.0.14",
     "vscode-languageserver": "^9.0.1"
   },
   "devDependencies": {
