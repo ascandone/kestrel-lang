@@ -284,35 +284,32 @@ class Typechecker {
           opts.returning.name === ast.name &&
           opts.returning.args.length === expectedArity;
 
-        const resolved = this.resolveType(ast.namespace, ast.name);
-
-        if (
-          !isSelfRec &&
-          (resolved === undefined ||
-            resolved.arity !== expectedArity ||
-            !resolved.pub)
-        ) {
-          this.errors.push(
-            resolved?.pub === false
-              ? {
-                  span: ast.span,
-                  description: new NonExistingImport(ast.name),
-                }
-              : {
-                  // TODO better error for wrong arity
-                  span: ast.span,
-                  description: new UnboundType(ast.name),
-                },
-          );
+        let moduleName: string | undefined = undefined;
+        if (isSelfRec) {
+          moduleName = opts.returning.moduleName;
+        } else {
+          const resolution = this.resolveType(ast.namespace, ast.name);
+          if (
+            resolution !== undefined &&
+            resolution.arity === expectedArity &&
+            resolution.pub
+          ) {
+            moduleName = resolution.namespace;
+          }
         }
 
-        if (resolved === undefined) {
+        if (moduleName === undefined) {
+          this.errors.push({
+            // TODO better error for wrong arity
+            span: ast.span,
+            description: new UnboundType(ast.name),
+          });
           return TVar.fresh().asType();
         }
 
         return {
           type: "named",
-          moduleName: resolved.namespace,
+          moduleName,
           name: ast.name,
           args: ast.args.map((arg) => this.typeAstToType(arg, opts)),
         };

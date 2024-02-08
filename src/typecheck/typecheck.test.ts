@@ -397,6 +397,26 @@ describe("custom types", () => {
     });
   });
 
+  test("generalize type constructors", () => {
+    const [types, errs] = tc(
+      `
+      type Box<a> {
+        Box(a),
+        Nested(Box<a>)
+      }
+      
+      let x = Nested(Box(42))
+      let y = Nested(Box("abc"))
+  `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Box<Int>",
+      y: "Box<String>",
+    });
+  });
+
   test("handles constructor with one (non-parametric) arg", () => {
     const [types, errs] = tc(
       `
@@ -1058,7 +1078,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
+    expect(errs[0]?.description).toBeInstanceOf(UnboundType);
   });
 
   test("error when expose impl is run on a extern type", () => {
