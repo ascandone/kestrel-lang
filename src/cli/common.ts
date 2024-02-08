@@ -8,7 +8,7 @@ import { col } from "./utils/colors";
 import { Config, readConfig } from "./config";
 import { join } from "node:path";
 
-const EXTENSION = "ks";
+const EXTENSION = "kes";
 
 export type RawModule = {
   path: string;
