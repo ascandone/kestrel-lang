@@ -3,7 +3,6 @@ import { parse, UntypedModule } from "../parser";
 import { typecheckProject, TypedModule } from "../typecheck";
 import { exit } from "node:process";
 import { compileProject } from "../compiler";
-import { CORE_FOLDER_PATH } from "./paths";
 import { showErrorLine } from "./utils/showErrorLine";
 import { col } from "./utils/colors";
 import { Config, readConfig } from "./config";
@@ -82,7 +81,12 @@ export async function check(
   }
 
   const rawProject = await readProjectWithDeps(path, config);
+  return checkProject(rawProject);
+}
 
+export async function checkProject(
+  rawProject: Record<string, RawModule>,
+): Promise<TypedProject | undefined> {
   const untypedProject: Record<string, UntypedModule> = {};
   for (const [ns, info] of Object.entries(rawProject)) {
     const parseResult = parse(info.content);
@@ -128,18 +132,18 @@ ${msg}
 }
 
 export async function compilePath(path: string): Promise<string> {
-  const typedProject = await check(path);
+  const config = await readConfig(path);
+  const rawProject = await readProjectWithDeps(path, config);
+  const typedProject = await checkProject(rawProject);
   if (typedProject === undefined) {
     exit(1);
   }
 
   const externs: Record<string, string> = {};
   for (const ns in typedProject) {
-    try {
-      const externBuf = await readFile(`${CORE_FOLDER_PATH}/${ns}.js`);
-      externs[ns] = externBuf.toString();
-    } catch {
-      // Assume file did not exist
+    const extern = rawProject[ns]?.extern;
+    if (extern !== undefined) {
+      externs[ns] = extern.toString();
     }
   }
 
