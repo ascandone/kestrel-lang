@@ -6,7 +6,7 @@ Program {
     = "import" NonemptyListOf<moduleName, "/"> ("." "{" NonemptyListOf<Exposing, ","> "}")?
 
   Exposing
-    = ident -- value
+    = (ident | infixIdent) -- value
     | typeIdent ("(" ".." ")")? -- type
 
   // --- Toplevel

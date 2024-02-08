@@ -577,6 +577,11 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
+  test("unqualified import of an infix value", () => {
+    const src = "import A.{(+)}";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
   test("unqualified import of values", () => {
     const src = "import A/B/C.{x, y, z}";
     expect(unsafeParse(src)).toMatchSnapshot();

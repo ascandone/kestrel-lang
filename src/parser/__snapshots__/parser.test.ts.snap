@@ -498,6 +498,32 @@ exports[`imports > unqualified import of a value 1`] = `
 }
 `;
 
+exports[`imports > unqualified import of an infix value 1`] = `
+{
+  "declarations": [],
+  "imports": [
+    {
+      "exposing": [
+        {
+          "name": "+",
+          "span": [
+            10,
+            13,
+          ],
+          "type": "value",
+        },
+      ],
+      "ns": "A",
+      "span": [
+        0,
+        14,
+      ],
+    },
+  ],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`imports > unqualified import of types (non-opaque) 1`] = `
 {
   "declarations": [],

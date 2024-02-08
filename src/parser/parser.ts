@@ -520,8 +520,7 @@ semantics.addOperation<UntypedExposedValue>("exposing()", {
   Exposing_value(ident) {
     return {
       type: "value",
-      name: ident.sourceString,
-      span: getSpan(this),
+      ...ident.ident(),
     };
   },
   Exposing_type(ident, _parens, dots, _rparens) {
