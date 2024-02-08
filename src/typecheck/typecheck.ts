@@ -47,45 +47,6 @@ import {
   UnimportedModule,
 } from "../errors";
 
-export type UnifyErrorType = "type-mismatch" | "occurs-check";
-export type TypecheckError = SpanMeta &
-  (
-    | {
-        type: "unbound-variable";
-        ident: string;
-      }
-    | {
-        type: "unbound-type";
-        name: string;
-        arity: number;
-      }
-    | {
-        type: "unbound-type-param";
-        id: string;
-      }
-    | {
-        type: "invalid-catchall";
-      }
-    | {
-        type: "type-param-shadowing";
-        id: string;
-      }
-    | {
-        type: "arity-mismatch";
-        expected: number;
-        got: number;
-      }
-    | { type: "unbound-module"; moduleName: string }
-    | { type: "unimported-module"; moduleName: string }
-    | { type: "non-existing-import"; name: string }
-    | { type: "bad-import" }
-    | {
-        type: UnifyErrorType;
-        left: Type;
-        right: Type;
-      }
-  );
-
 export type TypeMeta = { $: TVar };
 
 // Record from namespace (e.g. "A.B.C" ) to the module
