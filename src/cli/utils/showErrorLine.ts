@@ -1,5 +1,5 @@
 import { Span } from "../../parser";
-import { BgWhite, FgBlack, FgRed, Reset } from "./colors";
+import { col } from "./colors";
 
 type Position = { line: number; character: number };
 
@@ -14,7 +14,7 @@ export function showErrorLine(src: string, [start, end]: Span): string {
 
   function showLine(line: number) {
     const codeLine = lines[line]!;
-    const lineNum = `${BgWhite}${FgBlack}${line + 1}${Reset}`;
+    const lineNum = col.bgWhite.black.str(line + 1);
     return `${lineNum} ${codeLine}`;
   }
 
@@ -27,7 +27,7 @@ export function showErrorLine(src: string, [start, end]: Span): string {
 
     const errPadding = repeatN(" ", start);
     const errHighlight = repeatN("~", end - start);
-    return `${BgWhite}${digitsPadding}${Reset} ${FgRed}${errPadding}${errHighlight}${Reset}`;
+    return `${col.bgWhite.str(digitsPadding)} ${col.red.str(errPadding + errHighlight)}`;
   }
 
   const ret: string[] = [];

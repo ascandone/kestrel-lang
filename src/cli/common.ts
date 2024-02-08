@@ -5,7 +5,7 @@ import { exit } from "node:process";
 import { compileProject } from "../compiler";
 import { CORE_FOLDER_PATH } from "./paths";
 import { showErrorLine } from "./utils/showErrorLine";
-import { Bright, FgBlue, FgRed, Reset } from "./utils/colors";
+import { col } from "./utils/colors";
 import { Config, readConfig } from "./config";
 import { join } from "node:path";
 
@@ -113,7 +113,7 @@ export async function check(
     const parseResult = parse(info.content);
     if (!parseResult.ok) {
       console.log(
-        `${FgRed}Parsing error:${Reset} ${parseResult.matchResult.message!}`,
+        `${col.red.tag`Parsing error:`} ${parseResult.matchResult.message!}`,
       );
       exit(1);
     }
@@ -130,14 +130,14 @@ export async function check(
   for (const [ns, [program, errors]] of Object.entries(typedProject)) {
     res[ns] = program;
     if (errors.length !== 0) {
-      console.log(`${FgBlue}-------- ${ns}.${EXTENSION}${Reset}\n`);
+      console.log(col.blue.tag`-------- ${ns}.${EXTENSION}\n`);
     }
 
     for (const error of errors) {
       errorCount++;
       const msg = error.description.getDescription();
       console.log(
-        `${FgRed}Error:${Reset} ${Bright}${error.description.errorName}${Reset}
+        `${col.red.tag`Error:`} ${col.bright.str(error.description.errorName)}
 
 ${msg}
 `,
