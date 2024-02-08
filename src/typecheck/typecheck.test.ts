@@ -1,13 +1,15 @@
 import { describe, expect, test } from "vitest";
 import { unsafeParse, UntypedImport } from "../parser";
+import { Deps, typecheck, typecheckProject, typePPrint, TypedModule } from ".";
 import {
-  Deps,
-  typecheck,
-  typecheckProject,
-  TypecheckError,
-  typePPrint,
-  TypedModule,
-} from ".";
+  BadImport,
+  NonExistingImport,
+  TypeMismatch,
+  UnboundModule,
+  UnboundType,
+  UnboundVariable,
+  UnimportedModule,
+} from "../errors";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -53,12 +55,8 @@ test("infer a variable not present in the context", () => {
   `,
   );
 
-  expect(errors).toEqual<TypecheckError[]>([
-    expect.objectContaining({
-      type: "unbound-variable",
-      ident: "unbound_var",
-    }),
-  ]);
+  expect(errors[0]?.description).toBeInstanceOf(UnboundVariable);
+  expect((errors[0]!.description as UnboundVariable).ident).toBe("unbound_var");
   expect(types).toEqual({
     x: "t0",
   });
@@ -117,7 +115,7 @@ test("application args should be typechecked", () => {
   );
 
   expect(errors).not.toEqual([]);
-  expect(errors[0]?.type).toBe("type-mismatch");
+  expect(errors[0]?.description).toBeInstanceOf(TypeMismatch);
 });
 
 test("typecheck fn args", () => {
@@ -361,7 +359,7 @@ describe("type hints", () => {
   test("unknown types are ignored", () => {
     const [types, errs] = tc("let x: NotFound = 1");
     expect(errs).not.toEqual([]);
-    expect(errs[0]!.type).toBe("unbound-type");
+    expect(errs[0]?.description).toBeInstanceOf(UnboundType);
     expect(types).toEqual({
       x: "Int",
     });
@@ -462,7 +460,7 @@ describe("custom types", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("unbound-type");
+    expect(errs[0]?.description).toBeInstanceOf(UnboundType);
   });
 
   test("add types to the type pool", () => {
@@ -732,7 +730,7 @@ describe("prelude", () => {
     `);
 
     expect(errs).not.toEqual([]);
-    expect(errs[0]!.type).toEqual("unbound-type");
+    expect(errs[0]?.description).toBeInstanceOf(UnboundType);
   });
 
   test("checks extern types", () => {
@@ -979,7 +977,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("unbound-module");
+    expect(errs[0]?.description).toBeInstanceOf(UnboundModule);
   });
 
   test("error when importing a non-existing type", () => {
@@ -988,7 +986,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("non-existing-import");
+    expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
   test("error when importing a type the is not pub", () => {
@@ -997,7 +995,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("non-existing-import");
+    expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
   test("error when importing a non-existing value", () => {
@@ -1006,7 +1004,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("non-existing-import");
+    expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
   test("error when importing a private value", () => {
@@ -1015,7 +1013,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("non-existing-import");
+    expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
   test("qualified imports should not work on priv functions", () => {
@@ -1030,7 +1028,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("non-existing-import");
+    expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
   test("qualified imports should not work on priv constructors", () => {
@@ -1045,7 +1043,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("non-existing-import");
+    expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
   test("qualified imports should not work on priv types", () => {
@@ -1060,7 +1058,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("non-existing-import");
+    expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
   test("error when expose impl is run on a extern type", () => {
@@ -1069,7 +1067,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("bad-import");
+    expect(errs[0]?.description).toBeInstanceOf(BadImport);
   });
 
   test("error when expose impl is run on a opaque type", () => {
@@ -1079,7 +1077,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("bad-import");
+    expect(errs[0]?.description).toBeInstanceOf(BadImport);
   });
 
   test("error when qualifier is not an imported module", () => {
@@ -1087,7 +1085,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("unimported-module");
+    expect(errs[0]?.description).toBeInstanceOf(UnimportedModule);
   });
 
   test("types from different modules with the same name aren't treated the same", () => {
@@ -1103,7 +1101,7 @@ describe("modules", () => {
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
-    expect(errs[0]!.type).toBe("type-mismatch");
+    expect(errs[0]?.description).toBeInstanceOf(TypeMismatch);
   });
 });
 

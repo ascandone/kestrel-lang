@@ -12,7 +12,6 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import { UntypedModule, parse } from "../../parser";
 import {
   typecheckProject,
-  typeErrorPPrint,
   typePPrint,
   declByOffset,
   TypedModule,
@@ -110,7 +109,7 @@ class State {
           const [start, end] = e.span;
 
           return {
-            message: typeErrorPPrint(e),
+            message: e.description.getDescription(),
             source: "Typecheck",
             severity: DiagnosticSeverity.Error,
             range: {

@@ -1,11 +1,11 @@
 import { readFile, readdir } from "node:fs/promises";
 import { unsafeParse, parse, UntypedModule } from "../parser";
-import { typecheckProject, typeErrorPPrint, TypedModule } from "../typecheck";
+import { typecheckProject, TypedModule } from "../typecheck";
 import { exit } from "node:process";
 import { compileProject } from "../compiler";
 import { CORE_FOLDER_PATH } from "./paths";
 import { showErrorLine } from "./utils/showErrorLine";
-import { FgBlue, FgRed, Reset } from "./utils/colors";
+import { Bright, FgBlue, FgRed, Reset } from "./utils/colors";
 import { Config, readConfig } from "./config";
 import { join } from "node:path";
 
@@ -135,8 +135,13 @@ export async function check(
 
     for (const error of errors) {
       errorCount++;
-      const msg = typeErrorPPrint(error);
-      console.log(`${FgRed}Error:${Reset} ${msg}`);
+      const msg = error.description.getDescription();
+      console.log(
+        `${FgRed}Error:${Reset} ${Bright}${error.description.errorName}${Reset}
+
+${msg}
+`,
+      );
       console.log(showErrorLine(rawProject[ns]!.content, error.span), "\n\n");
     }
   }

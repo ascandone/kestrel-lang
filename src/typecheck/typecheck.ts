@@ -29,7 +29,23 @@ import {
   generalize,
   instantiate,
   Poly,
+  UnifyError,
 } from "./unify";
+import {
+  ArityMismatch,
+  BadImport,
+  ErrorInfo,
+  InvalidCatchall,
+  NonExistingImport,
+  OccursCheck,
+  TypeMismatch,
+  TypeParamShadowing,
+  UnboundModule,
+  UnboundType,
+  UnboundTypeParam,
+  UnboundVariable,
+  UnimportedModule,
+} from "../errors";
 
 export type UnifyErrorType = "type-mismatch" | "occurs-check";
 export type TypecheckError = SpanMeta &
@@ -81,7 +97,7 @@ export function typecheck(
   module: UntypedModule,
   deps: Deps = {},
   implicitImports: UntypedImport[] = defaultImports,
-): [TypedModule, TypecheckError[]] {
+): [TypedModule, ErrorInfo[]] {
   return new Typechecker(ns, deps).run(module, implicitImports);
 }
 
@@ -89,7 +105,7 @@ class Typechecker {
   // TODO remove globals and lookup import/declrs directly
   private globals: Context = {};
 
-  private errors: TypecheckError[] = [];
+  private errors: ErrorInfo[] = [];
   private imports: TypedImport[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
 
@@ -101,7 +117,7 @@ class Typechecker {
   run(
     module: UntypedModule,
     implicitImports: UntypedImport[] = defaultImports,
-  ): [TypedModule, TypecheckError[]] {
+  ): [TypedModule, ErrorInfo[]] {
     TVar.resetId();
 
     this.imports = [
@@ -136,9 +152,8 @@ class Typechecker {
       const importedModule = this.deps[import_.ns];
       if (importedModule === undefined) {
         this.errors.push({
-          type: "unbound-module",
-          moduleName: import_.ns,
           span: import_.span,
+          description: new UnboundModule(import_.ns),
         });
         return [];
       }
@@ -162,14 +177,13 @@ class Typechecker {
 
             if (resolved === undefined || !resolved.pub) {
               this.errors.push({
-                type: "non-existing-import",
-                name: exposing.name,
                 span: exposing.span,
+                description: new NonExistingImport(exposing.name),
               });
             } else if (resolved.type === "extern" && exposing.exposeImpl) {
               this.errors.push({
-                type: "bad-import",
                 span: exposing.span,
+                description: new BadImport(),
               });
             } else if (
               resolved.type === "adt" &&
@@ -177,8 +191,8 @@ class Typechecker {
               resolved.pub !== ".."
             ) {
               this.errors.push({
-                type: "bad-import",
                 span: exposing.span,
+                description: new BadImport(),
               });
             }
 
@@ -195,9 +209,8 @@ class Typechecker {
 
             if (decl === undefined || !decl.pub) {
               this.errors.push({
-                type: "non-existing-import",
-                name: exposing.name,
                 span: exposing.span,
+                description: new NonExistingImport(exposing.name),
               });
             }
 
@@ -265,10 +278,11 @@ class Typechecker {
         const [, end] = ast.args.at(-1)!.span;
 
         this.errors.push({
-          type: "arity-mismatch",
-          expected: e.left.args.length,
-          got: e.right.args.length,
           span: [start, end],
+          description: new ArityMismatch(
+            e.left.args.length,
+            e.right.args.length,
+          ),
         });
         return;
       }
@@ -278,29 +292,23 @@ class Typechecker {
         const [, end] = ast.params.at(-1)!.span;
 
         this.errors.push({
-          type: "arity-mismatch",
-          expected: e.left.args.length,
-          got: e.right.args.length,
           span: [start, end],
+          description: new ArityMismatch(
+            e.left.args.length,
+            e.right.args.length,
+          ),
         });
 
         return;
       }
 
       this.errors.push({
-        type: "arity-mismatch",
-        expected: e.left.args.length,
-        got: e.right.args.length,
         span: ast.span,
+        description: new ArityMismatch(e.left.args.length, e.right.args.length),
       });
     }
 
-    this.errors.push({
-      type: e.type,
-      left: e.left,
-      right: e.right,
-      span: ast.span,
-    });
+    this.errors.push(unifyErr(ast, e));
   }
 
   /**
@@ -326,16 +334,13 @@ class Typechecker {
           this.errors.push(
             resolved?.pub === false
               ? {
-                  type: "non-existing-import",
-                  name: ast.name,
                   span: ast.span,
+                  description: new NonExistingImport(ast.name),
                 }
               : {
                   // TODO better error for wrong arity
-                  type: "unbound-type",
-                  name: ast.name,
-                  arity: expectedArity,
                   span: ast.span,
+                  description: new UnboundType(ast.name),
                 },
           );
         }
@@ -365,16 +370,18 @@ class Typechecker {
           !opts.params.includes(ast.ident)
         ) {
           this.errors.push({
-            type: "unbound-type-param",
-            id: ast.ident,
             span: ast.span,
+            description: new UnboundTypeParam(ast.ident),
           });
         }
         return { type: "quantified", id: ast.ident };
 
       case "any":
         if (opts.type === "constructor-arg") {
-          this.errors.push({ type: "invalid-catchall", span: ast.span });
+          this.errors.push({
+            span: ast.span,
+            description: new InvalidCatchall(),
+          });
         }
         return { type: "var", var: TVar.fresh() };
     }
@@ -416,7 +423,10 @@ class Typechecker {
     if (ns !== undefined) {
       const import_ = this.imports.find((import_) => import_.ns === ns);
       if (import_ === undefined) {
-        this.errors.push({ type: "unimported-module", moduleName: ns, span });
+        this.errors.push({
+          span,
+          description: new UnimportedModule(ns),
+        });
         return TVar.fresh().asType();
       }
 
@@ -496,9 +506,8 @@ class Typechecker {
         if (lookup_ === undefined) {
           // TODO better err
           this.errors.push({
-            type: "unbound-variable",
-            ident: pattern.name,
             span: pattern.span,
+            description: new UnboundVariable(pattern.name),
           });
           return scope;
         }
@@ -537,10 +546,11 @@ class Typechecker {
 
           if (lookup.args.length !== pattern.args.length) {
             this.errors.push({
-              type: "arity-mismatch",
-              expected: lookup.args.length,
-              got: pattern.args.length,
               span: pattern.span,
+              description: new ArityMismatch(
+                lookup.args.length,
+                pattern.args.length,
+              ),
             });
             return scope;
           }
@@ -573,14 +583,12 @@ class Typechecker {
           this.errors.push(
             ast.namespace === undefined
               ? {
-                  type: "unbound-variable",
-                  ident: ast.name,
                   span: ast.span,
+                  description: new UnboundVariable(ast.name),
                 }
               : {
-                  type: "non-existing-import",
-                  name: ast.name,
                   span: ast.span,
+                  description: new NonExistingImport(ast.name),
                 },
           );
           return;
@@ -652,12 +660,7 @@ class Typechecker {
     if (e === undefined) {
       return;
     }
-    this.errors.push({
-      type: e.type,
-      left: e.left,
-      right: e.right,
-      span: ast.span,
-    });
+    this.errors.push(unifyErr(ast, e));
   }
 
   private annotateTypeDeclaration(
@@ -667,9 +670,8 @@ class Typechecker {
     for (const param of typeDecl.params) {
       if (usedParams.has(param.name)) {
         this.errors.push({
-          type: "type-param-shadowing",
-          id: param.name,
           span: param.span,
+          description: new TypeParamShadowing(param.name),
         });
       }
       usedParams.add(param.name);
@@ -900,10 +902,7 @@ export function typecheckProject(
   return projectResult;
 }
 
-export type ProjectTypeCheckResult = Record<
-  string,
-  [TypedModule, TypecheckError[]]
->;
+export type ProjectTypeCheckResult = Record<string, [TypedModule, ErrorInfo[]]>;
 
 // Keep this in sync with core
 const Bool: Type = {
@@ -912,3 +911,15 @@ const Bool: Type = {
   name: "Bool",
   args: [],
 };
+
+function unifyErr(node: SpanMeta, e: UnifyError): ErrorInfo {
+  switch (e.type) {
+    case "type-mismatch":
+      return {
+        span: node.span,
+        description: new TypeMismatch(e.left, e.right),
+      };
+    case "occurs-check":
+      return { span: node.span, description: new OccursCheck() };
+  }
+}
