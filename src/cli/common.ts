@@ -18,8 +18,8 @@ export type RawModule = {
 
 export async function readProjectWithDeps(
   path: string,
-  config: Config,
 ): Promise<Record<string, RawModule>> {
+  const config = await readConfig(path);
   let rawProject: Record<string, RawModule> = await readProject(path, config);
   if (config.type === "application") {
     for (const [_name, depInfo] of Object.entries(config.dependencies ?? {})) {
@@ -72,15 +72,8 @@ async function readProject(
 
 export type TypedProject = Record<string, TypedModule>;
 
-export async function check(
-  path: string,
-  config?: Config,
-): Promise<TypedProject | undefined> {
-  if (config === undefined) {
-    config = await readConfig(path);
-  }
-
-  const rawProject = await readProjectWithDeps(path, config);
+export async function check(path: string): Promise<TypedProject | undefined> {
+  const rawProject = await readProjectWithDeps(path);
   return checkProject(rawProject);
 }
 
@@ -132,8 +125,7 @@ ${msg}
 }
 
 export async function compilePath(path: string): Promise<string> {
-  const config = await readConfig(path);
-  const rawProject = await readProjectWithDeps(path, config);
+  const rawProject = await readProjectWithDeps(path);
   const typedProject = await checkProject(rawProject);
   if (typedProject === undefined) {
     exit(1);

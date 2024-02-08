@@ -17,7 +17,6 @@ import {
   TypedModule,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
-import { readConfig } from "../config";
 
 type Connection = _Connection;
 
@@ -149,8 +148,7 @@ class State {
 }
 
 async function initProject(connection: Connection, state: State) {
-  const config = await readConfig();
-  const rawProject = await readProjectWithDeps(process.cwd(), config);
+  const rawProject = await readProjectWithDeps(process.cwd());
 
   for (const [ns, raw] of Object.entries(rawProject)) {
     const uri = `file://${raw.path}`;
