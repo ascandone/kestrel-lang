@@ -18,6 +18,10 @@ test("identifier", () => {
   assertFormatted(`let x = y\n`);
 });
 
+test("pub modifier", () => {
+  assertFormatted(`pub let x = 42\n`);
+});
+
 test("namespaced identifier", () => {
   assertFormatted(`let x = A/B/C.y\n`);
 });

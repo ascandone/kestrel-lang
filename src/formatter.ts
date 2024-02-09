@@ -64,7 +64,6 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
 
     case "let": {
       const inner = concat(
-        // TODO same wrapping rules as let decl
         text(`let ${ast.binding.name} = `),
         exprToDoc(ast.value, false),
         text(";"),
@@ -90,6 +89,7 @@ function declToDoc(ast: UntypedDeclaration): Doc {
   }
 
   return concat(
+    ast.pub ? text("pub ") : nil,
     text(`let ${ast.binding.name} = `),
     exprToDoc(ast.value, false),
   );
