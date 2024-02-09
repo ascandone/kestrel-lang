@@ -64,6 +64,14 @@ test("prefix with and", () => {
   assertFormatted(`let x = !True && !False\n`);
 });
 
+test.todo("pipe operator wraps", () => {
+  assertFormatted(`let x =
+  x
+  |> f()
+  |> g()
+  `);
+});
+
 test("multiple declrs", () => {
   assertFormatted(`let x = 0
 
