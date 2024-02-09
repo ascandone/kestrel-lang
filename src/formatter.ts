@@ -91,7 +91,13 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
     }
 
     case "match":
-      throw new Error("TODO handle expr: " + ast.type);
+      return concat(
+        text("match "),
+        exprToDoc(ast.expr, false),
+        text(" {"),
+        break_(1),
+        text("}"),
+      );
   }
 }
 

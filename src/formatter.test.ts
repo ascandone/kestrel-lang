@@ -227,6 +227,16 @@ describe("type delc", () => {
   });
 });
 
+describe("pattern matching", () => {
+  test("empty pattern matching", () => {
+    assertFormatted(`let x = match expr {
+
+}
+`);
+  });
+});
+
+test.todo("infix ops");
 test.todo("order between type declrs and declrs");
 test.todo("comments");
 
