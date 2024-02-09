@@ -77,12 +77,16 @@ export function pprint(
   return buf.join("");
 }
 
-export function sepBy(sep: string, docs: Doc[]): Doc {
+export function sepByString(sep: string, docs: Doc[]): Doc {
+  return sepBy(text(sep), docs);
+}
+
+export function sepBy(sep: Doc, docs: Doc[]): Doc {
   return {
     type: "concat",
     docs: docs.flatMap((doc, index) => {
       const isLast = index === docs.length - 1;
-      return [doc, isLast ? nil : text(sep)];
+      return [doc, isLast ? nil : sep];
     }),
   };
 }

@@ -186,6 +186,45 @@ describe("type delc", () => {
   test("adts pub(..) modifier", () => {
     assertFormatted(`pub(..) type T { }\n`);
   });
+
+  test("adts with a constructors", () => {
+    assertFormatted(`type Unit {
+  Unit,
+}
+`);
+  });
+
+  test("adts with many constructors", () => {
+    assertFormatted(`type T {
+  A,
+  B,
+}
+`);
+  });
+
+  test("adts with a constructors with an arg", () => {
+    assertFormatted(`type Box {
+  Box(Int),
+}
+`);
+  });
+
+  test("adts with a constructors with many args", () => {
+    assertFormatted(`type Box {
+  Box(Int, a, Maybe<Int>),
+}
+`);
+  });
+
+  test("adts with one type params", () => {
+    assertFormatted(`type Box<a> { }
+`);
+  });
+
+  test("adts with many type params", () => {
+    assertFormatted(`type Box<a, b, c> { }
+`);
+  });
 });
 
 test.todo("order between type declrs and declrs");

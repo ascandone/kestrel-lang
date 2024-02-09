@@ -6,7 +6,17 @@ import {
   UntypedModule,
   UntypedTypeDeclaration,
 } from "./parser";
-import { Doc, break_, concat, nest, nil, pprint, sepBy, text } from "./pretty";
+import {
+  Doc,
+  break_,
+  concat,
+  nest,
+  nil,
+  pprint,
+  sepBy,
+  sepByString,
+  text,
+} from "./pretty";
 
 function constToDoc(lit: ConstLiteral): Doc {
   switch (lit.type) {
@@ -37,7 +47,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
       return concat(
         exprToDoc(ast.caller, false),
         text("("),
-        sepBy(
+        sepByString(
           ", ",
           ast.args.map((arg) => exprToDoc(arg, false)),
         ),
@@ -100,7 +110,7 @@ function typeAstToDoc(typeAst: TypeAst): Doc {
       return concat(
         name,
         text("<"),
-        sepBy(", ", typeAst.args.map(typeAstToDoc)),
+        sepByString(", ", typeAst.args.map(typeAstToDoc)),
         text(">"),
       );
     }
@@ -114,7 +124,7 @@ function typeAstToDoc(typeAst: TypeAst): Doc {
     case "fn":
       return concat(
         text("Fn("),
-        sepBy(", ", typeAst.args.map(typeAstToDoc)),
+        sepByString(", ", typeAst.args.map(typeAstToDoc)),
         text(") -> "),
         typeAstToDoc(typeAst.return),
       );
@@ -143,15 +153,51 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
         text(tDecl.name),
       );
 
-    case "adt":
+    case "adt": {
+      const variants =
+        tDecl.variants.length === 0
+          ? text(" ")
+          : indent(
+              sepBy(
+                break_(),
+                tDecl.variants.map((variant) =>
+                  concat(
+                    text(variant.name),
+                    ...(variant.args.length === 0
+                      ? []
+                      : [
+                          text("("),
+                          sepByString(", ", variant.args.map(typeAstToDoc)),
+                          text(")"),
+                        ]),
+                    text(","),
+                  ),
+                ),
+              ),
+            );
+
+      const params =
+        tDecl.params.length === 0
+          ? nil
+          : concat(
+              text("<"),
+              sepByString(
+                ", ",
+                tDecl.params.map((p) => text(p.name)),
+              ),
+              text(">"),
+            );
+
       return concat(
         tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
         text("type "),
         text(tDecl.name),
+        params,
         text(" {"),
-        text(" "),
+        variants,
         text("}"),
       );
+    }
   }
 }
 
