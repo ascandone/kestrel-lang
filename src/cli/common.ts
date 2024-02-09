@@ -77,6 +77,17 @@ export async function check(path: string): Promise<TypedProject | undefined> {
   return checkProject(rawProject);
 }
 
+export function parseModule(src: string): UntypedModule {
+  const parseResult = parse(src);
+  if (!parseResult.ok) {
+    console.log(
+      `${col.red.tag`Parsing error:`} ${parseResult.matchResult.message!}`,
+    );
+    exit(1);
+  }
+  return parseResult.value;
+}
+
 export async function checkProject(
   rawProject: Record<string, RawModule>,
 ): Promise<TypedProject | undefined> {

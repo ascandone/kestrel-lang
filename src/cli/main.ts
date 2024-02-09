@@ -6,6 +6,7 @@ import { lspCmd } from "./commands/lspCmd";
 import { compileCmd } from "./commands/compileCmd";
 import { runCmd } from "./commands/runCmd";
 import { initCmd } from "./commands/initCmd";
+import { formatCmd } from "./commands/formatCmd";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require("../../package.json");
@@ -26,6 +27,11 @@ program
   .option("--out <path>")
   .description("Compile the file into a js file")
   .action(compileCmd);
+
+program
+  .command("format <path>")
+  .description("Format a kestrel file")
+  .action(formatCmd);
 
 program.command("run").description("Evaluate the given file").action(runCmd);
 
