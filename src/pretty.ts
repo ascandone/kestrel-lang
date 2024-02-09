@@ -76,3 +76,13 @@ export function pprint(
   buf.reverse();
   return buf.join("");
 }
+
+export function sepBy(sep: string, docs: Doc[]): Doc {
+  return {
+    type: "concat",
+    docs: docs.flatMap((doc, index) => {
+      const isLast = index === docs.length - 1;
+      return [doc, isLast ? nil : text(sep)];
+    }),
+  };
+}

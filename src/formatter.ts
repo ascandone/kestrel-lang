@@ -5,7 +5,7 @@ import {
   UntypedDeclaration,
   UntypedModule,
 } from "./parser";
-import { Doc, break_, concat, nest, nil, pprint, text } from "./pretty";
+import { Doc, break_, concat, nest, nil, pprint, sepBy, text } from "./pretty";
 
 function constToDoc(lit: ConstLiteral): Doc {
   switch (lit.type) {
@@ -36,10 +36,10 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
       return concat(
         exprToDoc(ast.caller, false),
         text("("),
-        ...ast.args.flatMap((arg, index) => {
-          const isLast = index === ast.args.length - 1;
-          return [exprToDoc(arg, false), isLast ? nil : text(", ")];
-        }),
+        sepBy(
+          ", ",
+          ast.args.map((arg) => exprToDoc(arg, false)),
+        ),
         text(")"),
       );
 
@@ -96,10 +96,7 @@ function typeAstToDoc(typeAst: TypeAst): Doc {
       return concat(
         name,
         text("<"),
-        ...typeAst.args.flatMap((arg, index) => {
-          const isLast = index === typeAst.args.length - 1;
-          return [typeAstToDoc(arg), isLast ? nil : text(", ")];
-        }),
+        sepBy(", ", typeAst.args.map(typeAstToDoc)),
         text(">"),
       );
     }
