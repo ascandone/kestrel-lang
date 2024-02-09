@@ -20,9 +20,7 @@ function indent(...docs: Doc[]): Doc {
   return concat(nest(break_(), ...docs), break_());
 }
 
-type ExprCtx = { block: boolean };
-
-function exprToDoc(ast: Expr, ctx: ExprCtx): Doc {
+function exprToDoc(ast: Expr, block: boolean): Doc {
   switch (ast.type) {
     case "constant":
       return constToDoc(ast.value);
@@ -37,7 +35,7 @@ function exprToDoc(ast: Expr, ctx: ExprCtx): Doc {
       const params = ast.params.map((p) => ` ${p.name}`).join(",");
       return concat(
         text("fn", ...params, " {"),
-        indent(exprToDoc(ast.body, { ...ctx, block: true })),
+        indent(exprToDoc(ast.body, true)),
         text("}"),
       );
     }
@@ -46,11 +44,11 @@ function exprToDoc(ast: Expr, ctx: ExprCtx): Doc {
       return nest(
         break_(),
         text("if "),
-        exprToDoc(ast.condition, { ...ctx, block: false }),
+        exprToDoc(ast.condition, false),
         text(" {"),
-        indent(exprToDoc(ast.then, { ...ctx, block: true })),
+        indent(exprToDoc(ast.then, true)),
         text("} else {"),
-        indent(exprToDoc(ast.else, { ...ctx, block: true })),
+        indent(exprToDoc(ast.else, true)),
         text("}"),
       );
 
@@ -58,13 +56,13 @@ function exprToDoc(ast: Expr, ctx: ExprCtx): Doc {
       const inner = concat(
         // TODO same wrapping rules as let decl
         text(`let ${ast.binding.name} = `),
-        exprToDoc(ast.value, { ...ctx, block: false }),
+        exprToDoc(ast.value, false),
         text(";"),
         break_(),
-        exprToDoc(ast.body, { ...ctx, block: true }),
+        exprToDoc(ast.body, true),
       );
 
-      if (ctx.block) {
+      if (block) {
         return inner;
       }
 
@@ -84,7 +82,7 @@ function declToDoc(ast: UntypedDeclaration): Doc {
 
   return concat(
     text(`let ${ast.binding.name} = `),
-    exprToDoc(ast.value, { block: false }),
+    exprToDoc(ast.value, false),
   );
 }
 
