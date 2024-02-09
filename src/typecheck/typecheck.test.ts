@@ -58,7 +58,7 @@ test("infer a variable not present in the context", () => {
   expect(errors[0]?.description).toBeInstanceOf(UnboundVariable);
   expect((errors[0]!.description as UnboundVariable).ident).toBe("unbound_var");
   expect(types).toEqual({
-    x: "t0",
+    x: "a",
   });
 });
 
@@ -215,7 +215,7 @@ test("typecheck generic values", () => {
 
   expect(errs).toEqual([]);
   expect(types).toEqual({
-    id: "Fn(t0) -> t0",
+    id: "Fn(a) -> a",
   });
 });
 
@@ -229,7 +229,7 @@ test("generalize values", () => {
 
   expect(errs).toEqual([]);
   expect(types).toEqual({
-    id: "Fn(t0) -> t0",
+    id: "Fn(a) -> a",
     _: "Int",
   });
 });
@@ -246,7 +246,7 @@ test("recursive let exprs", () => {
 
   expect(errs).toEqual([]);
   expect(types).toEqual({
-    f: "Fn(Int) -> t0",
+    f: "Fn(Int) -> a",
   });
 });
 
@@ -259,7 +259,7 @@ test("recursive let declarations", () => {
 
   expect(errs).toEqual([]);
   expect(types).toEqual({
-    f: "Fn(Int) -> t0",
+    f: "Fn(Int) -> a",
   });
 });
 
@@ -504,7 +504,7 @@ describe("custom types", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      a: "Box<t0, t1>",
+      a: "Box<a, b>",
     });
   });
 
@@ -519,8 +519,8 @@ describe("custom types", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      a: "Fn(t0) -> T<t1, t0>",
-      b: "T<t0, Int>",
+      a: "Fn(a) -> T<b, a>",
+      b: "T<a, Int>",
     });
   });
 
@@ -691,7 +691,7 @@ describe("pattern matching", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(Maybe<t0>) -> Int",
+      f: "Fn(Maybe<a>) -> Int",
     });
   });
 

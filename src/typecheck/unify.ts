@@ -234,8 +234,19 @@ function getContextFreeVars(context: Context): Set<number> {
   return s;
 }
 
+const FIRST_CHAR = "a".charCodeAt(0);
+const LAST_CHAR = "z".charCodeAt(0);
+const TOTAL_CHARS = LAST_CHAR - FIRST_CHAR + 1;
+
 function generalizedName(count: number): string {
-  return `t${count}`;
+  const letter = String.fromCharCode(FIRST_CHAR + (count % TOTAL_CHARS));
+  const rem = Math.floor(count / TOTAL_CHARS);
+
+  if (rem === 0) {
+    return letter;
+  }
+
+  return `${letter}${rem}`;
 }
 
 export function generalize(t: Type, context: Context = {}): Type<Poly> {

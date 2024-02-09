@@ -396,8 +396,8 @@ describe("generalization", () => {
 
     const [$g1, $g2] = poly.args;
 
-    expect($g1).toEqual({ type: "quantified", id: "t0" });
-    expect($g2).toEqual({ type: "quantified", id: "t1" });
+    expect($g1).toEqual({ type: "quantified", id: "a" });
+    expect($g2).toEqual({ type: "quantified", id: "b" });
   });
 
   test("generalize many vars when linked", () => {
@@ -412,10 +412,10 @@ describe("generalization", () => {
     const [$g1, $g2] = poly.args;
 
     expect(($g1 as any).type).toEqual("quantified");
-    expect(($g1 as any).id).toEqual("t0");
+    expect(($g1 as any).id).toEqual("a");
 
     expect(($g2 as any).type).toEqual("quantified");
-    expect(($g2 as any).id).toEqual("t0");
+    expect(($g2 as any).id).toEqual("a");
   });
 
   test("generalize var bound to a nested type to generalize ", () => {
@@ -433,11 +433,11 @@ describe("generalization", () => {
 
     expect($g1).toEqual({
       type: "quantified",
-      id: "t0",
+      id: "a",
     });
     expect($g2).toEqual({
       type: "quantified",
-      id: "t0",
+      id: "a",
     });
   });
 
@@ -457,7 +457,7 @@ describe("generalization", () => {
     const [$ga, $gb] = poly.args;
     expect($ga).toEqual({
       type: "quantified",
-      id: "t0",
+      id: "a",
     });
     expect($gb).toEqual($b.asType());
   });

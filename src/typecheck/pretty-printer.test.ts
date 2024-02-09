@@ -22,14 +22,14 @@ test("nested types", () => {
 
 test("type var", () => {
   const $a = TVar.fresh();
-  expect(typePPrint($a.asType())).toBe("t0");
+  expect(typePPrint($a.asType())).toBe("a");
 });
 
 test("type vars", () => {
   const $a = TVar.fresh(),
     $b = TVar.fresh();
 
-  expect(typePPrint(Tuple($a.asType(), $b.asType()))).toBe("(t0, t1)");
+  expect(typePPrint(Tuple($a.asType(), $b.asType()))).toBe("(a, b)");
 });
 
 test("bound types", () => {
@@ -58,7 +58,7 @@ test("higher order function", () => {
 
 test("tv as arg", () => {
   const $a = TVar.fresh();
-  expect(typePPrint(Fn([$a.asType()], $a.asType()))).toBe("Fn(t0) -> t0");
+  expect(typePPrint(Fn([$a.asType()], $a.asType()))).toBe("Fn(a) -> a");
 });
 
 test("n-arity type nested in a fn", () => {
