@@ -38,6 +38,32 @@ test("application with many args", () => {
   assertFormatted(`let x = f(0, 1, 2)\n`);
 });
 
+test("infix application", () => {
+  assertFormatted(`let x = 1 + 2\n`);
+});
+
+test("nested infix", () => {
+  assertFormatted(`let x = 1 + 2 * 3\n`);
+  assertFormatted(`let x = 1 * 2 + 3\n`);
+});
+
+test("keep parenthesis if needed by prec", () => {
+  assertFormatted(`let x = (1 + 2) * 3\n`);
+});
+
+test("mix infix and appl", () => {
+  assertFormatted(`let x = 1 + f(2 + 3) + 4\n`);
+});
+
+test("prefix not", () => {
+  assertFormatted(`let x = !0\n`);
+});
+
+test("prefix with and", () => {
+  assertFormatted(`let x = !(True && False)\n`);
+  assertFormatted(`let x = !True && !False\n`);
+});
+
 test("multiple declrs", () => {
   assertFormatted(`let x = 0
 
@@ -248,7 +274,6 @@ describe("pattern matching", () => {
   });
 });
 
-test.todo("infix ops");
 test.todo("order between type declrs and declrs");
 test.todo("comments");
 

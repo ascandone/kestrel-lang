@@ -19,6 +19,56 @@ import {
   text,
 } from "./pretty";
 
+const ORDERED_PREFIX_SYMBOLS = [["!"]];
+
+const ORDERED_INFIX_SYMBOLS = [
+  ["^"],
+  ["*", "*.", "/", "/.", "%"],
+  ["+", "-", "+.", "-.", "<>"],
+  ["::"],
+  ["||"],
+  ["&&"],
+  ["==", "!="],
+  ["<", "<=", ">", ">="],
+  ["|>"],
+];
+
+const ORDERED_SYMBOLS = [...ORDERED_PREFIX_SYMBOLS, ...ORDERED_INFIX_SYMBOLS];
+
+function isPrefix(name: string) {
+  return ORDERED_PREFIX_SYMBOLS.some((s) => s.includes(name));
+}
+
+function getBindingPower(name: string): number | undefined {
+  const index = ORDERED_SYMBOLS.findIndex((ops) => ops.includes(name));
+  if (index === -1) {
+    return undefined;
+  }
+  return index;
+}
+
+// eslint-disable-next-line no-inner-declarations
+function hasLowerPrec(bindingPower: number, other: Expr): boolean {
+  switch (other.type) {
+    case "application":
+      infix: if (other.caller.type === "identifier") {
+        const selfBindingPower = getBindingPower(other.caller.name);
+        if (selfBindingPower === undefined) {
+          break infix;
+        }
+        return selfBindingPower > bindingPower;
+      }
+
+    case "constant":
+    case "identifier":
+    case "fn":
+    case "let":
+    case "if":
+    case "match":
+      return false;
+  }
+}
+
 function constToDoc(lit: ConstLiteral): Doc {
   switch (lit.type) {
     case "int":
@@ -45,6 +95,28 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
       );
 
     case "application":
+      infix: if (ast.caller.type === "identifier") {
+        const name = ast.caller.name;
+        const infixIndex = getBindingPower(name);
+        if (infixIndex === undefined) {
+          break infix;
+        }
+
+        const left = ast.args[0]!;
+        const leftNeedsParens = hasLowerPrec(infixIndex, left);
+        const leftDoc = leftNeedsParens
+          ? concat(text("("), exprToDoc(left, false), text(")"))
+          : exprToDoc(left, false);
+
+        if (isPrefix(name)) {
+          return concat(text(`${name}`), leftDoc);
+        }
+
+        const right = ast.args[1]!;
+
+        return concat(leftDoc, text(` ${name} `), exprToDoc(right, false));
+      }
+
       return concat(
         exprToDoc(ast.caller, false),
         text("("),
