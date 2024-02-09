@@ -33,7 +33,7 @@ test("renders break of many lines", () => {
       concat(
         //
         text("ab"),
-        break_(3),
+        break_(2),
         text("cd"),
       ),
     ),
