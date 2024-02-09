@@ -52,8 +52,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
     }
 
     case "if":
-      return nest(
-        break_(),
+      return concat(
         text("if "),
         exprToDoc(ast.condition, false),
         text(" {"),

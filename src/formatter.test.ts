@@ -41,13 +41,11 @@ let y = 1\n`);
 });
 
 test("if expr", () => {
-  // TODO remove extra trailing space after let
-  assertFormatted(`let _ = 
-  if cond {
-    0
-  } else {
-    1
-  }
+  assertFormatted(`let _ = if cond {
+  0
+} else {
+  1
+}
 `);
 });
 
@@ -69,6 +67,17 @@ test("fn inside function call", () => {
   assertFormatted(`let x = f(0, 1, fn a {
   x
 })
+`);
+});
+
+test("if inside fn", () => {
+  assertFormatted(`let f = fn {
+  if cond {
+    x
+  } else {
+    y
+  }
+}
 `);
 });
 
@@ -99,16 +108,15 @@ test("let inside fn", () => {
 });
 
 test("let inside if body", () => {
-  assertFormatted(`let f = 
-  if cond {
-    let x = value;
-    let y = value2;
-    body1
-  } else {
-    let x = value;
-    let y = value2;
-    body2
-  }
+  assertFormatted(`let f = if cond {
+  let x = value;
+  let y = value2;
+  body1
+} else {
+  let x = value;
+  let y = value2;
+  body2
+}
 `);
 });
 
