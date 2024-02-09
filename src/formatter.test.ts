@@ -22,6 +22,18 @@ test("namespaced identifier", () => {
   assertFormatted(`let x = A/B/C.y\n`);
 });
 
+test("application with no args", () => {
+  assertFormatted(`let x = f()\n`);
+});
+
+test("application with one arg", () => {
+  assertFormatted(`let x = f(0)\n`);
+});
+
+test("application with many args", () => {
+  assertFormatted(`let x = f(0, 1, 2)\n`);
+});
+
 test("multiple declrs", () => {
   assertFormatted(`let x = 0
 
@@ -50,6 +62,13 @@ test("fn with params", () => {
   assertFormatted(`let f = fn a, b, c {
   x
 }
+`);
+});
+
+test("fn inside function call", () => {
+  assertFormatted(`let x = f(0, 1, fn a {
+  x
+})
 `);
 });
 

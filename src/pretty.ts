@@ -4,6 +4,8 @@ export type Doc =
   | { type: "line-break"; lines: number }
   | { type: "nest"; doc: Doc };
 
+export const nil = concat();
+
 export function concat(...docs: Doc[]): Doc {
   if (docs.length === 1) {
     return docs[0]!;

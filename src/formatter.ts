@@ -4,7 +4,7 @@ import {
   UntypedDeclaration,
   UntypedModule,
 } from "./parser";
-import { Doc, break_, concat, nest, pprint, text } from "./pretty";
+import { Doc, break_, concat, nest, nil, pprint, text } from "./pretty";
 
 function constToDoc(lit: ConstLiteral): Doc {
   switch (lit.type) {
@@ -29,6 +29,17 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
       return text(
         ast.namespace === undefined ? "" : `${ast.namespace}.`,
         ast.name,
+      );
+
+    case "application":
+      return concat(
+        exprToDoc(ast.caller, false),
+        text("("),
+        ...ast.args.flatMap((arg, index) => {
+          const isLast = index === ast.args.length - 1;
+          return [exprToDoc(arg, false), isLast ? nil : text(", ")];
+        }),
+        text(")"),
       );
 
     case "fn": {
@@ -69,7 +80,6 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
       return concat(text("{"), indent(inner), text("}"));
     }
 
-    case "application":
     case "match":
       throw new Error("TODO handle expr: " + ast.type);
   }
