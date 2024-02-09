@@ -1,4 +1,4 @@
-import { test, expect } from "vitest";
+import { test, expect, describe } from "vitest";
 import { unsafeParse } from "./parser";
 import { format } from "./formatter";
 
@@ -122,6 +122,24 @@ test("let inside if body", () => {
   body2
 }
 `);
+});
+
+describe("type hints", () => {
+  test("concrete type", () => {
+    assertFormatted(`let f: Int = 0\n`);
+  });
+
+  test("type hints on extern", () => {
+    assertFormatted(`extern let f: Int\n`);
+  });
+
+  test("concrete with one arg", () => {
+    assertFormatted(`extern let f: Maybe<Int>\n`);
+  });
+
+  test("concrete with many args", () => {
+    assertFormatted(`extern let f: Result<Int, String>\n`);
+  });
 });
 
 function assertFormatted(src: string) {

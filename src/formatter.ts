@@ -1,6 +1,7 @@
 import {
   ConstLiteral,
   Expr,
+  TypeAst,
   UntypedDeclaration,
   UntypedModule,
 } from "./parser";
@@ -83,15 +84,41 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
   }
 }
 
-function declToDoc(ast: UntypedDeclaration): Doc {
-  if (ast.extern) {
-    throw new Error("TODO handle extern pprint");
-  }
+function typeAstToDoc(typeAst: TypeAst): Doc {
+  switch (typeAst.type) {
+    case "named": {
+      // TODO ns
+      const name = text(typeAst.name);
+      if (typeAst.args.length === 0) {
+        return name;
+      }
 
+      return concat(
+        name,
+        text("<"),
+        ...typeAst.args.flatMap((arg, index) => {
+          const isLast = index === typeAst.args.length - 1;
+          return [typeAstToDoc(arg), isLast ? nil : text(", ")];
+        }),
+        text(">"),
+      );
+    }
+    case "var":
+    case "fn":
+    case "any":
+      throw new Error("TODO typast: " + typeAst.type);
+  }
+}
+
+function declToDoc(ast: UntypedDeclaration): Doc {
   return concat(
+    ast.extern ? text("extern ") : nil,
     ast.pub ? text("pub ") : nil,
-    text(`let ${ast.binding.name} = `),
-    exprToDoc(ast.value, false),
+    text(`let ${ast.binding.name}`),
+    ast.typeHint === undefined
+      ? nil
+      : concat(text(": "), typeAstToDoc(ast.typeHint)),
+    ast.extern ? nil : concat(text(" = "), exprToDoc(ast.value, false)),
   );
 }
 
