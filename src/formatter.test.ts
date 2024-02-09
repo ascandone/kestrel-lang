@@ -166,6 +166,31 @@ describe("type hints", () => {
   });
 });
 
+describe("type delc", () => {
+  test("extern types", () => {
+    assertFormatted(`extern type T\n`);
+  });
+
+  test("extern types pub modifier", () => {
+    assertFormatted(`extern pub type T\n`);
+  });
+
+  test("adts with no construtcors", () => {
+    assertFormatted(`type T { }\n`);
+  });
+
+  test("adts pub modifier", () => {
+    assertFormatted(`pub type T { }\n`);
+  });
+
+  test("adts pub(..) modifier", () => {
+    assertFormatted(`pub(..) type T { }\n`);
+  });
+});
+
+test.todo("order between type declrs and declrs");
+test.todo("comments");
+
 function assertFormatted(src: string) {
   const ast = unsafeParse(src);
   expect(format(ast)).toBe(src);

@@ -4,6 +4,7 @@ import {
   TypeAst,
   UntypedDeclaration,
   UntypedModule,
+  UntypedTypeDeclaration,
 } from "./parser";
 import { Doc, break_, concat, nest, nil, pprint, sepBy, text } from "./pretty";
 
@@ -132,11 +133,36 @@ function declToDoc(ast: UntypedDeclaration): Doc {
   );
 }
 
+function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
+  switch (tDecl.type) {
+    case "extern":
+      return concat(
+        text("extern "),
+        tDecl.pub ? text("pub ") : nil,
+        text("type "),
+        text(tDecl.name),
+      );
+
+    case "adt":
+      return concat(
+        tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
+        text("type "),
+        text(tDecl.name),
+        text(" {"),
+        text(" "),
+        text("}"),
+      );
+  }
+}
+
 export function format(ast: UntypedModule): string {
-  const docs = ast.declarations.flatMap((decl, index) => {
-    const last = index === ast.declarations.length - 1;
-    return [declToDoc(decl), break_(last ? 0 : 1)];
+  const tDeclrs = ast.typeDeclarations.map(typeDeclToDoc);
+  const declrs = ast.declarations.map(declToDoc);
+
+  const docs = tDeclrs.concat(declrs).flatMap((doc, index, arr) => {
+    const last = index === arr.length - 1;
+    return [doc, break_(last ? 0 : 1)];
   });
 
-  return pprint(concat(...docs));
+  return pprint({ type: "concat", docs });
 }
