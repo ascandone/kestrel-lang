@@ -38,6 +38,18 @@ test("application with many args", () => {
   assertFormatted(`let x = f(0, 1, 2)\n`);
 });
 
+test("constructor application with many args", () => {
+  assertFormatted(`let x = Constr(0, 1, 2)\n`);
+});
+
+test("cons application sugar", () => {
+  assertFormatted(`let x = hd :: hd2 :: tl\n`);
+});
+
+test.todo("cons application is rassoc", () => {
+  assertFormatted(`let x = (hd :: tl1) :: tl2\n`);
+});
+
 test("infix application", () => {
   assertFormatted(`let x = 1 + 2\n`);
 });
@@ -306,6 +318,13 @@ describe("pattern matching", () => {
   test("matching a constructor with many args", () => {
     assertFormatted(`let m = match expr {
   X(x, y, z) => ret,
+}
+`);
+  });
+
+  test("matching :: sugar", () => {
+    assertFormatted(`let m = match expr {
+  hd :: tl => ret,
 }
 `);
   });

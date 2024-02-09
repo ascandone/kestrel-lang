@@ -83,6 +83,13 @@ function indent(...docs: Doc[]): Doc {
   return concat(nest(break_(), ...docs), break_());
 }
 
+function infixAliasForName(name: string) {
+  if (name === "Cons") {
+    return "::";
+  }
+  return name;
+}
+
 function exprToDoc(ast: Expr, block: boolean): Doc {
   switch (ast.type) {
     case "constant":
@@ -96,7 +103,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
 
     case "application":
       infix: if (ast.caller.type === "identifier") {
-        const name = ast.caller.name;
+        const name = infixAliasForName(ast.caller.name);
         const infixIndex = getBindingPower(name);
         if (infixIndex === undefined) {
           break infix;
@@ -190,6 +197,12 @@ function patternToDoc(pattern: MatchPattern): Doc {
       return constToDoc(pattern.literal);
 
     case "constructor":
+      if (pattern.name === "Cons" && pattern.args.length === 2) {
+        const left = pattern.args[0]!;
+        const right = pattern.args[1]!;
+        return concat(patternToDoc(left), text(" :: "), patternToDoc(right));
+      }
+
       if (pattern.args.length === 0) {
         return text(pattern.name);
       }
