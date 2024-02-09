@@ -174,7 +174,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         text(" {"),
         clauses.length === 0
           ? text(" ")
-          : indent(sepByString(",", clauses), text(",")),
+          : indent(sepBy(concat(text(","), break_()), clauses), text(",")),
         text("}"),
       );
     }
@@ -190,7 +190,15 @@ function patternToDoc(pattern: MatchPattern): Doc {
       return constToDoc(pattern.literal);
 
     case "constructor":
-      throw new Error("TODO match constructor");
+      if (pattern.args.length === 0) {
+        return text(pattern.name);
+      }
+      return concat(
+        text(pattern.name),
+        text("("),
+        sepByString(", ", pattern.args.map(patternToDoc)),
+        text(")"),
+      );
   }
 }
 

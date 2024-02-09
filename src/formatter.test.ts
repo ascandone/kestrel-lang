@@ -274,9 +274,45 @@ describe("pattern matching", () => {
 `);
   });
 
+  test("many clauses", () => {
+    assertFormatted(`let m = match expr {
+  x => 0,
+  y => 1,
+}
+`);
+  });
+
   test("matching over a const", () => {
     assertFormatted(`let m = match expr {
   0 => 0,
+}
+`);
+  });
+
+  test("matching a constructor with no args", () => {
+    assertFormatted(`let m = match expr {
+  X => ret,
+}
+`);
+  });
+
+  test("matching a constructor with one arg", () => {
+    assertFormatted(`let m = match expr {
+  X(x) => ret,
+}
+`);
+  });
+
+  test("matching a constructor with many args", () => {
+    assertFormatted(`let m = match expr {
+  X(x, y, z) => ret,
+}
+`);
+  });
+
+  test("nested pattern matching", () => {
+    assertFormatted(`let m = match expr {
+  X(Just(a, _, Ok)) => ret,
 }
 `);
   });
