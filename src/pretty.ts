@@ -15,7 +15,7 @@ export function text(...texts: string[]): Doc {
   return concat(...texts.map((text) => ({ type: "text", text }) satisfies Doc));
 }
 
-export function break_(lines = 1): Doc {
+export function break_(lines = 0): Doc {
   return { type: "line-break", lines };
 }
 
@@ -29,7 +29,7 @@ export type FormatOptions = {
   indentationSymbol: string;
 };
 
-export function format(
+export function pprint(
   doc: Doc,
   { nestSize = 2, indentationSymbol = " " }: Partial<FormatOptions> = {},
 ): string {
@@ -54,7 +54,7 @@ export function format(
         for (let i = 0; i < indentation; i++) {
           buf.push(indentationSymbol);
         }
-        for (let i = 0; i < doc.lines; i++) {
+        for (let i = 0; i < doc.lines + 1; i++) {
           buf.push("\n");
         }
         break;

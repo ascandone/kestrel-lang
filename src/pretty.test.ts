@@ -1,13 +1,13 @@
 import { test, expect } from "vitest";
-import { break_, concat, format, nest, text } from "./pretty";
+import { break_, concat, pprint, nest, text } from "./pretty";
 
 test("renders plain text", () => {
-  expect(format(text("Hello"))).toBe(`Hello`);
+  expect(pprint(text("Hello"))).toBe(`Hello`);
 });
 
 test("renders seq of text", () => {
   expect(
-    format(
+    pprint(
       //
       text("abc", "cde"),
     ),
@@ -16,7 +16,7 @@ test("renders seq of text", () => {
 
 test("renders break", () => {
   expect(
-    format(
+    pprint(
       concat(
         //
         text("ab"),
@@ -29,7 +29,7 @@ test("renders break", () => {
 
 test("renders break of many lines", () => {
   expect(
-    format(
+    pprint(
       concat(
         //
         text("ab"),
@@ -42,7 +42,7 @@ test("renders break of many lines", () => {
 
 test("nesting has no effect when there aren't breaks", () => {
   expect(
-    format(
+    pprint(
       concat(
         //
         text("ab"),
@@ -54,7 +54,7 @@ test("nesting has no effect when there aren't breaks", () => {
 
 test("nesting idents the wrapped doc after a break", () => {
   expect(
-    format(
+    pprint(
       concat(
         //
         text("ab"),
