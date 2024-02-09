@@ -87,8 +87,11 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
 function typeAstToDoc(typeAst: TypeAst): Doc {
   switch (typeAst.type) {
     case "named": {
-      // TODO ns
-      const name = text(typeAst.name);
+      const name = text(
+        typeAst.namespace === undefined ? "" : `${typeAst.namespace}.`,
+        typeAst.name,
+      );
+
       if (typeAst.args.length === 0) {
         return name;
       }
@@ -100,10 +103,20 @@ function typeAstToDoc(typeAst: TypeAst): Doc {
         text(">"),
       );
     }
+
     case "var":
-    case "fn":
+      return text(typeAst.ident);
+
     case "any":
-      throw new Error("TODO typast: " + typeAst.type);
+      return text("_");
+
+    case "fn":
+      return concat(
+        text("Fn("),
+        sepBy(", ", typeAst.args.map(typeAstToDoc)),
+        text(") -> "),
+        typeAstToDoc(typeAst.return),
+      );
   }
 }
 

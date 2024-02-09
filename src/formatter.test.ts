@@ -129,6 +129,10 @@ describe("type hints", () => {
     assertFormatted(`let f: Int = 0\n`);
   });
 
+  test("qualified concrete type", () => {
+    assertFormatted(`let f: A/B/C.Int = 0\n`);
+  });
+
   test("type hints on extern", () => {
     assertFormatted(`extern let f: Int\n`);
   });
@@ -139,6 +143,26 @@ describe("type hints", () => {
 
   test("concrete with many args", () => {
     assertFormatted(`extern let f: Result<Int, String>\n`);
+  });
+
+  test("tvar", () => {
+    assertFormatted(`extern let f: a\n`);
+  });
+
+  test("catchall", () => {
+    assertFormatted(`extern let f: _\n`);
+  });
+
+  test("Fn with no args", () => {
+    assertFormatted(`extern let f: Fn() -> Int\n`);
+  });
+
+  test("Fn with one arg", () => {
+    assertFormatted(`extern let f: Fn(A) -> Int\n`);
+  });
+
+  test("Fn with many arg", () => {
+    assertFormatted(`extern let f: Fn(A, B, C) -> Int\n`);
   });
 });
 
