@@ -20,14 +20,6 @@ function indent(...docs: Doc[]): Doc {
   return concat(nest(break_(), ...docs), break_());
 }
 
-function collectLet(expr: Expr): [Array<Expr & { type: "let" }>, Expr] {
-  if (expr.type !== "let") {
-    return [[], expr];
-  }
-  const [stmts, body] = collectLet(expr.body);
-  return [[expr, ...stmts], body];
-}
-
 type ExprCtx = { block: boolean };
 
 function exprToDoc(ast: Expr, ctx: ExprCtx): Doc {
@@ -63,19 +55,13 @@ function exprToDoc(ast: Expr, ctx: ExprCtx): Doc {
       );
 
     case "let": {
-      const [declrs, body] = collectLet(ast);
-
       const inner = concat(
-        ...declrs.map((decl) =>
-          concat(
-            // TODO same wrapping rules as let decl
-            text(`let ${decl.binding.name} = `),
-            exprToDoc(decl.value, ctx),
-            text(";"),
-            break_(),
-          ),
-        ),
-        exprToDoc(body, ctx),
+        // TODO same wrapping rules as let decl
+        text(`let ${ast.binding.name} = `),
+        exprToDoc(ast.value, { ...ctx, block: false }),
+        text(";"),
+        break_(),
+        exprToDoc(ast.body, { ...ctx, block: true }),
       );
 
       if (ctx.block) {
