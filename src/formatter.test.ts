@@ -229,8 +229,20 @@ describe("type delc", () => {
 
 describe("pattern matching", () => {
   test("empty pattern matching", () => {
-    assertFormatted(`let x = match expr {
+    assertFormatted(`let x = match expr { }
+`);
+  });
 
+  test("matching over an ident", () => {
+    assertFormatted(`let m = match expr {
+  x => 0,
+}
+`);
+  });
+
+  test("matching over a const", () => {
+    assertFormatted(`let m = match expr {
+  0 => 0,
 }
 `);
   });

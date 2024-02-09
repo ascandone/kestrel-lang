@@ -1,6 +1,7 @@
 import {
   ConstLiteral,
   Expr,
+  MatchPattern,
   TypeAst,
   UntypedDeclaration,
   UntypedModule,
@@ -90,14 +91,34 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
       return concat(text("{"), indent(inner), text("}"));
     }
 
-    case "match":
+    case "match": {
+      const clauses = ast.clauses.map(([pattern, expr]) =>
+        concat(patternToDoc(pattern), text(" => "), exprToDoc(expr, false)),
+      );
+
       return concat(
         text("match "),
         exprToDoc(ast.expr, false),
         text(" {"),
-        break_(1),
+        clauses.length === 0
+          ? text(" ")
+          : indent(sepByString(",", clauses), text(",")),
         text("}"),
       );
+    }
+  }
+}
+
+function patternToDoc(pattern: MatchPattern): Doc {
+  switch (pattern.type) {
+    case "ident":
+      return text(pattern.ident);
+
+    case "lit":
+      return constToDoc(pattern.literal);
+
+    case "constructor":
+      throw new Error("TODO match constructor");
   }
 }
 
