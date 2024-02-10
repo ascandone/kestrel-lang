@@ -47,12 +47,6 @@ export type FormatOptions = {
   indentationSymbol: string;
 };
 
-export const defaultFormatOptions: FormatOptions = {
-  maxWidth: 80,
-  indentationSymbol: " ",
-  nestSize: 2,
-};
-
 type DocStack = null | {
   mode: Mode;
   indentation: number;
