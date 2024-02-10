@@ -93,14 +93,14 @@ semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
 });
 
 semantics.addOperation<MatchPattern>("matchPattern()", {
-  MatchPattern_ident(ident) {
+  ConstructorPattern_ident(ident) {
     return {
       type: "ident",
       ident: ident.sourceString,
       span: getSpan(this),
     };
   },
-  MatchPattern_lit(lit) {
+  ConstructorPattern_lit(lit) {
     return {
       type: "lit",
       literal: lit.lit(),
@@ -108,7 +108,7 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
     };
   },
 
-  ConsPattern_cons(l, _cons, r) {
+  MatchPattern_cons(l, _cons, r) {
     return {
       type: "constructor",
       name: "Cons",
@@ -117,7 +117,7 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
     };
   },
 
-  MatchPattern_tuple(_lparens, x, _comma, xs, _rparens) {
+  ConstructorPattern_tuple(_lparens, x, _comma, xs, _rparens) {
     const xs_ = xs.asIteration().children.map((c) => c.matchPattern());
 
     const count = 1 + xs_.length;
@@ -129,7 +129,7 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
       span: getSpan(this),
     };
   },
-  MatchPattern_constructor(ident, _lparent, args, _rparens) {
+  ConstructorPattern_constructor(ident, _lparent, args, _rparens) {
     let args_: MatchPattern[] = [];
     if (args.numChildren > 0) {
       args_ = args

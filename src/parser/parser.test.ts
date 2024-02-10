@@ -508,6 +508,11 @@ describe("pattern matching", () => {
     const src = `let _ = match x { hd :: tl :: Nil => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("matching cons nested in tuple", () => {
+    const src = `let _ = match x { (hd :: Nil, y) => res }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("extern bindings", () => {

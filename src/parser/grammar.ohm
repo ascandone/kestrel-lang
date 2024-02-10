@@ -135,13 +135,13 @@ Program {
   // --- Pattern matching
 
   MatchClause
-    = ConsPattern "=>" Exp -- clause
-
-  ConsPattern
-    = MatchPattern "::" ConsPattern -- cons
-    | MatchPattern
+    = MatchPattern "=>" Exp -- clause
 
   MatchPattern
+    = ConstructorPattern "::" MatchPattern -- cons
+    | ConstructorPattern
+
+  ConstructorPattern
     = ident  -- ident
     | lit -- lit
     | "(" MatchPattern "," NonemptyListOf<MatchPattern, ","> ")" -- tuple
