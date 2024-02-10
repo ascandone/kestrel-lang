@@ -1,14 +1,5 @@
 import { test, expect } from "vitest";
-import {
-  lines,
-  concat,
-  pprint,
-  nest,
-  text,
-  break_,
-  group,
-  broken,
-} from "./pretty";
+import { lines, concat, pprint, nest, text, break_, broken } from "./pretty";
 
 test("renders plain text", () => {
   expect(pprint(text("Hello"))).toBe(`Hello`);
