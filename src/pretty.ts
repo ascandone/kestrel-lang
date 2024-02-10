@@ -78,7 +78,6 @@ export function pprint(
   // eslint-disable-next-line no-constant-condition
   while (true) {
     if (docsStack === null) {
-      buf.reverse();
       return buf.join("");
     }
     const mode: Mode = docsStack.mode;
@@ -93,11 +92,11 @@ export function pprint(
         break;
 
       case "lines":
-        for (let i = 0; i < indentation; i++) {
-          buf.push(indentationSymbol);
-        }
         for (let i = 0; i < doc.lines + 1; i++) {
           buf.push("\n");
+        }
+        for (let i = 0; i < indentation; i++) {
+          buf.push(indentationSymbol);
         }
         break;
 
@@ -111,12 +110,11 @@ export function pprint(
         break;
 
       case "concat":
-        // TODO iter reverse
-        for (const d of doc.docs) {
+        for (let i = doc.docs.length - 1; i >= 0; i--) {
           docsStack = {
             indentation: indentation,
             mode: mode,
-            doc: d,
+            doc: doc.docs[i]!,
             tail: docsStack,
           };
         }
@@ -129,10 +127,10 @@ export function pprint(
             width += doc.unbroken.length;
             break;
           case "break":
+            buf.push("\n");
             for (let i = 0; i < indentation; i++) {
               buf.push(indentationSymbol);
             }
-            buf.push("\n");
             width = indentation;
             break;
         }
