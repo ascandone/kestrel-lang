@@ -18,7 +18,7 @@ export function concat(...docs: Doc[]): Doc {
 }
 
 export function text(...texts: string[]): Doc {
-  return concat(...texts.map((text) => ({ type: "text", text }) satisfies Doc));
+  return { type: "text", text: texts.join("") };
 }
 
 export function break_(unbroken: string): Doc {
@@ -49,26 +49,43 @@ export const defaultFormatOptions: FormatOptions = {
   nestSize: 2,
 };
 
+type DocStack = null | {
+  mode: Mode;
+  indentation: number;
+  doc: Doc;
+  tail: DocStack;
+};
+
 export function pprint(
-  doc: Doc,
+  initialDoc: Doc,
   {
     // maxWidth = 80,
     indentationSymbol = " ",
     nestSize = 2,
   }: Partial<FormatOptions> = {},
 ) {
-  const stack: Array<[number, Mode, Doc]> = [[0, { type: "flat" }, doc]];
+  let docsStack: DocStack = {
+    doc: initialDoc,
+    indentation: 0,
+    mode: { type: "flat" },
+    tail: null,
+  };
+
   // TODO wrap doc in a group
   const buf: string[] = [];
   let width = 0;
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const popped = stack.pop();
-    if (popped === undefined) {
-      break;
+    if (docsStack === null) {
+      buf.reverse();
+      return buf.join("");
     }
-    const [indentation, mode, doc] = popped;
+    const mode: Mode = docsStack.mode;
+    const indentation: number = docsStack.indentation;
+    const doc: Doc = docsStack.doc;
+    docsStack = docsStack.tail;
+
     switch (doc.type) {
       case "text":
         buf.push(doc.text);
@@ -85,13 +102,23 @@ export function pprint(
         break;
 
       case "nest":
-        stack.push([indentation + nestSize, mode, doc.doc]);
+        docsStack = {
+          indentation: indentation + nestSize,
+          mode: mode,
+          doc: doc.doc,
+          tail: docsStack,
+        };
         break;
 
       case "concat":
         // TODO iter reverse
         for (const d of doc.docs) {
-          stack.push([indentation, mode, d]);
+          docsStack = {
+            indentation: indentation,
+            mode: mode,
+            doc: d,
+            tail: docsStack,
+          };
         }
         break;
 
@@ -111,9 +138,6 @@ export function pprint(
         }
     }
   }
-
-  buf.reverse();
-  return buf.join("");
 }
 
 export function sepByString(sep: string, docs: Doc[]): Doc {

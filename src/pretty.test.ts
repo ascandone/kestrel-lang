@@ -14,6 +14,15 @@ test("renders seq of text", () => {
   ).toBe(`abccde`);
 });
 
+test("singleton concat", () => {
+  expect(
+    pprint(
+      //
+      { type: "concat", docs: [text("abc")] },
+    ),
+  ).toBe(`abc`);
+});
+
 test("renders break", () => {
   expect(
     pprint(
