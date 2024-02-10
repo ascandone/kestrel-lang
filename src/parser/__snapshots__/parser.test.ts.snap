@@ -2563,7 +2563,17 @@ exports[`parse tuple sugar 1`] = `
               "value": 1,
             },
           },
-          "2",
+          {
+            "span": [
+              12,
+              13,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 2,
+            },
+          },
         ],
         "caller": {
           "name": "Tuple2",

@@ -183,7 +183,7 @@ semantics.addOperation<Expr<SpanMeta>>("expr()", {
   },
 
   PriExp_tuple(_lparens, x, _comma, xs, _rparens) {
-    const xs_ = xs.asIteration().children.map((m) => m.sourceString);
+    const xs_ = xs.asIteration().children.map((m) => m.expr());
 
     const count = 1 + xs_.length;
 
