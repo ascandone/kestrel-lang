@@ -469,6 +469,16 @@ describe("pattern matching", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
+  test("matching many clauses, without trailing comma", () => {
+    const src = `let _ = match x { a => ret_a, b => ret_b  }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("matching many clauses, with trailing comma", () => {
+    const src = `let _ = match x { a => ret_a, b => ret_b,  }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
   test("matching constructor with no args", () => {
     const src = `let _ = match x { X => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();

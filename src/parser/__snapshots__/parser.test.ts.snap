@@ -3284,6 +3284,166 @@ exports[`pattern matching > matching int literals 1`] = `
 }
 `;
 
+exports[`pattern matching > matching many clauses, with trailing comma 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        44,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "ident": "a",
+              "span": [
+                18,
+                19,
+              ],
+              "type": "ident",
+            },
+            {
+              "name": "ret_a",
+              "namespace": undefined,
+              "span": [
+                23,
+                28,
+              ],
+              "type": "identifier",
+            },
+          ],
+          [
+            {
+              "ident": "b",
+              "span": [
+                30,
+                31,
+              ],
+              "type": "ident",
+            },
+            {
+              "name": "ret_b",
+              "namespace": undefined,
+              "span": [
+                35,
+                40,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "namespace": undefined,
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          44,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pattern matching > matching many clauses, without trailing comma 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        43,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "ident": "a",
+              "span": [
+                18,
+                19,
+              ],
+              "type": "ident",
+            },
+            {
+              "name": "ret_a",
+              "namespace": undefined,
+              "span": [
+                23,
+                28,
+              ],
+              "type": "identifier",
+            },
+          ],
+          [
+            {
+              "ident": "b",
+              "span": [
+                30,
+                31,
+              ],
+              "type": "ident",
+            },
+            {
+              "name": "ret_b",
+              "namespace": undefined,
+              "span": [
+                35,
+                40,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "namespace": undefined,
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          43,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`pattern matching > matching str literals 1`] = `
 {
   "declarations": [
