@@ -78,7 +78,7 @@ test("nesting idents the wrapped doc after a break", () => {
 test("optional line break doesn't wrap when there is enough space", () => {
   expect(
     pprint(
-      concat(
+      group(
         //
         text("ab"),
         break_("-"),
@@ -89,16 +89,29 @@ test("optional line break doesn't wrap when there is enough space", () => {
   ).toBe(`ab-cd`);
 });
 
-test.todo("optional line break wraps when there is not enough space", () => {
+test("optional line break wraps when there is not enough space", () => {
   expect(
     pprint(
       group(
         //
-        text("ab"),
+        text("abc"),
         break_("-"),
-        text("cd"),
+        text("def"),
       ),
-      { maxWidth: 3 },
+      { maxWidth: 2 },
     ),
-  ).toBe(`ab\ncd`);
+  ).toBe(`abc\ndef`);
+});
+
+test("break respects indentation", () => {
+  expect(
+    pprint(
+      group(
+        //
+        text("abc"),
+        nest(break_("-"), text("def")),
+      ),
+      { maxWidth: 2 },
+    ),
+  ).toBe(`abc\n  def`);
 });

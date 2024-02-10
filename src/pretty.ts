@@ -21,7 +21,7 @@ export function text(...texts: string[]): Doc {
   return { type: "text", text: texts.join("") };
 }
 
-export function break_(unbroken: string): Doc {
+export function break_(unbroken: string = " "): Doc {
   return { type: "break", unbroken };
 }
 
@@ -56,10 +56,66 @@ type DocStack = null | {
   tail: DocStack;
 };
 
+function fits(width: number, docsStack: DocStack): boolean {
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    if (docsStack === null) {
+      return true;
+    }
+    const mode: Mode = docsStack.mode;
+    const indentation: number = docsStack.indentation;
+    const doc: Doc = docsStack.doc;
+    docsStack = docsStack.tail;
+
+    if (width < 0) {
+      return false;
+    }
+
+    switch (doc.type) {
+      case "text":
+        width -= doc.text.length;
+        break;
+      case "break":
+        switch (mode.type) {
+          case "flat":
+            width -= doc.unbroken.length;
+            break;
+          case "break":
+            return true;
+        }
+        break;
+
+      case "group":
+        docsStack = {
+          indentation,
+          mode: { type: "flat" },
+          doc: doc.doc,
+          tail: docsStack,
+        };
+        break;
+
+      case "concat":
+        for (let i = doc.docs.length - 1; i >= 0; i--) {
+          docsStack = {
+            indentation: indentation,
+            mode: mode,
+            doc: doc.docs[i]!,
+            tail: docsStack,
+          };
+        }
+        break;
+
+      case "nest":
+      case "lines":
+        throw new Error("TODO handle fits: " + doc.type);
+    }
+  }
+}
+
 export function pprint(
   initialDoc: Doc,
   {
-    // maxWidth = 80,
+    maxWidth = 80,
     indentationSymbol = " ",
     nestSize = 2,
   }: Partial<FormatOptions> = {},
@@ -134,6 +190,27 @@ export function pprint(
             width = indentation;
             break;
         }
+        break;
+
+      case "group": {
+        const fit = fits(maxWidth - width, {
+          indentation,
+          mode: { type: "flat" },
+          doc,
+          tail: docsStack,
+        });
+
+        const mode: Mode = fit
+          ? { type: "flat" }
+          : { type: "break", force: false };
+        docsStack = {
+          mode,
+          indentation,
+          doc: doc.doc,
+          tail: docsStack,
+        };
+        break;
+      }
     }
   }
 }
