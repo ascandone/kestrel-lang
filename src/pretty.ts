@@ -5,6 +5,7 @@ export type Doc =
   | { type: "concat"; docs: Doc[] }
   | { type: "lines"; lines: number }
   | { type: "break"; unbroken: string }
+  | { type: "force-broken"; doc: Doc }
   | { type: "nest"; doc: Doc }
   | { type: "group"; doc: Doc };
 
@@ -23,6 +24,10 @@ export function text(...texts: string[]): Doc {
 
 export function break_(unbroken: string = " "): Doc {
   return { type: "break", unbroken };
+}
+
+export function broken(...docs: Doc[]): Doc {
+  return { type: "force-broken", doc: concat(...docs) };
 }
 
 export function group(...docs: Doc[]): Doc {
@@ -73,6 +78,8 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
       case "text":
         width -= doc.text.length;
         break;
+      case "force-broken":
+        return false;
       case "break":
         switch (mode.type) {
           case "flat":
@@ -199,7 +206,26 @@ export function pprint(
         }
         break;
 
+      case "force-broken":
+        docsStack = {
+          indentation,
+          mode: { type: "break", force: true },
+          doc: doc.doc,
+          tail: docsStack,
+        };
+        break;
+
       case "group": {
+        if (mode.type === "break" && mode.force) {
+          docsStack = {
+            mode,
+            indentation,
+            doc: doc.doc,
+            tail: docsStack,
+          };
+          break;
+        }
+
         const fit = fits(maxWidth - width, nestSize, {
           indentation,
           mode: { type: "flat" },
@@ -207,11 +233,12 @@ export function pprint(
           tail: docsStack,
         });
 
-        const mode: Mode = fit
+        const newMode: Mode = fit
           ? { type: "flat" }
           : { type: "break", force: false };
+
         docsStack = {
-          mode,
+          mode: newMode,
           indentation,
           doc: doc.doc,
           tail: docsStack,

@@ -1,5 +1,14 @@
 import { test, expect } from "vitest";
-import { lines, concat, pprint, nest, text, break_, group } from "./pretty";
+import {
+  lines,
+  concat,
+  pprint,
+  nest,
+  text,
+  break_,
+  group,
+  broken,
+} from "./pretty";
 
 test("renders plain text", () => {
   expect(pprint(text("Hello"))).toBe(`Hello`);
@@ -112,6 +121,19 @@ test("break respects indentation", () => {
         nest(break_("-"), text("def")),
       ),
       { maxWidth: 2 },
+    ),
+  ).toBe(`abc\n  def`);
+});
+
+test("force break", () => {
+  expect(
+    pprint(
+      group(
+        //
+        text("abc"),
+        broken(nest(break_("-"), text("def"))),
+      ),
+      { maxWidth: Infinity },
     ),
   ).toBe(`abc\n  def`);
 });
