@@ -31,50 +31,66 @@ export type FormatOptions = {
   indentationSymbol: string;
 };
 
-export function pprint(
-  doc: Doc,
-  { nestSize = 2, indentationSymbol = " " }: Partial<FormatOptions> = {},
-): string {
-  // TODO wrap doc in a group
-  const buf: string[] = [];
-  const vec: Array<[number, Doc]> = [[0, doc]];
+class PPrint {
+  private stack: Array<[number, Doc]>;
 
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const popped = vec.pop();
-    if (popped === undefined) {
-      break;
-    }
-    const [indentation, doc] = popped;
-    switch (doc.type) {
-      case "text":
-        buf.push(doc.text);
-        // TODO update size
-        break;
-
-      case "lines":
-        for (let i = 0; i < indentation; i++) {
-          buf.push(indentationSymbol);
-        }
-        for (let i = 0; i < doc.lines + 1; i++) {
-          buf.push("\n");
-        }
-        break;
-
-      case "nest":
-        vec.push([indentation + nestSize, doc.doc]);
-        break;
-
-      case "concat":
-        for (const d of doc.docs) {
-          vec.push([indentation, d]);
-        }
-        break;
-    }
+  constructor(
+    doc: Doc,
+    private readonly options: FormatOptions,
+  ) {
+    this.stack = [[0, doc]];
   }
 
-  buf.reverse();
-  return buf.join("");
+  format() {
+    // TODO wrap doc in a group
+    const buf: string[] = [];
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const popped = this.stack.pop();
+      if (popped === undefined) {
+        break;
+      }
+      const [indentation, doc] = popped;
+      switch (doc.type) {
+        case "text":
+          buf.push(doc.text);
+          // TODO update size
+          break;
+
+        case "lines":
+          for (let i = 0; i < indentation; i++) {
+            buf.push(this.options.indentationSymbol);
+          }
+          for (let i = 0; i < doc.lines + 1; i++) {
+            buf.push("\n");
+          }
+          break;
+
+        case "nest":
+          this.stack.push([indentation + this.options.nestSize, doc.doc]);
+          break;
+
+        case "concat":
+          for (const d of doc.docs) {
+            this.stack.push([indentation, d]);
+          }
+          break;
+      }
+    }
+
+    buf.reverse();
+    return buf.join("");
+  }
+}
+
+export function pprint(doc: Doc, opt: Partial<FormatOptions> = {}): string {
+  const pprint = new PPrint(doc, {
+    nestSize: opt.nestSize ?? 2,
+    indentationSymbol: opt.indentationSymbol ?? " ",
+  });
+
+  return pprint.format();
 }
 
 export function sepByString(sep: string, docs: Doc[]): Doc {
