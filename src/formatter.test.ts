@@ -180,7 +180,11 @@ describe("imports", () => {
   });
 
   test("order with declrs", () => {
-    assertFormatted(`import A\nlet x = 0\n`);
+    assertFormatted(`import A
+import B
+
+let x = 0
+`);
   });
 
   test("exposing a value", () => {
@@ -189,6 +193,14 @@ describe("imports", () => {
 
   test("exposing a type", () => {
     assertFormatted(`import A.{Type}\n`);
+  });
+
+  test("exposing an infix value", () => {
+    assertFormatted(`import A.{(+)}\n`);
+  });
+
+  test("exposing many values", () => {
+    assertFormatted(`import A.{a, b, c}\n`);
   });
 
   test("exposing a type and its constructors", () => {
@@ -398,7 +410,5 @@ describe("pattern matching", () => {
 
 function assertFormatted(src: string, out: string = src) {
   const ast = unsafeParse(src);
-  console.dir(ast, { depth: Infinity });
-
   expect(format(ast)).toBe(out);
 }

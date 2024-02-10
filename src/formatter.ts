@@ -40,6 +40,10 @@ function isPrefix(name: string) {
   return ORDERED_PREFIX_SYMBOLS.some((s) => s.includes(name));
 }
 
+function isInfix(name: string) {
+  return ORDERED_INFIX_SYMBOLS.some((s) => s.includes(name));
+}
+
 function getBindingPower(name: string): number | undefined {
   const index = ORDERED_SYMBOLS.findIndex((ops) => ops.includes(name));
   if (index === -1) {
@@ -337,10 +341,15 @@ function importToDoc(import_: UntypedImport): Doc {
       ? nil
       : concat(
           text(".{"),
-          ...import_.exposing.map((exposing) =>
-            text(
-              exposing.name,
-              exposing.type === "type" && exposing.exposeImpl ? "(..)" : "",
+          sepByString(
+            ", ",
+            import_.exposing.map((exposing) =>
+              text(
+                isInfix(exposing.name) || isPrefix(exposing.name)
+                  ? `(${exposing.name})`
+                  : exposing.name,
+                exposing.type === "type" && exposing.exposeImpl ? "(..)" : "",
+              ),
             ),
           ),
           text("}"),
@@ -356,14 +365,16 @@ export function format(ast: UntypedModule): string {
   const importsDocs = ast.imports
     .sort((i1, i2) => (i1.ns > i2.ns ? 1 : -1))
     .map(importToDoc)
-    .flatMap((doc) => {
-      return [doc, break_()];
-    });
+    .flatMap((doc) => [doc, break_()]);
 
   const statements = [
     ...ast.typeDeclarations.map<Statement>((decl) => ({ type: "type", decl })),
     ...ast.declarations.map<Statement>((decl) => ({ type: "decl", decl })),
   ].sort((s1, s2) => s1.decl.span[0] - s2.decl.span[0]);
+
+  if (importsDocs.length !== 0 && statements.length !== 0) {
+    importsDocs.push(break_());
+  }
 
   const statementsDocs = statements
     .map((s) => {
