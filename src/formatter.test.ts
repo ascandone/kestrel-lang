@@ -38,6 +38,17 @@ test("application with many args", () => {
   assertFormatted(`let x = f(0, 1, 2)\n`);
 });
 
+test("application that wraps", () => {
+  assertFormatted(`let x = f(
+  long_spanning_val,
+  long_spanning_fn(1, 2, 4, 5, 6),
+  long_spanning_val,
+  long_spanning_val,
+  long_spanning_val
+)
+`);
+});
+
 test("constructor application with many args", () => {
   assertFormatted(`let x = Constr(0, 1, 2)\n`);
 });
@@ -119,8 +130,8 @@ test("fn with params", () => {
 
 test("fn inside function call", () => {
   assertFormatted(`let x = f(0, 1, fn a {
-  x
-})
+    x
+  })
 `);
 });
 

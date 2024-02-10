@@ -26,6 +26,10 @@ export function break_(unbroken: string = " "): Doc {
 }
 
 export function group(...docs: Doc[]): Doc {
+  if (docs.length === 1) {
+    return { type: "group", doc: docs[0]! };
+  }
+
   return { type: "group", doc: concat(...docs) };
 }
 
@@ -56,7 +60,7 @@ type DocStack = null | {
   tail: DocStack;
 };
 
-function fits(width: number, docsStack: DocStack): boolean {
+function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
   // eslint-disable-next-line no-constant-condition
   while (true) {
     if (docsStack === null) {
@@ -97,17 +101,25 @@ function fits(width: number, docsStack: DocStack): boolean {
       case "concat":
         for (let i = doc.docs.length - 1; i >= 0; i--) {
           docsStack = {
-            indentation: indentation,
-            mode: mode,
+            indentation,
+            mode,
             doc: doc.docs[i]!,
             tail: docsStack,
           };
         }
         break;
 
-      case "nest":
       case "lines":
-        throw new Error("TODO handle fits: " + doc.type);
+        return true;
+
+      case "nest":
+        docsStack = {
+          indentation: indentation + nestSize,
+          mode,
+          doc: doc.doc,
+          tail: docsStack,
+        };
+        break;
     }
   }
 }
@@ -159,7 +171,7 @@ export function pprint(
       case "nest":
         docsStack = {
           indentation: indentation + nestSize,
-          mode: mode,
+          mode,
           doc: doc.doc,
           tail: docsStack,
         };
@@ -168,8 +180,8 @@ export function pprint(
       case "concat":
         for (let i = doc.docs.length - 1; i >= 0; i--) {
           docsStack = {
-            indentation: indentation,
-            mode: mode,
+            indentation,
+            mode,
             doc: doc.docs[i]!,
             tail: docsStack,
           };
@@ -193,7 +205,7 @@ export function pprint(
         break;
 
       case "group": {
-        const fit = fits(maxWidth - width, {
+        const fit = fits(maxWidth - width, nestSize, {
           indentation,
           mode: { type: "flat" },
           doc,
