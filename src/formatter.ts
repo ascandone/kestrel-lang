@@ -321,14 +321,29 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
   }
 }
 
-export function format(ast: UntypedModule): string {
-  const tDeclrs = ast.typeDeclarations.map(typeDeclToDoc);
-  const declrs = ast.declarations.map(declToDoc);
+type Statement =
+  | { type: "decl"; decl: UntypedDeclaration }
+  | { type: "type"; decl: UntypedTypeDeclaration };
 
-  const docs = tDeclrs.concat(declrs).flatMap((doc, index, arr) => {
-    const last = index === arr.length - 1;
-    return [doc, break_(last ? 0 : 1)];
-  });
+export function format(ast: UntypedModule): string {
+  const statements = [
+    ...ast.typeDeclarations.map<Statement>((decl) => ({ type: "type", decl })),
+    ...ast.declarations.map<Statement>((decl) => ({ type: "decl", decl })),
+  ].sort((s1, s2) => s1.decl.span[0] - s2.decl.span[0]);
+
+  const docs = statements
+    .map((s) => {
+      switch (s.type) {
+        case "type":
+          return typeDeclToDoc(s.decl);
+        case "decl":
+          return declToDoc(s.decl);
+      }
+    })
+    .flatMap((doc, index, arr) => {
+      const last = index === arr.length - 1;
+      return [doc, break_(last ? 0 : 1)];
+    });
 
   return pprint({ type: "concat", docs });
 }

@@ -170,6 +170,15 @@ test("let inside if body", () => {
 `);
 });
 
+test("order between type declrs and declrs", () => {
+  const t = `type T { }`;
+  const d = `let x = 0`;
+  assertFormatted(`${t}\n\n${d}\n`);
+  assertFormatted(`${d}\n\n${t}\n`);
+});
+
+test.todo("comments");
+
 describe("type hints", () => {
   test("concrete type", () => {
     assertFormatted(`let f: Int = 0\n`);
@@ -336,9 +345,6 @@ describe("pattern matching", () => {
 `);
   });
 });
-
-test.todo("order between type declrs and declrs");
-test.todo("comments");
 
 function assertFormatted(src: string) {
   const ast = unsafeParse(src);
