@@ -102,7 +102,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         ast.name,
       );
 
-    case "application":
+    case "application": {
       infix: if (ast.caller.type === "identifier") {
         const name = infixAliasForName(ast.caller.name);
         const infixIndex = getBindingPower(name);
@@ -125,8 +125,11 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         return concat(leftDoc, text(` ${name} `), exprToDoc(right, false));
       }
 
+      const isTuple =
+        ast.caller.type === "identifier" && ast.caller.name === "Tuple2";
+
       return concat(
-        exprToDoc(ast.caller, false),
+        isTuple ? nil : exprToDoc(ast.caller, false),
         text("("),
         sepByString(
           ", ",
@@ -134,6 +137,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         ),
         text(")"),
       );
+    }
 
     case "fn": {
       const params = ast.params.map((p) => ` ${p.name}`).join(",");
@@ -197,7 +201,7 @@ function patternToDoc(pattern: MatchPattern): Doc {
     case "lit":
       return constToDoc(pattern.literal);
 
-    case "constructor":
+    case "constructor": {
       if (pattern.name === "Cons" && pattern.args.length === 2) {
         const left = pattern.args[0]!;
         const right = pattern.args[1]!;
@@ -207,12 +211,16 @@ function patternToDoc(pattern: MatchPattern): Doc {
       if (pattern.args.length === 0) {
         return text(pattern.name);
       }
+
+      const isTuple = pattern.name === "Tuple2";
+
       return concat(
-        text(pattern.name),
+        isTuple ? nil : text(pattern.name),
         text("("),
         sepByString(", ", pattern.args.map(patternToDoc)),
         text(")"),
       );
+    }
   }
 }
 

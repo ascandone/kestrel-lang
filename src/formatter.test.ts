@@ -42,6 +42,10 @@ test("constructor application with many args", () => {
   assertFormatted(`let x = Constr(0, 1, 2)\n`);
 });
 
+test("Tuple2 sugar", () => {
+  assertFormatted(`let x = (1, 2)\n`);
+});
+
 test("cons application sugar", () => {
   assertFormatted(`let x = hd :: hd2 :: tl\n`);
 });
@@ -375,6 +379,15 @@ describe("pattern matching", () => {
 `);
   });
 
+  test("matching Tuple2 sugar", () => {
+    assertFormatted(`let m = match expr {
+  (a, b) => ret,
+}
+`);
+  });
+
+  test.todo("TupleN sugar");
+
   test("nested pattern matching", () => {
     assertFormatted(`let m = match expr {
   X(Just(a, _, Ok)) => ret,
@@ -385,5 +398,7 @@ describe("pattern matching", () => {
 
 function assertFormatted(src: string, out: string = src) {
   const ast = unsafeParse(src);
+  console.dir(ast, { depth: Infinity });
+
   expect(format(ast)).toBe(out);
 }
