@@ -419,6 +419,20 @@ describe("pattern matching", () => {
   });
 });
 
+test("actual examples", () => {
+  assertFormatted(
+    `
+pub let range = fn from, to {
+  if from >= to {
+    Nil
+  } else {
+    from :: range(from + 1, to)
+  }
+}
+`.trimStart(),
+  );
+});
+
 function assertFormatted(src: string, out: string = src) {
   const ast = unsafeParse(src);
   expect(format(ast)).toBe(out);

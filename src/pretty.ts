@@ -160,6 +160,7 @@ export function pprint(
         for (let i = 0; i < indentation; i++) {
           buf.push(indentationSymbol);
         }
+        width = indentation;
         break;
 
       case "nest":
