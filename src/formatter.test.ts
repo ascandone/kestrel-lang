@@ -170,6 +170,43 @@ test("let inside if body", () => {
 `);
 });
 
+describe("imports", () => {
+  test("without exposings", () => {
+    assertFormatted(`import A\n`);
+  });
+
+  test("order with declrs", () => {
+    assertFormatted(`import A\nlet x = 0\n`);
+  });
+
+  test("exposing a value", () => {
+    assertFormatted(`import A.{value}\n`);
+  });
+
+  test("exposing a type", () => {
+    assertFormatted(`import A.{Type}\n`);
+  });
+
+  test("exposing a type and its constructors", () => {
+    assertFormatted(`import A.{Type(..)}\n`);
+  });
+
+  test("sort imports alphabetically", () => {
+    assertFormatted(`import A
+import B
+`);
+
+    assertFormatted(
+      `import B
+import A
+`,
+      `import A
+import B
+`,
+    );
+  });
+});
+
 test("order between type declrs and declrs", () => {
   const t = `type T { }`;
   const d = `let x = 0`;
@@ -346,7 +383,7 @@ describe("pattern matching", () => {
   });
 });
 
-function assertFormatted(src: string) {
+function assertFormatted(src: string, out: string = src) {
   const ast = unsafeParse(src);
-  expect(format(ast)).toBe(src);
+  expect(format(ast)).toBe(out);
 }

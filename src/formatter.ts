@@ -4,6 +4,7 @@ import {
   MatchPattern,
   TypeAst,
   UntypedDeclaration,
+  UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
 } from "./parser";
@@ -321,17 +322,42 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
   }
 }
 
+function importToDoc(import_: UntypedImport): Doc {
+  return concat(
+    text("import ", import_.ns),
+    import_.exposing.length === 0
+      ? nil
+      : concat(
+          text(".{"),
+          ...import_.exposing.map((exposing) =>
+            text(
+              exposing.name,
+              exposing.type === "type" && exposing.exposeImpl ? "(..)" : "",
+            ),
+          ),
+          text("}"),
+        ),
+  );
+}
+
 type Statement =
   | { type: "decl"; decl: UntypedDeclaration }
   | { type: "type"; decl: UntypedTypeDeclaration };
 
 export function format(ast: UntypedModule): string {
+  const importsDocs = ast.imports
+    .sort((i1, i2) => (i1.ns > i2.ns ? 1 : -1))
+    .map(importToDoc)
+    .flatMap((doc) => {
+      return [doc, break_()];
+    });
+
   const statements = [
     ...ast.typeDeclarations.map<Statement>((decl) => ({ type: "type", decl })),
     ...ast.declarations.map<Statement>((decl) => ({ type: "decl", decl })),
   ].sort((s1, s2) => s1.decl.span[0] - s2.decl.span[0]);
 
-  const docs = statements
+  const statementsDocs = statements
     .map((s) => {
       switch (s.type) {
         case "type":
@@ -344,6 +370,8 @@ export function format(ast: UntypedModule): string {
       const last = index === arr.length - 1;
       return [doc, break_(last ? 0 : 1)];
     });
+
+  const docs = [...importsDocs, ...statementsDocs];
 
   return pprint({ type: "concat", docs });
 }
