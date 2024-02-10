@@ -1,7 +1,7 @@
 export type Doc =
   | { type: "text"; text: string }
   | { type: "concat"; docs: Doc[] }
-  | { type: "line-break"; lines: number }
+  | { type: "lines"; lines: number }
   | { type: "nest"; doc: Doc };
 
 export const nil = concat();
@@ -17,8 +17,8 @@ export function text(...texts: string[]): Doc {
   return concat(...texts.map((text) => ({ type: "text", text }) satisfies Doc));
 }
 
-export function break_(lines = 0): Doc {
-  return { type: "line-break", lines };
+export function lines(lines = 0): Doc {
+  return { type: "lines", lines };
 }
 
 export function nest(...docs: Doc[]): Doc {
@@ -52,7 +52,7 @@ export function pprint(
         // TODO update size
         break;
 
-      case "line-break":
+      case "lines":
         for (let i = 0; i < indentation; i++) {
           buf.push(indentationSymbol);
         }

@@ -10,7 +10,7 @@ import {
 } from "./parser";
 import {
   Doc,
-  break_,
+  lines,
   concat,
   nest,
   nil,
@@ -85,7 +85,7 @@ function constToDoc(lit: ConstLiteral): Doc {
 }
 
 function indent(...docs: Doc[]): Doc {
-  return concat(nest(break_(), ...docs), break_());
+  return concat(nest(lines(), ...docs), lines());
 }
 
 function infixAliasForName(name: string) {
@@ -168,7 +168,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         text(`let ${ast.binding.name} = `),
         exprToDoc(ast.value, false),
         text(";"),
-        break_(),
+        lines(),
         exprToDoc(ast.body, true),
       );
 
@@ -190,7 +190,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         text(" {"),
         clauses.length === 0
           ? text(" ")
-          : indent(sepBy(concat(text(","), break_()), clauses), text(",")),
+          : indent(sepBy(concat(text(","), lines()), clauses), text(",")),
         text("}"),
       );
     }
@@ -292,7 +292,7 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
           ? text(" ")
           : indent(
               sepBy(
-                break_(),
+                lines(),
                 tDecl.variants.map((variant) =>
                   concat(
                     text(variant.name),
@@ -365,7 +365,7 @@ export function format(ast: UntypedModule): string {
   const importsDocs = ast.imports
     .sort((i1, i2) => (i1.ns > i2.ns ? 1 : -1))
     .map(importToDoc)
-    .flatMap((doc) => [doc, break_()]);
+    .flatMap((doc) => [doc, lines()]);
 
   const statements = [
     ...ast.typeDeclarations.map<Statement>((decl) => ({ type: "type", decl })),
@@ -373,7 +373,7 @@ export function format(ast: UntypedModule): string {
   ].sort((s1, s2) => s1.decl.span[0] - s2.decl.span[0]);
 
   if (importsDocs.length !== 0 && statements.length !== 0) {
-    importsDocs.push(break_());
+    importsDocs.push(lines());
   }
 
   const statementsDocs = statements
@@ -387,7 +387,7 @@ export function format(ast: UntypedModule): string {
     })
     .flatMap((doc, index, arr) => {
       const last = index === arr.length - 1;
-      return [doc, break_(last ? 0 : 1)];
+      return [doc, lines(last ? 0 : 1)];
     });
 
   const docs = [...importsDocs, ...statementsDocs];
