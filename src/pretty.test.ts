@@ -87,7 +87,7 @@ test("nesting idents the wrapped doc after a break", () => {
 test("optional line break doesn't wrap when there is enough space", () => {
   expect(
     pprint(
-      group(
+      concat(
         //
         text("ab"),
         break_("-"),
@@ -101,7 +101,7 @@ test("optional line break doesn't wrap when there is enough space", () => {
 test("optional line break wraps when there is not enough space", () => {
   expect(
     pprint(
-      group(
+      concat(
         //
         text("abc"),
         break_("-"),
@@ -115,7 +115,7 @@ test("optional line break wraps when there is not enough space", () => {
 test("break respects indentation", () => {
   expect(
     pprint(
-      group(
+      concat(
         //
         text("abc"),
         nest(break_("-"), text("def")),
@@ -128,7 +128,7 @@ test("break respects indentation", () => {
 test("force break", () => {
   expect(
     pprint(
-      group(
+      concat(
         //
         text("abc"),
         broken(nest(break_("-"), text("def"))),

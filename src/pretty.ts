@@ -134,7 +134,7 @@ export function pprint(
   }: Partial<FormatOptions> = {},
 ) {
   let docsStack: DocStack = {
-    doc: initialDoc,
+    doc: { type: "group", doc: initialDoc },
     indentation: 0,
     mode: { type: "flat" },
     tail: null,
