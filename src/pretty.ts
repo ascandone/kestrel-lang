@@ -1,8 +1,12 @@
+export type Mode = { type: "flat" } | { type: "break"; force: boolean };
+
 export type Doc =
   | { type: "text"; text: string }
   | { type: "concat"; docs: Doc[] }
   | { type: "lines"; lines: number }
-  | { type: "nest"; doc: Doc };
+  | { type: "break"; unbroken: string }
+  | { type: "nest"; doc: Doc }
+  | { type: "group"; doc: Doc };
 
 export const nil = concat();
 
@@ -17,6 +21,14 @@ export function text(...texts: string[]): Doc {
   return concat(...texts.map((text) => ({ type: "text", text }) satisfies Doc));
 }
 
+export function break_(unbroken: string): Doc {
+  return { type: "break", unbroken };
+}
+
+export function group(...docs: Doc[]): Doc {
+  return { type: "group", doc: concat(...docs) };
+}
+
 export function lines(lines = 0): Doc {
   return { type: "lines", lines };
 }
@@ -26,71 +38,82 @@ export function nest(...docs: Doc[]): Doc {
 }
 
 export type FormatOptions = {
-  // maxW: number;
+  maxWidth: number;
   nestSize: number;
   indentationSymbol: string;
 };
 
-class PPrint {
-  private stack: Array<[number, Doc]>;
+export const defaultFormatOptions: FormatOptions = {
+  maxWidth: 80,
+  indentationSymbol: " ",
+  nestSize: 2,
+};
 
-  constructor(
-    doc: Doc,
-    private readonly options: FormatOptions,
-  ) {
-    this.stack = [[0, doc]];
-  }
+export function pprint(
+  doc: Doc,
+  {
+    // maxWidth = 80,
+    indentationSymbol = " ",
+    nestSize = 2,
+  }: Partial<FormatOptions> = {},
+) {
+  const stack: Array<[number, Mode, Doc]> = [[0, { type: "flat" }, doc]];
+  // TODO wrap doc in a group
+  const buf: string[] = [];
+  let width = 0;
 
-  format() {
-    // TODO wrap doc in a group
-    const buf: string[] = [];
-
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const popped = this.stack.pop();
-      if (popped === undefined) {
-        break;
-      }
-      const [indentation, doc] = popped;
-      switch (doc.type) {
-        case "text":
-          buf.push(doc.text);
-          // TODO update size
-          break;
-
-        case "lines":
-          for (let i = 0; i < indentation; i++) {
-            buf.push(this.options.indentationSymbol);
-          }
-          for (let i = 0; i < doc.lines + 1; i++) {
-            buf.push("\n");
-          }
-          break;
-
-        case "nest":
-          this.stack.push([indentation + this.options.nestSize, doc.doc]);
-          break;
-
-        case "concat":
-          for (const d of doc.docs) {
-            this.stack.push([indentation, d]);
-          }
-          break;
-      }
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const popped = stack.pop();
+    if (popped === undefined) {
+      break;
     }
+    const [indentation, mode, doc] = popped;
+    switch (doc.type) {
+      case "text":
+        buf.push(doc.text);
+        width += doc.text.length;
+        break;
 
-    buf.reverse();
-    return buf.join("");
+      case "lines":
+        for (let i = 0; i < indentation; i++) {
+          buf.push(indentationSymbol);
+        }
+        for (let i = 0; i < doc.lines + 1; i++) {
+          buf.push("\n");
+        }
+        break;
+
+      case "nest":
+        stack.push([indentation + nestSize, mode, doc.doc]);
+        break;
+
+      case "concat":
+        // TODO iter reverse
+        for (const d of doc.docs) {
+          stack.push([indentation, mode, d]);
+        }
+        break;
+
+      case "break":
+        switch (mode.type) {
+          case "flat":
+            buf.push(doc.unbroken);
+            width += doc.unbroken.length;
+            break;
+          case "break":
+            for (let i = 0; i < indentation; i++) {
+              buf.push(indentationSymbol);
+            }
+            buf.push("\n");
+            width = indentation;
+            break;
+        }
+    }
   }
-}
 
-export function pprint(doc: Doc, opt: Partial<FormatOptions> = {}): string {
-  const pprint = new PPrint(doc, {
-    nestSize: opt.nestSize ?? 2,
-    indentationSymbol: opt.indentationSymbol ?? " ",
-  });
-
-  return pprint.format();
+  buf.reverse();
+  return buf.join("");
 }
 
 export function sepByString(sep: string, docs: Doc[]): Doc {

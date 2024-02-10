@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { lines, concat, pprint, nest, text } from "./pretty";
+import { lines, concat, pprint, nest, text, break_, group } from "./pretty";
 
 test("renders plain text", () => {
   expect(pprint(text("Hello"))).toBe(`Hello`);
@@ -64,4 +64,32 @@ test("nesting idents the wrapped doc after a break", () => {
       ),
     ),
   ).toBe(`ab\n  cd\nef`);
+});
+
+test("optional line break doesn't wrap when there is enough space", () => {
+  expect(
+    pprint(
+      concat(
+        //
+        text("ab"),
+        break_("-"),
+        text("cd"),
+      ),
+      { maxWidth: Infinity },
+    ),
+  ).toBe(`ab-cd`);
+});
+
+test.todo("optional line break wraps when there is not enough space", () => {
+  expect(
+    pprint(
+      group(
+        //
+        text("ab"),
+        break_("-"),
+        text("cd"),
+      ),
+      { maxWidth: 3 },
+    ),
+  ).toBe(`ab\ncd`);
 });
