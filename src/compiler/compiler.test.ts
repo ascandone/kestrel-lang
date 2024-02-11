@@ -935,6 +935,62 @@ function loop() {
 }
 `);
   });
+
+  test("Example: List.reduce", () => {
+    const out = compileSrc(`
+      pub let reduce = fn lst, acc, f {
+        match lst {
+          Nil => acc,
+          hd :: tl => reduce(lst, f(acc, hd), f),
+        }
+      }
+  `);
+
+    expect(out).toEqual(`function reduce(GEN__1, GEN__2, GEN__3) {
+  while (true) {
+    const lst = GEN__1;
+    const acc = GEN__2;
+    const f = GEN__3;
+    const GEN__0 = lst;
+    if (GEN__0.type === "Nil") {
+      return acc;
+    } else if (GEN__0.type === "Cons") {
+      GEN__0 = lst;
+      GEN__1 = f(acc, GEN__0.a0);
+      GEN__2 = f;
+    } else {
+      throw new Error("[non exhaustive match]")
+    }
+  }
+}
+`);
+  });
+
+  test.todo("Namespaced", () => {
+    const out = compileSrc(`let f1 = fn { f1() }`, "Mod");
+
+    expect(out).toEqual(`function Mod$f1() {
+  while (true) {
+  }
+}
+`);
+  });
+
+  test.todo("Local vars shadow tail calls", () => {
+    const out = compileSrc(`
+      let f1 = fn {
+        let f1 = fn { 0 };
+        f1()
+      }`);
+
+    expect(out).toEqual(`function f1() {
+  function f1$f1() {
+    return 0
+  };
+  return f1$f1();
+}
+`);
+  });
 });
 
 describe("modules", () => {
