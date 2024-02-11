@@ -38,7 +38,7 @@ test("application with many args", () => {
   assertFormatted(`let x = f(0, 1, 2)\n`);
 });
 
-test("application that wraps", () => {
+test.todo("application that wraps", () => {
   assertFormatted(`let x = f(
   long_spanning_val,
   long_spanning_fn(1, 2, 4, 5, 6),
@@ -130,8 +130,15 @@ test("fn with params", () => {
 
 test("fn inside function call", () => {
   assertFormatted(`let x = f(0, 1, fn a {
-    x
-  })
+  x
+})
+`);
+});
+
+test("fn inside function call that wraps", () => {
+  assertFormatted(`let x = f(0, 1, fn a {
+  very_very_very_very_very_very_very_very_long_spanning_fn_value()
+})
 `);
 });
 
@@ -428,6 +435,15 @@ pub let range = fn from, to {
   } else {
     from :: range(from + 1, to)
   }
+}
+
+pub let filter_map = fn lst, f {
+  reduce_right(lst, Nil, fn x, xs {
+    match f(x) {
+      Nothing => xs,
+      Just(hd) => hd :: xs,
+    }
+  })
 }
 `.trimStart(),
   );

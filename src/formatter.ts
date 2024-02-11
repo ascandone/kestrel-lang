@@ -18,8 +18,6 @@ import {
   sepBy,
   sepByString,
   text,
-  break_,
-  group,
 } from "./pretty";
 
 const ORDERED_PREFIX_SYMBOLS = [["!"]];
@@ -137,15 +135,9 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
       return concat(
         isTuple ? nil : exprToDoc(ast.caller, false),
         text("("),
-        group(
-          nest(
-            break_(""),
-            sepBy(
-              concat(text(","), break_(" ")),
-              ast.args.map((arg) => exprToDoc(arg, false)),
-            ),
-          ),
-          break_(""),
+        sepBy(
+          text(", "),
+          ast.args.map((arg) => exprToDoc(arg, false)),
         ),
         text(")"),
       );

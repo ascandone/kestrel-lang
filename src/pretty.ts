@@ -1,4 +1,4 @@
-export type Mode = { type: "flat" } | { type: "break"; force: boolean };
+export type Mode = "unbroken" | "broken" | "forced-broken";
 
 export type Doc =
   | { type: "text"; text: string }
@@ -65,10 +65,18 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
     if (docsStack === null) {
       return true;
     }
-    const mode: Mode = docsStack.mode;
-    const indentation: number = docsStack.indentation;
-    const doc: Doc = docsStack.doc;
+    const { mode, indentation, doc } = docsStack;
     docsStack = docsStack.tail;
+
+    // eslint-disable-next-line no-inner-declarations
+    function push(mode: Mode, indentation: number, doc: Doc) {
+      docsStack = {
+        indentation,
+        mode,
+        doc,
+        tail: docsStack,
+      };
+    }
 
     if (width < 0) {
       return false;
@@ -81,32 +89,23 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
       case "force-broken":
         return false;
       case "break":
-        switch (mode.type) {
-          case "flat":
+        switch (mode) {
+          case "unbroken":
             width -= doc.unbroken.length;
             break;
-          case "break":
+          case "broken":
+          case "forced-broken":
             return true;
         }
         break;
 
       case "group":
-        docsStack = {
-          indentation,
-          mode: { type: "flat" },
-          doc: doc.doc,
-          tail: docsStack,
-        };
+        push("unbroken", indentation, doc.doc);
         break;
 
       case "concat":
         for (let i = doc.docs.length - 1; i >= 0; i--) {
-          docsStack = {
-            indentation,
-            mode,
-            doc: doc.docs[i]!,
-            tail: docsStack,
-          };
+          push(mode, indentation, doc.docs[i]!);
         }
         break;
 
@@ -114,12 +113,7 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
         return true;
 
       case "nest":
-        docsStack = {
-          indentation: indentation + nestSize,
-          mode,
-          doc: doc.doc,
-          tail: docsStack,
-        };
+        push(mode, indentation + nestSize, doc.doc);
         break;
     }
   }
@@ -136,9 +130,18 @@ export function pprint(
   let docsStack: DocStack = {
     doc: { type: "group", doc: initialDoc },
     indentation: 0,
-    mode: { type: "flat" },
+    mode: "unbroken",
     tail: null,
   };
+
+  function push(mode: Mode, indentation: number, doc: Doc) {
+    docsStack = {
+      indentation,
+      mode,
+      doc,
+      tail: docsStack,
+    };
+  }
 
   // TODO wrap doc in a group
   const buf: string[] = [];
@@ -171,32 +174,23 @@ export function pprint(
         break;
 
       case "nest":
-        docsStack = {
-          indentation: indentation + nestSize,
-          mode,
-          doc: doc.doc,
-          tail: docsStack,
-        };
+        push(mode, indentation + nestSize, doc.doc);
         break;
 
       case "concat":
         for (let i = doc.docs.length - 1; i >= 0; i--) {
-          docsStack = {
-            indentation,
-            mode,
-            doc: doc.docs[i]!,
-            tail: docsStack,
-          };
+          push(mode, indentation, doc.docs[i]!);
         }
         break;
 
       case "break":
-        switch (mode.type) {
-          case "flat":
+        switch (mode) {
+          case "unbroken":
             buf.push(doc.unbroken);
             width += doc.unbroken.length;
             break;
-          case "break":
+          case "broken":
+          case "forced-broken":
             buf.push("\n");
             for (let i = 0; i < indentation; i++) {
               buf.push(indentationSymbol);
@@ -207,42 +201,23 @@ export function pprint(
         break;
 
       case "force-broken":
-        docsStack = {
-          indentation,
-          mode: { type: "break", force: true },
-          doc: doc.doc,
-          tail: docsStack,
-        };
+        push("forced-broken", indentation, doc.doc);
         break;
 
       case "group": {
-        if (mode.type === "break" && mode.force) {
-          docsStack = {
-            mode,
-            indentation,
-            doc: doc.doc,
-            tail: docsStack,
-          };
+        if (mode === "forced-broken") {
+          push(mode, indentation, doc.doc);
           break;
         }
 
         const fit = fits(maxWidth - width, nestSize, {
           indentation,
-          mode: { type: "flat" },
+          mode: "unbroken",
           doc,
           tail: docsStack,
         });
 
-        const newMode: Mode = fit
-          ? { type: "flat" }
-          : { type: "break", force: false };
-
-        docsStack = {
-          mode: newMode,
-          indentation,
-          doc: doc.doc,
-          tail: docsStack,
-        };
+        push(fit ? "unbroken" : "broken", indentation, doc.doc);
         break;
       }
     }
