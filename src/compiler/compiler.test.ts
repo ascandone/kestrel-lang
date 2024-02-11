@@ -943,6 +943,22 @@ describe("modules", () => {
     expect(out).toEqual(`const ExampleModule$a = 42;\n`);
   });
 
+  test("declarations from modules different than Main are resolved correctly", () => {
+    const out = compileSrc(`let a = 42\nlet x = a`, "ExampleModule");
+    expect(out).toEqual(
+      `const ExampleModule$a = 42;\n\nconst ExampleModule$x = ExampleModule$a;\n`,
+    );
+  });
+
+  test("extern declarations from modules different than Main are resolved correctly", () => {
+    const out = compileSrc(
+      `extern let a: Int
+      let x = a`,
+      "ExampleModule",
+    );
+    expect(out).toEqual(`const ExampleModule$x = ExampleModule$a;\n`);
+  });
+
   test("variables are scoped in nested modules", () => {
     const out = compileSrc(`let a = 42`, "A/B/C");
     expect(out).toEqual(`const A$B$C$a = 42;\n`);

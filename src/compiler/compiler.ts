@@ -421,11 +421,12 @@ export class Compiler {
     }
 
     for (const decl of src.declarations) {
+      const nameSpacedBinding = moduleNamespacedBinding(decl.binding.name, ns);
       if (decl.extern) {
         // skip the infix operators
         // as they are already handled by the compiler
         if (!isInfix(decl.binding.name)) {
-          this.globalScope[decl.binding.name] = decl.binding.name;
+          this.globalScope[decl.binding.name] = nameSpacedBinding;
         }
 
         continue;
@@ -438,7 +439,6 @@ export class Compiler {
         }),
       );
 
-      const nameSpacedBinding = moduleNamespacedBinding(decl.binding.name, ns);
       this.globalScope[decl.binding.name] = nameSpacedBinding;
 
       const statements = this.compileAsStatements(
