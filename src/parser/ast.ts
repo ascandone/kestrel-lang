@@ -111,7 +111,7 @@ export type Declaration<TypeMeta, IdentifierResolutionMeta> = SpanMeta & {
       }
   );
 
-export type TypeVariant<TypeMeta> = TypeMeta & {
+export type TypeVariant<TypeMeta> = (TypeMeta & SpanMeta) & {
   name: string;
   args: TypeAst[];
 };

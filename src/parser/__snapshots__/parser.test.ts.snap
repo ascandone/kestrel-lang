@@ -3882,10 +3882,18 @@ exports[`type declarations > trailing comma after variants 1`] = `
         {
           "args": [],
           "name": "A",
+          "span": [
+            9,
+            10,
+          ],
         },
         {
           "args": [],
           "name": "B",
+          "span": [
+            12,
+            13,
+          ],
         },
       ],
     },
@@ -3949,6 +3957,10 @@ exports[`type declarations > type with a variant with complex args 1`] = `
             },
           ],
           "name": "C",
+          "span": [
+            24,
+            50,
+          ],
         },
       ],
     },
@@ -3974,6 +3986,10 @@ exports[`type declarations > type with a variant with no args 1`] = `
         {
           "args": [],
           "name": "C",
+          "span": [
+            9,
+            10,
+          ],
         },
       ],
     },
@@ -4009,6 +4025,10 @@ exports[`type declarations > type with a variant with no args 2`] = `
             },
           ],
           "name": "C",
+          "span": [
+            9,
+            15,
+          ],
         },
       ],
     },
@@ -4034,10 +4054,18 @@ exports[`type declarations > type with many variants 1`] = `
         {
           "args": [],
           "name": "A",
+          "span": [
+            9,
+            10,
+          ],
         },
         {
           "args": [],
           "name": "B",
+          "span": [
+            12,
+            13,
+          ],
         },
       ],
     },

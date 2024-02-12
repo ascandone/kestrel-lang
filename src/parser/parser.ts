@@ -400,7 +400,7 @@ semantics.addOperation<TypeVariant<unknown>>("typeVariant()", {
         .children.map((c) => c.type());
     }
 
-    return { name: name.sourceString, args: args_ };
+    return { name: name.sourceString, args: args_, span: getSpan(this) };
   },
 });
 
