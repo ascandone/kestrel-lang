@@ -269,7 +269,20 @@ export async function lspCmd() {
           },
         };
       }
-      case "global-variable":
+
+      case "global-variable": {
+        const startPos = doc.positionAt(resolved.declaration.binding.span[0]);
+        const endPos = doc.positionAt(resolved.declaration.binding.span[1]);
+
+        return {
+          uri: textDocument.uri,
+          range: {
+            start: startPos,
+            end: endPos,
+          },
+        };
+      }
+
       case "constructor":
         return undefined;
     }
