@@ -825,8 +825,8 @@ class Typechecker {
           ...ast,
           $: TVar.fresh(),
           expr: this.annotateExpr(ast.expr, lexicalScope),
-          clauses: ast.clauses.map(([binding, expr]) => [
-            this.annotateMatchExpr(binding),
+          clauses: ast.clauses.map(([pattern, expr]) => [
+            this.annotateMatchPattern(pattern),
             this.annotateExpr(expr, lexicalScope),
           ]),
         };
@@ -834,7 +834,7 @@ class Typechecker {
     }
   }
 
-  private annotateMatchExpr(ast: MatchPattern): TypedMatchPattern {
+  private annotateMatchPattern(ast: MatchPattern): TypedMatchPattern {
     switch (ast.type) {
       case "lit":
         return {
@@ -856,7 +856,7 @@ class Typechecker {
             variant === undefined
               ? undefined
               : { type: "constructor", variant },
-          args: ast.args.map((arg) => this.annotateMatchExpr(arg)),
+          args: ast.args.map((arg) => this.annotateMatchPattern(arg)),
           $: TVar.fresh(),
         };
       }
