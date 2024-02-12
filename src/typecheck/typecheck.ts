@@ -71,7 +71,6 @@ type TypeVariants = Record<string, TypedTypeVariant>;
 
 class Typechecker {
   // TODO remove globals and lookup import/declrs directly
-  private globals: Context = {};
   private variants: TypeVariants = {};
   private globalScope: GlobalScope = {};
 
@@ -364,10 +363,7 @@ class Typechecker {
       return;
     }
 
-    this.typecheckAnnotatedExpr(decl.value, {
-      ...this.globals,
-      [decl.binding.name]: decl.value.$.asType(),
-    });
+    this.typecheckAnnotatedExpr(decl.value, {});
 
     this.unifyExpr(decl.value, decl.binding.$.asType(), decl.value.$.asType());
   }
@@ -727,25 +723,28 @@ class Typechecker {
     declrs: UntypedDeclaration[],
   ): TypedDeclaration[] {
     return declrs.map<TypedDeclaration>((decl) => {
-      const valueMeta = decl.extern
-        ? ({
-            extern: true,
-            typeHint: decl.typeHint,
-          } as const)
-        : ({
-            extern: false,
-            typeHint: decl.typeHint,
-            value: this.annotateExpr(decl.value, {}),
-          } as const);
-
-      const tDecl: TypedDeclaration = {
-        ...decl,
-        ...valueMeta,
-        binding: {
-          ...decl.binding,
-          $: TVar.fresh(),
-        },
+      const binding: Binding<TypeMeta> = {
+        ...decl.binding,
+        $: TVar.fresh(),
       };
+
+      let tDecl: TypedDeclaration;
+      if (decl.extern) {
+        tDecl = {
+          ...decl,
+          binding,
+        };
+      } else {
+        tDecl = {
+          ...decl,
+          binding,
+          value: this.annotateExpr(decl.value, {
+            // This is an hack to prevent the recursive reference to be generalized
+            // we probably want a new type of scope for this
+            [decl.binding.name]: binding,
+          }),
+        };
+      }
 
       this.globalScope[decl.binding.name] = tDecl;
 
