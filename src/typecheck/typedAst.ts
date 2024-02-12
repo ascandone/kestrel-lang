@@ -29,7 +29,7 @@ export type TypedExpr = Expr<TypeMeta, IdentifierResolutionMeta>;
 
 export type TypedExposing = ExposedValue<
   { resolved: TypedTypeDeclaration },
-  { poly: Type<Poly> }
+  { declaration?: TypedDeclaration }
 >;
 
 export type TypedImport = Import<TypedExposing>;

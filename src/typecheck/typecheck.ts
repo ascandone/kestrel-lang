@@ -171,25 +171,20 @@ class Typechecker {
           }
 
           case "value": {
-            const decl = importedModule.declarations.find(
+            const declaration = importedModule.declarations.find(
               (decl) => decl.binding.name === exposing.name,
             );
 
-            if (decl === undefined || !decl.pub) {
+            if (declaration === undefined || !declaration.pub) {
               this.errors.push({
                 span: exposing.span,
                 description: new NonExistingImport(exposing.name),
               });
             }
 
-            const poly =
-              decl === undefined
-                ? TVar.fresh().asType()
-                : generalize(decl.binding.$.asType());
-
             return {
               ...exposing,
-              poly,
+              declaration: declaration,
             } as TypedExposing;
           }
         }
@@ -422,7 +417,12 @@ class Typechecker {
 
             case "value":
               if (exposing.name === name) {
-                return exposing.poly;
+                const poly =
+                  exposing.declaration === undefined
+                    ? TVar.fresh().asType()
+                    : generalize(exposing.declaration.binding.$.asType());
+
+                return poly;
               }
               break;
           }
