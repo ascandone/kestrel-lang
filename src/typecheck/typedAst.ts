@@ -209,14 +209,12 @@ function goToDefinitionOfExpr(
       );
 
     case "match":
-      // for (const [binding, expr] of ast.clauses) {
-      //   const t =
-      //     matchExprByOffset(binding, offset) ?? exprByOffset(expr, offset);
-      //   if (t !== undefined) {
-      //     // TODO
-      //     return undefined;
-      //   }
-      // }
+      for (const [_pattern, expr] of ast.clauses) {
+        const t = goToDefinitionOfExpr(expr, offset);
+        if (t !== undefined) {
+          return t;
+        }
+      }
 
       return goToDefinitionOfExpr(ast.expr, offset);
   }
