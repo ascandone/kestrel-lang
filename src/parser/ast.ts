@@ -29,10 +29,10 @@ export type MatchPattern<
   IdentifierResolutionMeta = unknown,
 > = (TypeMeta & SpanMeta) &
   (
-    | ({
+    | {
         type: "identifier";
         name: string;
-      } & IdentifierResolutionMeta)
+      }
     | {
         type: "lit";
         literal: ConstLiteral;

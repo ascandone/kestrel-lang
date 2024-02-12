@@ -29,7 +29,6 @@ import {
   TVar,
   Type,
   unify,
-  Context,
   generalize,
   instantiate,
   Poly,
@@ -363,7 +362,7 @@ class Typechecker {
       return;
     }
 
-    this.typecheckAnnotatedExpr(decl.value, {});
+    this.typecheckAnnotatedExpr(decl.value);
 
     this.unifyExpr(decl.value, decl.binding.$.asType(), decl.value.$.asType());
   }
@@ -371,7 +370,6 @@ class Typechecker {
   private resolveIdent(
     ns: string | undefined,
     name: string,
-    scope: Context,
     span: Span,
   ): Type<Poly> | undefined {
     if (ns !== undefined) {
@@ -431,23 +429,19 @@ class Typechecker {
         }
       }
 
-      return scope[name];
+      return;
     }
   }
 
-  private typecheckPattern(
-    pattern: TypedMatchPattern,
-    scope: Context,
-  ): Context {
+  private typecheckPattern(pattern: TypedMatchPattern) {
     switch (pattern.type) {
       case "lit": {
         const t = inferConstant(pattern.literal);
         this.unifyNode(pattern, pattern.$.asType(), t);
-        return scope;
       }
 
       case "identifier":
-        return { ...scope, [pattern.name]: pattern.$.asType() };
+        break;
 
       case "constructor": {
         let lookup: Type<never>;
@@ -463,7 +457,6 @@ class Typechecker {
           const lookup_ = this.resolveIdent(
             undefined,
             pattern.name,
-            scope,
             pattern.span,
           );
 
@@ -473,7 +466,7 @@ class Typechecker {
               span: pattern.span,
               description: new UnboundVariable(pattern.name),
             });
-            return scope;
+            return;
           }
 
           lookup = instantiate(lookup_);
@@ -501,12 +494,7 @@ class Typechecker {
               lookup.args[i]!,
             );
 
-            const updatedContext = this.typecheckPattern(
-              pattern.args[i]!,
-              scope,
-            );
-
-            scope = { ...scope, ...updatedContext };
+            this.typecheckPattern(pattern.args[i]!);
           }
 
           if (lookup.args.length !== pattern.args.length) {
@@ -517,16 +505,16 @@ class Typechecker {
                 pattern.args.length,
               ),
             });
-            return scope;
+            return;
           }
         }
 
-        return scope;
+        return;
       }
     }
   }
 
-  private typecheckAnnotatedExpr(ast: TypedExpr, scope: Context) {
+  private typecheckAnnotatedExpr(ast: TypedExpr) {
     switch (ast.type) {
       case "constant": {
         const t = inferConstant(ast.value);
@@ -554,12 +542,7 @@ class Typechecker {
           }
         }
 
-        const lookup = this.resolveIdent(
-          ast.namespace,
-          ast.name,
-          scope,
-          ast.span,
-        );
+        const lookup = this.resolveIdent(ast.namespace, ast.name, ast.span);
         if (lookup === undefined) {
           this.errors.push(
             ast.namespace === undefined
@@ -585,44 +568,44 @@ class Typechecker {
           return: ast.body.$.asType(),
         });
 
-        this.typecheckAnnotatedExpr(ast.body, scope);
+        this.typecheckAnnotatedExpr(ast.body);
         return;
 
       case "application":
-        this.typecheckAnnotatedExpr(ast.caller, scope);
+        this.typecheckAnnotatedExpr(ast.caller);
         this.unifyExpr(ast, ast.caller.$.asType(), {
           type: "fn",
           args: ast.args.map((arg) => arg.$.asType()),
           return: ast.$.asType(),
         });
         for (const arg of ast.args) {
-          this.typecheckAnnotatedExpr(arg, scope);
+          this.typecheckAnnotatedExpr(arg);
         }
         return;
 
       case "let":
         this.unifyExpr(ast, ast.binding.$.asType(), ast.value.$.asType());
         this.unifyExpr(ast, ast.$.asType(), ast.body.$.asType());
-        this.typecheckAnnotatedExpr(ast.value, scope);
-        this.typecheckAnnotatedExpr(ast.body, scope);
+        this.typecheckAnnotatedExpr(ast.value);
+        this.typecheckAnnotatedExpr(ast.body);
         return;
 
       case "if":
         this.unifyExpr(ast, ast.condition.$.asType(), Bool);
         this.unifyExpr(ast, ast.$.asType(), ast.then.$.asType());
         this.unifyExpr(ast, ast.$.asType(), ast.else.$.asType());
-        this.typecheckAnnotatedExpr(ast.condition, scope);
-        this.typecheckAnnotatedExpr(ast.then, scope);
-        this.typecheckAnnotatedExpr(ast.else, scope);
+        this.typecheckAnnotatedExpr(ast.condition);
+        this.typecheckAnnotatedExpr(ast.then);
+        this.typecheckAnnotatedExpr(ast.else);
         return;
 
       case "match":
-        this.typecheckAnnotatedExpr(ast.expr, scope);
+        this.typecheckAnnotatedExpr(ast.expr);
         for (const [pattern, expr] of ast.clauses) {
           this.unifyExpr(ast, pattern.$.asType(), ast.expr.$.asType());
-          const newContext = this.typecheckPattern(pattern, scope);
+          this.typecheckPattern(pattern);
           this.unifyExpr(ast, ast.$.asType(), expr.$.asType());
-          this.typecheckAnnotatedExpr(expr, newContext);
+          this.typecheckAnnotatedExpr(expr);
         }
     }
   }
@@ -825,42 +808,60 @@ class Typechecker {
           ...ast,
           $: TVar.fresh(),
           expr: this.annotateExpr(ast.expr, lexicalScope),
-          clauses: ast.clauses.map(([pattern, expr]) => [
-            this.annotateMatchPattern(pattern),
-            this.annotateExpr(expr, lexicalScope),
-          ]),
+          clauses: ast.clauses.map(([pattern, expr]) => {
+            const [annotatedPattern, matchScope] =
+              this.annotateMatchPattern(pattern);
+
+            return [
+              annotatedPattern,
+              this.annotateExpr(expr, { ...lexicalScope, ...matchScope }),
+            ];
+          }),
         };
       }
     }
   }
 
-  private annotateMatchPattern(ast: MatchPattern): TypedMatchPattern {
-    switch (ast.type) {
-      case "lit":
-        return {
-          ...ast,
-          $: TVar.fresh(),
-        };
-      case "identifier":
-        return {
-          ...ast,
-          resolution: undefined,
-          $: TVar.fresh(),
-        };
-      case "constructor": {
-        // TODO only resolve if constructor is unqualified
-        const variant = this.variants[ast.name];
-        return {
-          ...ast,
-          resolution:
-            variant === undefined
-              ? undefined
-              : { type: "constructor", variant },
-          args: ast.args.map((arg) => this.annotateMatchPattern(arg)),
-          $: TVar.fresh(),
-        };
+  private annotateMatchPattern(
+    ast: MatchPattern,
+  ): [TypedMatchPattern, LexicalScope] {
+    const scope: LexicalScope = {};
+
+    const recur = (ast: MatchPattern): TypedMatchPattern => {
+      switch (ast.type) {
+        case "lit":
+          return {
+            ...ast,
+            $: TVar.fresh(),
+          };
+
+        case "identifier": {
+          const typedBinding = {
+            ...ast,
+            $: TVar.fresh(),
+          };
+          scope[ast.name] = typedBinding;
+          return typedBinding;
+        }
+
+        case "constructor": {
+          // TODO only resolve if constructor is unqualified
+          const variant = this.variants[ast.name];
+          const typedPattern: TypedMatchPattern = {
+            ...ast,
+            resolution:
+              variant === undefined
+                ? undefined
+                : { type: "constructor", variant },
+            args: ast.args.map(recur),
+            $: TVar.fresh(),
+          };
+          return typedPattern;
+        }
       }
-    }
+    };
+
+    return [recur(ast), scope];
   }
 
   private resolveIdentifier(
