@@ -16,7 +16,7 @@ import { Poly, Type } from "./unify";
 export type IdentifierResolution =
   | { type: "local-variable"; binding: Binding<TypeMeta> }
   | { type: "global-variable"; declaration: TypedDeclaration }
-  | { type: "constructor" };
+  | { type: "constructor"; variant: TypedTypeVariant };
 
 export type TypedExpr = Expr<
   TypeMeta,
@@ -30,8 +30,9 @@ export type TypedExposing = ExposedValue<
 
 export type TypedImport = Import<TypedExposing>;
 
-export type TypedTypeVariant = TypeVariant<{ polyType: Type<Poly> }>;
-export type TypedTypeDeclaration = TypeDeclaration<{ polyType: Type<Poly> }>;
+export type PolyTypeMeta = { poly: Type<Poly> };
+export type TypedTypeVariant = TypeVariant<PolyTypeMeta>;
+export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 
 export type TypedDeclaration = Declaration<
   TypeMeta,

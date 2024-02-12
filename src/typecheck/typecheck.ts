@@ -20,6 +20,7 @@ import {
   TypedImport,
   TypedModule,
   TypedTypeDeclaration,
+  TypedTypeVariant,
 } from "./typedAst";
 import { CORE_MODULES, defaultImports } from "./defaultImports";
 import { topSortedModules } from "./project";
@@ -65,10 +66,12 @@ export function typecheck(
 }
 
 type GlobalScope = Record<string, TypedDeclaration>;
+type TypeVariants = Record<string, TypedTypeVariant>;
 
 class Typechecker {
   // TODO remove globals and lookup import/declrs directly
   private globals: Context = {};
+  private variants: TypeVariants = {};
   private globalScope: GlobalScope = {};
 
   private errors: ErrorInfo[] = [];
@@ -401,7 +404,7 @@ class Typechecker {
         if (tDecl.type === "adt" && tDecl.pub === "..") {
           for (const variant of tDecl.variants) {
             if (variant.name === name) {
-              return variant.polyType;
+              return variant.poly;
             }
           }
         }
@@ -415,7 +418,7 @@ class Typechecker {
               if (exposing.exposeImpl && exposing.resolved.type === "adt") {
                 for (const variant of exposing.resolved.variants) {
                   if (variant.name === name) {
-                    return variant.polyType;
+                    return variant.poly;
                   }
                 }
               }
@@ -535,10 +538,11 @@ class Typechecker {
               this.unifyExpr(ast, ast.$.asType(), instantiate(t));
               return;
             }
-
-            case "constructor":
-            default:
-              throw new Error("TODO");
+            case "constructor": {
+              const t = instantiate(resolved.variant.poly);
+              this.unifyExpr(ast, ast.$.asType(), instantiate(t));
+              return;
+            }
           }
         }
 
@@ -647,10 +651,12 @@ class Typechecker {
           variants: typeDecl.variants.map((variant) => {
             const t = this.makeVariantType(typeDecl, variant);
             this.globals[variant.name] = t;
-            return {
+            const typedVariant = {
               ...variant,
-              polyType: t,
+              poly: t,
             };
+            this.variants[variant.name] = typedVariant;
+            return typedVariant;
           }),
         } as TypedTypeDeclaration;
       }
@@ -824,6 +830,11 @@ class Typechecker {
   ): IdentifierResolution | undefined {
     if (ast.namespace !== undefined) {
       return;
+    }
+
+    const variant = this.variants[ast.name];
+    if (variant !== undefined) {
+      return { type: "constructor", variant };
     }
 
     const lexical = lexicalScope[ast.name];
