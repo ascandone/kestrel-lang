@@ -185,7 +185,7 @@ function goToDefinitionOfExpr(
           return t;
         }
       }
-      return undefined;
+      return goToDefinitionOfExpr(ast.caller, offset);
 
     case "let":
       return (
@@ -209,13 +209,41 @@ function goToDefinitionOfExpr(
       );
 
     case "match":
-      for (const [_pattern, expr] of ast.clauses) {
-        const t = goToDefinitionOfExpr(expr, offset);
+      for (const [pattern, expr] of ast.clauses) {
+        const t =
+          goToDefinitionOfPattern(pattern, offset) ??
+          goToDefinitionOfExpr(expr, offset);
+
         if (t !== undefined) {
           return t;
         }
       }
 
       return goToDefinitionOfExpr(ast.expr, offset);
+  }
+}
+
+function goToDefinitionOfPattern(
+  pattern: TypedMatchPattern,
+  offset: number,
+): IdentifierResolution | undefined {
+  if (!spanContains(pattern.span, offset)) {
+    return;
+  }
+
+  switch (pattern.type) {
+    case "lit":
+    case "identifier":
+      return;
+
+    case "constructor":
+      for (const arg of pattern.args) {
+        const res = goToDefinitionOfPattern(arg, offset);
+        if (res !== undefined) {
+          return res;
+        }
+      }
+
+      return pattern.resolution;
   }
 }
