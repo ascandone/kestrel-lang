@@ -574,10 +574,7 @@ class Typechecker {
           return: ast.body.$.asType(),
         });
 
-        this.typecheckAnnotatedExpr(ast.body, {
-          ...scope,
-          ...Object.fromEntries(ast.params.map((p) => [p.name, p.$.asType()])),
-        });
+        this.typecheckAnnotatedExpr(ast.body, scope);
         return;
 
       case "application":
@@ -764,16 +761,24 @@ function annotateExpr(ast: Expr, lexicalScope: LexicalScope): TypedExpr {
         $: TVar.fresh(),
       };
 
-    case "fn":
+    case "fn": {
+      const params = ast.params.map((p) => ({
+        ...p,
+        $: TVar.fresh(),
+      }));
+
+      for (const param of params) {
+        lexicalScope = { ...lexicalScope, [param.name]: param };
+      }
+
       return {
         ...ast,
         $: TVar.fresh(),
         body: annotateExpr(ast.body, lexicalScope),
-        params: ast.params.map((p) => ({
-          ...p,
-          $: TVar.fresh(),
-        })),
+        params,
       };
+    }
+
     case "application":
       return {
         ...ast,
