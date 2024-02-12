@@ -27,7 +27,7 @@ export type TypeAst = SpanMeta &
 export type MatchPattern<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
   (
     | {
-        type: "ident";
+        type: "identifier";
         name: string;
       }
     | {

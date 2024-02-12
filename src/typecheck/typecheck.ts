@@ -449,7 +449,7 @@ class Typechecker {
         return scope;
       }
 
-      case "ident":
+      case "identifier":
         return { ...scope, [pattern.name]: pattern.$.asType() };
 
       case "constructor": {
@@ -825,7 +825,7 @@ class Typechecker {
   }
 
   private resolveIdentifier(
-    ast: Expr & { type: "identifier" },
+    ast: { name: string; namespace?: string },
     lexicalScope: LexicalScope,
   ): IdentifierResolution | undefined {
     if (ast.namespace !== undefined) {
@@ -860,7 +860,7 @@ type TypeResolutionData = {
 function annotateMatchExpr(ast: MatchPattern): MatchPattern<TypeMeta> {
   switch (ast.type) {
     case "lit":
-    case "ident":
+    case "identifier":
       return {
         ...ast,
         $: TVar.fresh(),

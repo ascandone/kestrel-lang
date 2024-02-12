@@ -95,7 +95,7 @@ semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
 semantics.addOperation<MatchPattern>("matchPattern()", {
   ConstructorPattern_ident(ident) {
     return {
-      type: "ident",
+      type: "identifier",
       name: ident.sourceString,
       span: getSpan(this),
     };

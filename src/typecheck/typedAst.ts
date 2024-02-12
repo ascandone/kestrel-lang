@@ -110,7 +110,7 @@ function matchExprByOffset(
   }
 
   switch (ast.type) {
-    case "ident":
+    case "identifier":
       return ast;
 
     case "constructor":

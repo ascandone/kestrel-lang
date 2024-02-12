@@ -471,7 +471,7 @@ function compilePattern(
         conditions: [`${matchSubject} === ${constToString(pattern.literal)}`],
         newScope: {},
       };
-    case "ident":
+    case "identifier":
       return {
         conditions: [],
         newScope: { [pattern.name]: matchSubject },
