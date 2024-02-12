@@ -595,10 +595,7 @@ class Typechecker {
       case "let":
         this.unifyExpr(ast, ast.binding.$.asType(), ast.value.$.asType());
         this.unifyExpr(ast, ast.$.asType(), ast.body.$.asType());
-        this.typecheckAnnotatedExpr(ast.value, {
-          ...scope,
-          [ast.binding.name]: ast.value.$.asType(),
-        });
+        this.typecheckAnnotatedExpr(ast.value, scope);
         this.typecheckAnnotatedExpr(ast.body, scope);
         return;
 
@@ -804,7 +801,11 @@ function annotateExpr(ast: Expr, lexicalScope: LexicalScope): TypedExpr {
         ...ast,
         $: TVar.fresh(),
         binding,
-        value: annotateExpr(ast.value, lexicalScope),
+        // TODO only pass this if it's a fn
+        value: annotateExpr(ast.value, {
+          ...lexicalScope,
+          [ast.binding.name]: binding,
+        }),
         body: annotateExpr(ast.body, {
           ...lexicalScope,
           [ast.binding.name]: binding,
