@@ -15,6 +15,7 @@ import {
   typePPrint,
   declByOffset,
   TypedModule,
+  goToDefinitionOf,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
 
@@ -181,6 +182,7 @@ export async function lspCmd() {
       textDocumentSync: TextDocumentSyncKind.Incremental,
       hoverProvider: true,
       documentSymbolProvider: true,
+      definitionProvider: true,
       codeLensProvider: { resolveProvider: true },
     },
   }));
@@ -241,6 +243,37 @@ export async function lspCmd() {
   });
 
   connection.onExecuteCommand(() => {});
+
+  connection.onDefinition(({ textDocument, position }) => {
+    const res = state.docByUri(textDocument.uri);
+    if (res === undefined) {
+      return;
+    }
+    const [doc, ast] = res;
+    const offset = doc.offsetAt(position);
+    const resolved = goToDefinitionOf(ast, offset);
+    if (resolved === undefined) {
+      return undefined;
+    }
+
+    switch (resolved.type) {
+      case "local-variable": {
+        const startPos = doc.positionAt(resolved.binding.span[0]);
+        const endPos = doc.positionAt(resolved.binding.span[1]);
+
+        return {
+          uri: textDocument.uri,
+          range: {
+            start: startPos,
+            end: endPos,
+          },
+        };
+      }
+      case "global-variable":
+      case "constructor":
+        return undefined;
+    }
+  });
 
   connection.onHover(({ textDocument, position }) => {
     const res = state.docByUri(textDocument.uri);

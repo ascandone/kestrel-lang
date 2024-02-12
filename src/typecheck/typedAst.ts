@@ -145,3 +145,77 @@ export function declByOffset(
 function spanContains([start, end]: Span, offset: number) {
   return start <= offset && end >= offset;
 }
+
+export function goToDefinitionOf(
+  module: TypedModule,
+  offset: number,
+): IdentifierResolution | undefined {
+  for (const st of module.declarations) {
+    if (!spanContains(st.span, offset)) {
+      continue;
+    }
+
+    return st.extern ? undefined : goToDefinitionOfExpr(st.value, offset);
+  }
+
+  return undefined;
+}
+
+function goToDefinitionOfExpr(
+  ast: TypedExpr,
+  offset: number,
+): IdentifierResolution | undefined {
+  if (!spanContains(ast.span, offset)) {
+    return;
+  }
+
+  switch (ast.type) {
+    case "identifier":
+      return ast.resolution;
+
+    case "constant":
+      return undefined;
+
+    case "application":
+      for (const arg of ast.args) {
+        const t = goToDefinitionOfExpr(arg, offset);
+        if (t !== undefined) {
+          return t;
+        }
+      }
+      return undefined;
+
+    case "let":
+      return (
+        goToDefinitionOfExpr(ast.value, offset) ??
+        goToDefinitionOfExpr(ast.body, offset)
+      );
+
+    case "fn":
+      for (const param of ast.params) {
+        if (spanContains(param.span, offset)) {
+          return undefined;
+        }
+      }
+      return goToDefinitionOfExpr(ast.body, offset);
+
+    case "if":
+      return (
+        goToDefinitionOfExpr(ast.condition, offset) ??
+        goToDefinitionOfExpr(ast.then, offset) ??
+        goToDefinitionOfExpr(ast.else, offset)
+      );
+
+    case "match":
+      // for (const [binding, expr] of ast.clauses) {
+      //   const t =
+      //     matchExprByOffset(binding, offset) ?? exprByOffset(expr, offset);
+      //   if (t !== undefined) {
+      //     // TODO
+      //     return undefined;
+      //   }
+      // }
+
+      return goToDefinitionOfExpr(ast.expr, offset);
+  }
+}
