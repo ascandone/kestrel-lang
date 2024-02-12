@@ -1,4 +1,5 @@
 import {
+  Binding,
   ConstLiteral,
   Expr,
   MatchPattern,
@@ -12,6 +13,7 @@ import {
   UntypedTypeVariant,
 } from "../parser";
 import {
+  IdentifierResolution,
   TypedDeclaration,
   TypedExposing,
   TypedExpr,
@@ -519,10 +521,7 @@ class Typechecker {
     }
   }
 
-  private typecheckAnnotatedExpr<T extends SpanMeta>(
-    ast: Expr<T & TypeMeta>,
-    scope: Context,
-  ) {
+  private typecheckAnnotatedExpr(ast: TypedExpr, scope: Context) {
     switch (ast.type) {
       case "constant": {
         const t = inferConstant(ast.value);
@@ -531,6 +530,19 @@ class Typechecker {
       }
 
       case "identifier": {
+        const resolved = ast.resolution;
+        if (resolved !== undefined) {
+          switch (resolved.type) {
+            case "local-variable":
+              this.unifyExpr(ast, ast.$.asType(), resolved.binding.$.asType());
+              return;
+            case "global-variable":
+            case "constructor":
+            default:
+              throw new Error("TODO");
+          }
+        }
+
         const lookup = this.resolveIdent(
           ast.namespace,
           ast.name,
@@ -587,10 +599,7 @@ class Typechecker {
           ...scope,
           [ast.binding.name]: ast.value.$.asType(),
         });
-        this.typecheckAnnotatedExpr(ast.body, {
-          ...scope,
-          [ast.binding.name]: ast.value.$.asType(),
-        });
+        this.typecheckAnnotatedExpr(ast.body, scope);
         return;
 
       case "if":
@@ -728,17 +737,41 @@ function annotateMatchExpr(ast: MatchPattern): MatchPattern<TypeMeta> {
   }
 }
 
-function annotateExpr(ast: Expr): TypedExpr {
+type LexicalScope = Record<string, Binding<TypeMeta>>;
+
+function resolveIdentifier(
+  ast: Expr & { type: "identifier" },
+  lexicalScope: LexicalScope,
+): IdentifierResolution | undefined {
+  if (ast.namespace !== undefined) {
+    return;
+  }
+
+  const lexical = lexicalScope[ast.name];
+  if (lexical !== undefined) {
+    return { type: "local-variable", binding: lexical };
+  }
+
+  return;
+}
+
+function annotateExpr(ast: Expr, lexicalScope: LexicalScope): TypedExpr {
   switch (ast.type) {
     case "constant":
-    case "identifier":
       return { ...ast, $: TVar.fresh() };
+
+    case "identifier":
+      return {
+        ...ast,
+        resolution: resolveIdentifier(ast, lexicalScope),
+        $: TVar.fresh(),
+      };
 
     case "fn":
       return {
         ...ast,
         $: TVar.fresh(),
-        body: annotateExpr(ast.body),
+        body: annotateExpr(ast.body, lexicalScope),
         params: ast.params.map((p) => ({
           ...p,
           $: TVar.fresh(),
@@ -748,35 +781,44 @@ function annotateExpr(ast: Expr): TypedExpr {
       return {
         ...ast,
         $: TVar.fresh(),
-        caller: annotateExpr(ast.caller),
-        args: ast.args.map(annotateExpr),
+        caller: annotateExpr(ast.caller, lexicalScope),
+        args: ast.args.map((arg) => annotateExpr(arg, lexicalScope)),
       };
 
     case "if":
       return {
         ...ast,
         $: TVar.fresh(),
-        condition: annotateExpr(ast.condition),
-        then: annotateExpr(ast.then),
-        else: annotateExpr(ast.else),
+        condition: annotateExpr(ast.condition, lexicalScope),
+        then: annotateExpr(ast.then, lexicalScope),
+        else: annotateExpr(ast.else, lexicalScope),
       };
 
-    case "let":
+    case "let": {
+      const binding: Binding<TypeMeta> = {
+        ...ast.binding,
+        $: TVar.fresh(),
+      };
+
       return {
         ...ast,
         $: TVar.fresh(),
-        binding: { ...ast.binding, $: TVar.fresh() },
-        value: annotateExpr(ast.value),
-        body: annotateExpr(ast.body),
+        binding,
+        value: annotateExpr(ast.value, lexicalScope),
+        body: annotateExpr(ast.body, {
+          ...lexicalScope,
+          [ast.binding.name]: binding,
+        }),
       };
+    }
     case "match": {
       return {
         ...ast,
         $: TVar.fresh(),
-        expr: annotateExpr(ast.expr),
+        expr: annotateExpr(ast.expr, lexicalScope),
         clauses: ast.clauses.map(([binding, expr]) => [
           annotateMatchExpr(binding),
-          annotateExpr(expr),
+          annotateExpr(expr, lexicalScope),
         ]),
       };
     }
@@ -795,7 +837,7 @@ function annotateDeclarations(
       : ({
           extern: false,
           typeHint: decl.typeHint,
-          value: annotateExpr(decl.value),
+          value: annotateExpr(decl.value, {}),
         } as const);
 
     return {

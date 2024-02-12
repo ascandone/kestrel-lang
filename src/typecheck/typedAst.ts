@@ -18,7 +18,10 @@ export type IdentifierResolution =
   | { type: "global-variable"; declaration: TypedDeclaration }
   | { type: "constructor" };
 
-export type TypedExpr = Expr<TypeMeta, { resolution?: IdentifierResolution }>;
+export type TypedExpr = Expr<
+  TypeMeta,
+  { resolution: IdentifierResolution | undefined }
+>;
 
 export type TypedExposing = ExposedValue<
   { resolved: TypedTypeDeclaration },
@@ -32,7 +35,7 @@ export type TypedTypeDeclaration = TypeDeclaration<{ polyType: Type<Poly> }>;
 
 export type TypedDeclaration = Declaration<
   TypeMeta,
-  { resolution?: IdentifierResolution }
+  { resolution: IdentifierResolution | undefined }
 >;
 
 export type TypedModule = {
