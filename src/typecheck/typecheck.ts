@@ -64,9 +64,12 @@ export function typecheck(
   return new Typechecker(ns, deps).run(module, implicitImports);
 }
 
+type GlobalScope = Record<string, TypedDeclaration>;
+
 class Typechecker {
   // TODO remove globals and lookup import/declrs directly
   private globals: Context = {};
+  private globalScope: GlobalScope = {};
 
   private errors: ErrorInfo[] = [];
   private imports: TypedImport[] = [];
@@ -94,7 +97,7 @@ class Typechecker {
       this.typeDeclarations.push(annotated);
     }
 
-    const annotatedDeclrs = annotateDeclarations(module.declarations);
+    const annotatedDeclrs = this.annotateDeclarations(module.declarations);
 
     for (const decl of annotatedDeclrs) {
       this.typecheckAnnotatedDecl(decl);
@@ -351,10 +354,6 @@ class Typechecker {
     if (decl.typeHint !== undefined) {
       const th = this.typeAstToType(decl.typeHint, { type: "type-hint" });
       this.unifyNode(decl.typeHint, instantiate(th), decl.binding.$.asType());
-
-      if (decl.extern) {
-        this.globals[decl.binding.name] = th;
-      }
     }
 
     if (decl.extern) {
@@ -367,11 +366,6 @@ class Typechecker {
     });
 
     this.unifyExpr(decl.value, decl.binding.$.asType(), decl.value.$.asType());
-
-    this.globals[decl.binding.name] = generalize(
-      decl.value.$.asType(),
-      this.globals,
-    );
   }
 
   private resolveIdent(
@@ -536,7 +530,12 @@ class Typechecker {
             case "local-variable":
               this.unifyExpr(ast, ast.$.asType(), resolved.binding.$.asType());
               return;
-            case "global-variable":
+            case "global-variable": {
+              const t = generalize(resolved.declaration.binding.$.asType());
+              this.unifyExpr(ast, ast.$.asType(), instantiate(t));
+              return;
+            }
+
             case "constructor":
             default:
               throw new Error("TODO");
@@ -706,6 +705,139 @@ class Typechecker {
     }
     return undefined;
   }
+
+  private annotateDeclarations(
+    declrs: UntypedDeclaration[],
+  ): TypedDeclaration[] {
+    return declrs.map<TypedDeclaration>((decl) => {
+      const valueMeta = decl.extern
+        ? ({
+            extern: true,
+            typeHint: decl.typeHint,
+          } as const)
+        : ({
+            extern: false,
+            typeHint: decl.typeHint,
+            value: this.annotateExpr(decl.value, {}),
+          } as const);
+
+      const tDecl: TypedDeclaration = {
+        ...decl,
+        ...valueMeta,
+        binding: {
+          ...decl.binding,
+          $: TVar.fresh(),
+        },
+      };
+
+      this.globalScope[decl.binding.name] = tDecl;
+
+      return tDecl;
+    });
+  }
+
+  private annotateExpr(ast: Expr, lexicalScope: LexicalScope): TypedExpr {
+    switch (ast.type) {
+      case "constant":
+        return { ...ast, $: TVar.fresh() };
+
+      case "identifier":
+        return {
+          ...ast,
+          resolution: this.resolveIdentifier(ast, lexicalScope),
+          $: TVar.fresh(),
+        };
+
+      case "fn": {
+        const params = ast.params.map((p) => ({
+          ...p,
+          $: TVar.fresh(),
+        }));
+
+        for (const param of params) {
+          lexicalScope = { ...lexicalScope, [param.name]: param };
+        }
+
+        return {
+          ...ast,
+          $: TVar.fresh(),
+          body: this.annotateExpr(ast.body, lexicalScope),
+          params,
+        };
+      }
+
+      case "application":
+        return {
+          ...ast,
+          $: TVar.fresh(),
+          caller: this.annotateExpr(ast.caller, lexicalScope),
+          args: ast.args.map((arg) => this.annotateExpr(arg, lexicalScope)),
+        };
+
+      case "if":
+        return {
+          ...ast,
+          $: TVar.fresh(),
+          condition: this.annotateExpr(ast.condition, lexicalScope),
+          then: this.annotateExpr(ast.then, lexicalScope),
+          else: this.annotateExpr(ast.else, lexicalScope),
+        };
+
+      case "let": {
+        const binding: Binding<TypeMeta> = {
+          ...ast.binding,
+          $: TVar.fresh(),
+        };
+
+        return {
+          ...ast,
+          $: TVar.fresh(),
+          binding,
+          // TODO only pass this if it's a fn
+          value: this.annotateExpr(ast.value, {
+            ...lexicalScope,
+            [ast.binding.name]: binding,
+          }),
+          body: this.annotateExpr(ast.body, {
+            ...lexicalScope,
+            [ast.binding.name]: binding,
+          }),
+        };
+      }
+      case "match": {
+        return {
+          ...ast,
+          $: TVar.fresh(),
+          expr: this.annotateExpr(ast.expr, lexicalScope),
+          clauses: ast.clauses.map(([binding, expr]) => [
+            annotateMatchExpr(binding),
+            this.annotateExpr(expr, lexicalScope),
+          ]),
+        };
+      }
+    }
+  }
+
+  private resolveIdentifier(
+    ast: Expr & { type: "identifier" },
+    lexicalScope: LexicalScope,
+  ): IdentifierResolution | undefined {
+    if (ast.namespace !== undefined) {
+      return;
+    }
+
+    const lexical = lexicalScope[ast.name];
+    if (lexical !== undefined) {
+      return { type: "local-variable", binding: lexical };
+    }
+
+    const global = this.globalScope[ast.name];
+    if (global !== undefined) {
+      return { type: "global-variable", declaration: global };
+    }
+
+    return;
+  }
 }
 
 type TypeResolutionData = {
@@ -732,130 +864,6 @@ function annotateMatchExpr(ast: MatchPattern): MatchPattern<TypeMeta> {
 }
 
 type LexicalScope = Record<string, Binding<TypeMeta>>;
-
-function resolveIdentifier(
-  ast: Expr & { type: "identifier" },
-  lexicalScope: LexicalScope,
-): IdentifierResolution | undefined {
-  if (ast.namespace !== undefined) {
-    return;
-  }
-
-  const lexical = lexicalScope[ast.name];
-  if (lexical !== undefined) {
-    return { type: "local-variable", binding: lexical };
-  }
-
-  return;
-}
-
-function annotateExpr(ast: Expr, lexicalScope: LexicalScope): TypedExpr {
-  switch (ast.type) {
-    case "constant":
-      return { ...ast, $: TVar.fresh() };
-
-    case "identifier":
-      return {
-        ...ast,
-        resolution: resolveIdentifier(ast, lexicalScope),
-        $: TVar.fresh(),
-      };
-
-    case "fn": {
-      const params = ast.params.map((p) => ({
-        ...p,
-        $: TVar.fresh(),
-      }));
-
-      for (const param of params) {
-        lexicalScope = { ...lexicalScope, [param.name]: param };
-      }
-
-      return {
-        ...ast,
-        $: TVar.fresh(),
-        body: annotateExpr(ast.body, lexicalScope),
-        params,
-      };
-    }
-
-    case "application":
-      return {
-        ...ast,
-        $: TVar.fresh(),
-        caller: annotateExpr(ast.caller, lexicalScope),
-        args: ast.args.map((arg) => annotateExpr(arg, lexicalScope)),
-      };
-
-    case "if":
-      return {
-        ...ast,
-        $: TVar.fresh(),
-        condition: annotateExpr(ast.condition, lexicalScope),
-        then: annotateExpr(ast.then, lexicalScope),
-        else: annotateExpr(ast.else, lexicalScope),
-      };
-
-    case "let": {
-      const binding: Binding<TypeMeta> = {
-        ...ast.binding,
-        $: TVar.fresh(),
-      };
-
-      return {
-        ...ast,
-        $: TVar.fresh(),
-        binding,
-        // TODO only pass this if it's a fn
-        value: annotateExpr(ast.value, {
-          ...lexicalScope,
-          [ast.binding.name]: binding,
-        }),
-        body: annotateExpr(ast.body, {
-          ...lexicalScope,
-          [ast.binding.name]: binding,
-        }),
-      };
-    }
-    case "match": {
-      return {
-        ...ast,
-        $: TVar.fresh(),
-        expr: annotateExpr(ast.expr, lexicalScope),
-        clauses: ast.clauses.map(([binding, expr]) => [
-          annotateMatchExpr(binding),
-          annotateExpr(expr, lexicalScope),
-        ]),
-      };
-    }
-  }
-}
-
-function annotateDeclarations(
-  declrs: UntypedDeclaration[],
-): TypedDeclaration[] {
-  return declrs.map<TypedDeclaration>((decl) => {
-    const valueMeta = decl.extern
-      ? ({
-          extern: true,
-          typeHint: decl.typeHint,
-        } as const)
-      : ({
-          extern: false,
-          typeHint: decl.typeHint,
-          value: annotateExpr(decl.value, {}),
-        } as const);
-
-    return {
-      ...decl,
-      ...valueMeta,
-      binding: {
-        ...decl.binding,
-        $: TVar.fresh(),
-      },
-    };
-  });
-}
 
 function inferConstant(x: ConstLiteral): Type {
   // Keep this in sync with core

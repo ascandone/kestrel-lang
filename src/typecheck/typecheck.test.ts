@@ -766,20 +766,6 @@ describe("prelude", () => {
   test("typechecks extern values", () => {
     const [types, errs] = tc(
       `
-     type Unit {}
-     extern let x : Unit
-    `,
-    );
-
-    expect(errs).toEqual([]);
-    expect(types).toEqual({
-      x: "Unit",
-    });
-  });
-
-  test("typechecks extern values", () => {
-    const [types, errs] = tc(
-      `
      type Unit { }
      extern let x : Unit
      let y = x
