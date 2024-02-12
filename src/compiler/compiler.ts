@@ -474,7 +474,7 @@ function compilePattern(
     case "ident":
       return {
         conditions: [],
-        newScope: { [pattern.ident]: matchSubject },
+        newScope: { [pattern.name]: matchSubject },
       };
     case "constructor": {
       const conditions: string[] = [matchCondition(matchSubject, pattern.name)];

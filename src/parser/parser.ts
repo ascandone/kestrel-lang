@@ -96,7 +96,7 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
   ConstructorPattern_ident(ident) {
     return {
       type: "ident",
-      ident: ident.sourceString,
+      name: ident.sourceString,
       span: getSpan(this),
     };
   },

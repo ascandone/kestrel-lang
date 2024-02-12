@@ -28,7 +28,7 @@ export type MatchPattern<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
   (
     | {
         type: "ident";
-        ident: string;
+        name: string;
       }
     | {
         type: "lit";
@@ -44,55 +44,60 @@ export type MatchPattern<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
 export type Binding<TypeMeta = unknown> = { name: string } & TypeMeta &
   SpanMeta;
 
-export type Expr<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
+export type Expr<
+  TypeMeta = unknown,
+  IdentifierResolutionMeta = unknown,
+> = (TypeMeta & SpanMeta) &
   (
     | {
         type: "constant";
         value: ConstLiteral;
       }
-    | {
+    | ({
         type: "identifier";
         namespace?: string;
         name: string;
-      }
+      } & IdentifierResolutionMeta)
     | {
         type: "fn";
         params: Binding<TypeMeta>[];
-        body: Expr<TypeMeta>;
+        body: Expr<TypeMeta, IdentifierResolutionMeta>;
       }
     | {
         type: "application";
-        caller: Expr<TypeMeta>;
-        args: Expr<TypeMeta>[];
+        caller: Expr<TypeMeta, IdentifierResolutionMeta>;
+        args: Expr<TypeMeta, IdentifierResolutionMeta>[];
       }
     | {
         type: "let";
         binding: Binding<TypeMeta>;
-        value: Expr<TypeMeta>;
-        body: Expr<TypeMeta>;
+        value: Expr<TypeMeta, IdentifierResolutionMeta>;
+        body: Expr<TypeMeta, IdentifierResolutionMeta>;
       }
     | {
         type: "if";
-        condition: Expr<TypeMeta>;
-        then: Expr<TypeMeta>;
-        else: Expr<TypeMeta>;
+        condition: Expr<TypeMeta, IdentifierResolutionMeta>;
+        then: Expr<TypeMeta, IdentifierResolutionMeta>;
+        else: Expr<TypeMeta, IdentifierResolutionMeta>;
       }
     | {
         type: "match";
-        expr: Expr<TypeMeta>;
-        clauses: Array<[MatchPattern<TypeMeta>, Expr<TypeMeta>]>;
+        expr: Expr<TypeMeta, IdentifierResolutionMeta>;
+        clauses: Array<
+          [MatchPattern<TypeMeta>, Expr<TypeMeta, IdentifierResolutionMeta>]
+        >;
       }
   );
 
-export type UntypedDeclaration = Declaration<unknown>;
-export type Declaration<TypeMeta> = SpanMeta & {
+export type UntypedDeclaration = Declaration<unknown, unknown>;
+export type Declaration<TypeMeta, IdentifierResolutionMeta> = SpanMeta & {
   pub: boolean;
   binding: Binding<TypeMeta>;
 } & (
     | {
         extern: false;
         typeHint?: TypeAst & SpanMeta;
-        value: Expr<TypeMeta>;
+        value: Expr<TypeMeta, IdentifierResolutionMeta>;
       }
     | {
         extern: true;

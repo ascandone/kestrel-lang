@@ -1,4 +1,5 @@
 import {
+  Binding,
   Declaration,
   ExposedValue,
   Expr,
@@ -12,7 +13,12 @@ import {
 import { TypeMeta } from "./typecheck";
 import { Poly, Type } from "./unify";
 
-export type TypedExpr = Expr<TypeMeta>;
+export type IdentifierResolution =
+  | { type: "local-variable"; binding: Binding<TypeMeta> }
+  | { type: "global-variable"; declaration: TypedDeclaration }
+  | { type: "constructor" };
+
+export type TypedExpr = Expr<TypeMeta, { resolution?: IdentifierResolution }>;
 
 export type TypedExposing = ExposedValue<
   { resolved: TypedTypeDeclaration },
@@ -24,7 +30,10 @@ export type TypedImport = Import<TypedExposing>;
 export type TypedTypeVariant = TypeVariant<{ polyType: Type<Poly> }>;
 export type TypedTypeDeclaration = TypeDeclaration<{ polyType: Type<Poly> }>;
 
-export type TypedDeclaration = Declaration<TypeMeta>;
+export type TypedDeclaration = Declaration<
+  TypeMeta,
+  { resolution?: IdentifierResolution }
+>;
 
 export type TypedModule = {
   imports: TypedImport[];

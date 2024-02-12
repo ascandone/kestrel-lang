@@ -1,6 +1,5 @@
 import {
   ConstLiteral,
-  Declaration,
   Expr,
   MatchPattern,
   Span,
@@ -11,10 +10,11 @@ import {
   UntypedModule,
   UntypedTypeDeclaration,
   UntypedTypeVariant,
-} from "../parser/ast";
+} from "../parser";
 import {
   TypedDeclaration,
   TypedExposing,
+  TypedExpr,
   TypedImport,
   TypedModule,
   TypedTypeDeclaration,
@@ -345,7 +345,7 @@ class Typechecker {
     }
   }
 
-  private typecheckAnnotatedDecl(decl: Declaration<TypeMeta>) {
+  private typecheckAnnotatedDecl(decl: TypedDeclaration) {
     if (decl.typeHint !== undefined) {
       const th = this.typeAstToType(decl.typeHint, { type: "type-hint" });
       this.unifyNode(decl.typeHint, instantiate(th), decl.binding.$.asType());
@@ -451,7 +451,7 @@ class Typechecker {
       }
 
       case "ident":
-        return { ...scope, [pattern.ident]: pattern.$.asType() };
+        return { ...scope, [pattern.name]: pattern.$.asType() };
 
       case "constructor": {
         // TODO handle ns
@@ -711,9 +711,7 @@ type TypeResolutionData = {
   namespace: string;
 };
 
-function annotateMatchExpr<T>(
-  ast: MatchPattern<T>,
-): MatchPattern<T & TypeMeta> {
+function annotateMatchExpr(ast: MatchPattern): MatchPattern<TypeMeta> {
   switch (ast.type) {
     case "lit":
     case "ident":
@@ -730,7 +728,7 @@ function annotateMatchExpr<T>(
   }
 }
 
-function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
+function annotateExpr(ast: Expr): TypedExpr {
   switch (ast.type) {
     case "constant":
     case "identifier":

@@ -2667,7 +2667,7 @@ exports[`pattern matching > binding with identifier 1`] = `
         "clauses": [
           [
             {
-              "ident": "a",
+              "name": "a",
               "span": [
                 18,
                 19,
@@ -2771,7 +2771,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
             {
               "args": [
                 {
-                  "ident": "hd",
+                  "name": "hd",
                   "span": [
                     18,
                     20,
@@ -2779,7 +2779,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
                   "type": "ident",
                 },
                 {
-                  "ident": "tl",
+                  "name": "tl",
                   "span": [
                     24,
                     26,
@@ -2850,7 +2850,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
             {
               "args": [
                 {
-                  "ident": "hd",
+                  "name": "hd",
                   "span": [
                     18,
                     20,
@@ -2860,7 +2860,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
                 {
                   "args": [
                     {
-                      "ident": "tl",
+                      "name": "tl",
                       "span": [
                         24,
                         26,
@@ -2950,7 +2950,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                 {
                   "args": [
                     {
-                      "ident": "hd",
+                      "name": "hd",
                       "span": [
                         19,
                         21,
@@ -2975,7 +2975,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                   "type": "constructor",
                 },
                 {
-                  "ident": "y",
+                  "name": "y",
                   "span": [
                     30,
                     31,
@@ -3108,7 +3108,7 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
             {
               "args": [
                 {
-                  "ident": "a",
+                  "name": "a",
                   "span": [
                     20,
                     21,
@@ -3305,7 +3305,7 @@ exports[`pattern matching > matching many clauses, with trailing comma 1`] = `
         "clauses": [
           [
             {
-              "ident": "a",
+              "name": "a",
               "span": [
                 18,
                 19,
@@ -3324,7 +3324,7 @@ exports[`pattern matching > matching many clauses, with trailing comma 1`] = `
           ],
           [
             {
-              "ident": "b",
+              "name": "b",
               "span": [
                 30,
                 31,
@@ -3385,7 +3385,7 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
         "clauses": [
           [
             {
-              "ident": "a",
+              "name": "a",
               "span": [
                 18,
                 19,
@@ -3404,7 +3404,7 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
           ],
           [
             {
-              "ident": "b",
+              "name": "b",
               "span": [
                 30,
                 31,
@@ -3531,7 +3531,7 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
             {
               "args": [
                 {
-                  "ident": "x",
+                  "name": "x",
                   "span": [
                     19,
                     20,
@@ -3539,7 +3539,7 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
                   "type": "ident",
                 },
                 {
-                  "ident": "y",
+                  "name": "y",
                   "span": [
                     22,
                     23,
