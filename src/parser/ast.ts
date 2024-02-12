@@ -24,21 +24,24 @@ export type TypeAst = SpanMeta &
     | { type: "any" }
   );
 
-export type MatchPattern<TypeMeta = unknown> = (TypeMeta & SpanMeta) &
+export type MatchPattern<
+  TypeMeta = unknown,
+  IdentifierResolutionMeta = unknown,
+> = (TypeMeta & SpanMeta) &
   (
-    | {
+    | ({
         type: "identifier";
         name: string;
-      }
+      } & IdentifierResolutionMeta)
     | {
         type: "lit";
         literal: ConstLiteral;
       }
-    | {
+    | ({
         type: "constructor";
         name: string;
-        args: MatchPattern<TypeMeta>[];
-      }
+        args: MatchPattern<TypeMeta, IdentifierResolutionMeta>[];
+      } & IdentifierResolutionMeta)
   );
 
 export type Binding<TypeMeta = unknown> = { name: string } & TypeMeta &
@@ -84,7 +87,10 @@ export type Expr<
         type: "match";
         expr: Expr<TypeMeta, IdentifierResolutionMeta>;
         clauses: Array<
-          [MatchPattern<TypeMeta>, Expr<TypeMeta, IdentifierResolutionMeta>]
+          [
+            MatchPattern<TypeMeta, IdentifierResolutionMeta>,
+            Expr<TypeMeta, IdentifierResolutionMeta>,
+          ]
         >;
       }
   );

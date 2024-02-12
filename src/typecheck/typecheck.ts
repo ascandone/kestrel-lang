@@ -18,6 +18,7 @@ import {
   TypedExposing,
   TypedExpr,
   TypedImport,
+  TypedMatchPattern,
   TypedModule,
   TypedTypeDeclaration,
   TypedTypeVariant,
@@ -438,8 +439,8 @@ class Typechecker {
     }
   }
 
-  private typecheckPattern<T>(
-    pattern: MatchPattern<T & SpanMeta & TypeMeta>,
+  private typecheckPattern(
+    pattern: TypedMatchPattern,
     scope: Context,
   ): Context {
     switch (pattern.type) {
@@ -453,23 +454,34 @@ class Typechecker {
         return { ...scope, [pattern.name]: pattern.$.asType() };
 
       case "constructor": {
-        // TODO handle ns
-        const lookup_ = this.resolveIdent(
-          undefined,
-          pattern.name,
-          scope,
-          pattern.span,
-        );
-        if (lookup_ === undefined) {
-          // TODO better err
-          this.errors.push({
-            span: pattern.span,
-            description: new UnboundVariable(pattern.name),
-          });
-          return scope;
-        }
+        let lookup: Type<never>;
 
-        const lookup = instantiate(lookup_);
+        const resolved = pattern.resolution;
+        if (resolved !== undefined) {
+          if (resolved.type !== "constructor") {
+            throw new Error("[unreachable] invalid resolution for constructor");
+          }
+          lookup = instantiate(resolved.variant.poly);
+        } else {
+          // TODO handle ns
+          const lookup_ = this.resolveIdent(
+            undefined,
+            pattern.name,
+            scope,
+            pattern.span,
+          );
+
+          if (lookup_ === undefined) {
+            // TODO better err
+            this.errors.push({
+              span: pattern.span,
+              description: new UnboundVariable(pattern.name),
+            });
+            return scope;
+          }
+
+          lookup = instantiate(lookup_);
+        }
 
         if (lookup.type === "named") {
           this.unifyNode(pattern, lookup, pattern.$.asType());
@@ -650,7 +662,6 @@ class Typechecker {
           ...typeDecl,
           variants: typeDecl.variants.map((variant) => {
             const t = this.makeVariantType(typeDecl, variant);
-            this.globals[variant.name] = t;
             const typedVariant = {
               ...variant,
               poly: t,
@@ -816,9 +827,38 @@ class Typechecker {
           $: TVar.fresh(),
           expr: this.annotateExpr(ast.expr, lexicalScope),
           clauses: ast.clauses.map(([binding, expr]) => [
-            annotateMatchExpr(binding),
+            this.annotateMatchExpr(binding),
             this.annotateExpr(expr, lexicalScope),
           ]),
+        };
+      }
+    }
+  }
+
+  private annotateMatchExpr(ast: MatchPattern): TypedMatchPattern {
+    switch (ast.type) {
+      case "lit":
+        return {
+          ...ast,
+          $: TVar.fresh(),
+        };
+      case "identifier":
+        return {
+          ...ast,
+          resolution: undefined,
+          $: TVar.fresh(),
+        };
+      case "constructor": {
+        // TODO only resolve if constructor is unqualified
+        const variant = this.variants[ast.name];
+        return {
+          ...ast,
+          resolution:
+            variant === undefined
+              ? undefined
+              : { type: "constructor", variant },
+          args: ast.args.map((arg) => this.annotateMatchExpr(arg)),
+          $: TVar.fresh(),
         };
       }
     }
@@ -856,23 +896,6 @@ type TypeResolutionData = {
   pub: boolean;
   namespace: string;
 };
-
-function annotateMatchExpr(ast: MatchPattern): MatchPattern<TypeMeta> {
-  switch (ast.type) {
-    case "lit":
-    case "identifier":
-      return {
-        ...ast,
-        $: TVar.fresh(),
-      };
-    case "constructor":
-      return {
-        ...ast,
-        args: ast.args.map(annotateMatchExpr),
-        $: TVar.fresh(),
-      };
-  }
-}
 
 type LexicalScope = Record<string, Binding<TypeMeta>>;
 

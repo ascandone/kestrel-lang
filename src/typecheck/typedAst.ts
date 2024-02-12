@@ -18,10 +18,14 @@ export type IdentifierResolution =
   | { type: "global-variable"; declaration: TypedDeclaration }
   | { type: "constructor"; variant: TypedTypeVariant };
 
-export type TypedExpr = Expr<
+export type IdentifierResolutionMeta = {
+  resolution: IdentifierResolution | undefined;
+};
+export type TypedMatchPattern = MatchPattern<
   TypeMeta,
-  { resolution: IdentifierResolution | undefined }
+  IdentifierResolutionMeta
 >;
+export type TypedExpr = Expr<TypeMeta, IdentifierResolutionMeta>;
 
 export type TypedExposing = ExposedValue<
   { resolved: TypedTypeDeclaration },
@@ -34,10 +38,7 @@ export type PolyTypeMeta = { poly: Type<Poly> };
 export type TypedTypeVariant = TypeVariant<PolyTypeMeta>;
 export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 
-export type TypedDeclaration = Declaration<
-  TypeMeta,
-  { resolution: IdentifierResolution | undefined }
->;
+export type TypedDeclaration = Declaration<TypeMeta, IdentifierResolutionMeta>;
 
 export type TypedModule = {
   imports: TypedImport[];
