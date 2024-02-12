@@ -283,8 +283,18 @@ export async function lspCmd() {
         };
       }
 
-      case "constructor":
-        return undefined;
+      case "constructor": {
+        const startPos = doc.positionAt(resolved.variant.span[0]);
+        const endPos = doc.positionAt(resolved.variant.span[1]);
+
+        return {
+          uri: textDocument.uri,
+          range: {
+            start: startPos,
+            end: endPos,
+          },
+        };
+      }
     }
   });
 
