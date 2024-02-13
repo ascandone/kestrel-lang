@@ -378,42 +378,11 @@ class Typechecker {
     this.unifyExpr(decl.value, decl.binding.$.asType(), decl.value.$.asType());
   }
 
-  private resolveIdent(
-    ns: string | undefined,
-    name: string,
-    span: Span,
-  ): Type<Poly> | undefined {
+  private resolveIdent(ns: string | undefined): Type<Poly> | undefined {
     if (ns !== undefined) {
       const import_ = this.imports.find((import_) => import_.ns === ns);
       if (import_ === undefined) {
-        this.errors.push({
-          span,
-          description: new UnimportedModule(ns),
-        });
         return TVar.fresh().asType();
-      }
-
-      const dep = this.deps[ns];
-      if (dep === undefined) {
-        return undefined;
-      }
-
-      const decl = dep.declarations
-        .find((decl) => decl.binding.name === name && decl.pub)
-        ?.binding.$.asType();
-
-      if (decl !== undefined) {
-        return generalize(decl);
-      }
-
-      for (const tDecl of dep.typeDeclarations) {
-        if (tDecl.type === "adt" && tDecl.pub === "..") {
-          for (const variant of tDecl.variants) {
-            if (variant.name === name) {
-              return variant.poly;
-            }
-          }
-        }
       }
     }
   }
@@ -439,11 +408,7 @@ class Typechecker {
           lookup = instantiate(resolved.variant.poly);
         } else {
           // TODO handle ns
-          const lookup_ = this.resolveIdent(
-            undefined,
-            pattern.name,
-            pattern.span,
-          );
+          const lookup_ = this.resolveIdent(undefined);
 
           if (lookup_ === undefined) {
             // TODO better err
@@ -527,7 +492,7 @@ class Typechecker {
           }
         }
 
-        const lookup = this.resolveIdent(ast.namespace, ast.name, ast.span);
+        const lookup = this.resolveIdent(ast.namespace);
         if (lookup === undefined) {
           this.errors.push(
             ast.namespace === undefined
@@ -854,10 +819,68 @@ class Typechecker {
   }
 
   private resolveIdentifier(
-    ast: { name: string; namespace?: string },
+    ast: { name: string; namespace?: string; span: Span },
     lexicalScope: LexicalScope,
   ): IdentifierResolution | undefined {
     if (ast.namespace !== undefined) {
+      const import_ = this.imports.find(
+        (import_) => import_.ns === ast.namespace,
+      );
+      if (import_ === undefined) {
+        this.errors.push({
+          span: ast.span,
+          description: new UnimportedModule(ast.namespace),
+        });
+        return undefined;
+      }
+
+      const dep = this.deps[import_.ns];
+      if (dep === undefined) {
+        return undefined;
+      }
+
+      const declaration = dep.declarations.find(
+        (decl) => decl.binding.name === ast.name && decl.pub,
+      );
+      if (declaration !== undefined) {
+        return {
+          type: "global-variable",
+          declaration,
+          namespace: ast.namespace,
+        };
+      }
+
+      for (const tDecl of dep.typeDeclarations) {
+        if (tDecl.type === "adt" && tDecl.pub === "..") {
+          for (const variant of tDecl.variants) {
+            if (variant.name === ast.name) {
+              return { type: "constructor", variant, namespace: ast.namespace };
+            }
+          }
+        }
+      }
+
+      for (const exposed of import_.exposing) {
+        if (exposed.name === ast.name) {
+          // Found!
+          switch (exposed.type) {
+            case "value":
+              if (exposed.declaration === undefined) {
+                return;
+              }
+
+              return {
+                type: "global-variable",
+                namespace: ast.namespace,
+                declaration: exposed.declaration,
+              };
+
+            case "type":
+              break;
+          }
+        }
+      }
+
       return;
     }
 
