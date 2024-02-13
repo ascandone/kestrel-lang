@@ -385,7 +385,11 @@ export class Compiler {
       for (const exposed of import_.exposing) {
         switch (exposed.type) {
           case "type":
-            if (exposed.resolved.type === "adt" && exposed.exposeImpl) {
+            if (
+              exposed.resolved !== undefined &&
+              exposed.resolved.type === "adt" &&
+              exposed.exposeImpl
+            ) {
               for (const variant of exposed.resolved.variants) {
                 this.globalScope[variant.name] = moduleNamespacedBinding(
                   variant.name,
