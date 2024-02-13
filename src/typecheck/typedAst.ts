@@ -136,6 +136,92 @@ function matchExprByOffset(
   }
 }
 
+export type HoveredInfo = IdentifierResolution;
+export type Hovered = SpanMeta & { hovered: HoveredInfo };
+
+export function hoverOn(
+  module: TypedModule,
+  offset: number,
+): Hovered | undefined {
+  for (const decl of module.declarations) {
+    const d = hoverOnDecl(decl, offset);
+    if (d !== undefined) {
+      return d;
+    }
+  }
+
+  return undefined;
+}
+
+function hoverOnDecl(
+  declaration: TypedDeclaration,
+  offset: number,
+): Hovered | undefined {
+  if (contains(declaration.binding, offset)) {
+    return {
+      span: declaration.binding.span,
+      hovered: { type: "global-variable", declaration },
+    };
+  }
+
+  if (!declaration.extern && contains(declaration.value, offset)) {
+    return hoverOnExpr(declaration.value, offset);
+  }
+
+  return undefined;
+}
+
+function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
+  if (!contains(expr, offset)) {
+    return undefined;
+  }
+
+  switch (expr.type) {
+    case "constant":
+      return undefined;
+    case "identifier":
+      if (expr.resolution === undefined) {
+        return undefined;
+      }
+      return {
+        span: expr.span,
+        hovered: expr.resolution,
+      };
+
+    case "fn":
+      return hoverOnExpr(expr.body, offset);
+
+    case "application":
+      return (
+        hoverOnExpr(expr.caller, offset) ??
+        firstBy(expr.args, (arg) => hoverOnExpr(arg, offset))
+      );
+
+    case "if":
+      return (
+        hoverOnExpr(expr.condition, offset) ??
+        hoverOnExpr(expr.then, offset) ??
+        hoverOnExpr(expr.else, offset)
+      );
+
+    case "let":
+      return hoverOnExpr(expr.value, offset) ?? hoverOnExpr(expr.body, offset);
+
+    case "match":
+      return firstBy(expr.clauses, ([_pat, expr]) => hoverOnExpr(expr, offset));
+  }
+}
+
+function firstBy<T, U>(r: T[], f: (t: T) => U | undefined): U | undefined {
+  for (const t of r) {
+    const res = f(t);
+    if (res !== undefined) {
+      return res;
+    }
+  }
+  return undefined;
+}
+
 export function declByOffset(
   module: TypedModule,
   offset: number,
@@ -153,6 +239,11 @@ export function declByOffset(
   }
 
   return undefined;
+}
+
+function contains(spanned: SpanMeta, offset: number) {
+  const [start, end] = spanned.span;
+  return start <= offset && end >= offset;
 }
 
 function spanContains([start, end]: Span, offset: number) {
