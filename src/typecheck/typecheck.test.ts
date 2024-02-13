@@ -55,6 +55,7 @@ test("infer a variable not present in the context", () => {
   `,
   );
 
+  expect(errors).toHaveLength(1);
   expect(errors[0]?.description).toBeInstanceOf(UnboundVariable);
   expect((errors[0]!.description as UnboundVariable).ident).toBe("unbound_var");
   expect(types).toEqual({
@@ -1017,7 +1018,6 @@ describe("modules", () => {
     const [Mod] = tcProgram("Mod", `let not_found = 42`);
     const [, errs] = tc(`import Mod.{not_found}`, { Mod });
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
@@ -1032,7 +1032,6 @@ describe("modules", () => {
       { Mod },
     );
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });

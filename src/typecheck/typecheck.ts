@@ -374,17 +374,7 @@ class Typechecker {
     }
 
     this.typecheckAnnotatedExpr(decl.value);
-
     this.unifyExpr(decl.value, decl.binding.$.asType(), decl.value.$.asType());
-  }
-
-  private resolveIdent(ns: string | undefined): Type<Poly> | undefined {
-    if (ns !== undefined) {
-      const import_ = this.imports.find((import_) => import_.ns === ns);
-      if (import_ === undefined) {
-        return TVar.fresh().asType();
-      }
-    }
   }
 
   private typecheckPattern(pattern: TypedMatchPattern) {
@@ -398,60 +388,45 @@ class Typechecker {
         break;
 
       case "constructor": {
-        let lookup: Type<never>;
-
-        const resolved = pattern.resolution;
-        if (resolved !== undefined) {
-          if (resolved.type !== "constructor") {
-            throw new Error("[unreachable] invalid resolution for constructor");
-          }
-          lookup = instantiate(resolved.variant.poly);
-        } else {
-          // TODO handle ns
-          const lookup_ = this.resolveIdent(undefined);
-
-          if (lookup_ === undefined) {
-            // TODO better err
-            this.errors.push({
-              span: pattern.span,
-              description: new UnboundVariable(pattern.name),
-            });
-            return;
-          }
-
-          lookup = instantiate(lookup_);
+        if (pattern.resolution === undefined) {
+          this.errors.push({
+            span: pattern.span,
+            description: new UnboundVariable(pattern.name),
+          });
+          return;
         }
 
-        if (lookup.type === "named") {
-          this.unifyNode(pattern, lookup, pattern.$.asType());
+        if (pattern.resolution.type !== "constructor") {
+          throw new Error("[unreachable] invalid resolution for constructor");
         }
 
-        if (lookup.type === "fn") {
+        const t = instantiate(pattern.resolution.variant.poly);
+
+        if (t.type === "named") {
+          this.unifyNode(pattern, t, pattern.$.asType());
+        }
+
+        if (t.type === "fn") {
           this.unifyNode(
             pattern,
             {
               type: "fn",
-              args: lookup.args,
+              args: t.args,
               return: pattern.$.asType(),
             },
-            lookup,
+            t,
           );
 
-          for (let i = 0; i < lookup.args.length; i++) {
-            this.unifyNode(
-              pattern,
-              pattern.args[i]!.$.asType(),
-              lookup.args[i]!,
-            );
-
+          for (let i = 0; i < t.args.length; i++) {
+            this.unifyNode(pattern, pattern.args[i]!.$.asType(), t.args[i]!);
             this.typecheckPattern(pattern.args[i]!);
           }
 
-          if (lookup.args.length !== pattern.args.length) {
+          if (t.args.length !== pattern.args.length) {
             this.errors.push({
               span: pattern.span,
               description: new ArityMismatch(
-                lookup.args.length,
+                t.args.length,
                 pattern.args.length,
               ),
             });
@@ -473,42 +448,31 @@ class Typechecker {
       }
 
       case "identifier": {
-        const resolved = ast.resolution;
-        if (resolved !== undefined) {
-          switch (resolved.type) {
-            case "local-variable":
-              this.unifyExpr(ast, ast.$.asType(), resolved.binding.$.asType());
-              return;
-            case "global-variable": {
-              const t = generalize(resolved.declaration.binding.$.asType());
-              this.unifyExpr(ast, ast.$.asType(), instantiate(t));
-              return;
-            }
-            case "constructor": {
-              const t = instantiate(resolved.variant.poly);
-              this.unifyExpr(ast, ast.$.asType(), instantiate(t));
-              return;
-            }
-          }
-        }
-
-        const lookup = this.resolveIdent(ast.namespace);
-        if (lookup === undefined) {
-          this.errors.push(
-            ast.namespace === undefined
-              ? {
-                  span: ast.span,
-                  description: new UnboundVariable(ast.name),
-                }
-              : {
-                  span: ast.span,
-                  description: new NonExistingImport(ast.name),
-                },
-          );
+        if (ast.resolution === undefined) {
+          // Error was already emitted
+          // Do not narrow the identifier's type
           return;
         }
-        this.unifyExpr(ast, ast.$.asType(), instantiate(lookup));
-        return;
+
+        switch (ast.resolution.type) {
+          case "local-variable":
+            this.unifyExpr(
+              ast,
+              ast.$.asType(),
+              ast.resolution.binding.$.asType(),
+            );
+            return;
+          case "global-variable": {
+            const t = generalize(ast.resolution.declaration.binding.$.asType());
+            this.unifyExpr(ast, ast.$.asType(), instantiate(t));
+            return;
+          }
+          case "constructor": {
+            const t = instantiate(ast.resolution.variant.poly);
+            this.unifyExpr(ast, ast.$.asType(), instantiate(t));
+            return;
+          }
+        }
       }
 
       case "fn":
@@ -842,6 +806,7 @@ class Typechecker {
       const declaration = dep.declarations.find(
         (decl) => decl.binding.name === ast.name && decl.pub,
       );
+
       if (declaration !== undefined) {
         return {
           type: "global-variable",
@@ -881,6 +846,11 @@ class Typechecker {
         }
       }
 
+      this.errors.push({
+        span: ast.span,
+        description: new NonExistingImport(ast.name),
+      });
+
       return;
     }
 
@@ -893,6 +863,11 @@ class Typechecker {
     if (global !== undefined) {
       return global;
     }
+
+    this.errors.push({
+      span: ast.span,
+      description: new UnboundVariable(ast.name),
+    });
 
     return;
   }
