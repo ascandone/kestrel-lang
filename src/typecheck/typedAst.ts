@@ -159,10 +159,15 @@ function spanContains([start, end]: Span, offset: number) {
   return start <= offset && end >= offset;
 }
 
+export type Location = {
+  namespace?: string;
+  span: Span;
+};
+
 export function goToDefinitionOf(
   module: TypedModule,
   offset: number,
-): IdentifierResolution | undefined {
+): Location | undefined {
   for (const import_ of module.imports) {
     if (!spanContains(import_.span, offset)) {
       continue;
@@ -175,15 +180,21 @@ export function goToDefinitionOf(
 
       switch (exposing.type) {
         case "type":
-          break;
-        case "value":
-          if (exposing.declaration !== undefined) {
-            return {
-              type: "global-variable",
-              declaration: exposing.declaration,
-              namespace: import_.ns,
-            };
+          if (exposing.resolved === undefined) {
+            return undefined;
           }
+
+          return { namespace: import_.ns, span: exposing.resolved.span };
+
+        case "value":
+          if (exposing.declaration === undefined) {
+            return undefined;
+          }
+
+          return {
+            namespace: import_.ns,
+            span: exposing.declaration.span,
+          };
       }
     }
   }
@@ -199,17 +210,37 @@ export function goToDefinitionOf(
   return undefined;
 }
 
+function resolutionToLocation(resolution: IdentifierResolution): Location {
+  switch (resolution.type) {
+    case "local-variable":
+      return { namespace: undefined, span: resolution.binding.span };
+    case "global-variable":
+      return {
+        namespace: resolution.namespace,
+        span: resolution.declaration.span,
+      };
+    case "constructor":
+      return {
+        namespace: resolution.namespace,
+        span: resolution.variant.span,
+      };
+  }
+}
+
 function goToDefinitionOfExpr(
   ast: TypedExpr,
   offset: number,
-): IdentifierResolution | undefined {
+): Location | undefined {
   if (!spanContains(ast.span, offset)) {
     return;
   }
 
   switch (ast.type) {
     case "identifier":
-      return ast.resolution;
+      if (ast.resolution === undefined) {
+        return undefined;
+      }
+      return resolutionToLocation(ast.resolution);
 
     case "constant":
       return undefined;
@@ -262,7 +293,7 @@ function goToDefinitionOfExpr(
 function goToDefinitionOfPattern(
   pattern: TypedMatchPattern,
   offset: number,
-): IdentifierResolution | undefined {
+): Location | undefined {
   if (!spanContains(pattern.span, offset)) {
     return;
   }
@@ -280,6 +311,10 @@ function goToDefinitionOfPattern(
         }
       }
 
-      return pattern.resolution;
+      if (pattern.resolution === undefined) {
+        return undefined;
+      }
+
+      return resolutionToLocation(pattern.resolution);
   }
 }

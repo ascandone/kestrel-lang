@@ -261,52 +261,19 @@ export async function lspCmd() {
       return undefined;
     }
 
-    switch (resolved.type) {
-      case "local-variable": {
-        const startPos = doc.positionAt(resolved.binding.span[0]);
-        const endPos = doc.positionAt(resolved.binding.span[1]);
+    const startPos = doc.positionAt(resolved.span[0]);
+    const endPos = doc.positionAt(resolved.span[1]);
 
-        return {
-          uri: textDocument.uri,
-          range: {
-            start: startPos,
-            end: endPos,
-          },
-        };
-      }
-
-      case "global-variable": {
-        const startPos = doc.positionAt(resolved.declaration.binding.span[0]);
-        const endPos = doc.positionAt(resolved.declaration.binding.span[1]);
-
-        return {
-          uri:
-            resolved.namespace === undefined
-              ? textDocument.uri
-              : state.uriByNs(resolved.namespace),
-          range: {
-            start: startPos,
-            end: endPos,
-          },
-        };
-      }
-
-      case "constructor": {
-        const startPos = doc.positionAt(resolved.variant.span[0]);
-        const endPos = doc.positionAt(resolved.variant.span[1]);
-
-        return {
-          uri:
-            resolved.namespace === undefined
-              ? textDocument.uri
-              : state.uriByNs(resolved.namespace),
-          range: {
-            start: startPos,
-            end: endPos,
-          },
-        };
-      }
-    }
+    return {
+      uri:
+        resolved.namespace === undefined
+          ? textDocument.uri
+          : state.uriByNs(resolved.namespace),
+      range: {
+        start: startPos,
+        end: endPos,
+      },
+    };
   });
 
   connection.onHover(({ textDocument, position }) => {
