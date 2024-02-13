@@ -21,7 +21,6 @@ import {
   TypedMatchPattern,
   TypedModule,
   TypedTypeDeclaration,
-  TypedTypeVariant,
 } from "./typedAst";
 import { CORE_MODULES, defaultImports } from "./defaultImports";
 import { topSortedModules } from "./project";
@@ -65,12 +64,9 @@ export function typecheck(
   return new Typechecker(ns, deps).run(module, implicitImports);
 }
 
-type GlobalScope = Record<string, TypedDeclaration>;
-type TypeVariants = Record<string, TypedTypeVariant>;
+type GlobalScope = Record<string, IdentifierResolution>;
 
 class Typechecker {
-  // TODO remove globals and lookup import/declrs directly
-  private variants: TypeVariants = {};
   private globalScope: GlobalScope = {};
 
   private errors: ErrorInfo[] = [];
@@ -148,26 +144,40 @@ class Typechecker {
                 span: exposing.span,
                 description: new NonExistingImport(exposing.name),
               });
-            } else if (resolved.type === "extern" && exposing.exposeImpl) {
-              this.errors.push({
-                span: exposing.span,
-                description: new BadImport(),
-              });
-            } else if (
-              resolved.type === "adt" &&
-              exposing.exposeImpl &&
-              resolved.pub !== ".."
-            ) {
-              this.errors.push({
-                span: exposing.span,
-                description: new BadImport(),
-              });
+              return exposing;
+            }
+
+            if (exposing.exposeImpl) {
+              switch (resolved.type) {
+                case "extern":
+                  this.errors.push({
+                    span: exposing.span,
+                    description: new BadImport(),
+                  });
+                  break;
+                case "adt":
+                  if (resolved.pub !== "..") {
+                    this.errors.push({
+                      span: exposing.span,
+                      description: new BadImport(),
+                    });
+                    break;
+                  } else {
+                    for (const variant of resolved.variants) {
+                      this.globalScope[variant.name] = {
+                        type: "constructor",
+                        variant,
+                        namespace: import_.ns,
+                      };
+                    }
+                  }
+              }
             }
 
             return {
               ...exposing,
               resolved,
-            } as TypedExposing;
+            };
           }
 
           case "value": {
@@ -180,6 +190,12 @@ class Typechecker {
                 span: exposing.span,
                 description: new NonExistingImport(exposing.name),
               });
+            } else {
+              this.globalScope[exposing.name] = {
+                type: "global-variable",
+                declaration,
+                namespace: import_.ns,
+              };
             }
 
             return {
@@ -399,37 +415,6 @@ class Typechecker {
           }
         }
       }
-    } else {
-      for (const import_ of this.imports) {
-        for (const exposing of import_.exposing) {
-          switch (exposing.type) {
-            case "type": {
-              // TODO error when using (..) on extern types
-              if (exposing.exposeImpl && exposing.resolved.type === "adt") {
-                for (const variant of exposing.resolved.variants) {
-                  if (variant.name === name) {
-                    return variant.poly;
-                  }
-                }
-              }
-              break;
-            }
-
-            case "value":
-              if (exposing.name === name) {
-                const poly =
-                  exposing.declaration === undefined
-                    ? TVar.fresh().asType()
-                    : generalize(exposing.declaration.binding.$.asType());
-
-                return poly;
-              }
-              break;
-          }
-        }
-      }
-
-      return;
     }
   }
 
@@ -645,7 +630,12 @@ class Typechecker {
               ...variant,
               poly: t,
             };
-            this.variants[variant.name] = typedVariant;
+
+            this.globalScope[variant.name] = {
+              type: "constructor",
+              variant: typedVariant,
+            };
+
             return typedVariant;
           }),
         } as TypedTypeDeclaration;
@@ -689,7 +679,7 @@ class Typechecker {
     }
     for (const import_ of this.imports) {
       for (const exposed of import_.exposing) {
-        if (exposed.type === "type" && exposed.resolved.name === typeName) {
+        if (exposed.type === "type" && exposed.resolved?.name === typeName) {
           // TODO pub=true?
           return {
             arity: exposed.resolved.params.length,
@@ -729,7 +719,10 @@ class Typechecker {
         };
       }
 
-      this.globalScope[decl.binding.name] = tDecl;
+      this.globalScope[decl.binding.name] = {
+        type: "global-variable",
+        declaration: tDecl,
+      };
 
       return tDecl;
     });
@@ -846,13 +839,9 @@ class Typechecker {
 
         case "constructor": {
           // TODO only resolve if constructor is unqualified
-          const variant = this.variants[ast.name];
           const typedPattern: TypedMatchPattern = {
             ...ast,
-            resolution:
-              variant === undefined
-                ? undefined
-                : { type: "constructor", variant },
+            resolution: this.globalScope[ast.name],
             args: ast.args.map(recur),
             $: TVar.fresh(),
           };
@@ -872,11 +861,6 @@ class Typechecker {
       return;
     }
 
-    const variant = this.variants[ast.name];
-    if (variant !== undefined) {
-      return { type: "constructor", variant };
-    }
-
     const lexical = lexicalScope[ast.name];
     if (lexical !== undefined) {
       return { type: "local-variable", binding: lexical };
@@ -884,7 +868,7 @@ class Typechecker {
 
     const global = this.globalScope[ast.name];
     if (global !== undefined) {
-      return { type: "global-variable", declaration: global };
+      return global;
     }
 
     return;

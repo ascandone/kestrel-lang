@@ -14,9 +14,20 @@ import { TypeMeta } from "./typecheck";
 import { Poly, Type } from "./unify";
 
 export type IdentifierResolution =
-  | { type: "local-variable"; binding: Binding<TypeMeta> }
-  | { type: "global-variable"; declaration: TypedDeclaration }
-  | { type: "constructor"; variant: TypedTypeVariant };
+  | {
+      type: "local-variable";
+      binding: Binding<TypeMeta>;
+    }
+  | {
+      type: "global-variable";
+      declaration: TypedDeclaration;
+      namespace?: string;
+    }
+  | {
+      type: "constructor";
+      variant: TypedTypeVariant;
+      namespace?: string;
+    };
 
 export type IdentifierResolutionMeta = {
   resolution: IdentifierResolution | undefined;
@@ -28,7 +39,7 @@ export type TypedMatchPattern = MatchPattern<
 export type TypedExpr = Expr<TypeMeta, IdentifierResolutionMeta>;
 
 export type TypedExposing = ExposedValue<
-  { resolved: TypedTypeDeclaration },
+  { resolved?: TypedTypeDeclaration },
   { declaration?: TypedDeclaration }
 >;
 
