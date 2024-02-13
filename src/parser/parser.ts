@@ -95,8 +95,8 @@ semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
 semantics.addOperation<MatchPattern>("matchPattern()", {
   ConstructorPattern_ident(ident) {
     return {
-      type: "ident",
-      ident: ident.sourceString,
+      type: "identifier",
+      name: ident.sourceString,
       span: getSpan(this),
     };
   },
@@ -400,7 +400,7 @@ semantics.addOperation<TypeVariant<unknown>>("typeVariant()", {
         .children.map((c) => c.type());
     }
 
-    return { name: name.sourceString, args: args_ };
+    return { name: name.sourceString, args: args_, span: getSpan(this) };
   },
 });
 

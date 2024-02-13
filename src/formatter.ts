@@ -199,8 +199,8 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
 
 function patternToDoc(pattern: MatchPattern): Doc {
   switch (pattern.type) {
-    case "ident":
-      return text(pattern.ident);
+    case "identifier":
+      return text(pattern.name);
 
     case "lit":
       return constToDoc(pattern.literal);

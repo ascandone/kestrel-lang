@@ -1,6 +1,6 @@
 import {
+  Binding,
   ConstLiteral,
-  Declaration,
   Expr,
   MatchPattern,
   Span,
@@ -11,11 +11,14 @@ import {
   UntypedModule,
   UntypedTypeDeclaration,
   UntypedTypeVariant,
-} from "../parser/ast";
+} from "../parser";
 import {
+  IdentifierResolution,
   TypedDeclaration,
   TypedExposing,
+  TypedExpr,
   TypedImport,
+  TypedMatchPattern,
   TypedModule,
   TypedTypeDeclaration,
 } from "./typedAst";
@@ -25,7 +28,6 @@ import {
   TVar,
   Type,
   unify,
-  Context,
   generalize,
   instantiate,
   Poly,
@@ -62,9 +64,10 @@ export function typecheck(
   return new Typechecker(ns, deps).run(module, implicitImports);
 }
 
+type GlobalScope = Record<string, IdentifierResolution>;
+
 class Typechecker {
-  // TODO remove globals and lookup import/declrs directly
-  private globals: Context = {};
+  private globalScope: GlobalScope = {};
 
   private errors: ErrorInfo[] = [];
   private imports: TypedImport[] = [];
@@ -92,7 +95,7 @@ class Typechecker {
       this.typeDeclarations.push(annotated);
     }
 
-    const annotatedDeclrs = annotateDeclarations(module.declarations);
+    const annotatedDeclrs = this.annotateDeclarations(module.declarations);
 
     for (const decl of annotatedDeclrs) {
       this.typecheckAnnotatedDecl(decl);
@@ -141,48 +144,63 @@ class Typechecker {
                 span: exposing.span,
                 description: new NonExistingImport(exposing.name),
               });
-            } else if (resolved.type === "extern" && exposing.exposeImpl) {
-              this.errors.push({
-                span: exposing.span,
-                description: new BadImport(),
-              });
-            } else if (
-              resolved.type === "adt" &&
-              exposing.exposeImpl &&
-              resolved.pub !== ".."
-            ) {
-              this.errors.push({
-                span: exposing.span,
-                description: new BadImport(),
-              });
+              return exposing;
+            }
+
+            if (exposing.exposeImpl) {
+              switch (resolved.type) {
+                case "extern":
+                  this.errors.push({
+                    span: exposing.span,
+                    description: new BadImport(),
+                  });
+                  break;
+                case "adt":
+                  if (resolved.pub !== "..") {
+                    this.errors.push({
+                      span: exposing.span,
+                      description: new BadImport(),
+                    });
+                    break;
+                  } else {
+                    for (const variant of resolved.variants) {
+                      this.globalScope[variant.name] = {
+                        type: "constructor",
+                        variant,
+                        namespace: import_.ns,
+                      };
+                    }
+                  }
+              }
             }
 
             return {
               ...exposing,
               resolved,
-            } as TypedExposing;
+            };
           }
 
           case "value": {
-            const decl = importedModule.declarations.find(
+            const declaration = importedModule.declarations.find(
               (decl) => decl.binding.name === exposing.name,
             );
 
-            if (decl === undefined || !decl.pub) {
+            if (declaration === undefined || !declaration.pub) {
               this.errors.push({
                 span: exposing.span,
                 description: new NonExistingImport(exposing.name),
               });
+            } else {
+              this.globalScope[exposing.name] = {
+                type: "global-variable",
+                declaration,
+                namespace: import_.ns,
+              };
             }
-
-            const poly =
-              decl === undefined
-                ? TVar.fresh().asType()
-                : generalize(decl.binding.$.asType());
 
             return {
               ...exposing,
-              poly,
+              declaration: declaration,
             } as TypedExposing;
           }
         }
@@ -345,132 +363,64 @@ class Typechecker {
     }
   }
 
-  private typecheckAnnotatedDecl(decl: Declaration<TypeMeta>) {
+  private typecheckAnnotatedDecl(decl: TypedDeclaration) {
     if (decl.typeHint !== undefined) {
       const th = this.typeAstToType(decl.typeHint, { type: "type-hint" });
       this.unifyNode(decl.typeHint, instantiate(th), decl.binding.$.asType());
-
-      if (decl.extern) {
-        this.globals[decl.binding.name] = th;
-      }
     }
 
     if (decl.extern) {
       return;
     }
 
-    this.typecheckAnnotatedExpr(decl.value, {
-      ...this.globals,
-      [decl.binding.name]: decl.value.$.asType(),
-    });
+    this.typecheckAnnotatedExpr(decl.value);
 
     this.unifyExpr(decl.value, decl.binding.$.asType(), decl.value.$.asType());
-
-    this.globals[decl.binding.name] = generalize(
-      decl.value.$.asType(),
-      this.globals,
-    );
   }
 
-  private resolveIdent(
-    ns: string | undefined,
-    name: string,
-    scope: Context,
-    span: Span,
-  ): Type<Poly> | undefined {
+  private resolveIdent(ns: string | undefined): Type<Poly> | undefined {
     if (ns !== undefined) {
       const import_ = this.imports.find((import_) => import_.ns === ns);
       if (import_ === undefined) {
-        this.errors.push({
-          span,
-          description: new UnimportedModule(ns),
-        });
         return TVar.fresh().asType();
       }
-
-      const dep = this.deps[ns];
-      if (dep === undefined) {
-        return undefined;
-      }
-
-      const decl = dep.declarations
-        .find((decl) => decl.binding.name === name && decl.pub)
-        ?.binding.$.asType();
-
-      if (decl !== undefined) {
-        return generalize(decl);
-      }
-
-      for (const tDecl of dep.typeDeclarations) {
-        if (tDecl.type === "adt" && tDecl.pub === "..") {
-          for (const variant of tDecl.variants) {
-            if (variant.name === name) {
-              return variant.polyType;
-            }
-          }
-        }
-      }
-    } else {
-      for (const import_ of this.imports) {
-        for (const exposing of import_.exposing) {
-          switch (exposing.type) {
-            case "type": {
-              // TODO error when using (..) on extern types
-              if (exposing.exposeImpl && exposing.resolved.type === "adt") {
-                for (const variant of exposing.resolved.variants) {
-                  if (variant.name === name) {
-                    return variant.polyType;
-                  }
-                }
-              }
-              break;
-            }
-
-            case "value":
-              if (exposing.name === name) {
-                return exposing.poly;
-              }
-              break;
-          }
-        }
-      }
-
-      return scope[name];
     }
   }
 
-  private typecheckPattern<T>(
-    pattern: MatchPattern<T & SpanMeta & TypeMeta>,
-    scope: Context,
-  ): Context {
+  private typecheckPattern(pattern: TypedMatchPattern) {
     switch (pattern.type) {
       case "lit": {
         const t = inferConstant(pattern.literal);
         this.unifyNode(pattern, pattern.$.asType(), t);
-        return scope;
       }
 
-      case "ident":
-        return { ...scope, [pattern.ident]: pattern.$.asType() };
+      case "identifier":
+        break;
 
       case "constructor": {
-        // TODO handle ns
-        const lookup_ = this.resolveIdent(
-          undefined,
-          pattern.name,
-          scope,
-          pattern.span,
-        );
-        if (lookup_ === undefined) {
-          // TODO better err
-          this.errors.push({
-            span: pattern.span,
-            description: new UnboundVariable(pattern.name),
-          });
-          return scope;
-        }
+        let lookup: Type<never>;
 
-        const lookup = instantiate(lookup_);
+        const resolved = pattern.resolution;
+        if (resolved !== undefined) {
+          if (resolved.type !== "constructor") {
+            throw new Error("[unreachable] invalid resolution for constructor");
+          }
+          lookup = instantiate(resolved.variant.poly);
+        } else {
+          // TODO handle ns
+          const lookup_ = this.resolveIdent(undefined);
+
+          if (lookup_ === undefined) {
+            // TODO better err
+            this.errors.push({
+              span: pattern.span,
+              description: new UnboundVariable(pattern.name),
+            });
+            return;
+          }
+
+          lookup = instantiate(lookup_);
+        }
 
         if (lookup.type === "named") {
           this.unifyNode(pattern, lookup, pattern.$.asType());
@@ -494,12 +444,7 @@ class Typechecker {
               lookup.args[i]!,
             );
 
-            const updatedContext = this.typecheckPattern(
-              pattern.args[i]!,
-              scope,
-            );
-
-            scope = { ...scope, ...updatedContext };
+            this.typecheckPattern(pattern.args[i]!);
           }
 
           if (lookup.args.length !== pattern.args.length) {
@@ -510,19 +455,16 @@ class Typechecker {
                 pattern.args.length,
               ),
             });
-            return scope;
+            return;
           }
         }
 
-        return scope;
+        return;
       }
     }
   }
 
-  private typecheckAnnotatedExpr<T extends SpanMeta>(
-    ast: Expr<T & TypeMeta>,
-    scope: Context,
-  ) {
+  private typecheckAnnotatedExpr(ast: TypedExpr) {
     switch (ast.type) {
       case "constant": {
         const t = inferConstant(ast.value);
@@ -531,12 +473,26 @@ class Typechecker {
       }
 
       case "identifier": {
-        const lookup = this.resolveIdent(
-          ast.namespace,
-          ast.name,
-          scope,
-          ast.span,
-        );
+        const resolved = ast.resolution;
+        if (resolved !== undefined) {
+          switch (resolved.type) {
+            case "local-variable":
+              this.unifyExpr(ast, ast.$.asType(), resolved.binding.$.asType());
+              return;
+            case "global-variable": {
+              const t = generalize(resolved.declaration.binding.$.asType());
+              this.unifyExpr(ast, ast.$.asType(), instantiate(t));
+              return;
+            }
+            case "constructor": {
+              const t = instantiate(resolved.variant.poly);
+              this.unifyExpr(ast, ast.$.asType(), instantiate(t));
+              return;
+            }
+          }
+        }
+
+        const lookup = this.resolveIdent(ast.namespace);
         if (lookup === undefined) {
           this.errors.push(
             ast.namespace === undefined
@@ -562,53 +518,44 @@ class Typechecker {
           return: ast.body.$.asType(),
         });
 
-        this.typecheckAnnotatedExpr(ast.body, {
-          ...scope,
-          ...Object.fromEntries(ast.params.map((p) => [p.name, p.$.asType()])),
-        });
+        this.typecheckAnnotatedExpr(ast.body);
         return;
 
       case "application":
-        this.typecheckAnnotatedExpr(ast.caller, scope);
+        this.typecheckAnnotatedExpr(ast.caller);
         this.unifyExpr(ast, ast.caller.$.asType(), {
           type: "fn",
           args: ast.args.map((arg) => arg.$.asType()),
           return: ast.$.asType(),
         });
         for (const arg of ast.args) {
-          this.typecheckAnnotatedExpr(arg, scope);
+          this.typecheckAnnotatedExpr(arg);
         }
         return;
 
       case "let":
         this.unifyExpr(ast, ast.binding.$.asType(), ast.value.$.asType());
         this.unifyExpr(ast, ast.$.asType(), ast.body.$.asType());
-        this.typecheckAnnotatedExpr(ast.value, {
-          ...scope,
-          [ast.binding.name]: ast.value.$.asType(),
-        });
-        this.typecheckAnnotatedExpr(ast.body, {
-          ...scope,
-          [ast.binding.name]: ast.value.$.asType(),
-        });
+        this.typecheckAnnotatedExpr(ast.value);
+        this.typecheckAnnotatedExpr(ast.body);
         return;
 
       case "if":
         this.unifyExpr(ast, ast.condition.$.asType(), Bool);
         this.unifyExpr(ast, ast.$.asType(), ast.then.$.asType());
         this.unifyExpr(ast, ast.$.asType(), ast.else.$.asType());
-        this.typecheckAnnotatedExpr(ast.condition, scope);
-        this.typecheckAnnotatedExpr(ast.then, scope);
-        this.typecheckAnnotatedExpr(ast.else, scope);
+        this.typecheckAnnotatedExpr(ast.condition);
+        this.typecheckAnnotatedExpr(ast.then);
+        this.typecheckAnnotatedExpr(ast.else);
         return;
 
       case "match":
-        this.typecheckAnnotatedExpr(ast.expr, scope);
+        this.typecheckAnnotatedExpr(ast.expr);
         for (const [pattern, expr] of ast.clauses) {
           this.unifyExpr(ast, pattern.$.asType(), ast.expr.$.asType());
-          const newContext = this.typecheckPattern(pattern, scope);
+          this.typecheckPattern(pattern);
           this.unifyExpr(ast, ast.$.asType(), expr.$.asType());
-          this.typecheckAnnotatedExpr(expr, newContext);
+          this.typecheckAnnotatedExpr(expr);
         }
     }
   }
@@ -644,11 +591,17 @@ class Typechecker {
           ...typeDecl,
           variants: typeDecl.variants.map((variant) => {
             const t = this.makeVariantType(typeDecl, variant);
-            this.globals[variant.name] = t;
-            return {
+            const typedVariant = {
               ...variant,
-              polyType: t,
+              poly: t,
             };
+
+            this.globalScope[variant.name] = {
+              type: "constructor",
+              variant: typedVariant,
+            };
+
+            return typedVariant;
           }),
         } as TypedTypeDeclaration;
       }
@@ -691,7 +644,7 @@ class Typechecker {
     }
     for (const import_ of this.imports) {
       for (const exposed of import_.exposing) {
-        if (exposed.type === "type" && exposed.resolved.name === typeName) {
+        if (exposed.type === "type" && exposed.resolved?.name === typeName) {
           // TODO pub=true?
           return {
             arity: exposed.resolved.params.length,
@@ -703,6 +656,246 @@ class Typechecker {
     }
     return undefined;
   }
+
+  private annotateDeclarations(
+    declrs: UntypedDeclaration[],
+  ): TypedDeclaration[] {
+    return declrs.map<TypedDeclaration>((decl) => {
+      const binding: Binding<TypeMeta> = {
+        ...decl.binding,
+        $: TVar.fresh(),
+      };
+
+      let tDecl: TypedDeclaration;
+      if (decl.extern) {
+        tDecl = {
+          ...decl,
+          binding,
+        };
+      } else {
+        tDecl = {
+          ...decl,
+          binding,
+          value: this.annotateExpr(decl.value, {
+            // This is an hack to prevent the recursive reference to be generalized
+            // we probably want a new type of scope for this
+            [decl.binding.name]: binding,
+          }),
+        };
+      }
+
+      this.globalScope[decl.binding.name] = {
+        type: "global-variable",
+        declaration: tDecl,
+      };
+
+      return tDecl;
+    });
+  }
+
+  private annotateExpr(ast: Expr, lexicalScope: LexicalScope): TypedExpr {
+    switch (ast.type) {
+      case "constant":
+        return { ...ast, $: TVar.fresh() };
+
+      case "identifier":
+        return {
+          ...ast,
+          resolution: this.resolveIdentifier(ast, lexicalScope),
+          $: TVar.fresh(),
+        };
+
+      case "fn": {
+        const params = ast.params.map((p) => ({
+          ...p,
+          $: TVar.fresh(),
+        }));
+
+        for (const param of params) {
+          lexicalScope = { ...lexicalScope, [param.name]: param };
+        }
+
+        return {
+          ...ast,
+          $: TVar.fresh(),
+          body: this.annotateExpr(ast.body, lexicalScope),
+          params,
+        };
+      }
+
+      case "application":
+        return {
+          ...ast,
+          $: TVar.fresh(),
+          caller: this.annotateExpr(ast.caller, lexicalScope),
+          args: ast.args.map((arg) => this.annotateExpr(arg, lexicalScope)),
+        };
+
+      case "if":
+        return {
+          ...ast,
+          $: TVar.fresh(),
+          condition: this.annotateExpr(ast.condition, lexicalScope),
+          then: this.annotateExpr(ast.then, lexicalScope),
+          else: this.annotateExpr(ast.else, lexicalScope),
+        };
+
+      case "let": {
+        const binding: Binding<TypeMeta> = {
+          ...ast.binding,
+          $: TVar.fresh(),
+        };
+
+        return {
+          ...ast,
+          $: TVar.fresh(),
+          binding,
+          // TODO only pass this if it's a fn
+          value: this.annotateExpr(ast.value, {
+            ...lexicalScope,
+            [ast.binding.name]: binding,
+          }),
+          body: this.annotateExpr(ast.body, {
+            ...lexicalScope,
+            [ast.binding.name]: binding,
+          }),
+        };
+      }
+      case "match": {
+        return {
+          ...ast,
+          $: TVar.fresh(),
+          expr: this.annotateExpr(ast.expr, lexicalScope),
+          clauses: ast.clauses.map(([pattern, expr]) => {
+            const [annotatedPattern, matchScope] =
+              this.annotateMatchPattern(pattern);
+
+            return [
+              annotatedPattern,
+              this.annotateExpr(expr, { ...lexicalScope, ...matchScope }),
+            ];
+          }),
+        };
+      }
+    }
+  }
+
+  private annotateMatchPattern(
+    ast: MatchPattern,
+  ): [TypedMatchPattern, LexicalScope] {
+    const scope: LexicalScope = {};
+
+    const recur = (ast: MatchPattern): TypedMatchPattern => {
+      switch (ast.type) {
+        case "lit":
+          return {
+            ...ast,
+            $: TVar.fresh(),
+          };
+
+        case "identifier": {
+          const typedBinding = {
+            ...ast,
+            $: TVar.fresh(),
+          };
+          scope[ast.name] = typedBinding;
+          return typedBinding;
+        }
+
+        case "constructor": {
+          // TODO only resolve if constructor is unqualified
+          const typedPattern: TypedMatchPattern = {
+            ...ast,
+            resolution: this.globalScope[ast.name],
+            args: ast.args.map(recur),
+            $: TVar.fresh(),
+          };
+          return typedPattern;
+        }
+      }
+    };
+
+    return [recur(ast), scope];
+  }
+
+  private resolveIdentifier(
+    ast: { name: string; namespace?: string; span: Span },
+    lexicalScope: LexicalScope,
+  ): IdentifierResolution | undefined {
+    if (ast.namespace !== undefined) {
+      const import_ = this.imports.find(
+        (import_) => import_.ns === ast.namespace,
+      );
+      if (import_ === undefined) {
+        this.errors.push({
+          span: ast.span,
+          description: new UnimportedModule(ast.namespace),
+        });
+        return undefined;
+      }
+
+      const dep = this.deps[import_.ns];
+      if (dep === undefined) {
+        return undefined;
+      }
+
+      const declaration = dep.declarations.find(
+        (decl) => decl.binding.name === ast.name && decl.pub,
+      );
+      if (declaration !== undefined) {
+        return {
+          type: "global-variable",
+          declaration,
+          namespace: ast.namespace,
+        };
+      }
+
+      for (const tDecl of dep.typeDeclarations) {
+        if (tDecl.type === "adt" && tDecl.pub === "..") {
+          for (const variant of tDecl.variants) {
+            if (variant.name === ast.name) {
+              return { type: "constructor", variant, namespace: ast.namespace };
+            }
+          }
+        }
+      }
+
+      for (const exposed of import_.exposing) {
+        if (exposed.name === ast.name) {
+          // Found!
+          switch (exposed.type) {
+            case "value":
+              if (exposed.declaration === undefined) {
+                return;
+              }
+
+              return {
+                type: "global-variable",
+                namespace: ast.namespace,
+                declaration: exposed.declaration,
+              };
+
+            case "type":
+              break;
+          }
+        }
+      }
+
+      return;
+    }
+
+    const lexical = lexicalScope[ast.name];
+    if (lexical !== undefined) {
+      return { type: "local-variable", binding: lexical };
+    }
+
+    const global = this.globalScope[ast.name];
+    if (global !== undefined) {
+      return global;
+    }
+
+    return;
+  }
 }
 
 type TypeResolutionData = {
@@ -711,105 +904,7 @@ type TypeResolutionData = {
   namespace: string;
 };
 
-function annotateMatchExpr<T>(
-  ast: MatchPattern<T>,
-): MatchPattern<T & TypeMeta> {
-  switch (ast.type) {
-    case "lit":
-    case "ident":
-      return {
-        ...ast,
-        $: TVar.fresh(),
-      };
-    case "constructor":
-      return {
-        ...ast,
-        args: ast.args.map(annotateMatchExpr),
-        $: TVar.fresh(),
-      };
-  }
-}
-
-function annotateExpr<T>(ast: Expr<T>): Expr<T & TypeMeta> {
-  switch (ast.type) {
-    case "constant":
-    case "identifier":
-      return { ...ast, $: TVar.fresh() };
-
-    case "fn":
-      return {
-        ...ast,
-        $: TVar.fresh(),
-        body: annotateExpr(ast.body),
-        params: ast.params.map((p) => ({
-          ...p,
-          $: TVar.fresh(),
-        })),
-      };
-    case "application":
-      return {
-        ...ast,
-        $: TVar.fresh(),
-        caller: annotateExpr(ast.caller),
-        args: ast.args.map(annotateExpr),
-      };
-
-    case "if":
-      return {
-        ...ast,
-        $: TVar.fresh(),
-        condition: annotateExpr(ast.condition),
-        then: annotateExpr(ast.then),
-        else: annotateExpr(ast.else),
-      };
-
-    case "let":
-      return {
-        ...ast,
-        $: TVar.fresh(),
-        binding: { ...ast.binding, $: TVar.fresh() },
-        value: annotateExpr(ast.value),
-        body: annotateExpr(ast.body),
-      };
-    case "match": {
-      return {
-        ...ast,
-        $: TVar.fresh(),
-        expr: annotateExpr(ast.expr),
-        clauses: ast.clauses.map(([binding, expr]) => [
-          annotateMatchExpr(binding),
-          annotateExpr(expr),
-        ]),
-      };
-    }
-  }
-}
-
-function annotateDeclarations(
-  declrs: UntypedDeclaration[],
-): TypedDeclaration[] {
-  return declrs.map<TypedDeclaration>((decl) => {
-    const valueMeta = decl.extern
-      ? ({
-          extern: true,
-          typeHint: decl.typeHint,
-        } as const)
-      : ({
-          extern: false,
-          typeHint: decl.typeHint,
-          value: annotateExpr(decl.value),
-        } as const);
-
-    return {
-      ...decl,
-      ...valueMeta,
-      binding: {
-        ...decl.binding,
-        $: TVar.fresh(),
-      },
-    };
-  });
-}
+type LexicalScope = Record<string, Binding<TypeMeta>>;
 
 function inferConstant(x: ConstLiteral): Type {
   // Keep this in sync with core

@@ -15,6 +15,7 @@ import {
   typePPrint,
   declByOffset,
   TypedModule,
+  goToDefinitionOf,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
 
@@ -123,6 +124,11 @@ class State {
     return [typedProject, diagnostics];
   }
 
+  uriByNs(ns: string): string {
+    const doc = this.docs[ns]!;
+    return doc.uri;
+  }
+
   docByUri(uri: string): [TextDocument, TypedModule] | undefined {
     const ns = this.nsByUri(uri);
 
@@ -181,6 +187,7 @@ export async function lspCmd() {
       textDocumentSync: TextDocumentSyncKind.Incremental,
       hoverProvider: true,
       documentSymbolProvider: true,
+      definitionProvider: true,
       codeLensProvider: { resolveProvider: true },
     },
   }));
@@ -241,6 +248,33 @@ export async function lspCmd() {
   });
 
   connection.onExecuteCommand(() => {});
+
+  connection.onDefinition(({ textDocument, position }) => {
+    const res = state.docByUri(textDocument.uri);
+    if (res === undefined) {
+      return;
+    }
+    const [doc, ast] = res;
+    const offset = doc.offsetAt(position);
+    const resolved = goToDefinitionOf(ast, offset);
+    if (resolved === undefined) {
+      return undefined;
+    }
+
+    const startPos = doc.positionAt(resolved.span[0]);
+    const endPos = doc.positionAt(resolved.span[1]);
+
+    return {
+      uri:
+        resolved.namespace === undefined
+          ? textDocument.uri
+          : state.uriByNs(resolved.namespace),
+      range: {
+        start: startPos,
+        end: endPos,
+      },
+    };
+  });
 
   connection.onHover(({ textDocument, position }) => {
     const res = state.docByUri(textDocument.uri);

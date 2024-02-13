@@ -1,4 +1,5 @@
 import {
+  Binding,
   Declaration,
   ExposedValue,
   Expr,
@@ -12,19 +13,43 @@ import {
 import { TypeMeta } from "./typecheck";
 import { Poly, Type } from "./unify";
 
-export type TypedExpr = Expr<TypeMeta>;
+export type IdentifierResolution =
+  | {
+      type: "local-variable";
+      binding: Binding<TypeMeta>;
+    }
+  | {
+      type: "global-variable";
+      declaration: TypedDeclaration;
+      namespace?: string;
+    }
+  | {
+      type: "constructor";
+      variant: TypedTypeVariant;
+      namespace?: string;
+    };
+
+export type IdentifierResolutionMeta = {
+  resolution: IdentifierResolution | undefined;
+};
+export type TypedMatchPattern = MatchPattern<
+  TypeMeta,
+  IdentifierResolutionMeta
+>;
+export type TypedExpr = Expr<TypeMeta, IdentifierResolutionMeta>;
 
 export type TypedExposing = ExposedValue<
-  { resolved: TypedTypeDeclaration },
-  { poly: Type<Poly> }
+  { resolved?: TypedTypeDeclaration },
+  { declaration?: TypedDeclaration }
 >;
 
 export type TypedImport = Import<TypedExposing>;
 
-export type TypedTypeVariant = TypeVariant<{ polyType: Type<Poly> }>;
-export type TypedTypeDeclaration = TypeDeclaration<{ polyType: Type<Poly> }>;
+export type PolyTypeMeta = { poly: Type<Poly> };
+export type TypedTypeVariant = TypeVariant<PolyTypeMeta>;
+export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 
-export type TypedDeclaration = Declaration<TypeMeta>;
+export type TypedDeclaration = Declaration<TypeMeta, IdentifierResolutionMeta>;
 
 export type TypedModule = {
   imports: TypedImport[];
@@ -97,7 +122,7 @@ function matchExprByOffset(
   }
 
   switch (ast.type) {
-    case "ident":
+    case "identifier":
       return ast;
 
     case "constructor":
@@ -132,4 +157,164 @@ export function declByOffset(
 
 function spanContains([start, end]: Span, offset: number) {
   return start <= offset && end >= offset;
+}
+
+export type Location = {
+  namespace?: string;
+  span: Span;
+};
+
+export function goToDefinitionOf(
+  module: TypedModule,
+  offset: number,
+): Location | undefined {
+  for (const import_ of module.imports) {
+    if (!spanContains(import_.span, offset)) {
+      continue;
+    }
+
+    for (const exposing of import_.exposing) {
+      if (!spanContains(exposing.span, offset)) {
+        continue;
+      }
+
+      switch (exposing.type) {
+        case "type":
+          if (exposing.resolved === undefined) {
+            return undefined;
+          }
+
+          return { namespace: import_.ns, span: exposing.resolved.span };
+
+        case "value":
+          if (exposing.declaration === undefined) {
+            return undefined;
+          }
+
+          return {
+            namespace: import_.ns,
+            span: exposing.declaration.span,
+          };
+      }
+    }
+  }
+
+  for (const st of module.declarations) {
+    if (!spanContains(st.span, offset)) {
+      continue;
+    }
+
+    return st.extern ? undefined : goToDefinitionOfExpr(st.value, offset);
+  }
+
+  return undefined;
+}
+
+function resolutionToLocation(resolution: IdentifierResolution): Location {
+  switch (resolution.type) {
+    case "local-variable":
+      return { namespace: undefined, span: resolution.binding.span };
+    case "global-variable":
+      return {
+        namespace: resolution.namespace,
+        span: resolution.declaration.span,
+      };
+    case "constructor":
+      return {
+        namespace: resolution.namespace,
+        span: resolution.variant.span,
+      };
+  }
+}
+
+function goToDefinitionOfExpr(
+  ast: TypedExpr,
+  offset: number,
+): Location | undefined {
+  if (!spanContains(ast.span, offset)) {
+    return;
+  }
+
+  switch (ast.type) {
+    case "identifier":
+      if (ast.resolution === undefined) {
+        return undefined;
+      }
+      return resolutionToLocation(ast.resolution);
+
+    case "constant":
+      return undefined;
+
+    case "application":
+      for (const arg of ast.args) {
+        const t = goToDefinitionOfExpr(arg, offset);
+        if (t !== undefined) {
+          return t;
+        }
+      }
+      return goToDefinitionOfExpr(ast.caller, offset);
+
+    case "let":
+      return (
+        goToDefinitionOfExpr(ast.value, offset) ??
+        goToDefinitionOfExpr(ast.body, offset)
+      );
+
+    case "fn":
+      for (const param of ast.params) {
+        if (spanContains(param.span, offset)) {
+          return undefined;
+        }
+      }
+      return goToDefinitionOfExpr(ast.body, offset);
+
+    case "if":
+      return (
+        goToDefinitionOfExpr(ast.condition, offset) ??
+        goToDefinitionOfExpr(ast.then, offset) ??
+        goToDefinitionOfExpr(ast.else, offset)
+      );
+
+    case "match":
+      for (const [pattern, expr] of ast.clauses) {
+        const t =
+          goToDefinitionOfPattern(pattern, offset) ??
+          goToDefinitionOfExpr(expr, offset);
+
+        if (t !== undefined) {
+          return t;
+        }
+      }
+
+      return goToDefinitionOfExpr(ast.expr, offset);
+  }
+}
+
+function goToDefinitionOfPattern(
+  pattern: TypedMatchPattern,
+  offset: number,
+): Location | undefined {
+  if (!spanContains(pattern.span, offset)) {
+    return;
+  }
+
+  switch (pattern.type) {
+    case "lit":
+    case "identifier":
+      return;
+
+    case "constructor":
+      for (const arg of pattern.args) {
+        const res = goToDefinitionOfPattern(arg, offset);
+        if (res !== undefined) {
+          return res;
+        }
+      }
+
+      if (pattern.resolution === undefined) {
+        return undefined;
+      }
+
+      return resolutionToLocation(pattern.resolution);
+  }
 }
