@@ -124,9 +124,8 @@ class State {
     return [typedProject, diagnostics];
   }
 
-  uriByNs(ns: string): string {
-    const doc = this.docs[ns]!;
-    return doc.uri;
+  docByNs(ns: string): TextDocument {
+    return this.docs[ns]!;
   }
 
   docByUri(uri: string): [TextDocument, TypedModule] | undefined {
@@ -255,20 +254,23 @@ export async function lspCmd() {
       return;
     }
     const [doc, ast] = res;
+
     const offset = doc.offsetAt(position);
     const resolved = goToDefinitionOf(ast, offset);
     if (resolved === undefined) {
       return undefined;
     }
 
-    const startPos = doc.positionAt(resolved.span[0]);
-    const endPos = doc.positionAt(resolved.span[1]);
+    const definitionDoc =
+      resolved.namespace === undefined
+        ? doc
+        : state.docByNs(resolved.namespace);
+
+    const startPos = definitionDoc.positionAt(resolved.span[0]);
+    const endPos = definitionDoc.positionAt(resolved.span[1]);
 
     return {
-      uri:
-        resolved.namespace === undefined
-          ? textDocument.uri
-          : state.uriByNs(resolved.namespace),
+      uri: definitionDoc.uri,
       range: {
         start: startPos,
         end: endPos,
