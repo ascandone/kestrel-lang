@@ -885,13 +885,13 @@ function inferConstant(x: ConstLiteral): Type {
   // Keep this in sync with core
   switch (x.type) {
     case "int":
-      return { moduleName: "Basics", type: "named", name: "Int", args: [] };
+      return Int;
 
     case "float":
-      return { moduleName: "Basics", type: "named", name: "Float", args: [] };
+      return Float;
 
     case "string":
-      return { moduleName: "String", type: "named", name: "String", args: [] };
+      return String;
   }
 }
 
@@ -932,14 +932,6 @@ export function typecheckProject(
 
 export type ProjectTypeCheckResult = Record<string, [TypedModule, ErrorInfo[]]>;
 
-// Keep this in sync with core
-const Bool: Type = {
-  type: "named",
-  moduleName: "Basics",
-  name: "Bool",
-  args: [],
-};
-
 function unifyErr(node: SpanMeta, e: UnifyError): ErrorInfo {
   switch (e.type) {
     case "type-mismatch":
@@ -951,3 +943,32 @@ function unifyErr(node: SpanMeta, e: UnifyError): ErrorInfo {
       return { span: node.span, description: new OccursCheck() };
   }
 }
+
+// Keep this in sync with core
+const Bool: Type = {
+  type: "named",
+  moduleName: "Basics",
+  name: "Bool",
+  args: [],
+};
+
+const Int: Type = {
+  moduleName: "Basics",
+  type: "named",
+  name: "Int",
+  args: [],
+};
+
+const Float: Type = {
+  moduleName: "Basics",
+  type: "named",
+  name: "Float",
+  args: [],
+};
+
+const String: Type = {
+  moduleName: "String",
+  type: "named",
+  name: "String",
+  args: [],
+};
