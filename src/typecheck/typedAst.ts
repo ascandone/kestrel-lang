@@ -163,6 +163,31 @@ export function goToDefinitionOf(
   module: TypedModule,
   offset: number,
 ): IdentifierResolution | undefined {
+  for (const import_ of module.imports) {
+    if (!spanContains(import_.span, offset)) {
+      continue;
+    }
+
+    for (const exposing of import_.exposing) {
+      if (!spanContains(exposing.span, offset)) {
+        continue;
+      }
+
+      switch (exposing.type) {
+        case "type":
+          break;
+        case "value":
+          if (exposing.declaration !== undefined) {
+            return {
+              type: "global-variable",
+              declaration: exposing.declaration,
+              namespace: import_.ns,
+            };
+          }
+      }
+    }
+  }
+
   for (const st of module.declarations) {
     if (!spanContains(st.span, offset)) {
       continue;
