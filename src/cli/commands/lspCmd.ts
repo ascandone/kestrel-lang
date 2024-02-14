@@ -292,11 +292,11 @@ export async function lspCmd() {
       return undefined;
     }
 
-    const [_scheme, { hovered, span }] = hoverData;
+    const [scheme, { hovered, span }] = hoverData;
 
     switch (hovered.type) {
       case "local-variable": {
-        const tpp = typePPrint(hovered.binding.$.asType());
+        const tpp = typePPrint(hovered.binding.$.asType(), scheme);
         return {
           range: spannedToRange(doc, span),
           contents: {
@@ -310,7 +310,7 @@ local declaration
         };
       }
       case "global-variable": {
-        const tpp = typePPrint(hovered.declaration.binding.$.asType());
+        const tpp = typePPrint(hovered.declaration.binding.$.asType(), scheme);
         return {
           range: spannedToRange(doc, span),
           contents: {

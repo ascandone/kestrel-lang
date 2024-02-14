@@ -38,8 +38,6 @@ function pprintHelper(t: Type, scheme: TypeScheme): string {
 }
 
 export function typePPrint(t: Type<never>, scheme?: TypeScheme): string {
-  if (scheme === undefined) {
-    scheme = generalizeAsScheme(t);
-  }
+  scheme = generalizeAsScheme(t, scheme);
   return pprintHelper(t, scheme);
 }

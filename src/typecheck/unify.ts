@@ -330,9 +330,13 @@ export type TypeScheme = Record<number, string>;
 
 export type PolyType = [TypeScheme, Type];
 
-export function generalizeAsScheme(mono: Type): TypeScheme {
+export function generalizeAsScheme(
+  mono: Type,
+  initialScheme: TypeScheme = {},
+): TypeScheme {
+  const usedNames = new Set(Object.values(initialScheme));
   let nextId = 0;
-  const scheme: TypeScheme = {};
+  const scheme: TypeScheme = { ...initialScheme };
 
   function recur(mono: Type) {
     switch (mono.type) {
@@ -344,7 +348,15 @@ export function generalizeAsScheme(mono: Type): TypeScheme {
               return;
             }
 
-            scheme[res.id] = generalizedName(nextId++);
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+              const name = generalizedName(nextId++);
+              if (!usedNames.has(name)) {
+                scheme[res.id] = name;
+                break;
+              }
+            }
+
             return;
           }
           case "bound":

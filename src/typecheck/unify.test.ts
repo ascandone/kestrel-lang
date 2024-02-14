@@ -538,6 +538,15 @@ describe("generalization (refactor)", () => {
     expect(generalizeAsScheme($a.asType())).toEqual({ 0: "a" });
   });
 
+  test("generalize single unbound var when ident is already used", () => {
+    TVar.fresh();
+    const $b = TVar.fresh();
+    expect(generalizeAsScheme($b.asType(), { 0: "a" })).toEqual({
+      0: "a",
+      1: "b",
+    });
+  });
+
   test("generalize unbound var in fn args", () => {
     const $a = TVar.fresh();
     expect(generalizeAsScheme(Fn([$a.asType()], Int))).toEqual({ 0: "a" });

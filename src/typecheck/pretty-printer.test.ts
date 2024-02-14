@@ -71,6 +71,11 @@ test("handle scheme", () => {
   expect(typePPrint(f, { 0: "z" })).toBe("z");
 });
 
+test("closure", () => {
+  const a = TVar.fresh().asType();
+  expect(typePPrint(a, {})).toBe("a");
+});
+
 function Fn(args: Type[], ret: Type): ConcreteType {
   return { type: "fn", args, return: ret };
 }
