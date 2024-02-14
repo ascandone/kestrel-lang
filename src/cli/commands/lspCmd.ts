@@ -8,16 +8,17 @@ import {
   _Connection,
   createConnection,
 } from "vscode-languageserver";
-import { TextDocument } from "vscode-languageserver-textdocument";
-import { UntypedModule, parse } from "../../parser";
+import { TextDocument, Range } from "vscode-languageserver-textdocument";
+import { SpanMeta, UntypedModule, parse } from "../../parser";
 import {
   typecheckProject,
   typePPrint,
-  declByOffset,
   TypedModule,
   goToDefinitionOf,
+  hoverOn,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
+import { instantiate } from "../../typecheck/unify";
 
 type Connection = _Connection;
 
@@ -286,27 +287,69 @@ export async function lspCmd() {
     const [doc, ast] = res;
 
     const offset = doc.offsetAt(position);
-    const node = declByOffset(ast, offset);
-    if (node === undefined) {
+    const hovered = hoverOn(ast, offset);
+    if (hovered === undefined) {
       return undefined;
     }
 
-    const tpp = typePPrint(node.$.asType());
+    switch (hovered.hovered.type) {
+      case "local-variable": {
+        const tpp = typePPrint(hovered.hovered.binding.$.asType());
+        return {
+          range: spannedToRange(doc, hovered),
+          contents: {
+            kind: MarkupKind.Markdown,
+            value: `\`\`\`
+${hovered.hovered.binding.name} : ${tpp}
+\`\`\`
+local declaration
+`,
+          },
+        };
+      }
+      case "global-variable": {
+        const tpp = typePPrint(hovered.hovered.declaration.binding.$.asType());
+        return {
+          range: spannedToRange(doc, hovered),
+          contents: {
+            kind: MarkupKind.Markdown,
+            value: `\`\`\`
+${hovered.hovered.declaration.binding.name} : ${tpp}
+\`\`\`
+global declaration
+`,
+          },
+        };
+      }
 
-    return {
-      range: {
-        start: doc.positionAt(node.span[0]),
-        end: doc.positionAt(node.span[1]),
-      },
-      contents: {
-        kind: MarkupKind.Markdown,
-        value: `\`\`\`
-${tpp}
-\`\`\``,
-      },
-    };
+      case "constructor": {
+        const tpp = typePPrint(instantiate(hovered.hovered.variant.poly));
+
+        return {
+          range: spannedToRange(doc, hovered),
+          contents: {
+            kind: MarkupKind.Markdown,
+            value: `\`\`\`
+${hovered.hovered.variant.name} : ${tpp}
+\`\`\`
+type constructor
+`,
+          },
+        };
+      }
+    }
   });
 
   documents.listen(connection);
   connection.listen();
+}
+
+function spannedToRange(
+  doc: TextDocument,
+  { span: [start, end] }: SpanMeta,
+): Range {
+  return {
+    start: doc.positionAt(start),
+    end: doc.positionAt(end),
+  };
 }
