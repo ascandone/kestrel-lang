@@ -206,16 +206,14 @@ export async function lspCmd() {
       name: st.name,
       span: st.span,
     }));
-    return decls.concat(typeDecl).map(({ span, name }) => {
-      return {
-        kind: SymbolKind.Variable,
-        name,
-        location: {
-          uri: textDocument.uri,
-          range: spannedToRange(doc, span),
-        },
-      };
-    });
+    return decls.concat(typeDecl).map(({ span, name }) => ({
+      kind: SymbolKind.Variable,
+      name,
+      location: {
+        uri: textDocument.uri,
+        range: spannedToRange(doc, span),
+      },
+    }));
   });
 
   connection.onCodeLens(({ textDocument }) => {
@@ -225,8 +223,8 @@ export async function lspCmd() {
     }
     const [doc, ast] = res;
 
-    return ast.declarations.map(({ span, binding }) => {
-      const tpp = typePPrint(binding.$.asType());
+    return ast.declarations.map(({ span, binding, scheme }) => {
+      const tpp = typePPrint(binding.$.asType(), scheme);
       return {
         command: { title: tpp, command: "noop" },
         range: spannedToRange(doc, span),
