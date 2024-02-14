@@ -513,34 +513,8 @@ class Typechecker {
           return;
         }
 
-        switch (ast.resolution.type) {
-          case "local-variable":
-            this.unifyExpr(
-              ast,
-              ast.$.asType(),
-              ast.resolution.binding.$.asType(),
-            );
-            return;
-          case "global-variable": {
-            this.unifyExpr(
-              ast,
-              ast.$.asType(),
-              instantiateFromScheme(
-                ast.resolution.declaration.binding.$.asType(),
-                ast.resolution.declaration.scheme,
-              ),
-            );
-            return;
-          }
-          case "constructor": {
-            const t = instantiateFromScheme(
-              ast.resolution.variant.mono,
-              ast.resolution.variant.scheme,
-            );
-            this.unifyExpr(ast, ast.$.asType(), t);
-            return;
-          }
-        }
+        this.unifyExpr(ast, ast.$.asType(), resolutionToType(ast.resolution));
+        return;
       }
 
       case "fn":
@@ -1012,6 +986,25 @@ function unifyErr(node: SpanMeta, e: UnifyError): ErrorInfo {
       };
     case "occurs-check":
       return { span: node.span, description: new OccursCheck() };
+  }
+}
+
+function resolutionToType(resolution: IdentifierResolution): Type {
+  switch (resolution.type) {
+    case "local-variable":
+      return resolution.binding.$.asType();
+
+    case "global-variable":
+      return instantiateFromScheme(
+        resolution.declaration.binding.$.asType(),
+        resolution.declaration.scheme,
+      );
+
+    case "constructor":
+      return instantiateFromScheme(
+        resolution.variant.mono,
+        resolution.variant.scheme,
+      );
   }
 }
 
