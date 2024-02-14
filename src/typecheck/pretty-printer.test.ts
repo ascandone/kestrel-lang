@@ -66,6 +66,11 @@ test("n-arity type nested in a fn", () => {
   expect(typePPrint(f)).toBe("Fn(List<Int>) -> Maybe<Bool>");
 });
 
+test("handle scheme", () => {
+  const f = TVar.fresh().asType();
+  expect(typePPrint(f, { 0: "z" })).toBe("z");
+});
+
 function Fn(args: Type[], ret: Type): ConcreteType {
   return { type: "fn", args, return: ret };
 }

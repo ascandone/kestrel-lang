@@ -1,23 +1,25 @@
-import { Poly, Type, generalize } from "./unify";
+import { Type, TypeScheme, generalizeAsScheme } from "./unify";
 
-function pprintHelper(t: Type<Poly>): string {
+function pprintHelper(t: Type, scheme: TypeScheme): string {
   switch (t.type) {
-    case "quantified":
-      return t.id;
-
     case "var": {
       const resolved = t.var.resolve();
       switch (resolved.type) {
         case "bound":
-          return pprintHelper(resolved.value);
-        case "unbound":
-          throw new Error("[unreachable]");
+          return pprintHelper(resolved.value, scheme);
+        case "unbound": {
+          const id = scheme[resolved.id];
+          if (id === undefined) {
+            throw new Error("[unreachable] var not found: " + resolved.id);
+          }
+          return id;
+        }
       }
     }
 
     case "fn": {
-      const args = t.args.map(pprintHelper).join(", ");
-      return `Fn(${args}) -> ${pprintHelper(t.return)}`;
+      const args = t.args.map((arg) => pprintHelper(arg, scheme)).join(", ");
+      return `Fn(${args}) -> ${pprintHelper(t.return, scheme)}`;
     }
 
     case "named": {
@@ -26,15 +28,18 @@ function pprintHelper(t: Type<Poly>): string {
       }
 
       if (t.name === "Tuple2") {
-        return `(${pprintHelper(t.args[0]!)}, ${pprintHelper(t.args[1]!)})`;
+        return `(${pprintHelper(t.args[0]!, scheme)}, ${pprintHelper(t.args[1]!, scheme)})`;
       }
 
-      const args = t.args.map(pprintHelper).join(", ");
+      const args = t.args.map((arg) => pprintHelper(arg, scheme)).join(", ");
       return `${t.name}<${args}>`;
     }
   }
 }
 
-export function typePPrint(t: Type<never>): string {
-  return pprintHelper(generalize(t));
+export function typePPrint(t: Type<never>, scheme?: TypeScheme): string {
+  if (scheme === undefined) {
+    scheme = generalizeAsScheme(t);
+  }
+  return pprintHelper(t, scheme);
 }
