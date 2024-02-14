@@ -410,7 +410,7 @@ export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
             return t.asType();
           }
           case "bound":
-            throw "TODO bound";
+            return recur(resolved.value);
         }
       }
     }

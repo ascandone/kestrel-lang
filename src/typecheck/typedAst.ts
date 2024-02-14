@@ -11,7 +11,7 @@ import {
   TypeVariant,
 } from "../parser";
 import { TypeMeta } from "./typecheck";
-import { Poly, Type } from "./unify";
+import { Poly, Type, TypeScheme } from "./unify";
 
 export type IdentifierResolution =
   | {
@@ -49,7 +49,10 @@ export type PolyTypeMeta = { poly: Type<Poly> };
 export type TypedTypeVariant = TypeVariant<PolyTypeMeta>;
 export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 
-export type TypedDeclaration = Declaration<TypeMeta, IdentifierResolutionMeta>;
+export type TypedDeclaration = { scheme: TypeScheme } & Declaration<
+  TypeMeta,
+  IdentifierResolutionMeta
+>;
 
 export type TypedModule = {
   imports: TypedImport[];

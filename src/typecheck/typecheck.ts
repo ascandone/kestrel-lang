@@ -28,10 +28,11 @@ import {
   TVar,
   Type,
   unify,
-  generalize,
   instantiate,
   Poly,
   UnifyError,
+  generalizeAsScheme,
+  instantiateFromScheme,
 } from "./unify";
 import {
   ArityMismatch,
@@ -375,6 +376,7 @@ class Typechecker {
 
     this.typecheckAnnotatedExpr(decl.value);
     this.unifyExpr(decl.value, decl.binding.$.asType(), decl.value.$.asType());
+    decl.scheme = generalizeAsScheme(decl.value.$.asType());
   }
 
   private typecheckPattern(pattern: TypedMatchPattern) {
@@ -463,8 +465,14 @@ class Typechecker {
             );
             return;
           case "global-variable": {
-            const t = generalize(ast.resolution.declaration.binding.$.asType());
-            this.unifyExpr(ast, ast.$.asType(), instantiate(t));
+            this.unifyExpr(
+              ast,
+              ast.$.asType(),
+              instantiateFromScheme(
+                ast.resolution.declaration.binding.$.asType(),
+                ast.resolution.declaration.scheme,
+              ),
+            );
             return;
           }
           case "constructor": {
@@ -634,11 +642,13 @@ class Typechecker {
       if (decl.extern) {
         tDecl = {
           ...decl,
+          scheme: {},
           binding,
         };
       } else {
         tDecl = {
           ...decl,
+          scheme: {},
           binding,
           value: this.annotateExpr(decl.value, {
             // This is an hack to prevent the recursive reference to be generalized
