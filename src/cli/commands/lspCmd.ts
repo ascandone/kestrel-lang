@@ -300,7 +300,7 @@ export async function lspCmd() {
           contents: {
             kind: MarkupKind.Markdown,
             value: `\`\`\`
-${hovered.hovered.binding.name} : ${tpp}
+${hovered.hovered.binding.name}: ${tpp}
 \`\`\`
 local declaration
 `,
@@ -314,7 +314,7 @@ local declaration
           contents: {
             kind: MarkupKind.Markdown,
             value: `\`\`\`
-${hovered.hovered.declaration.binding.name} : ${tpp}
+${hovered.hovered.declaration.binding.name}: ${tpp}
 \`\`\`
 global declaration
 `,
@@ -330,7 +330,7 @@ global declaration
           contents: {
             kind: MarkupKind.Markdown,
             value: `\`\`\`
-${hovered.hovered.variant.name} : ${tpp}
+${hovered.hovered.variant.name}: ${tpp}
 \`\`\`
 type constructor
 `,
