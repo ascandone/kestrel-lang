@@ -10,6 +10,7 @@ import {
   TypeDeclaration,
   TypeVariant,
 } from "../parser";
+import { typePPrint } from "./pretty-printer";
 import { TypeMeta } from "./typecheck";
 import { Type, TypeScheme } from "./unify";
 
@@ -77,6 +78,40 @@ export function hoverOn(
   }
 
   return undefined;
+}
+
+export function hoverToMarkdown(
+  scheme: TypeScheme,
+  { hovered }: Hovered,
+): string {
+  switch (hovered.type) {
+    case "local-variable": {
+      const tpp = typePPrint(hovered.binding.$.asType(), scheme);
+      return `\`\`\`
+${hovered.binding.name}: ${tpp}
+\`\`\`
+local declaration
+`;
+    }
+
+    case "global-variable": {
+      const tpp = typePPrint(hovered.declaration.binding.$.asType(), scheme);
+      return `\`\`\`
+${hovered.declaration.binding.name}: ${tpp}
+\`\`\`
+global declaration
+`;
+    }
+
+    case "constructor": {
+      const tpp = typePPrint(hovered.variant.mono, scheme);
+      return `\`\`\`
+${hovered.variant.name}: ${tpp}
+\`\`\`
+type constructor
+`;
+    }
+  }
 }
 
 function hoverOnDecl(

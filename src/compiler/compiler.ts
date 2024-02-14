@@ -641,7 +641,7 @@ export type CompileOptions = {
   externs?: Record<string, string>;
   entrypoint?: {
     module: string;
-    type: ConcreteType<never>;
+    type: ConcreteType;
   };
 };
 

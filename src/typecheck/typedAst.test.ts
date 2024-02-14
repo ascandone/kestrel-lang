@@ -1,5 +1,5 @@
 import { test, expect, describe } from "vitest";
-import { Hovered, hoverOn } from "./typedAst";
+import { Hovered, hoverOn, hoverToMarkdown } from "./typedAst";
 import { Span, unsafeParse } from "../parser";
 import { typecheck } from "./typecheck";
 import { TypeScheme } from "./unify";
@@ -161,6 +161,29 @@ describe("hoverOn", () => {
         type: "constructor",
       }),
     });
+  });
+
+  test("snapshot when hovering on global fn", () => {
+    const src = `let glb = fn x, y { y }`;
+    const [scheme, hoverable] = parseHover(src, "glb")!;
+    expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  });
+
+  test("snapshot when hovering on an extern type", () => {
+    const src = `extern let glb: Fn(x) -> x`;
+    const [scheme, hoverable] = parseHover(src, "glb")!;
+    expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  });
+
+  test("snapshot when hovering on a local fn", () => {
+    const src = `
+      let glb = fn a {
+        let closure = fn x { a };
+        0
+      }
+    `;
+    const [scheme, hoverable] = parseHover(src, "closure")!;
+    expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
   });
 });
 

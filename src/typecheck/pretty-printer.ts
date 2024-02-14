@@ -37,7 +37,7 @@ function pprintHelper(t: Type, scheme: TypeScheme): string {
   }
 }
 
-export function typePPrint(t: Type<never>, scheme?: TypeScheme): string {
+export function typePPrint(t: Type, scheme?: TypeScheme): string {
   scheme = generalizeAsScheme(t, scheme);
   return pprintHelper(t, scheme);
 }

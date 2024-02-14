@@ -16,6 +16,7 @@ import {
   TypedModule,
   goToDefinitionOf,
   hoverOn,
+  hoverToMarkdown,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
 
@@ -291,54 +292,15 @@ export async function lspCmd() {
       return undefined;
     }
 
-    const [scheme, { hovered, span }] = hoverData;
-
-    switch (hovered.type) {
-      case "local-variable": {
-        const tpp = typePPrint(hovered.binding.$.asType(), scheme);
-        return {
-          range: spannedToRange(doc, span),
-          contents: {
-            kind: MarkupKind.Markdown,
-            value: `\`\`\`
-${hovered.binding.name}: ${tpp}
-\`\`\`
-local declaration
-`,
-          },
-        };
-      }
-      case "global-variable": {
-        const tpp = typePPrint(hovered.declaration.binding.$.asType(), scheme);
-        return {
-          range: spannedToRange(doc, span),
-          contents: {
-            kind: MarkupKind.Markdown,
-            value: `\`\`\`
-${hovered.declaration.binding.name}: ${tpp}
-\`\`\`
-global declaration
-`,
-          },
-        };
-      }
-
-      case "constructor": {
-        const tpp = typePPrint(hovered.variant.mono, scheme);
-
-        return {
-          range: spannedToRange(doc, span),
-          contents: {
-            kind: MarkupKind.Markdown,
-            value: `\`\`\`
-${hovered.variant.name}: ${tpp}
-\`\`\`
-type constructor
-`,
-          },
-        };
-      }
-    }
+    const [scheme, hover] = hoverData;
+    const md = hoverToMarkdown(scheme, hover);
+    return {
+      range: spannedToRange(doc, hover.span),
+      contents: {
+        kind: MarkupKind.Markdown,
+        value: md,
+      },
+    };
   });
 
   documents.listen(connection);
