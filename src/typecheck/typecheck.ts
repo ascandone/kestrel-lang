@@ -21,6 +21,7 @@ import {
   TypedMatchPattern,
   TypedModule,
   TypedTypeDeclaration,
+  TypedTypeVariant,
 } from "./typedAst";
 import { CORE_MODULES, defaultImports } from "./defaultImports";
 import { topSortedModules } from "./project";
@@ -28,11 +29,12 @@ import {
   TVar,
   Type,
   unify,
-  instantiate,
   Poly,
   UnifyError,
   generalizeAsScheme,
   instantiateFromScheme,
+  TypeScheme,
+  PolyType,
 } from "./unify";
 import {
   ArityMismatch,
@@ -212,33 +214,54 @@ class Typechecker {
   private makeVariantType(
     typeDecl: UntypedTypeDeclaration & { type: "adt" },
     variant: UntypedTypeVariant,
-  ): Type<Poly> {
-    const ret: Type<Poly> = {
+  ): PolyType {
+    const generics: [string, TVar][] = typeDecl.params.map((param) => [
+      param.name,
+      TVar.fresh(),
+    ]);
+
+    const scheme: TypeScheme = Object.fromEntries(
+      generics.map(([param, $]) => {
+        const resolved = $.resolve();
+        if (resolved.type !== "unbound") {
+          throw new Error("[unreachable]");
+        }
+        return [resolved.id, param];
+      }),
+    );
+
+    const ret: Type = {
       type: "named",
       moduleName: this.ns,
       name: typeDecl.name,
-      args: typeDecl.params.map((param) => ({
-        type: "quantified",
-        id: param.name,
-      })),
+      args: generics.map((g) => g[1].asType()),
     };
 
     const params = typeDecl.params.map((p) => p.name);
 
     if (variant.args.length === 0) {
-      return ret;
+      return [scheme, ret];
     } else {
-      return {
-        type: "fn",
-        args: variant.args.map((arg) =>
-          this.typeAstToType(arg, {
-            type: "constructor-arg",
-            params,
-            returning: ret,
+      return [
+        scheme,
+        {
+          type: "fn",
+          args: variant.args.map((arg) => {
+            const mono = this.typeAstToType(
+              arg,
+              {
+                type: "constructor-arg",
+                params,
+                returning: ret,
+              },
+              Object.fromEntries(generics.map(([p, t]) => [p, t.asType()])),
+            );
+
+            return mono;
           }),
-        ),
-        return: ret,
-      };
+          return: ret,
+        },
+      ];
     }
   }
 
@@ -294,7 +317,11 @@ class Typechecker {
   /**
    * Used to parse args of ADT constructors
    */
-  private typeAstToType(ast: TypeAst, opts: TypeAstConversionType): Type<Poly> {
+  private typeAstToType(
+    ast: TypeAst,
+    opts: TypeAstConversionType,
+    /* mut */ bound: Record<string, Type>,
+  ): Type {
     switch (ast.type) {
       case "named": {
         const expectedArity = ast.args.length;
@@ -330,18 +357,18 @@ class Typechecker {
           type: "named",
           moduleName,
           name: ast.name,
-          args: ast.args.map((arg) => this.typeAstToType(arg, opts)),
+          args: ast.args.map((arg) => this.typeAstToType(arg, opts, bound)),
         };
       }
 
       case "fn":
         return {
           type: "fn",
-          args: ast.args.map((arg) => this.typeAstToType(arg, opts)),
-          return: this.typeAstToType(ast.return, opts),
+          args: ast.args.map((arg) => this.typeAstToType(arg, opts, bound)),
+          return: this.typeAstToType(ast.return, opts, bound),
         };
 
-      case "var":
+      case "var": {
         if (
           opts.type === "constructor-arg" &&
           !opts.params.includes(ast.ident)
@@ -351,7 +378,16 @@ class Typechecker {
             description: new UnboundTypeParam(ast.ident),
           });
         }
-        return { type: "quantified", id: ast.ident };
+
+        const bound_ = bound[ast.ident];
+        if (bound_ === undefined) {
+          const $ = TVar.fresh().asType();
+          bound[ast.ident] = $;
+          return $;
+        }
+
+        return bound_;
+      }
 
       case "any":
         if (opts.type === "constructor-arg") {
@@ -366,8 +402,13 @@ class Typechecker {
 
   private typecheckAnnotatedDecl(decl: TypedDeclaration) {
     if (decl.typeHint !== undefined) {
-      const th = this.typeAstToType(decl.typeHint, { type: "type-hint" });
-      this.unifyNode(decl.typeHint, instantiate(th), decl.binding.$.asType());
+      const th = this.typeAstToType(decl.typeHint, { type: "type-hint" }, {});
+
+      this.unifyNode(
+        decl.typeHint,
+        instantiateFromScheme(th, {}),
+        decl.binding.$.asType(),
+      );
     }
 
     if (decl.extern) {
@@ -402,7 +443,10 @@ class Typechecker {
           throw new Error("[unreachable] invalid resolution for constructor");
         }
 
-        const t = instantiate(pattern.resolution.variant.poly);
+        const t = instantiateFromScheme(
+          pattern.resolution.variant.mono,
+          pattern.resolution.variant.scheme,
+        );
 
         if (t.type === "named") {
           this.unifyNode(pattern, t, pattern.$.asType());
@@ -476,8 +520,11 @@ class Typechecker {
             return;
           }
           case "constructor": {
-            const t = instantiate(ast.resolution.variant.poly);
-            this.unifyExpr(ast, ast.$.asType(), instantiate(t));
+            const t = instantiateFromScheme(
+              ast.resolution.variant.mono,
+              ast.resolution.variant.scheme,
+            );
+            this.unifyExpr(ast, ast.$.asType(), t);
             return;
           }
         }
@@ -562,10 +609,11 @@ class Typechecker {
         return {
           ...typeDecl,
           variants: typeDecl.variants.map((variant) => {
-            const t = this.makeVariantType(typeDecl, variant);
-            const typedVariant = {
+            const [scheme, mono] = this.makeVariantType(typeDecl, variant);
+            const typedVariant: TypedTypeVariant = {
               ...variant,
-              poly: t,
+              scheme,
+              mono,
             };
 
             this.globalScope[variant.name] = {

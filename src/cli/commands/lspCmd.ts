@@ -18,7 +18,6 @@ import {
   hoverOn,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
-import { instantiate } from "../../typecheck/unify";
 
 type Connection = _Connection;
 
@@ -325,7 +324,7 @@ global declaration
       }
 
       case "constructor": {
-        const tpp = typePPrint(instantiate(hovered.variant.poly));
+        const tpp = typePPrint(hovered.variant.mono, scheme);
 
         return {
           range: spannedToRange(doc, span),

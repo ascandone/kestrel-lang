@@ -289,43 +289,6 @@ export function generalize(t: Type, context: Context = {}): Type<Poly> {
   return recur(t);
 }
 
-export function instantiate(t: Type<Poly>): Type {
-  const instantiated = new Map<string, TVar>();
-
-  function recur(t: Type<Poly>): Type {
-    switch (t.type) {
-      case "named":
-        return {
-          ...t,
-          args: t.args.map(recur),
-        };
-      case "fn":
-        if (t.type === "fn") {
-          return {
-            type: "fn",
-            args: t.args.map(recur),
-            return: recur(t.return),
-          };
-        }
-      case "quantified":
-        if (t.type === "quantified") {
-          const lookup = instantiated.get(t.id);
-          if (lookup === undefined) {
-            const fresh = TVar.fresh();
-            instantiated.set(t.id, fresh);
-            return fresh.asType();
-          }
-          return lookup.asType();
-        }
-
-      case "var":
-        return t;
-    }
-  }
-
-  return recur(t);
-}
-
 export type TypeScheme = Record<number, string>;
 
 export type PolyType = [TypeScheme, Type];
@@ -395,13 +358,15 @@ export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
           args: mono.args.map(recur),
         };
       case "fn":
-        if (mono.type === "fn") {
-          return {
-            type: "fn",
-            args: mono.args.map(recur),
-            return: recur(mono.return),
-          };
+        if (mono.type !== "fn") {
+          throw new Error("Invalid type");
         }
+
+        return {
+          type: "fn",
+          args: mono.args.map(recur),
+          return: recur(mono.return),
+        };
 
       case "var": {
         const resolved = mono.var.resolve();
