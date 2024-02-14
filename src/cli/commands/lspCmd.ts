@@ -47,10 +47,10 @@ class State {
             message: parsed.matchResult.message ?? "Parsing",
             source: "Parsing",
             severity: DiagnosticSeverity.Error,
-            range: {
-              start: textDoc.positionAt(interval.startIdx),
-              end: textDoc.positionAt(interval.endIdx),
-            },
+            range: spannedToRange(textDoc, [
+              interval.startIdx,
+              interval.endIdx,
+            ]),
           },
         ],
       },
@@ -101,24 +101,16 @@ class State {
     const diagnostics: PublishDiagnosticsParams[] = [];
     for (const [ns, [typed, errors]] of Object.entries(tc)) {
       const document = this.docs[ns]!;
-
       typedProject[ns] = typed;
 
       diagnostics.push({
         uri: document.uri,
-        diagnostics: errors.map((e) => {
-          const [start, end] = e.span;
-
-          return {
-            message: e.description.getDescription(),
-            source: "Typecheck",
-            severity: DiagnosticSeverity.Error,
-            range: {
-              start: document.positionAt(start),
-              end: document.positionAt(end),
-            },
-          };
-        }),
+        diagnostics: errors.map((e) => ({
+          message: e.description.getDescription(),
+          source: "Typecheck",
+          severity: DiagnosticSeverity.Error,
+          range: spannedToRange(document, e.span),
+        })),
       });
     }
 
@@ -214,13 +206,13 @@ export async function lspCmd() {
       name: st.name,
       span: st.span,
     }));
-    return decls.concat(typeDecl).map(({ span: [start, end], name }) => {
+    return decls.concat(typeDecl).map(({ span, name }) => {
       return {
         kind: SymbolKind.Variable,
         name,
         location: {
           uri: textDocument.uri,
-          range: { start: doc.positionAt(start), end: doc.positionAt(end) },
+          range: spannedToRange(doc, span),
         },
       };
     });
@@ -233,16 +225,11 @@ export async function lspCmd() {
     }
     const [doc, ast] = res;
 
-    return ast.declarations.map(({ span: [start, end], binding }) => {
-      const startPos = doc.positionAt(start);
-      const endPos = doc.positionAt(end);
+    return ast.declarations.map(({ span, binding }) => {
       const tpp = typePPrint(binding.$.asType());
       return {
         command: { title: tpp, command: "noop" },
-        range: {
-          start: startPos,
-          end: endPos,
-        },
+        range: spannedToRange(doc, span),
       };
     });
   });
@@ -267,15 +254,9 @@ export async function lspCmd() {
         ? doc
         : state.docByNs(resolved.namespace);
 
-    const startPos = definitionDoc.positionAt(resolved.span[0]);
-    const endPos = definitionDoc.positionAt(resolved.span[1]);
-
     return {
       uri: definitionDoc.uri,
-      range: {
-        start: startPos,
-        end: endPos,
-      },
+      range: spannedToRange(definitionDoc, resolved.span),
     };
   });
 
