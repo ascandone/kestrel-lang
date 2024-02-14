@@ -254,7 +254,7 @@ class Typechecker {
                 params,
                 returning: ret,
               },
-              Object.fromEntries(generics.map(([p, t]) => [p, t.asType()])),
+              Object.fromEntries(generics.map(([p, t]) => [p, t])),
             );
 
             return mono;
@@ -320,7 +320,7 @@ class Typechecker {
   private typeAstToType(
     ast: TypeAst,
     opts: TypeAstConversionType,
-    /* mut */ bound: Record<string, Type>,
+    /* mut */ bound: Record<string, TVar>,
   ): Type {
     switch (ast.type) {
       case "named": {
@@ -381,12 +381,12 @@ class Typechecker {
 
         const bound_ = bound[ast.ident];
         if (bound_ === undefined) {
-          const $ = TVar.fresh().asType();
+          const $ = TVar.fresh();
           bound[ast.ident] = $;
-          return $;
+          return $.asType();
         }
 
-        return bound_;
+        return bound_.asType();
       }
 
       case "any":
@@ -402,8 +402,22 @@ class Typechecker {
 
   private typecheckAnnotatedDecl(decl: TypedDeclaration) {
     if (decl.typeHint !== undefined) {
-      const th = this.typeAstToType(decl.typeHint, { type: "type-hint" }, {});
+      const bound: Record<string, TVar> = {};
+      const th = this.typeAstToType(
+        decl.typeHint,
+        { type: "type-hint" },
+        bound,
+      );
+      const scheme: TypeScheme = {};
+      for (const [name, $] of Object.entries(bound)) {
+        const resolved = $.resolve();
+        if (resolved.type !== "unbound") {
+          continue;
+        }
+        scheme[resolved.id] = name;
+      }
 
+      decl.scheme = scheme;
       this.unifyNode(
         decl.typeHint,
         instantiateFromScheme(th, {}),
