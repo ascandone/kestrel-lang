@@ -1,32 +1,26 @@
-export type ConcreteType<Poly = never> =
+export type ConcreteType =
   | {
       type: "fn";
-      args: Type<Poly>[];
-      return: Type<Poly>;
+      args: Type[];
+      return: Type;
     }
   | {
       type: "named";
       moduleName: string;
       name: string;
-      args: Type<Poly>[];
+      args: Type[];
     };
 
-export type Poly = {
-  type: "quantified";
-  id: string;
-};
-
-export type Type<Poly = never> =
-  | ConcreteType<Poly>
+export type Type =
+  | ConcreteType
   | {
       type: "var";
       var: TVar;
-    }
-  | Poly;
+    };
 
 export type TVarResolution =
   | { type: "unbound"; id: number }
-  | { type: "bound"; value: ConcreteType<never> };
+  | { type: "bound"; value: ConcreteType };
 
 export type UnifyError = {
   type: UnifyErrorType;
@@ -193,46 +187,7 @@ function occursCheck(v: TVar, x: Type): boolean {
   return false;
 }
 
-export type Context = Record<string, Type<Poly>>;
-
-function* getTypeFreeVars(t: Type<Poly>): Generator<number> {
-  switch (t.type) {
-    case "var": {
-      const resolved = t.var.resolve();
-      if (resolved.type === "unbound") {
-        yield resolved.id;
-      }
-      return;
-    }
-
-    case "named":
-      for (const arg of t.args) {
-        yield* getTypeFreeVars(arg);
-      }
-      return;
-
-    case "fn":
-      for (const arg of t.args) {
-        yield* getTypeFreeVars(arg);
-      }
-      yield* getTypeFreeVars(t.return);
-      return;
-
-    case "quantified":
-      return;
-  }
-}
-
-/** Returns the set of ids of free vars in a context  */
-function getContextFreeVars(context: Context): Set<number> {
-  const s = new Set<number>();
-  for (const t of Object.values(context)) {
-    for (const id of getTypeFreeVars(t)) {
-      s.add(id);
-    }
-  }
-  return s;
-}
+export type Context = Record<string, Type>;
 
 const FIRST_CHAR = "a".charCodeAt(0);
 const LAST_CHAR = "z".charCodeAt(0);
@@ -247,46 +202,6 @@ function generalizedName(count: number): string {
   }
 
   return `${letter}${rem}`;
-}
-
-export function generalize(t: Type, context: Context = {}): Type<Poly> {
-  const ctxFreeVars = getContextFreeVars(context);
-  let nextId = 0;
-  const bound = new Map<number, number>();
-
-  function recur(t: Type): Type<Poly> {
-    if (t.type === "named") {
-      return {
-        ...t,
-        args: t.args.map(recur),
-      };
-    }
-
-    if (t.type === "fn") {
-      return {
-        type: "fn",
-        args: t.args.map(recur),
-        return: recur(t.return),
-      };
-    }
-
-    const resolvedT = t.var.resolve();
-    switch (resolvedT.type) {
-      case "bound":
-        return recur(resolvedT.value);
-      case "unbound": {
-        if (ctxFreeVars.has(resolvedT.id)) {
-          return t;
-        }
-        const thisId = bound.get(resolvedT.id) ?? nextId++;
-        bound.set(resolvedT.id, thisId);
-        const name = generalizedName(thisId);
-        return { type: "quantified", id: name };
-      }
-    }
-  }
-
-  return recur(t);
 }
 
 export type TypeScheme = Record<number, string>;

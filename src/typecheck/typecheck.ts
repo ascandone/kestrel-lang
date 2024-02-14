@@ -29,7 +29,6 @@ import {
   TVar,
   Type,
   unify,
-  Poly,
   UnifyError,
   generalizeAsScheme,
   instantiateFromScheme,
@@ -972,7 +971,7 @@ type TypeAstConversionType =
   | {
       type: "constructor-arg";
       params: string[];
-      returning: Type<Poly> & { type: "named" };
+      returning: Type & { type: "named" };
     };
 
 export function typecheckProject(

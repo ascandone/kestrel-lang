@@ -1,4 +1,4 @@
-import { ConcreteType, Poly, TVar, Type, generalize } from "../typecheck/unify";
+import { ConcreteType, Type } from "../typecheck/unify";
 
 const BASICS_MODULE = "Basics";
 
@@ -64,14 +64,4 @@ export function Tuple(...args: Type[]): ConcreteType {
 
 export function Fn(args: Type[], ret: Type): ConcreteType {
   return { type: "fn", args, return: ret };
-}
-
-export function gen(f: (args: Generator<Type>) => Type): Type<Poly> {
-  function* freshVars() {
-    while (true) {
-      yield TVar.fresh().asType();
-    }
-  }
-  const t = f(freshVars());
-  return generalize(t);
 }
