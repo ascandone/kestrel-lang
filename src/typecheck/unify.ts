@@ -56,7 +56,7 @@ export class TVar {
     TVar.unboundId = 0;
   }
 
-  asType(): Type {
+  asType(): Type & { type: "var" } {
     return { type: "var", var: this };
   }
 
@@ -324,4 +324,101 @@ export function instantiate(t: Type<Poly>): Type {
   }
 
   return recur(t);
+}
+
+export type TypeScheme = Record<number, string>;
+
+export type PolyType = [TypeScheme, Type];
+
+export function generalizeAsScheme(
+  mono: Type,
+  context: Context = {},
+): TypeScheme {
+  let nextId = 0;
+  const scheme: TypeScheme = {};
+  const freeVars = getContextFreeVars(context);
+
+  function recur(mono: Type) {
+    switch (mono.type) {
+      case "var": {
+        const res = mono.var.resolve();
+        switch (res.type) {
+          case "unbound": {
+            if (res.id in scheme || freeVars.has(res.id)) {
+              return;
+            }
+
+            scheme[res.id] = generalizedName(nextId++);
+            return;
+          }
+          case "bound":
+            recur(res.value);
+            return;
+        }
+      }
+
+      case "named":
+        for (const arg of mono.args) {
+          recur(arg);
+        }
+        return;
+
+      case "fn":
+        for (const arg of mono.args) {
+          recur(arg);
+        }
+        recur(mono.return);
+        return;
+    }
+  }
+
+  recur(mono);
+  return scheme;
+}
+
+export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
+  const instantiated = new Map<string, TVar>();
+
+  function recur(mono: Type): Type {
+    switch (mono.type) {
+      case "named":
+        return {
+          ...mono,
+          args: mono.args.map(recur),
+        };
+      case "fn":
+        if (mono.type === "fn") {
+          return {
+            type: "fn",
+            args: mono.args.map(recur),
+            return: recur(mono.return),
+          };
+        }
+
+      case "var": {
+        const resolved = mono.var.resolve();
+        switch (resolved.type) {
+          case "unbound": {
+            const boundId = scheme[resolved.id];
+            if (boundId === undefined) {
+              return mono;
+            }
+
+            const i = instantiated.get(boundId);
+            if (i !== undefined) {
+              return i.asType();
+            }
+
+            const t = TVar.fresh();
+            instantiated.set(boundId, t);
+            return t.asType();
+          }
+          case "bound":
+            throw "TODO bound";
+        }
+      }
+    }
+  }
+
+  return recur(mono);
 }

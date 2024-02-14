@@ -6,7 +6,9 @@ import {
   Type,
   UnifyError,
   generalize,
+  generalizeAsScheme,
   instantiate,
+  instantiateFromScheme,
   unify,
 } from "./unify";
 import { Bool, Int, List, Tuple } from "../__test__/types";
@@ -517,6 +519,142 @@ describe("generalization", () => {
     expect(($ai as any).var.resolve().id).toEqual(
       ($bi as any).var.resolve().id,
     );
+  });
+});
+
+describe("generalization (refactor)", () => {
+  test("generalize concrete", () => {
+    expect(generalizeAsScheme(Int)).toEqual({});
+  });
+
+  test("generalize var bound to a primitive", () => {
+    const $a = TVar.fresh();
+    unify($a.asType(), Int);
+    expect(generalizeAsScheme($a.asType())).toEqual({});
+  });
+
+  test("generalize single unbound var", () => {
+    const $a = TVar.fresh();
+    expect(generalizeAsScheme($a.asType())).toEqual({ 0: "a" });
+  });
+
+  test("generalize unbound var in fn args", () => {
+    const $a = TVar.fresh();
+    expect(generalizeAsScheme(Fn([$a.asType()], Int))).toEqual({ 0: "a" });
+  });
+
+  test("generalize unbound var in fn return", () => {
+    const $a = TVar.fresh();
+    expect(generalizeAsScheme(Fn([], $a.asType()))).toEqual({ 0: "a" });
+  });
+
+  test("generalize many vars", () => {
+    const $a = TVar.fresh();
+    const $b = TVar.fresh();
+    expect(generalizeAsScheme(Tuple($a.asType(), $b.asType()))).toEqual({
+      0: "a",
+      1: "b",
+    });
+  });
+
+  test("generalize many vars when linked", () => {
+    const $a = TVar.fresh();
+    expect(generalizeAsScheme(Tuple($a.asType(), $a.asType()))).toEqual({
+      0: "a",
+    });
+  });
+
+  test("generalize var bound to a nested type to generalize ", () => {
+    const $a = TVar.fresh();
+    const $b = TVar.fresh();
+    unify($a.asType(), Tuple($b.asType(), $b.asType()));
+    expect(generalizeAsScheme($a.asType())).toEqual({ 1: "a" });
+  });
+
+  test("do not generalize vars that appear in the context", () => {
+    const $a = TVar.fresh();
+    const $b = TVar.fresh();
+    expect(
+      generalizeAsScheme(Tuple($a.asType(), $b.asType()), {
+        // Note $b is not free in context
+        x: List($b.asType()),
+      }),
+    ).toEqual({ 0: "a" });
+  });
+
+  test("instantiate concrete type", () => {
+    const m = instantiateFromScheme(Int, {});
+    expect(m).toEqual(Int);
+  });
+
+  test("instantiate fn", () => {
+    const m = instantiateFromScheme(Fn([Int], Bool), {});
+    expect(m).toEqual(Fn([Int], Bool));
+  });
+
+  test("instantiate single var", () => {
+    const ta = TVar.fresh().asType();
+
+    const scheme = generalizeAsScheme(ta);
+    const taI = instantiateFromScheme(ta, scheme);
+
+    if (taI.type !== "var") {
+      throw new Error();
+    }
+
+    expect(taI.var.resolve().type).toBe("unbound");
+    expect(taI.var.resolve()).not.toEqual(ta.var.resolve());
+  });
+
+  test("instantiate two different vars", () => {
+    const ta = TVar.fresh().asType();
+    const tb = TVar.fresh().asType();
+    const t = Tuple(ta, tb);
+    const scheme = generalizeAsScheme(t);
+
+    const m = instantiateFromScheme(t, scheme);
+
+    if (m.type !== "named") {
+      throw new Error("fail");
+    }
+
+    const [$ai, $bi] = m.args;
+
+    expect(($ai as any).var.resolve().type).toEqual("unbound");
+    expect(($bi as any).var.resolve().type).toEqual("unbound");
+    expect(($ai as any).var.resolve().id).not.toEqual(
+      ($bi as any).var.resolve().id,
+    );
+  });
+
+  test("instantiate two same vars", () => {
+    const ta = TVar.fresh().asType();
+
+    const t = Tuple(ta, ta);
+    const scheme = generalizeAsScheme(t);
+
+    const m = instantiateFromScheme(t, scheme);
+
+    if (m.type !== "named") {
+      throw new Error("fail");
+    }
+
+    const [$ai, $bi] = m.args;
+
+    expect(($ai as any).var.resolve().type).toEqual("unbound");
+    expect(($bi as any).var.resolve().type).toEqual("unbound");
+    expect(($ai as any).var.resolve().id).toEqual(
+      ($bi as any).var.resolve().id,
+    );
+  });
+
+  test("instante var that are free in ctx", () => {
+    const ta = TVar.fresh().asType();
+
+    const scheme = generalizeAsScheme(ta, { ta });
+
+    const m = instantiateFromScheme(ta, scheme);
+    expect(m).toEqual(ta);
   });
 });
 
