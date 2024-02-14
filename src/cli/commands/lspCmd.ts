@@ -19,6 +19,7 @@ import {
   hoverToMarkdown,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
+import { Severity } from "../../errors";
 
 type Connection = _Connection;
 
@@ -108,7 +109,7 @@ class State {
         diagnostics: errors.map((e) => ({
           message: e.description.getDescription(),
           source: "Typecheck",
-          severity: DiagnosticSeverity.Error,
+          severity: toDiagnosticSeverity(e.description.severity ?? "error"),
           range: spannedToRange(document, e.span),
         })),
       });
@@ -291,4 +292,13 @@ function spannedToRange(doc: TextDocument, [start, end]: Span): Range {
     start: doc.positionAt(start),
     end: doc.positionAt(end),
   };
+}
+
+function toDiagnosticSeverity(severity: Severity): DiagnosticSeverity {
+  switch (severity) {
+    case "error":
+      return DiagnosticSeverity.Error;
+    case "warning":
+      return DiagnosticSeverity.Warning;
+  }
 }

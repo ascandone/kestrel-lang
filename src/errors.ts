@@ -1,12 +1,15 @@
 import { Span } from "./parser";
 import { Type, typePPrint } from "./typecheck";
 
+export type Severity = "error" | "warning";
+
 export type ErrorInfo = {
   span: Span;
   description: ErrorDescription;
 };
 
 export interface ErrorDescription {
+  severity?: Severity;
   errorName: string;
   getDescription(): string;
 }
@@ -24,6 +27,17 @@ export class UnboundVariable implements ErrorDescription {
   errorName = "Unbound variable";
   getDescription() {
     return `Cannot find variable "${this.ident}"`;
+  }
+}
+
+export class UnusedVariable implements ErrorDescription {
+  constructor(public ident: string) {}
+
+  severity?: Severity = "warning";
+
+  errorName = "Unused variable";
+  getDescription() {
+    return `"${this.ident}" is declared but never used. Try to rename it to "_${this.ident}"`;
   }
 }
 
