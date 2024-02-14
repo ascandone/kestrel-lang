@@ -49,6 +49,7 @@ import {
   UnboundTypeParam,
   UnboundVariable,
   UnimportedModule,
+  UnusedVariable,
 } from "../errors";
 
 export type TypeMeta = { $: TVar };
@@ -74,6 +75,7 @@ class Typechecker {
   private errors: ErrorInfo[] = [];
   private imports: TypedImport[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
+  private unusedVariables = new WeakSet<Binding<TypeMeta>>();
 
   constructor(
     private ns: string,
@@ -721,13 +723,30 @@ class Typechecker {
         }));
 
         for (const param of params) {
+          if (!param.name.startsWith("_")) {
+            this.unusedVariables.add(param);
+          }
+        }
+
+        for (const param of params) {
           lexicalScope = { ...lexicalScope, [param.name]: param };
+        }
+
+        const body: TypedExpr = this.annotateExpr(ast.body, lexicalScope);
+
+        for (const param of params) {
+          if (this.unusedVariables.has(param)) {
+            this.errors.push({
+              span: param.span,
+              description: new UnusedVariable(param.name),
+            });
+          }
         }
 
         return {
           ...ast,
           $: TVar.fresh(),
-          body: this.annotateExpr(ast.body, lexicalScope),
+          body,
           params,
         };
       }
@@ -755,7 +774,11 @@ class Typechecker {
           $: TVar.fresh(),
         };
 
-        return {
+        if (!binding.name.startsWith("_")) {
+          this.unusedVariables.add(binding);
+        }
+
+        const node = {
           ...ast,
           $: TVar.fresh(),
           binding,
@@ -769,6 +792,15 @@ class Typechecker {
             [ast.binding.name]: binding,
           }),
         };
+
+        if (this.unusedVariables.has(binding)) {
+          this.errors.push({
+            span: binding.span,
+            description: new UnusedVariable(binding.name),
+          });
+        }
+
+        return node;
       }
       case "match": {
         return {
@@ -901,6 +933,7 @@ class Typechecker {
 
     const lexical = lexicalScope[ast.name];
     if (lexical !== undefined) {
+      this.unusedVariables.delete(lexical);
       return { type: "local-variable", binding: lexical };
     }
 
