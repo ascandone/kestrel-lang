@@ -36,6 +36,37 @@ describe("hoverOn", () => {
     });
   });
 
+  test("hover fn param", () => {
+    const src = `let f = fn x { 0 }`;
+    const hoverable = parseHover(src, "x");
+    expect(hoverable).toEqual<Hovered>({
+      span: spanOf(src, "x"),
+      hovered: expect.objectContaining({
+        type: "local-variable",
+        binding: expect.objectContaining({
+          name: "x",
+        }),
+      }),
+    });
+  });
+
+  test("hover let expr binding", () => {
+    const src = `let f = {
+      let x = 42;
+      0
+    }`;
+    const hoverable = parseHover(src, "x");
+    expect(hoverable).toEqual<Hovered>({
+      span: spanOf(src, "x"),
+      hovered: expect.objectContaining({
+        type: "local-variable",
+        binding: expect.objectContaining({
+          name: "x",
+        }),
+      }),
+    });
+  });
+
   test("hover a reference to a global binding", () => {
     const src = `
         let x = 42

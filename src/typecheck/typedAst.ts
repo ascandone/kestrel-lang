@@ -102,6 +102,7 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
   switch (expr.type) {
     case "constant":
       return undefined;
+
     case "identifier":
       if (expr.resolution === undefined) {
         return undefined;
@@ -112,7 +113,19 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
       };
 
     case "fn":
-      return hoverOnExpr(expr.body, offset);
+      return (
+        hoverOnExpr(expr.body, offset) ??
+        firstBy(expr.params, (param): Hovered | undefined => {
+          if (!contains(param, offset)) {
+            return undefined;
+          }
+
+          return {
+            span: param.span,
+            hovered: { type: "local-variable", binding: param },
+          };
+        })
+      );
 
     case "application":
       return (
@@ -128,6 +141,13 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
       );
 
     case "let":
+      if (contains(expr.binding, offset)) {
+        return {
+          span: expr.binding.span,
+          hovered: { type: "local-variable", binding: expr.binding },
+        };
+      }
+
       return hoverOnExpr(expr.value, offset) ?? hoverOnExpr(expr.body, offset);
 
     case "match":
