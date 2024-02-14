@@ -330,13 +330,9 @@ export type TypeScheme = Record<number, string>;
 
 export type PolyType = [TypeScheme, Type];
 
-export function generalizeAsScheme(
-  mono: Type,
-  context: Context = {},
-): TypeScheme {
+export function generalizeAsScheme(mono: Type): TypeScheme {
   let nextId = 0;
   const scheme: TypeScheme = {};
-  const freeVars = getContextFreeVars(context);
 
   function recur(mono: Type) {
     switch (mono.type) {
@@ -344,7 +340,7 @@ export function generalizeAsScheme(
         const res = mono.var.resolve();
         switch (res.type) {
           case "unbound": {
-            if (res.id in scheme || freeVars.has(res.id)) {
+            if (res.id in scheme) {
               return;
             }
 

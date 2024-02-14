@@ -571,17 +571,6 @@ describe("generalization (refactor)", () => {
     expect(generalizeAsScheme($a.asType())).toEqual({ 1: "a" });
   });
 
-  test("do not generalize vars that appear in the context", () => {
-    const $a = TVar.fresh();
-    const $b = TVar.fresh();
-    expect(
-      generalizeAsScheme(Tuple($a.asType(), $b.asType()), {
-        // Note $b is not free in context
-        x: List($b.asType()),
-      }),
-    ).toEqual({ 0: "a" });
-  });
-
   test("instantiate concrete type", () => {
     const m = instantiateFromScheme(Int, {});
     expect(m).toEqual(Int);
@@ -646,15 +635,6 @@ describe("generalization (refactor)", () => {
     expect(($ai as any).var.resolve().id).toEqual(
       ($bi as any).var.resolve().id,
     );
-  });
-
-  test("instante var that are free in ctx", () => {
-    const ta = TVar.fresh().asType();
-
-    const scheme = generalizeAsScheme(ta, { ta });
-
-    const m = instantiateFromScheme(ta, scheme);
-    expect(m).toEqual(ta);
   });
 });
 
