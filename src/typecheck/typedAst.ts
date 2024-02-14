@@ -68,11 +68,11 @@ export type Hovered = SpanMeta & { hovered: HoveredInfo };
 export function hoverOn(
   module: TypedModule,
   offset: number,
-): Hovered | undefined {
+): [TypeScheme, Hovered] | undefined {
   for (const decl of module.declarations) {
     const d = hoverOnDecl(decl, offset);
     if (d !== undefined) {
-      return d;
+      return [decl.scheme, d];
     }
   }
 

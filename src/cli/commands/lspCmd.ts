@@ -9,7 +9,7 @@ import {
   createConnection,
 } from "vscode-languageserver";
 import { TextDocument, Range } from "vscode-languageserver-textdocument";
-import { SpanMeta, UntypedModule, parse } from "../../parser";
+import { Span, UntypedModule, parse } from "../../parser";
 import {
   typecheckProject,
   typePPrint,
@@ -287,20 +287,22 @@ export async function lspCmd() {
     const [doc, ast] = res;
 
     const offset = doc.offsetAt(position);
-    const hovered = hoverOn(ast, offset);
-    if (hovered === undefined) {
+    const hoverData = hoverOn(ast, offset);
+    if (hoverData === undefined) {
       return undefined;
     }
 
-    switch (hovered.hovered.type) {
+    const [_scheme, { hovered, span }] = hoverData;
+
+    switch (hovered.type) {
       case "local-variable": {
-        const tpp = typePPrint(hovered.hovered.binding.$.asType());
+        const tpp = typePPrint(hovered.binding.$.asType());
         return {
-          range: spannedToRange(doc, hovered),
+          range: spannedToRange(doc, span),
           contents: {
             kind: MarkupKind.Markdown,
             value: `\`\`\`
-${hovered.hovered.binding.name}: ${tpp}
+${hovered.binding.name}: ${tpp}
 \`\`\`
 local declaration
 `,
@@ -308,13 +310,13 @@ local declaration
         };
       }
       case "global-variable": {
-        const tpp = typePPrint(hovered.hovered.declaration.binding.$.asType());
+        const tpp = typePPrint(hovered.declaration.binding.$.asType());
         return {
-          range: spannedToRange(doc, hovered),
+          range: spannedToRange(doc, span),
           contents: {
             kind: MarkupKind.Markdown,
             value: `\`\`\`
-${hovered.hovered.declaration.binding.name}: ${tpp}
+${hovered.declaration.binding.name}: ${tpp}
 \`\`\`
 global declaration
 `,
@@ -323,14 +325,14 @@ global declaration
       }
 
       case "constructor": {
-        const tpp = typePPrint(instantiate(hovered.hovered.variant.poly));
+        const tpp = typePPrint(instantiate(hovered.variant.poly));
 
         return {
-          range: spannedToRange(doc, hovered),
+          range: spannedToRange(doc, span),
           contents: {
             kind: MarkupKind.Markdown,
             value: `\`\`\`
-${hovered.hovered.variant.name}: ${tpp}
+${hovered.variant.name}: ${tpp}
 \`\`\`
 type constructor
 `,
@@ -344,10 +346,7 @@ type constructor
   connection.listen();
 }
 
-function spannedToRange(
-  doc: TextDocument,
-  { span: [start, end] }: SpanMeta,
-): Range {
+function spannedToRange(doc: TextDocument, [start, end]: Span): Range {
   return {
     start: doc.positionAt(start),
     end: doc.positionAt(end),
