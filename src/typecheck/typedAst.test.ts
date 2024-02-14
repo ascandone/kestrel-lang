@@ -1,5 +1,11 @@
 import { test, expect, describe } from "vitest";
-import { Hovered, hoverOn, hoverToMarkdown } from "./typedAst";
+import {
+  Hovered,
+  goToDefinitionOf,
+  hoverOn,
+  hoverToMarkdown,
+  Location,
+} from "./typedAst";
 import { Span, unsafeParse } from "../parser";
 import { typecheck } from "./typecheck";
 import { TypeScheme } from "./unify";
@@ -187,6 +193,29 @@ describe("hoverOn", () => {
   });
 });
 
+describe("goToDefinition", () => {
+  test("glb decl", () => {
+    const src = `
+      let glb = 42
+      let _ = glb
+    `;
+    const location = parseGotoDef(src, "glb", 2);
+    expect(location?.span).toEqual(spanOf(src, "let glb = 42"));
+  });
+
+  test("let decl", () => {
+    const src = `let _ = { let x = 42; 1 + x }`;
+    const location = parseGotoDef(src, "x", 2);
+    expect(location?.span).toEqual(spanOf(src, "x", 1));
+  });
+
+  test("fn par", () => {
+    const src = `let _ = fn x { x }`;
+    const location = parseGotoDef(src, "x", 2);
+    expect(location?.span).toEqual(spanOf(src, "x", 1));
+  });
+});
+
 function parseHover(
   src: string,
   hovering: string,
@@ -201,6 +230,50 @@ function parseHover(
   const parsed = unsafeParse(src);
   const [typed, _] = typecheck("Main", parsed);
   return hoverOn(typed, offset);
+}
+
+function parseGotoDef(
+  src: string,
+  hovering: string,
+  occurrenceNumber = 1,
+): Location | undefined {
+  const offset = indexOf(src, hovering, occurrenceNumber);
+
+  if (offset === undefined) {
+    throw new Error("Invalid offset");
+  }
+
+  const parsed = unsafeParse(src);
+  const [typed, _] = typecheck("Main", parsed);
+  return goToDefinitionOf(typed, offset);
+}
+
+function spanOf(
+  src: string,
+  subStr: string = src,
+  occurrenceNumber: number = 1,
+): Span {
+  const index = indexOf(src, subStr, occurrenceNumber);
+  if (index === undefined) {
+    throw new Error("Invalid index");
+  }
+
+  return [index, index + subStr.length];
+}
+
+function indexOf(
+  src: string,
+  subStr: string = src,
+  occurrenceNumber: number = 1,
+): number | undefined {
+  let lastOccurrenceIndex = -1;
+  for (let i = 0; i < occurrenceNumber; i++) {
+    lastOccurrenceIndex = src.indexOf(subStr, lastOccurrenceIndex + 1);
+    if (lastOccurrenceIndex === -1) {
+      return undefined;
+    }
+  }
+  return lastOccurrenceIndex;
 }
 
 test("indexOf test utility", () => {
@@ -218,31 +291,3 @@ test("indexOf test utility", () => {
 
   expect(indexOf("let x =\n x + 1", "x", 2)).toBe(9);
 });
-
-function indexOf(
-  src: string,
-  subStr: string = src,
-  occurrenceNumber: number = 1,
-): number | undefined {
-  let lastOccurrenceIndex = -1;
-  for (let i = 0; i < occurrenceNumber; i++) {
-    lastOccurrenceIndex = src.indexOf(subStr, lastOccurrenceIndex + 1);
-    if (lastOccurrenceIndex === -1) {
-      return undefined;
-    }
-  }
-  return lastOccurrenceIndex;
-}
-
-function spanOf(
-  src: string,
-  subStr: string = src,
-  occurrenceNumber: number = 1,
-): Span {
-  const index = indexOf(src, subStr, occurrenceNumber);
-  if (index === undefined) {
-    throw new Error("Invalid index");
-  }
-
-  return [index, index + subStr.length];
-}
