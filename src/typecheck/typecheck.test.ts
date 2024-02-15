@@ -4,6 +4,7 @@ import { Deps, typecheck, typecheckProject, typePPrint, TypedModule } from ".";
 import {
   BadImport,
   InvalidCatchall,
+  InvalidTypeArity,
   NonExistingImport,
   TypeMismatch,
   TypeParamShadowing,
@@ -487,6 +488,25 @@ describe("custom types", () => {
 
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(UnboundType);
+  });
+
+  test("checks arity in constructors", () => {
+    const [, errs] = tc(
+      `  
+      type T<a> { }
+
+      type T1<a, b> {
+        C(T<a, b>)
+      }
+    `,
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(InvalidTypeArity);
+
+    const desc = errs[0]?.description as InvalidTypeArity;
+    expect(desc.expected).toEqual(1);
+    expect(desc.got).toEqual(2);
   });
 
   test("add types to the type pool", () => {

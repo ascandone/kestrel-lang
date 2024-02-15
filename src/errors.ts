@@ -58,6 +58,18 @@ export class UnboundType implements ErrorDescription {
   }
 }
 
+export class InvalidTypeArity implements ErrorDescription {
+  constructor(
+    public type: string,
+    public expected: number,
+    public got: number,
+  ) {}
+  errorName = "Invalid type arity";
+  getDescription() {
+    return `Wrong number of args for type "${this.type}". Expected ${this.expected} but got ${this.got} instead`;
+  }
+}
+
 export class UnboundTypeParam implements ErrorDescription {
   constructor(public param: string) {}
   errorName = "Unbound type parameter";

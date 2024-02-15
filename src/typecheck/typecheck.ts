@@ -40,6 +40,7 @@ import {
   BadImport,
   ErrorInfo,
   InvalidCatchall,
+  InvalidTypeArity,
   NonExistingImport,
   OccursCheck,
   TypeMismatch,
@@ -336,12 +337,19 @@ class Typechecker {
           moduleName = opts.returning.moduleName;
         } else {
           const resolution = this.resolveType(ast.namespace, ast.name);
-          if (
-            resolution !== undefined &&
-            resolution.arity === expectedArity &&
-            resolution.pub
-          ) {
+
+          if (resolution !== undefined && resolution.pub) {
             moduleName = resolution.namespace;
+            if (resolution.arity !== expectedArity) {
+              this.errors.push({
+                span: ast.span,
+                description: new InvalidTypeArity(
+                  ast.name,
+                  resolution.arity,
+                  expectedArity,
+                ),
+              });
+            }
           }
         }
 
