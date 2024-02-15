@@ -4,50 +4,50 @@ import { TypedModule, typecheck, typecheckProject } from "../typecheck";
 import { UntypedModule, unsafeParse } from "../parser";
 
 test("compile int constants", () => {
-  const out = compileSrc(`let x = 42`);
+  const out = compileSrc(`pub let x = 42`);
   expect(out).toEqual(`const x = 42;
 `);
 });
 
 test("compile string constants", () => {
-  const out = compileSrc(`let x = "abc"`);
+  const out = compileSrc(`pub let x = "abc"`);
   expect(out).toEqual(`const x = "abc";
 `);
 });
 
 test("compile string constants with newlines", () => {
-  const out = compileSrc(`let x = "ab\nc"`);
+  const out = compileSrc(`pub let x = "ab\nc"`);
   expect(out).toEqual(`const x = "ab\nc";
 `);
 });
 
 test("compile + of ints", () => {
-  const out = compileSrc(`let x = 1 + 2`);
+  const out = compileSrc(`pub let x = 1 + 2`);
   expect(out).toEqual(`const x = 1 + 2;
 `);
 });
 
 test("compile * of ints", () => {
-  const out = compileSrc(`let x = 1 * 2`);
+  const out = compileSrc(`pub let x = 1 * 2`);
   expect(out).toEqual(`const x = 1 * 2;
 `);
 });
 
 test("precedence between * and +", () => {
-  const out = compileSrc(`let x = (1 + 2) * 3`);
+  const out = compileSrc(`pub let x = (1 + 2) * 3`);
   expect(out).toEqual(`const x = (1 + 2) * 3;
 `);
 });
 
 test("precedence between * and + (2)", () => {
-  const out = compileSrc(`let x = 1 + 2 * 3`);
+  const out = compileSrc(`pub let x = 1 + 2 * 3`);
   expect(out).toEqual(`const x = 1 + 2 * 3;
 `);
 });
 
 test("math expr should have same semantics as js", () => {
   const expr = "2 * 3 + 4";
-  const compiled = compileSrc(`let x = ${expr}`);
+  const compiled = compileSrc(`pub let x = ${expr}`);
 
   const evaluated = new Function(`${compiled}; return x`);
   expect(evaluated()).toEqual(2 * 3 + 4);
@@ -1101,7 +1101,7 @@ function MyModule$C2(a0) {
 describe("project compilation", () => {
   test("compile single module with main value", () => {
     const out = compileRawProject({
-      Main: `let main = "main"`,
+      Main: `pub let main = "main"`,
     });
 
     expect(out).toBe(`const Main$main = "main";
@@ -1114,7 +1114,7 @@ Main$main.run(() => {});
   test("handles nested modules as entrypoint", () => {
     const out = compileRawProject(
       {
-        "Nested/Entrypoint/Mod": `let main = "main"`,
+        "Nested/Entrypoint/Mod": `pub let main = "main"`,
       },
       {
         entrypoint: {
@@ -1136,7 +1136,7 @@ Nested$Entrypoint$Mod$main.run(() => {});
       ModA: `pub let x = "main"`,
       Main: `
           import ModA
-          let main = ModA.x
+          pub let main = ModA.x
         `,
     });
 
@@ -1153,11 +1153,11 @@ Main$main.run(() => {});
   test("if two modules import a module, it has to be compiled only once", () => {
     const out = compileRawProject({
       ModA: `pub let a = "a"`,
-      ModB: `import ModA\nlet b = "b"`,
+      ModB: `import ModA\npub let b = "b"`,
       Main: `
           import ModA
           import ModB
-          let main = "main"
+          pub let main = "main"
         `,
     });
 
@@ -1177,7 +1177,7 @@ Main$main.run(() => {});
   test("compiling externs", () => {
     const out = compileRawProject(
       {
-        Main: `let main = "main"`,
+        Main: `pub let main = "main"`,
       },
       {
         entrypoint: testEntryPoint,

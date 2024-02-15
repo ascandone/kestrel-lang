@@ -31,13 +31,22 @@ export class UnboundVariable implements ErrorDescription {
 }
 
 export class UnusedVariable implements ErrorDescription {
-  constructor(public ident: string) {}
+  constructor(
+    public ident: string,
+    public type: "local" | "global",
+  ) {}
 
   severity?: Severity = "warning";
 
   errorName = "Unused variable";
   getDescription() {
-    return `"${this.ident}" is declared but never used. Try to rename it to "_${this.ident}"`;
+    const pre = `"${this.ident}" is declared but never used-.`;
+    switch (this.type) {
+      case "local":
+        return `${pre}\nTry to rename it to "_${this.ident}"`;
+      case "global":
+        return `${pre}\nTry to add a \`pub\` modifier`;
+    }
   }
 }
 

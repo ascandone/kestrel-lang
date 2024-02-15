@@ -13,7 +13,7 @@ import {
 
 test("infer int", () => {
   const [types, errors] = tc(`
-    let x = 42
+    pub let x = 42
   `);
 
   expect(errors).toEqual([]);
@@ -24,7 +24,7 @@ test("infer int", () => {
 
 test("infer float", () => {
   const [types, errors] = tc(`
-    let x = 42.2
+    pub let x = 42.2
   `);
 
   expect(errors).toEqual([]);
@@ -36,8 +36,8 @@ test("infer float", () => {
 test("infer a variable present in the context", () => {
   const [types, errors] = tc(
     `
-    let x = 42
-    let y = x
+    pub let x = 42
+    pub let y = x
   `,
   );
 
@@ -51,7 +51,7 @@ test("infer a variable present in the context", () => {
 test("infer a variable not present in the context", () => {
   const [types, errors] = tc(
     `
-    let x = unbound_var
+    pub let x = unbound_var
   `,
   );
 
@@ -65,8 +65,8 @@ test("infer a variable not present in the context", () => {
 
 test("typechecking previously defined vars", () => {
   const [types, errors] = tc(`
-    let x = 42
-    let y = x
+    pub let x = 42
+    pub let y = x
   `);
 
   expect(errors).toEqual([]);
@@ -78,7 +78,7 @@ test("typechecking previously defined vars", () => {
 
 test("fn returning a constant", () => {
   const [types, errors] = tc(`
-    let f = fn { 42 }
+    pub let f = fn { 42 }
   `);
 
   expect(errors).toEqual([]);
@@ -91,8 +91,8 @@ test("application return type", () => {
   const [types, errors] = tc(
     `
     extern type Bool
-    extern let (>): Fn(a, a) -> Bool
-    let x = 1 > 2
+    extern pub let (>): Fn(a, a) -> Bool
+    pub let x = 1 > 2
   `,
   );
 
@@ -110,8 +110,8 @@ test("application args should be typechecked", () => {
     type T { C }
     type Ret {}
 
-    extern let f: Fn(T, T) -> Ret
-    let x = f(42, C)
+    extern pub let f: Fn(T, T) -> Ret
+    pub let x = f(42, C)
   `,
   );
 
@@ -124,7 +124,7 @@ test("typecheck fn args", () => {
     `
     extern type Int
     extern type Bool
-    extern let (>): Fn(Int, Int) -> Bool
+    extern pub let (>): Fn(Int, Int) -> Bool
     let f = fn x, y { x > y }
   `,
   );
@@ -194,7 +194,7 @@ test("typecheck if condition", () => {
 test("typecheck let expr", () => {
   const [types, errs] = tc(
     `
-    let x = {
+    pub let x = {
       let y = 42;
       y
     }
@@ -210,7 +210,7 @@ test("typecheck let expr", () => {
 test("typecheck generic values", () => {
   const [types, errs] = tc(
     `
-    let id = fn x { x }
+    pub let id = fn x { x }
   `,
   );
 
@@ -223,22 +223,22 @@ test("typecheck generic values", () => {
 test("generalize values", () => {
   const [types, errs] = tc(
     `
-    let id = fn x { x }
-    let _ = id(42)
+    pub let id = fn x { x }
+    pub let v = id(42)
   `,
   );
 
   expect(errs).toEqual([]);
   expect(types).toEqual({
     id: "Fn(a) -> a",
-    _: "Int",
+    v: "Int",
   });
 });
 
 test("recursive let exprs", () => {
   const [types, errs] = tc(
     `
-    let f = {
+    pub let f = {
       let g = fn _ { g(1) };
       g
   }
@@ -254,7 +254,7 @@ test("recursive let exprs", () => {
 test("recursive let declarations", () => {
   const [types, errs] = tc(
     `
-    let f = fn _ { f(42) }
+    pub let f = fn _ { f(42) }
   `,
   );
 
@@ -269,7 +269,7 @@ describe("type hints", () => {
     const [types, errs] = tc(
       `
         extern type Int
-        let x: Int = 1.1
+        pub let x: Int = 1.1
       `,
     );
     expect(errs).not.toEqual([]);
@@ -298,7 +298,7 @@ describe("type hints", () => {
       `
       extern type Bool
       extern type Int
-      extern let (!): Fn(Bool) -> Bool
+      extern pub let (!): Fn(Bool) -> Bool
       let x: Fn(Bool) -> Int = fn x { !x }
       `,
     );
@@ -314,7 +314,7 @@ describe("type hints", () => {
     const [types, errs] = tc(
       `
       extern type Int
-      let x: _ = 1`,
+      pub let x: _ = 1`,
     );
     expect(errs).toEqual([]);
     expect(types).toEqual({
@@ -339,7 +339,7 @@ describe("type hints", () => {
   });
 
   test.todo("vars type hints are used by typechecker", () => {
-    const [types, errs] = tc("let eq: Fn(a, a, b) -> a = fn x, y, z { x }");
+    const [types, errs] = tc("pub let eq: Fn(a, a, b) -> a = fn x, y, z { x }");
     expect(errs).toEqual([]);
     expect(types).toEqual({
       eq: "Fn(a, a, b) -> a",
@@ -349,7 +349,7 @@ describe("type hints", () => {
   test("type hints instantiate polytypes", () => {
     const [types, errs] = tc(`
       extern type Int
-      let f: Fn(Int) -> Int = fn x { x }
+      pub let f: Fn(Int) -> Int = fn x { x }
     `);
     expect(errs).toEqual([]);
     expect(types).toEqual({
@@ -358,7 +358,7 @@ describe("type hints", () => {
   });
 
   test("unknown types are ignored", () => {
-    const [types, errs] = tc("let x: NotFound = 1");
+    const [types, errs] = tc("pub let x: NotFound = 1");
     expect(errs).not.toEqual([]);
     expect(errs[0]?.description).toBeInstanceOf(UnboundType);
     expect(types).toEqual({
@@ -372,10 +372,10 @@ describe("custom types", () => {
     const [types, errs] = tc(
       `
     extern type X
-    extern let x: X
+    extern pub let x: X
 
     type T { }
-    let f: Fn(T) -> X = fn _ { x }
+    pub let f: Fn(T) -> X = fn _ { x }
   `,
     );
 
@@ -389,7 +389,7 @@ describe("custom types", () => {
   test("handles constructor without args nor params", () => {
     const [types, errs] = tc(`
     type T { C }
-    let c = C
+    pub let c = C
   `);
 
     expect(errs).toEqual([]);
@@ -406,8 +406,8 @@ describe("custom types", () => {
         Nested(Box<a>)
       }
       
-      let x = Nested(Box(42))
-      let y = Nested(Box("abc"))
+      pub let x = Nested(Box(42))
+      pub let y = Nested(Box("abc"))
   `,
     );
 
@@ -423,7 +423,7 @@ describe("custom types", () => {
       `
     extern type Int
     type T { C(Int) }
-    let c = C
+    pub let c = C
   `,
     );
 
@@ -441,7 +441,7 @@ describe("custom types", () => {
     type T {
       C(Maybe<Int>, Int)
     }
-    let c = C
+    pub let c = C
   `,
     );
 
@@ -460,7 +460,7 @@ describe("custom types", () => {
     type T {
       C(Fn(A, B) -> C)
     }
-    let c = C
+    pub let c = C
   `,
     );
 
@@ -499,7 +499,7 @@ describe("custom types", () => {
     const [types, errs] = tc(
       `
         type Box<a, b> { C }
-        let a = C
+        pub let a = C
   `,
     );
 
@@ -513,8 +513,8 @@ describe("custom types", () => {
     const [types, errs] = tc(
       `
         type T<a, b> { C(b) }
-        let a = C
-        let b = C(1)
+        pub let a = C
+        pub let b = C(1)
   `,
     );
 
@@ -568,18 +568,18 @@ describe("custom types", () => {
 
 describe("pattern matching", () => {
   test("typechecks matched expressions", () => {
-    const [, errs] = tc(`let _ = match unbound { }`);
+    const [, errs] = tc(`pub let v = match unbound { }`);
     expect(errs).not.toEqual([]);
   });
 
   test("typechecks clause return type", () => {
-    const [, errs] = tc(`let _ = match 0 { _ => unbound }`);
+    const [, errs] = tc(`pub let v = match 0 { _ => unbound }`);
     expect(errs).not.toEqual([]);
   });
 
   test("unifies clause return types", () => {
     const [, errs] = tc(`
-      let _ = match 0 {
+    pub let _ = match 0 {
         _ => 0,
         _ => 0.0,
       }
@@ -589,7 +589,7 @@ describe("pattern matching", () => {
 
   test("infers return type", () => {
     const [types, errs] = tc(`
-      let x = match 1.1 { _ => 0 }
+      pub let x = match 1.1 { _ => 0 }
     `);
     expect(errs).toEqual([]);
     expect(types).toEqual({
@@ -599,7 +599,7 @@ describe("pattern matching", () => {
 
   test("infers matched type when is a lit", () => {
     const [types, errs] = tc(`
-      let f = fn x {
+    pub let f = fn x {
         match x {
           42 => 0,
         }
@@ -616,7 +616,7 @@ describe("pattern matching", () => {
     const [types, errs] = tc(`
       type T { C }
 
-      let f = fn x {
+      pub let f = fn x {
         match x {
           C => 0,
         }
@@ -634,7 +634,7 @@ describe("pattern matching", () => {
       type Bool { }
       type T { C(Bool) }
 
-      let f = fn x {
+      pub let f = fn x {
         match x {
           C(_) => 0,
         }
@@ -659,7 +659,7 @@ describe("pattern matching", () => {
         Make(a),
       }
 
-      let f = fn x {
+      pub let f = fn x {
         match x {
           Make(True) => 0,
         }
@@ -682,7 +682,7 @@ describe("pattern matching", () => {
         Just(a),
       }
 
-      let f = fn x {
+      pub let f = fn x {
         match x {
           Nothing => 2,
         }
@@ -697,7 +697,7 @@ describe("pattern matching", () => {
   });
 
   test("use pattern matching bound vars", () => {
-    const [types, errs] = tc(`let x = match 0 { a => a }`);
+    const [types, errs] = tc(`pub let x = match 0 { a => a }`);
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
@@ -709,7 +709,7 @@ describe("pattern matching", () => {
     const [types, errs] = tc(`
       type Boxed<a> { Boxed(a) }
 
-      let x = match Boxed(42) {
+      pub let x = match Boxed(42) {
         Boxed(a) => a
       }
     `);
@@ -723,7 +723,7 @@ describe("pattern matching", () => {
   test("return error on wrong matched type", () => {
     const [, errs] = tc(`
       type X { X }
-      let _ = match 42 {
+      pub let v = match 42 {
         X => 0
       }
     `);
@@ -757,8 +757,8 @@ describe("prelude", () => {
   test("checks extern types", () => {
     const [, errs] = tc(`
      extern type ExtType
-     extern let x : ExtType
-     let y: ExtType = x
+     extern pub let x : ExtType
+     pub let y: ExtType = x
     `);
 
     expect(errs).toEqual([]);
@@ -768,8 +768,8 @@ describe("prelude", () => {
     const [types, errs] = tc(
       `
      type Unit { }
-     extern let x : Unit
-     let y = x
+     extern pub let x : Unit
+     pub let y = x
     `,
     );
 
@@ -846,7 +846,7 @@ describe("modules", () => {
 
     const [types, errs] = tc(
       `
-      let x = A
+      pub let x = A
     `,
       { A },
       [
@@ -877,7 +877,7 @@ describe("modules", () => {
     const [types, errs] = tc(
       `
       import A.{Boxed(..), T(..)}
-      let x = Boxed(T)
+      pub let x = Boxed(T)
     `,
       { A },
     );
@@ -898,7 +898,7 @@ describe("modules", () => {
     const [types, errs] = tc(
       `
       import A
-      let x = A.Constr
+      pub let x = A.Constr
     `,
       { A },
     );
@@ -920,7 +920,7 @@ describe("modules", () => {
     const [types, errs] = tc(
       `
       import A/B/C
-      let x = A/B/C.x
+      pub let x = A/B/C.x
     `,
       { "A/B/C": Mod },
     );
@@ -937,7 +937,7 @@ describe("modules", () => {
     const [types, errs] = tc(
       `
       import Mod.{Example}
-      extern let x: Example
+      extern pub let x: Example
     `,
       { Mod },
     );
@@ -953,7 +953,7 @@ describe("modules", () => {
     const [types, errs] = tc(
       `
       import Mod
-      extern let x: Mod.Example
+      extern pub let x: Mod.Example
     `,
       { Mod },
     );
@@ -969,7 +969,7 @@ describe("modules", () => {
     const [, errs] = tc(
       `
       import Mod.{T(..)}
-      let x = match Constr {
+      pub let x = match Constr {
         Constr => 0,
       }
     `,
@@ -1018,8 +1018,9 @@ describe("modules", () => {
     const [Mod] = tcProgram("Mod", `let not_found = 42`);
     const [, errs] = tc(`import Mod.{not_found}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
+    expect(
+      errs.some((e) => e.description instanceof NonExistingImport),
+    ).toBeTruthy();
   });
 
   test("qualified imports should not work on priv functions", () => {
@@ -1027,7 +1028,7 @@ describe("modules", () => {
     const [, errs] = tc(
       `
       import Mod
-      let _ = Mod.not_found
+      pub let v = Mod.not_found
     `,
       { Mod },
     );
@@ -1041,7 +1042,7 @@ describe("modules", () => {
     const [, errs] = tc(
       `
       import Mod
-      let _ = Mod.A
+      pub let v = Mod.A
     `,
       { Mod },
     );
@@ -1056,7 +1057,7 @@ describe("modules", () => {
     const [, errs] = tc(
       `
       import Mod
-      extern let x: Mod.PrivateType
+      extern pub let x: Mod.PrivateType
     `,
       { Mod },
     );
@@ -1086,7 +1087,7 @@ describe("modules", () => {
   });
 
   test("error when qualifier is not an imported module", () => {
-    const [, errs] = tc(`let x = NotImported.value`);
+    const [, errs] = tc(`pub let x = NotImported.value`);
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
@@ -1099,7 +1100,7 @@ describe("modules", () => {
       `
       import Mod
       type T { Constr }
-      let t: T = Mod.Constr
+      pub let t: T = Mod.Constr
     `,
       { Mod },
     );
@@ -1119,7 +1120,7 @@ describe("typecheck project", () => {
       `),
         B: unsafeParse(`
         import A.{x}
-        let y = x
+        pub let y = x
       `),
       },
       [],
@@ -1148,7 +1149,7 @@ describe("typecheck project", () => {
       `),
         B: unsafeParse(`
         import A
-        let y = A.x
+        pub let y = A.x
       `),
       },
       [],

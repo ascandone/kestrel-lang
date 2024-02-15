@@ -402,6 +402,10 @@ class Typechecker {
   }
 
   private typecheckAnnotatedDecl(decl: TypedDeclaration) {
+    if (!decl.pub) {
+      this.unusedVariables.add(decl.binding);
+    }
+
     if (decl.typeHint !== undefined) {
       const bound: Record<string, TVar> = {};
       const th = this.typeAstToType(
@@ -432,6 +436,14 @@ class Typechecker {
 
     this.typecheckAnnotatedExpr(decl.value);
     this.unifyExpr(decl.value, decl.binding.$.asType(), decl.value.$.asType());
+
+    if (this.unusedVariables.has(decl.binding)) {
+      this.errors.push({
+        span: decl.binding.span,
+        description: new UnusedVariable(decl.binding.name, "global"),
+      });
+    }
+
     decl.scheme = generalizeAsScheme(decl.value.$.asType());
   }
 
@@ -738,7 +750,7 @@ class Typechecker {
           if (this.unusedVariables.has(param)) {
             this.errors.push({
               span: param.span,
-              description: new UnusedVariable(param.name),
+              description: new UnusedVariable(param.name, "local"),
             });
           }
         }
@@ -796,7 +808,7 @@ class Typechecker {
         if (this.unusedVariables.has(binding)) {
           this.errors.push({
             span: binding.span,
-            description: new UnusedVariable(binding.name),
+            description: new UnusedVariable(binding.name, "local"),
           });
         }
 
