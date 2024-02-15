@@ -3,10 +3,13 @@ import { unsafeParse, UntypedImport } from "../parser";
 import { Deps, typecheck, typecheckProject, typePPrint, TypedModule } from ".";
 import {
   BadImport,
+  InvalidCatchall,
   NonExistingImport,
   TypeMismatch,
+  TypeParamShadowing,
   UnboundModule,
   UnboundType,
+  UnboundTypeParam,
   UnboundVariable,
   UnimportedModule,
 } from "../errors";
@@ -115,7 +118,7 @@ test("application args should be typechecked", () => {
   `,
   );
 
-  expect(errors).not.toEqual([]);
+  expect(errors).toHaveLength(1);
   expect(errors[0]?.description).toBeInstanceOf(TypeMismatch);
 });
 
@@ -272,7 +275,8 @@ describe("type hints", () => {
         pub let x: Int = 1.1
       `,
     );
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(TypeMismatch);
     expect(types).toEqual({
       x: "Int",
     });
@@ -282,10 +286,11 @@ describe("type hints", () => {
     const [types, errs] = tc(
       `
         type T { C }
-        let x: Fn() -> T = fn { 42 }
+        pub let x: Fn() -> T = fn { 42 }
         `,
     );
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(TypeMismatch);
     expect(types).toEqual(
       expect.objectContaining({
         x: "Fn() -> T",
@@ -299,10 +304,11 @@ describe("type hints", () => {
       extern type Bool
       extern type Int
       extern pub let (!): Fn(Bool) -> Bool
-      let x: Fn(Bool) -> Int = fn x { !x }
+      pub let x: Fn(Bool) -> Int = fn x { !x }
       `,
     );
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(TypeMismatch);
     expect(types).toEqual(
       expect.objectContaining({
         x: "Fn(Bool) -> Int",
@@ -324,7 +330,7 @@ describe("type hints", () => {
 
   test.todo("vars type hints should be generalized", () => {
     const [types, errs] = tc("let x: a = 0");
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
     expect(types).toEqual({
       x: "a",
     });
@@ -332,7 +338,7 @@ describe("type hints", () => {
 
   test.todo("unify generalized values", () => {
     const [types, errs] = tc("let f: Fn(ta) -> tb = fn x { x }");
-    expect(errs).not.toEqual([]);
+    expect(errs[0]!.description).toBeInstanceOf(TypeMismatch);
     expect(types).toEqual({
       f: "Fn(ta) -> tb",
     });
@@ -359,8 +365,8 @@ describe("type hints", () => {
 
   test("unknown types are ignored", () => {
     const [types, errs] = tc("pub let x: NotFound = 1");
-    expect(errs).not.toEqual([]);
-    expect(errs[0]?.description).toBeInstanceOf(UnboundType);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(UnboundType);
     expect(types).toEqual({
       x: "Int",
     });
@@ -479,7 +485,6 @@ describe("custom types", () => {
   `,
     );
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(UnboundType);
   });
@@ -532,7 +537,8 @@ describe("custom types", () => {
   `,
     );
 
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(UnboundTypeParam);
   });
 
   test("doesn't allow shadowing type params", () => {
@@ -542,7 +548,8 @@ describe("custom types", () => {
   `,
     );
 
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(TypeParamShadowing);
   });
 
   test("prevents catchall to be used in type args", () => {
@@ -552,7 +559,8 @@ describe("custom types", () => {
   `,
     );
 
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(InvalidCatchall);
   });
 
   test("allows self-recursive type", () => {
@@ -569,12 +577,14 @@ describe("custom types", () => {
 describe("pattern matching", () => {
   test("typechecks matched expressions", () => {
     const [, errs] = tc(`pub let v = match unbound { }`);
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(UnboundVariable);
   });
 
   test("typechecks clause return type", () => {
     const [, errs] = tc(`pub let v = match 0 { _ => unbound }`);
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(UnboundVariable);
   });
 
   test("unifies clause return types", () => {
@@ -584,7 +594,8 @@ describe("pattern matching", () => {
         _ => 0.0,
       }
     `);
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(TypeMismatch);
   });
 
   test("infers return type", () => {
@@ -728,29 +739,31 @@ describe("pattern matching", () => {
       }
     `);
 
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(TypeMismatch);
   });
 
   test("return error on unbound types", () => {
     const [, errs] = tc(`
-      let _ = fn x {
+      pub let v = fn x {
         match x {
           NotFound => 0
         }
       }
     `);
 
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(UnboundVariable);
   });
 });
 
 describe("prelude", () => {
   test("intrinsics' types are not visible by default", () => {
     const [, errs] = tc(`
-     let x : Int = 0
+     pub let x : Int = 0
     `);
 
-    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(UnboundType);
   });
 
@@ -982,7 +995,6 @@ describe("modules", () => {
   test("error when import a non-existing module", () => {
     const [, errs] = tc(`import ModuleNotFound`);
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(UnboundModule);
   });
@@ -991,7 +1003,6 @@ describe("modules", () => {
     const [Mod] = tcProgram("Mod", ``);
     const [, errs] = tc(`import Mod.{NotFound}`, { Mod });
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
@@ -1000,7 +1011,6 @@ describe("modules", () => {
     const [Mod] = tcProgram("Mod", `type PrivateType {}`);
     const [, errs] = tc(`import Mod.{PrivateType}`, { Mod });
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
@@ -1009,7 +1019,6 @@ describe("modules", () => {
     const [Mod] = tcProgram("Mod", ``);
     const [, errs] = tc(`import Mod.{not_found}`, { Mod });
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
@@ -1047,7 +1056,6 @@ describe("modules", () => {
       { Mod },
     );
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(NonExistingImport);
   });
@@ -1062,7 +1070,6 @@ describe("modules", () => {
       { Mod },
     );
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(UnboundType);
   });
@@ -1071,7 +1078,6 @@ describe("modules", () => {
     const [Mod] = tcProgram("Mod", `extern pub type ExternType`);
     const [, errs] = tc(`import Mod.{ExternType(..)}`, { Mod });
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(BadImport);
   });
@@ -1081,7 +1087,6 @@ describe("modules", () => {
     const [Mod] = tcProgram("Mod", `pub type T {}`);
     const [, errs] = tc(`import Mod.{T(..)}`, { Mod });
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(BadImport);
   });
@@ -1089,7 +1094,6 @@ describe("modules", () => {
   test("error when qualifier is not an imported module", () => {
     const [, errs] = tc(`pub let x = NotImported.value`);
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(UnimportedModule);
   });
@@ -1105,7 +1109,6 @@ describe("modules", () => {
       { Mod },
     );
 
-    expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(TypeMismatch);
   });
