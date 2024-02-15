@@ -201,9 +201,9 @@ describe("hoverOn", () => {
     expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
   });
 
-  test.todo("snapshot when hovering on a constructor", () => {
+  test("snapshot when hovering on a constructor", () => {
     const src = `
-      type T<content> { Constr(content) }
+      type T<content> { X, Constr(content) }
     `;
     const [scheme, hoverable] = parseHover(src, "Constr")!;
     expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();

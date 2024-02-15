@@ -70,6 +70,30 @@ export function hoverOn(
   module: TypedModule,
   offset: number,
 ): [TypeScheme, Hovered] | undefined {
+  for (const typeDecl of module.typeDeclarations) {
+    if (!contains(typeDecl, offset)) {
+      continue;
+    }
+
+    if (typeDecl.type !== "adt") {
+      continue;
+    }
+
+    for (const variant of typeDecl.variants) {
+      if (!contains(variant, offset)) {
+        continue;
+      }
+
+      return [
+        variant.scheme,
+        {
+          span: variant.span,
+          hovered: { type: "constructor", variant },
+        },
+      ];
+    }
+  }
+
   for (const decl of module.declarations) {
     const d = hoverOnDecl(decl, offset);
     if (d !== undefined) {

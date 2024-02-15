@@ -1,5 +1,13 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`hoverOn > snapshot when hovering on a constructor 1`] = `
+"\`\`\`
+Constr: Fn(content) -> T<content>
+\`\`\`
+type constructor
+"
+`;
+
 exports[`hoverOn > snapshot when hovering on a constructor reference 1`] = `
 "\`\`\`
 Constr: Fn(content) -> T<content>
