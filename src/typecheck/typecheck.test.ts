@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { unsafeParse, UntypedImport } from "../parser";
 import { Deps, typecheck, typecheckProject, typePPrint, TypedModule } from ".";
 import {
+  ArityMismatch,
   BadImport,
   InvalidCatchall,
   InvalidTypeArity,
@@ -677,6 +678,26 @@ describe("pattern matching", () => {
     expect(types).toEqual({
       f: "Fn(T) -> Int",
     });
+  });
+
+  test("typechecks constructor args", () => {
+    const [, errs] = tc(
+      `
+      type T<a> { C(a, a, a) }
+
+      pub let f = fn x {
+        match x {
+          C(_, _) => 0,
+        }
+      }
+    `,
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(ArityMismatch);
+    const err = errs[0]!.description as ArityMismatch;
+    expect(err.expected).toEqual(3);
+    expect(err.got).toEqual(2);
   });
 
   test("infers nested types in p match", () => {

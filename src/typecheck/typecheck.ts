@@ -498,7 +498,7 @@ class Typechecker {
             t,
           );
 
-          for (let i = 0; i < t.args.length; i++) {
+          for (let i = 0; i < pattern.args.length && i < t.args.length; i++) {
             this.unifyNode(pattern, pattern.args[i]!.$.asType(), t.args[i]!);
             this.typecheckPattern(pattern.args[i]!);
           }
