@@ -25,6 +25,7 @@ export const defaultImports: UntypedImport[] = [
       { type: "value", name: "*", span: dummySpan },
       { type: "value", name: "/", span: dummySpan },
       { type: "value", name: "^", span: dummySpan },
+      { type: "value", name: "%", span: dummySpan },
 
       // Float
       { type: "type", name: "Float", exposeImpl: false, span: dummySpan },
