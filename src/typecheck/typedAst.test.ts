@@ -181,6 +181,15 @@ describe("hoverOn", () => {
     expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
   });
 
+  test("snapshot when hovering on an extern type reference", () => {
+    const src = `
+      extern let glb: Fn(x) -> x
+      let v = glb
+    `;
+    const [scheme, hoverable] = parseHover(src, "glb", 2)!;
+    expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  });
+
   test("snapshot when hovering on a local fn", () => {
     const src = `
       let glb = fn a {
@@ -189,6 +198,24 @@ describe("hoverOn", () => {
       }
     `;
     const [scheme, hoverable] = parseHover(src, "closure")!;
+    expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  });
+
+  test.todo("snapshot when hovering on a constructor", () => {
+    const src = `
+      type T<content> { Constr(content) }
+    `;
+    const [scheme, hoverable] = parseHover(src, "Constr")!;
+    expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  });
+
+  test("snapshot when hovering on a constructor reference", () => {
+    const src = `
+      type T<content> { Constr(content) }
+
+      pub let c = Constr(42)
+    `;
+    const [scheme, hoverable] = parseHover(src, "Constr", 2)!;
     expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
   });
 });

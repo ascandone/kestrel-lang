@@ -1,5 +1,13 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`hoverOn > snapshot when hovering on a constructor reference 1`] = `
+"\`\`\`
+Constr: Fn(content) -> T<content>
+\`\`\`
+type constructor
+"
+`;
+
 exports[`hoverOn > snapshot when hovering on a local fn 1`] = `
 "\`\`\`
 closure: Fn(b) -> a
@@ -9,6 +17,14 @@ local declaration
 `;
 
 exports[`hoverOn > snapshot when hovering on an extern type 1`] = `
+"\`\`\`
+glb: Fn(x) -> x
+\`\`\`
+global declaration
+"
+`;
+
+exports[`hoverOn > snapshot when hovering on an extern type reference 1`] = `
 "\`\`\`
 glb: Fn(x) -> x
 \`\`\`

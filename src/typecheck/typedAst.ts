@@ -95,7 +95,10 @@ local declaration
     }
 
     case "global-variable": {
-      const tpp = typePPrint(hovered.declaration.binding.$.asType(), scheme);
+      const tpp = typePPrint(
+        hovered.declaration.binding.$.asType(),
+        hovered.declaration.scheme,
+      );
       return `\`\`\`
 ${hovered.declaration.binding.name}: ${tpp}
 \`\`\`
@@ -104,7 +107,7 @@ global declaration
     }
 
     case "constructor": {
-      const tpp = typePPrint(hovered.variant.mono, scheme);
+      const tpp = typePPrint(hovered.variant.mono, hovered.variant.scheme);
       return `\`\`\`
 ${hovered.variant.name}: ${tpp}
 \`\`\`
