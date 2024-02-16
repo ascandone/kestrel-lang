@@ -7,6 +7,8 @@ type Link = { code: string; next: Colored };
 export type StringLike = string | number;
 
 class Colored {
+  static disabled: boolean = false;
+
   constructor(private link?: Link) {}
 
   // render
@@ -25,11 +27,16 @@ class Colored {
     const stack: StringLike[] = [];
     let { link } = this;
     while (link !== undefined) {
-      stack.push(link.code);
+      if (!Colored.disabled) {
+        stack.push(link.code);
+      }
       link = link.next.link;
     }
     stack.reverse();
-    stack.push(...content, RESET_CODE);
+    stack.push(...content);
+    if (!Colored.disabled) {
+      stack.push(RESET_CODE);
+    }
     return stack.join("");
   }
 
@@ -65,3 +72,11 @@ class Colored {
 }
 
 export const col = new Colored();
+
+export function withDisabled<T>(disabled: boolean, f: () => T): T {
+  const initial = Colored.disabled;
+  Colored.disabled = disabled;
+  const res = f();
+  Colored.disabled = initial;
+  return res;
+}

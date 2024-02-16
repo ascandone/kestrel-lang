@@ -3,10 +3,10 @@ import { parse, UntypedModule } from "../parser";
 import { typecheckProject, TypedModule } from "../typecheck";
 import { exit } from "node:process";
 import { compileProject } from "../compiler";
-import { showErrorLine } from "./utils/showErrorLine";
-import { col } from "./utils/colors";
+import { col } from "../utils/colors";
 import { Config, readConfig } from "./config";
 import { join } from "node:path";
+import { errorInfoToString } from "../errors";
 
 const EXTENSION = "kes";
 
@@ -115,14 +115,8 @@ export async function checkProject(
 
     for (const error of errors) {
       errorCount++;
-      const msg = error.description.getDescription();
-      console.log(
-        `${col.red.tag`Error:`} ${col.bright.str(error.description.errorName)}
-
-${msg}
-`,
-      );
-      console.log(showErrorLine(rawProject[ns]!.content, error.span), "\n\n");
+      const src = rawProject[ns]!.content!;
+      console.log(errorInfoToString(src, error), "\n\n");
     }
   }
 

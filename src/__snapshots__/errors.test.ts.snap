@@ -1,0 +1,10 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`errorInfoToString > unbound variable 1`] = `
+"[31mError:[0m [1mUnbound variable[0m
+
+Cannot find variable "unbound_var"
+
+[47m[30m1[0m pub let x = unbound_var
+[47m [0m [31m            ~~~~~~~~~~~[0m"
+`;

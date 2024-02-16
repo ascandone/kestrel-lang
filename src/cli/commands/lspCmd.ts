@@ -19,7 +19,7 @@ import {
   hoverToMarkdown,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
-import { Severity } from "../../errors";
+import { Severity, errorInfoToString } from "../../errors";
 
 type Connection = _Connection;
 
@@ -107,8 +107,7 @@ class State {
       diagnostics.push({
         uri: document.uri,
         diagnostics: errors.map((e) => ({
-          message: e.description.getDescription(),
-          source: "Typecheck",
+          message: errorInfoToString(document.getText(), e, true),
           severity: toDiagnosticSeverity(e.description.severity ?? "error"),
           range: spannedToRange(document, e.span),
         })),

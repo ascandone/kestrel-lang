@@ -1,5 +1,7 @@
+import { showErrorLine } from "./errors/showErrorLine";
 import { Span } from "./parser";
 import { Type, typePPrint } from "./typecheck";
+import { col, withDisabled } from "./utils/colors";
 
 export type Severity = "error" | "warning";
 
@@ -11,13 +13,13 @@ export type ErrorInfo = {
 export interface ErrorDescription {
   severity?: Severity;
   errorName: string;
-  getDescription(): string;
+  shortDescription(): string;
 }
 
 export class ParsingError implements ErrorDescription {
   constructor(public expecting: string) {}
   errorName = "Parsing error";
-  getDescription(): string {
+  shortDescription(): string {
     return this.expecting;
   }
 }
@@ -25,7 +27,7 @@ export class ParsingError implements ErrorDescription {
 export class UnboundVariable implements ErrorDescription {
   constructor(public ident: string) {}
   errorName = "Unbound variable";
-  getDescription() {
+  shortDescription() {
     return `Cannot find variable "${this.ident}"`;
   }
 }
@@ -39,7 +41,7 @@ export class UnusedVariable implements ErrorDescription {
   severity?: Severity = "warning";
 
   errorName = "Unused variable";
-  getDescription() {
+  shortDescription() {
     const pre = `"${this.ident}" is declared but never used-.`;
     switch (this.type) {
       case "local":
@@ -53,7 +55,7 @@ export class UnusedVariable implements ErrorDescription {
 export class UnboundType implements ErrorDescription {
   constructor(public ident: string) {}
   errorName = "Unbound type";
-  getDescription() {
+  shortDescription() {
     return `Cannot find type "${this.ident}"`;
   }
 }
@@ -65,7 +67,7 @@ export class InvalidTypeArity implements ErrorDescription {
     public got: number,
   ) {}
   errorName = "Invalid type arity";
-  getDescription() {
+  shortDescription() {
     return `Wrong number of args for type "${this.type}". Expected ${this.expected} but got ${this.got} instead`;
   }
 }
@@ -73,14 +75,14 @@ export class InvalidTypeArity implements ErrorDescription {
 export class UnboundTypeParam implements ErrorDescription {
   constructor(public param: string) {}
   errorName = "Unbound type parameter";
-  getDescription() {
+  shortDescription() {
     return `Cannot find type parameter "${this.param}"`;
   }
 }
 
 export class InvalidCatchall implements ErrorDescription {
   errorName = "Invalid catchall";
-  getDescription() {
+  shortDescription() {
     return `Invalid use of the catchall type`;
   }
 }
@@ -88,7 +90,7 @@ export class InvalidCatchall implements ErrorDescription {
 export class TypeParamShadowing implements ErrorDescription {
   constructor(public param: string) {}
   errorName = "Type parameter shadowing";
-  getDescription(): string {
+  shortDescription(): string {
     return `Cannot redeclare type parameter ${this.param}`;
   }
 }
@@ -99,7 +101,7 @@ export class ArityMismatch implements ErrorDescription {
     public got: number,
   ) {}
   errorName = "Arity mismatch";
-  getDescription(): string {
+  shortDescription(): string {
     return `Expected ${this.expected} arguments, but got ${this.got}.`;
   }
 }
@@ -107,7 +109,7 @@ export class ArityMismatch implements ErrorDescription {
 export class UnboundModule implements ErrorDescription {
   constructor(public moduleName: string) {}
   errorName = "Unbound module";
-  getDescription(): string {
+  shortDescription(): string {
     return `Unbound module: "${this.moduleName}".`;
   }
 }
@@ -115,7 +117,7 @@ export class UnboundModule implements ErrorDescription {
 export class UnimportedModule implements ErrorDescription {
   constructor(public moduleName: string) {}
   errorName = "Unimported module";
-  getDescription(): string {
+  shortDescription(): string {
     return `This module was not imported: "${this.moduleName}".`;
   }
 }
@@ -123,21 +125,21 @@ export class UnimportedModule implements ErrorDescription {
 export class NonExistingImport implements ErrorDescription {
   constructor(public name: string) {}
   errorName = "Non existing import";
-  getDescription(): string {
+  shortDescription(): string {
     return `The module does not expose the following value: ${this.name}`;
   }
 }
 
 export class BadImport implements ErrorDescription {
   errorName = "Bad import";
-  getDescription(): string {
+  shortDescription(): string {
     return `This type doesn't have constructors to expose`;
   }
 }
 
 export class OccursCheck implements ErrorDescription {
   errorName = "Occurs check";
-  getDescription(): string {
+  shortDescription(): string {
     return `Cannot construct the infinite type`;
   }
 }
@@ -149,7 +151,7 @@ export class TypeMismatch implements ErrorDescription {
   ) {}
 
   errorName = "Type mismatch";
-  getDescription(): string {
+  shortDescription(): string {
     const expected = typePPrint(this.expected);
     const got = typePPrint(this.got);
     const qualify = expected === got;
@@ -166,4 +168,19 @@ export class TypeMismatch implements ErrorDescription {
      Got:  ${nsRight}${got}
 `;
   }
+}
+
+export function errorInfoToString(
+  src: string,
+  { description, span }: ErrorInfo,
+  disableColors: boolean = false,
+): string {
+  return withDisabled(
+    disableColors,
+    () => `${col.red.tag`Error:`} ${col.bright.str(description.errorName)}
+
+${description.shortDescription()}
+
+${showErrorLine(src, span)}`,
+  );
 }

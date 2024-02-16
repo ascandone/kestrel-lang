@@ -1,5 +1,5 @@
-import { Span } from "../../parser";
-import { col } from "./colors";
+import { Span } from "../parser";
+import { col } from "../utils/colors";
 
 type Position = { line: number; character: number };
 
