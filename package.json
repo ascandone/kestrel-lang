@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "commander": "^11.1.0",
+    "ohm-js": "^17.1.0",
     "ts-decode": "^0.0.14",
     "vscode-languageserver": "^9.0.1"
   },
@@ -39,7 +40,6 @@
     "@vitest/coverage-v8": "^1.2.0",
     "@vitest/ui": "^1.2.1",
     "eslint": "^8.56.0",
-    "ohm-js": "^17.1.0",
     "prettier": "^3.2.1",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0",
