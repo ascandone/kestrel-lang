@@ -4,10 +4,10 @@
 
 Kestrel has basics datatypes such as:
 
-- strings: `"abc"`
-- int: `42`
-- float: `42.1`
-- bool: `True` and `False`
+- values of type `String`, such as `"abc"`
+- values of type `Int`, such as `42`
+- values of type `Float`, such as `42.1`
+- values of type `Bool` : `True` and `False`
 
 Comments can be written using `//` syntax.
 
