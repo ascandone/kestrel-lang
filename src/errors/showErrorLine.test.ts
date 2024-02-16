@@ -10,11 +10,13 @@ const xb = 1;
 const xc = 2;
   `;
 
-    const lineC = "const xb = 1;";
-    const lineE = "      ~~";
-    expect(showErrorLine(code, [14 + 6, 14 + 8])).toBe(
-      `\x1b[47m\x1b[30m2\x1b[0m ${lineC}
-\x1b[47m \x1b[0m \x1b[31m${lineE}\x1b[0m`,
+    const out = showErrorLine(code, [14 + 6, 14 + 8]);
+
+    expect(out).toMatchInlineSnapshot(
+      `
+      "2| const xb = 1;
+       | [31m      ~~[0m"
+    `,
     );
   });
 
@@ -36,12 +38,15 @@ const xa = 0;
 `;
 
     const lineC = "const xa = 0;";
-    const lineE = "      ~~";
     const startIndex = code.indexOf(lineC);
 
-    expect(showErrorLine(code, [startIndex + 6, startIndex + 6 + 2])).toBe(
-      `\x1b[47m\x1b[30m12\x1b[0m ${lineC}
-\x1b[47m  \x1b[0m \x1b[31m${lineE}\x1b[0m`,
+    expect(
+      showErrorLine(code, [startIndex + 6, startIndex + 6 + 2]),
+    ).toMatchInlineSnapshot(
+      `
+      "12| const xa = 0;
+        | [31m      ~~[0m"
+    `,
     );
   });
 
@@ -54,16 +59,13 @@ const xb = 1;
 const xc = 2;
   `;
 
-    const lineC1 = "const xb = 1;";
-    const lineE1 = "           ~~";
-    const lineC2 = "const xc = 2;";
-    const lineE2 = "~~~";
-
-    expect(showErrorLine(code, [14 + 11, 14 + 14 + 3])).toBe(
-      `\x1b[47m\x1b[30m2\x1b[0m ${lineC1}
-\x1b[47m \x1b[0m \x1b[31m${lineE1}\x1b[0m
-\x1b[47m\x1b[30m3\x1b[0m ${lineC2}
-\x1b[47m \x1b[0m \x1b[31m${lineE2}\x1b[0m`,
+    expect(showErrorLine(code, [14 + 11, 14 + 14 + 3])).toMatchInlineSnapshot(
+      `
+      "2| const xb = 1;
+       | [31m           ~~[0m
+      3| const xc = 2;
+       | [31m~~~[0m"
+    `,
     );
   });
 
@@ -75,12 +77,11 @@ const xc = 2;
 in 0
   `;
 
-    const l1 = "  if a";
-    const e1 = "     ~";
-
-    expect(showErrorLine(src, [19, 20])).toBe(
-      `\x1b[47m\x1b[30m2\x1b[0m ${l1}
-\x1b[47m \x1b[0m \x1b[31m${e1}\x1b[0m`,
+    expect(showErrorLine(src, [19, 20])).toMatchInlineSnapshot(
+      `
+      "2|   if a
+       | [31m     ~[0m"
+    `,
     );
   });
 });

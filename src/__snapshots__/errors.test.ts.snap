@@ -5,6 +5,6 @@ exports[`errorInfoToString > unbound variable 1`] = `
 
 Cannot find variable "unbound_var"
 
-[47m[30m1[0m pub let x = unbound_var
-[47m [0m [31m            ~~~~~~~~~~~[0m"
+1| pub let x = unbound_var
+ | [31m            ~~~~~~~~~~~[0m"
 `;

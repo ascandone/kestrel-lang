@@ -14,8 +14,7 @@ export function showErrorLine(src: string, [start, end]: Span): string {
 
   function showLine(line: number) {
     const codeLine = lines[line]!;
-    const lineNum = col.bgWhite.black.str(line + 1);
-    return `${lineNum} ${codeLine}`;
+    return `${line + 1}| ${codeLine}`;
   }
 
   function showErr(
@@ -27,7 +26,7 @@ export function showErrorLine(src: string, [start, end]: Span): string {
 
     const errPadding = repeatN(" ", start);
     const errHighlight = repeatN("~", end - start);
-    return `${col.bgWhite.str(digitsPadding)} ${col.red.str(errPadding + errHighlight)}`;
+    return `${digitsPadding}| ${col.red.str(errPadding + errHighlight)}`;
   }
 
   const ret: string[] = [];
