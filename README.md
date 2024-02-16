@@ -2,6 +2,7 @@
 
 ![npm](https://badgen.net/npm/v/kestrel-lang)
 [![CI](https://github.com/ascandone/kestrel-lang/actions/workflows/ci.yml/badge.svg)](https://github.com/ascandone/kestrel-lang/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ascandone/kestrel-lang/graph/badge.svg?token=rHjOLSg3xg)](https://codecov.io/gh/ascandone/kestrel-lang)
 
 Kestrel is a pure, strongly typed functional language that compiles to js.
 
