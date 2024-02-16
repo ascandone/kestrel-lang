@@ -5,6 +5,14 @@
   "bin": {
     "kestrel": "./dist/cli/main.js"
   },
+  "files": [
+    "dist/**/*.js",
+    "dist/parser/index.d.ts",
+    "dist/typecheck/index.d.ts",
+    "dist/compiler/index.d.ts",
+    "dist/errors.d.ts",
+    "dist/formatter.d.ts"
+  ],
   "scripts": {
     "gen:parser": "ohm generateBundles --withTypes src/parser/grammar.ohm",
     "test:watch": "vitest",
