@@ -311,6 +311,8 @@ class Typechecker {
         span: ast.span,
         description: new ArityMismatch(e.left.args.length, e.right.args.length),
       });
+
+      return;
     }
 
     this.errors.push(unifyErr(ast, e));
