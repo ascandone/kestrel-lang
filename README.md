@@ -26,3 +26,6 @@ Install the `kestrel` cli using npm:
 ```bash
 npm install -g kestrel-lang
 ```
+
+Lsp integration is available as a [vscode extension](https://github.com/ascandone/kestrel-lang-vscode/tree/main)
+
