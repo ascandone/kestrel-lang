@@ -241,6 +241,30 @@ describe("goToDefinition", () => {
     const location = parseGotoDef(src, "x", 2);
     expect(location?.span).toEqual(spanOf(src, "x", 1));
   });
+
+  test("wrapped in an if and appl", () => {
+    const src = `let _ = fn a, loc_var {
+      if True {
+        0
+      } else {
+        f(loc_var)
+      }
+    }`;
+    const location = parseGotoDef(src, "loc_var", 2);
+    expect(location?.span).toEqual(spanOf(src, "loc_var", 1));
+  });
+
+  test("pattern ident", () => {
+    const src = `
+      type Box<a> { Box(a) }
+      let _ = match Box(Box(42)) {
+        _ => 0,
+        Box(Box(local_var)) => local_var,
+      }
+    `;
+    const location = parseGotoDef(src, "local_var", 2);
+    expect(location?.span).toEqual(spanOf(src, "local_var", 1));
+  });
 });
 
 function parseHover(
