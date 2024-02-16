@@ -148,6 +148,25 @@ TODO
 
 TODO
 
+## Creating a Kestrel project
+
+Ketrel's cli is the unified tool to run, typecheck, build, format your kestrel projects, and more.
+
+You can create an new Kestrel project using the `kestrel init` command.
+
+You can run the typechecker over a Kestrel project using `kestrel check`
+
+You can compile a Kestrel project using the `kestrel build` or run it on the fly using `kestrel run`.
+To do that, you'll need to create a module exposing a value called `main` that has type `Task<Unit>`.
+
+Here's the classic hello world example:
+
+```rust
+import IO
+
+pub let main = IO.println("Hello world!")
+```
+
 ## Syntax sugar
 
 #### Pipe operator
