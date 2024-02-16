@@ -33,6 +33,7 @@ fn x, y { x + y }
 ```
 
 And call them using common function call syntax: `my_function(1, 2)`
+Functions are first class citizen, therefor you can assign them to let declarations, pass them to other function or return from functions
 
 #### Let declarations
 
@@ -66,9 +67,11 @@ let declaration = {
 }
 ```
 
+You can locally-scoped `let` expression whenever there is a block (e.g. `if` expressions or `fn` body)
+
 #### If expressions
 
-To branch programgs, you can use `if` expressions:
+To branch programs, you can use `if` expressions:
 
 ```rust
 let value =
@@ -81,9 +84,69 @@ let value =
 
 ## Types
 
+There are few built-in types, such as `Int`, `Float`, `String`.
+
+Kestrel has Hindely-Milner type inference, meaning that you don't need to manually write types, as they will be inferred by the typechecker. Still, is possible to give `let` declarations explicit type hints:
+
+```rust
+let x: Int = 42
+let x: Bool = "not a bool" // => this will not typecheck
+```
+
+Functions have their own types:
+
+```rust
+// `add1` is inferred as `Fn(Int) -> Int`
+let add1 = fn x { x + 1 }
+```
+
+Lowercase types behave as type variables, for example:
+
+```rust
+// `add1` is inferred as `Fn(a) -> a`
+let identity = fn x { x }
+```
+
+In the example above, `a` is a type variable that can be instantiated to any possible type, as long as every occurrence is instantiated to the same type. This is the same as writing `<T>(x: T) => T` in typescript
+
+#### Custom types
+
+You can also create your own types, specifying its constructors:
+
+```rust
+type MyType {
+  NoArgs,
+  WithArgs(Int, Int),
+}
+```
+
+This way, we now have in scope:
+
+1.  A type called `MyType`
+2.  Two constructors `NoArgs` (that is a value of type `MyType`) and `WithArgs` (that is a value of type `Fn(Int, Int) -> MyType`)
+
+For example, we can now write:
+
+```rust
+// x is inferred as `MyType`
+let x = WithArgs(1, 2)
+```
+
+Custom types can have generic args:
+
+```rust
+type Box<a> {
+  MakeBox(a),
+}
+```
+
 #### Match expressions
 
+TODO
+
 ## Modules
+
+TODO
 
 ## Syntax sugar
 
