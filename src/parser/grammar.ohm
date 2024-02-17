@@ -24,7 +24,7 @@ Program {
     = PipeExp
 
   PipeExp
-    = PipeExp "|>" QualifiedName "(" ListOf<Exp, ","> ","? ")"  -- pipe
+    = PipeExp "|>" CompExp  -- pipe
     | CompExp
 
   CompExp

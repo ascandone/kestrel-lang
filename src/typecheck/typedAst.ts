@@ -36,7 +36,7 @@ export type TypedMatchPattern = MatchPattern<
   TypeMeta,
   IdentifierResolutionMeta
 >;
-export type TypedExpr = Expr<TypeMeta, IdentifierResolutionMeta>;
+export type TypedExpr = Expr<TypeMeta, IdentifierResolutionMeta, never>;
 
 export type TypedExposing = ExposedValue<
   { resolved?: TypedTypeDeclaration },
@@ -51,7 +51,8 @@ export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 
 export type TypedDeclaration = { scheme: TypeScheme } & Declaration<
   TypeMeta,
-  IdentifierResolutionMeta
+  IdentifierResolutionMeta,
+  never
 >;
 
 export type TypedModule = {

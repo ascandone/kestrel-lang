@@ -647,49 +647,48 @@ exports[`it should be possible to mix pipe with infix 1`] = `
         32,
       ],
       "value": {
-        "args": [
-          {
+        "left": {
+          "left": {
             "args": [
               {
-                "args": [
-                  {
-                    "span": [
-                      13,
-                      14,
-                    ],
-                    "type": "constant",
-                    "value": {
-                      "type": "int",
-                      "value": 1,
-                    },
-                  },
-                  {
-                    "span": [
-                      17,
-                      18,
-                    ],
-                    "type": "constant",
-                    "value": {
-                      "type": "int",
-                      "value": 2,
-                    },
-                  },
-                ],
-                "caller": {
-                  "name": "+",
-                  "span": [
-                    15,
-                    16,
-                  ],
-                  "type": "identifier",
-                },
                 "span": [
                   13,
+                  14,
+                ],
+                "type": "constant",
+                "value": {
+                  "type": "int",
+                  "value": 1,
+                },
+              },
+              {
+                "span": [
+                  17,
                   18,
                 ],
-                "type": "application",
+                "type": "constant",
+                "value": {
+                  "type": "int",
+                  "value": 2,
+                },
               },
             ],
+            "caller": {
+              "name": "+",
+              "span": [
+                15,
+                16,
+              ],
+              "type": "identifier",
+            },
+            "span": [
+              13,
+              18,
+            ],
+            "type": "application",
+          },
+          "right": {
+            "args": [],
             "caller": {
               "name": "f",
               "namespace": undefined,
@@ -700,26 +699,39 @@ exports[`it should be possible to mix pipe with infix 1`] = `
               "type": "identifier",
             },
             "span": [
-              13,
+              22,
               25,
             ],
             "type": "application",
           },
-        ],
-        "caller": {
-          "name": "g",
-          "namespace": undefined,
+          "span": [
+            13,
+            25,
+          ],
+          "type": "pipe",
+        },
+        "right": {
+          "args": [],
+          "caller": {
+            "name": "g",
+            "namespace": undefined,
+            "span": [
+              29,
+              30,
+            ],
+            "type": "identifier",
+          },
           "span": [
             29,
-            30,
+            32,
           ],
-          "type": "identifier",
+          "type": "application",
         },
         "span": [
           13,
           32,
         ],
-        "type": "application",
+        "type": "pipe",
       },
     },
   ],
@@ -3605,49 +3617,56 @@ exports[`pipe syntax sugar 1`] = `
         25,
       ],
       "value": {
-        "args": [
-          {
-            "name": "a",
-            "namespace": undefined,
-            "span": [
-              13,
-              14,
-            ],
-            "type": "identifier",
-          },
-          {
-            "name": "x",
-            "namespace": undefined,
-            "span": [
-              20,
-              21,
-            ],
-            "type": "identifier",
-          },
-          {
-            "name": "y",
-            "namespace": undefined,
-            "span": [
-              23,
-              24,
-            ],
-            "type": "identifier",
-          },
-        ],
-        "caller": {
-          "name": "f",
+        "left": {
+          "name": "a",
           "namespace": undefined,
           "span": [
-            18,
-            19,
+            13,
+            14,
           ],
           "type": "identifier",
+        },
+        "right": {
+          "args": [
+            {
+              "name": "x",
+              "namespace": undefined,
+              "span": [
+                20,
+                21,
+              ],
+              "type": "identifier",
+            },
+            {
+              "name": "y",
+              "namespace": undefined,
+              "span": [
+                23,
+                24,
+              ],
+              "type": "identifier",
+            },
+          ],
+          "caller": {
+            "name": "f",
+            "namespace": undefined,
+            "span": [
+              18,
+              19,
+            ],
+            "type": "identifier",
+          },
+          "span": [
+            18,
+            25,
+          ],
+          "type": "application",
         },
         "span": [
           13,
           25,
         ],
-        "type": "application",
+        "type": "pipe",
       },
     },
   ],
@@ -3674,19 +3693,18 @@ exports[`pipe syntax sugar should be chainable 1`] = `
         28,
       ],
       "value": {
-        "args": [
-          {
-            "args": [
-              {
-                "name": "a",
-                "namespace": undefined,
-                "span": [
-                  13,
-                  14,
-                ],
-                "type": "identifier",
-              },
+        "left": {
+          "left": {
+            "name": "a",
+            "namespace": undefined,
+            "span": [
+              13,
+              14,
             ],
+            "type": "identifier",
+          },
+          "right": {
+            "args": [],
             "caller": {
               "name": "f",
               "namespace": undefined,
@@ -3697,26 +3715,39 @@ exports[`pipe syntax sugar should be chainable 1`] = `
               "type": "identifier",
             },
             "span": [
-              13,
+              18,
               21,
             ],
             "type": "application",
           },
-        ],
-        "caller": {
-          "name": "g",
-          "namespace": undefined,
+          "span": [
+            13,
+            21,
+          ],
+          "type": "pipe",
+        },
+        "right": {
+          "args": [],
+          "caller": {
+            "name": "g",
+            "namespace": undefined,
+            "span": [
+              25,
+              26,
+            ],
+            "type": "identifier",
+          },
           "span": [
             25,
-            26,
+            28,
           ],
-          "type": "identifier",
+          "type": "application",
         },
         "span": [
           13,
           28,
         ],
-        "type": "application",
+        "type": "pipe",
       },
     },
   ],
@@ -3743,49 +3774,56 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
         29,
       ],
       "value": {
-        "args": [
-          {
-            "name": "a",
-            "namespace": "Mod",
-            "span": [
-              13,
-              18,
-            ],
-            "type": "identifier",
-          },
-          {
-            "name": "x",
-            "namespace": undefined,
-            "span": [
-              24,
-              25,
-            ],
-            "type": "identifier",
-          },
-          {
-            "name": "y",
-            "namespace": undefined,
-            "span": [
-              27,
-              28,
-            ],
-            "type": "identifier",
-          },
-        ],
-        "caller": {
-          "name": "f",
-          "namespace": undefined,
+        "left": {
+          "name": "a",
+          "namespace": "Mod",
           "span": [
-            22,
-            23,
+            13,
+            18,
           ],
           "type": "identifier",
+        },
+        "right": {
+          "args": [
+            {
+              "name": "x",
+              "namespace": undefined,
+              "span": [
+                24,
+                25,
+              ],
+              "type": "identifier",
+            },
+            {
+              "name": "y",
+              "namespace": undefined,
+              "span": [
+                27,
+                28,
+              ],
+              "type": "identifier",
+            },
+          ],
+          "caller": {
+            "name": "f",
+            "namespace": undefined,
+            "span": [
+              22,
+              23,
+            ],
+            "type": "identifier",
+          },
+          "span": [
+            22,
+            29,
+          ],
+          "type": "application",
         },
         "span": [
           13,
           29,
         ],
-        "type": "application",
+        "type": "pipe",
       },
     },
   ],

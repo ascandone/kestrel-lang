@@ -24,6 +24,14 @@ export class ParsingError implements ErrorDescription {
   }
 }
 
+export class InvalidPipe implements ErrorDescription {
+  constructor() {}
+  errorName = "Invalid pipe";
+  shortDescription(): string {
+    return "Pipe right side should be a function application";
+  }
+}
+
 export class UnboundVariable implements ErrorDescription {
   constructor(public ident: string) {}
   errorName = "Unbound variable";

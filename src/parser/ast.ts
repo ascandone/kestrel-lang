@@ -47,68 +47,78 @@ export type MatchPattern<
 export type Binding<TypeMeta = unknown> = { name: string } & TypeMeta &
   SpanMeta;
 
-export type UntypedExpr = Expr<unknown, unknown>;
+// TODO add monadic let
+export type SyntaxSugar = {
+  type: "pipe";
+  left: UntypedExpr;
+  right: UntypedExpr;
+};
 
-export type Expr<TypeMeta, IdentifierResolutionMeta> = (TypeMeta & SpanMeta) &
-  (
-    | {
-        type: "constant";
-        value: ConstLiteral;
-      }
-    | ({
-        type: "identifier";
-        namespace?: string;
-        name: string;
-      } & IdentifierResolutionMeta)
-    | {
-        type: "fn";
-        params: Binding<TypeMeta>[];
-        body: Expr<TypeMeta, IdentifierResolutionMeta>;
-      }
-    | {
-        type: "application";
-        caller: Expr<TypeMeta, IdentifierResolutionMeta>;
-        args: Expr<TypeMeta, IdentifierResolutionMeta>[];
-      }
-    | {
-        type: "let";
-        binding: Binding<TypeMeta>;
-        value: Expr<TypeMeta, IdentifierResolutionMeta>;
-        body: Expr<TypeMeta, IdentifierResolutionMeta>;
-      }
-    | {
-        type: "if";
-        condition: Expr<TypeMeta, IdentifierResolutionMeta>;
-        then: Expr<TypeMeta, IdentifierResolutionMeta>;
-        else: Expr<TypeMeta, IdentifierResolutionMeta>;
-      }
-    | {
-        type: "match";
-        expr: Expr<TypeMeta, IdentifierResolutionMeta>;
-        clauses: Array<
-          [
-            MatchPattern<TypeMeta, IdentifierResolutionMeta>,
-            Expr<TypeMeta, IdentifierResolutionMeta>,
-          ]
-        >;
-      }
-  );
+export type UntypedExpr = Expr<unknown, unknown, SyntaxSugar>;
 
-export type UntypedDeclaration = Declaration<unknown, unknown>;
-export type Declaration<TypeMeta, IdentifierResolutionMeta> = SpanMeta & {
-  pub: boolean;
-  binding: Binding<TypeMeta>;
-} & (
-    | {
-        extern: false;
-        typeHint?: TypeAst & SpanMeta;
-        value: Expr<TypeMeta, IdentifierResolutionMeta>;
-      }
-    | {
-        extern: true;
-        typeHint: TypeAst & SpanMeta;
-      }
-  );
+export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
+  | SyntaxSugar
+  | {
+      type: "constant";
+      value: ConstLiteral;
+    }
+  | ({
+      type: "identifier";
+      namespace?: string;
+      name: string;
+    } & IdentifierResolutionMeta)
+  | {
+      type: "fn";
+      params: Binding<TypeMeta>[];
+      body: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+    }
+  | {
+      type: "application";
+      caller: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      args: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>[];
+    }
+  | {
+      type: "let";
+      binding: Binding<TypeMeta>;
+      value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      body: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+    }
+  | {
+      type: "if";
+      condition: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      then: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      else: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+    }
+  | {
+      type: "match";
+      expr: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      clauses: Array<
+        [
+          MatchPattern<TypeMeta, IdentifierResolutionMeta>,
+          Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>,
+        ]
+      >;
+    }
+) &
+  TypeMeta &
+  SpanMeta;
+
+export type UntypedDeclaration = Declaration<unknown, unknown, SyntaxSugar>;
+export type Declaration<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> =
+  SpanMeta & {
+    pub: boolean;
+    binding: Binding<TypeMeta>;
+  } & (
+      | {
+          extern: false;
+          typeHint?: TypeAst & SpanMeta;
+          value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+        }
+      | {
+          extern: true;
+          typeHint: TypeAst & SpanMeta;
+        }
+    );
 
 export type TypeVariant<TypeMeta> = (TypeMeta & SpanMeta) & {
   name: string;

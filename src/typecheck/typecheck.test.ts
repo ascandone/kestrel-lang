@@ -11,6 +11,7 @@ import {
   ArityMismatch,
   BadImport,
   InvalidCatchall,
+  InvalidPipe,
   InvalidTypeArity,
   NonExistingImport,
   TypeMismatch,
@@ -128,6 +129,37 @@ test("application args should be typechecked", () => {
 
   expect(errors).toHaveLength(1);
   expect(errors[0]?.description).toBeInstanceOf(TypeMismatch);
+});
+
+test("application (pipe operator)", () => {
+  const [types, errors] = tc(
+    `
+    type T { C }
+    type T1 { C1 }
+    type Ret {}
+
+    extern pub let f: Fn(T, T1) -> Ret
+    pub let x = C |> f(C1)
+  `,
+  );
+
+  expect(errors).toEqual([]);
+  expect(types).toEqual(
+    expect.objectContaining({
+      x: "Ret",
+    }),
+  );
+});
+
+test("invalid pipe operator", () => {
+  const [, errors] = tc(
+    `
+    pub let x = 0 |> 1
+  `,
+  );
+
+  expect(errors).toHaveLength(1);
+  expect(errors[0]?.description).toBeInstanceOf(InvalidPipe);
 });
 
 test("typecheck fn args", () => {

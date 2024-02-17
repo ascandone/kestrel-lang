@@ -40,6 +40,7 @@ import {
   BadImport,
   ErrorInfo,
   InvalidCatchall,
+  InvalidPipe,
   InvalidTypeArity,
   NonExistingImport,
   OccursCheck,
@@ -731,6 +732,28 @@ class Typechecker {
     lexicalScope: LexicalScope,
   ): TypedExpr {
     switch (ast.type) {
+      // syntax sugar
+      case "pipe":
+        if (ast.right.type !== "application") {
+          this.errors.push({
+            span: ast.right.span,
+            description: new InvalidPipe(),
+          });
+          return this.annotateExpr(ast.left, lexicalScope);
+        }
+
+        return this.annotateExpr(
+          {
+            type: "application",
+            span: ast.right.span,
+            caller: ast.right.caller,
+            args: [ast.left, ...ast.right.args],
+          },
+          lexicalScope,
+        );
+
+      // Actual ast
+
       case "constant":
         return { ...ast, $: TVar.fresh() };
 

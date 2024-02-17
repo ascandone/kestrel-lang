@@ -152,11 +152,11 @@ semantics.addOperation<[MatchPattern, UntypedExpr]>("matchClause()", {
 });
 
 semantics.addOperation<UntypedExpr>("expr()", {
-  PipeExp_pipe(left, _pipe, caller, _lparens, args, _trailingComma, _rparens) {
+  PipeExp_pipe(left, _pipe, right) {
     return {
-      type: "application",
-      caller: caller.expr(),
-      args: [left.expr(), ...args.asIteration().children.map((c) => c.expr())],
+      type: "pipe",
+      left: left.expr(),
+      right: right.expr(),
       span: getSpan(this),
     };
   },
