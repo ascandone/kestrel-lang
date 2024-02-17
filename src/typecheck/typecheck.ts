@@ -1,12 +1,12 @@
 import {
   Binding,
   ConstLiteral,
-  Expr,
   MatchPattern,
   Span,
   SpanMeta,
   TypeAst,
   UntypedDeclaration,
+  UntypedExpr,
   UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
@@ -267,7 +267,7 @@ class Typechecker {
     }
   }
 
-  private unifyExpr(ast: Expr, t1: Type, t2: Type) {
+  private unifyExpr(ast: TypedExpr, t1: Type, t2: Type) {
     const e = unify(t1, t2);
     if (e === undefined) {
       return;
@@ -726,7 +726,10 @@ class Typechecker {
     });
   }
 
-  private annotateExpr(ast: Expr, lexicalScope: LexicalScope): TypedExpr {
+  private annotateExpr(
+    ast: UntypedExpr,
+    lexicalScope: LexicalScope,
+  ): TypedExpr {
     switch (ast.type) {
       case "constant":
         return { ...ast, $: TVar.fresh() };

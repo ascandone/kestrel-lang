@@ -1,5 +1,5 @@
-import { ConstLiteral, Expr, MatchPattern, TypeVariant } from "../parser";
-import { TypeMeta, TypedModule } from "../typecheck";
+import { ConstLiteral, MatchPattern, TypeVariant } from "../parser";
+import { TypedExpr, TypedModule } from "../typecheck";
 import { ConcreteType } from "../typecheck/type";
 
 const builtinValues: Scope = {
@@ -84,7 +84,7 @@ export class Compiler {
   }
 
   private compileLetValue(
-    src: Expr<TypeMeta> & { type: "let" },
+    src: TypedExpr & { type: "let" },
     scope: Scope,
   ): { value: string[]; scopedBinding: string } {
     const name = this.getCurrentFrame().preventShadow(src.binding.name);
@@ -110,7 +110,7 @@ export class Compiler {
   }
 
   private compileAsExpr(
-    src: Expr<TypeMeta>,
+    src: TypedExpr,
     scope: Scope,
     tailPosData: TailPositionData | undefined,
   ): CompileExprResult {
@@ -196,7 +196,7 @@ export class Compiler {
   }
 
   private compileAsStatements(
-    src: Expr<TypeMeta>,
+    src: TypedExpr,
     as: CompilationMode,
     scope: Scope,
     tailPosData: TailPositionData | undefined,
@@ -548,7 +548,7 @@ function isInfix(name: string) {
 }
 
 function getInfixPrecAndName(
-  expr: Expr<unknown>,
+  expr: TypedExpr,
 ): { prec: number; jsName: string } | undefined {
   if (expr.type !== "application" || expr.caller.type !== "identifier") {
     return;

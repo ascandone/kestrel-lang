@@ -1,7 +1,6 @@
 import grammar from "./grammar.ohm-bundle";
 import {
   ConstLiteral,
-  Expr,
   Span,
   SpanMeta,
   TypeAst,
@@ -12,6 +11,7 @@ import {
   UntypedDeclaration,
   UntypedExposedValue,
   UntypedImport,
+  UntypedExpr,
 } from "./ast";
 import type {
   IterationNode,
@@ -20,7 +20,6 @@ import type {
   Node as OhmNode,
   TerminalNode,
 } from "ohm-js";
-import { TypeMeta } from "../typecheck";
 
 function getSpan({ source }: OhmNode): Span {
   return [source.startIdx, source.endIdx];
@@ -47,7 +46,7 @@ function parseInfix(
   left: NonterminalNode,
   op: TerminalNode,
   right: NonterminalNode,
-): Expr<SpanMeta> {
+): UntypedExpr {
   return {
     type: "application",
     span: getSpan(this),
@@ -64,7 +63,7 @@ function parsePrefix(
   this: NonterminalNode,
   op: TerminalNode,
   exp: NonterminalNode,
-): Expr<SpanMeta> {
+): UntypedExpr {
   return {
     type: "application",
     span: getSpan(this),
@@ -146,13 +145,13 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
   },
 });
 
-semantics.addOperation<[MatchPattern, Expr<TypeMeta>]>("matchClause()", {
+semantics.addOperation<[MatchPattern, UntypedExpr]>("matchClause()", {
   MatchClause_clause(match, _arrow, expr) {
     return [match.matchPattern(), expr.expr()];
   },
 });
 
-semantics.addOperation<Expr<SpanMeta>>("expr()", {
+semantics.addOperation<UntypedExpr>("expr()", {
   PipeExp_pipe(left, _pipe, caller, _lparens, args, _trailingComma, _rparens) {
     return {
       type: "application",

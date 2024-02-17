@@ -1,9 +1,9 @@
 import {
   ConstLiteral,
-  Expr,
   MatchPattern,
   TypeAst,
   UntypedDeclaration,
+  UntypedExpr,
   UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
@@ -53,7 +53,7 @@ function getBindingPower(name: string): number | undefined {
 }
 
 // eslint-disable-next-line no-inner-declarations
-function hasLowerPrec(bindingPower: number, other: Expr): boolean {
+function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
   switch (other.type) {
     case "application":
       infix: if (other.caller.type === "identifier") {
@@ -95,7 +95,7 @@ function infixAliasForName(name: string) {
   return name;
 }
 
-function exprToDoc(ast: Expr, block: boolean): Doc {
+function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
   switch (ast.type) {
     case "constant":
       return constToDoc(ast.value);

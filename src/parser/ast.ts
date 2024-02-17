@@ -47,10 +47,9 @@ export type MatchPattern<
 export type Binding<TypeMeta = unknown> = { name: string } & TypeMeta &
   SpanMeta;
 
-export type Expr<
-  TypeMeta = unknown,
-  IdentifierResolutionMeta = unknown,
-> = (TypeMeta & SpanMeta) &
+export type UntypedExpr = Expr<unknown, unknown>;
+
+export type Expr<TypeMeta, IdentifierResolutionMeta> = (TypeMeta & SpanMeta) &
   (
     | {
         type: "constant";
