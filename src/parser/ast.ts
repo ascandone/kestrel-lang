@@ -48,11 +48,19 @@ export type Binding<TypeMeta = unknown> = { name: string } & TypeMeta &
   SpanMeta;
 
 // TODO add monadic let
-export type SyntaxSugar = {
-  type: "pipe";
-  left: UntypedExpr;
-  right: UntypedExpr;
-};
+export type SyntaxSugar =
+  | {
+      type: "pipe";
+      left: UntypedExpr;
+      right: UntypedExpr;
+    }
+  | {
+      type: "let#";
+      mapper: SpanMeta & { namespace?: string; name: string };
+      binding: Binding;
+      value: UntypedExpr;
+      body: UntypedExpr;
+    };
 
 export type UntypedExpr = Expr<unknown, unknown, SyntaxSugar>;
 

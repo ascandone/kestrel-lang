@@ -758,43 +758,23 @@ exports[`monadic let syntax sugar 1`] = `
         58,
       ],
       "value": {
-        "args": [
-          {
-            "name": "expr",
-            "namespace": undefined,
-            "span": [
-              36,
-              40,
-            ],
-            "type": "identifier",
-          },
-          {
-            "body": {
-              "name": "body",
-              "namespace": undefined,
-              "span": [
-                48,
-                52,
-              ],
-              "type": "identifier",
-            },
-            "params": [
-              {
-                "name": "x",
-                "span": [
-                  32,
-                  33,
-                ],
-              },
-            ],
-            "span": [
-              21,
-              52,
-            ],
-            "type": "fn",
-          },
-        ],
-        "caller": {
+        "binding": {
+          "name": "x",
+          "span": [
+            32,
+            33,
+          ],
+        },
+        "body": {
+          "name": "body",
+          "namespace": undefined,
+          "span": [
+            48,
+            52,
+          ],
+          "type": "identifier",
+        },
+        "mapper": {
           "name": "bind_f",
           "namespace": undefined,
           "span": [
@@ -807,7 +787,16 @@ exports[`monadic let syntax sugar 1`] = `
           21,
           52,
         ],
-        "type": "application",
+        "type": "let#",
+        "value": {
+          "name": "expr",
+          "namespace": undefined,
+          "span": [
+            36,
+            40,
+          ],
+          "type": "identifier",
+        },
       },
     },
   ],
@@ -834,43 +823,23 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
         61,
       ],
       "value": {
-        "args": [
-          {
-            "name": "expr",
-            "namespace": undefined,
-            "span": [
-              39,
-              43,
-            ],
-            "type": "identifier",
-          },
-          {
-            "body": {
-              "name": "body",
-              "namespace": undefined,
-              "span": [
-                51,
-                55,
-              ],
-              "type": "identifier",
-            },
-            "params": [
-              {
-                "name": "x",
-                "span": [
-                  35,
-                  36,
-                ],
-              },
-            ],
-            "span": [
-              21,
-              55,
-            ],
-            "type": "fn",
-          },
-        ],
-        "caller": {
+        "binding": {
+          "name": "x",
+          "span": [
+            35,
+            36,
+          ],
+        },
+        "body": {
+          "name": "body",
+          "namespace": undefined,
+          "span": [
+            51,
+            55,
+          ],
+          "type": "identifier",
+        },
+        "mapper": {
           "name": "bind",
           "namespace": "Task",
           "span": [
@@ -883,7 +852,16 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
           21,
           55,
         ],
-        "type": "application",
+        "type": "let#",
+        "value": {
+          "name": "expr",
+          "namespace": undefined,
+          "span": [
+            39,
+            43,
+          ],
+          "type": "identifier",
+        },
       },
     },
   ],

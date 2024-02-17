@@ -76,20 +76,41 @@ function parsePrefix(
   };
 }
 
-semantics.addOperation<{ name: string } & SpanMeta>("ident()", {
-  infixIdent(_lparens, ident, _rparens) {
-    return {
-      name: ident.sourceString,
-      span: getSpan(this),
-    };
+semantics.addOperation<{ name: string; namespace?: string } & SpanMeta>(
+  "ident()",
+  {
+    QualifiedIdent(ns, _dot, id) {
+      const namespace =
+        ns.numChildren === 0
+          ? undefined
+          : ns
+              .child(0)
+              .asIteration()
+              .children.map((c) => c.sourceString)
+              .join("/");
+
+      return {
+        type: "identifier",
+        span: getSpan(this),
+        namespace,
+        name: id.sourceString,
+      };
+    },
+
+    infixIdent(_lparens, ident, _rparens) {
+      return {
+        name: ident.sourceString,
+        span: getSpan(this),
+      };
+    },
+    ident(_hd, _tl) {
+      return {
+        name: this.sourceString,
+        span: getSpan(this),
+      };
+    },
   },
-  ident(_hd, _tl) {
-    return {
-      name: this.sourceString,
-      span: getSpan(this),
-    };
-  },
-});
+);
 
 semantics.addOperation<MatchPattern>("matchPattern()", {
   ConstructorPattern_ident(ident) {
@@ -312,19 +333,13 @@ semantics.addOperation<UntypedExpr>("expr()", {
     return e.expr();
   },
 
-  BlockContent_monadicLet(_let, bindFIdent, ident, _eq, value, _comma, body) {
+  BlockContent_monadicLet(_let, mapper, ident, _eq, value, _comma, body) {
     return {
-      type: "application",
-      caller: bindFIdent.expr(),
-      args: [
-        value.expr(),
-        {
-          type: "fn",
-          params: [ident.ident()],
-          body: body.expr(),
-          span: getSpan(this),
-        },
-      ],
+      type: "let#",
+      mapper: mapper.ident(),
+      body: body.expr(),
+      value: value.expr(),
+      binding: ident.ident(),
       span: getSpan(this),
     };
   },

@@ -752,6 +752,30 @@ class Typechecker {
           lexicalScope,
         );
 
+      case "let#":
+        return this.annotateExpr(
+          {
+            type: "application",
+            caller: {
+              type: "identifier",
+              namespace: ast.mapper.namespace,
+              name: ast.mapper.name,
+              span: ast.mapper.span,
+            },
+            args: [
+              ast.value,
+              {
+                type: "fn",
+                params: [ast.binding],
+                body: ast.body,
+                span: ast.span,
+              },
+            ],
+            span: ast.span,
+          },
+          lexicalScope,
+        );
+
       // Actual ast
 
       case "constant":

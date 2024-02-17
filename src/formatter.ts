@@ -52,12 +52,8 @@ function getBindingPower(name: string): number | undefined {
   return index;
 }
 
-// eslint-disable-next-line no-inner-declarations
 function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
   switch (other.type) {
-    case "pipe":
-      throw new Error("TODO handle pipe 1");
-
     case "application":
       infix: if (other.caller.type === "identifier") {
         const selfBindingPower = getBindingPower(other.caller.name);
@@ -67,6 +63,8 @@ function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
         return selfBindingPower > bindingPower;
       }
 
+    case "pipe":
+    case "let#":
     case "constant":
     case "identifier":
     case "fn":
@@ -180,6 +178,25 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         indent(exprToDoc(ast.else, true)),
         text("}"),
       );
+
+    case "let#": {
+      const ns =
+        ast.mapper.namespace === undefined ? "" : `${ast.mapper.namespace}.`;
+
+      const inner = concat(
+        text(`let#${ns}${ast.mapper.name} ${ast.binding.name} = `),
+        exprToDoc(ast.value, false),
+        text(";"),
+        lines(),
+        exprToDoc(ast.body, true),
+      );
+
+      if (block) {
+        return inner;
+      }
+
+      return concat(text("{"), indent(inner), text("}"));
+    }
 
     case "let": {
       const inner = concat(

@@ -190,6 +190,16 @@ test("toplevel nested let expr", () => {
 `);
 });
 
+test("toplevel nested let# expr", () => {
+  assertFormatted(`let f = {
+  let#and_then x = value;
+  let#My/Mod.and_then y = value2;
+  let#and_then z = value3;
+  body
+}
+`);
+});
+
 test("let inside fn", () => {
   assertFormatted(`let f = fn {
   let x = value;
