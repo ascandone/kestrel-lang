@@ -98,15 +98,22 @@ function infixAliasForName(name: string) {
   return name;
 }
 
+function asBlock(isBlock: boolean, docs: Doc[]): Doc {
+  if (isBlock) {
+    return concat(...docs);
+  }
+  return concat(text("{"), indent(...docs), text("}"));
+}
+
 function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
   switch (ast.type) {
     case "pipe":
-      return concat(
-        exprToDoc(ast.left, false),
+      return asBlock(block, [
+        exprToDoc(ast.left, true),
         lines(),
         text("|> "),
-        exprToDoc(ast.right, false),
-      );
+        exprToDoc(ast.right, true),
+      ]);
 
     case "constant":
       return constToDoc(ast.value);

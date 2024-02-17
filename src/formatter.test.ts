@@ -91,10 +91,30 @@ test("prefix with and", () => {
   assertFormatted(`let x = !True && !False\n`);
 });
 
-test("pipe operator wraps", () => {
-  assertFormatted(`let x = example_arg
-|> f(a, b)
-|> g(c)
+test("pipe operator in let", () => {
+  assertFormatted(`let x = {
+  example_arg
+  |> f(a, b)
+  |> g(c)
+}
+`);
+});
+
+test("pipe operator in let", () => {
+  assertFormatted(`let x = f(1, 2, {
+  arg
+  |> f(a, b)
+  |> g(c)
+})
+`);
+});
+
+test("pipe operator inside fn", () => {
+  assertFormatted(`let x = fn {
+  arg
+  |> f(a, b)
+  |> g(c)
+}
 `);
 });
 
