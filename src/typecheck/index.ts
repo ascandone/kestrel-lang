@@ -1,4 +1,3 @@
 export * from "./typecheck";
-export * from "./pretty-printer";
 export * from "./typedAst";
-export { Type } from "./unify";
+export { Type, typeToString } from "./type";

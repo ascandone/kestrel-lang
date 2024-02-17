@@ -8,7 +8,7 @@ import {
 } from "./typedAst";
 import { Span, unsafeParse } from "../parser";
 import { typecheck } from "./typecheck";
-import { TypeScheme } from "./unify";
+import { TypeScheme } from "./type";
 
 describe("hoverOn", () => {
   test("hover a declaration's binding", () => {

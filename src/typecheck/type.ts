@@ -310,3 +310,49 @@ export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
 
   return recur(mono);
 }
+
+function typeToStringHelper(t: Type, scheme: TypeScheme): string {
+  switch (t.type) {
+    case "var": {
+      const resolved = t.var.resolve();
+      switch (resolved.type) {
+        case "bound":
+          return typeToStringHelper(resolved.value, scheme);
+        case "unbound": {
+          const id = scheme[resolved.id];
+          if (id === undefined) {
+            throw new Error("[unreachable] var not found: " + resolved.id);
+          }
+          return id;
+        }
+      }
+    }
+
+    case "fn": {
+      const args = t.args
+        .map((arg) => typeToStringHelper(arg, scheme))
+        .join(", ");
+      return `Fn(${args}) -> ${typeToStringHelper(t.return, scheme)}`;
+    }
+
+    case "named": {
+      if (t.args.length === 0) {
+        return t.name;
+      }
+
+      if (t.name === "Tuple2") {
+        return `(${typeToStringHelper(t.args[0]!, scheme)}, ${typeToStringHelper(t.args[1]!, scheme)})`;
+      }
+
+      const args = t.args
+        .map((arg) => typeToStringHelper(arg, scheme))
+        .join(", ");
+      return `${t.name}<${args}>`;
+    }
+  }
+}
+
+export function typeToString(t: Type, scheme?: TypeScheme): string {
+  scheme = generalizeAsScheme(t, scheme);
+  return typeToStringHelper(t, scheme);
+}

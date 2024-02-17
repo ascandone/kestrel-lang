@@ -1,6 +1,6 @@
 import { showErrorLine } from "./errors/showErrorLine";
 import { Span } from "./parser";
-import { Type, typePPrint } from "./typecheck";
+import { Type, typeToString } from "./typecheck";
 import { col, withDisabled } from "./utils/colors";
 
 export type Severity = "error" | "warning";
@@ -152,8 +152,8 @@ export class TypeMismatch implements ErrorDescription {
 
   errorName = "Type mismatch";
   shortDescription(): string {
-    const expected = typePPrint(this.expected);
-    const got = typePPrint(this.got);
+    const expected = typeToString(this.expected);
+    const got = typeToString(this.got);
     const qualify = expected === got;
 
     const nsLeft =

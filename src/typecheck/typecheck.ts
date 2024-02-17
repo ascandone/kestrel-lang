@@ -34,7 +34,7 @@ import {
   instantiateFromScheme,
   TypeScheme,
   PolyType,
-} from "./unify";
+} from "./type";
 import {
   ArityMismatch,
   BadImport,

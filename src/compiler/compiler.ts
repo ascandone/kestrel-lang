@@ -1,6 +1,6 @@
 import { ConstLiteral, Expr, MatchPattern, TypeVariant } from "../parser";
 import { TypeMeta, TypedModule } from "../typecheck";
-import { ConcreteType } from "../typecheck/unify";
+import { ConcreteType } from "../typecheck/type";
 
 const builtinValues: Scope = {
   True: "true",

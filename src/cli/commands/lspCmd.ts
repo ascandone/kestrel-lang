@@ -12,7 +12,7 @@ import { TextDocument, Range } from "vscode-languageserver-textdocument";
 import { Span, UntypedModule, parse } from "../../parser";
 import {
   typecheckProject,
-  typePPrint,
+  typeToString,
   TypedModule,
   goToDefinitionOf,
   hoverOn,
@@ -229,7 +229,7 @@ export async function lspCmd() {
     const [doc, ast] = res;
 
     return ast.declarations.map(({ span, binding, scheme }) => {
-      const tpp = typePPrint(binding.$.asType(), scheme);
+      const tpp = typeToString(binding.$.asType(), scheme);
       return {
         command: { title: tpp, command: "noop" },
         range: spannedToRange(doc, span),

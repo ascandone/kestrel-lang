@@ -10,9 +10,8 @@ import {
   TypeDeclaration,
   TypeVariant,
 } from "../parser";
-import { typePPrint } from "./pretty-printer";
 import { TypeMeta } from "./typecheck";
-import { Type, TypeScheme } from "./unify";
+import { Type, TypeScheme, typeToString } from "./type";
 
 export type IdentifierResolution =
   | {
@@ -110,7 +109,7 @@ export function hoverToMarkdown(
 ): string {
   switch (hovered.type) {
     case "local-variable": {
-      const tpp = typePPrint(hovered.binding.$.asType(), scheme);
+      const tpp = typeToString(hovered.binding.$.asType(), scheme);
       return `\`\`\`
 ${hovered.binding.name}: ${tpp}
 \`\`\`
@@ -119,7 +118,7 @@ local declaration
     }
 
     case "global-variable": {
-      const tpp = typePPrint(
+      const tpp = typeToString(
         hovered.declaration.binding.$.asType(),
         hovered.declaration.scheme,
       );
@@ -131,7 +130,7 @@ global declaration
     }
 
     case "constructor": {
-      const tpp = typePPrint(hovered.variant.mono, hovered.variant.scheme);
+      const tpp = typeToString(hovered.variant.mono, hovered.variant.scheme);
       return `\`\`\`
 ${hovered.variant.name}: ${tpp}
 \`\`\`

@@ -1,6 +1,12 @@
 import { describe, expect, test } from "vitest";
 import { unsafeParse, UntypedImport } from "../parser";
-import { Deps, typecheck, typecheckProject, typePPrint, TypedModule } from ".";
+import {
+  Deps,
+  typecheck,
+  typecheckProject,
+  TypedModule,
+  typeToString,
+} from ".";
 import {
   ArityMismatch,
   BadImport,
@@ -1226,7 +1232,7 @@ function tc(src: string, deps: Deps = {}, prelude: UntypedImport[] = []) {
 function programTypes(typed: TypedModule): Record<string, string> {
   const kvs = typed.declarations.map((decl) => [
     decl.binding.name,
-    typePPrint(decl.binding.$.asType()),
+    typeToString(decl.binding.$.asType()),
   ]);
 
   return Object.fromEntries(kvs);

@@ -1,4 +1,4 @@
-import { ConcreteType, Type } from "../typecheck/unify";
+import { ConcreteType, Type } from "../typecheck/type";
 
 const BASICS_MODULE = "Basics";
 
