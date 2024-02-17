@@ -10,6 +10,7 @@ import {
 import {
   ArityMismatch,
   BadImport,
+  DuplicateDeclaration,
   InvalidCatchall,
   InvalidPipe,
   InvalidTypeArity,
@@ -86,6 +87,23 @@ test("typechecking previously defined vars", () => {
     x: "Int",
     y: "Int",
   });
+});
+
+test("forbid duplicate identifiers", () => {
+  const [types, errors] = tc(`
+    pub let x = 42
+    pub let x = "override"
+
+    pub let y = x
+  `);
+
+  expect(errors).toHaveLength(1);
+  expect(errors[0]?.description).toBeInstanceOf(DuplicateDeclaration);
+  expect(types).toEqual(
+    expect.objectContaining({
+      y: "Int",
+    }),
+  );
 });
 
 test("fn returning a constant", () => {

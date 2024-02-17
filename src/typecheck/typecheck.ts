@@ -38,6 +38,7 @@ import {
 import {
   ArityMismatch,
   BadImport,
+  DuplicateDeclaration,
   ErrorInfo,
   InvalidCatchall,
   InvalidPipe,
@@ -718,11 +719,17 @@ class Typechecker {
         };
       }
 
-      this.globalScope[decl.binding.name] = {
-        type: "global-variable",
-        declaration: tDecl,
-      };
-
+      if (decl.binding.name in this.globalScope) {
+        this.errors.push({
+          span: decl.binding.span,
+          description: new DuplicateDeclaration(decl.binding.name),
+        });
+      } else {
+        this.globalScope[decl.binding.name] = {
+          type: "global-variable",
+          declaration: tDecl,
+        };
+      }
       return tDecl;
     });
   }

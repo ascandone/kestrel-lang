@@ -32,6 +32,14 @@ export class InvalidPipe implements ErrorDescription {
   }
 }
 
+export class DuplicateDeclaration implements ErrorDescription {
+  constructor(public ident: string) {}
+  errorName = "Duplicate declaration";
+  shortDescription() {
+    return `"${this.ident}" was already defined`;
+  }
+}
+
 export class UnboundVariable implements ErrorDescription {
   constructor(public ident: string) {}
   errorName = "Unbound variable";
