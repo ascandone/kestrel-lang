@@ -91,12 +91,11 @@ test("prefix with and", () => {
   assertFormatted(`let x = !True && !False\n`);
 });
 
-test.todo("pipe operator wraps", () => {
-  assertFormatted(`let x =
-  x
-  |> f()
-  |> g()
-  `);
+test("pipe operator wraps", () => {
+  assertFormatted(`let x = example_arg
+|> f(a, b)
+|> g(c)
+`);
 });
 
 test("multiple declrs", () => {

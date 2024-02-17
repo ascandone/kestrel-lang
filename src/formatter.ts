@@ -56,7 +56,7 @@ function getBindingPower(name: string): number | undefined {
 function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
   switch (other.type) {
     case "pipe":
-      throw new Error("TODO handle pipe");
+      throw new Error("TODO handle pipe 1");
 
     case "application":
       infix: if (other.caller.type === "identifier") {
@@ -101,7 +101,12 @@ function infixAliasForName(name: string) {
 function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
   switch (ast.type) {
     case "pipe":
-      throw new Error("TODO handle pipe");
+      return concat(
+        exprToDoc(ast.left, false),
+        lines(),
+        text("|> "),
+        exprToDoc(ast.right, false),
+      );
 
     case "constant":
       return constToDoc(ast.value);
