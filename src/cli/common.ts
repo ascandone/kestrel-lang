@@ -12,7 +12,7 @@ import { promisify } from "node:util";
 
 const execP = promisify(exec);
 
-const EXTENSION = "kes";
+export const EXTENSION = "kes";
 
 export type RawModule = {
   path: string;
