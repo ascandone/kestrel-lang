@@ -325,6 +325,10 @@ describe("type delc", () => {
     expect(`extern type T\n`).toBeFormatted();
   });
 
+  test("extern types with generic args", () => {
+    expect(`extern type T<p1, p2>\n`).toBeFormatted();
+  });
+
   test("extern types pub modifier", () => {
     expect(`extern pub type T\n`).toBeFormatted();
   });

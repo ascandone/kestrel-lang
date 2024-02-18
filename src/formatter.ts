@@ -336,6 +336,18 @@ function declToDoc(ast: UntypedDeclaration): Doc {
 }
 
 function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
+  const params =
+    tDecl.params.length === 0
+      ? nil
+      : concat(
+          text("<"),
+          sepByString(
+            ", ",
+            tDecl.params.map((p) => text(p.name)),
+          ),
+          text(">"),
+        );
+
   switch (tDecl.type) {
     case "extern":
       return concat(
@@ -343,6 +355,7 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
         tDecl.pub ? text("pub ") : nil,
         text("type "),
         text(tDecl.name),
+        params,
       );
 
     case "adt": {
@@ -366,18 +379,6 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
                   ),
                 ),
               ),
-            );
-
-      const params =
-        tDecl.params.length === 0
-          ? nil
-          : concat(
-              text("<"),
-              sepByString(
-                ", ",
-                tDecl.params.map((p) => text(p.name)),
-              ),
-              text(">"),
             );
 
       return concat(
