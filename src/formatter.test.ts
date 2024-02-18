@@ -125,11 +125,13 @@ let y = 1\n`);
 });
 
 test("if expr", () => {
-  assertFormatted(`let _ = if cond {
-  0
-} else {
-  1
-}
+  assertFormatted(`let _ =
+  if cond {
+    0
+  } else {
+    1
+  }
+
 `);
 });
 
@@ -209,15 +211,17 @@ test("let inside fn", () => {
 });
 
 test("let inside if body", () => {
-  assertFormatted(`let f = if cond {
-  let x = value;
-  let y = value2;
-  body1
-} else {
-  let x = value;
-  let y = value2;
-  body2
-}
+  assertFormatted(`let f =
+  if cond {
+    let x = value;
+    let y = value2;
+    body1
+  } else {
+    let x = value;
+    let y = value2;
+    body2
+  }
+
 `);
 });
 

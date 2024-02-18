@@ -18,6 +18,9 @@ import {
   sepBy,
   sepByString,
   text,
+  break_,
+  broken,
+  group,
 } from "./pretty";
 
 const ORDERED_PREFIX_SYMBOLS = [["!"]];
@@ -87,6 +90,20 @@ function constToDoc(lit: ConstLiteral): Doc {
 
 function indent(...docs: Doc[]): Doc {
   return concat(nest(lines(), ...docs), lines());
+}
+
+function indentWithSpaceBreak(...docs: Doc[]): Doc {
+  return concat(nest(group(break_(), ...docs)), break_(""));
+}
+
+function block_(...docs: Doc[]): Doc {
+  return broken(
+    //
+    text("{"),
+    nest(group(break_(), ...docs)),
+    break_(""),
+    text("}"),
+  );
 }
 
 function infixAliasForName(name: string) {
@@ -161,22 +178,22 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
 
     case "fn": {
       const params = ast.params.map((p) => ` ${p.name}`).join(",");
+
       return concat(
-        text("fn", ...params, " {"),
-        indent(exprToDoc(ast.body, true)),
-        text("}"),
+        text("fn", ...params, " "),
+        block_(exprToDoc(ast.body, true)),
       );
     }
 
     case "if":
-      return concat(
+      return broken(
         text("if "),
         exprToDoc(ast.condition, false),
-        text(" {"),
-        indent(exprToDoc(ast.then, true)),
-        text("} else {"),
-        indent(exprToDoc(ast.else, true)),
-        text("}"),
+        text(" "),
+        block_(exprToDoc(ast.then, true)),
+
+        text(" else "),
+        block_(exprToDoc(ast.else, true)),
       );
 
     case "let#": {
@@ -307,7 +324,14 @@ function declToDoc(ast: UntypedDeclaration): Doc {
     ast.typeHint === undefined
       ? nil
       : concat(text(": "), typeAstToDoc(ast.typeHint)),
-    ast.extern ? nil : concat(text(" = "), exprToDoc(ast.value, false)),
+    ast.extern
+      ? nil
+      : concat(
+          text(" ="),
+          ["if"].includes(ast.value.type)
+            ? indentWithSpaceBreak(exprToDoc(ast.value, false))
+            : concat(text(" "), exprToDoc(ast.value, false)),
+        ),
   );
 }
 
