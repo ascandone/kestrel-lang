@@ -291,6 +291,14 @@ describe("type hints", () => {
     expect(`extern let f: Int\n`).toBeFormatted();
   });
 
+  test("infix extern", () => {
+    expect(`extern let (+): Fn(Int, Int) -> Int\n`).toBeFormatted();
+  });
+
+  test("prefix extern", () => {
+    expect(`extern let (!): Fn(Bool) -> Bool\n`).toBeFormatted();
+  });
+
   test("concrete with one arg", () => {
     expect(`extern let f: Maybe<Int>\n`).toBeFormatted();
   });

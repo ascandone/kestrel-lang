@@ -317,10 +317,15 @@ function typeAstToDoc(typeAst: TypeAst): Doc {
 }
 
 function declToDoc(ast: UntypedDeclaration): Doc {
+  const name =
+    isInfix(ast.binding.name) || isPrefix(ast.binding.name)
+      ? `(${ast.binding.name})`
+      : ast.binding.name;
+
   return concat(
     ast.extern ? text("extern ") : nil,
     ast.pub ? text("pub ") : nil,
-    text(`let ${ast.binding.name}`),
+    text(`let ${name}`),
     ast.typeHint === undefined
       ? nil
       : concat(text(": "), typeAstToDoc(ast.typeHint)),
