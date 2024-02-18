@@ -1,5 +1,9 @@
 import { expect, test } from "vitest";
-import { configDecoder } from "./config";
+import { Config, configDecoder, defaultConfig } from "./config";
+
+test("decode default config", () => {
+  expect(() => configDecoder.decodeUnsafeThrow(defaultConfig)).not.toThrow();
+});
 
 test("decode application config", () => {
   const c = {
@@ -9,7 +13,13 @@ test("decode application config", () => {
     },
     "source-directories": ["src"],
   };
-  expect(configDecoder.decodeUnsafeThrow(c)).toEqual(c);
+  expect(configDecoder.decodeUnsafeThrow(c)).toEqual<Config>({
+    type: "application",
+    dependencies: {
+      core: { type: "local", path: "~/example/path" },
+    },
+    "source-directories": ["src"],
+  });
 });
 
 test("decode package config", () => {

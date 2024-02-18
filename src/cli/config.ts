@@ -8,9 +8,25 @@ const CONFIG_NAME = "kestrel.json";
 
 export type Config = dec.Infer<typeof configDecoder>;
 
-const dependencyDecoder = dec.object({
-  path: dec.string.required,
-});
+export type Dependency = dec.Infer<typeof dependencyDecoder>;
+const dependencyDecoder = dec.oneOf(
+  dec
+    .object({
+      path: dec.string.required,
+    })
+    .map((o) => ({
+      type: "local" as const,
+      ...o,
+    })),
+  dec
+    .object({
+      git: dec.string.required,
+    })
+    .map((o) => ({
+      type: "git" as const,
+      ...o,
+    })),
+);
 
 export const configDecoder = dec.oneOf(
   dec.object({
@@ -27,9 +43,14 @@ export const configDecoder = dec.oneOf(
   }),
 );
 
-export const defaultConfig: Config = {
+export const defaultConfig = {
   type: "application",
   "source-directories": ["src"],
+  dependencies: {
+    kestrel_core: {
+      git: "https://github.com/ascandone/kestrel-core.git",
+    },
+  },
 };
 
 export async function readConfig(
@@ -53,7 +74,7 @@ export async function readConfig(
 
 export async function writeConfig(
   path: string,
-  config: Config = defaultConfig,
+  config: unknown = defaultConfig,
 ) {
   const kestrelJsonPath = join(path, CONFIG_NAME);
   const configExists = existsSync(kestrelJsonPath);

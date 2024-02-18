@@ -4,9 +4,13 @@ import { typecheckProject, TypedModule } from "../typecheck";
 import { exit } from "node:process";
 import { compileProject } from "../compiler";
 import { col } from "../utils/colors";
-import { Config, readConfig } from "./config";
+import { exec } from "node:child_process";
+import { Config, Dependency, readConfig } from "./config";
 import { join } from "node:path";
 import { errorInfoToString } from "../errors";
+import { promisify } from "node:util";
+
+const execP = promisify(exec);
 
 const EXTENSION = "kes";
 
@@ -16,16 +20,41 @@ export type RawModule = {
   extern: string | undefined;
 };
 
+function dependencyToPath(name: string, dep: Dependency): string {
+  switch (dep.type) {
+    case "local":
+      return dep.path;
+    case "git":
+      return `deps/${name}`;
+  }
+}
+
+export async function fetchDeps(path: string, config: Config) {
+  const deps = Object.entries(config.dependencies ?? {});
+
+  for (const [name, dep] of deps) {
+    if (dep.type === "git") {
+      process.stdout.write(
+        `${col.blue.tag`[info]`} Fetching ${name} from git...`,
+      );
+      // This raises an err on failure
+      await execP(`git clone --depth=1 ${dep.git} ${path}/deps/${name}`);
+      process.stdout.write(` Done.`);
+    }
+  }
+}
+
 export async function readProjectWithDeps(
   path: string,
 ): Promise<Record<string, RawModule>> {
   const config = await readConfig(path);
   let rawProject: Record<string, RawModule> = await readProject(path, config);
   if (config.type === "application") {
-    for (const [_name, depInfo] of Object.entries(config.dependencies ?? {})) {
-      const path = depInfo.path;
-      const depConfig = await readConfig(path);
-      const dep = await readProject(depInfo.path, depConfig);
+    const deps = Object.entries(config.dependencies ?? {});
+    for (const [name, depInfo] of deps) {
+      const depPath = dependencyToPath(name, depInfo);
+      const depConfig = await readConfig(depPath);
+      const dep = await readProject(depPath, depConfig);
       rawProject = { ...rawProject, ...dep };
     }
   }

@@ -7,6 +7,7 @@ import { compileCmd } from "./commands/compileCmd";
 import { runCmd } from "./commands/runCmd";
 import { initCmd } from "./commands/initCmd";
 import { formatCmd } from "./commands/formatCmd";
+import { depsInstall } from "./commands/depsCmd";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require("../../package.json");
@@ -15,7 +16,10 @@ const program = new Command();
 
 program.version(packageJson.version);
 
-program.command("init").description("Init a kestrel program").action(initCmd);
+program
+  .command("init <project_name>")
+  .description("Init a kestrel program")
+  .action(initCmd);
 
 program
   .command("check")
@@ -27,6 +31,9 @@ program
   .option("--out <path>")
   .description("Compile the file into a js file")
   .action(compileCmd);
+
+const deps = program.command("deps").description("Manage dependencies");
+deps.command("install").description("Install dependencies").action(depsInstall);
 
 program
   .command("format <path>")
