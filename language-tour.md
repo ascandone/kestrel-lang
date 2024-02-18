@@ -33,7 +33,8 @@ fn x, y { x + y }
 ```
 
 And call them using common function call syntax: `my_function(1, 2)`
-Functions are first class citizen, therefor you can assign them to let declarations, pass them to other function or return from functions
+
+Functions are first class citizen, therefore you can assign them to let declarations, pass them to other function or return from functions
 
 #### Let declarations
 
