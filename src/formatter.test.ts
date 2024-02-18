@@ -3,215 +3,215 @@ import { unsafeParse } from "./parser";
 import { format } from "./formatter";
 
 test("int lit", () => {
-  assertFormatted(`let x = 42\n`);
+  expect(`let x = 42\n`).toBeFormatted();
 });
 
 test("float lit", () => {
-  assertFormatted(`let x = 1.2\n`);
+  expect(`let x = 1.2\n`).toBeFormatted();
 });
 
 test("string lit", () => {
-  assertFormatted(`let x = "abc"\n`);
+  expect(`let x = "abc"\n`).toBeFormatted();
 });
 
 test("identifier", () => {
-  assertFormatted(`let x = y\n`);
+  expect(`let x = y\n`).toBeFormatted();
 });
 
 test("pub modifier", () => {
-  assertFormatted(`pub let x = 42\n`);
+  expect(`pub let x = 42\n`).toBeFormatted();
 });
 
 test("namespaced identifier", () => {
-  assertFormatted(`let x = A/B/C.y\n`);
+  expect(`let x = A/B/C.y\n`).toBeFormatted();
 });
 
 test("application with no args", () => {
-  assertFormatted(`let x = f()\n`);
+  expect(`let x = f()\n`).toBeFormatted();
 });
 
 test("application with one arg", () => {
-  assertFormatted(`let x = f(0)\n`);
+  expect(`let x = f(0)\n`).toBeFormatted();
 });
 
 test("application with many args", () => {
-  assertFormatted(`let x = f(0, 1, 2)\n`);
+  expect(`let x = f(0, 1, 2)\n`).toBeFormatted();
 });
 
 test.todo("application that wraps", () => {
-  assertFormatted(`let x = f(
+  expect(`let x = f(
   long_spanning_val,
   long_spanning_fn(1, 2, 4, 5, 6),
   long_spanning_val,
   long_spanning_val,
   long_spanning_val
 )
-`);
+`).toBeFormatted();
 });
 
 test("constructor application with many args", () => {
-  assertFormatted(`let x = Constr(0, 1, 2)\n`);
+  expect(`let x = Constr(0, 1, 2)\n`).toBeFormatted();
 });
 
 test("Tuple2 sugar", () => {
-  assertFormatted(`let x = (1, 2)\n`);
+  expect(`let x = (1, 2)\n`).toBeFormatted();
 });
 
 test("cons application sugar", () => {
-  assertFormatted(`let x = hd :: hd2 :: tl\n`);
+  expect(`let x = hd :: hd2 :: tl\n`).toBeFormatted();
 });
 
 test.todo("cons application is rassoc", () => {
-  assertFormatted(`let x = (hd :: tl1) :: tl2\n`);
+  expect(`let x = (hd :: tl1) :: tl2\n`).toBeFormatted();
 });
 
 test("infix application", () => {
-  assertFormatted(`let x = 1 + 2\n`);
+  expect(`let x = 1 + 2\n`).toBeFormatted();
 });
 
 test("nested infix", () => {
-  assertFormatted(`let x = 1 + 2 * 3\n`);
-  assertFormatted(`let x = 1 * 2 + 3\n`);
+  expect(`let x = 1 + 2 * 3\n`).toBeFormatted();
+  expect(`let x = 1 * 2 + 3\n`).toBeFormatted();
 });
 
 test("keep parenthesis if needed by prec", () => {
-  assertFormatted(`let x = (1 + 2) * 3\n`);
+  expect(`let x = (1 + 2) * 3\n`).toBeFormatted();
 });
 
 test("mix infix and appl", () => {
-  assertFormatted(`let x = 1 + f(2 + 3) + 4\n`);
+  expect(`let x = 1 + f(2 + 3) + 4\n`).toBeFormatted();
 });
 
 test("prefix not", () => {
-  assertFormatted(`let x = !0\n`);
+  expect(`let x = !0\n`).toBeFormatted();
 });
 
 test("prefix with and", () => {
-  assertFormatted(`let x = !(True && False)\n`);
-  assertFormatted(`let x = !True && !False\n`);
+  expect(`let x = !(True && False)\n`).toBeFormatted();
+  expect(`let x = !True && !False\n`).toBeFormatted();
 });
 
 test("pipe operator in let", () => {
-  assertFormatted(`let x = {
+  expect(`let x = {
   example_arg
   |> f(a, b)
   |> g(c)
 }
-`);
+`).toBeFormatted();
 });
 
 test("pipe operator in let", () => {
-  assertFormatted(`let x = f(1, 2, {
+  expect(`let x = f(1, 2, {
   arg
   |> f(a, b)
   |> g(c)
 })
-`);
+`).toBeFormatted();
 });
 
 test("pipe operator inside fn", () => {
-  assertFormatted(`let x = fn {
+  expect(`let x = fn {
   arg
   |> f(a, b)
   |> g(c)
 }
-`);
+`).toBeFormatted();
 });
 
 test("multiple declrs", () => {
-  assertFormatted(`let x = 0
+  expect(`let x = 0
 
-let y = 1\n`);
+let y = 1\n`).toBeFormatted();
 });
 
 test("if expr", () => {
-  assertFormatted(`let _ =
+  expect(`let _ =
   if cond {
     0
   } else {
     1
   }
 
-`);
+`).toBeFormatted();
 });
 
 test("fn with no params", () => {
-  assertFormatted(`let f = fn {
+  expect(`let f = fn {
   x
 }
-`);
+`).toBeFormatted();
 });
 
 test("fn with params", () => {
-  assertFormatted(`let f = fn a, b, c {
+  expect(`let f = fn a, b, c {
   x
 }
-`);
+`).toBeFormatted();
 });
 
 test("fn inside function call", () => {
-  assertFormatted(`let x = f(0, 1, fn a {
+  expect(`let x = f(0, 1, fn a {
   x
 })
-`);
+`).toBeFormatted();
 });
 
 test("fn inside function call that wraps", () => {
-  assertFormatted(`let x = f(0, 1, fn a {
+  expect(`let x = f(0, 1, fn a {
   very_very_very_very_very_very_very_very_long_spanning_fn_value()
 })
-`);
+`).toBeFormatted();
 });
 
 test("if inside fn", () => {
-  assertFormatted(`let f = fn {
+  expect(`let f = fn {
   if cond {
     x
   } else {
     y
   }
 }
-`);
+`).toBeFormatted();
 });
 
 test("toplevel let expr", () => {
-  assertFormatted(`let f = {
+  expect(`let f = {
   let x = value;
   body
 }
-`);
+`).toBeFormatted();
 });
 
 test("toplevel nested let expr", () => {
-  assertFormatted(`let f = {
+  expect(`let f = {
   let x = value;
   let y = value2;
   let z = value3;
   body
 }
-`);
+`).toBeFormatted();
 });
 
 test("toplevel nested let# expr", () => {
-  assertFormatted(`let f = {
+  expect(`let f = {
   let#and_then x = value;
   let#My/Mod.and_then y = value2;
   let#and_then z = value3;
   body
 }
-`);
+`).toBeFormatted();
 });
 
 test("let inside fn", () => {
-  assertFormatted(`let f = fn {
+  expect(`let f = fn {
   let x = value;
   body
 }
-`);
+`).toBeFormatted();
 });
 
 test("let inside if body", () => {
-  assertFormatted(`let f =
+  expect(`let f =
   if cond {
     let x = value;
     let y = value2;
@@ -222,51 +222,46 @@ test("let inside if body", () => {
     body2
   }
 
-`);
+`).toBeFormatted();
 });
 
 describe("imports", () => {
   test("without exposings", () => {
-    assertFormatted(`import A\n`);
+    expect(`import A\n`).toBeFormatted();
   });
 
   test("order with declrs", () => {
-    assertFormatted(`import A
+    expect(`import A
 import B
 
 let x = 0
-`);
+`).toBeFormatted();
   });
 
   test("exposing a value", () => {
-    assertFormatted(`import A.{value}\n`);
+    expect(`import A.{value}\n`).toBeFormatted();
   });
 
   test("exposing a type", () => {
-    assertFormatted(`import A.{Type}\n`);
+    expect(`import A.{Type}\n`).toBeFormatted();
   });
 
   test("exposing an infix value", () => {
-    assertFormatted(`import A.{(+)}\n`);
+    expect(`import A.{(+)}\n`).toBeFormatted();
   });
 
   test("exposing many values", () => {
-    assertFormatted(`import A.{a, b, c}\n`);
+    expect(`import A.{a, b, c}\n`).toBeFormatted();
   });
 
   test("exposing a type and its constructors", () => {
-    assertFormatted(`import A.{Type(..)}\n`);
+    expect(`import A.{Type(..)}\n`).toBeFormatted();
   });
 
   test("sort imports alphabetically", () => {
-    assertFormatted(`import A
-import B
-`);
-
-    assertFormatted(
-      `import B
+    expect(`import B
 import A
-`,
+`).toBeFormatted(
       `import A
 import B
 `,
@@ -277,190 +272,190 @@ import B
 test("order between type declrs and declrs", () => {
   const t = `type T { }`;
   const d = `let x = 0`;
-  assertFormatted(`${t}\n\n${d}\n`);
-  assertFormatted(`${d}\n\n${t}\n`);
+  expect(`${t}\n\n${d}\n`).toBeFormatted();
+  expect(`${d}\n\n${t}\n`).toBeFormatted();
 });
 
 test.todo("comments");
 
 describe("type hints", () => {
   test("concrete type", () => {
-    assertFormatted(`let f: Int = 0\n`);
+    expect(`let f: Int = 0\n`).toBeFormatted();
   });
 
   test("qualified concrete type", () => {
-    assertFormatted(`let f: A/B/C.Int = 0\n`);
+    expect(`let f: A/B/C.Int = 0\n`).toBeFormatted();
   });
 
   test("type hints on extern", () => {
-    assertFormatted(`extern let f: Int\n`);
+    expect(`extern let f: Int\n`).toBeFormatted();
   });
 
   test("concrete with one arg", () => {
-    assertFormatted(`extern let f: Maybe<Int>\n`);
+    expect(`extern let f: Maybe<Int>\n`).toBeFormatted();
   });
 
   test("concrete with many args", () => {
-    assertFormatted(`extern let f: Result<Int, String>\n`);
+    expect(`extern let f: Result<Int, String>\n`).toBeFormatted();
   });
 
   test("tvar", () => {
-    assertFormatted(`extern let f: a\n`);
+    expect(`extern let f: a\n`).toBeFormatted();
   });
 
   test("catchall", () => {
-    assertFormatted(`extern let f: _\n`);
+    expect(`extern let f: _\n`).toBeFormatted();
   });
 
   test("Fn with no args", () => {
-    assertFormatted(`extern let f: Fn() -> Int\n`);
+    expect(`extern let f: Fn() -> Int\n`).toBeFormatted();
   });
 
   test("Fn with one arg", () => {
-    assertFormatted(`extern let f: Fn(A) -> Int\n`);
+    expect(`extern let f: Fn(A) -> Int\n`).toBeFormatted();
   });
 
   test("Fn with many arg", () => {
-    assertFormatted(`extern let f: Fn(A, B, C) -> Int\n`);
+    expect(`extern let f: Fn(A, B, C) -> Int\n`).toBeFormatted();
   });
 });
 
 describe("type delc", () => {
   test("extern types", () => {
-    assertFormatted(`extern type T\n`);
+    expect(`extern type T\n`).toBeFormatted();
   });
 
   test("extern types pub modifier", () => {
-    assertFormatted(`extern pub type T\n`);
+    expect(`extern pub type T\n`).toBeFormatted();
   });
 
   test("adts with no construtcors", () => {
-    assertFormatted(`type T { }\n`);
+    expect(`type T { }\n`).toBeFormatted();
   });
 
   test("adts pub modifier", () => {
-    assertFormatted(`pub type T { }\n`);
+    expect(`pub type T { }\n`).toBeFormatted();
   });
 
   test("adts pub(..) modifier", () => {
-    assertFormatted(`pub(..) type T { }\n`);
+    expect(`pub(..) type T { }\n`).toBeFormatted();
   });
 
   test("adts with a constructors", () => {
-    assertFormatted(`type Unit {
+    expect(`type Unit {
   Unit,
 }
-`);
+`).toBeFormatted();
   });
 
   test("adts with many constructors", () => {
-    assertFormatted(`type T {
+    expect(`type T {
   A,
   B,
 }
-`);
+`).toBeFormatted();
   });
 
   test("adts with a constructors with an arg", () => {
-    assertFormatted(`type Box {
+    expect(`type Box {
   Box(Int),
 }
-`);
+`).toBeFormatted();
   });
 
   test("adts with a constructors with many args", () => {
-    assertFormatted(`type Box {
+    expect(`type Box {
   Box(Int, a, Maybe<Int>),
 }
-`);
+`).toBeFormatted();
   });
 
   test("adts with one type params", () => {
-    assertFormatted(`type Box<a> { }
-`);
+    expect(`type Box<a> { }
+`).toBeFormatted();
   });
 
   test("adts with many type params", () => {
-    assertFormatted(`type Box<a, b, c> { }
-`);
+    expect(`type Box<a, b, c> { }
+`).toBeFormatted();
   });
 });
 
 describe("pattern matching", () => {
   test("empty pattern matching", () => {
-    assertFormatted(`let x = match expr { }
-`);
+    expect(`let x = match expr { }
+`).toBeFormatted();
   });
 
   test("matching over an ident", () => {
-    assertFormatted(`let m = match expr {
+    expect(`let m = match expr {
   x => 0,
 }
-`);
+`).toBeFormatted();
   });
 
   test("many clauses", () => {
-    assertFormatted(`let m = match expr {
+    expect(`let m = match expr {
   x => 0,
   y => 1,
 }
-`);
+`).toBeFormatted();
   });
 
   test("matching over a const", () => {
-    assertFormatted(`let m = match expr {
+    expect(`let m = match expr {
   0 => 0,
 }
-`);
+`).toBeFormatted();
   });
 
   test("matching a constructor with no args", () => {
-    assertFormatted(`let m = match expr {
+    expect(`let m = match expr {
   X => ret,
 }
-`);
+`).toBeFormatted();
   });
 
   test("matching a constructor with one arg", () => {
-    assertFormatted(`let m = match expr {
+    expect(`let m = match expr {
   X(x) => ret,
 }
-`);
+`).toBeFormatted();
   });
 
   test("matching a constructor with many args", () => {
-    assertFormatted(`let m = match expr {
+    expect(`let m = match expr {
   X(x, y, z) => ret,
 }
-`);
+`).toBeFormatted();
   });
 
   test("matching :: sugar", () => {
-    assertFormatted(`let m = match expr {
+    expect(`let m = match expr {
   hd :: tl => ret,
 }
-`);
+`).toBeFormatted();
   });
 
   test("matching Tuple2 sugar", () => {
-    assertFormatted(`let m = match expr {
+    expect(`let m = match expr {
   (a, b) => ret,
 }
-`);
+`).toBeFormatted();
   });
 
   test.todo("TupleN sugar");
 
   test("nested pattern matching", () => {
-    assertFormatted(`let m = match expr {
+    expect(`let m = match expr {
   X(Just(a, _, Ok)) => ret,
 }
-`);
+`).toBeFormatted();
   });
 });
 
 test("actual examples", () => {
-  assertFormatted(
+  expect(
     `
 pub let range = fn from, to {
   if from >= to {
@@ -479,10 +474,27 @@ pub let filter_map = fn lst, f {
   })
 }
 `.trimStart(),
-  );
+  ).toBeFormatted();
 });
 
-function assertFormatted(src: string, out: string = src) {
-  const ast = unsafeParse(src);
-  expect(format(ast)).toBe(out);
+interface CustomMatchers<R = unknown> {
+  toBeFormatted: (as?: string) => R;
 }
+
+declare module "vitest" {
+  interface Assertion<T = any> extends CustomMatchers<T> {}
+  interface AsymmetricMatchersContaining extends CustomMatchers {}
+}
+
+expect.extend({
+  toBeFormatted(received, expected = received) {
+    const formatted = format(unsafeParse(received));
+
+    return {
+      pass: expected === formatted,
+      expected,
+      actual: formatted,
+      message: () => `The given string is not formatted as expected`,
+    };
+  },
+});
