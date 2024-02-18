@@ -7,12 +7,18 @@ import { join } from "path";
 
 export type FormatOptions = {
   write?: boolean;
+  path?: string;
 };
 
-export async function formatCmd(
-  path: string,
-  { write = false }: FormatOptions,
-) {
+export async function formatCmd({ write = false, ...opts }: FormatOptions) {
+  let path: string;
+  if (opts.path === undefined) {
+    // TODO this should be read from config
+    path = join(process.cwd(), "src");
+  } else {
+    path = opts.path;
+  }
+
   const start = Date.now();
 
   const stat_ = await stat(path);

@@ -36,8 +36,9 @@ const deps = program.command("deps").description("Manage dependencies");
 deps.command("install").description("Install dependencies").action(depsInstall);
 
 program
-  .command("format <path>")
+  .command("format")
   .description("Format a kestrel file")
+  .option("--path <path>")
   .option("--write")
   .action(formatCmd);
 
