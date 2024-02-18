@@ -26,6 +26,8 @@ jobs:
           node-version: 20
       - name: Install kestrel cli
         run: npm install -g kestrel-lang
+      - name: Check if project is formatted
+        run: kestrel format
       - name: Typecheck the project
         run: kestrel check
 `;
