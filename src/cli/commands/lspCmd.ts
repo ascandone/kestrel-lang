@@ -5,6 +5,7 @@ import {
   SymbolKind,
   TextDocumentSyncKind,
   TextDocuments,
+  TextEdit,
   _Connection,
   createConnection,
 } from "vscode-languageserver";
@@ -21,6 +22,7 @@ import {
 import { readProjectWithDeps } from "../common";
 import { Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
+import { format } from "../../formatter";
 
 type Connection = _Connection;
 
@@ -186,6 +188,7 @@ export async function lspCmd() {
       documentSymbolProvider: true,
       definitionProvider: true,
       codeLensProvider: { resolveProvider: true },
+      documentFormattingProvider: true,
     },
   }));
 
@@ -194,6 +197,28 @@ export async function lspCmd() {
     for (const err of errors) {
       connection.sendDiagnostics(err);
     }
+  });
+
+  connection.onDocumentFormatting(({ textDocument }) => {
+    const pair = state.docByUri(textDocument.uri);
+    if (pair === undefined) {
+      return undefined;
+    }
+    const [doc] = pair;
+    const original = doc.getText();
+    // TODO this is inefficient
+    // store untyped ast too
+    const parsed = parse(original);
+    if (!parsed.ok) {
+      return;
+    }
+    const formatted = format(parsed.value);
+    return [
+      {
+        range: spannedToRange(doc, [0, original.length]),
+        newText: formatted,
+      } as TextEdit,
+    ];
   });
 
   connection.onDocumentSymbol(({ textDocument }) => {
