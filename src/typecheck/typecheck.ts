@@ -103,6 +103,14 @@ class Typechecker {
     }
 
     const annotatedDeclrs = this.annotateDeclarations(module.declarations);
+    for (const decl of annotatedDeclrs) {
+      if (this.unusedVariables.has(decl.binding)) {
+        this.errors.push({
+          span: decl.binding.span,
+          description: new UnusedVariable(decl.binding.name, "global"),
+        });
+      }
+    }
 
     for (const decl of annotatedDeclrs) {
       this.typecheckAnnotatedDecl(decl);
@@ -414,10 +422,6 @@ class Typechecker {
   }
 
   private typecheckAnnotatedDecl(decl: TypedDeclaration) {
-    if (!decl.pub) {
-      this.unusedVariables.add(decl.binding);
-    }
-
     if (decl.typeHint !== undefined) {
       const bound: Record<string, TVar> = {};
       const th = this.typeAstToType(
@@ -448,13 +452,6 @@ class Typechecker {
 
     this.typecheckAnnotatedExpr(decl.value);
     this.unifyExpr(decl.value, decl.binding.$.asType(), decl.value.$.asType());
-
-    if (this.unusedVariables.has(decl.binding)) {
-      this.errors.push({
-        span: decl.binding.span,
-        description: new UnusedVariable(decl.binding.name, "global"),
-      });
-    }
 
     decl.scheme = generalizeAsScheme(decl.value.$.asType());
   }
@@ -717,6 +714,10 @@ class Typechecker {
             [decl.binding.name]: binding,
           }),
         };
+      }
+
+      if (!decl.pub) {
+        this.unusedVariables.add(tDecl.binding);
       }
 
       if (decl.binding.name in this.globalScope) {
@@ -1018,6 +1019,9 @@ class Typechecker {
 
     const global = this.globalScope[ast.name];
     if (global !== undefined) {
+      if (global.type === "global-variable") {
+        this.unusedVariables.delete(global.declaration.binding);
+      }
       return global;
     }
 

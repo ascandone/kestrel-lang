@@ -22,6 +22,7 @@ import {
   UnboundTypeParam,
   UnboundVariable,
   UnimportedModule,
+  UnusedVariable,
 } from "../errors";
 
 test("infer int", () => {
@@ -323,6 +324,42 @@ test("recursive let declarations", () => {
   expect(types).toEqual({
     f: "Fn(Int) -> a",
   });
+});
+
+test("unused locals", () => {
+  const [, errs] = tc(
+    `
+    pub let f = {
+      let unused_var = 42;
+      0
+    }
+  `,
+  );
+
+  expect(errs).toHaveLength(1);
+  expect(errs[0]?.description).toBeInstanceOf(UnusedVariable);
+});
+
+test("unused globals", () => {
+  const [, errs] = tc(
+    `
+    let x = 42
+  `,
+  );
+
+  expect(errs).toHaveLength(1);
+  expect(errs[0]?.description).toBeInstanceOf(UnusedVariable);
+});
+
+test("unused globals does not trigger when private vars are used", () => {
+  const [, errs] = tc(
+    `
+    let x = 42
+    pub let y = x
+  `,
+  );
+
+  expect(errs).toEqual([]);
 });
 
 describe("type hints", () => {
