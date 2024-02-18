@@ -14,8 +14,29 @@ const DEFAULT_GITIGNORE = `.DS_Store
 /deps/
 `;
 
+const DEFAULT_WORKFLOW_FILE = `name: CI
+on: push
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install kestrel cli
+        run: npm install -g kestrel-lang
+      - name: Typecheck the project
+        run: kestrel check
+`;
+
 async function initGit(path: string) {
   await writeFile(join(path, ".gitignore"), DEFAULT_GITIGNORE);
+
+  const workflowFolder = join(path, ".github", "workflows");
+  await mkdir(workflowFolder, { recursive: true });
+  await writeFile(join(workflowFolder, "ci.yml"), DEFAULT_WORKFLOW_FILE);
+
   await execP(`git init -b main ${path}`);
 }
 
