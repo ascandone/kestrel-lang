@@ -2,6 +2,7 @@ import { readConfig } from "../config";
 import { fetchDeps } from "../common";
 
 export async function depsInstall() {
-  const config = await readConfig(process.cwd());
-  fetchDeps(config);
+  const path = process.cwd();
+  const config = await readConfig(path);
+  fetchDeps(path, config);
 }
