@@ -38,6 +38,7 @@ deps.command("install").description("Install dependencies").action(depsInstall);
 program
   .command("format <path>")
   .description("Format a kestrel file")
+  .option("--write")
   .action(formatCmd);
 
 program.command("run").description("Evaluate the given file").action(runCmd);
