@@ -489,6 +489,16 @@ pub let filter_map = fn lst, f {
   ).toBeFormatted();
 });
 
+describe("test dsl", () => {
+  test("Test.test", () => {
+    expect(`let t = Test.test("example", {
+  f(a, b)
+  |> Expect.eq_just(Expect.eq_int, 0)
+})
+`).toBeFormatted();
+  });
+});
+
 interface CustomMatchers<R = unknown> {
   toBeFormatted: (as?: string) => R;
 }
