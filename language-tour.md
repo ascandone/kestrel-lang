@@ -141,13 +141,76 @@ type Box<a> {
 }
 ```
 
+PS. Note that `Bool` is simply defined as
+
+```rust
+type Bool {
+  True,
+  False,
+}
+```
+
 #### Match expressions
 
-TODO
+You can pattern match values using the `match` expression:
+
+```rust
+match value {
+  Nothing => "no values",
+  Just(value) => "value is: " <> value
+}
+```
+
+Pattern match supports nested patterns, catchall patterns (`_`), and matching literals, e.g.
+
+```rust
+match (n % 3, n % 5) {
+  (0, 0) => "FizzBuzz",
+  (0, _) => "Fizz",
+  (_, 0) => "Buzz",
+  _ => String.from_int(n),
+}
+```
 
 ## Modules
 
-TODO
+You can import values and types of different modules with `import` statements, that must be appear first in the module.
+
+```
+import MyModule
+// Now you can use the MyModule.some_value syntax to access to
+// `some_value` defined in MyModule
+// You can also access types and constructors
+```
+
+Imports can be unqualified too:
+
+```
+import MyModule.{some_value, MyType(..)}
+// this adds to the scope:
+// the `some_value` value
+// the `MyType` type
+// `MyType` constructors (because of the `(..)`)
+```
+
+You can import nested modules using the `import My/Nested/Module` syntax
+
+### Creating modules
+
+Creating a file implicitly creates a module whose the namespace is the file's path.
+Values defined in a module are private by default, but can be visible from outer modules using the `pub` keyword:
+
+```rust
+// Export `x`
+pub let x = 42
+
+// Export `MyType`, but not the constructors
+// aka "opaque types"
+pub type MyType { Constructor }
+
+// Export `MyType` _and_ its constructors
+pub(..) MyType { Constructor }
+```
 
 ## Creating a Kestrel project
 
