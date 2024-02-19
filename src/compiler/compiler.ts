@@ -19,6 +19,7 @@ type CompilationMode =
 class Frame {
   constructor(
     public readonly data: { type: "let"; name: string } | { type: "fn" },
+    private compiler: Compiler,
   ) {}
 
   private usedVars = new Map<string, number>();
@@ -33,11 +34,9 @@ class Frame {
     return `${name}$${timesUsed}`;
   }
 
-  private nextId = 0;
-
   getUniqueName(ns?: string) {
     const namespace = ns === undefined ? "" : `${ns}$`;
-    return `${namespace}GEN__${this.nextId++}`;
+    return `${namespace}GEN__${this.compiler.getNextId()}`;
   }
 }
 
@@ -48,6 +47,11 @@ type TailPositionData = {
 export class Compiler {
   private frames: Frame[] = [];
   private tailCall = false;
+
+  private nextId = 0;
+  getNextId() {
+    return this.nextId++;
+  }
 
   private getUniqueName() {
     return this.getCurrentFrame().getUniqueName(this.getBlockNs());
@@ -88,7 +92,7 @@ export class Compiler {
     scope: Scope,
   ): { value: string[]; scopedBinding: string } {
     const name = this.getCurrentFrame().preventShadow(src.binding.name);
-    this.frames.push(new Frame({ type: "let", name }));
+    this.frames.push(new Frame({ type: "let", name }, this));
     const scopedBinding = this.getBlockNs();
     if (scopedBinding === undefined) {
       throw new Error("[unreachable] empty ns stack");
@@ -251,7 +255,7 @@ export class Compiler {
             ? as.name
             : this.getUniqueName();
 
-        this.frames.push(new Frame({ type: "fn" }));
+        this.frames.push(new Frame({ type: "fn" }, this));
         const paramsScope = Object.fromEntries(
           src.params.map((p) => [p.name, p.name]),
         );
@@ -440,10 +444,13 @@ export class Compiler {
       }
 
       this.frames.push(
-        new Frame({
-          type: "let",
-          name: moduleNamespacedBinding(decl.binding.name, ns),
-        }),
+        new Frame(
+          {
+            type: "let",
+            name: moduleNamespacedBinding(decl.binding.name, ns),
+          },
+          this,
+        ),
       );
 
       this.globalScope[decl.binding.name] = nameSpacedBinding;
