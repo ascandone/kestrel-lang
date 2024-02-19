@@ -1857,7 +1857,6 @@ exports[`parse empty list sugar 1`] = `
       ],
       "value": {
         "name": "Nil",
-        "namespace": "List",
         "span": [
           9,
           9,
@@ -2544,7 +2543,6 @@ exports[`parse list sugar with many values 1`] = `
                   },
                   {
                     "name": "Nil",
-                    "namespace": "List",
                     "span": [
                       9,
                       16,
@@ -2554,7 +2552,6 @@ exports[`parse list sugar with many values 1`] = `
                 ],
                 "caller": {
                   "name": "Cons",
-                  "namespace": "List",
                   "span": [
                     8,
                     17,
@@ -2570,7 +2567,6 @@ exports[`parse list sugar with many values 1`] = `
             ],
             "caller": {
               "name": "Cons",
-              "namespace": "List",
               "span": [
                 8,
                 17,
@@ -2586,7 +2582,6 @@ exports[`parse list sugar with many values 1`] = `
         ],
         "caller": {
           "name": "Cons",
-          "namespace": "List",
           "span": [
             8,
             17,
@@ -2673,7 +2668,6 @@ exports[`parse singleton list sugar 1`] = `
           },
           {
             "name": "Nil",
-            "namespace": "List",
             "span": [
               9,
               11,
@@ -2683,7 +2677,6 @@ exports[`parse singleton list sugar 1`] = `
         ],
         "caller": {
           "name": "Cons",
-          "namespace": "List",
           "span": [
             8,
             12,
