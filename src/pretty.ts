@@ -4,7 +4,7 @@ export type Doc =
   | { type: "text"; text: string }
   | { type: "concat"; docs: Doc[] }
   | { type: "lines"; lines: number }
-  | { type: "break"; unbroken: string }
+  | { type: "break"; unbroken: string; broken?: string }
   | { type: "force-broken"; doc: Doc }
   | { type: "nest"; doc: Doc }
   | { type: "group"; doc: Doc };
@@ -22,8 +22,8 @@ export function text(...texts: string[]): Doc {
   return { type: "text", text: texts.join("") };
 }
 
-export function break_(unbroken: string = " "): Doc {
-  return { type: "break", unbroken };
+export function break_(unbroken: string = " ", broken?: string): Doc {
+  return { type: "break", unbroken, broken };
 }
 
 export function broken(...docs: Doc[]): Doc {
@@ -94,6 +94,9 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
             width -= doc.unbroken.length;
             break;
           case "broken":
+            if (doc.broken !== undefined) {
+              width -= doc.broken.length;
+            }
           case "forced-broken":
             return true;
         }
@@ -191,6 +194,9 @@ export function pprint(
             break;
           case "broken":
           case "forced-broken":
+            if (doc.broken !== undefined) {
+              buf.push(doc.broken);
+            }
             buf.push("\n");
             for (let i = 0; i < indentation; i++) {
               buf.push(indentationSymbol);

@@ -89,6 +89,20 @@ test("optional line break doesn't wrap when there is enough space", () => {
   ).toBe(`ab-cd`);
 });
 
+test("optional line break works when not indented", () => {
+  expect(
+    pprint(
+      concat(
+        //
+        text("super_long_text"),
+        break_("UNREACHABLE", ">"),
+        text("super_long_text_2"),
+      ),
+      { maxWidth: 3 },
+    ),
+  ).toBe(`super_long_text>\nsuper_long_text_2`);
+});
+
 test("optional line break wraps when there is not enough space", () => {
   expect(
     pprint(
