@@ -181,6 +181,32 @@ semantics.addOperation<UntypedExpr>("expr()", {
       span: getSpan(this),
     };
   },
+  PriExp_listLit(_lbracket, args, _trailingComma, _rbracket) {
+    const nil: UntypedExpr = {
+      type: "identifier",
+      name: "Nil",
+      namespace: "List",
+      span: getSpan(args),
+    };
+
+    return args
+      .asIteration()
+      .children.map((c) => c.expr() as UntypedExpr)
+      .reduceRight(
+        (acc, expr) => ({
+          type: "application",
+          caller: {
+            type: "identifier",
+            name: "Cons",
+            namespace: "List",
+            span: getSpan(this),
+          },
+          args: [expr, acc],
+          span: getSpan(this),
+        }),
+        nil,
+      );
+  },
   PriExp_literal(n) {
     return {
       type: "constant",

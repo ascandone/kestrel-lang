@@ -1838,6 +1838,39 @@ exports[`parse conslist sugar 1`] = `
 }
 `;
 
+exports[`parse empty list sugar 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        10,
+      ],
+      "value": {
+        "name": "Nil",
+        "namespace": "List",
+        "span": [
+          9,
+          9,
+        ],
+        "type": "identifier",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse empty strings 1`] = `
 {
   "declarations": [
@@ -2453,6 +2486,126 @@ exports[`parse let block with two let stmts 1`] = `
 }
 `;
 
+exports[`parse list sugar with many values 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        17,
+      ],
+      "value": {
+        "args": [
+          {
+            "span": [
+              9,
+              10,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 0,
+            },
+          },
+          {
+            "args": [
+              {
+                "span": [
+                  12,
+                  13,
+                ],
+                "type": "constant",
+                "value": {
+                  "type": "int",
+                  "value": 1,
+                },
+              },
+              {
+                "args": [
+                  {
+                    "span": [
+                      15,
+                      16,
+                    ],
+                    "type": "constant",
+                    "value": {
+                      "type": "int",
+                      "value": 2,
+                    },
+                  },
+                  {
+                    "name": "Nil",
+                    "namespace": "List",
+                    "span": [
+                      9,
+                      16,
+                    ],
+                    "type": "identifier",
+                  },
+                ],
+                "caller": {
+                  "name": "Cons",
+                  "namespace": "List",
+                  "span": [
+                    8,
+                    17,
+                  ],
+                  "type": "identifier",
+                },
+                "span": [
+                  8,
+                  17,
+                ],
+                "type": "application",
+              },
+            ],
+            "caller": {
+              "name": "Cons",
+              "namespace": "List",
+              "span": [
+                8,
+                17,
+              ],
+              "type": "identifier",
+            },
+            "span": [
+              8,
+              17,
+            ],
+            "type": "application",
+          },
+        ],
+        "caller": {
+          "name": "Cons",
+          "namespace": "List",
+          "span": [
+            8,
+            17,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          17,
+        ],
+        "type": "application",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse nonempty strings 1`] = `
 {
   "declarations": [
@@ -2480,6 +2633,68 @@ exports[`parse nonempty strings 1`] = `
           "type": "string",
           "value": "abc",
         },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`parse singleton list sugar 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        12,
+      ],
+      "value": {
+        "args": [
+          {
+            "span": [
+              9,
+              11,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 42,
+            },
+          },
+          {
+            "name": "Nil",
+            "namespace": "List",
+            "span": [
+              9,
+              11,
+            ],
+            "type": "identifier",
+          },
+        ],
+        "caller": {
+          "name": "Cons",
+          "namespace": "List",
+          "span": [
+            8,
+            12,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          12,
+        ],
+        "type": "application",
       },
     },
   ],

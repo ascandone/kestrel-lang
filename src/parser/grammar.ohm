@@ -78,6 +78,7 @@ Program {
   PriExp
     = "(" Exp ")"  -- paren
     | "(" Exp "," NonemptyListOf<Exp, ","> ")"  -- tuple // Tuples have 2+ elements
+    | "[" ListOf<Exp, ","> ","? "]"  -- listLit
     | PriExp "(" ListOf<Exp, ","> ","? ")" -- apply
     | "{" BlockContent "}"  -- block
     | "fn" ListOf<ident, ","> "{" BlockContent "}"  -- fn

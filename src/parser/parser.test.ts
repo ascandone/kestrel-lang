@@ -275,6 +275,21 @@ test("parse tuple sugar", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse empty list sugar", () => {
+  const src = "let _ = []";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse singleton list sugar", () => {
+  const src = "let _ = [42]";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse list sugar with many values", () => {
+  const src = "let _ = [0, 1, 2]";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 test("parse conslist sugar", () => {
   const src = "let _ = hd :: tl";
   expect(unsafeParse(src)).toMatchSnapshot();
