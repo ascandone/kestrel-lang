@@ -216,7 +216,10 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
       return hoverOnExpr(expr.value, offset) ?? hoverOnExpr(expr.body, offset);
 
     case "match":
-      return firstBy(expr.clauses, ([_pat, expr]) => hoverOnExpr(expr, offset));
+      return (
+        hoverOnExpr(expr.expr, offset) ??
+        firstBy(expr.clauses, ([_pat, expr]) => hoverOnExpr(expr, offset))
+      );
   }
 }
 

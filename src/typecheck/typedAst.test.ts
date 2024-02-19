@@ -155,6 +155,20 @@ describe("hoverOn", () => {
     });
   });
 
+  test("hover a reference to a local binding in a match expr subject", () => {
+    const src = `
+      let something = 42
+      let m = match something { }
+    `;
+
+    const [, hoverable] = parseHover(src, "something", 2)!;
+    expect(hoverable).toEqual<Hovered>(
+      expect.objectContaining({
+        span: spanOf(src, "something", 2),
+      }),
+    );
+  });
+
   test("hover a constructor", () => {
     const src = `
         type T { Constr(Int) }
