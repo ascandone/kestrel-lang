@@ -218,8 +218,37 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
     case "match":
       return (
         hoverOnExpr(expr.expr, offset) ??
-        firstBy(expr.clauses, ([_pat, expr]) => hoverOnExpr(expr, offset))
+        firstBy(
+          expr.clauses,
+          ([pattern, expr]) =>
+            hoverOnPattern(pattern, offset) ?? hoverOnExpr(expr, offset),
+        )
       );
+  }
+}
+
+function hoverOnPattern(
+  pattern: TypedMatchPattern,
+  offset: number,
+): Hovered | undefined {
+  if (!contains(pattern, offset)) {
+    return undefined;
+  }
+
+  switch (pattern.type) {
+    case "identifier":
+      return {
+        span: pattern.span,
+        hovered: { type: "local-variable", binding: pattern },
+      };
+
+    case "constructor":
+      return firstBy(pattern.args, (argPattern) =>
+        hoverOnPattern(argPattern, offset),
+      );
+
+    case "lit":
+      return undefined;
   }
 }
 

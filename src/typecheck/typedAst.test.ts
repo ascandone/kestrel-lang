@@ -136,6 +136,20 @@ describe("hoverOn", () => {
     });
   });
 
+  test("hover a local binding in a match expr", () => {
+    const src = `
+        let m = match something {
+          Constr(Nested(_, loc_var)) => 0,
+        }
+    `;
+    const [, hoverable] = parseHover(src, "loc_var")!;
+    expect(hoverable).toEqual<Hovered>(
+      expect.objectContaining({
+        span: spanOf(src, "loc_var"),
+      }),
+    );
+  });
+
   test("hover a reference to a local binding in a match expr", () => {
     const src = `
         let m = match something {
