@@ -185,7 +185,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
     const nil: UntypedExpr = {
       type: "identifier",
       name: "Nil",
-      namespace: "List",
+      // namespace: "List",
       span: getSpan(args),
     };
 
@@ -198,7 +198,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
           caller: {
             type: "identifier",
             name: "Cons",
-            namespace: "List",
+            // namespace: "List",
             span: getSpan(this),
           },
           args: [expr, acc],
