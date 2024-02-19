@@ -57,6 +57,20 @@ test("Tuple2 sugar", () => {
   expect(`let x = (1, 2)\n`).toBeFormatted();
 });
 
+describe("list lit syntax", () => {
+  test("on empty list", () => {
+    expect(`let x = []\n`).toBeFormatted();
+  });
+
+  test("on singleton", () => {
+    expect(`let x = [42]\n`).toBeFormatted();
+  });
+
+  test("on list with many elems", () => {
+    expect(`let x = [1, 2, 3]\n`).toBeFormatted();
+  });
+});
+
 test("cons application sugar", () => {
   expect(`let x = hd :: hd2 :: tl\n`).toBeFormatted();
 });
@@ -471,14 +485,14 @@ test("actual examples", () => {
     `
 pub let range = fn from, to {
   if from >= to {
-    Nil
+    []
   } else {
     from :: range(from + 1, to)
   }
 }
 
 pub let filter_map = fn lst, f {
-  reduce_right(lst, Nil, fn x, xs {
+  reduce_right(lst, [], fn x, xs {
     match f(x) {
       Nothing => xs,
       Just(hd) => hd :: xs,
