@@ -511,6 +511,20 @@ describe("test dsl", () => {
 })
 `).toBeFormatted();
   });
+
+  test("Test.describe", () => {
+    expect(`let t = Test.describe("descr", [
+  Test.test("my test with a long description that should break the group", {
+    0
+    |> Expect.eq(42)
+  }),
+  Test.test("my second test", {
+    0
+    |> Expect.eq(42)
+  }),
+])
+`).toBeFormatted();
+  });
 });
 
 interface CustomMatchers<R = unknown> {

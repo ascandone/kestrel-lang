@@ -92,8 +92,8 @@ function indent(...docs: Doc[]): Doc {
   return concat(nest(lines(), ...docs), lines());
 }
 
-function indentWithSpaceBreak(...docs: Doc[]): Doc {
-  return concat(nest(group(break_(), ...docs)), break_(""));
+function indentWithSpaceBreak(docs: Doc[], unbroken?: string): Doc {
+  return concat(nest(group(break_(""), ...docs)), break_("", unbroken));
 }
 
 function block_(...docs: Doc[]): Doc {
@@ -177,11 +177,16 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         if (end.type === "expr") {
           break consSugar;
         }
-        return concat(
+        return group(
           text("["),
-          sepBy(
-            text(", "),
-            [ast.args[0]!, ...xs].map((expr) => exprToDoc(expr, false)),
+          indentWithSpaceBreak(
+            [
+              sepBy(
+                concat(text(","), break_()),
+                [ast.args[0]!, ...xs].map((expr) => exprToDoc(expr, false)),
+              ),
+            ],
+            ",",
           ),
           text("]"),
         );
@@ -381,7 +386,7 @@ function declToDoc(ast: UntypedDeclaration): Doc {
       : concat(
           text(" ="),
           ["if"].includes(ast.value.type)
-            ? indentWithSpaceBreak(exprToDoc(ast.value, false))
+            ? indentWithSpaceBreak([exprToDoc(ast.value, false)])
             : concat(text(" "), exprToDoc(ast.value, false)),
         ),
   );
