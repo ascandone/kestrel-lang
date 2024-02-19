@@ -420,7 +420,10 @@ export class Compiler {
         }
         const def = getVariantImpl(variant, ns);
         decls.push(def);
-        this.globalScope[variant.name] = variant.name;
+        this.globalScope[variant.name] = moduleNamespacedBinding(
+          variant.name,
+          ns,
+        );
       }
     }
 

@@ -1028,12 +1028,21 @@ const ExampleModule$a = ExampleModule$a$b;
   });
 
   test("variants from modules different than Main are namespaced", () => {
-    const out = compileSrc(`type MyType { C1, C2(Int) }`, "MyModule");
+    const out = compileSrc(
+      `
+      type MyType { C1, C2(Int) }
+      let c2_example = C2(42)
+    `,
+      "MyModule",
+    );
+
     expect(out).toEqual(`const MyModule$C1 = { type: "C1" };
 
 function MyModule$C2(a0) {
   return { type: "C2", a0 };
-}`);
+}
+const MyModule$c2_example = MyModule$C2(42);
+`);
   });
 
   test("values imported with unqualfied imports are resolved with the right namespace", () => {
