@@ -88,10 +88,6 @@ function constToDoc(lit: ConstLiteral): Doc {
   }
 }
 
-function indent(...docs: Doc[]): Doc {
-  return concat(nest(lines(), ...docs), lines());
-}
-
 function indentWithSpaceBreak(docs: Doc[], unbroken?: string): Doc {
   return concat(
     nest(
@@ -432,21 +428,19 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
       const variants =
         tDecl.variants.length === 0
           ? text(" ")
-          : indent(
-              sepBy(
-                lines(),
-                tDecl.variants.map((variant) =>
-                  concat(
-                    text(variant.name),
-                    ...(variant.args.length === 0
-                      ? []
-                      : [
-                          text("("),
-                          sepByString(", ", variant.args.map(typeAstToDoc)),
-                          text(")"),
-                        ]),
-                    text(","),
-                  ),
+          : sepBy(
+              break_(),
+              tDecl.variants.map((variant) =>
+                concat(
+                  text(variant.name),
+                  ...(variant.args.length === 0
+                    ? []
+                    : [
+                        text("("),
+                        sepByString(", ", variant.args.map(typeAstToDoc)),
+                        text(")"),
+                      ]),
+                  text(","),
                 ),
               ),
             );
@@ -456,9 +450,8 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
         text("type "),
         text(tDecl.name),
         params,
-        text(" {"),
-        variants,
-        text("}"),
+        text(" "),
+        tDecl.variants.length === 0 ? text("{ }") : block_(variants),
       );
     }
   }
