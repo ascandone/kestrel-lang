@@ -42,7 +42,10 @@ program
   .option("--write")
   .action(formatCmd);
 
-program.command("run").description("Evaluate the given file").action(runCmd);
+program
+  .command("run [entrypoint]")
+  .description("Evaluate the given file")
+  .action(runCmd);
 
 program.command("lsp").description("Run the language server").action(lspCmd);
 

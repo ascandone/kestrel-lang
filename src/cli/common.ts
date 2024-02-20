@@ -2,7 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { parse, UntypedModule } from "../parser";
 import { typecheckProject, TypedModule } from "../typecheck";
 import { exit } from "node:process";
-import { compileProject } from "../compiler";
+import { compileProject, defaultEntryPoint } from "../compiler";
 import { col } from "../utils/colors";
 import { exec } from "node:child_process";
 import { Config, Dependency, readConfig } from "./config";
@@ -158,7 +158,10 @@ export async function checkProject(
   return res;
 }
 
-export async function compilePath(path: string): Promise<string> {
+export async function compilePath(
+  path: string,
+  entryPointModule?: string,
+): Promise<string> {
   const rawProject = await readProjectWithDeps(path);
   const typedProject = await checkProject(rawProject);
   if (typedProject === undefined) {
@@ -173,5 +176,11 @@ export async function compilePath(path: string): Promise<string> {
     }
   }
 
-  return compileProject(typedProject, { externs });
+  return compileProject(typedProject, {
+    externs,
+    entrypoint: {
+      ...defaultEntryPoint,
+      module: entryPointModule ?? defaultEntryPoint.module,
+    },
+  });
 }
