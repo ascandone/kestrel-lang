@@ -124,7 +124,7 @@ function asBlock(isBlock: boolean, docs: Doc[]): Doc {
   if (isBlock) {
     return concat(...docs);
   }
-  return concat(text("{"), indent(...docs), text("}"));
+  return block_(...docs);
 }
 
 export type ConsEnd = { type: "nil" } | { type: "expr"; expr: UntypedExpr };
