@@ -7,6 +7,7 @@ import {
   UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
+  UntypedTypeVariant,
 } from "./parser";
 import {
   Doc,
@@ -428,17 +429,7 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
       const variants = sepBy(
         break_(),
         tDecl.variants.map((variant) =>
-          concat(
-            text(variant.name),
-            ...(variant.args.length === 0
-              ? []
-              : [
-                  text("("),
-                  sepByString(", ", variant.args.map(typeAstToDoc)),
-                  text(")"),
-                ]),
-            text(","),
-          ),
+          concat(variantToDoc(variant), text(",")),
         ),
       );
 
@@ -452,6 +443,19 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
       );
     }
   }
+}
+
+function variantToDoc(variant: UntypedTypeVariant): Doc {
+  const args =
+    variant.args.length === 0
+      ? []
+      : [
+          text("("),
+          sepByString(", ", variant.args.map(typeAstToDoc)),
+          text(")"),
+        ];
+
+  return concat(text(variant.name), ...args);
 }
 
 function importToDoc(import_: UntypedImport): Doc {
