@@ -300,11 +300,15 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
       return concat(
         text("match "),
         exprToDoc(ast.expr, false),
-        text(" {"),
+        text(" "),
         clauses.length === 0
-          ? text(" ")
-          : indent(sepBy(concat(text(","), lines()), clauses), text(",")),
-        text("}"),
+          ? text("{ }")
+          : block_(
+              sepBy(
+                break_("", ""),
+                clauses.map((clause) => concat(clause, text(","))),
+              ),
+            ),
       );
     }
   }
