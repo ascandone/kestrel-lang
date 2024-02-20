@@ -503,7 +503,7 @@ pub let filter_map = fn lst, f {
   ).toBeFormatted();
 });
 
-test.todo("fn callback after list", () => {
+test("fn callback after list", () => {
   const src = `let x = List.map([1, 2, 3], fn x {
   x + 1
 })
@@ -527,6 +527,16 @@ describe("test dsl", () => {
     |> Expect.eq(42)
   }),
   Test.test("my second test", {
+    0
+    |> Expect.eq(42)
+  }),
+])
+`).toBeFormatted();
+  });
+
+  test.todo("Test.describe short", () => {
+    expect(`let t = Test.describe("descr", [
+  Test.test("my test", {
     0
     |> Expect.eq(42)
   }),

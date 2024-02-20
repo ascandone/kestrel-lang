@@ -90,13 +90,12 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
         return false;
       case "break":
         switch (mode) {
-          case "unbroken":
           case "broken":
-            width -= doc.unbroken.length;
-            break;
-
           case "forced-broken":
             return true;
+          case "unbroken":
+            width -= doc.unbroken.length;
+            break;
         }
         break;
 
@@ -210,15 +209,14 @@ export function pprint(
 
       case "group": {
         if (mode === "forced-broken") {
-          push(mode, indentation, doc.doc);
-          break;
+          throw new Error("[unrechable]");
         }
 
         const fit = fits(maxWidth - width, nestSize, {
           indentation,
           mode: "unbroken",
           doc,
-          tail: docsStack,
+          tail: null,
         });
 
         push(fit ? "unbroken" : "broken", indentation, doc.doc);

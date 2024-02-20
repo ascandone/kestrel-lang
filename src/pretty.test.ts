@@ -159,7 +159,7 @@ test("force break inside a group", () => {
   expect(pprint(docs, { maxWidth: Infinity })).toBe(`abc\ndef`);
 });
 
-test.todo("if a group breaks, do not break nested group", () => {
+test("if a group breaks, do not break nested group", () => {
   const docs = broken(
     text("a"),
     break_(),
