@@ -503,6 +503,17 @@ pub let filter_map = fn lst, f {
   ).toBeFormatted();
 });
 
+test("list that wraps", () => {
+  const src = `let x = [
+  "long-element-of-list",
+  "long-element-of-list",
+  "long-element-of-list",
+  "long-element-of-list",
+]
+`;
+  expect(src).toBeFormatted();
+});
+
 test("fn callback after list", () => {
   const src = `let x = List.map([1, 2, 3], fn x {
   x + 1
