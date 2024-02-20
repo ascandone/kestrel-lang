@@ -57,6 +57,10 @@ class Colored {
     return this.chain("\x1b[31m");
   }
 
+  get yellow() {
+    return this.chain("\x1b[33m");
+  }
+
   get bgWhite() {
     return this.chain("\x1b[47m");
   }

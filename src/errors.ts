@@ -191,12 +191,16 @@ export function errorInfoToString(
   { description, span }: ErrorInfo,
   disableColors: boolean = false,
 ): string {
-  return withDisabled(
-    disableColors,
-    () => `${col.red.tag`Error:`} ${col.bright.str(description.errorName)}
+  return withDisabled(disableColors, () => {
+    const errType =
+      description.severity === "error"
+        ? col.red.tag`Error:`
+        : col.yellow.tag`Warning:`;
+
+    return `${errType} ${col.bright.str(description.errorName)}
 
 ${description.shortDescription()}
 
-${showErrorLine(src, span)}`,
-  );
+${showErrorLine(src, span)}`;
+  });
 }
