@@ -8,6 +8,7 @@ import {
   break_,
   broken,
   group,
+  flexBreak,
 } from "./pretty";
 
 test("renders plain text", () => {
@@ -186,4 +187,44 @@ test("force break when nesting", () => {
       { maxWidth: Infinity },
     ),
   ).toBe(`abc\n  def`);
+});
+
+test("flexible break when breaking last", () => {
+  const doc = concat(
+    text("some-long-string"),
+    flexBreak(),
+    text("some-long-string"),
+    flexBreak(),
+    text("some-long-string"),
+  );
+
+  expect(pprint(doc, { maxWidth: "some-long-string".length * 2 + 3 }))
+    .toBe(`some-long-string some-long-string
+some-long-string`);
+});
+
+test("flexible break when breaking all", () => {
+  const doc = concat(
+    text("some-long-string"),
+    flexBreak("IGNORED", ">"),
+    text("some-long-string"),
+    flexBreak("IGNORED", ">"),
+    text("some-long-string"),
+  );
+
+  expect(pprint(doc, { maxWidth: 3 })).toBe(`some-long-string>
+some-long-string>
+some-long-string`);
+});
+
+test("flexible break when not breaking", () => {
+  const doc = concat(
+    text("a"),
+    flexBreak("_"),
+    text("b"),
+    flexBreak("_"),
+    text("c"),
+  );
+
+  expect(pprint(doc, { maxWidth: Infinity })).toBe(`a_b_c`);
 });
