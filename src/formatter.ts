@@ -154,12 +154,14 @@ function collectCons(ast: UntypedExpr): [UntypedExpr[], ConsEnd] {
 function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
   switch (ast.type) {
     case "pipe":
-      return asBlock(block, [
-        exprToDoc(ast.left, true),
-        lines(),
-        text("|> "),
-        exprToDoc(ast.right, true),
-      ]);
+      return broken(
+        asBlock(block, [
+          exprToDoc(ast.left, true),
+          break_(),
+          text("|> "),
+          exprToDoc(ast.right, true),
+        ]),
+      );
 
     case "constant":
       return constToDoc(ast.value);
@@ -263,7 +265,7 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         text(`let#${ns}${ast.mapper.name} ${ast.binding.name} = `),
         exprToDoc(ast.value, false),
         text(";"),
-        lines(),
+        break_(),
         exprToDoc(ast.body, true),
       );
 
@@ -271,7 +273,7 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         return inner;
       }
 
-      return concat(text("{"), indent(inner), text("}"));
+      return block_(inner);
     }
 
     case "let": {
@@ -279,7 +281,7 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         text(`let ${ast.binding.name} = `),
         exprToDoc(ast.value, false),
         text(";"),
-        lines(),
+        break_(),
         exprToDoc(ast.body, true),
       );
 
@@ -287,7 +289,7 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         return inner;
       }
 
-      return concat(text("{"), indent(inner), text("}"));
+      return block_(inner);
     }
 
     case "match": {
