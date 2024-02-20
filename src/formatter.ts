@@ -425,25 +425,22 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
       );
 
     case "adt": {
-      const variants =
-        tDecl.variants.length === 0
-          ? text(" ")
-          : sepBy(
-              break_(),
-              tDecl.variants.map((variant) =>
-                concat(
-                  text(variant.name),
-                  ...(variant.args.length === 0
-                    ? []
-                    : [
-                        text("("),
-                        sepByString(", ", variant.args.map(typeAstToDoc)),
-                        text(")"),
-                      ]),
-                  text(","),
-                ),
-              ),
-            );
+      const variants = sepBy(
+        break_(),
+        tDecl.variants.map((variant) =>
+          concat(
+            text(variant.name),
+            ...(variant.args.length === 0
+              ? []
+              : [
+                  text("("),
+                  sepByString(", ", variant.args.map(typeAstToDoc)),
+                  text(")"),
+                ]),
+            text(","),
+          ),
+        ),
+      );
 
       return concat(
         tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
