@@ -62,6 +62,10 @@ type DocStack = null | {
 function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
   // eslint-disable-next-line no-constant-condition
   while (true) {
+    if (width < 0) {
+      return false;
+    }
+
     if (docsStack === null) {
       return true;
     }
@@ -78,10 +82,6 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
       };
     }
 
-    if (width < 0) {
-      return false;
-    }
-
     switch (doc.type) {
       case "text":
         width -= doc.text.length;
@@ -91,19 +91,17 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
       case "break":
         switch (mode) {
           case "unbroken":
+          case "broken":
             width -= doc.unbroken.length;
             break;
-          case "broken":
-            if (doc.broken !== undefined) {
-              width -= doc.broken.length;
-            }
+
           case "forced-broken":
             return true;
         }
         break;
 
       case "group":
-        push("unbroken", indentation, doc.doc);
+        push(mode === "broken" ? "unbroken" : mode, indentation, doc.doc);
         break;
 
       case "concat":
@@ -207,7 +205,7 @@ export function pprint(
         break;
 
       case "force-broken":
-        push("forced-broken", indentation, doc.doc);
+        push(mode, indentation, doc.doc);
         break;
 
       case "group": {

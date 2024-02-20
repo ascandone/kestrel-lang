@@ -1,5 +1,14 @@
 import { test, expect } from "vitest";
-import { lines, concat, pprint, nest, text, break_, broken } from "./pretty";
+import {
+  lines,
+  concat,
+  pprint,
+  nest,
+  text,
+  break_,
+  broken,
+  group,
+} from "./pretty";
 
 test("renders plain text", () => {
   expect(pprint(text("Hello"))).toBe(`Hello`);
@@ -130,7 +139,43 @@ test("break respects indentation", () => {
   ).toBe(`abc\n  def`);
 });
 
-test("force break", () => {
+test("force break outside of a group", () => {
+  const docs = broken(
+    //
+    group(text("abc"), break_("-"), text("def")),
+  );
+
+  expect(pprint(docs, { maxWidth: Infinity })).toBe(`abc-def`);
+});
+
+test("force break inside a group", () => {
+  const docs = broken(
+    //
+    text("abc"),
+    break_("-"),
+    text("def"),
+  );
+
+  expect(pprint(docs, { maxWidth: Infinity })).toBe(`abc\ndef`);
+});
+
+test.todo("if a group breaks, do not break nested group", () => {
+  const docs = broken(
+    text("a"),
+    break_(),
+    text("b"),
+    break_(),
+    group(text("1"), break_(), text("2")),
+    broken(break_(), text("c")),
+  );
+
+  expect(pprint(docs, { maxWidth: Infinity })).toBe(`a
+b
+1 2
+c`);
+});
+
+test("force break when nesting", () => {
   expect(
     pprint(
       concat(

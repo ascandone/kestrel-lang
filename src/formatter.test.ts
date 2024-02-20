@@ -503,6 +503,14 @@ pub let filter_map = fn lst, f {
   ).toBeFormatted();
 });
 
+test.todo("fn callback after list", () => {
+  const src = `let x = List.map([1, 2, 3], fn x {
+  x + 1
+})
+`;
+  expect(src).toBeFormatted();
+});
+
 describe("test dsl", () => {
   test("Test.test", () => {
     expect(`let t = Test.test("example", {

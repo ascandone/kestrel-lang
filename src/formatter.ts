@@ -93,14 +93,21 @@ function indent(...docs: Doc[]): Doc {
 }
 
 function indentWithSpaceBreak(docs: Doc[], unbroken?: string): Doc {
-  return concat(nest(group(break_(""), ...docs)), break_("", unbroken));
+  return concat(
+    nest(
+      //
+      break_(""),
+      ...docs,
+    ),
+    break_("", unbroken),
+  );
 }
 
 function block_(...docs: Doc[]): Doc {
-  return broken(
+  return group(
     //
     text("{"),
-    nest(group(break_(), ...docs)),
+    broken(nest(break_(), ...docs)),
     break_(""),
     text("}"),
   );
