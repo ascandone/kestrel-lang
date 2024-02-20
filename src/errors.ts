@@ -58,7 +58,7 @@ export class UnusedVariable implements ErrorDescription {
 
   errorName = "Unused variable";
   shortDescription() {
-    const pre = `"${this.ident}" is declared but never used-.`;
+    const pre = `"${this.ident}" is declared but never used.`;
     switch (this.type) {
       case "local":
         return `${pre}\nTry to rename it to "_${this.ident}"`;
