@@ -44,6 +44,44 @@ type TailPositionData = {
   ident: string;
 };
 
+function isStructuralEq(caller: TypedExpr, args: TypedExpr[]): boolean {
+  if (caller.type !== "identifier" || caller.name !== "==") {
+    return false;
+  }
+
+  const resolvedType = args[0]!.$.resolve();
+
+  if (resolvedType.type === "unbound") {
+    return true;
+  }
+
+  if (resolvedType.value.type === "fn") {
+    return false;
+  }
+
+  if (
+    resolvedType.value.name === "Int" &&
+    resolvedType.value.moduleName === "Basics"
+  ) {
+    return false;
+  }
+
+  if (
+    resolvedType.value.name === "Float" &&
+    resolvedType.value.moduleName === "Basics"
+  ) {
+    return false;
+  }
+
+  if (
+    resolvedType.value.name === "String" &&
+    resolvedType.value.moduleName === "String"
+  ) {
+    return false;
+  }
+
+  return true;
+}
 export class Compiler {
   private frames: Frame[] = [];
   private tailCall = false;
@@ -135,8 +173,11 @@ export class Compiler {
       }
 
       case "application": {
+        const isStructuralEq_ = isStructuralEq(src.caller, src.args);
+
         const infix = getInfixPrecAndName(src);
-        if (infix !== undefined) {
+
+        if (!isStructuralEq_ && infix !== undefined) {
           const [l, r] = src.args;
           const [lStatements, lExpr] = this.compileAsExpr(l!, scope, undefined);
           const [rStatements, rExpr] = this.compileAsExpr(r!, scope, undefined);
@@ -151,11 +192,9 @@ export class Compiler {
           ];
         }
 
-        const [callerStatemens, callerExpr] = this.compileAsExpr(
-          src.caller,
-          scope,
-          undefined,
-        );
+        const [callerStatemens, callerExpr] = isStructuralEq_
+          ? [[], "Basics$_eq"]
+          : this.compileAsExpr(src.caller, scope, undefined);
 
         const statements: string[] = [...callerStatemens];
         const args: string[] = [];

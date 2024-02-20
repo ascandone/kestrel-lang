@@ -33,6 +33,12 @@ test("compile * of ints", () => {
 `);
 });
 
+test("compile == of ints", () => {
+  const out = compileSrc(`pub let x = 1 == 2`);
+  expect(out).toEqual(`const x = 1 == 2;
+`);
+});
+
 test("precedence between * and +", () => {
   const out = compileSrc(`pub let x = (1 + 2) * 3`);
   expect(out).toEqual(`const x = (1 + 2) * 3;
@@ -186,6 +192,61 @@ test("toplevel fn with params", () => {
 `);
 });
 
+test("== performs structural equality when type is unbound", () => {
+  const out = compileSrc(`
+  extern let (==): Fn(a, a) -> Bool
+  let f = fn x, y { x == y }
+`);
+
+  expect(out).toEqual(`function f(x, y) {
+  return Basics$_eq(x, y);
+}
+`);
+});
+
+test("== performs structural equality when type is adt", () => {
+  const out = compileSrc(`
+  type T { C(Int) }
+  let f = C(0) == C(1)
+`);
+
+  expect(out).toEqual(`function C(a0) {
+  return { type: "C", a0 };
+}
+const f = Basics$_eq(C(0), C(1));
+`);
+});
+
+test("== doesn't perform structural equality when type is int", () => {
+  const out = compileSrc(`
+  extern let (==): Fn(a, a) -> Bool
+  let f = 2 == 0
+`);
+
+  expect(out).toEqual(`const f = 2 == 0;
+`);
+});
+
+test("== doesn't perform structural equality when type is string", () => {
+  const out = compileSrc(`
+  extern let (==): Fn(a, a) -> Bool
+  let f = "a" == "b"
+`);
+
+  expect(out).toEqual(`const f = "a" == "b";
+`);
+});
+
+test("== doesn't perform structural equality when type is float", () => {
+  const out = compileSrc(`
+  extern let (==): Fn(a, a) -> Bool
+  let f = 1.2 == 3.2
+`);
+
+  expect(out).toEqual(`const f = 1.2 == 3.2;
+`);
+});
+
 test("fn inside if return", () => {
   const out = compileSrc(`
   let f =
@@ -275,6 +336,7 @@ if (0) {
 
 test("tail position if", () => {
   const out = compileSrc(`
+    extern let (==): Fn(a, a) -> Bool
     let is_zero = fn n {
       if n == 0 {
         "yes"
@@ -297,6 +359,7 @@ test("tail position if", () => {
 test("nested ifs", () => {
   // TODO switch this to if-else syntax
   const out = compileSrc(`
+    extern let (==): Fn(a, a) -> Bool
     let is_zero = fn n {
       if n == 0 {
         "zero"
@@ -345,6 +408,7 @@ if (x$a == 1) {
 
 test("eval if", () => {
   const out = compileSrc(`
+    extern let (==): Fn(a, a) -> Bool
     let is_zero = fn n {
       if n == 0 {
         "yes"
@@ -914,6 +978,7 @@ function loop() {
 
   test("inside if", () => {
     const out = compileSrc(`
+      extern let (==): Fn(a, a) -> Bool
       let to_zero = fn x {
         if x == 0 {
           x
