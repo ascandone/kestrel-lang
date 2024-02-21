@@ -192,7 +192,9 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
             [
               sepBy(
                 concat(text(","), break_()),
-                [ast.args[0]!, ...xs].map((expr) => exprToDoc(expr, true)),
+                [ast.args[0]!, ...xs].map((expr) =>
+                  exprToDoc(expr, expr.type !== "let" && expr.type !== "let#"),
+                ),
               ),
             ],
             ",",

@@ -558,6 +558,27 @@ test("long arg as last arg", () => {
   expect(src).toBeFormatted();
 });
 
+test("let inside list", () => {
+  const src = `let x = [
+  {
+    let x = 42;
+    0
+  },
+]
+`;
+  expect(src).toBeFormatted();
+});
+
+test("fn inside list", () => {
+  const src = `let x = [
+  fn {
+    0
+  },
+]
+`;
+  expect(src).toBeFormatted();
+});
+
 describe("test dsl", () => {
   test("Test.test", () => {
     expect(`let t = Test.test("example", {
