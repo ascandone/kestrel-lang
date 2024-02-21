@@ -1,4 +1,4 @@
-export type Mode = "unbroken" | "broken" | "forced-broken";
+export type Mode = "unbroken" | "broken" | "forced-broken" | "forced-unbroken";
 
 export type NestCondition = "always" | "when-broken";
 
@@ -8,7 +8,7 @@ export type Doc =
   | { type: "lines"; lines: number }
   | { type: "break"; unbroken: string; broken?: string; flex: boolean }
   | { type: "force-broken"; doc: Doc }
-  | { type: "next-break-fits"; doc: Doc }
+  | { type: "next-break-fits"; doc: Doc; enabled: boolean }
   | { type: "nest"; doc: Doc; condition: NestCondition }
   | { type: "group"; doc: Doc };
 
@@ -33,8 +33,8 @@ export function flexBreak(unbroken: string = " ", broken?: string): Doc {
   return { type: "break", unbroken, broken, flex: true };
 }
 
-export function nextBreakFits(doc: Doc): Doc {
-  return { type: "next-break-fits", doc };
+export function nextBreakFits(doc: Doc, enabled = true): Doc {
+  return { type: "next-break-fits", doc, enabled };
 }
 
 export function broken(...docs: Doc[]): Doc {
@@ -117,7 +117,13 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
         return false;
 
       case "next-break-fits":
-        push("forced-broken", indentation, doc.doc);
+        if (!doc.enabled) {
+          push("forced-unbroken", indentation, doc.doc);
+        } else if (mode === "forced-unbroken") {
+          push(mode, indentation, doc.doc);
+        } else {
+          push("forced-broken", indentation, doc.doc);
+        }
         break;
 
       case "break":
@@ -126,6 +132,7 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
           case "forced-broken":
             return true;
           case "unbroken":
+          case "forced-unbroken":
             width -= doc.unbroken.length;
             break;
         }
@@ -253,6 +260,7 @@ export function pprint(
 
         switch (mode) {
           case "unbroken":
+          case "forced-unbroken":
             buf.push(doc.unbroken);
             width += doc.unbroken.length;
             break;
