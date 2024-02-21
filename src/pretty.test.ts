@@ -10,6 +10,7 @@ import {
   group,
   flexBreak,
   nextBreakFits,
+  nestOnBreak,
 } from "./pretty";
 
 test("renders plain text", () => {
@@ -260,5 +261,27 @@ b
 1
 2`;
     expect(pprint(doc, { maxWidth: 1 })).toBe(out3);
+  });
+
+  test("using conditional nesting", () => {
+    const doc = nestOnBreak(
+      text("first_value"),
+      break_(),
+      text("second_value"),
+      nextBreakFits(
+        group(
+          //
+          break_("<unreachable>"),
+          text("some_long_spanning_stuff"),
+        ),
+      ),
+    );
+
+    const out = `first_value second_value
+some_long_spanning_stuff`;
+
+    expect(pprint(doc, { maxWidth: "first_value second_value  ".length })).toBe(
+      out,
+    );
   });
 });

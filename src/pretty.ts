@@ -1,5 +1,7 @@
 export type Mode = "unbroken" | "broken" | "forced-broken";
 
+export type NestCondition = "always" | "when-broken";
+
 export type Doc =
   | { type: "text"; text: string }
   | { type: "concat"; docs: Doc[] }
@@ -7,7 +9,7 @@ export type Doc =
   | { type: "break"; unbroken: string; broken?: string; flex: boolean }
   | { type: "force-broken"; doc: Doc }
   | { type: "next-break-fits"; doc: Doc }
-  | { type: "nest"; doc: Doc }
+  | { type: "nest"; doc: Doc; condition: NestCondition }
   | { type: "group"; doc: Doc };
 
 export const nil = concat();
@@ -52,7 +54,19 @@ export function lines(lines = 0): Doc {
 }
 
 export function nest(...docs: Doc[]): Doc {
-  return concat(...docs.map((doc) => ({ type: "nest", doc }) satisfies Doc));
+  return concat(
+    ...docs.map(
+      (doc) => ({ type: "nest", doc, condition: "always" }) satisfies Doc,
+    ),
+  );
+}
+
+export function nestOnBreak(...docs: Doc[]): Doc {
+  return concat(
+    ...docs.map(
+      (doc) => ({ type: "nest", doc, condition: "when-broken" }) satisfies Doc,
+    ),
+  );
 }
 
 export type FormatOptions = {
@@ -126,9 +140,17 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
       case "lines":
         return true;
 
-      case "nest":
-        push(mode, indentation + nestSize, doc.doc);
+      case "nest": {
+        let newIndentation;
+        switch (doc.condition) {
+          case "always":
+            newIndentation = indentation + nestSize;
+          case "when-broken":
+            newIndentation = indentation;
+        }
+        push(mode, newIndentation, doc.doc);
         break;
+      }
     }
   }
 }
@@ -187,9 +209,15 @@ export function pprint(
         width = indentation;
         break;
 
-      case "nest":
-        push(mode, indentation + nestSize, doc.doc);
+      case "nest": {
+        const addedSize =
+          doc.condition === "always" ||
+          (doc.condition === "when-broken" && mode === "broken")
+            ? nestSize
+            : 0;
+        push(mode, indentation + addedSize, doc.doc);
         break;
+      }
 
       case "concat":
         for (let i = doc.docs.length - 1; i >= 0; i--) {
