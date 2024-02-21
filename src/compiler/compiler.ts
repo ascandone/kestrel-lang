@@ -1,6 +1,8 @@
+import { exit } from "process";
 import { ConstLiteral, MatchPattern, TypeVariant } from "../parser";
 import { TypedExpr, TypedModule } from "../typecheck";
 import { ConcreteType } from "../typecheck/type";
+import { col } from "../utils/colors";
 
 const builtinValues: Scope = {
   True: "true",
@@ -721,7 +723,8 @@ export function compileProject(
     visited.add(ns);
     const module = typedProject[ns];
     if (module === undefined) {
-      throw new Error("[unreachable] module not found: " + ns);
+      console.error(col.red.tag`Error:`, `Could not find module '${ns}'`);
+      exit(1);
     }
 
     for (const import_ of module.imports) {
