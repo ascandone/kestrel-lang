@@ -602,8 +602,8 @@ describe("test dsl", () => {
 `).toBeFormatted();
   });
 
-  test.todo("Test.describe short", () => {
-    expect(`let t = [
+  test("Test.describe short", () => {
+    expect(`let t = Test.describe("example", [
   Test.test("my test", {
     0
     |> Expect.eq(42)
@@ -612,7 +612,7 @@ describe("test dsl", () => {
     0
     |> Expect.eq(42)
   }),
-]
+])
 `).toBeFormatted();
   });
 });
