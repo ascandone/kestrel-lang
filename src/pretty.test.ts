@@ -1,4 +1,4 @@
-import { test, expect } from "vitest";
+import { test, expect, describe } from "vitest";
 import {
   lines,
   concat,
@@ -9,6 +9,7 @@ import {
   broken,
   group,
   flexBreak,
+  nextBreakFits,
 } from "./pretty";
 
 test("renders plain text", () => {
@@ -227,4 +228,37 @@ test("flexible break when not breaking", () => {
   );
 
   expect(pprint(doc, { maxWidth: Infinity })).toBe(`a_b_c`);
+});
+
+describe("next break fits", () => {
+  test("prevents wrapping", () => {
+    const doc = concat(
+      //
+      text("a"),
+      break_("-"),
+      text("b"),
+      break_("-"),
+      nextBreakFits(
+        group(
+          //
+          text("1"),
+          break_("-"),
+          text("2"),
+        ),
+      ),
+    );
+
+    const out1 = `a-b-1
+2`;
+    expect(pprint(doc, { maxWidth: "a-b-1".length })).toBe(out1);
+
+    const out2 = `a-b-1-2`;
+    expect(pprint(doc, { maxWidth: Infinity })).toBe(out2);
+
+    const out3 = `a
+b
+1
+2`;
+    expect(pprint(doc, { maxWidth: 1 })).toBe(out3);
+  });
 });

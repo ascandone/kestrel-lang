@@ -6,6 +6,7 @@ export type Doc =
   | { type: "lines"; lines: number }
   | { type: "break"; unbroken: string; broken?: string; flex: boolean }
   | { type: "force-broken"; doc: Doc }
+  | { type: "next-break-fits"; doc: Doc }
   | { type: "nest"; doc: Doc }
   | { type: "group"; doc: Doc };
 
@@ -28,6 +29,10 @@ export function break_(unbroken: string = " ", broken?: string): Doc {
 
 export function flexBreak(unbroken: string = " ", broken?: string): Doc {
   return { type: "break", unbroken, broken, flex: true };
+}
+
+export function nextBreakFits(doc: Doc): Doc {
+  return { type: "next-break-fits", doc };
 }
 
 export function broken(...docs: Doc[]): Doc {
@@ -92,6 +97,11 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
         break;
       case "force-broken":
         return false;
+
+      case "next-break-fits":
+        push("forced-broken", indentation, doc.doc);
+        break;
+
       case "break":
         switch (mode) {
           case "broken":
@@ -229,6 +239,7 @@ export function pprint(
         break;
 
       case "force-broken":
+      case "next-break-fits":
         push(mode, indentation, doc.doc);
         break;
 
