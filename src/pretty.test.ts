@@ -285,3 +285,42 @@ some_long_spanning_stuff`;
     );
   });
 });
+
+test("example: fn application", () => {
+  const fnDoc = group(
+    text("fn {"),
+    broken(
+      nest(
+        //
+        break_("NOT_SHOWN"),
+        text("body"),
+      ),
+      break_(),
+      text("}"),
+    ),
+  );
+  expect(pprint(fnDoc, { maxWidth: Infinity })).toBe(`fn {
+  body
+}`);
+
+  const doc = concat(
+    //
+    text("f("),
+    nestOnBreak(
+      //
+      break_(""),
+      text("first_arg,"),
+      break_(),
+      text("second_arg,"),
+      break_(),
+      nextBreakFits(fnDoc),
+    ),
+    break_(""),
+    text(")"),
+  );
+
+  expect(pprint(doc, { maxWidth: Infinity }))
+    .toBe(`f(first_arg, second_arg, fn {
+  body
+})`);
+});

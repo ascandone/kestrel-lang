@@ -110,6 +110,10 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
         width -= doc.text.length;
         break;
       case "force-broken":
+        if (mode === "forced-broken") {
+          push(mode, indentation, doc.doc);
+          break;
+        }
         return false;
 
       case "next-break-fits":
