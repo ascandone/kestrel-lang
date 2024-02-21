@@ -22,6 +22,8 @@ import {
   break_,
   broken,
   group,
+  nextBreakFits,
+  nestOnBreak,
 } from "./pretty";
 
 const ORDERED_PREFIX_SYMBOLS = [["!"]];
@@ -223,13 +225,25 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
       const isTuple =
         ast.caller.type === "identifier" && ast.caller.name === "Tuple2";
 
-      return concat(
+      return group(
         isTuple ? nil : exprToDoc(ast.caller, false),
         text("("),
-        sepBy(
-          text(", "),
-          ast.args.map((arg) => exprToDoc(arg, false)),
+        nestOnBreak(
+          break_(""),
+          sepBy(
+            concat(text(","), break_()),
+            ast.args.map((arg, index, arr) => {
+              const isLast = index === arr.length - 1;
+              const inner = exprToDoc(arg, false);
+              if (isLast) {
+                return nextBreakFits(group(inner));
+              } else {
+                return inner;
+              }
+            }),
+          ),
         ),
+        break_("", ","),
         text(")"),
       );
     }

@@ -38,13 +38,12 @@ test("application with many args", () => {
   expect(`let x = f(0, 1, 2)\n`).toBeFormatted();
 });
 
-test.todo("application that wraps", () => {
+test("application that wraps", () => {
   expect(`let x = f(
   long_spanning_val,
-  long_spanning_fn(1, 2, 4, 5, 6),
+  long_spanning_fn(1, 2, 3),
   long_spanning_val,
   long_spanning_val,
-  long_spanning_val
 )
 `).toBeFormatted();
 });
