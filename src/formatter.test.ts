@@ -531,6 +531,33 @@ test("fn callback after list", () => {
   expect(src).toBeFormatted();
 });
 
+test("match as last arg", () => {
+  const src = `let x = f(a, b, match expr {
+  b => 42,
+})
+`;
+  expect(src).toBeFormatted();
+});
+
+test("let block as last arg", () => {
+  const src = `let x = f(a, b, {
+  let x = 42;
+  value
+})
+`;
+  expect(src).toBeFormatted();
+});
+
+test("long arg as last arg", () => {
+  const src = `let x = f(
+  a,
+  b,
+  "something that should wrap 'cause its very long and it's overflowing",
+)
+`;
+  expect(src).toBeFormatted();
+});
+
 describe("test dsl", () => {
   test("Test.test", () => {
     expect(`let t = Test.test("example", {
@@ -555,12 +582,16 @@ describe("test dsl", () => {
   });
 
   test.todo("Test.describe short", () => {
-    expect(`let t = Test.describe("descr", [
+    expect(`let t = [
   Test.test("my test", {
     0
     |> Expect.eq(42)
   }),
-])
+  Test.test("my test", {
+    0
+    |> Expect.eq(42)
+  }),
+]
 `).toBeFormatted();
   });
 });
@@ -578,6 +609,9 @@ expect.extend({
   toBeFormatted(received, expected = received) {
     const formatted = format(unsafeParse(received));
 
+    if (expected !== formatted) {
+      console.log(formatted);
+    }
     return {
       pass: expected === formatted,
       expected,
