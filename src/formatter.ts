@@ -187,11 +187,12 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         }
         return group(
           text("["),
+
           indentWithSpaceBreak(
             [
               sepBy(
                 concat(text(","), break_()),
-                [ast.args[0]!, ...xs].map((expr) => exprToDoc(expr, false)),
+                [ast.args[0]!, ...xs].map((expr) => exprToDoc(expr, true)),
               ),
             ],
             ",",

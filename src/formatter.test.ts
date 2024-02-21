@@ -113,6 +113,16 @@ test("pipe operator in let", () => {
 `).toBeFormatted();
 });
 
+test("pipe within a list", () => {
+  expect(`let t = Test.describe("descr", [
+  example_value
+  |> Expect.eq(42),
+  example_value
+  |> Expect.eq(2),
+])
+`).toBeFormatted();
+});
+
 test("pipe operator in let", () => {
   expect(`let x = f(1, 2, {
   arg
