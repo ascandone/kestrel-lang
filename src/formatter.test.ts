@@ -10,6 +10,10 @@ test("float lit", () => {
   expect(`let x = 1.2\n`).toBeFormatted();
 });
 
+test("float lit that is integer", () => {
+  expect(`let x = 2.0\n`).toBeFormatted();
+});
+
 test("string lit", () => {
   expect(`let x = "abc"\n`).toBeFormatted();
 });

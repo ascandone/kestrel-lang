@@ -84,8 +84,12 @@ function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
 function constToDoc(lit: ConstLiteral): Doc {
   switch (lit.type) {
     case "int":
-    case "float":
       return text(lit.value.toString());
+    case "float": {
+      const str = lit.value.toString();
+      return text(str.includes(".") ? str : `${str}.0`);
+    }
+
     case "string":
       return text(`"${lit.value}"`);
   }
