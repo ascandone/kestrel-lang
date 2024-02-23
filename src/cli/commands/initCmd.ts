@@ -32,6 +32,14 @@ jobs:
         run: kestrel check
 `;
 
+const DEFAULT_EXTENSIONS_FILE = JSON.stringify(
+  {
+    recommendations: ["ascandone.kestrel-vscode"],
+  },
+  null,
+  2,
+);
+
 async function initGit(path: string) {
   await writeFile(join(path, ".gitignore"), DEFAULT_GITIGNORE);
 
@@ -42,6 +50,15 @@ async function initGit(path: string) {
   await execP(`git init -b main ${path}`);
 }
 
+async function initVscode(path: string) {
+  const vscodeExtensionFolder = join(path, ".vscode");
+  await mkdir(vscodeExtensionFolder, { recursive: true });
+  await writeFile(
+    join(vscodeExtensionFolder, "extensions.json"),
+    DEFAULT_EXTENSIONS_FILE,
+  );
+}
+
 export async function initCmd(projectName: string) {
   // TODO project name validation
 
@@ -49,6 +66,8 @@ export async function initCmd(projectName: string) {
   const path = join(process.cwd(), projectName);
   await writeConfig(path, defaultConfig);
   process.stdout.write(`${col.blue.tag`[info]`} Created project\n`);
+
+  await initVscode(path);
 
   await initGit(path);
   process.stdout.write(`${col.blue.tag`[info]`} Initialized git project\n`);
