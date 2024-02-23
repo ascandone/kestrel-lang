@@ -710,6 +710,12 @@ export function compileProject(
   typedProject: Record<string, TypedModule>,
   { entrypoint = defaultEntryPoint, externs = {} }: CompileOptions = {},
 ): string {
+  const entry = typedProject[entrypoint.module]!;
+  const mainDecl = entry.declarations.find((d) => d.binding.name === "main");
+  if (mainDecl === undefined) {
+    throw new Error("Entrypoint needs a value called `main`.");
+  }
+
   const compiler = new Compiler();
   const visited = new Set<string>();
 

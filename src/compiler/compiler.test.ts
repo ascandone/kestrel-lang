@@ -1268,7 +1268,17 @@ Main$main.run(() => {});
 `);
   });
 
-  test.todo("compilation error when main has the wrong type");
+  test("throws when main is missing", () => {
+    expect(() =>
+      compileRawProject(
+        {
+          Main: ``,
+        },
+        { entrypoint: testEntryPoint },
+      ),
+    ).toThrow();
+  });
+
   test.todo("error when extern types are not found");
 });
 

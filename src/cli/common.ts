@@ -176,11 +176,16 @@ export async function compilePath(
     }
   }
 
-  return compileProject(typedProject, {
-    externs,
-    entrypoint: {
-      ...defaultEntryPoint,
-      module: entryPointModule ?? defaultEntryPoint.module,
-    },
-  });
+  try {
+    return compileProject(typedProject, {
+      externs,
+      entrypoint: {
+        ...defaultEntryPoint,
+        module: entryPointModule ?? defaultEntryPoint.module,
+      },
+    });
+  } catch (e) {
+    console.error(col.red.tag`Error:`, (e as Error).message);
+    exit(1);
+  }
 }
