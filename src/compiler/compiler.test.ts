@@ -1279,6 +1279,20 @@ Main$main.run(() => {});
     ).toThrow();
   });
 
+  test("throws when main is not public", () => {
+    expect(() =>
+      compileRawProject(
+        {
+          Main: `
+            let main = "main"
+            pub let f = main
+          `,
+        },
+        { entrypoint: testEntryPoint },
+      ),
+    ).toThrow();
+  });
+
   test.todo("error when extern types are not found");
 });
 

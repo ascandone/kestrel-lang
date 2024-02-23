@@ -711,7 +711,9 @@ export function compileProject(
   { entrypoint = defaultEntryPoint, externs = {} }: CompileOptions = {},
 ): string {
   const entry = typedProject[entrypoint.module]!;
-  const mainDecl = entry.declarations.find((d) => d.binding.name === "main");
+  const mainDecl = entry.declarations.find(
+    (d) => d.binding.name === "main" && d.pub,
+  );
   if (mainDecl === undefined) {
     throw new Error("Entrypoint needs a value called `main`.");
   }
