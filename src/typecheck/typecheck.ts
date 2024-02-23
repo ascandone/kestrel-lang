@@ -66,8 +66,9 @@ export function typecheck(
   module: UntypedModule,
   deps: Deps = {},
   implicitImports: UntypedImport[] = defaultImports,
+  mainType = DEFAULT_MAIN_TYPE,
 ): [TypedModule, ErrorInfo[]] {
-  return new Typechecker(ns, deps).run(module, implicitImports);
+  return new Typechecker(ns, deps, mainType).run(module, implicitImports);
 }
 
 type GlobalScope = Record<string, IdentifierResolution>;
@@ -83,6 +84,7 @@ class Typechecker {
   constructor(
     private ns: string,
     private deps: Deps,
+    private mainType: Type,
   ) {}
 
   run(
@@ -444,6 +446,10 @@ class Typechecker {
         instantiateFromScheme(th, {}),
         decl.binding.$.asType(),
       );
+    }
+
+    if (decl.binding.name === "main") {
+      this.unifyNode(decl.binding, decl.binding.$.asType(), this.mainType);
     }
 
     if (decl.extern) {
@@ -1067,6 +1073,7 @@ type TypeAstConversionType =
 export function typecheckProject(
   project: Record<string, UntypedModule>,
   implicitImports: UntypedImport[] = defaultImports,
+  mainType = DEFAULT_MAIN_TYPE,
 ): ProjectTypeCheckResult {
   const sortedModules = topSortedModules(project, implicitImports);
 
@@ -1083,6 +1090,7 @@ export function typecheckProject(
       module,
       deps,
       CORE_MODULES.includes(ns) ? [] : implicitImports,
+      mainType,
     );
     projectResult[ns] = tc;
     deps[ns] = tc[0];
@@ -1152,3 +1160,21 @@ const String: Type = {
   name: "String",
   args: [],
 };
+
+const Unit: Type = {
+  type: "named",
+  moduleName: "Basics",
+  name: "Unit",
+  args: [],
+};
+
+function Task(arg: Type): Type {
+  return {
+    type: "named",
+    moduleName: "Task",
+    name: "Task",
+    args: [arg],
+  };
+}
+
+export const DEFAULT_MAIN_TYPE = Task(Unit);

@@ -1301,6 +1301,12 @@ describe("typecheck project", () => {
   });
 });
 
+test("type error when main has not type Task<Unit>", () => {
+  const [_, errors] = tc(`pub let main = "not-task-type"`);
+  expect(errors).toHaveLength(1);
+  expect(errors[0]?.description).toBeInstanceOf(TypeMismatch);
+});
+
 function tcProgram(
   ns: string,
   src: string,

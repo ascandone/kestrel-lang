@@ -1298,14 +1298,24 @@ Main$main.run(() => {});
 
 function compileSrc(src: string, ns?: string) {
   const parsed = unsafeParse(src);
-  const [program] = typecheck(ns ?? "Main", parsed, {}, []);
+  const [program] = typecheck(
+    ns ?? "Main",
+    parsed,
+    {},
+    [],
+    testEntryPoint.type,
+  );
   const out = new Compiler().compile(program, ns);
   return out;
 }
 
 // Returns Main
 function compileSrcWithDeps(rawProject: Record<string, string>): string {
-  const res = typecheckProject(parseProject(rawProject), []);
+  const res = typecheckProject(
+    parseProject(rawProject),
+    [],
+    testEntryPoint.type,
+  );
   const Main = res.Main!;
   return new Compiler().compile(Main[0], "Main");
 }
@@ -1333,7 +1343,11 @@ function compileRawProject(
   options: CompileOptions = { entrypoint: testEntryPoint },
 ): string {
   const untypedProject = parseProject(rawProject);
-  const typecheckResult = typecheckProject(untypedProject, []);
+  const typecheckResult = typecheckProject(
+    untypedProject,
+    [],
+    testEntryPoint.type,
+  );
 
   const typedProject: Record<string, TypedModule> = {};
   for (const [ns, [typedModule, errs]] of Object.entries(typecheckResult)) {
