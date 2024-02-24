@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { format } from "../formatter";
 import { unsafeParse } from "../parser";
-import { optimize } from "./optimize";
+import { optimizeModule } from "./optimize";
 import { typecheck } from "../typecheck";
 
 describe("constant folding", () => {
@@ -195,7 +195,7 @@ expect.extend({
     const parsedSrc = unsafeParse(received);
     const [typed] = typecheck("Main", parsedSrc, {}, []);
 
-    const optimized = optimize(typed);
+    const optimized = optimizeModule(typed);
     const optFormatted = format(optimized).trimStart().trimEnd();
 
     const expectedNormalized = expected.trimStart().trimEnd();

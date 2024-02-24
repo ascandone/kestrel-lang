@@ -185,7 +185,7 @@ function optimizeExpr(src: TypedExpr): TypedExpr {
   }
 }
 
-export function optimize(src: TypedModule): TypedModule {
+export function optimizeModule(src: TypedModule): TypedModule {
   return {
     ...src,
     declarations: src.declarations.map((decl) => {
