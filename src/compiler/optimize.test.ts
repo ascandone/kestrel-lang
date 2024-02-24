@@ -23,6 +23,28 @@ describe("constant folding", () => {
   });
 });
 
+describe("fold iif", () => {
+  test("with no args", () => {
+    expect(`
+    let a = fn { x * y } ()
+`).toOptimizeAs(`
+let a = x * y
+  `);
+  });
+
+  test("with many args", () => {
+    expect(`
+    let a = fn x, y { x * y } (f(), g())
+`).toOptimizeAs(`
+let a = {
+  let x = f();
+  let y = g();
+  x * y
+}
+  `);
+  });
+});
+
 test("apply opt to many statements", () => {
   expect(`
     let x = 1 + 2

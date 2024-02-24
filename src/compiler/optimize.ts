@@ -1,5 +1,5 @@
-import { ConstLiteral } from "../parser";
-import { TypedExpr, TypedModule } from "../typecheck";
+import { Binding, ConstLiteral } from "../parser";
+import { TypeMeta, TypedExpr, TypedModule } from "../typecheck";
 
 type Optimization = (src: TypedExpr) => TypedExpr | undefined;
 
@@ -68,7 +68,33 @@ const constantFolding: Optimization = (src) => {
   }
 };
 
-const OPTIMIZATIONS: Optimization[] = [constantFolding];
+const iifFolding: Optimization = (src) => {
+  if (src.type !== "application") {
+    return undefined;
+  }
+
+  if (src.caller.type !== "fn") {
+    return undefined;
+  }
+
+  const zipped = src.caller.params.map<[Binding<TypeMeta>, TypedExpr]>(
+    (param, index) => [param, src.args[index]!] as const,
+  );
+
+  return zipped.reduceRight(
+    (acc, [binding, arg]): TypedExpr => ({
+      type: "let",
+      span: src.span,
+      $: src.$,
+      binding,
+      body: acc,
+      value: arg,
+    }),
+    src.caller.body,
+  );
+};
+
+const OPTIMIZATIONS: Optimization[] = [constantFolding, iifFolding];
 
 class ChangeTracker {
   public patchedNode = false;
