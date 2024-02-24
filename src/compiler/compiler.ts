@@ -3,6 +3,7 @@ import { ConstLiteral, MatchPattern, TypeVariant } from "../parser";
 import { TypedExpr, TypedModule } from "../typecheck";
 import { ConcreteType } from "../typecheck/type";
 import { col } from "../utils/colors";
+import { optimizeModule } from "./optimize";
 
 const builtinValues: Scope = {
   True: "true",
@@ -690,6 +691,7 @@ function moduleNamespacedBinding(name: string, ns: string | undefined): string {
 
 export type CompileOptions = {
   externs?: Record<string, string>;
+  optimize?: boolean;
   entrypoint?: {
     module: string;
     type: ConcreteType;
@@ -708,7 +710,11 @@ export const defaultEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
 
 export function compileProject(
   typedProject: Record<string, TypedModule>,
-  { entrypoint = defaultEntryPoint, externs = {} }: CompileOptions = {},
+  {
+    entrypoint = defaultEntryPoint,
+    externs = {},
+    optimize = false,
+  }: CompileOptions = {},
 ): string {
   const entry = typedProject[entrypoint.module]!;
   const mainDecl = entry.declarations.find(
@@ -744,7 +750,11 @@ export function compileProject(
       buf.push(extern);
     }
 
-    const out = compiler.compile(module, ns);
+    const out = compiler.compile(
+      optimize ? optimizeModule(module) : module,
+      ns,
+    );
+
     buf.push(out);
   }
 

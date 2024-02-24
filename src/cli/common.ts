@@ -161,6 +161,7 @@ export async function checkProject(
 export async function compilePath(
   path: string,
   entryPointModule?: string,
+  optimize?: boolean,
 ): Promise<string> {
   const rawProject = await readProjectWithDeps(path);
   const typedProject = await checkProject(rawProject);
@@ -179,6 +180,7 @@ export async function compilePath(
   try {
     return compileProject(typedProject, {
       externs,
+      optimize,
       entrypoint: {
         ...defaultEntryPoint,
         module: entryPointModule ?? defaultEntryPoint.module,

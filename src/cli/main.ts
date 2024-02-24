@@ -29,6 +29,8 @@ program
 program
   .command("compile")
   .option("--out <path>")
+  // TODO add the flag when is fixed
+  // .option("--optimize")
   .description("Compile the file into a js file")
   .action(compileCmd);
 
