@@ -164,6 +164,29 @@ test("function inlining example", () => {
   `).toOptimizeAs(`let glb = 101`);
 
   expect(`
+    pub let map = fn m, f {
+      let and_then = fn m, f {
+        match m {
+          Just(x) => f(x),
+          Nothing => Nothing,
+        }
+      };
+
+      and_then(m, fn x {
+        Just(f(x))
+      })
+    }
+  
+  `).toOptimizeAs(`
+pub let map = fn m, f {
+  match m {
+    Just(x) => Just(f(x)),
+    Nothing => Nothing,
+  }
+}
+`);
+
+  expect(`
   let glb = {
     let maybe_map = fn x, f {
       match x {
