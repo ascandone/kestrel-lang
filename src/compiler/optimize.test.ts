@@ -34,14 +34,54 @@ let a = x * y
 
   test("with many args", () => {
     expect(`
-    let a = fn x, y { x * y } (f(), g())
+    let a = fn x, y { x * x * y * y } (f(), g())
 `).toOptimizeAs(`
 let a = {
   let x = f();
   let y = g();
-  x * y
+  x * x * y * y
 }
   `);
+  });
+});
+
+describe("inline let bindings", () => {
+  test("does not apply to recursive functions that are only used once", () => {
+    expect(`
+    let glb = {
+      let rec = fn x { rec(x) };
+      rec(10)
+    }
+    `).toOptimizeAs(`
+let glb = {
+  let rec = fn x {
+    rec(x)
+  };
+  rec(10)
+}
+`);
+  });
+
+  test("remove unused bindings", () => {
+    expect(`
+let glb = {
+  let unused = f();
+  g()
+}
+`).toOptimizeAs(`
+let glb = g()
+`);
+  });
+
+  test("inline let binding when is only used once", () => {
+    expect(`
+let g = {
+  let x = f();
+  g(x)
+}
+    `).toOptimizeAs(`
+let g = g(f())
+`);
   });
 });
 
@@ -99,10 +139,7 @@ let x = {
   1 + 10 + a
 }
   `).toOptimizeAs(`
-let x = {
-  let a = f(11);
-  11 + a
-}
+let x = 11 + f(11)
 `);
 });
 
@@ -114,6 +151,32 @@ let x = match 1 + 2 {
   `).toOptimizeAs(`
 let x = match 3 {
   _ => 30,
+}
+`);
+});
+
+test("function inlining example", () => {
+  expect(`
+  let glb = {
+    let add1 = fn x { x + 1 };
+    add1(100)
+  }
+  `).toOptimizeAs(`let glb = 101`);
+
+  expect(`
+  let glb = {
+    let maybe_map = fn x, f {
+      match x {
+        Nothing => Nothing,
+        Just(v) => f(v),
+      }
+    };
+    maybe_map(Just(42), fn x { x + 1 })
+  }
+  `).toOptimizeAs(`
+let glb = match Just(42) {
+  Nothing => Nothing,
+  Just(v) => v + 1,
 }
 `);
 });
