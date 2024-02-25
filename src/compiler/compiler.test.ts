@@ -1112,7 +1112,7 @@ const MyModule$c2_example = MyModule$C2(42);
 
   test("values imported with unqualfied imports are resolved with the right namespace", () => {
     const out = compileSrcWithDeps({
-      ExampleModule: `let value_name = 42`,
+      ExampleModule: `pub let value_name = 42`,
       Main: `
         import ExampleModule.{value_name}
         let a = value_name
@@ -1123,7 +1123,7 @@ const MyModule$c2_example = MyModule$C2(42);
 
   test("values imported with unqualfied imports in nested modules are resolved with the right namespace", () => {
     const out = compileSrcWithDeps({
-      "Nested/Mod": `let value_name = 42`,
+      "Nested/Mod": `pub let value_name = 42`,
       Main: `
         import Nested/Mod.{value_name}
         let a = value_name
@@ -1134,7 +1134,7 @@ const MyModule$c2_example = MyModule$C2(42);
 
   test("values imported with ualfied imports in nested modules are resolved with the right namespace", () => {
     const out = compileSrcWithDeps({
-      "Nested/Mod": `let value_name = 42`,
+      "Nested/Mod": `pub let value_name = 42`,
       Main: `
         import Nested/Mod
         let a = Nested/Mod.value_name
@@ -1145,7 +1145,7 @@ const MyModule$c2_example = MyModule$C2(42);
 
   test("values imported from another module are resolved with the right namespace", () => {
     const out = compileSrcWithDeps({
-      ExampleModule: "let value_name = 42",
+      ExampleModule: "pub let value_name = 42",
       Main: `
       import ExampleModule
       let a = ExampleModule.value_name
@@ -1156,7 +1156,7 @@ const MyModule$c2_example = MyModule$C2(42);
 
   test("constructors imported with unqualfied imports are resolved with the right namespace", () => {
     const out = compileSrcWithDeps({
-      ExampleModule: `pub type T { Constr }`,
+      ExampleModule: `pub(..) type T { Constr }`,
       Main: `
       import ExampleModule.{T(..)}
       let a = Constr
