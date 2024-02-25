@@ -557,29 +557,43 @@ const f = 0;
 });
 
 test("represent True as true", () => {
-  const out = compileSrc(`
-    let x = True
-  `);
+  const out = compileSrcWithDeps({
+    Basics: `pub(..) type Bool { True, False }`,
+    Main: `
+      import Basics.{Bool(..)}
+      let x = True
+    `,
+  });
 
-  expect(out).toEqual(`const x = true;
+  expect(out).toEqual(`const Main$x = true;
 `);
 });
 
 test("represent False as false", () => {
-  const out = compileSrc(`
-    let x = False
-  `);
+  const out = compileSrcWithDeps({
+    Basics: `pub(..) type Bool { True, False }`,
+    Main: `
+      import Basics.{Bool(..)}
+      let x = False
+    `,
+  });
 
-  expect(out).toEqual(`const x = false;
+  expect(out).toEqual(`const Main$x = false;
 `);
 });
 
 test("represent Unit as null", () => {
-  const out = compileSrc(`
+  const out = compileSrcWithDeps({
+    Basics: `
+      pub(..) type Unit { Unit }
+  `,
+    Main: `
+    import Basics.{Unit(..)}
     let x = Unit
-  `);
+  `,
+  });
 
-  expect(out).toEqual(`const x = null;
+  expect(out).toEqual(`const Main$x = null;
 `);
 });
 
@@ -705,19 +719,23 @@ if (x$GEN__0 === "constraint") {
 });
 
 test("pattern matching bool values", () => {
-  const out = compileSrc(`
+  const out = compileSrcWithDeps({
+    Basics: `pub(..) type Bool { True, False }`,
+    Main: `
+  import Basics.{Bool(..)}
   let x = match True {
     True => 0,
     False => 1,
   }
-`);
+`,
+  });
 
-  expect(out).toEqual(`const x$GEN__0 = true;
-let x;
-if (x$GEN__0) {
-  x = 0;
-} else if (!x$GEN__0) {
-  x = 1;
+  expect(out).toEqual(`const Main$x$GEN__0 = true;
+let Main$x;
+if (Main$x$GEN__0) {
+  Main$x = 0;
+} else if (!Main$x$GEN__0) {
+  Main$x = 1;
 } else {
   throw new Error("[non exhaustive match]")
 }
@@ -725,16 +743,20 @@ if (x$GEN__0) {
 });
 
 test("pattern matching Unit values", () => {
-  const out = compileSrc(`
+  const out = compileSrcWithDeps({
+    Basics: `pub(..) type Unit { Unit }`,
+    Main: `
+  import Basics.{Unit(..)}
   let x = match Unit {
     Unit => 0,
   }
-`);
+`,
+  });
 
-  expect(out).toEqual(`const x$GEN__0 = null;
-let x;
+  expect(out).toEqual(`const Main$x$GEN__0 = null;
+let Main$x;
 if (true) {
-  x = 0;
+  Main$x = 0;
 } else {
   throw new Error("[non exhaustive match]")
 }
@@ -760,6 +782,7 @@ if (true) {
 
 test("pattern matching nested value", () => {
   const out = compileSrc(`
+  type Bool { True }
   type T {
     C(Bool),
   }
@@ -1167,8 +1190,14 @@ const MyModule$c2_example = MyModule$C2(42);
   });
 
   test("constructors imported with qualified imports are resolved with the right namespace", () => {
-    const out = compileSrc(`let a = ExampleModule.Constr`);
-    expect(out).toEqual(`const a = ExampleModule$Constr;\n`);
+    const out = compileSrcWithDeps({
+      ExampleModule: `pub(..) type T { Constr }`,
+      Main: `
+        import ExampleModule
+        let a = ExampleModule.Constr
+      `,
+    });
+    expect(out).toEqual(`const Main$a = ExampleModule$Constr;\n`);
   });
 });
 
