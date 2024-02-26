@@ -162,11 +162,7 @@ export class Compiler {
     return { value, scopedBinding };
   }
 
-  private compileAsExpr(
-    src: TypedExpr,
-    scope: Scope,
-    tailPosData: TailPositionData | undefined,
-  ): CompileExprResult {
+  private compileAsExpr(src: TypedExpr, scope: Scope): CompileExprResult {
     switch (src.type) {
       case "constant":
         return [[], constToString(src.value)];
@@ -230,8 +226,8 @@ export class Compiler {
 
         if (!isStructuralEq_ && infix !== undefined) {
           const [l, r] = src.args;
-          const [lStatements, lExpr] = this.compileAsExpr(l!, scope, undefined);
-          const [rStatements, rExpr] = this.compileAsExpr(r!, scope, undefined);
+          const [lStatements, lExpr] = this.compileAsExpr(l!, scope);
+          const [rStatements, rExpr] = this.compileAsExpr(r!, scope);
 
           const infixLeft = getInfixPrecAndName(l!);
           const lCWithParens =
@@ -245,16 +241,12 @@ export class Compiler {
 
         const [callerStatemens, callerExpr] = isStructuralEq_
           ? [[], "Basics$_eq"]
-          : this.compileAsExpr(src.caller, scope, undefined);
+          : this.compileAsExpr(src.caller, scope);
 
         const statements: string[] = [...callerStatemens];
         const args: string[] = [];
         for (const arg of src.args) {
-          const [argStatements, argExpr] = this.compileAsExpr(
-            arg,
-            scope,
-            undefined,
-          );
+          const [argStatements, argExpr] = this.compileAsExpr(arg, scope);
           args.push(argExpr);
           statements.push(...argStatements);
         }
@@ -263,14 +255,10 @@ export class Compiler {
 
       case "let": {
         const { value, scopedBinding } = this.compileLetValue(src, scope);
-        const [bodyStatements, bodyExpr] = this.compileAsExpr(
-          src.body,
-          {
-            ...scope,
-            [src.binding.name]: scopedBinding,
-          },
-          tailPosData,
-        );
+        const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body, {
+          ...scope,
+          [src.binding.name]: scopedBinding,
+        });
         return [[...value, ...bodyStatements], bodyExpr];
       }
 
@@ -306,11 +294,7 @@ export class Compiler {
           const ret: string[] = [];
           let i = 0;
           for (const arg of src.args) {
-            const [statements, expr] = this.compileAsExpr(
-              arg,
-              scope,
-              undefined,
-            );
+            const [statements, expr] = this.compileAsExpr(arg, scope);
             ret.push(...statements);
             ret.push(`GEN_TC__${i} = ${expr};`);
             i++;
@@ -320,7 +304,7 @@ export class Compiler {
 
       case "identifier":
       case "constant": {
-        const [statements, expr] = this.compileAsExpr(src, scope, tailPosData);
+        const [statements, expr] = this.compileAsExpr(src, scope);
         return [...statements, wrapJsExpr(expr, as)];
       }
 
@@ -392,7 +376,6 @@ export class Compiler {
         const [conditionStatements, conditionExpr] = this.compileAsExpr(
           src.condition,
           scope,
-          undefined,
         );
 
         const thenBlock = this.compileAsStatements(
