@@ -89,6 +89,8 @@ export class Compiler {
   private frames: Frame[] = [];
   private tailCall = false;
 
+  private ns: string | undefined;
+
   private nextId = 0;
   getNextId() {
     return this.nextId++;
@@ -164,11 +166,41 @@ export class Compiler {
         return [[], constToString(src.value)];
 
       case "identifier": {
-        if (src.namespace !== undefined) {
-          return [[], `${sanitizeNamespace(src.namespace)}$${src.name}`];
+        if (src.resolution === undefined) {
+          throw new Error("[unreachable] unresolved var: " + src.name);
         }
 
-        const lookup = builtinValues[src.name] ?? scope[src.name];
+        switch (src.resolution.type) {
+          case "global-variable": {
+            const ns = src.resolution.namespace ?? this.ns;
+            if (ns === undefined) {
+              return [[], src.name];
+            }
+
+            return [[], `${sanitizeNamespace(ns)}$${src.name}`];
+          }
+
+          case "constructor": {
+            if (src.resolution.namespace) {
+              const builtinLookup = builtinValues[src.name];
+              if (builtinLookup !== undefined) {
+                return [[], builtinLookup];
+              }
+            }
+
+            const ns = src.resolution.namespace ?? this.ns;
+            if (ns === undefined) {
+              return [[], src.name];
+            }
+
+            return [[], `${sanitizeNamespace(ns)}$${src.name}`];
+          }
+
+          case "local-variable":
+          // TODO handle
+        }
+
+        const lookup = scope[src.name];
         if (lookup === undefined) {
           throw new Error(`[unreachable] undefined identifier (${src.name})`);
         }
@@ -424,6 +456,7 @@ export class Compiler {
   }
 
   compile(src: TypedModule, ns: string | undefined): string {
+    this.ns = ns;
     const decls: string[] = [];
 
     for (const import_ of src.imports) {

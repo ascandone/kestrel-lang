@@ -781,8 +781,11 @@ if (true) {
 });
 
 test("pattern matching nested value", () => {
-  const out = compileSrc(`
-  type Bool { True }
+  const out = compileSrcWithDeps({
+    Basics: `pub(..) type Bool { True }`,
+    Main: `
+  import Basics.{Bool(..)}
+
   type T {
     C(Bool),
   }
@@ -790,15 +793,16 @@ test("pattern matching nested value", () => {
   let x = match C(True) {
     C(True) => 0,
   }
-`);
+`,
+  });
   // TODO whitepace
-  expect(out).toEqual(`function C(a0) {
+  expect(out).toEqual(`function Main$C(a0) {
   return { type: "C", a0 };
 }
-const x$GEN__0 = C(true);
-let x;
-if (x$GEN__0.type === "C" && x$GEN__0.a0) {
-  x = 0;
+const Main$x$GEN__0 = Main$C(true);
+let Main$x;
+if (Main$x$GEN__0.type === "C" && Main$x$GEN__0.a0) {
+  Main$x = 0;
 } else {
   throw new Error("[non exhaustive match]")
 }
