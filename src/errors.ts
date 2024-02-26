@@ -48,6 +48,15 @@ export class UnboundVariable implements ErrorDescription {
   }
 }
 
+export class CyclicDefinition implements ErrorDescription {
+  constructor(public ident: string) {}
+  errorName = "Cyclic definition";
+  // TODO better error
+  shortDescription() {
+    return `Cyclic definition`;
+  }
+}
+
 export class UnusedVariable implements ErrorDescription {
   constructor(
     public ident: string,

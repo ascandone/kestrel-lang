@@ -10,6 +10,7 @@ import {
 import {
   ArityMismatch,
   BadImport,
+  CyclicDefinition,
   DuplicateDeclaration,
   InvalidCatchall,
   InvalidPipe,
@@ -325,6 +326,47 @@ test("recursive let declarations", () => {
     f: "Fn(Int) -> a",
   });
 });
+
+test.todo("let declarations in reverse order", () => {
+  const [types, errs] = tc(
+    `
+    pub let a = b
+    pub let b = 42
+  `,
+  );
+
+  expect(errs).toEqual([]);
+  expect(types).toEqual({
+    a: "Int",
+    b: "Int",
+  });
+});
+
+test.todo("dependency cycle between let declarations in reverse order", () => {
+  const [, errs] = tc(
+    `
+    pub let a = b
+    pub let b = a
+  `,
+  );
+
+  expect(errs).toHaveLength(1);
+  expect(errs[0]?.description).toBeInstanceOf(CyclicDefinition);
+});
+
+test.todo(
+  "dependency cycle between let declarations are permitted in thunks",
+  () => {
+    const [, errs] = tc(
+      `
+    pub let a = b
+    pub let b = fn { a }
+  `,
+    );
+
+    expect(errs).toEqual([]);
+  },
+);
 
 test("unused locals", () => {
   const [, errs] = tc(
