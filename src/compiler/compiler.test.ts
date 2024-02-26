@@ -569,6 +569,32 @@ test("represent True as true", () => {
 `);
 });
 
+test.todo("boolean negation", () => {
+  const out = compileSrcWithDeps({
+    Basics: `pub(..) type Bool { True, False }`,
+    Main: `
+      import Basics.{Bool(..)}
+      let x = !True
+    `,
+  });
+
+  expect(out).toEqual(`const Main$x = !true;
+`);
+});
+
+test.todo("boolean negation and && prec", () => {
+  const out = compileSrcWithDeps({
+    Basics: `pub(..) type Bool { True, False }`,
+    Main: `
+      import Basics.{Bool(..)}
+      let x = !(True && False)
+    `,
+  });
+
+  expect(out).toEqual(`const Main$x = !(true && false);
+`);
+});
+
 test("represent False as false", () => {
   const out = compileSrcWithDeps({
     Basics: `pub(..) type Bool { True, False }`,

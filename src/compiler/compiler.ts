@@ -488,34 +488,6 @@ export class Compiler {
     this.ns = ns;
     const decls: string[] = [];
 
-    for (const import_ of src.imports) {
-      for (const exposed of import_.exposing) {
-        switch (exposed.type) {
-          case "type":
-            if (
-              exposed.resolved !== undefined &&
-              exposed.resolved.type === "adt" &&
-              exposed.exposeImpl
-            ) {
-              for (const variant of exposed.resolved.variants) {
-                this.globalScope[variant.name] = moduleNamespacedBinding(
-                  variant.name,
-                  import_.ns,
-                );
-              }
-            }
-
-            break;
-          case "value":
-            this.globalScope[exposed.name] = moduleNamespacedBinding(
-              exposed.name,
-              import_.ns,
-            );
-            break;
-        }
-      }
-    }
-
     for (const typeDecl of src.typeDeclarations) {
       if (typeDecl.type === "extern") {
         continue;
@@ -527,22 +499,12 @@ export class Compiler {
         }
         const def = getVariantImpl(variant, ns);
         decls.push(def);
-        this.globalScope[variant.name] = moduleNamespacedBinding(
-          variant.name,
-          ns,
-        );
       }
     }
 
     for (const decl of src.declarations) {
       const nameSpacedBinding = moduleNamespacedBinding(decl.binding.name, ns);
       if (decl.extern) {
-        // skip the infix operators
-        // as they are already handled by the compiler
-        if (!isInfix(decl.binding.name)) {
-          this.globalScope[decl.binding.name] = nameSpacedBinding;
-        }
-
         continue;
       }
 
@@ -649,17 +611,6 @@ const infixPrecTable: Record<string, number> = {
   // compilation might be wrong
   "**": 13,
 };
-
-// TODO fix compilation
-const prefixPrecTable: Record<string, number> = {
-  "!": 14,
-};
-
-function isInfix(name: string) {
-  return (
-    name in infixPrecTable || name in prefixPrecTable || name in mapToJsInfix
-  );
-}
 
 function getInfixPrecAndName(
   expr: TypedExpr,
