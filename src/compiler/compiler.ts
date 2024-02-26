@@ -1,5 +1,5 @@
 import { exit } from "process";
-import { ConstLiteral, MatchPattern, TypeVariant } from "../parser";
+import { Binding, ConstLiteral, MatchPattern, TypeVariant } from "../parser";
 import { TypedExpr, TypedModule } from "../typecheck";
 import { ConcreteType } from "../typecheck/type";
 import { col } from "../utils/colors";
@@ -130,6 +130,9 @@ export class Compiler {
     return currentFrame;
   }
 
+  // <Binding> => ns map
+  private localBindings = new WeakMap<Binding<unknown>, string>();
+
   private compileLetValue(
     src: TypedExpr & { type: "let" },
     scope: Scope,
@@ -152,6 +155,9 @@ export class Compiler {
       updatedScope,
       undefined,
     );
+
+    this.localBindings.set(src.binding, scopedBinding);
+
     this.frames.pop();
     return { value, scopedBinding };
   }
@@ -196,8 +202,18 @@ export class Compiler {
             return [[], `${sanitizeNamespace(ns)}$${src.name}`];
           }
 
-          case "local-variable":
-          // TODO handle
+          case "local-variable": {
+            const lookup = this.localBindings.get(src.resolution.binding);
+            if (lookup === undefined) {
+              break;
+            }
+            if (lookup === undefined) {
+              throw new Error(
+                `[unreachable] undefined identifier (${src.name})`,
+              );
+            }
+            return [[], lookup];
+          }
         }
 
         const lookup = scope[src.name];
