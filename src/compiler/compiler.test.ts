@@ -830,6 +830,7 @@ test("simple pattern matching in tail position", () => {
 test("pattern matching in tail position (match constructor)", () => {
   const out = compileSrc(`
   type Box { Box(Int) }
+  extern let (+): Fn(Int, Int) -> Int
   let f = fn {
     match Box(42) {
       Box(x) => x + 1
@@ -928,6 +929,7 @@ const x = f(x$GEN__0, x$GEN__1);
 describe("TCO", () => {
   test("does not apply inside infix application", () => {
     const out = compileSrc(`
+    extern let (+): Fn(Int, Int) -> Int
     let loop = fn {
       1 + loop()
     }

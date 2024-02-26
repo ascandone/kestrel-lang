@@ -21,7 +21,9 @@ type CompilationMode =
 
 class Frame {
   constructor(
-    public readonly data: { type: "let"; name: string } | { type: "fn" },
+    public readonly data:
+      | { type: "let"; name: string; binding: Binding<unknown> }
+      | { type: "fn" },
     private compiler: Compiler,
   ) {}
 
@@ -42,10 +44,6 @@ class Frame {
     return `${namespace}GEN__${this.compiler.getNextId()}`;
   }
 }
-
-type TailPositionData = {
-  ident: string;
-};
 
 function isStructuralEq(caller: TypedExpr, args: TypedExpr[]): boolean {
   if (caller.type !== "identifier" || caller.name !== "==") {
@@ -86,6 +84,7 @@ function isStructuralEq(caller: TypedExpr, args: TypedExpr[]): boolean {
   return true;
 }
 export class Compiler {
+  private bindingsStack: Binding<unknown>[] = [];
   private frames: Frame[] = [];
   private tailCall = false;
 
@@ -138,7 +137,9 @@ export class Compiler {
     scope: Scope,
   ): { value: string[]; scopedBinding: string } {
     const name = this.getCurrentFrame().preventShadow(src.binding.name);
-    this.frames.push(new Frame({ type: "let", name }, this));
+    this.frames.push(
+      new Frame({ type: "let", name, binding: src.binding }, this),
+    );
     const scopedBinding = this.getBlockNs();
     if (scopedBinding === undefined) {
       throw new Error("[unreachable] empty ns stack");
@@ -159,6 +160,7 @@ export class Compiler {
     this.localBindings.set(src.binding, scopedBinding);
 
     this.frames.pop();
+    this.bindingsStack.pop();
     return { value, scopedBinding };
   }
 
@@ -277,19 +279,41 @@ export class Compiler {
     }
   }
 
+  private isTailCall(
+    src: TypedExpr & { type: "application" },
+    tailPosBinding: Binding<unknown> | undefined,
+  ): boolean {
+    if (tailPosBinding === undefined) {
+      return false;
+    }
+
+    if (src.caller.type !== "identifier") {
+      return false;
+    }
+
+    if (src.caller.resolution === undefined) {
+      throw new Error("[unreachable] undefined resolution");
+    }
+
+    switch (src.caller.resolution.type) {
+      case "local-variable":
+        return src.caller.resolution.binding === tailPosBinding;
+      case "global-variable":
+        return src.caller.resolution.declaration.binding === tailPosBinding;
+      case "constructor":
+        return false;
+    }
+  }
+
   private compileAsStatements(
     src: TypedExpr,
     as: CompilationMode,
     scope: Scope,
-    tailPosData: TailPositionData | undefined,
+    tailPosCaller: Binding<unknown> | undefined,
   ): string[] {
     switch (src.type) {
-      case "application":
-        if (
-          src.caller.type === "identifier" &&
-          tailPosData !== undefined &&
-          tailPosData.ident === src.caller.name
-        ) {
+      case "application": {
+        if (this.isTailCall(src, tailPosCaller)) {
           this.tailCall = true;
           const ret: string[] = [];
           let i = 0;
@@ -301,6 +325,7 @@ export class Compiler {
           }
           return ret;
         }
+      }
 
       case "identifier":
       case "constant": {
@@ -317,7 +342,7 @@ export class Compiler {
             ...scope,
             [src.binding.name]: scopedBinding,
           },
-          tailPosData,
+          tailPosCaller,
         );
         return [...value, ...bodyStatements];
       }
@@ -328,10 +353,15 @@ export class Compiler {
             ? as.name
             : this.getUniqueName();
 
+        const frame = this.frames.at(-1);
+        const callerBinding =
+          frame?.data.type === "let" ? frame.data.binding : undefined;
+
         this.frames.push(new Frame({ type: "fn" }, this));
         const paramsScope = Object.fromEntries(
           src.params.map((p) => [p.name, p.name]),
         );
+
         const fnBody = this.compileAsStatements(
           src.body,
           { type: "return" },
@@ -339,7 +369,7 @@ export class Compiler {
             ...scope,
             ...paramsScope,
           },
-          { ident: name },
+          callerBinding,
         );
 
         const isTailRec = this.tailCall;
@@ -382,14 +412,14 @@ export class Compiler {
           src.then,
           doNotDeclare(as),
           scope,
-          tailPosData,
+          tailPosCaller,
         );
 
         const elseBlock = this.compileAsStatements(
           src.else,
           doNotDeclare(as),
           scope,
-          tailPosData,
+          tailPosCaller,
         );
 
         return [
@@ -428,7 +458,7 @@ export class Compiler {
               ...scope,
               ...compiled.newScope,
             },
-            tailPosData,
+            tailPosCaller,
           );
 
           const condition =
@@ -521,6 +551,7 @@ export class Compiler {
           {
             type: "let",
             name: moduleNamespacedBinding(decl.binding.name, ns),
+            binding: decl.binding,
           },
           this,
         ),
