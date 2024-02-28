@@ -1,6 +1,6 @@
 {
   "name": "kestrel-lang",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "license": "MIT",
   "bin": {
     "kestrel": "./dist/cli/main.js"
