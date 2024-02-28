@@ -264,8 +264,7 @@ export class Compiler {
               undefined,
             );
             ret.push(...statements);
-            // TODO is it safe to rely on this?
-            ret.push(`GEN__${i} = ${expr};`);
+            ret.push(`GEN_TC__${i} = ${expr};`);
             i++;
           }
           return ret;
@@ -314,7 +313,7 @@ export class Compiler {
         const isTailRec = this.tailCall;
         this.tailCall = false;
         const params = isTailRec
-          ? src.params.map(() => this.getUniqueName())
+          ? src.params.map((_, index) => `GEN_TC__${index}`)
           : src.params.map((p) => p.name);
 
         this.frames.pop();

@@ -988,12 +988,12 @@ function loop() {
       }
   `);
 
-    expect(out).toEqual(`function loop(GEN__0, GEN__1) {
+    expect(out).toEqual(`function loop(GEN_TC__0, GEN_TC__1) {
   while (true) {
-    const x = GEN__0;
-    const y = GEN__1;
-    GEN__0 = x + 1;
-    GEN__1 = y;
+    const x = GEN_TC__0;
+    const y = GEN_TC__1;
+    GEN_TC__0 = x + 1;
+    GEN_TC__1 = y;
   }
 }
 `);
@@ -1011,13 +1011,13 @@ function loop() {
       }
   `);
 
-    expect(out).toEqual(`function to_zero(GEN__0) {
+    expect(out).toEqual(`function to_zero(GEN_TC__0) {
   while (true) {
-    const x = GEN__0;
+    const x = GEN_TC__0;
     if (x == 0) {
       return x;
     } else {
-      GEN__0 = x - 1;
+      GEN_TC__0 = x - 1;
     }
   }
 }
@@ -1034,18 +1034,18 @@ function loop() {
       }
   `);
 
-    expect(out).toEqual(`function reduce(GEN__1, GEN__2, GEN__3) {
+    expect(out).toEqual(`function reduce(GEN_TC__0, GEN_TC__1, GEN_TC__2) {
   while (true) {
-    const lst = GEN__1;
-    const acc = GEN__2;
-    const f = GEN__3;
+    const lst = GEN_TC__0;
+    const acc = GEN_TC__1;
+    const f = GEN_TC__2;
     const GEN__0 = lst;
     if (GEN__0.type === "Nil") {
       return acc;
     } else if (GEN__0.type === "Cons") {
-      GEN__0 = lst;
-      GEN__1 = f(acc, GEN__0.a0);
-      GEN__2 = f;
+      GEN_TC__0 = lst;
+      GEN_TC__1 = f(acc, GEN__0.a0);
+      GEN_TC__2 = f;
     } else {
       throw new Error("[non exhaustive match]")
     }
