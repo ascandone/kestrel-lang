@@ -761,7 +761,7 @@ export function compileProject(
   visit(entrypoint.module);
 
   const entryPointMod = sanitizeNamespace(entrypoint.module);
-  buf.push(`${entryPointMod}$main.run(() => {});\n`);
+  buf.push(`${entryPointMod}$main.exec();\n`);
 
   return buf.join("\n\n");
 }

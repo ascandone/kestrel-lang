@@ -1210,7 +1210,7 @@ describe("project compilation", () => {
     expect(out).toBe(`const Main$main = "main";
 
 
-Main$main.run(() => {});
+Main$main.exec();
 `);
   });
 
@@ -1230,7 +1230,7 @@ Main$main.run(() => {});
     expect(out).toBe(`const Nested$Entrypoint$Mod$main = "main";
 
 
-Nested$Entrypoint$Mod$main.run(() => {});
+Nested$Entrypoint$Mod$main.exec();
 `);
   });
 
@@ -1249,7 +1249,7 @@ Nested$Entrypoint$Mod$main.run(() => {});
 const Main$main = ModA$x;
 
 
-Main$main.run(() => {});
+Main$main.exec();
 `);
   });
 
@@ -1273,7 +1273,7 @@ const ModB$b = "b";
 const Main$main = "main";
 
 
-Main$main.run(() => {});
+Main$main.exec();
 `);
   });
 
@@ -1293,7 +1293,7 @@ Main$main.run(() => {});
 const Main$main = "main";
 
 
-Main$main.run(() => {});
+Main$main.exec();
 `);
   });
 
