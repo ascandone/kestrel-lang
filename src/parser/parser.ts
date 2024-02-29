@@ -186,7 +186,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
       type: "identifier",
       name: "Nil",
       // namespace: "List",
-      span: getSpan(args),
+      span: [0, -1],
     };
 
     return args
@@ -199,7 +199,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
             type: "identifier",
             name: "Cons",
             // namespace: "List",
-            span: getSpan(this),
+            span: [0, -1],
           },
           args: [expr, acc],
           span: getSpan(this),
