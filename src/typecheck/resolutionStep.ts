@@ -232,16 +232,14 @@ class ResolutionStep {
             ast.name === recursiveBinding.name &&
             (ast.namespace === undefined || ast.namespace === this.ns);
 
-          if (isRecursive) {
-            // TODO remove this duplication
-            const ret: TypedTypeAst = {
-              ...ast,
-              args: ast.args.map(recur),
-              // Type unsafe hack
-              // This must be filled with this function's return type
-              resolution: null!,
-            };
+          const ret: TypedTypeAst = {
+            ...ast,
+            args: ast.args.map(recur),
+            // This must be filled with this function's return type
+            resolution: undefined,
+          };
 
+          if (isRecursive) {
             recursiveBinding.holes.push((declaration) => {
               ret.resolution = {
                 declaration,
@@ -259,12 +257,8 @@ class ResolutionStep {
               description: new UnboundType(ast.name),
             });
           }
-
-          return {
-            ...ast,
-            args: ast.args.map(recur),
-            resolution,
-          };
+          ret.resolution = resolution;
+          return ret;
         }
       }
     };
