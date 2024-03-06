@@ -51,7 +51,7 @@ export function typecheck(
   implicitImports: UntypedImport[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
 ): [TypedModule, ErrorInfo[]] {
-  return new Typechecker(ns, deps, mainType).run(module, implicitImports);
+  return new Typechecker(ns, mainType).run(module, deps, implicitImports);
 }
 
 class Typechecker {
@@ -59,22 +59,17 @@ class Typechecker {
 
   constructor(
     private ns: string,
-    private deps: Deps,
     private mainType: Type,
   ) {}
 
   run(
     module: UntypedModule,
+    deps: Deps,
     implicitImports: UntypedImport[] = defaultImports,
   ): [TypedModule, ErrorInfo[]] {
     TVar.resetId();
 
-    const [typedAst, errors] = castAst(
-      this.ns,
-      module,
-      this.deps,
-      implicitImports,
-    );
+    const [typedAst, errors] = castAst(this.ns, module, deps, implicitImports);
 
     this.errors = [...errors];
 
