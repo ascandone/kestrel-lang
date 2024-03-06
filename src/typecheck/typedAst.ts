@@ -7,6 +7,7 @@ import {
   MatchPattern,
   Span,
   SpanMeta,
+  TypeAst,
   TypeDeclaration,
   TypeVariant,
 } from "../parser";
@@ -29,9 +30,18 @@ export type IdentifierResolution =
       namespace?: string;
     };
 
+export type TypeResolution = {
+  declaration: TypedTypeDeclaration;
+  namespace: string;
+};
+
 export type IdentifierResolutionMeta = {
   resolution: IdentifierResolution | undefined;
 };
+export type TypeResolutionMeta = {
+  resolution: TypeResolution | undefined;
+};
+
 export type TypedMatchPattern = MatchPattern<
   TypeMeta,
   IdentifierResolutionMeta
@@ -49,9 +59,11 @@ export type PolyTypeMeta = { scheme: TypeScheme; mono: Type };
 export type TypedTypeVariant = TypeVariant<PolyTypeMeta>;
 export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 
+export type TypedTypeAst = TypeAst<TypeResolutionMeta>;
 export type TypedDeclaration = { scheme: TypeScheme } & Declaration<
   TypeMeta,
   IdentifierResolutionMeta,
+  TypeResolutionMeta,
   never
 >;
 

@@ -3,7 +3,7 @@ export type ConstLiteral =
   | { type: "float"; value: number }
   | { type: "string"; value: string };
 
-export type TypeAst = SpanMeta &
+export type TypeAst<TypeResolutionMeta = unknown> = SpanMeta &
   (
     | {
         type: "var";
@@ -11,15 +11,15 @@ export type TypeAst = SpanMeta &
       }
     | {
         type: "fn";
-        args: TypeAst[];
-        return: TypeAst;
+        args: TypeAst<TypeResolutionMeta>[];
+        return: TypeAst<TypeResolutionMeta>;
       }
-    | {
+    | ({
         type: "named";
         namespace?: string;
         name: string;
-        args: TypeAst[];
-      }
+        args: TypeAst<TypeResolutionMeta>[];
+      } & TypeResolutionMeta)
     // This should only be used for type annotations, not type declarations
     | { type: "any" }
   );
@@ -111,22 +111,31 @@ export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
   TypeMeta &
   SpanMeta;
 
-export type UntypedDeclaration = Declaration<unknown, unknown, SyntaxSugar>;
-export type Declaration<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> =
-  SpanMeta & {
-    pub: boolean;
-    binding: Binding<TypeMeta>;
-  } & (
-      | {
-          extern: false;
-          typeHint?: TypeAst & SpanMeta;
-          value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
-        }
-      | {
-          extern: true;
-          typeHint: TypeAst & SpanMeta;
-        }
-    );
+export type UntypedDeclaration = Declaration<
+  unknown,
+  unknown,
+  unknown,
+  SyntaxSugar
+>;
+export type Declaration<
+  TypeMeta,
+  IdentifierResolutionMeta,
+  TypeResolutionMeta,
+  SyntaxSugar,
+> = SpanMeta & {
+  pub: boolean;
+  binding: Binding<TypeMeta>;
+} & (
+    | {
+        extern: false;
+        typeHint?: TypeAst<TypeResolutionMeta> & SpanMeta;
+        value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      }
+    | {
+        extern: true;
+        typeHint: TypeAst<TypeResolutionMeta> & SpanMeta;
+      }
+  );
 
 export type TypeVariant<TypeMeta> = (TypeMeta & SpanMeta) & {
   name: string;

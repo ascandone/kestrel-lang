@@ -188,7 +188,7 @@ test("typecheck fn args", () => {
     extern type Int
     extern type Bool
     extern pub let (>): Fn(Int, Int) -> Bool
-    let f = fn x, y { x > y }
+    pub let f = fn x, y { x > y }
   `,
   );
 
