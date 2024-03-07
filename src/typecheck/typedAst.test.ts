@@ -293,6 +293,34 @@ describe("goToDefinition", () => {
     const location = parseGotoDef(src, "local_var", 2);
     expect(location?.span).toEqual(spanOf(src, "local_var", 1));
   });
+
+  test("valid recursive let bindings", () => {
+    const src = `
+      let x = f(fn { x })
+    `;
+    const location = parseGotoDef(src, "x", 2);
+    expect(location?.span).toEqual(spanOf(src, "x", 1));
+  });
+
+  test("invalid recursive let bindings", () => {
+    const src = `
+      let x = x
+    `;
+    const location = parseGotoDef(src, "x", 2);
+    expect(location?.span).toEqual(undefined);
+  });
+
+  test("shadowed let", () => {
+    const src = `
+      let x = {
+        let a = 0;
+        let a = a;
+        42
+      }
+    `;
+    const location = parseGotoDef(src, "a", 3);
+    expect(location?.span).toEqual(spanOf(src, "a", 1));
+  });
 });
 
 function parseHover(

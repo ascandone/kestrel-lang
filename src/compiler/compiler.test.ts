@@ -569,6 +569,32 @@ test("represent True as true", () => {
 `);
 });
 
+test.todo("boolean negation", () => {
+  const out = compileSrcWithDeps({
+    Basics: `pub(..) type Bool { True, False }`,
+    Main: `
+      import Basics.{Bool(..)}
+      let x = !True
+    `,
+  });
+
+  expect(out).toEqual(`const Main$x = !true;
+`);
+});
+
+test.todo("boolean negation and && prec", () => {
+  const out = compileSrcWithDeps({
+    Basics: `pub(..) type Bool { True, False }`,
+    Main: `
+      import Basics.{Bool(..)}
+      let x = !(True && False)
+    `,
+  });
+
+  expect(out).toEqual(`const Main$x = !(true && false);
+`);
+});
+
 test("represent False as false", () => {
   const out = compileSrcWithDeps({
     Basics: `pub(..) type Bool { True, False }`,
@@ -781,8 +807,11 @@ if (true) {
 });
 
 test("pattern matching nested value", () => {
-  const out = compileSrc(`
-  type Bool { True }
+  const out = compileSrcWithDeps({
+    Basics: `pub(..) type Bool { True }`,
+    Main: `
+  import Basics.{Bool(..)}
+
   type T {
     C(Bool),
   }
@@ -790,15 +819,16 @@ test("pattern matching nested value", () => {
   let x = match C(True) {
     C(True) => 0,
   }
-`);
+`,
+  });
   // TODO whitepace
-  expect(out).toEqual(`function C(a0) {
+  expect(out).toEqual(`function Main$C(a0) {
   return { type: "C", a0 };
 }
-const x$GEN__0 = C(true);
-let x;
-if (x$GEN__0.type === "C" && x$GEN__0.a0) {
-  x = 0;
+const Main$x$GEN__0 = Main$C(true);
+let Main$x;
+if (Main$x$GEN__0.type === "C" && Main$x$GEN__0.a0) {
+  Main$x = 0;
 } else {
   throw new Error("[non exhaustive match]")
 }
@@ -826,6 +856,7 @@ test("simple pattern matching in tail position", () => {
 test("pattern matching in tail position (match constructor)", () => {
   const out = compileSrc(`
   type Box { Box(Int) }
+  extern let (+): Fn(Int, Int) -> Int
   let f = fn {
     match Box(42) {
       Box(x) => x + 1
@@ -924,6 +955,7 @@ const x = f(x$GEN__0, x$GEN__1);
 describe("TCO", () => {
   test("does not apply inside infix application", () => {
     const out = compileSrc(`
+    extern let (+): Fn(Int, Int) -> Int
     let loop = fn {
       1 + loop()
     }
@@ -1054,7 +1086,44 @@ function loop() {
 `);
   });
 
-  test.todo("Namespaced", () => {
+  test("a tc call should not leak into other expressions", () => {
+    const out = compileSrc(`
+    let ap = fn f { f(10) }
+    pub type Bool { True }
+
+    pub let f = fn a {
+      if True {
+        f()
+      } else {
+        let id = ap(fn x { x });
+        0
+      }
+    }
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+      "function ap(f) {
+        return f(10);
+      }
+
+      function f(GEN_TC__0) {
+        while (true) {
+          const a = GEN_TC__0;
+          if (True) {
+          } else {
+            function id$GEN__0(x) {
+              return x;
+            }
+            const id = ap(id$GEN__0);
+            return 0;
+          }
+        }
+      }
+      "
+    `);
+  });
+
+  test("Namespaced", () => {
     const out = compileSrc(`let f1 = fn { f1() }`, "Mod");
 
     expect(out).toEqual(`function Mod$f1() {

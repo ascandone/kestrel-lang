@@ -1,5 +1,5 @@
 import { exit } from "process";
-import { ConstLiteral, MatchPattern, TypeVariant } from "../parser";
+import { Binding, ConstLiteral, MatchPattern, TypeVariant } from "../parser";
 import { TypedExpr, TypedModule } from "../typecheck";
 import { ConcreteType } from "../typecheck/type";
 import { col } from "../utils/colors";
@@ -21,7 +21,9 @@ type CompilationMode =
 
 class Frame {
   constructor(
-    public readonly data: { type: "let"; name: string } | { type: "fn" },
+    public readonly data:
+      | { type: "let"; name: string; binding: Binding<unknown> }
+      | { type: "fn" },
     private compiler: Compiler,
   ) {}
 
@@ -42,10 +44,6 @@ class Frame {
     return `${namespace}GEN__${this.compiler.getNextId()}`;
   }
 }
-
-type TailPositionData = {
-  ident: string;
-};
 
 function isStructuralEq(caller: TypedExpr, args: TypedExpr[]): boolean {
   if (caller.type !== "identifier" || caller.name !== "==") {
@@ -86,8 +84,11 @@ function isStructuralEq(caller: TypedExpr, args: TypedExpr[]): boolean {
   return true;
 }
 export class Compiler {
+  private bindingsStack: Binding<unknown>[] = [];
   private frames: Frame[] = [];
   private tailCall = false;
+
+  private ns: string | undefined;
 
   private nextId = 0;
   getNextId() {
@@ -128,12 +129,17 @@ export class Compiler {
     return currentFrame;
   }
 
+  // <Binding> => ns map
+  private localBindings = new WeakMap<Binding<unknown>, string>();
+
   private compileLetValue(
     src: TypedExpr & { type: "let" },
     scope: Scope,
   ): { value: string[]; scopedBinding: string } {
     const name = this.getCurrentFrame().preventShadow(src.binding.name);
-    this.frames.push(new Frame({ type: "let", name }, this));
+    this.frames.push(
+      new Frame({ type: "let", name, binding: src.binding }, this),
+    );
     const scopedBinding = this.getBlockNs();
     if (scopedBinding === undefined) {
       throw new Error("[unreachable] empty ns stack");
@@ -150,25 +156,65 @@ export class Compiler {
       updatedScope,
       undefined,
     );
+
+    this.localBindings.set(src.binding, scopedBinding);
+
     this.frames.pop();
+    this.bindingsStack.pop();
     return { value, scopedBinding };
   }
 
-  private compileAsExpr(
-    src: TypedExpr,
-    scope: Scope,
-    tailPosData: TailPositionData | undefined,
-  ): CompileExprResult {
+  private compileAsExpr(src: TypedExpr, scope: Scope): CompileExprResult {
     switch (src.type) {
       case "constant":
         return [[], constToString(src.value)];
 
       case "identifier": {
-        if (src.namespace !== undefined) {
-          return [[], `${sanitizeNamespace(src.namespace)}$${src.name}`];
+        if (src.resolution === undefined) {
+          throw new Error("[unreachable] unresolved var: " + src.name);
         }
 
-        const lookup = builtinValues[src.name] ?? scope[src.name];
+        switch (src.resolution.type) {
+          case "global-variable": {
+            const ns = src.resolution.namespace ?? this.ns;
+            if (ns === undefined) {
+              return [[], src.name];
+            }
+
+            return [[], `${sanitizeNamespace(ns)}$${src.name}`];
+          }
+
+          case "constructor": {
+            if (src.resolution.namespace) {
+              const builtinLookup = builtinValues[src.name];
+              if (builtinLookup !== undefined) {
+                return [[], builtinLookup];
+              }
+            }
+
+            const ns = src.resolution.namespace ?? this.ns;
+            if (ns === undefined) {
+              return [[], src.name];
+            }
+
+            return [[], `${sanitizeNamespace(ns)}$${src.name}`];
+          }
+
+          case "local-variable": {
+            const lookup = this.localBindings.get(src.resolution.binding);
+            if (lookup === undefined) {
+              break;
+            }
+            if (lookup === undefined) {
+              throw new Error(
+                `[unreachable] undefined identifier (${src.name})`,
+              );
+            }
+            return [[], lookup];
+          }
+        }
+
+        const lookup = scope[src.name];
         if (lookup === undefined) {
           throw new Error(`[unreachable] undefined identifier (${src.name})`);
         }
@@ -182,8 +228,8 @@ export class Compiler {
 
         if (!isStructuralEq_ && infix !== undefined) {
           const [l, r] = src.args;
-          const [lStatements, lExpr] = this.compileAsExpr(l!, scope, undefined);
-          const [rStatements, rExpr] = this.compileAsExpr(r!, scope, undefined);
+          const [lStatements, lExpr] = this.compileAsExpr(l!, scope);
+          const [rStatements, rExpr] = this.compileAsExpr(r!, scope);
 
           const infixLeft = getInfixPrecAndName(l!);
           const lCWithParens =
@@ -197,16 +243,12 @@ export class Compiler {
 
         const [callerStatemens, callerExpr] = isStructuralEq_
           ? [[], "Basics$_eq"]
-          : this.compileAsExpr(src.caller, scope, undefined);
+          : this.compileAsExpr(src.caller, scope);
 
         const statements: string[] = [...callerStatemens];
         const args: string[] = [];
         for (const arg of src.args) {
-          const [argStatements, argExpr] = this.compileAsExpr(
-            arg,
-            scope,
-            undefined,
-          );
+          const [argStatements, argExpr] = this.compileAsExpr(arg, scope);
           args.push(argExpr);
           statements.push(...argStatements);
         }
@@ -215,14 +257,10 @@ export class Compiler {
 
       case "let": {
         const { value, scopedBinding } = this.compileLetValue(src, scope);
-        const [bodyStatements, bodyExpr] = this.compileAsExpr(
-          src.body,
-          {
-            ...scope,
-            [src.binding.name]: scopedBinding,
-          },
-          tailPosData,
-        );
+        const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body, {
+          ...scope,
+          [src.binding.name]: scopedBinding,
+        });
         return [[...value, ...bodyStatements], bodyExpr];
       }
 
@@ -241,38 +279,57 @@ export class Compiler {
     }
   }
 
+  private isTailCall(
+    src: TypedExpr & { type: "application" },
+    tailPosBinding: Binding<unknown> | undefined,
+  ): boolean {
+    if (tailPosBinding === undefined) {
+      return false;
+    }
+
+    if (src.caller.type !== "identifier") {
+      return false;
+    }
+
+    if (src.caller.resolution === undefined) {
+      throw new Error("[unreachable] undefined resolution");
+    }
+
+    switch (src.caller.resolution.type) {
+      case "local-variable":
+        return src.caller.resolution.binding === tailPosBinding;
+      case "global-variable":
+        return src.caller.resolution.declaration.binding === tailPosBinding;
+      case "constructor":
+        return false;
+    }
+  }
+
   private compileAsStatements(
     src: TypedExpr,
     as: CompilationMode,
     scope: Scope,
-    tailPosData: TailPositionData | undefined,
+    tailPosCaller: Binding<unknown> | undefined,
   ): string[] {
     switch (src.type) {
-      case "application":
-        if (
-          src.caller.type === "identifier" &&
-          tailPosData !== undefined &&
-          tailPosData.ident === src.caller.name
-        ) {
+      case "application": {
+        if (this.isTailCall(src, tailPosCaller)) {
           this.tailCall = true;
           const ret: string[] = [];
           let i = 0;
           for (const arg of src.args) {
-            const [statements, expr] = this.compileAsExpr(
-              arg,
-              scope,
-              undefined,
-            );
+            const [statements, expr] = this.compileAsExpr(arg, scope);
             ret.push(...statements);
             ret.push(`GEN_TC__${i} = ${expr};`);
             i++;
           }
           return ret;
         }
+      }
 
       case "identifier":
       case "constant": {
-        const [statements, expr] = this.compileAsExpr(src, scope, tailPosData);
+        const [statements, expr] = this.compileAsExpr(src, scope);
         return [...statements, wrapJsExpr(expr, as)];
       }
 
@@ -285,21 +342,29 @@ export class Compiler {
             ...scope,
             [src.binding.name]: scopedBinding,
           },
-          tailPosData,
+          tailPosCaller,
         );
         return [...value, ...bodyStatements];
       }
 
       case "fn": {
+        const wasTailCall = this.tailCall;
+        this.tailCall = false;
+
         const name =
           as.type === "assign_var" && as.declare
             ? as.name
             : this.getUniqueName();
 
+        const frame = this.frames.at(-1);
+        const callerBinding =
+          frame?.data.type === "let" ? frame.data.binding : undefined;
+
         this.frames.push(new Frame({ type: "fn" }, this));
         const paramsScope = Object.fromEntries(
           src.params.map((p) => [p.name, p.name]),
         );
+
         const fnBody = this.compileAsStatements(
           src.body,
           { type: "return" },
@@ -307,7 +372,7 @@ export class Compiler {
             ...scope,
             ...paramsScope,
           },
-          { ident: name },
+          callerBinding,
         );
 
         const isTailRec = this.tailCall;
@@ -329,6 +394,7 @@ export class Compiler {
             ]
           : fnBody;
 
+        this.tailCall = wasTailCall;
         return [
           //
           `function ${name}(${params.join(", ")}) {`,
@@ -344,21 +410,20 @@ export class Compiler {
         const [conditionStatements, conditionExpr] = this.compileAsExpr(
           src.condition,
           scope,
-          undefined,
         );
 
         const thenBlock = this.compileAsStatements(
           src.then,
           doNotDeclare(as),
           scope,
-          tailPosData,
+          tailPosCaller,
         );
 
         const elseBlock = this.compileAsStatements(
           src.else,
           doNotDeclare(as),
           scope,
-          tailPosData,
+          tailPosCaller,
         );
 
         return [
@@ -397,7 +462,7 @@ export class Compiler {
               ...scope,
               ...compiled.newScope,
             },
-            tailPosData,
+            tailPosCaller,
           );
 
           const condition =
@@ -424,35 +489,8 @@ export class Compiler {
   }
 
   compile(src: TypedModule, ns: string | undefined): string {
+    this.ns = ns;
     const decls: string[] = [];
-
-    for (const import_ of src.imports) {
-      for (const exposed of import_.exposing) {
-        switch (exposed.type) {
-          case "type":
-            if (
-              exposed.resolved !== undefined &&
-              exposed.resolved.type === "adt" &&
-              exposed.exposeImpl
-            ) {
-              for (const variant of exposed.resolved.variants) {
-                this.globalScope[variant.name] = moduleNamespacedBinding(
-                  variant.name,
-                  import_.ns,
-                );
-              }
-            }
-
-            break;
-          case "value":
-            this.globalScope[exposed.name] = moduleNamespacedBinding(
-              exposed.name,
-              import_.ns,
-            );
-            break;
-        }
-      }
-    }
 
     for (const typeDecl of src.typeDeclarations) {
       if (typeDecl.type === "extern") {
@@ -465,22 +503,12 @@ export class Compiler {
         }
         const def = getVariantImpl(variant, ns);
         decls.push(def);
-        this.globalScope[variant.name] = moduleNamespacedBinding(
-          variant.name,
-          ns,
-        );
       }
     }
 
     for (const decl of src.declarations) {
       const nameSpacedBinding = moduleNamespacedBinding(decl.binding.name, ns);
       if (decl.extern) {
-        // skip the infix operators
-        // as they are already handled by the compiler
-        if (!isInfix(decl.binding.name)) {
-          this.globalScope[decl.binding.name] = nameSpacedBinding;
-        }
-
         continue;
       }
 
@@ -489,6 +517,7 @@ export class Compiler {
           {
             type: "let",
             name: moduleNamespacedBinding(decl.binding.name, ns),
+            binding: decl.binding,
           },
           this,
         ),
@@ -586,17 +615,6 @@ const infixPrecTable: Record<string, number> = {
   // compilation might be wrong
   "**": 13,
 };
-
-// TODO fix compilation
-const prefixPrecTable: Record<string, number> = {
-  "!": 14,
-};
-
-function isInfix(name: string) {
-  return (
-    name in infixPrecTable || name in prefixPrecTable || name in mapToJsInfix
-  );
-}
 
 function getInfixPrecAndName(
   expr: TypedExpr,
@@ -719,6 +737,7 @@ export function compileProject(
   if (entry === undefined) {
     throw new Error(`Entrypoint not found: ${entry}`);
   }
+
   const mainDecl = entry.declarations.find(
     (d) => d.binding.name === "main" && d.pub,
   );
