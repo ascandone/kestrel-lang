@@ -103,7 +103,11 @@ export type TypedProject = Record<string, TypedModule>;
 
 export async function check(path: string): Promise<TypedProject | undefined> {
   const rawProject = await readProjectWithDeps(path);
-  return checkProject(rawProject);
+  const [project, hasWarnings] = await checkProject(rawProject);
+  if (hasWarnings) {
+    return undefined;
+  }
+  return project;
 }
 
 export function parseModule(src: string): UntypedModule {
@@ -119,7 +123,7 @@ export function parseModule(src: string): UntypedModule {
 
 export async function checkProject(
   rawProject: Record<string, RawModule>,
-): Promise<TypedProject | undefined> {
+): Promise<[TypedProject | undefined, boolean]> {
   const untypedProject: Record<string, UntypedModule> = {};
   for (const [ns, info] of Object.entries(rawProject)) {
     const parseResult = parse(info.content);
@@ -135,7 +139,8 @@ export async function checkProject(
   const typedProject = typecheckProject(untypedProject);
 
   const res: TypedProject = {};
-  let errorCount = 0;
+  let errorsCount = 0,
+    warningsCount = 0;
   for (const [ns, [program, errors]] of Object.entries(typedProject)) {
     res[ns] = program;
     if (errors.length !== 0) {
@@ -143,19 +148,31 @@ export async function checkProject(
     }
 
     for (const error of errors) {
-      errorCount++;
+      const severity = error.description.severity ?? "error";
+      if (severity === "warning") {
+        warningsCount++;
+      } else {
+        errorsCount++;
+      }
+
       const src = rawProject[ns]!.content!;
       console.log(errorInfoToString(src, error), "\n\n");
     }
   }
 
-  if (errorCount > 0) {
-    const plErr = errorCount === 1 ? "error" : "errors";
-    console.log(`[Found ${errorCount} ${plErr}]\n`);
-    return undefined;
+  const totalIssuesCount = errorsCount + warningsCount;
+  const hasWarnings = warningsCount !== 0;
+
+  if (totalIssuesCount > 0) {
+    const plErr = totalIssuesCount === 1 ? "error" : "errors";
+    console.log(`[Found ${totalIssuesCount} ${plErr}]\n`);
   }
 
-  return res;
+  if (errorsCount === 0) {
+    return [res, hasWarnings];
+  } else {
+    return [undefined, hasWarnings];
+  }
 }
 
 export async function compilePath(
@@ -164,7 +181,7 @@ export async function compilePath(
   optimize?: boolean,
 ): Promise<string> {
   const rawProject = await readProjectWithDeps(path);
-  const typedProject = await checkProject(rawProject);
+  const [typedProject] = await checkProject(rawProject);
   if (typedProject === undefined) {
     exit(1);
   }
