@@ -715,7 +715,10 @@ export function compileProject(
     optimize = false,
   }: CompileOptions = {},
 ): string {
-  const entry = typedProject[entrypoint.module]!;
+  const entry = typedProject[entrypoint.module];
+  if (entry === undefined) {
+    throw new Error(`Entrypoint not found: ${entry}`);
+  }
   const mainDecl = entry.declarations.find(
     (d) => d.binding.name === "main" && d.pub,
   );

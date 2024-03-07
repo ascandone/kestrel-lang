@@ -8,12 +8,12 @@ export type Options = {
   optimize?: boolean;
 };
 
-export async function compileCmd({
-  out: outPath = DEFAULT_OUTPUT_FILE,
-  optimize = false,
-}: Options) {
+export async function compileCmd(
+  entryPoint: string,
+  { out: outPath = DEFAULT_OUTPUT_FILE, optimize = false }: Options,
+) {
   const start = Date.now();
-  const compiled = await compilePath(process.cwd(), undefined, optimize);
+  const compiled = await compilePath(process.cwd(), entryPoint, optimize);
   writeFile(outPath, compiled);
   const end = Date.now();
   console.log(`Done in ${end - start}ms ✨`);

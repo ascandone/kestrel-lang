@@ -27,7 +27,7 @@ program
   .action(checkCmd);
 
 program
-  .command("compile")
+  .command("compile [entrypoint]")
   .option("--out <path>")
   // TODO add the flag when is fixed
   // .option("--optimize")
