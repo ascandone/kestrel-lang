@@ -1086,7 +1086,7 @@ function loop() {
 `);
   });
 
-  test.todo("Namespaced", () => {
+  test("Namespaced", () => {
     const out = compileSrc(`let f1 = fn { f1() }`, "Mod");
 
     expect(out).toEqual(`function Mod$f1() {
