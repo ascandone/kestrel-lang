@@ -1086,6 +1086,43 @@ function loop() {
 `);
   });
 
+  test("a tc call should not leak into other expressions", () => {
+    const out = compileSrc(`
+    let ap = fn f { f(10) }
+    pub type Bool { True }
+
+    pub let f = fn a {
+      if True {
+        f()
+      } else {
+        let id = ap(fn x { x });
+        0
+      }
+    }
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+      "function ap(f) {
+        return f(10);
+      }
+
+      function f(GEN_TC__0) {
+        while (true) {
+          const a = GEN_TC__0;
+          if (True) {
+          } else {
+            function id$GEN__0(x) {
+              return x;
+            }
+            const id = ap(id$GEN__0);
+            return 0;
+          }
+        }
+      }
+      "
+    `);
+  });
+
   test("Namespaced", () => {
     const out = compileSrc(`let f1 = fn { f1() }`, "Mod");
 

@@ -348,6 +348,9 @@ export class Compiler {
       }
 
       case "fn": {
+        const wasTailCall = this.tailCall;
+        this.tailCall = false;
+
         const name =
           as.type === "assign_var" && as.declare
             ? as.name
@@ -391,6 +394,7 @@ export class Compiler {
             ]
           : fnBody;
 
+        this.tailCall = wasTailCall;
         return [
           //
           `function ${name}(${params.join(", ")}) {`,
