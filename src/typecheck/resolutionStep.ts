@@ -37,6 +37,7 @@ import {
   UnimportedModule,
   UnusedVariable,
 } from "../errors";
+import { Frame } from "./frame";
 
 export type Deps = Record<string, TypedModule>;
 
@@ -62,11 +63,20 @@ class ResolutionStep {
   private imports: TypedImport[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
   private unusedVariables = new WeakSet<Binding<TypeMeta>>();
+  private frames: Frame<Binding<TypeMeta>>[] = [new Frame(undefined, [])];
 
   constructor(
     private ns: string,
     private deps: Deps,
   ) {}
+
+  private currentFrame(): Frame<Binding<TypeMeta>> {
+    const frame = this.frames.at(-1);
+    if (frame === undefined) {
+      throw new Error("[unreachable] No frames left");
+    }
+    return frame;
+  }
 
   run(
     module: UntypedModule,
@@ -407,6 +417,15 @@ class ResolutionStep {
       return;
     }
 
+    for (let i = this.frames.length - 1; i >= 0; i--) {
+      const frame = this.frames[i]!;
+      const resolution = frame.resolve(ast.name);
+      if (resolution !== undefined) {
+        this.unusedVariables.delete(resolution);
+        return { type: "local-variable", binding: resolution };
+      }
+    }
+
     const lexical = lexicalScope[ast.name];
     if (lexical !== undefined) {
       this.unusedVariables.delete(lexical);
@@ -491,19 +510,17 @@ class ResolutionStep {
         };
 
       case "fn": {
-        const params = ast.params.map((p) => ({
+        const params = ast.params.map<Binding<TypeMeta>>((p) => ({
           ...p,
           $: TVar.fresh(),
         }));
 
+        // TODO frame name
+        this.frames.push(new Frame(undefined, params));
         for (const param of params) {
           if (!param.name.startsWith("_")) {
             this.unusedVariables.add(param);
           }
-        }
-
-        for (const param of params) {
-          lexicalScope = { ...lexicalScope, [param.name]: param };
         }
 
         const body: TypedExpr = this.annotateExpr(ast.body, lexicalScope);
@@ -516,6 +533,8 @@ class ResolutionStep {
             });
           }
         }
+
+        this.frames.pop();
 
         return {
           ...ast,
@@ -552,19 +571,24 @@ class ResolutionStep {
           this.unusedVariables.add(binding);
         }
 
+        const currentFrame = this.currentFrame();
+
+        // TODO proper rec binding
+        const value = this.annotateExpr(ast.value, {
+          ...lexicalScope,
+          [ast.binding.name]: binding,
+        });
+
+        currentFrame.defineLocal(binding);
+        const body = this.annotateExpr(ast.body, lexicalScope);
+        currentFrame.exitLocal();
+
         const node = {
           ...ast,
           $: TVar.fresh(),
           binding,
-          // TODO only pass this if it's a fn
-          value: this.annotateExpr(ast.value, {
-            ...lexicalScope,
-            [ast.binding.name]: binding,
-          }),
-          body: this.annotateExpr(ast.body, {
-            ...lexicalScope,
-            [ast.binding.name]: binding,
-          }),
+          value,
+          body,
         };
 
         if (this.unusedVariables.has(binding)) {
