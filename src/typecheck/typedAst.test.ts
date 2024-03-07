@@ -302,7 +302,7 @@ describe("goToDefinition", () => {
     expect(location?.span).toEqual(spanOf(src, "x", 1));
   });
 
-  test.todo("invalid recursive let bindings", () => {
+  test("invalid recursive let bindings", () => {
     const src = `
       let x = x
     `;
@@ -310,7 +310,7 @@ describe("goToDefinition", () => {
     expect(location?.span).toEqual(undefined);
   });
 
-  test.todo("shadowed let", () => {
+  test("shadowed let", () => {
     const src = `
       let x = {
         let a = 0;

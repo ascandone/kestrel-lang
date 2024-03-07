@@ -64,6 +64,7 @@ class ResolutionStep {
   private typeDeclarations: TypedTypeDeclaration[] = [];
   private unusedVariables = new WeakSet<Binding<TypeMeta>>();
   private frames: Frame<Binding<TypeMeta>>[] = [new Frame(undefined, [])];
+  private recursiveBinding: Binding<TypeMeta> | undefined = undefined;
 
   constructor(
     private ns: string,
@@ -123,6 +124,7 @@ class ResolutionStep {
         ...decl.binding,
         $: TVar.fresh(),
       };
+      this.recursiveBinding = binding;
 
       let tDecl: TypedDeclaration;
       if (decl.extern) {
@@ -136,11 +138,7 @@ class ResolutionStep {
           ...decl,
           scheme: {},
           binding,
-          value: this.annotateExpr(decl.value, {
-            // This is an hack to prevent the recursive reference to be generalized
-            // we probably want a new type of scope for this
-            [decl.binding.name]: binding,
-          }),
+          value: this.annotateExpr(decl.value, {}),
         };
       }
 
@@ -349,6 +347,7 @@ class ResolutionStep {
     ast: { name: string; namespace?: string; span: Span },
     lexicalScope: LexicalScope,
   ): IdentifierResolution | undefined {
+    // TODO && ast.namespace !== this.ns
     if (ast.namespace !== undefined) {
       const import_ = this.imports.find(
         (import_) => import_.ns === ast.namespace,
@@ -516,7 +515,7 @@ class ResolutionStep {
         }));
 
         // TODO frame name
-        this.frames.push(new Frame(undefined, params));
+        this.frames.push(new Frame(this.recursiveBinding, params));
         for (const param of params) {
           if (!param.name.startsWith("_")) {
             this.unusedVariables.add(param);
@@ -562,6 +561,8 @@ class ResolutionStep {
         };
 
       case "let": {
+        const oldBinding = this.recursiveBinding;
+
         const binding: Binding<TypeMeta> = {
           ...ast.binding,
           $: TVar.fresh(),
@@ -574,10 +575,9 @@ class ResolutionStep {
         const currentFrame = this.currentFrame();
 
         // TODO proper rec binding
-        const value = this.annotateExpr(ast.value, {
-          ...lexicalScope,
-          [ast.binding.name]: binding,
-        });
+        this.recursiveBinding = binding;
+        const value = this.annotateExpr(ast.value, lexicalScope);
+        this.recursiveBinding = oldBinding;
 
         currentFrame.defineLocal(binding);
         const body = this.annotateExpr(ast.body, lexicalScope);
