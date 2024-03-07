@@ -606,13 +606,8 @@ class ResolutionStep {
           $: TVar.fresh(),
           expr: this.annotateExpr(ast.expr, lexicalScope),
           clauses: ast.clauses.map(([pattern, expr]) => {
-            const [annotatedPattern, matchScope] =
-              this.annotateMatchPattern(pattern);
-
-            return [
-              annotatedPattern,
-              this.annotateExpr(expr, { ...lexicalScope, ...matchScope }),
-            ];
+            const annotatedPattern = this.annotateMatchPattern(pattern);
+            return [annotatedPattern, this.annotateExpr(expr, lexicalScope)];
           }),
         };
       }
@@ -701,41 +696,34 @@ class ResolutionStep {
     };
   }
 
-  private annotateMatchPattern(
-    ast: MatchPattern,
-  ): [TypedMatchPattern, LexicalScope] {
-    const scope: LexicalScope = {};
+  private annotateMatchPattern(ast: MatchPattern): TypedMatchPattern {
+    switch (ast.type) {
+      case "lit":
+        return {
+          ...ast,
+          $: TVar.fresh(),
+        };
 
-    const recur = (ast: MatchPattern): TypedMatchPattern => {
-      switch (ast.type) {
-        case "lit":
-          return {
-            ...ast,
-            $: TVar.fresh(),
-          };
+      case "identifier": {
+        const typedBinding = {
+          ...ast,
+          $: TVar.fresh(),
+        };
+        this.currentFrame().defineLocal(typedBinding);
 
-        case "identifier": {
-          const typedBinding = {
-            ...ast,
-            $: TVar.fresh(),
-          };
-          scope[ast.name] = typedBinding;
-          return typedBinding;
-        }
-
-        case "constructor": {
-          // TODO only resolve if constructor is unqualified
-          const typedPattern: TypedMatchPattern = {
-            ...ast,
-            resolution: this.globalScope[ast.name],
-            args: ast.args.map(recur),
-            $: TVar.fresh(),
-          };
-          return typedPattern;
-        }
+        return typedBinding;
       }
-    };
 
-    return [recur(ast), scope];
+      case "constructor": {
+        // TODO only resolve if constructor is unqualified
+        const typedPattern: TypedMatchPattern = {
+          ...ast,
+          resolution: this.globalScope[ast.name],
+          args: ast.args.map((arg) => this.annotateMatchPattern(arg)),
+          $: TVar.fresh(),
+        };
+        return typedPattern;
+      }
+    }
   }
 }
