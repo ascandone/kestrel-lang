@@ -54,8 +54,6 @@ export function castAst(
 
 type GlobalScope = Record<string, IdentifierResolution>;
 
-type LexicalScope = Record<string, Binding<TypeMeta>>;
-
 class ResolutionStep {
   private globalScope: GlobalScope = {};
 
@@ -138,7 +136,7 @@ class ResolutionStep {
           ...decl,
           scheme: {},
           binding,
-          value: this.annotateExpr(decl.value, {}),
+          value: this.annotateExpr(decl.value),
         };
       }
 
@@ -343,10 +341,11 @@ class ResolutionStep {
     });
   }
 
-  private resolveIdentifier(
-    ast: { name: string; namespace?: string; span: Span },
-    lexicalScope: LexicalScope,
-  ): IdentifierResolution | undefined {
+  private resolveIdentifier(ast: {
+    name: string;
+    namespace?: string;
+    span: Span;
+  }): IdentifierResolution | undefined {
     // TODO && ast.namespace !== this.ns
     if (ast.namespace !== undefined) {
       const import_ = this.imports.find(
@@ -425,12 +424,6 @@ class ResolutionStep {
       }
     }
 
-    const lexical = lexicalScope[ast.name];
-    if (lexical !== undefined) {
-      this.unusedVariables.delete(lexical);
-      return { type: "local-variable", binding: lexical };
-    }
-
     const global = this.globalScope[ast.name];
     if (global !== undefined) {
       if (global.type === "global-variable") {
@@ -447,10 +440,7 @@ class ResolutionStep {
     return;
   }
 
-  private annotateExpr(
-    ast: UntypedExpr,
-    lexicalScope: LexicalScope,
-  ): TypedExpr {
+  private annotateExpr(ast: UntypedExpr): TypedExpr {
     switch (ast.type) {
       // syntax sugar
       case "pipe":
@@ -459,42 +449,36 @@ class ResolutionStep {
             span: ast.right.span,
             description: new InvalidPipe(),
           });
-          return this.annotateExpr(ast.left, lexicalScope);
+          return this.annotateExpr(ast.left);
         }
 
-        return this.annotateExpr(
-          {
-            type: "application",
-            span: ast.right.span,
-            caller: ast.right.caller,
-            args: [ast.left, ...ast.right.args],
-          },
-          lexicalScope,
-        );
+        return this.annotateExpr({
+          type: "application",
+          span: ast.right.span,
+          caller: ast.right.caller,
+          args: [ast.left, ...ast.right.args],
+        });
 
       case "let#":
-        return this.annotateExpr(
-          {
-            type: "application",
-            caller: {
-              type: "identifier",
-              namespace: ast.mapper.namespace,
-              name: ast.mapper.name,
-              span: ast.mapper.span,
-            },
-            args: [
-              ast.value,
-              {
-                type: "fn",
-                params: [ast.binding],
-                body: ast.body,
-                span: ast.span,
-              },
-            ],
-            span: ast.span,
+        return this.annotateExpr({
+          type: "application",
+          caller: {
+            type: "identifier",
+            namespace: ast.mapper.namespace,
+            name: ast.mapper.name,
+            span: ast.mapper.span,
           },
-          lexicalScope,
-        );
+          args: [
+            ast.value,
+            {
+              type: "fn",
+              params: [ast.binding],
+              body: ast.body,
+              span: ast.span,
+            },
+          ],
+          span: ast.span,
+        });
 
       // Actual ast
 
@@ -504,7 +488,7 @@ class ResolutionStep {
       case "identifier":
         return {
           ...ast,
-          resolution: this.resolveIdentifier(ast, lexicalScope),
+          resolution: this.resolveIdentifier(ast),
           $: TVar.fresh(),
         };
 
@@ -522,7 +506,7 @@ class ResolutionStep {
           }
         }
 
-        const body: TypedExpr = this.annotateExpr(ast.body, lexicalScope);
+        const body: TypedExpr = this.annotateExpr(ast.body);
 
         for (const param of params) {
           if (this.unusedVariables.has(param)) {
@@ -547,17 +531,17 @@ class ResolutionStep {
         return {
           ...ast,
           $: TVar.fresh(),
-          caller: this.annotateExpr(ast.caller, lexicalScope),
-          args: ast.args.map((arg) => this.annotateExpr(arg, lexicalScope)),
+          caller: this.annotateExpr(ast.caller),
+          args: ast.args.map((arg) => this.annotateExpr(arg)),
         };
 
       case "if":
         return {
           ...ast,
           $: TVar.fresh(),
-          condition: this.annotateExpr(ast.condition, lexicalScope),
-          then: this.annotateExpr(ast.then, lexicalScope),
-          else: this.annotateExpr(ast.else, lexicalScope),
+          condition: this.annotateExpr(ast.condition),
+          then: this.annotateExpr(ast.then),
+          else: this.annotateExpr(ast.else),
         };
 
       case "let": {
@@ -576,11 +560,11 @@ class ResolutionStep {
 
         // TODO proper rec binding
         this.recursiveBinding = binding;
-        const value = this.annotateExpr(ast.value, lexicalScope);
+        const value = this.annotateExpr(ast.value);
         this.recursiveBinding = oldBinding;
 
         currentFrame.defineLocal(binding);
-        const body = this.annotateExpr(ast.body, lexicalScope);
+        const body = this.annotateExpr(ast.body);
         currentFrame.exitLocal();
 
         const node = {
@@ -604,10 +588,10 @@ class ResolutionStep {
         return {
           ...ast,
           $: TVar.fresh(),
-          expr: this.annotateExpr(ast.expr, lexicalScope),
+          expr: this.annotateExpr(ast.expr),
           clauses: ast.clauses.map(([pattern, expr]) => {
             const annotatedPattern = this.annotateMatchPattern(pattern);
-            return [annotatedPattern, this.annotateExpr(expr, lexicalScope)];
+            return [annotatedPattern, this.annotateExpr(expr)];
           }),
         };
       }
