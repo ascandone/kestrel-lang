@@ -382,7 +382,7 @@ test("unused locals", () => {
   expect(errs[0]?.description).toBeInstanceOf(UnusedVariable);
 });
 
-test.todo("unused pattern match locals", () => {
+test("unused pattern match locals", () => {
   const [, errs] = tc(
     `
     pub let a = match "something" {

@@ -63,6 +63,7 @@ class ResolutionStep {
   private unusedVariables = new WeakSet<Binding<TypeMeta>>();
   private frames: Frame<Binding<TypeMeta>>[] = [new Frame(undefined, [])];
   private recursiveBinding: Binding<TypeMeta> | undefined = undefined;
+  private patternBindings: Binding<TypeMeta>[] = [];
 
   constructor(
     private ns: string,
@@ -590,8 +591,20 @@ class ResolutionStep {
           $: TVar.fresh(),
           expr: this.annotateExpr(ast.expr),
           clauses: ast.clauses.map(([pattern, expr]) => {
+            this.patternBindings = [];
             const annotatedPattern = this.annotateMatchPattern(pattern);
-            return [annotatedPattern, this.annotateExpr(expr)];
+            const annotatedExpr = this.annotateExpr(expr);
+
+            for (const binding of this.patternBindings) {
+              if (this.unusedVariables.has(binding)) {
+                this.errors.push({
+                  description: new UnusedVariable(binding.name, "local"),
+                  span: binding.span,
+                });
+              }
+            }
+
+            return [annotatedPattern, annotatedExpr];
           }),
         };
       }
@@ -693,8 +706,11 @@ class ResolutionStep {
           ...ast,
           $: TVar.fresh(),
         };
-        this.currentFrame().defineLocal(typedBinding);
-
+        if (!ast.name.startsWith("_")) {
+          this.currentFrame().defineLocal(typedBinding);
+          this.unusedVariables.add(typedBinding);
+          this.patternBindings.push(typedBinding);
+        }
         return typedBinding;
       }
 
