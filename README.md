@@ -18,7 +18,7 @@ pub let fizz_buzz = fn n {
 }
 ```
 
-Take a look at the [language tour](https://github.com/ascandone/kestrel-lang/blob/main/language-tour.md) to learn more
+Take a look at the [language tour](https://github.com/ascandone/kestrel-lang/blob/main/language-tour.md) to learn more. You can find some examples by looking at the standard library [implementation](https://github.com/ascandone/kestrel_core/tree/main/src)
 
 ### Get started
 
@@ -28,4 +28,4 @@ Install the `kestrel` cli using npm:
 npm install -g kestrel-lang
 ```
 
-Lsp integration is available as a [vscode extension](https://marketplace.visualstudio.com/items?itemName=ascandone.kestrel-vscode)
+Lsp integration is available as a [vscode extension](https://marketplace.visualstudio.com/items?itemName=ascandone.kestrel-vscode).
