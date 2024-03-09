@@ -84,7 +84,6 @@ function isStructuralEq(caller: TypedExpr, args: TypedExpr[]): boolean {
   return true;
 }
 export class Compiler {
-  private bindingsStack: Binding<unknown>[] = [];
   private frames: Frame[] = [];
   private tailCall = false;
 
@@ -160,7 +159,6 @@ export class Compiler {
     this.localBindings.set(src.binding, scopedBinding);
 
     this.frames.pop();
-    this.bindingsStack.pop();
     return { value, scopedBinding };
   }
 
