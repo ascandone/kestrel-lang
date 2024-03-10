@@ -359,6 +359,10 @@ export class Compiler {
           frame?.data.type === "let" ? frame.data.binding : undefined;
 
         this.frames.push(new Frame({ type: "fn" }, this));
+        for (const param of src.params) {
+          this.localBindings.set(param, param.name);
+        }
+
         const paramsScope = Object.fromEntries(
           src.params.map((p) => [p.name, p.name]),
         );
