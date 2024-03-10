@@ -149,14 +149,13 @@ export class Compiler {
         ? { ...scope, [src.binding.name]: scopedBinding }
         : scope;
 
+    this.localBindings.set(src.binding, scopedBinding);
     const value = this.compileAsStatements(
       src.value,
       { type: "assign_var", name: scopedBinding, declare: true },
       updatedScope,
       undefined,
     );
-
-    this.localBindings.set(src.binding, scopedBinding);
 
     this.frames.pop();
     return { value, scopedBinding };
