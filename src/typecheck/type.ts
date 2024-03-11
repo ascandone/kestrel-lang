@@ -169,15 +169,13 @@ function occursCheck(v: TVar, x: Type): boolean {
   }
 
   const resolvedV = v.resolve();
-
   if (resolvedV.type === "bound") {
     return false;
   }
 
   const resolvedX = x.var.resolve();
-
   if (resolvedX.type === "bound") {
-    return false;
+    return occursCheck(v, resolvedX.value);
   }
 
   if (resolvedV.id === resolvedX.id) {

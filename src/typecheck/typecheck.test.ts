@@ -16,6 +16,7 @@ import {
   InvalidPipe,
   InvalidTypeArity,
   NonExistingImport,
+  OccursCheck,
   TypeMismatch,
   TypeParamShadowing,
   UnboundModule,
@@ -415,6 +416,19 @@ test("unused globals does not trigger when private vars are used", () => {
   );
 
   expect(errs).toEqual([]);
+});
+
+test("closures with resursive bindings", () => {
+  const [, errs] = tc(
+    `
+    pub let f = fn {
+      fn { f }
+    }
+  `,
+  );
+
+  expect(errs).toHaveLength(1);
+  expect(errs[0]?.description).toBeInstanceOf(OccursCheck);
 });
 
 describe("type hints", () => {
