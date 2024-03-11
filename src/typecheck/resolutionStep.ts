@@ -37,7 +37,7 @@ import {
   UnimportedModule,
   UnusedVariable,
 } from "../errors";
-import { Frame } from "./frame";
+import { FramesStack } from "./frame";
 
 export type Deps = Record<string, TypedModule>;
 
@@ -61,22 +61,14 @@ class ResolutionStep {
   private imports: TypedImport[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
   private unusedVariables = new WeakSet<TypedBinding>();
-  private frames: Frame<TypedBinding>[] = [new Frame(undefined, [])];
-  private recursiveBinding: TypedBinding | undefined = undefined;
+  private framesStack = new FramesStack<TypedBinding>();
+
   private patternBindings: TypedBinding[] = [];
 
   constructor(
     private ns: string,
     private deps: Deps,
   ) {}
-
-  private currentFrame(): Frame<TypedBinding> {
-    const frame = this.frames.at(-1);
-    if (frame === undefined) {
-      throw new Error("[unreachable] No frames left");
-    }
-    return frame;
-  }
 
   run(
     module: UntypedModule,
@@ -123,7 +115,7 @@ class ResolutionStep {
         ...decl.binding,
         $: TVar.fresh(),
       };
-      this.recursiveBinding = binding;
+      this.framesStack.defineRecursiveLabel(binding);
 
       let tDecl: TypedDeclaration;
       if (decl.extern) {
@@ -416,12 +408,15 @@ class ResolutionStep {
       return;
     }
 
-    for (let i = this.frames.length - 1; i >= 0; i--) {
-      const frame = this.frames[i]!;
-      const resolution = frame.resolve(ast.name);
-      if (resolution !== undefined) {
-        this.unusedVariables.delete(resolution);
-        return { type: "local-variable", binding: resolution };
+    const resolvedLocal = this.framesStack.resolve(ast.name);
+    if (resolvedLocal !== undefined) {
+      switch (resolvedLocal.type) {
+        case "local":
+          this.unusedVariables.delete(resolvedLocal.binding);
+          return {
+            type: "local-variable",
+            binding: resolvedLocal.binding,
+          };
       }
     }
 
@@ -499,8 +494,8 @@ class ResolutionStep {
           $: TVar.fresh(),
         }));
 
+        this.framesStack.pushFrame(params);
         // TODO frame name
-        this.frames.push(new Frame(this.recursiveBinding, params));
         for (const param of params) {
           if (!param.name.startsWith("_")) {
             this.unusedVariables.add(param);
@@ -518,7 +513,7 @@ class ResolutionStep {
           }
         }
 
-        this.frames.pop();
+        this.framesStack.popFrame();
 
         return {
           ...ast,
@@ -546,8 +541,6 @@ class ResolutionStep {
         };
 
       case "let": {
-        const oldBinding = this.recursiveBinding;
-
         const binding: TypedBinding = {
           ...ast.binding,
           $: TVar.fresh(),
@@ -557,16 +550,11 @@ class ResolutionStep {
           this.unusedVariables.add(binding);
         }
 
-        const currentFrame = this.currentFrame();
-
-        // TODO proper rec binding
-        this.recursiveBinding = binding;
+        this.framesStack.defineRecursiveLabel(binding);
         const value = this.annotateExpr(ast.value);
-        this.recursiveBinding = oldBinding;
-
-        currentFrame.defineLocal(binding);
+        this.framesStack.defineLocal(binding);
         const body = this.annotateExpr(ast.body);
-        currentFrame.exitLocal();
+        this.framesStack.exitLocal();
 
         const node = {
           ...ast,
@@ -596,7 +584,8 @@ class ResolutionStep {
             const annotatedExpr = this.annotateExpr(expr);
 
             for (const binding of this.patternBindings) {
-              this.currentFrame().exitLocal();
+              this.framesStack.exitLocal();
+
               if (this.unusedVariables.has(binding)) {
                 this.errors.push({
                   description: new UnusedVariable(binding.name, "local"),
@@ -708,7 +697,7 @@ class ResolutionStep {
           $: TVar.fresh(),
         };
         if (!ast.name.startsWith("_")) {
-          this.currentFrame().defineLocal(typedBinding);
+          this.framesStack.defineLocal(typedBinding);
           this.unusedVariables.add(typedBinding);
           this.patternBindings.push(typedBinding);
         }
