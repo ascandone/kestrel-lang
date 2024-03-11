@@ -1089,10 +1089,9 @@ function loop() {
   test("a tc call should not leak into other expressions", () => {
     const out = compileSrc(`
     let ap = fn f { f(10) }
-    pub type Bool { True }
 
     pub let f = fn a {
-      if True {
+      if a {
         f()
       } else {
         let id = ap(fn x { x });
@@ -1109,7 +1108,7 @@ function loop() {
       function f(GEN_TC__0) {
         while (true) {
           const a = GEN_TC__0;
-          if (True) {
+          if (a) {
           } else {
             function id$GEN__0(x) {
               return x;
