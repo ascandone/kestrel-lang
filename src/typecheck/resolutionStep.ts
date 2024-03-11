@@ -1,5 +1,4 @@
 import {
-  Binding,
   MatchPattern,
   Span,
   TypeAst,
@@ -12,6 +11,7 @@ import {
 import {
   IdentifierResolution,
   TypeResolution,
+  TypedBinding,
   TypedDeclaration,
   TypedExposing,
   TypedExpr,
@@ -60,17 +60,17 @@ class ResolutionStep {
   private errors: ErrorInfo[] = [];
   private imports: TypedImport[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
-  private unusedVariables = new WeakSet<Binding<TypeMeta>>();
-  private frames: Frame<Binding<TypeMeta>>[] = [new Frame(undefined, [])];
-  private recursiveBinding: Binding<TypeMeta> | undefined = undefined;
-  private patternBindings: Binding<TypeMeta>[] = [];
+  private unusedVariables = new WeakSet<TypedBinding>();
+  private frames: Frame<TypedBinding>[] = [new Frame(undefined, [])];
+  private recursiveBinding: TypedBinding | undefined = undefined;
+  private patternBindings: TypedBinding[] = [];
 
   constructor(
     private ns: string,
     private deps: Deps,
   ) {}
 
-  private currentFrame(): Frame<Binding<TypeMeta>> {
+  private currentFrame(): Frame<TypedBinding> {
     const frame = this.frames.at(-1);
     if (frame === undefined) {
       throw new Error("[unreachable] No frames left");
@@ -119,7 +119,7 @@ class ResolutionStep {
     declrs: UntypedDeclaration[],
   ): TypedDeclaration[] {
     return declrs.map<TypedDeclaration>((decl) => {
-      const binding: Binding<TypeMeta> = {
+      const binding: TypedBinding = {
         ...decl.binding,
         $: TVar.fresh(),
       };
@@ -494,7 +494,7 @@ class ResolutionStep {
         };
 
       case "fn": {
-        const params = ast.params.map<Binding<TypeMeta>>((p) => ({
+        const params = ast.params.map<TypedBinding>((p) => ({
           ...p,
           $: TVar.fresh(),
         }));
@@ -548,7 +548,7 @@ class ResolutionStep {
       case "let": {
         const oldBinding = this.recursiveBinding;
 
-        const binding: Binding<TypeMeta> = {
+        const binding: TypedBinding = {
           ...ast.binding,
           $: TVar.fresh(),
         };

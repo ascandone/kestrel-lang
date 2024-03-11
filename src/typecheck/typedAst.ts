@@ -30,6 +30,8 @@ export type IdentifierResolution =
       namespace?: string;
     };
 
+export type TypedBinding = Binding<TypeMeta>;
+
 export type TypeResolution = {
   declaration: TypedTypeDeclaration;
   namespace: string;
