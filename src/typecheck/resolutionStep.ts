@@ -596,6 +596,7 @@ class ResolutionStep {
             const annotatedExpr = this.annotateExpr(expr);
 
             for (const binding of this.patternBindings) {
+              this.currentFrame().exitLocal();
               if (this.unusedVariables.has(binding)) {
                 this.errors.push({
                   description: new UnusedVariable(binding.name, "local"),
