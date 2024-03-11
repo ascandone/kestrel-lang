@@ -334,78 +334,89 @@ class ResolutionStep {
     });
   }
 
+  private resolveExternalIdentifier(ast: {
+    name: string;
+    namespace: string;
+    span: Span;
+  }): IdentifierResolution | undefined {
+    const import_ = this.imports.find(
+      (import_) => import_.ns === ast.namespace,
+    );
+    if (import_ === undefined) {
+      this.errors.push({
+        span: ast.span,
+        description: new UnimportedModule(ast.namespace),
+      });
+      return undefined;
+    }
+
+    const dep = this.deps[import_.ns];
+    if (dep === undefined) {
+      return undefined;
+    }
+
+    const declaration = dep.declarations.find(
+      (decl) => decl.binding.name === ast.name && decl.pub,
+    );
+
+    if (declaration !== undefined) {
+      return {
+        type: "global-variable",
+        declaration,
+        namespace: ast.namespace,
+      };
+    }
+
+    for (const tDecl of dep.typeDeclarations) {
+      if (tDecl.type === "adt" && tDecl.pub === "..") {
+        for (const variant of tDecl.variants) {
+          if (variant.name === ast.name) {
+            return { type: "constructor", variant, namespace: ast.namespace };
+          }
+        }
+      }
+    }
+
+    for (const exposed of import_.exposing) {
+      if (exposed.name === ast.name) {
+        // Found!
+        switch (exposed.type) {
+          case "value":
+            if (exposed.declaration === undefined) {
+              return;
+            }
+
+            return {
+              type: "global-variable",
+              namespace: ast.namespace,
+              declaration: exposed.declaration,
+            };
+
+          case "type":
+            break;
+        }
+      }
+    }
+
+    this.errors.push({
+      span: ast.span,
+      description: new NonExistingImport(ast.name),
+    });
+
+    return;
+  }
+
   private resolveIdentifier(ast: {
     name: string;
     namespace?: string;
     span: Span;
   }): IdentifierResolution | undefined {
-    // TODO && ast.namespace !== this.ns
-    if (ast.namespace !== undefined) {
-      const import_ = this.imports.find(
-        (import_) => import_.ns === ast.namespace,
-      );
-      if (import_ === undefined) {
-        this.errors.push({
-          span: ast.span,
-          description: new UnimportedModule(ast.namespace),
-        });
-        return undefined;
-      }
-
-      const dep = this.deps[import_.ns];
-      if (dep === undefined) {
-        return undefined;
-      }
-
-      const declaration = dep.declarations.find(
-        (decl) => decl.binding.name === ast.name && decl.pub,
-      );
-
-      if (declaration !== undefined) {
-        return {
-          type: "global-variable",
-          declaration,
-          namespace: ast.namespace,
-        };
-      }
-
-      for (const tDecl of dep.typeDeclarations) {
-        if (tDecl.type === "adt" && tDecl.pub === "..") {
-          for (const variant of tDecl.variants) {
-            if (variant.name === ast.name) {
-              return { type: "constructor", variant, namespace: ast.namespace };
-            }
-          }
-        }
-      }
-
-      for (const exposed of import_.exposing) {
-        if (exposed.name === ast.name) {
-          // Found!
-          switch (exposed.type) {
-            case "value":
-              if (exposed.declaration === undefined) {
-                return;
-              }
-
-              return {
-                type: "global-variable",
-                namespace: ast.namespace,
-                declaration: exposed.declaration,
-              };
-
-            case "type":
-              break;
-          }
-        }
-      }
-
-      this.errors.push({
+    if (ast.namespace !== undefined && ast.namespace !== this.ns) {
+      return this.resolveExternalIdentifier({
+        name: ast.name,
+        namespace: ast.namespace,
         span: ast.span,
-        description: new NonExistingImport(ast.name),
       });
-
-      return;
     }
 
     const resolvedLocal = this.framesStack.resolve(ast.name);
