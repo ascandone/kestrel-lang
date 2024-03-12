@@ -343,7 +343,7 @@ function resolutionToLocation(resolution: IdentifierResolution): Location {
     case "global-variable":
       return {
         namespace: resolution.namespace,
-        span: resolution.declaration.span,
+        span: resolution.declaration.binding.span,
       };
     case "constructor":
       return {

@@ -118,7 +118,6 @@ class ResolutionStep {
         ...decl.binding,
         $: TVar.fresh(),
       };
-      this.framesStack.defineRecursiveLabel(binding);
 
       let tDecl: TypedDeclaration;
       if (decl.extern) {
@@ -132,8 +131,15 @@ class ResolutionStep {
           ...decl,
           scheme: {},
           binding,
-          value: this.annotateExpr(decl.value),
+          value: undefined!,
         };
+
+        this.framesStack.defineRecursiveLabel({
+          type: "global",
+          declaration: tDecl,
+        });
+
+        tDecl.value = this.annotateExpr(decl.value);
       }
 
       if (decl.typeHint !== undefined) {
@@ -144,11 +150,7 @@ class ResolutionStep {
         this.unusedVariables.add(tDecl.binding);
       }
 
-      const ok = this.framesStack.defineGlobal(
-        decl.binding.name,
-        undefined,
-        tDecl,
-      );
+      const ok = this.framesStack.defineGlobal(tDecl, undefined);
       if (!ok) {
         this.errors.push({
           span: decl.binding.span,
@@ -569,7 +571,7 @@ class ResolutionStep {
           this.unusedVariables.add(binding);
         }
 
-        this.framesStack.defineRecursiveLabel(binding);
+        this.framesStack.defineRecursiveLabel({ type: "local", binding });
         const value = this.annotateExpr(ast.value);
         this.framesStack.defineLocal(binding);
         const body = this.annotateExpr(ast.body);
@@ -685,11 +687,7 @@ class ResolutionStep {
                 description: new NonExistingImport(exposing.name),
               });
             } else {
-              this.framesStack.defineGlobal(
-                exposing.name,
-                import_.ns,
-                declaration,
-              );
+              this.framesStack.defineGlobal(declaration, import_.ns);
             }
 
             return {

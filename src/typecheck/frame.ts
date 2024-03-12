@@ -1,36 +1,3 @@
-export class Frame<Local extends { name: string }> {
-  private locals: Local[];
-  constructor(
-    public readonly self: Local | undefined,
-    parameters: Local[],
-  ) {
-    this.locals = [...parameters];
-  }
-
-  defineLocal(binding: Local) {
-    this.locals.push(binding);
-  }
-
-  exitLocal() {
-    this.locals.pop();
-  }
-
-  resolve(name: string): Local | undefined {
-    for (let i = this.locals.length - 1; i >= 0; i--) {
-      const b = this.locals[i]!;
-      if (b.name === name) {
-        return b;
-      }
-    }
-
-    if (this.self?.name === name) {
-      return this.self;
-    }
-
-    return undefined;
-  }
-}
-
 export type BindingResolution<Binding, Global> =
   | {
       type: "local";
@@ -42,11 +9,65 @@ export type BindingResolution<Binding, Global> =
       namespace?: string;
     };
 
-export class FramesStack<Local extends { name: string }, Global = never> {
-  private globals = new Map<string, [string | undefined, Global]>();
-  private recursiveLabel: Local | undefined;
-  private frames: Frame<Local>[] = [new Frame(undefined, [])];
-  private getCurrentFrame(): Frame<Local> {
+export class Frame<
+  Binding extends { name: string },
+  Global extends { binding: Binding },
+> {
+  private locals: Binding[];
+  constructor(
+    public readonly closestLabel:
+      | BindingResolution<Binding, Global>
+      | undefined,
+    parameters: Binding[],
+  ) {
+    this.locals = [...parameters];
+  }
+
+  defineLocal(binding: Binding) {
+    this.locals.push(binding);
+  }
+
+  exitLocal() {
+    this.locals.pop();
+  }
+
+  resolve(name: string): BindingResolution<Binding, Global> | undefined {
+    for (let i = this.locals.length - 1; i >= 0; i--) {
+      const b = this.locals[i]!;
+      if (b.name === name) {
+        return { type: "local", binding: b };
+      }
+    }
+
+    if (this.closestLabel === undefined) {
+      return undefined;
+    }
+
+    const recLabelName = (() => {
+      switch (this.closestLabel.type) {
+        case "local":
+          return this.closestLabel.binding.name;
+        case "global":
+          return this.closestLabel.declaration.binding.name;
+      }
+    })();
+
+    if (recLabelName === name) {
+      return this.closestLabel;
+    }
+
+    return undefined;
+  }
+}
+
+export class FramesStack<
+  Binding extends { name: string },
+  Declaration extends { binding: Binding },
+> {
+  private globals = new Map<string, [string | undefined, Declaration]>();
+  private recursiveLabel: BindingResolution<Binding, Declaration> | undefined;
+  private frames = [new Frame<Binding, Declaration>(undefined, [])];
+  private getCurrentFrame(): Frame<Binding, Declaration> {
     const frame = this.frames.at(-1);
     if (frame === undefined) {
       throw new Error("[unreachable] No frames left");
@@ -54,7 +75,7 @@ export class FramesStack<Local extends { name: string }, Global = never> {
     return frame;
   }
 
-  pushFrame(parameters: Local[]) {
+  pushFrame(parameters: Binding[]) {
     this.frames.push(new Frame(this.recursiveLabel, parameters));
   }
 
@@ -62,20 +83,16 @@ export class FramesStack<Local extends { name: string }, Global = never> {
     this.frames.pop();
   }
 
-  defineLocal(binding: Local) {
+  defineLocal(binding: Binding) {
     const currentFrame = this.getCurrentFrame();
     currentFrame.defineLocal(binding);
   }
 
-  defineGlobal(
-    name: string,
-    namespace: string | undefined,
-    global: Global,
-  ): boolean {
-    if (this.globals.has(name)) {
+  defineGlobal(global: Declaration, namespace: string | undefined): boolean {
+    if (this.globals.has(global.binding.name)) {
       return false;
     }
-    this.globals.set(name, [namespace, global]);
+    this.globals.set(global.binding.name, [namespace, global]);
     return true;
   }
 
@@ -84,27 +101,28 @@ export class FramesStack<Local extends { name: string }, Global = never> {
     currentFrame.exitLocal();
   }
 
-  defineRecursiveLabel(binding: Local) {
-    this.recursiveLabel = binding;
+  defineRecursiveLabel(label: BindingResolution<Binding, Declaration>) {
+    this.recursiveLabel = label;
   }
 
-  resolve(name: string): BindingResolution<Local, Global> | undefined {
+  resolve(name: string): BindingResolution<Binding, Declaration> | undefined {
     for (let i = this.frames.length - 1; i >= 0; i--) {
       const frame = this.frames[i]!;
       const resolution = frame.resolve(name);
-      if (resolution === undefined) {
-        continue;
+
+      if (resolution !== undefined) {
+        return resolution;
       }
-      return {
-        type: "local",
-        binding: resolution,
-      };
     }
 
     const glb = this.globals.get(name);
     if (glb !== undefined) {
       const [ns, declaration] = glb;
-      return { type: "global", declaration, namespace: ns };
+      return {
+        type: "global",
+        declaration,
+        namespace: ns,
+      };
     }
 
     return undefined;

@@ -255,7 +255,7 @@ describe("goToDefinition", () => {
       let _ = glb
     `;
     const location = parseGotoDef(src, "glb", 2);
-    expect(location?.span).toEqual(spanOf(src, "let glb = 42"));
+    expect(location?.span).toEqual(spanOf(src, "glb"));
   });
 
   test("let decl", () => {
