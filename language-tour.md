@@ -214,7 +214,7 @@ pub(..) MyType { Constructor }
 
 ## Creating a Kestrel project
 
-Ketrel's cli is the unified tool to run, typecheck, build, format your kestrel projects, and more.
+Kestrel's cli is the unified tool to run, typecheck, build, format your kestrel projects, and more.
 
 You can create an new Kestrel project using the `kestrel init` command.
 
@@ -253,9 +253,9 @@ Sometimes we need to deeply nest function calls like in the following example:
 
 ```rust
 let program: Task<Unit> =
-  Task.await(IO.print("Enter you name"), fn _ {
+  Task.await(IO.println("Enter you name"), fn _ {
     Task.await(IO.readline, fn name {
-      IO.print("Hello " <> line <> "!")
+      IO.println("Hello " <> name <> "!")
     })
   })
 ```
@@ -264,9 +264,9 @@ However, such programs quickly become unreadable. To avoid that, we can use the 
 
 ```rust
 {
-  let#Task.await _ = IO.print("Enter your name");
+  let#Task.await _ = IO.println("Enter your name");
   let#Task.await name = IO.readline;
-  IO.print("Hello " <> line <> "!")
+  IO.println("Hello " <> name <> "!")
 }
 ```
 
