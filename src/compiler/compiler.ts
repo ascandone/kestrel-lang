@@ -98,8 +98,6 @@ export class Compiler {
     return this.getCurrentFrame().getUniqueName(this.getBlockNs());
   }
 
-  private globalScope: Scope = {};
-
   private getBlockNs(): string | undefined {
     const ns: string[] = [];
     for (let i = this.frames.length - 1; i >= 0; i--) {
@@ -131,10 +129,7 @@ export class Compiler {
   // <Binding> => ns map
   private localBindings = new WeakMap<Binding<unknown>, string>();
 
-  private compileLetValue(
-    src: TypedExpr & { type: "let" },
-    scope: Scope,
-  ): { value: string[]; scopedBinding: string } {
+  private compileLetValue(src: TypedExpr & { type: "let" }): string[] {
     const name = this.getCurrentFrame().preventShadow(src.binding.name);
     this.frames.push(
       new Frame({ type: "let", name, binding: src.binding }, this),
@@ -144,24 +139,19 @@ export class Compiler {
       throw new Error("[unreachable] empty ns stack");
     }
 
-    const updatedScope =
-      src.value.type === "fn"
-        ? { ...scope, [src.binding.name]: scopedBinding }
-        : scope;
-
     this.localBindings.set(src.binding, scopedBinding);
     const value = this.compileAsStatements(
       src.value,
       { type: "assign_var", name: scopedBinding, declare: true },
-      updatedScope,
+
       undefined,
     );
 
     this.frames.pop();
-    return { value, scopedBinding };
+    return value;
   }
 
-  private compileAsExpr(src: TypedExpr, scope: Scope): CompileExprResult {
+  private compileAsExpr(src: TypedExpr): CompileExprResult {
     switch (src.type) {
       case "constant":
         return [[], constToString(src.value)];
@@ -216,8 +206,8 @@ export class Compiler {
 
         if (!isStructuralEq_ && infix !== undefined) {
           const [l, r] = src.args;
-          const [lStatements, lExpr] = this.compileAsExpr(l!, scope);
-          const [rStatements, rExpr] = this.compileAsExpr(r!, scope);
+          const [lStatements, lExpr] = this.compileAsExpr(l!);
+          const [rStatements, rExpr] = this.compileAsExpr(r!);
 
           const infixLeft = getInfixPrecAndName(l!);
           const lCWithParens =
@@ -231,12 +221,12 @@ export class Compiler {
 
         const [callerStatemens, callerExpr] = isStructuralEq_
           ? [[], "Basics$_eq"]
-          : this.compileAsExpr(src.caller, scope);
+          : this.compileAsExpr(src.caller);
 
         const statements: string[] = [...callerStatemens];
         const args: string[] = [];
         for (const arg of src.args) {
-          const [argStatements, argExpr] = this.compileAsExpr(arg, scope);
+          const [argStatements, argExpr] = this.compileAsExpr(arg);
           args.push(argExpr);
           statements.push(...argStatements);
         }
@@ -244,11 +234,8 @@ export class Compiler {
       }
 
       case "let": {
-        const { value, scopedBinding } = this.compileLetValue(src, scope);
-        const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body, {
-          ...scope,
-          [src.binding.name]: scopedBinding,
-        });
+        const value = this.compileLetValue(src);
+        const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body);
         return [[...value, ...bodyStatements], bodyExpr];
       }
 
@@ -259,7 +246,6 @@ export class Compiler {
         const statements = this.compileAsStatements(
           src,
           { type: "assign_var", name, declare: true },
-          scope,
           undefined,
         );
 
@@ -297,7 +283,6 @@ export class Compiler {
   private compileAsStatements(
     src: TypedExpr,
     as: CompilationMode,
-    scope: Scope,
     tailPosCaller: Binding<unknown> | undefined,
   ): string[] {
     switch (src.type) {
@@ -307,7 +292,7 @@ export class Compiler {
           const ret: string[] = [];
           let i = 0;
           for (const arg of src.args) {
-            const [statements, expr] = this.compileAsExpr(arg, scope);
+            const [statements, expr] = this.compileAsExpr(arg);
             ret.push(...statements);
             ret.push(`GEN_TC__${i} = ${expr};`);
             i++;
@@ -318,19 +303,15 @@ export class Compiler {
 
       case "identifier":
       case "constant": {
-        const [statements, expr] = this.compileAsExpr(src, scope);
+        const [statements, expr] = this.compileAsExpr(src);
         return [...statements, wrapJsExpr(expr, as)];
       }
 
       case "let": {
-        const { value, scopedBinding } = this.compileLetValue(src, scope);
+        const value = this.compileLetValue(src);
         const bodyStatements = this.compileAsStatements(
           src.body,
           as,
-          {
-            ...scope,
-            [src.binding.name]: scopedBinding,
-          },
           tailPosCaller,
         );
         return [...value, ...bodyStatements];
@@ -354,17 +335,9 @@ export class Compiler {
           this.localBindings.set(param, param.name);
         }
 
-        const paramsScope = Object.fromEntries(
-          src.params.map((p) => [p.name, p.name]),
-        );
-
         const fnBody = this.compileAsStatements(
           src.body,
           { type: "return" },
-          {
-            ...scope,
-            ...paramsScope,
-          },
           callerBinding,
         );
 
@@ -402,20 +375,19 @@ export class Compiler {
       case "if": {
         const [conditionStatements, conditionExpr] = this.compileAsExpr(
           src.condition,
-          scope,
         );
 
         const thenBlock = this.compileAsStatements(
           src.then,
           doNotDeclare(as),
-          scope,
+
           tailPosCaller,
         );
 
         const elseBlock = this.compileAsStatements(
           src.else,
           doNotDeclare(as),
-          scope,
+
           tailPosCaller,
         );
 
@@ -435,7 +407,7 @@ export class Compiler {
         const statements = this.compileAsStatements(
           src.expr,
           { type: "assign_var", name: matched, declare: true },
-          scope,
+
           undefined,
         );
 
@@ -451,9 +423,7 @@ export class Compiler {
           const retStatements = this.compileAsStatements(
             ret,
             doNotDeclare(as),
-            {
-              ...scope,
-            },
+
             tailPosCaller,
           );
 
@@ -513,12 +483,9 @@ export class Compiler {
         ),
       );
 
-      this.globalScope[decl.binding.name] = nameSpacedBinding;
-
       const statements = this.compileAsStatements(
         decl.value,
         { type: "assign_var", name: nameSpacedBinding, declare: true },
-        this.globalScope,
         undefined,
       );
 
