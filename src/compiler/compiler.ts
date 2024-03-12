@@ -200,9 +200,6 @@ export class Compiler {
           case "local-variable": {
             const lookup = this.localBindings.get(src.resolution.binding);
             if (lookup === undefined) {
-              break;
-            }
-            if (lookup === undefined) {
               throw new Error(
                 `[unreachable] undefined identifier (${src.name})`,
               );
@@ -210,12 +207,6 @@ export class Compiler {
             return [[], lookup];
           }
         }
-
-        const lookup = scope[src.name];
-        if (lookup === undefined) {
-          throw new Error(`[unreachable] undefined identifier (${src.name})`);
-        }
-        return [[], lookup];
       }
 
       case "application": {
@@ -271,6 +262,7 @@ export class Compiler {
           scope,
           undefined,
         );
+
         return [statements, name];
       }
     }
@@ -454,22 +446,19 @@ export class Compiler {
 
         let first = true;
         for (const [pattern, ret] of src.clauses) {
-          const compiled = compilePattern(matched, pattern);
+          const compiled = this.compilePattern(matched, pattern);
 
           const retStatements = this.compileAsStatements(
             ret,
             doNotDeclare(as),
             {
               ...scope,
-              ...compiled.newScope,
             },
             tailPosCaller,
           );
 
           const condition =
-            compiled.conditions.length === 0
-              ? "true"
-              : compiled.conditions.join(" && ");
+            compiled.length === 0 ? "true" : compiled.join(" && ");
 
           compiledMatchExpr.push(
             first ? `if (${condition}) {` : `} else if (${condition}) {`,
@@ -539,41 +528,34 @@ export class Compiler {
 
     return decls.join("\n");
   }
-}
 
-type CompiledPatternResult = {
-  conditions: string[];
-  newScope: Scope;
-};
+  private compilePattern(
+    matchSubject: string,
+    pattern: MatchPattern,
+  ): string[] {
+    switch (pattern.type) {
+      case "lit":
+        return [`${matchSubject} === ${constToString(pattern.literal)}`];
+      case "identifier":
+        this.localBindings.set(pattern, matchSubject);
+        return [];
+      case "constructor": {
+        const conditions: string[] = [
+          matchCondition(matchSubject, pattern.name),
+        ];
 
-function compilePattern(
-  matchSubject: string,
-  pattern: MatchPattern,
-): CompiledPatternResult {
-  switch (pattern.type) {
-    case "lit":
-      return {
-        conditions: [`${matchSubject} === ${constToString(pattern.literal)}`],
-        newScope: {},
-      };
-    case "identifier":
-      return {
-        conditions: [],
-        newScope: { [pattern.name]: matchSubject },
-      };
-    case "constructor": {
-      const conditions: string[] = [matchCondition(matchSubject, pattern.name)];
-      let newScope: Scope = {};
+        let i = 0;
+        for (const nested of pattern.args) {
+          const index = i++;
+          const compiled = this.compilePattern(
+            `${matchSubject}.a${index}`,
+            nested,
+          );
+          conditions.push(...compiled);
+        }
 
-      let i = 0;
-      for (const nested of pattern.args) {
-        const index = i++;
-        const compiled = compilePattern(`${matchSubject}.a${index}`, nested);
-        conditions.push(...compiled.conditions);
-        newScope = { ...newScope, ...compiled.newScope };
+        return conditions;
       }
-
-      return { conditions, newScope };
     }
   }
 }
