@@ -1,20 +1,21 @@
-export class Frame<Binding extends { name: string }> {
-  private locals: Binding[];
+export class Frame<Local extends { name: string }> {
+  private locals: Local[];
   constructor(
-    public readonly self: Binding | undefined,
-    parameters: Binding[],
+    public readonly self: Local | undefined,
+    parameters: Local[],
   ) {
     this.locals = [...parameters];
   }
 
-  defineLocal(binding: Binding) {
+  defineLocal(binding: Local) {
     this.locals.push(binding);
   }
+
   exitLocal() {
     this.locals.pop();
   }
 
-  resolve(name: string): Binding | undefined {
+  resolve(name: string): Local | undefined {
     for (let i = this.locals.length - 1; i >= 0; i--) {
       const b = this.locals[i]!;
       if (b.name === name) {
@@ -30,15 +31,22 @@ export class Frame<Binding extends { name: string }> {
   }
 }
 
-export type BindingResolution<Binding> = {
-  type: "local";
-  binding: Binding;
-};
+export type BindingResolution<Binding, Global> =
+  | {
+      type: "local";
+      binding: Binding;
+    }
+  | {
+      type: "global";
+      declaration: Global;
+      namespace?: string;
+    };
 
-export class FramesStack<Binding extends { name: string }> {
-  private recursiveLabel: Binding | undefined;
-  private frames: Frame<Binding>[] = [new Frame(undefined, [])];
-  private getCurrentFrame(): Frame<Binding> {
+export class FramesStack<Local extends { name: string }, Global = never> {
+  private globals = new Map<string, [string | undefined, Global]>();
+  private recursiveLabel: Local | undefined;
+  private frames: Frame<Local>[] = [new Frame(undefined, [])];
+  private getCurrentFrame(): Frame<Local> {
     const frame = this.frames.at(-1);
     if (frame === undefined) {
       throw new Error("[unreachable] No frames left");
@@ -46,7 +54,7 @@ export class FramesStack<Binding extends { name: string }> {
     return frame;
   }
 
-  pushFrame(parameters: Binding[]) {
+  pushFrame(parameters: Local[]) {
     this.frames.push(new Frame(this.recursiveLabel, parameters));
   }
 
@@ -54,9 +62,21 @@ export class FramesStack<Binding extends { name: string }> {
     this.frames.pop();
   }
 
-  defineLocal(binding: Binding) {
+  defineLocal(binding: Local) {
     const currentFrame = this.getCurrentFrame();
     currentFrame.defineLocal(binding);
+  }
+
+  defineGlobal(
+    name: string,
+    namespace: string | undefined,
+    global: Global,
+  ): boolean {
+    if (this.globals.has(name)) {
+      return false;
+    }
+    this.globals.set(name, [namespace, global]);
+    return true;
   }
 
   exitLocal() {
@@ -64,11 +84,11 @@ export class FramesStack<Binding extends { name: string }> {
     currentFrame.exitLocal();
   }
 
-  defineRecursiveLabel(binding: Binding) {
+  defineRecursiveLabel(binding: Local) {
     this.recursiveLabel = binding;
   }
 
-  resolve(name: string): BindingResolution<Binding> | undefined {
+  resolve(name: string): BindingResolution<Local, Global> | undefined {
     for (let i = this.frames.length - 1; i >= 0; i--) {
       const frame = this.frames[i]!;
       const resolution = frame.resolve(name);
@@ -79,6 +99,12 @@ export class FramesStack<Binding extends { name: string }> {
         type: "local",
         binding: resolution,
       };
+    }
+
+    const glb = this.globals.get(name);
+    if (glb !== undefined) {
+      const [ns, declaration] = glb;
+      return { type: "global", declaration, namespace: ns };
     }
 
     return undefined;

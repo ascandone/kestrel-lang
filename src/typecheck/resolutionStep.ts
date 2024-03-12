@@ -52,16 +52,19 @@ export function castAst(
   return new ResolutionStep(ns, deps).run(module, implicitImports);
 }
 
-type GlobalScope = Record<string, IdentifierResolution>;
+type Constructors = Record<
+  string,
+  IdentifierResolution & { type: "constructor" }
+>;
 
 class ResolutionStep {
-  private globalScope: GlobalScope = {};
+  private constructors: Constructors = {};
 
   private errors: ErrorInfo[] = [];
   private imports: TypedImport[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
   private unusedVariables = new WeakSet<TypedBinding>();
-  private framesStack = new FramesStack<TypedBinding>();
+  private framesStack = new FramesStack<TypedBinding, TypedDeclaration>();
 
   private patternBindings: TypedBinding[] = [];
 
@@ -141,16 +144,16 @@ class ResolutionStep {
         this.unusedVariables.add(tDecl.binding);
       }
 
-      if (decl.binding.name in this.globalScope) {
+      const ok = this.framesStack.defineGlobal(
+        decl.binding.name,
+        undefined,
+        tDecl,
+      );
+      if (!ok) {
         this.errors.push({
           span: decl.binding.span,
           description: new DuplicateDeclaration(decl.binding.name),
         });
-      } else {
-        this.globalScope[decl.binding.name] = {
-          type: "global-variable",
-          declaration: tDecl,
-        };
       }
       return tDecl;
     });
@@ -302,7 +305,7 @@ class ResolutionStep {
               ),
             };
 
-            this.globalScope[variant.name] = {
+            this.constructors[variant.name] = {
               type: "constructor",
               variant: typedVariant,
             };
@@ -419,23 +422,28 @@ class ResolutionStep {
       });
     }
 
-    const resolvedLocal = this.framesStack.resolve(ast.name);
-    if (resolvedLocal !== undefined) {
-      switch (resolvedLocal.type) {
+    const resolved = this.framesStack.resolve(ast.name);
+    if (resolved !== undefined) {
+      switch (resolved.type) {
+        case "global":
+          this.unusedVariables.delete(resolved.declaration.binding);
+          return {
+            type: "global-variable",
+            declaration: resolved.declaration,
+            namespace: resolved.namespace,
+          };
+
         case "local":
-          this.unusedVariables.delete(resolvedLocal.binding);
+          this.unusedVariables.delete(resolved.binding);
           return {
             type: "local-variable",
-            binding: resolvedLocal.binding,
+            binding: resolved.binding,
           };
       }
     }
 
-    const global = this.globalScope[ast.name];
+    const global = this.constructors[ast.name];
     if (global !== undefined) {
-      if (global.type === "global-variable") {
-        this.unusedVariables.delete(global.declaration.binding);
-      }
       return global;
     }
 
@@ -650,7 +658,7 @@ class ResolutionStep {
                     break;
                   } else {
                     for (const variant of resolved.variants) {
-                      this.globalScope[variant.name] = {
+                      this.constructors[variant.name] = {
                         type: "constructor",
                         variant,
                         namespace: import_.ns,
@@ -677,11 +685,11 @@ class ResolutionStep {
                 description: new NonExistingImport(exposing.name),
               });
             } else {
-              this.globalScope[exposing.name] = {
-                type: "global-variable",
+              this.framesStack.defineGlobal(
+                exposing.name,
+                import_.ns,
                 declaration,
-                namespace: import_.ns,
-              };
+              );
             }
 
             return {
@@ -719,7 +727,7 @@ class ResolutionStep {
         // TODO only resolve if constructor is unqualified
         const typedPattern: TypedMatchPattern = {
           ...ast,
-          resolution: this.globalScope[ast.name],
+          resolution: this.constructors[ast.name],
           args: ast.args.map((arg) => this.annotateMatchPattern(arg)),
           $: TVar.fresh(),
         };

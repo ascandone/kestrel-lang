@@ -181,4 +181,24 @@ describe("frames stack", () => {
       binding: y,
     });
   });
+
+  test("allows globals", () => {
+    const frames = new FramesStack<Binding, Binding>();
+    frames.defineGlobal("x", "ns", x);
+    expect(frames.resolve("x")).toEqual({
+      type: "global",
+      declaration: x,
+      namespace: "ns",
+    });
+  });
+
+  test("locals shadow globals", () => {
+    const frames = new FramesStack<Binding, Binding>();
+    frames.defineGlobal("x", undefined, x);
+    frames.defineLocal(x);
+    expect(frames.resolve("x")).toEqual({
+      type: "local",
+      binding: x,
+    });
+  });
 });
