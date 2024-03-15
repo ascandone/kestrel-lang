@@ -1,3 +1,4 @@
+import { TypedProject } from "./cli/common";
 import { TypedModule, TypedTypeAst, typeToString } from "./typecheck";
 
 export type Variant = {
@@ -25,7 +26,19 @@ export type ModuleDoc = {
   items: Item[];
 };
 
-export function extractDocs(
+export type ProjectDoc = {
+  modules: Record<string, ModuleDoc>;
+};
+
+export function makeProjectDoc(typedProject: TypedProject): ProjectDoc {
+  const modules: ProjectDoc["modules"] = {};
+  for (const mod in typedProject) {
+    modules[mod] = makeModuleDoc(mod, typedProject[mod]!);
+  }
+  return { modules };
+}
+
+export function makeModuleDoc(
   moduleName: string,
   typedModule: TypedModule,
 ): ModuleDoc {

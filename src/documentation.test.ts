@@ -1,4 +1,4 @@
-import { ModuleDoc, extractDocs } from "./documentation";
+import { ModuleDoc, makeModuleDoc } from "./documentation";
 import { unsafeParse } from "./parser";
 import { typecheck } from "./typecheck";
 import { test, expect } from "vitest";
@@ -107,5 +107,5 @@ function parseExtractDocs(src: string): ModuleDoc {
     throw new Error("Typecheck error: " + e.description.shortDescription());
   }
 
-  return extractDocs(ns, tc);
+  return makeModuleDoc(ns, tc);
 }
