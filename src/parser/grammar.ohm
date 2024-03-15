@@ -15,8 +15,8 @@ Program {
     | docCommentLine* "extern" "pub"? "let" (ident | infixIdent) ":" Type -- externLetStmt
 
   TypeDeclaration
-    = ("pub" "(..)"?)? "type" typeIdent ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef
-    | "extern" "pub"? "type" typeIdent ("<" NonemptyListOf<typeVar, ","> ">")? -- externType
+    = docCommentLine* ("pub" "(..)"?)? "type" typeIdent ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef
+    | docCommentLine* "extern" "pub"? "type" typeIdent ("<" NonemptyListOf<typeVar, ","> ">")? -- externType
 
   // --- Expressions
 

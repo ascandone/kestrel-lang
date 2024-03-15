@@ -129,6 +129,28 @@ exports[`Comments > doc comments 1`] = `
 }
 `;
 
+exports[`Comments > doc comments on extern types 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "docComment": " first line
+ second line
+",
+      "name": "X",
+      "params": [],
+      "pub": false,
+      "span": [
+        5,
+        57,
+      ],
+      "type": "extern",
+    },
+  ],
+}
+`;
+
 exports[`Comments > doc comments on externs 1`] = `
 {
   "declarations": [
@@ -162,6 +184,29 @@ exports[`Comments > doc comments on externs 1`] = `
   ],
   "imports": [],
   "typeDeclarations": [],
+}
+`;
+
+exports[`Comments > doc comments on types 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "docComment": " first line
+ second line
+",
+      "name": "X",
+      "params": [],
+      "pub": false,
+      "span": [
+        5,
+        53,
+      ],
+      "type": "adt",
+      "variants": [],
+    },
+  ],
 }
 `;
 

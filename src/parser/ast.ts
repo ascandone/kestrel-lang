@@ -148,6 +148,7 @@ export type UntypedTypeDeclaration = TypeDeclaration<unknown>;
 export type TypeDeclaration<TypeMeta> = SpanMeta & {
   name: string;
   params: Array<{ name: string } & SpanMeta>;
+  docComment?: string;
 } & (
     | { type: "adt"; variants: TypeVariant<TypeMeta>[]; pub: boolean | ".." }
     | { type: "extern"; pub: boolean }

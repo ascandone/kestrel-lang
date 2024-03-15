@@ -460,6 +460,7 @@ function parseParams(params: IterationNode) {
 
 semantics.addOperation<Statement>("statement()", {
   TypeDeclaration_externType(
+    docComment,
     _extern,
     pubOpt,
     _type,
@@ -470,19 +471,27 @@ semantics.addOperation<Statement>("statement()", {
   ) {
     const pub = pubOpt.numChildren === 1;
 
+    const decl: UntypedTypeDeclaration = {
+      type: "extern",
+      pub,
+      params: parseParams(params),
+      name: typeName.sourceString,
+      span: getSpan(this),
+    };
+
+    const doc = handleDocString(docComment.sourceString);
+    if (doc !== "") {
+      decl.docComment = doc;
+    }
+
     return {
       type: "typeDeclaration",
-      decl: {
-        type: "extern",
-        pub,
-        params: parseParams(params),
-        name: typeName.sourceString,
-        span: getSpan(this),
-      },
+      decl,
     };
   },
 
   TypeDeclaration_typeDef(
+    docComment,
     pubOpt,
     nestedPubOpt,
     _type,
@@ -500,16 +509,23 @@ semantics.addOperation<Statement>("statement()", {
       .asIteration()
       .children.map<TypeVariant<unknown>>((n) => n.typeVariant());
 
+    const decl: UntypedTypeDeclaration = {
+      type: "adt",
+      pub: pub && nestedPubOpt.child(0).numChildren === 1 ? ".." : pub,
+      params: parseParams(params),
+      name: typeName.sourceString,
+      variants: variants_,
+      span: getSpan(this),
+    };
+
+    const doc = handleDocString(docComment.sourceString);
+    if (doc !== "") {
+      decl.docComment = doc;
+    }
+
     return {
       type: "typeDeclaration",
-      decl: {
-        type: "adt",
-        pub: pub && nestedPubOpt.child(0).numChildren === 1 ? ".." : pub,
-        params: parseParams(params),
-        name: typeName.sourceString,
-        variants: variants_,
-        span: getSpan(this),
-      },
+      decl,
     };
   },
   Declaration_externLetStmt(

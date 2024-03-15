@@ -671,6 +671,24 @@ describe("Comments", () => {
     `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("doc comments on types", () => {
+    const src = `
+    /// first line
+    /// second line
+    type X {}
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("doc comments on extern types", () => {
+    const src = `
+    /// first line
+    /// second line
+    extern type X
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {
