@@ -11,8 +11,8 @@ Program {
 
   // --- Toplevel
   Declaration
-    = "pub"? "let" ident (":" Type)? "=" Exp  -- letStmt
-    | "extern" "pub"? "let" (ident | infixIdent) ":" Type -- externLetStmt
+    = docCommentLine* "pub"? "let" ident (":" Type)? "=" Exp  -- letStmt
+    | docCommentLine* "extern" "pub"? "let" (ident | infixIdent) ":" Type -- externLetStmt
 
   TypeDeclaration
     = ("pub" "(..)"?)? "type" typeIdent ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef
@@ -197,7 +197,9 @@ Program {
     | "&"
     | "|"
 
-comment = "//" (~"\n" any)* "\n"
+docCommentLine = "///" (~"\n" any)* "\n"
+
+comment = ("//" ~"/") (~"\n" any)* "\n"
 
 space += comment
 

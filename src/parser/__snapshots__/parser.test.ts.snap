@@ -91,6 +91,80 @@ exports[`+ is left-associative 1`] = `
 }
 `;
 
+exports[`Comments > doc comments 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          48,
+          49,
+        ],
+      },
+      "docComment": " first line
+ second line
+",
+      "extern": false,
+      "pub": false,
+      "span": [
+        5,
+        53,
+      ],
+      "value": {
+        "span": [
+          52,
+          53,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`Comments > doc comments on externs 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          55,
+          56,
+        ],
+      },
+      "docComment": " first line
+ second line
+",
+      "extern": true,
+      "pub": false,
+      "span": [
+        5,
+        59,
+      ],
+      "typeHint": {
+        "args": [],
+        "name": "X",
+        "span": [
+          58,
+          59,
+        ],
+        "type": "named",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`extern bindings > let decls 1`] = `
 {
   "declarations": [

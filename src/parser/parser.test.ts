@@ -643,6 +643,26 @@ describe("imports", () => {
   });
 });
 
+describe("Comments", () => {
+  test("doc comments", () => {
+    const src = `
+    /// first line
+    /// second line
+    let x = 0
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("doc comments on externs", () => {
+    const src = `
+    /// first line
+    /// second line
+    extern let x: X
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];

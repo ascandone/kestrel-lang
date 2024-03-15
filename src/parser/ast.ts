@@ -125,6 +125,7 @@ export type Declaration<
 > = SpanMeta & {
   pub: boolean;
   binding: Binding<TypeMeta>;
+  docComment?: string;
 } & (
     | {
         extern: false;
