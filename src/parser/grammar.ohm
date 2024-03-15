@@ -59,10 +59,12 @@ Program {
     | AddExp "<>" MulExp  -- concat
     | MulExp
 
+  mul = "/" ~"/"
+  
   MulExp
     = MulExp "*" ExpExp  -- mult
     | MulExp "*." ExpExp  -- multFloat
-    | MulExp "/" ExpExp  -- divide
+    | MulExp mul ExpExp  -- divide
     | MulExp "/." ExpExp  -- divideFloat
     | MulExp "%" ExpExp  -- rem
     | ExpExp
@@ -185,7 +187,7 @@ Program {
     = "+"
     | "-"
     | "*"
-    | "/"
+    | mul
     | "^"
     | "="
     | ">"

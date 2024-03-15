@@ -661,6 +661,16 @@ describe("Comments", () => {
     `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("doc comments with many declrs", () => {
+    const src = `
+    let x = 0
+
+    /// comment
+    pub let y = 1
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {
