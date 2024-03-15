@@ -303,7 +303,16 @@ test("order between type declrs and declrs", () => {
   expect(`${d}\n\n${t}\n`).toBeFormatted();
 });
 
-test.todo("comments");
+describe("comments", () => {
+  test.todo("regular comments");
+
+  test("doc comments", () => {
+    expect(`/// First line
+/// Second line
+let f = 0
+`).toBeFormatted();
+  });
+});
 
 describe("type hints", () => {
   test("concrete type", () => {
