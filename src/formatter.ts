@@ -450,9 +450,13 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
           text(">"),
         );
 
+  const docComment =
+    tDecl.docComment === undefined ? nil : handleDocComment(tDecl.docComment);
+
   switch (tDecl.type) {
     case "extern":
       return concat(
+        docComment,
         text("extern "),
         tDecl.pub ? text("pub ") : nil,
         text("type "),
@@ -469,6 +473,7 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
       );
 
       return concat(
+        docComment,
         tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
         text("type "),
         text(tDecl.name),

@@ -306,10 +306,31 @@ test("order between type declrs and declrs", () => {
 describe("comments", () => {
   test.todo("regular comments");
 
-  test("doc comments", () => {
+  test("doc comments on declrs", () => {
     expect(`/// First line
 /// Second line
 let f = 0
+`).toBeFormatted();
+  });
+
+  test("doc comments on extern declrs", () => {
+    expect(`/// First line
+/// Second line
+extern let f: X
+`).toBeFormatted();
+  });
+
+  test("doc comments on types", () => {
+    expect(`/// First line
+/// Second line
+type X { }
+`).toBeFormatted();
+  });
+
+  test("doc comments on extern types", () => {
+    expect(`/// First line
+/// Second line
+extern type X
 `).toBeFormatted();
   });
 });
