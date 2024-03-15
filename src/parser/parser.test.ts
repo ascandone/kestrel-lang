@@ -643,6 +643,54 @@ describe("imports", () => {
   });
 });
 
+describe("Comments", () => {
+  test("doc comments", () => {
+    const src = `
+    /// first line
+    /// second line
+    let x = 0
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("doc comments on externs", () => {
+    const src = `
+    /// first line
+    /// second line
+    extern let x: X
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("doc comments with many declrs", () => {
+    const src = `
+    let x = 0
+
+    /// comment
+    pub let y = 1
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("doc comments on types", () => {
+    const src = `
+    /// first line
+    /// second line
+    type X {}
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("doc comments on extern types", () => {
+    const src = `
+    /// first line
+    /// second line
+    extern type X
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+});
+
 function spanOf(src: string, substr: string = src): Span {
   const index = src.indexOf(substr);
   return [index, index + substr.length];

@@ -402,6 +402,15 @@ function typeAstToDoc(typeAst: TypeAst): Doc {
   }
 }
 
+function handleDocComment(content: string) {
+  return concat(
+    ...content
+      .split("\n")
+      .slice(0, -1)
+      .map((l) => group(text(`///${l}`), lines())),
+  );
+}
+
 function declToDoc(ast: UntypedDeclaration): Doc {
   const name =
     isInfix(ast.binding.name) || isPrefix(ast.binding.name)
@@ -409,6 +418,8 @@ function declToDoc(ast: UntypedDeclaration): Doc {
       : ast.binding.name;
 
   return concat(
+    ast.docComment === undefined ? nil : handleDocComment(ast.docComment),
+
     ast.extern ? text("extern ") : nil,
     ast.pub ? text("pub ") : nil,
     text(`let ${name}`),
@@ -439,9 +450,13 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
           text(">"),
         );
 
+  const docComment =
+    tDecl.docComment === undefined ? nil : handleDocComment(tDecl.docComment);
+
   switch (tDecl.type) {
     case "extern":
       return concat(
+        docComment,
         text("extern "),
         tDecl.pub ? text("pub ") : nil,
         text("type "),
@@ -458,6 +473,7 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
       );
 
       return concat(
+        docComment,
         tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
         text("type "),
         text(tDecl.name),

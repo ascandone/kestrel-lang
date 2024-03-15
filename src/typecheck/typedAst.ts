@@ -140,7 +140,7 @@ local declaration
       return `\`\`\`
 ${hovered.declaration.binding.name}: ${tpp}
 \`\`\`
-global declaration
+${hovered.declaration.docComment ?? ""}
 `;
     }
 

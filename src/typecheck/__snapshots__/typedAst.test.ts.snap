@@ -28,7 +28,7 @@ exports[`hoverOn > snapshot when hovering on an extern type 1`] = `
 "\`\`\`
 glb: Fn(x) -> x
 \`\`\`
-global declaration
+
 "
 `;
 
@@ -36,7 +36,7 @@ exports[`hoverOn > snapshot when hovering on an extern type reference 1`] = `
 "\`\`\`
 glb: Fn(x) -> x
 \`\`\`
-global declaration
+
 "
 `;
 
@@ -44,6 +44,6 @@ exports[`hoverOn > snapshot when hovering on global fn 1`] = `
 "\`\`\`
 glb: Fn(a, b) -> b
 \`\`\`
-global declaration
+
 "
 `;

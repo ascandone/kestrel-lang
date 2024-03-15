@@ -91,6 +91,188 @@ exports[`+ is left-associative 1`] = `
 }
 `;
 
+exports[`Comments > doc comments 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          48,
+          49,
+        ],
+      },
+      "docComment": " first line
+ second line
+",
+      "extern": false,
+      "pub": false,
+      "span": [
+        5,
+        53,
+      ],
+      "value": {
+        "span": [
+          52,
+          53,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`Comments > doc comments on extern types 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "docComment": " first line
+ second line
+",
+      "name": "X",
+      "params": [],
+      "pub": false,
+      "span": [
+        5,
+        57,
+      ],
+      "type": "extern",
+    },
+  ],
+}
+`;
+
+exports[`Comments > doc comments on externs 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          55,
+          56,
+        ],
+      },
+      "docComment": " first line
+ second line
+",
+      "extern": true,
+      "pub": false,
+      "span": [
+        5,
+        59,
+      ],
+      "typeHint": {
+        "args": [],
+        "name": "X",
+        "span": [
+          58,
+          59,
+        ],
+        "type": "named",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`Comments > doc comments on types 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "docComment": " first line
+ second line
+",
+      "name": "X",
+      "params": [],
+      "pub": false,
+      "span": [
+        5,
+        53,
+      ],
+      "type": "adt",
+      "variants": [],
+    },
+  ],
+}
+`;
+
+exports[`Comments > doc comments with many declrs 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          9,
+          10,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        5,
+        14,
+      ],
+      "value": {
+        "span": [
+          13,
+          14,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+    {
+      "binding": {
+        "name": "y",
+        "span": [
+          44,
+          45,
+        ],
+      },
+      "docComment": " comment
+",
+      "extern": false,
+      "pub": true,
+      "span": [
+        20,
+        49,
+      ],
+      "value": {
+        "span": [
+          48,
+          49,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 1,
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`extern bindings > let decls 1`] = `
 {
   "declarations": [
