@@ -31,6 +31,8 @@ export function extractDocs(
 ): ModuleDoc {
   const items: Item[] = [];
 
+  const indexes = new WeakMap<Item, number>();
+
   for (const decl of typedModule.declarations) {
     if (!decl.pub) {
       continue;
@@ -46,6 +48,7 @@ export function extractDocs(
       item.docComment = decl.docComment;
     }
 
+    indexes.set(item, decl.span[0]);
     items.push(item);
   }
 
@@ -75,8 +78,11 @@ export function extractDocs(
       }));
     }
 
+    indexes.set(item, typeDecl.span[0]);
     items.push(item);
   }
+
+  items.sort((a, b) => indexes.get(a)! - indexes.get(b)!);
 
   return {
     moduleName,

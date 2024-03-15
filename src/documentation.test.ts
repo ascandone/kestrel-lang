@@ -81,6 +81,23 @@ test("Extract types documentation", () => {
   });
 });
 
+test("order between types and values", () => {
+  const src = `
+  extern pub let x: a
+  extern pub type X
+  extern pub let y: b
+`;
+
+  expect(parseExtractDocs(src)).toEqual<ModuleDoc>({
+    moduleName: "Example",
+    items: [
+      expect.objectContaining({ name: "x" }),
+      expect.objectContaining({ name: "X" }),
+      expect.objectContaining({ name: "y" }),
+    ],
+  });
+});
+
 function parseExtractDocs(src: string): ModuleDoc {
   const ns = "Example";
   const parsed = unsafeParse(src);
