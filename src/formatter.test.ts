@@ -338,7 +338,6 @@ extern type X
     expect(`//// Comment
 //// Second line
 
-
 /// value comment
 let x = 42
 `).toBeFormatted();
@@ -347,7 +346,6 @@ let x = 42
   test("doc comments before imports", () => {
     expect(`//// Comment
 //// Second line
-
 
 import A/B
 `).toBeFormatted();

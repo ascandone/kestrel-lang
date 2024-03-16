@@ -557,7 +557,7 @@ export function format(ast: UntypedModule): string {
   const docs = [
     ast.moduleDoc === undefined
       ? nil
-      : concat(handleDocComment(ast.moduleDoc, "////"), lines(1)),
+      : concat(handleDocComment(ast.moduleDoc, "////"), lines()),
     ...importsDocs,
     ...statementsDocs,
   ];
