@@ -28,15 +28,19 @@ export type ModuleDoc = {
 };
 
 export type ProjectDoc = {
+  version: string;
   modules: Record<string, ModuleDoc>;
 };
 
-export function makeProjectDoc(typedProject: TypedProject): ProjectDoc {
+export function makeProjectDoc(
+  version: string,
+  typedProject: TypedProject,
+): ProjectDoc {
   const modules: ProjectDoc["modules"] = {};
   for (const mod in typedProject) {
     modules[mod] = makeModuleDoc(mod, typedProject[mod]!);
   }
-  return { modules };
+  return { version, modules };
 }
 
 export function makeModuleDoc(

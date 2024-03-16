@@ -3,16 +3,23 @@ import { makeProjectDoc } from "../../documentation";
 import { check } from "../common";
 import { join } from "node:path";
 import { exit } from "process";
+import { readConfig } from "../config";
 
 const DOCS_JSON_NAME = "docs.json";
 
 async function getDocsJson(root: string) {
+  const config = await readConfig(root);
+  if (config.version === undefined) {
+    console.error("Version is required to generate docs");
+    exit(1);
+  }
+
   const typedProject = await check(root);
   if (typedProject === undefined) {
     return;
   }
 
-  const projectDoc = makeProjectDoc(typedProject);
+  const projectDoc = makeProjectDoc(config.version, typedProject);
   return JSON.stringify(projectDoc);
 }
 

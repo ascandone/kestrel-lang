@@ -32,6 +32,7 @@ export const configDecoder = dec.oneOf(
   dec.object({
     type: dec.hardcoded("application").required,
     "source-directories": dec.array(dec.string).required,
+    version: dec.string.optional,
     dependencies: dec.dict(dependencyDecoder).optional,
   }),
   dec.object({
