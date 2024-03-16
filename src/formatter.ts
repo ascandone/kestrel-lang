@@ -402,12 +402,12 @@ function typeAstToDoc(typeAst: TypeAst): Doc {
   }
 }
 
-function handleDocComment(content: string) {
+function handleDocComment(content: string, init = "///") {
   return concat(
     ...content
       .split("\n")
       .slice(0, -1)
-      .map((l) => group(text(`///${l}`), lines())),
+      .map((l) => group(text(`${init}${l}`), lines())),
   );
 }
 
@@ -554,7 +554,13 @@ export function format(ast: UntypedModule): string {
       return [doc, lines(last ? 0 : 1)];
     });
 
-  const docs = [...importsDocs, ...statementsDocs];
+  const docs = [
+    ast.moduleDoc === undefined
+      ? nil
+      : concat(handleDocComment(ast.moduleDoc, "////"), lines(1)),
+    ...importsDocs,
+    ...statementsDocs,
+  ];
 
   return pprint({ type: "concat", docs });
 }

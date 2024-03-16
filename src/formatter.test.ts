@@ -333,6 +333,25 @@ type X { }
 extern type X
 `).toBeFormatted();
   });
+
+  test("doc comments on modules", () => {
+    expect(`//// Comment
+//// Second line
+
+
+/// value comment
+let x = 42
+`).toBeFormatted();
+  });
+
+  test("doc comments before imports", () => {
+    expect(`//// Comment
+//// Second line
+
+
+import A/B
+`).toBeFormatted();
+  });
 });
 
 describe("type hints", () => {
