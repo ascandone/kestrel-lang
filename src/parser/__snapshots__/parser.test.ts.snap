@@ -273,6 +273,44 @@ exports[`Comments > doc comments with many declrs 1`] = `
 }
 `;
 
+exports[`Comments > moduledoc comments 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          60,
+          61,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        56,
+        65,
+      ],
+      "value": {
+        "span": [
+          64,
+          65,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "moduleDoc": " Module level comment
+ Second line
+",
+  "typeDeclarations": [],
+}
+`;
+
 exports[`extern bindings > let decls 1`] = `
 {
   "declarations": [

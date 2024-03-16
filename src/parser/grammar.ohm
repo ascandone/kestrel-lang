@@ -1,6 +1,6 @@
 Program {
   MAIN
-    = Import* (Declaration | TypeDeclaration)*
+    = moduleDocCommentLine* Import* (Declaration | TypeDeclaration)*
 
   Import
     = "import" NonemptyListOf<moduleName, "/"> ("." "{" NonemptyListOf<Exposing, ","> "}")?
@@ -198,6 +198,8 @@ Program {
     | "%"
     | "&"
     | "|"
+
+moduleDocCommentLine = "////" (~"\n" any)* "\n"
 
 docCommentLine = "///" (~"\n" any)* "\n"
 

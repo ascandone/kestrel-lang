@@ -175,6 +175,7 @@ export type Import<Exposing> = SpanMeta & {
 };
 
 export type UntypedModule = {
+  moduleDoc?: string;
   imports: UntypedImport[];
   typeDeclarations: UntypedTypeDeclaration[];
   declarations: UntypedDeclaration[];

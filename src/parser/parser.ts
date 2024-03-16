@@ -636,12 +636,12 @@ semantics.addOperation<UntypedImport>("import_()", {
 });
 
 semantics.addOperation<UntypedModule>("parse()", {
-  MAIN(imports, statements) {
+  MAIN(moduleDoc, imports, statements) {
     const statements_ = statements.children.map<Statement>((child) =>
       child.statement(),
     );
 
-    return {
+    const untypedModule: UntypedModule = {
       imports: imports.children.map((c) => c.import_()),
       typeDeclarations: statements_.flatMap((st) =>
         st.type === "typeDeclaration" ? [st.decl] : [],
@@ -650,6 +650,13 @@ semantics.addOperation<UntypedModule>("parse()", {
         st.type === "declaration" ? [st.decl] : [],
       ),
     };
+
+    const moduleDocContent = handleDocString(moduleDoc.sourceString, "////");
+    if (moduleDocContent !== "") {
+      untypedModule.moduleDoc = moduleDocContent;
+    }
+
+    return untypedModule;
   },
 });
 
@@ -675,10 +682,10 @@ export function unsafeParse(input: string): UntypedModule {
   throw new Error(res.matchResult.message!);
 }
 
-function handleDocString(raw: string) {
+function handleDocString(raw: string, commentStart = "///") {
   const buf: string[] = [];
   for (const line of raw.split("\n")) {
-    buf.push(line.trimStart().replace("///", ""));
+    buf.push(line.trimStart().replace(commentStart, ""));
   }
 
   return buf.join("\n");

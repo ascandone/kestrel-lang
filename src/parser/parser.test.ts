@@ -689,6 +689,15 @@ describe("Comments", () => {
     `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("moduledoc comments", () => {
+    const src = `
+    //// Module level comment
+    //// Second line
+    let x = 0
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {
