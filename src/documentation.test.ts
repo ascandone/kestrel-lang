@@ -98,6 +98,29 @@ test("order between types and values", () => {
   });
 });
 
+test("moduledoc", () => {
+  const src = `
+  //// Moduledoc comment
+  //// line 2
+
+  /// Comment
+  pub let x = 1
+`;
+
+  expect(parseExtractDocs(src)).toEqual<ModuleDoc>({
+    moduleName: "Example",
+    moduleDoc: " Moduledoc comment\n line 2\n",
+    items: [
+      {
+        type: "value",
+        name: "x",
+        signature: "Int",
+        docComment: " Comment\n",
+      },
+    ],
+  });
+});
+
 function parseExtractDocs(src: string): ModuleDoc {
   const ns = "Example";
   const parsed = unsafeParse(src);

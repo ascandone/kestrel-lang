@@ -22,6 +22,7 @@ export type Item =
     };
 
 export type ModuleDoc = {
+  moduleDoc?: string;
   moduleName: string;
   items: Item[];
 };
@@ -97,10 +98,16 @@ export function makeModuleDoc(
 
   items.sort((a, b) => indexes.get(a)! - indexes.get(b)!);
 
-  return {
+  const moduleDoc: ModuleDoc = {
     moduleName,
     items,
   };
+
+  if (typedModule.moduleDoc) {
+    moduleDoc.moduleDoc = typedModule.moduleDoc;
+  }
+
+  return moduleDoc;
 }
 
 function typeAstToString(typeAst: TypedTypeAst): string {

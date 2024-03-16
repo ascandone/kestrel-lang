@@ -100,14 +100,17 @@ class ResolutionStep {
       }
     }
 
-    return [
-      {
-        imports: this.imports,
-        declarations: annotatedDeclrs,
-        typeDeclarations: this.typeDeclarations,
-      },
-      this.errors,
-    ];
+    const typedModule: TypedModule = {
+      imports: this.imports,
+      declarations: annotatedDeclrs,
+      typeDeclarations: this.typeDeclarations,
+    };
+
+    if (module.moduleDoc !== undefined) {
+      typedModule.moduleDoc = module.moduleDoc;
+    }
+
+    return [typedModule, this.errors];
   }
 
   private annotateDeclarations(

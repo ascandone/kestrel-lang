@@ -70,6 +70,7 @@ export type TypedDeclaration = { scheme: TypeScheme } & Declaration<
 >;
 
 export type TypedModule = {
+  moduleDoc?: string;
   imports: TypedImport[];
   typeDeclarations: TypedTypeDeclaration[];
   declarations: TypedDeclaration[];
