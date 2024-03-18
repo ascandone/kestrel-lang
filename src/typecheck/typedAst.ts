@@ -22,12 +22,12 @@ export type IdentifierResolution =
   | {
       type: "global-variable";
       declaration: TypedDeclaration;
-      namespace?: string;
+      namespace: string;
     }
   | {
       type: "constructor";
       variant: TypedTypeVariant;
-      namespace?: string;
+      namespace: string;
     };
 
 export type TypedBinding = Binding<TypeMeta>;
@@ -82,6 +82,7 @@ export type HoveredInfo = IdentifierResolution;
 export type Hovered = SpanMeta & { hovered: HoveredInfo };
 
 export function hoverOn(
+  namespace: string,
   module: TypedModule,
   offset: number,
 ): [TypeScheme, Hovered] | undefined {
@@ -103,14 +104,18 @@ export function hoverOn(
         variant.scheme,
         {
           span: variant.span,
-          hovered: { type: "constructor", variant },
+          hovered: {
+            type: "constructor",
+            variant,
+            namespace,
+          },
         },
       ];
     }
   }
 
   for (const decl of module.declarations) {
-    const d = hoverOnDecl(decl, offset);
+    const d = hoverOnDecl(namespace, decl, offset);
     if (d !== undefined) {
       return [decl.scheme, d];
     }
@@ -157,13 +162,18 @@ type constructor
 }
 
 function hoverOnDecl(
+  namespace: string,
   declaration: TypedDeclaration,
   offset: number,
 ): Hovered | undefined {
   if (contains(declaration.binding, offset)) {
     return {
       span: declaration.binding.span,
-      hovered: { type: "global-variable", declaration },
+      hovered: {
+        type: "global-variable",
+        declaration,
+        namespace,
+      },
     };
   }
 

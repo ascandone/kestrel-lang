@@ -140,6 +140,7 @@ class ResolutionStep {
         this.framesStack.defineRecursiveLabel({
           type: "global",
           declaration: tDecl,
+          namespace: this.ns,
         });
 
         tDecl.value = this.annotateExpr(decl.value);
@@ -153,7 +154,7 @@ class ResolutionStep {
         this.unusedVariables.add(tDecl.binding);
       }
 
-      const ok = this.framesStack.defineGlobal(tDecl, undefined);
+      const ok = this.framesStack.defineGlobal(tDecl, this.ns);
       if (!ok) {
         this.errors.push({
           span: decl.binding.span,
@@ -313,6 +314,7 @@ class ResolutionStep {
             this.constructors[variant.name] = {
               type: "constructor",
               variant: typedVariant,
+              namespace: this.ns,
             };
 
             return typedVariant;

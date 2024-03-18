@@ -114,7 +114,7 @@ describe("frames stack", () => {
 
   test("locals shadow globals", () => {
     const frames = new FramesStack<Binding, { binding: Binding }>();
-    frames.defineGlobal({ binding: x }, undefined);
+    frames.defineGlobal({ binding: x }, "Main");
     frames.defineLocal(x);
     expect(frames.resolve("x")).toEqual({
       type: "local",

@@ -128,7 +128,7 @@ class State {
     return this.docs[ns]!;
   }
 
-  docByUri(uri: string): [TextDocument, TypedModule] | undefined {
+  docByUri(uri: string): [TextDocument, TypedModule, string] | undefined {
     const ns = this.nsByUri(uri);
 
     if (ns === undefined) {
@@ -138,10 +138,10 @@ class State {
     const [typed] = this.typecheckDocs();
     const doc = this.docs[ns]!;
     const ast = typed[ns]!;
-    return [doc, ast];
+    return [doc, ast, ns];
   }
 
-  private nsByUri(uri: string): string | undefined {
+  nsByUri(uri: string): string | undefined {
     for (const [ns, oldDoc] of Object.entries(this.docs)) {
       if (oldDoc.uri === uri) {
         return ns;
@@ -293,10 +293,10 @@ export async function lspCmd() {
     if (res === undefined) {
       return;
     }
-    const [doc, ast] = res;
+    const [doc, ast, ns] = res;
 
     const offset = doc.offsetAt(position);
-    const hoverData = hoverOn(ast, offset);
+    const hoverData = hoverOn(ns, ast, offset);
     if (hoverData === undefined) {
       return undefined;
     }

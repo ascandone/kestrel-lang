@@ -448,7 +448,7 @@ export class Compiler {
     }
   }
 
-  compile(src: TypedModule, ns: string | undefined): string {
+  compile(src: TypedModule, ns: string): string {
     this.ns = ns;
     const decls: string[] = [];
 

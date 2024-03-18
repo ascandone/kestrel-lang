@@ -6,7 +6,7 @@ export type BindingResolution<Binding, Global> =
   | {
       type: "global";
       declaration: Global;
-      namespace?: string;
+      namespace: string;
     };
 
 export class Frame<
@@ -64,7 +64,7 @@ export class FramesStack<
   Binding extends { name: string },
   Declaration extends { binding: Binding },
 > {
-  private globals = new Map<string, [string | undefined, Declaration]>();
+  private globals = new Map<string, [string, Declaration]>();
   private recursiveLabel: BindingResolution<Binding, Declaration> | undefined;
   private frames = [new Frame<Binding, Declaration>(undefined, [])];
   private getCurrentFrame(): Frame<Binding, Declaration> {
@@ -88,7 +88,7 @@ export class FramesStack<
     currentFrame.defineLocal(binding);
   }
 
-  defineGlobal(global: Declaration, namespace: string | undefined): boolean {
+  defineGlobal(global: Declaration, namespace: string): boolean {
     if (this.globals.has(global.binding.name)) {
       return false;
     }

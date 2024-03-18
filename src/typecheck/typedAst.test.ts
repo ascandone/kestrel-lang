@@ -336,7 +336,7 @@ function parseHover(
 
   const parsed = unsafeParse(src);
   const [typed, _] = typecheck("Main", parsed);
-  return hoverOn(typed, offset);
+  return hoverOn("Ns", typed, offset);
 }
 
 function parseGotoDef(
