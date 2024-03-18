@@ -48,14 +48,11 @@ function parseInfix(
   right: NonterminalNode,
 ): UntypedExpr {
   return {
-    type: "application",
+    type: "infix",
     span: getSpan(this),
-    caller: {
-      type: "identifier",
-      name: op.sourceString,
-      span: getSpan(op),
-    },
-    args: [left.expr(), right.expr()],
+    operator: op.sourceString,
+    left: left.expr(),
+    right: right.expr(),
   };
 }
 

@@ -549,6 +549,14 @@ class ResolutionStep {
         };
       }
 
+      case "infix":
+        return this.annotateExpr({
+          type: "application",
+          caller: { type: "identifier", name: ast.operator, span: ast.span },
+          args: [ast.left, ast.right],
+          span: ast.span,
+        });
+
       case "application":
         return {
           ...ast,

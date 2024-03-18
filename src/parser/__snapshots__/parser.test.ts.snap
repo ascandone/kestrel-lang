@@ -18,71 +18,53 @@ exports[`+ is left-associative 1`] = `
         17,
       ],
       "value": {
-        "args": [
-          {
-            "args": [
-              {
-                "span": [
-                  8,
-                  9,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 1,
-                },
-              },
-              {
-                "span": [
-                  12,
-                  13,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 2,
-                },
-              },
-            ],
-            "caller": {
-              "name": "+",
-              "span": [
-                10,
-                11,
-              ],
-              "type": "identifier",
-            },
+        "left": {
+          "left": {
             "span": [
               8,
-              13,
-            ],
-            "type": "application",
-          },
-          {
-            "span": [
-              16,
-              17,
+              9,
             ],
             "type": "constant",
             "value": {
               "type": "int",
-              "value": 3,
+              "value": 1,
             },
           },
-        ],
-        "caller": {
-          "name": "+",
+          "operator": "+",
+          "right": {
+            "span": [
+              12,
+              13,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 2,
+            },
+          },
           "span": [
-            14,
-            15,
+            8,
+            13,
           ],
-          "type": "identifier",
+          "type": "infix",
+        },
+        "operator": "+",
+        "right": {
+          "span": [
+            16,
+            17,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 3,
+          },
         },
         "span": [
           8,
           17,
         ],
-        "type": "application",
+        "type": "infix",
       },
     },
   ],
@@ -869,43 +851,34 @@ exports[`it should be possible to mix pipe with infix 1`] = `
       "value": {
         "left": {
           "left": {
-            "args": [
-              {
-                "span": [
-                  13,
-                  14,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 1,
-                },
-              },
-              {
-                "span": [
-                  17,
-                  18,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 2,
-                },
-              },
-            ],
-            "caller": {
-              "name": "+",
+            "left": {
               "span": [
-                15,
-                16,
+                13,
+                14,
               ],
-              "type": "identifier",
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 1,
+              },
+            },
+            "operator": "+",
+            "right": {
+              "span": [
+                17,
+                18,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 2,
+              },
             },
             "span": [
               13,
               18,
             ],
-            "type": "application",
+            "type": "infix",
           },
           "right": {
             "args": [],
@@ -1108,43 +1081,34 @@ exports[`parse * expr 1`] = `
         13,
       ],
       "value": {
-        "args": [
-          {
-            "span": [
-              8,
-              9,
-            ],
-            "type": "constant",
-            "value": {
-              "type": "int",
-              "value": 1,
-            },
-          },
-          {
-            "span": [
-              12,
-              13,
-            ],
-            "type": "constant",
-            "value": {
-              "type": "int",
-              "value": 2,
-            },
-          },
-        ],
-        "caller": {
-          "name": "*",
+        "left": {
           "span": [
-            10,
-            11,
+            8,
+            9,
           ],
-          "type": "identifier",
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 1,
+          },
+        },
+        "operator": "*",
+        "right": {
+          "span": [
+            12,
+            13,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 2,
+          },
         },
         "span": [
           8,
           13,
         ],
-        "type": "application",
+        "type": "infix",
       },
     },
   ],
@@ -1171,71 +1135,53 @@ exports[`parse + and * prec 1`] = `
         17,
       ],
       "value": {
-        "args": [
-          {
+        "left": {
+          "span": [
+            8,
+            9,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 1,
+          },
+        },
+        "operator": "-",
+        "right": {
+          "left": {
             "span": [
-              8,
-              9,
+              12,
+              13,
             ],
             "type": "constant",
             "value": {
               "type": "int",
-              "value": 1,
+              "value": 2,
             },
           },
-          {
-            "args": [
-              {
-                "span": [
-                  12,
-                  13,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 2,
-                },
-              },
-              {
-                "span": [
-                  16,
-                  17,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 3,
-                },
-              },
-            ],
-            "caller": {
-              "name": "*",
-              "span": [
-                14,
-                15,
-              ],
-              "type": "identifier",
-            },
+          "operator": "*",
+          "right": {
             "span": [
-              12,
+              16,
               17,
             ],
-            "type": "application",
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 3,
+            },
           },
-        ],
-        "caller": {
-          "name": "-",
           "span": [
-            10,
-            11,
+            12,
+            17,
           ],
-          "type": "identifier",
+          "type": "infix",
         },
         "span": [
           8,
           17,
         ],
-        "type": "application",
+        "type": "infix",
       },
     },
   ],
@@ -1262,71 +1208,53 @@ exports[`parse + and * prec with parens 1`] = `
         19,
       ],
       "value": {
-        "args": [
-          {
-            "args": [
-              {
-                "span": [
-                  9,
-                  10,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 1,
-                },
-              },
-              {
-                "span": [
-                  13,
-                  14,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 2,
-                },
-              },
-            ],
-            "caller": {
-              "name": "-",
-              "span": [
-                11,
-                12,
-              ],
-              "type": "identifier",
-            },
+        "left": {
+          "left": {
             "span": [
               9,
-              14,
-            ],
-            "type": "application",
-          },
-          {
-            "span": [
-              18,
-              19,
+              10,
             ],
             "type": "constant",
             "value": {
               "type": "int",
-              "value": 3,
+              "value": 1,
             },
           },
-        ],
-        "caller": {
-          "name": "*",
+          "operator": "-",
+          "right": {
+            "span": [
+              13,
+              14,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 2,
+            },
+          },
           "span": [
-            16,
-            17,
+            9,
+            14,
           ],
-          "type": "identifier",
+          "type": "infix",
+        },
+        "operator": "*",
+        "right": {
+          "span": [
+            18,
+            19,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 3,
+          },
         },
         "span": [
           8,
           19,
         ],
-        "type": "application",
+        "type": "infix",
       },
     },
   ],
@@ -1353,43 +1281,34 @@ exports[`parse + expr 1`] = `
         13,
       ],
       "value": {
-        "args": [
-          {
-            "span": [
-              8,
-              9,
-            ],
-            "type": "constant",
-            "value": {
-              "type": "int",
-              "value": 1,
-            },
-          },
-          {
-            "span": [
-              12,
-              13,
-            ],
-            "type": "constant",
-            "value": {
-              "type": "int",
-              "value": 2,
-            },
-          },
-        ],
-        "caller": {
-          "name": "+",
+        "left": {
           "span": [
-            10,
-            11,
+            8,
+            9,
           ],
-          "type": "identifier",
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 1,
+          },
+        },
+        "operator": "+",
+        "right": {
+          "span": [
+            12,
+            13,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 2,
+          },
         },
         "span": [
           8,
           13,
         ],
-        "type": "application",
+        "type": "infix",
       },
     },
   ],
@@ -1416,43 +1335,34 @@ exports[`parse +. expr 1`] = `
         14,
       ],
       "value": {
-        "args": [
-          {
-            "span": [
-              8,
-              9,
-            ],
-            "type": "constant",
-            "value": {
-              "type": "int",
-              "value": 1,
-            },
-          },
-          {
-            "span": [
-              13,
-              14,
-            ],
-            "type": "constant",
-            "value": {
-              "type": "int",
-              "value": 2,
-            },
-          },
-        ],
-        "caller": {
-          "name": "+.",
+        "left": {
           "span": [
-            10,
-            12,
+            8,
+            9,
           ],
-          "type": "identifier",
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 1,
+          },
+        },
+        "operator": "+.",
+        "right": {
+          "span": [
+            13,
+            14,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 2,
+          },
         },
         "span": [
           8,
           14,
         ],
-        "type": "application",
+        "type": "infix",
       },
     },
   ],
@@ -1479,43 +1389,34 @@ exports[`parse - expr 1`] = `
         13,
       ],
       "value": {
-        "args": [
-          {
-            "span": [
-              8,
-              9,
-            ],
-            "type": "constant",
-            "value": {
-              "type": "int",
-              "value": 1,
-            },
-          },
-          {
-            "span": [
-              12,
-              13,
-            ],
-            "type": "constant",
-            "value": {
-              "type": "int",
-              "value": 2,
-            },
-          },
-        ],
-        "caller": {
-          "name": "-",
+        "left": {
           "span": [
-            10,
-            11,
+            8,
+            9,
           ],
-          "type": "identifier",
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 1,
+          },
+        },
+        "operator": "-",
+        "right": {
+          "span": [
+            12,
+            13,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 2,
+          },
         },
         "span": [
           8,
           13,
         ],
-        "type": "application",
+        "type": "infix",
       },
     },
   ],
@@ -1664,43 +1565,34 @@ exports[`parse appl with nested expr 1`] = `
       "value": {
         "args": [
           {
-            "args": [
-              {
-                "span": [
-                  10,
-                  11,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 1,
-                },
-              },
-              {
-                "span": [
-                  14,
-                  15,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 2,
-                },
-              },
-            ],
-            "caller": {
-              "name": "+",
+            "left": {
               "span": [
-                12,
-                13,
+                10,
+                11,
               ],
-              "type": "identifier",
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 1,
+              },
+            },
+            "operator": "+",
+            "right": {
+              "span": [
+                14,
+                15,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 2,
+              },
             },
             "span": [
               10,
               15,
             ],
-            "type": "application",
+            "type": "infix",
           },
         ],
         "caller": {

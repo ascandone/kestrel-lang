@@ -60,6 +60,15 @@ function getBindingPower(name: string): number | undefined {
 
 function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
   switch (other.type) {
+    case "infix": {
+      const selfBindingPower = getBindingPower(other.operator);
+      if (selfBindingPower === undefined) {
+        throw new Error("[unreachable] unknown infix operator");
+      }
+
+      return selfBindingPower > bindingPower;
+    }
+
     case "application":
       infix: if (other.caller.type === "identifier") {
         const selfBindingPower = getBindingPower(other.caller.name);
@@ -178,6 +187,25 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         ast.namespace === undefined ? "" : `${ast.namespace}.`,
         ast.name,
       );
+
+    case "infix": {
+      const name = infixAliasForName(ast.operator);
+      const infixIndex = getBindingPower(name);
+      if (infixIndex === undefined) {
+        throw new Error("[unreachable] unkown operator");
+      }
+
+      const leftNeedsParens = hasLowerPrec(infixIndex, ast.left);
+      const leftDoc = leftNeedsParens
+        ? concat(text("("), exprToDoc(ast.left, false), text(")"))
+        : exprToDoc(ast.left, false);
+
+      if (isPrefix(name)) {
+        return concat(text(`${name}`), leftDoc);
+      }
+
+      return concat(leftDoc, text(` ${name} `), exprToDoc(ast.right, false));
+    }
 
     case "application": {
       consSugar: if (

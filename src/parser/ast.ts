@@ -61,6 +61,12 @@ export type SyntaxSugar =
       binding: Binding;
       value: UntypedExpr;
       body: UntypedExpr;
+    }
+  | {
+      type: "infix";
+      operator: string;
+      left: UntypedExpr;
+      right: UntypedExpr;
     };
 
 export type UntypedExpr = Expr<unknown, unknown, SyntaxSugar>;
