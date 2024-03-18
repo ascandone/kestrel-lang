@@ -725,15 +725,59 @@ class ResolutionStep {
       }
 
       case "constructor": {
-        // TODO only resolve if constructor is unqualified
-        const typedPattern: TypedMatchPattern = {
+        const resolution = this.resolveConstructor(
+          ast.namespace,
+          ast.name,
+          ast.span,
+        );
+        return {
           ...ast,
-          resolution: this.constructors[ast.name],
+          resolution,
           args: ast.args.map((arg) => this.annotateMatchPattern(arg)),
           $: TVar.fresh(),
         };
-        return typedPattern;
       }
     }
+  }
+
+  private resolveConstructor(
+    namespace: string | undefined,
+    name: string,
+    span: Span,
+  ): IdentifierResolution | undefined {
+    namespace = namespace ?? this.ns;
+    if (namespace === this.ns) {
+      return this.constructors[name];
+    }
+
+    const module = this.deps[namespace];
+    if (module === undefined) {
+      this.errors.push({
+        description: new UnimportedModule(namespace),
+        span,
+      });
+      return undefined;
+    }
+
+    for (const typeDeclaration of module.typeDeclarations) {
+      if (typeDeclaration.type === "adt") {
+        for (const variant of typeDeclaration.variants) {
+          if (variant.name === name) {
+            return {
+              type: "constructor",
+              variant: variant,
+              namespace: namespace,
+            };
+          }
+        }
+      }
+    }
+
+    this.errors.push({
+      description: new UnboundVariable(name),
+      span,
+    });
+
+    return undefined;
   }
 }

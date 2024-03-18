@@ -34,7 +34,6 @@ import {
   OccursCheck,
   TypeMismatch,
   UnboundTypeParam,
-  UnboundVariable,
 } from "../errors";
 import { castAst } from "./resolutionStep";
 
@@ -325,10 +324,6 @@ class Typechecker {
 
       case "constructor": {
         if (pattern.resolution === undefined) {
-          this.errors.push({
-            span: pattern.span,
-            description: new UnboundVariable(pattern.name),
-          });
           return;
         }
 

@@ -822,6 +822,35 @@ describe("pattern matching", () => {
     });
   });
 
+  test("infers matched type when is qualified", () => {
+    const [A] = tcProgram(
+      "A",
+      `
+      pub(..) type T { T }
+    `,
+    );
+
+    const [types, errs] = tc(
+      `
+      import A.{T(..)}
+
+      pub let f = fn x {
+        match x {
+          A.T => 0,
+        }
+      }
+    `,
+      {
+        A,
+      },
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(T) -> Int",
+    });
+  });
+
   test("infers matched type when there are concrete args", () => {
     const [types, errs] = tc(
       `
