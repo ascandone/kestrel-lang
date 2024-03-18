@@ -3288,6 +3288,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
                     {
                       "args": [],
                       "name": "Nil",
+                      "namespace": undefined,
                       "span": [
                         30,
                         33,
@@ -3378,6 +3379,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                     {
                       "args": [],
                       "name": "Nil",
+                      "namespace": undefined,
                       "span": [
                         25,
                         28,
@@ -3464,6 +3466,7 @@ exports[`pattern matching > matching constructor with no args 1`] = `
             {
               "args": [],
               "name": "X",
+              "namespace": undefined,
               "span": [
                 18,
                 19,
@@ -3535,6 +3538,7 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
                 },
               ],
               "name": "X",
+              "namespace": undefined,
               "span": [
                 18,
                 22,
@@ -3852,6 +3856,88 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
         "span": [
           8,
           43,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pattern matching > matching qualified constructors 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        42,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "args": [
+                {
+                  "name": "a",
+                  "span": [
+                    29,
+                    30,
+                  ],
+                  "type": "identifier",
+                },
+                {
+                  "name": "b",
+                  "span": [
+                    32,
+                    33,
+                  ],
+                  "type": "identifier",
+                },
+              ],
+              "name": "Constr",
+              "namespace": "A/B",
+              "span": [
+                18,
+                34,
+              ],
+              "type": "constructor",
+            },
+            {
+              "span": [
+                38,
+                40,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 42,
+              },
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "namespace": undefined,
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          42,
         ],
         "type": "match",
       },

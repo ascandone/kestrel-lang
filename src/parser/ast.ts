@@ -41,6 +41,7 @@ export type MatchPattern<
         type: "constructor";
         name: string;
         args: MatchPattern<TypeMeta, IdentifierResolutionMeta>[];
+        namespace?: string;
       } & IdentifierResolutionMeta)
   );
 

@@ -148,7 +148,7 @@ Program {
     = ident  -- ident
     | lit -- lit
     | "(" MatchPattern "," NonemptyListOf<MatchPattern, ","> ")" -- tuple
-    | typeIdent ("(" ListOf<MatchPattern, ","> ")")? -- constructor
+    | QualifiedTypeIdent ("(" ListOf<MatchPattern, ","> ")")? -- constructor
 
   // --- Types
 

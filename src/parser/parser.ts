@@ -150,6 +150,8 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
     };
   },
   ConstructorPattern_constructor(ident, _lparent, args, _rparens) {
+    const { name, namespace } = ident.qualifiedTypeAst();
+
     let args_: MatchPattern[] = [];
     if (args.numChildren > 0) {
       args_ = args
@@ -157,9 +159,11 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
         .asIteration()
         .children.map((a) => a.matchPattern());
     }
+
     return {
       type: "constructor",
-      name: ident.sourceString,
+      name,
+      namespace,
       args: args_,
       span: getSpan(this),
     };

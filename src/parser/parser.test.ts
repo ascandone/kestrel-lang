@@ -538,6 +538,11 @@ describe("pattern matching", () => {
     const src = `let _ = match x { (hd :: Nil, y) => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("matching qualified constructors", () => {
+    const src = `let _ = match x { A/B.Constr(a, b) => 42 }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("extern bindings", () => {
