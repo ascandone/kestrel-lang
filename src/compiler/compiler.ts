@@ -151,9 +151,7 @@ export class Compiler {
     return value;
   }
 
-  private compileJsApplication(
-    jsCall: JsApplicationType,
-  ): [string[], string] | undefined {
+  private compileJsApplication(jsCall: JsApplicationType): [string[], string] {
     switch (jsCall.type) {
       case "infix": {
         const [lStatements, lExpr] = this.compileAsExpr(jsCall.left);
@@ -167,12 +165,43 @@ export class Compiler {
         ];
       }
 
+      case "prefix": {
+        const [lStatements, compiledExpr] = this.compileAsExpr(jsCall.expr);
+        const needsParens_ = needsParens(jsCall, jsCall.expr);
+        const compiledWithParens = needsParens_
+          ? `(${compiledExpr})`
+          : compiledExpr;
+
+        return [lStatements, `!${compiledWithParens}`];
+      }
+
       case "structural-eq":
-      case "prefix":
+        return this.compileJsApplicationHelper([], "Basics$_eq", [
+          jsCall.left,
+          jsCall.right,
+        ]);
+
       case "call":
-        return undefined;
-      // throw new Error("TODO");
+        return this.compileJsApplicationHelper(
+          ...this.compileAsExpr(jsCall.caller),
+          jsCall.args,
+        );
     }
+  }
+
+  private compileJsApplicationHelper(
+    callerStatemens: string[],
+    callerExpr: string,
+    srcArgs: TypedExpr[],
+  ): [string[], string] {
+    const statements: string[] = [...callerStatemens];
+    const args: string[] = [];
+    for (const arg of srcArgs) {
+      const [argStatements, argExpr] = this.compileAsExpr(arg);
+      args.push(argExpr);
+      statements.push(...argStatements);
+    }
+    return [statements, `${callerExpr}(${args.join(", ")})`];
   }
 
   private compileAsExpr(src: TypedExpr): CompileExprResult {
@@ -225,25 +254,7 @@ export class Compiler {
 
       case "application": {
         const appType = toApplicationType(src);
-        const compiled = this.compileJsApplication(appType);
-        if (compiled !== undefined) {
-          return compiled;
-        }
-
-        const isStructuralEq_ = isStructuralEq(src.caller, src.args);
-
-        const [callerStatemens, callerExpr] = isStructuralEq_
-          ? [[], "Basics$_eq"]
-          : this.compileAsExpr(src.caller);
-
-        const statements: string[] = [...callerStatemens];
-        const args: string[] = [];
-        for (const arg of src.args) {
-          const [argStatements, argExpr] = this.compileAsExpr(arg);
-          args.push(argExpr);
-          statements.push(...argStatements);
-        }
-        return [statements, `${callerExpr}(${args.join(", ")})`];
+        return this.compileJsApplication(appType);
       }
 
       case "let": {
@@ -588,9 +599,20 @@ function getJsInfix(srcName: string) {
 
 type JsInfix = NonNullable<ReturnType<typeof getJsInfix>>;
 
+function getJsPrefix(srcName: string) {
+  switch (srcName) {
+    case "!":
+      return srcName;
+
+    default:
+      return undefined;
+  }
+}
+type JsPrefix = NonNullable<ReturnType<typeof getJsPrefix>>;
+
 type JsApplicationType =
   | { type: "infix"; operator: JsInfix; left: TypedExpr; right: TypedExpr }
-  | { type: "prefix" }
+  | { type: "prefix"; operator: JsPrefix; expr: TypedExpr }
   | { type: "call"; caller: TypedExpr; args: TypedExpr[] }
   | { type: "structural-eq"; left: TypedExpr; right: TypedExpr };
 
@@ -614,6 +636,25 @@ const infixPrecTable: Record<JsInfix, number> = {
   "**": 13,
 };
 
+const prefixPrecTable: Record<JsPrefix, number> = {
+  "!": 14,
+};
+
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence#table
+function precTable(appType: JsApplicationType): number {
+  switch (appType.type) {
+    case "infix":
+      return infixPrecTable[appType.operator];
+
+    case "prefix":
+      return prefixPrecTable[appType.operator];
+
+    case "call":
+    case "structural-eq":
+      return 17;
+  }
+}
+
 function toApplicationType(
   src: TypedExpr & { type: "application" },
 ): JsApplicationType {
@@ -635,6 +676,15 @@ function toApplicationType(
         right: src.args[1]!,
       };
     }
+
+    const mappedToPrefix = getJsPrefix(src.caller.name);
+    if (mappedToPrefix !== undefined) {
+      return {
+        type: "prefix",
+        operator: mappedToPrefix,
+        expr: src.args[0]!,
+      };
+    }
   }
 
   return {
@@ -651,20 +701,9 @@ function needsParens(self: JsApplicationType, innerLeft: TypedExpr): boolean {
 
   const inner = toApplicationType(innerLeft);
 
-  switch (self.type) {
-    case "infix": {
-      if (inner.type === "infix") {
-        const prec = infixPrecTable[inner.operator];
-        const selfPrec = infixPrecTable[self.operator];
-        return prec < selfPrec;
-      }
-    }
-
-    case "prefix":
-    case "call":
-    case "structural-eq":
-      return false;
-  }
+  const precSelf = precTable(self);
+  const precInner = precTable(inner);
+  return precInner < precSelf;
 }
 
 function indentBlock(lines: string[]): string[] {

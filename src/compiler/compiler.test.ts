@@ -569,11 +569,14 @@ test("represent True as true", () => {
 `);
 });
 
-test.todo("boolean negation", () => {
+test("boolean negation", () => {
   const out = compileSrcWithDeps({
-    Basics: `pub(..) type Bool { True, False }`,
+    Basics: `
+      pub(..) type Bool { True, False }
+      extern pub let (!): Fn(Bool) -> Bool
+    `,
     Main: `
-      import Basics.{Bool(..)}
+      import Basics.{Bool(..), (!)}
       let x = !True
     `,
   });
@@ -582,7 +585,7 @@ test.todo("boolean negation", () => {
 `);
 });
 
-test.todo("boolean negation and && prec", () => {
+test("boolean negation and && prec", () => {
   const out = compileSrcWithDeps({
     Basics: `pub(..) type Bool { True, False }`,
     Main: `
