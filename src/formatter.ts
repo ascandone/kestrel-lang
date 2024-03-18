@@ -258,7 +258,8 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
       }
 
       const isTuple =
-        ast.caller.type === "identifier" && ast.caller.name === "Tuple2";
+        ast.caller.type === "identifier" &&
+        isTupleN(ast.caller.namespace, ast.caller.name);
 
       return nextBreakFits(
         group(
@@ -382,10 +383,8 @@ function patternToDoc(pattern: MatchPattern): Doc {
         return text(pattern.name);
       }
 
-      const isTuple = pattern.name === "Tuple2";
-
       return concat(
-        isTuple
+        isTupleN(pattern.namespace, pattern.name)
           ? nil
           : text(
               pattern.namespace === undefined ? "" : `${pattern.namespace}.`,
@@ -596,4 +595,11 @@ export function format(ast: UntypedModule): string {
   ];
 
   return pprint({ type: "concat", docs });
+}
+
+function isTupleN(namespace: string | undefined, name: string) {
+  return (
+    namespace === "Tuple" &&
+    (name === "Tuple2" || name === "Tuple3" || name === "Tuple4")
+  );
 }

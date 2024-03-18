@@ -537,7 +537,19 @@ describe("pattern matching", () => {
 `).toBeFormatted();
   });
 
-  test.todo("TupleN sugar");
+  test("Tuple3 sugar", () => {
+    expect(`let m = match expr {
+  (a, b, c) => ret,
+}
+`).toBeFormatted();
+  });
+
+  test("Tuple4 sugar", () => {
+    expect(`let m = match expr {
+  (a, b, c, d) => ret,
+}
+`).toBeFormatted();
+  });
 
   test("nested pattern matching", () => {
     expect(`let m = match expr {
@@ -689,6 +701,7 @@ expect.extend({
     const formatted = format(unsafeParse(received));
 
     if (expected !== formatted) {
+      console.dir(unsafeParse(received).declarations, { depth: Infinity });
       console.log(formatted);
     }
     return {
