@@ -509,6 +509,13 @@ describe("pattern matching", () => {
 `).toBeFormatted();
   });
 
+  test("matching a qualified constructor", () => {
+    expect(`let m = match expr {
+  A/B.X(_) => ret,
+}
+`).toBeFormatted();
+  });
+
   test("matching a constructor with many args", () => {
     expect(`let m = match expr {
   X(x, y, z) => ret,

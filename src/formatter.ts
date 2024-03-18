@@ -357,7 +357,12 @@ function patternToDoc(pattern: MatchPattern): Doc {
       const isTuple = pattern.name === "Tuple2";
 
       return concat(
-        isTuple ? nil : text(pattern.name),
+        isTuple
+          ? nil
+          : text(
+              pattern.namespace === undefined ? "" : `${pattern.namespace}.`,
+              pattern.name,
+            ),
         text("("),
         sepByString(", ", pattern.args.map(patternToDoc)),
         text(")"),
