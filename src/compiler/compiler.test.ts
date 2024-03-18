@@ -5,49 +5,49 @@ import { UntypedModule, unsafeParse } from "../parser";
 
 test("compile int constants", () => {
   const out = compileSrc(`pub let x = 42`);
-  expect(out).toEqual(`const x = 42;
+  expect(out).toEqual(`const Main$x = 42;
 `);
 });
 
 test("compile string constants", () => {
   const out = compileSrc(`pub let x = "abc"`);
-  expect(out).toEqual(`const x = "abc";
+  expect(out).toEqual(`const Main$x = "abc";
 `);
 });
 
 test("compile string constants with newlines", () => {
   const out = compileSrc(`pub let x = "ab\nc"`);
-  expect(out).toEqual(`const x = "ab\nc";
+  expect(out).toEqual(`const Main$x = "ab\nc";
 `);
 });
 
 test("compile + of ints", () => {
   const out = compileSrc(`pub let x = 1 + 2`);
-  expect(out).toEqual(`const x = 1 + 2;
+  expect(out).toEqual(`const Main$x = 1 + 2;
 `);
 });
 
 test("compile * of ints", () => {
   const out = compileSrc(`pub let x = 1 * 2`);
-  expect(out).toEqual(`const x = 1 * 2;
+  expect(out).toEqual(`const Main$x = 1 * 2;
 `);
 });
 
 test("compile == of ints", () => {
   const out = compileSrc(`pub let x = 1 == 2`);
-  expect(out).toEqual(`const x = 1 == 2;
+  expect(out).toEqual(`const Main$x = 1 == 2;
 `);
 });
 
 test("precedence between * and +", () => {
   const out = compileSrc(`pub let x = (1 + 2) * 3`);
-  expect(out).toEqual(`const x = (1 + 2) * 3;
+  expect(out).toEqual(`const Main$x = (1 + 2) * 3;
 `);
 });
 
 test("precedence between * and + (2)", () => {
   const out = compileSrc(`pub let x = 1 + 2 * 3`);
-  expect(out).toEqual(`const x = 1 + 2 * 3;
+  expect(out).toEqual(`const Main$x = 1 + 2 * 3;
 `);
 });
 
@@ -55,7 +55,7 @@ test("math expr should have same semantics as js", () => {
   const expr = "2 * 3 + 4";
   const compiled = compileSrc(`pub let x = ${expr}`);
 
-  const evaluated = new Function(`${compiled}; return x`);
+  const evaluated = new Function(`${compiled}; return Main$x`);
   expect(evaluated()).toEqual(2 * 3 + 4);
 });
 
@@ -64,9 +64,9 @@ test("refer to previously defined idents", () => {
     let x = 0
     let y = x
   `);
-  expect(out).toEqual(`const x = 0;
+  expect(out).toEqual(`const Main$x = 0;
 
-const y = x;
+const Main$y = Main$x;
 `);
 });
 
@@ -75,9 +75,9 @@ test("function calls with no args", () => {
     let f = 0
     let y = f()
   `);
-  expect(out).toEqual(`const f = 0;
+  expect(out).toEqual(`const Main$f = 0;
 
-const y = f();
+const Main$y = Main$f();
 `);
 });
 
@@ -87,9 +87,9 @@ test("function calls with args", () => {
     let y = f(1, 2)
   `);
 
-  expect(out).toEqual(`const f = 0;
+  expect(out).toEqual(`const Main$f = 0;
 
-const y = f(1, 2);
+const Main$y = Main$f(1, 2);
 `);
 });
 
@@ -101,8 +101,8 @@ test("let expressions", () => {
     }
   `);
 
-  expect(out).toEqual(`const x$local = 0;
-const x = x$local + 1;
+  expect(out).toEqual(`const Main$x$local = 0;
+const Main$x = Main$x$local + 1;
 `);
 });
 
@@ -115,9 +115,9 @@ test("let expressions with multiple vars", () => {
     }
   `);
 
-  expect(out).toEqual(`const x$local1 = 0;
-const x$local2 = 1;
-const x = x$local1 + x$local2;
+  expect(out).toEqual(`const Main$x$local1 = 0;
+const Main$x$local2 = 1;
+const Main$x = Main$x$local1 + Main$x$local2;
 `);
 });
 
@@ -132,9 +132,9 @@ test("nested let exprs", () => {
     }
   `);
 
-  expect(out).toEqual(`const x$local$nested = 0;
-const x$local = x$local$nested + 1;
-const x = x$local + 2;
+  expect(out).toEqual(`const Main$x$local$nested = 0;
+const Main$x$local = Main$x$local$nested + 1;
+const Main$x = Main$x$local + 2;
 `);
 });
 
@@ -147,9 +147,9 @@ test("shadowed let exprs", () => {
     }
   `);
 
-  expect(out).toEqual(`const x$a = 0;
-const x$a$1 = x$a;
-const x = x$a$1;
+  expect(out).toEqual(`const Main$x$a = 0;
+const Main$x$a$1 = Main$x$a;
+const Main$x = Main$x$a$1;
 `);
 });
 
@@ -162,11 +162,11 @@ test("two let as fn args, shadowing", () => {
     )
 `);
 
-  expect(out).toEqual(`const f = 0;
+  expect(out).toEqual(`const Main$f = 0;
 
-const x$a = 0;
-const x$a$1 = 1;
-const x = f(x$a, x$a$1);
+const Main$x$a = 0;
+const Main$x$a$1 = 1;
+const Main$x = Main$f(Main$x$a, Main$x$a$1);
 `);
 });
 
@@ -175,7 +175,7 @@ test("toplevel fn without params", () => {
   let f = fn { 42 }
 `);
 
-  expect(out).toEqual(`function f() {
+  expect(out).toEqual(`function Main$f() {
   return 42;
 }
 `);
@@ -186,7 +186,7 @@ test("toplevel fn with params", () => {
   let f = fn x, y { y }
 `);
 
-  expect(out).toEqual(`function f(x, y) {
+  expect(out).toEqual(`function Main$f(x, y) {
   return y;
 }
 `);
@@ -198,7 +198,7 @@ test("== performs structural equality when type is unbound", () => {
   let f = fn x, y { x == y }
 `);
 
-  expect(out).toEqual(`function f(x, y) {
+  expect(out).toEqual(`function Main$f(x, y) {
   return Basics$_eq(x, y);
 }
 `);
@@ -210,10 +210,10 @@ test("== performs structural equality when type is adt", () => {
   let f = C(0) == C(1)
 `);
 
-  expect(out).toEqual(`function C(a0) {
+  expect(out).toEqual(`function Main$C(a0) {
   return { type: "C", a0 };
 }
-const f = Basics$_eq(C(0), C(1));
+const Main$f = Basics$_eq(Main$C(0), Main$C(1));
 `);
 });
 
@@ -223,7 +223,7 @@ test("== doesn't perform structural equality when type is int", () => {
   let f = 2 == 0
 `);
 
-  expect(out).toEqual(`const f = 2 == 0;
+  expect(out).toEqual(`const Main$f = 2 == 0;
 `);
 });
 
@@ -233,7 +233,7 @@ test("== doesn't perform structural equality when type is string", () => {
   let f = "a" == "b"
 `);
 
-  expect(out).toEqual(`const f = "a" == "b";
+  expect(out).toEqual(`const Main$f = "a" == "b";
 `);
 });
 
@@ -243,7 +243,7 @@ test("== doesn't perform structural equality when type is float", () => {
   let f = 1.2 == 3.2
 `);
 
-  expect(out).toEqual(`const f = 1.2 == 3.2;
+  expect(out).toEqual(`const Main$f = 1.2 == 3.2;
 `);
 });
 
@@ -257,14 +257,14 @@ test("fn inside if return", () => {
     }
 `);
 
-  expect(out).toEqual(`let f;
+  expect(out).toEqual(`let Main$f;
 if (0) {
-  function f$GEN__0() {
+  function Main$f$GEN__0() {
     return 1;
   }
-  f = f$GEN__0;
+  Main$f = Main$f$GEN__0;
 } else {
-  f = 2;
+  Main$f = 2;
 }
 `);
 });
@@ -278,7 +278,7 @@ test("let inside scope", () => {
   }
 `);
 
-  expect(out).toEqual(`function f() {
+  expect(out).toEqual(`function Main$f() {
   const x = 0;
   const y = 1;
   return x;
@@ -295,10 +295,10 @@ test("let inside arg of a function", () => {
   })
 `);
 
-  expect(out).toEqual(`const f = 0;
+  expect(out).toEqual(`const Main$f = 0;
 
-const a$x = 0;
-const a = f(a$x);
+const Main$a$x = 0;
+const Main$a = Main$f(Main$a$x);
 `);
 });
 
@@ -310,8 +310,8 @@ test("function with a scoped identified as caller", () => {
   }
 `);
 
-  expect(out).toEqual(`const x$f = 0;
-const x = x$f();
+  expect(out).toEqual(`const Main$x$f = 0;
+const Main$x = Main$x$f();
 `);
 });
 
@@ -325,11 +325,11 @@ test("if expression", () => {
     }
 `);
 
-  expect(out).toEqual(`let x;
+  expect(out).toEqual(`let Main$x;
 if (0) {
-  x = 1;
+  Main$x = 1;
 } else {
-  x = 2;
+  Main$x = 2;
 }
 `);
 });
@@ -346,7 +346,7 @@ test("tail position if", () => {
     }
   `);
 
-  expect(out).toEqual(`function is_zero(n) {
+  expect(out).toEqual(`function Main$is_zero(n) {
   if (n == 0) {
     return "yes";
   } else {
@@ -373,7 +373,7 @@ test("nested ifs", () => {
     }
   `);
 
-  expect(out).toEqual(`function is_zero(n) {
+  expect(out).toEqual(`function Main$is_zero(n) {
   if (n == 0) {
     return "zero";
   } else {
@@ -396,12 +396,12 @@ test("let expr inside if condition", () => {
       }
   `);
 
-  expect(out).toEqual(`const x$a = 0;
-let x;
-if (x$a == 1) {
-  x = "a";
+  expect(out).toEqual(`const Main$x$a = 0;
+let Main$x;
+if (Main$x$a == 1) {
+  Main$x = "a";
 } else {
-  x = "b";
+  Main$x = "b";
 }
 `);
 });
@@ -418,7 +418,7 @@ test("eval if", () => {
     }
   `);
 
-  const isZero = new Function(`${out}; return is_zero`)();
+  const isZero = new Function(`${out}; return Main$is_zero`)();
 
   expect(isZero(0)).toEqual("yes");
   expect(isZero(42)).toEqual("nope");
@@ -432,10 +432,10 @@ test("fn inside let", () => {
     }
 `);
 
-  expect(out).toEqual(`function x$f() {
+  expect(out).toEqual(`function Main$x$f() {
   return 0;
 }
-const x = x$f(1);
+const Main$x = Main$x$f(1);
 `);
 });
 
@@ -447,12 +447,12 @@ test("fn as expr", () => {
     })
 `);
 
-  expect(out).toEqual(`const f = 0;
+  expect(out).toEqual(`const Main$f = 0;
 
-function x$GEN__0() {
+function Main$x$GEN__0() {
   return 1;
 }
-const x = f(x$GEN__0);
+const Main$x = Main$f(Main$x$GEN__0);
 `);
 });
 
@@ -467,15 +467,15 @@ test("ifs as expr", () => {
       })
 `);
 
-  expect(out).toEqual(`const f = 0;
+  expect(out).toEqual(`const Main$f = 0;
 
-let x$GEN__0;
+let Main$x$GEN__0;
 if (0 == 1) {
-  x$GEN__0 = "a";
+  Main$x$GEN__0 = "a";
 } else {
-  x$GEN__0 = "b";
+  Main$x$GEN__0 = "b";
 }
-const x = f(x$GEN__0);
+const Main$x = Main$f(Main$x$GEN__0);
 `);
 });
 
@@ -484,9 +484,9 @@ test("infix exprs producing statements", () => {
     let a = { let x = 0; x } + { let x = 1; x }
   `);
 
-  expect(out).toEqual(`const a$x = 0;
-const a$x$1 = 1;
-const a = a$x + a$x$1;
+  expect(out).toEqual(`const Main$a$x = 0;
+const Main$a$x$1 = 1;
+const Main$a = Main$a$x + Main$a$x$1;
 `);
 });
 
@@ -496,10 +496,10 @@ test("iifs", () => {
     let a = fn { 42 } ()
   `);
 
-  expect(out).toEqual(`function a$GEN__0() {
+  expect(out).toEqual(`function Main$a$GEN__0() {
   return 42;
 }
-const a = a$GEN__0();
+const Main$a = Main$a$GEN__0();
 `);
 });
 
@@ -511,9 +511,9 @@ test("(let) closures", () => {
     }
   `);
 
-  expect(out).toEqual(`const a$captured = 42;
-function a() {
-  return a$captured;
+  expect(out).toEqual(`const Main$a$captured = 42;
+function Main$a() {
+  return Main$a$captured;
 }
 `);
 });
@@ -527,7 +527,7 @@ test("fn closures", () => {
     }
   `);
 
-  expect(out).toEqual(`function a() {
+  expect(out).toEqual(`function Main$a() {
   function GEN__0() {
     return 100;
   }
@@ -545,13 +545,13 @@ test("recursion in closures", () => {
 `);
 
   expect(out).toEqual(
-    `function f$x() {
+    `function Main$f$x() {
   function GEN__0() {
-    return f$x();
+    return Main$f$x();
   }
   return GEN__0;
 }
-const f = 0;
+const Main$f = 0;
 `,
   );
 });
@@ -630,9 +630,9 @@ test("allow custom types with zero args", () => {
     let x = X
   `);
 
-  expect(out).toEqual(`const X = { type: "X" };
+  expect(out).toEqual(`const Main$X = { type: "X" };
 
-const x = X;
+const Main$x = Main$X;
 `);
 });
 
@@ -643,10 +643,10 @@ test("allow custom types with one arg", () => {
     let x = X
   `);
 
-  expect(out).toEqual(`function X(a0) {
+  expect(out).toEqual(`function Main$X(a0) {
   return { type: "X", a0 };
 }
-const x = X;
+const Main$x = Main$X;
 `);
 });
 
@@ -658,16 +658,16 @@ test("allow custom types with two args", () => {
     let x = X
   `);
 
-  expect(out).toEqual(`function X(a0, a1) {
+  expect(out).toEqual(`function Main$X(a0, a1) {
   return { type: "X", a0, a1 };
 }
-const x = X;
+const Main$x = Main$X;
 `);
 });
 
 test("allow non-js operators", () => {
   const out = compileSrc(`let x = "a" <> "b"`);
-  expect(out).toEqual(`const x = "a" + "b";
+  expect(out).toEqual(`const Main$x = "a" + "b";
 `);
 });
 
@@ -685,17 +685,17 @@ test("pattern matching (flat)", () => {
   }
 `);
   // TODO whitepace
-  expect(out).toEqual(`const A = { type: "A" };
+  expect(out).toEqual(`const Main$A = { type: "A" };
 
-function B(a0) {
+function Main$B(a0) {
   return { type: "B", a0 };
 }
-const x$GEN__0 = B(42);
-let x;
-if (x$GEN__0.type === "A") {
-  x = 0;
-} else if (x$GEN__0.type === "B") {
-  x = 1;
+const Main$x$GEN__0 = Main$B(42);
+let Main$x;
+if (Main$x$GEN__0.type === "A") {
+  Main$x = 0;
+} else if (Main$x$GEN__0.type === "B") {
+  Main$x = 1;
 } else {
   throw new Error("[non exhaustive match]")
 }
@@ -714,13 +714,13 @@ test("pattern matching (ident)", () => {
   }
 `);
   // TODO whitepace
-  expect(out).toEqual(`function C(a0) {
+  expect(out).toEqual(`function Main$C(a0) {
   return { type: "C", a0 };
 }
-const x$GEN__0 = C(42);
-let x;
-if (x$GEN__0.type === "C") {
-  x = x$GEN__0.a0;
+const Main$x$GEN__0 = Main$C(42);
+let Main$x;
+if (Main$x$GEN__0.type === "C") {
+  Main$x = Main$x$GEN__0.a0;
 } else {
   throw new Error("[non exhaustive match]")
 }
@@ -734,10 +734,10 @@ test("pattern matching literals", () => {
   }
 `);
 
-  expect(out).toEqual(`const x$GEN__0 = "subject";
-let x;
-if (x$GEN__0 === "constraint") {
-  x = 0;
+  expect(out).toEqual(`const Main$x$GEN__0 = "subject";
+let Main$x;
+if (Main$x$GEN__0 === "constraint") {
+  Main$x = 0;
 } else {
   throw new Error("[non exhaustive match]")
 }
@@ -796,10 +796,10 @@ test("toplevel ident in p matching", () => {
   }
 `);
   // TODO whitepace
-  expect(out).toEqual(`const x$GEN__0 = 42;
-let x;
+  expect(out).toEqual(`const Main$x$GEN__0 = 42;
+let Main$x;
 if (true) {
-  x = x$GEN__0;
+  Main$x = Main$x$GEN__0;
 } else {
   throw new Error("[non exhaustive match]")
 }
@@ -842,7 +842,7 @@ test("simple pattern matching in tail position", () => {
   }
 `);
 
-  expect(out).toEqual(`function f() {
+  expect(out).toEqual(`function Main$f() {
   const GEN__0 = 42;
   if (true) {
     return GEN__0;
@@ -864,11 +864,11 @@ test("pattern matching in tail position (match constructor)", () => {
   }
 `);
 
-  expect(out).toEqual(`function Box(a0) {
+  expect(out).toEqual(`function Main$Box(a0) {
   return { type: "Box", a0 };
 }
-function f() {
-  const GEN__0 = Box(42);
+function Main$f() {
+  const GEN__0 = Main$Box(42);
   if (GEN__0.type === "Box") {
     return GEN__0.a0 + 1;
   } else {
@@ -886,16 +886,16 @@ test("pattern matching as fn arg", () => {
   })
 `);
 
-  expect(out).toEqual(`const f = 0;
+  expect(out).toEqual(`const Main$f = 0;
 
-const x$GEN__1 = 42;
-let x$GEN__0;
+const Main$x$GEN__1 = 42;
+let Main$x$GEN__0;
 if (true) {
-  x$GEN__0 = 0;
+  Main$x$GEN__0 = 0;
 } else {
   throw new Error("[non exhaustive match]")
 }
-const x = f(x$GEN__0);
+const Main$x = Main$f(Main$x$GEN__0);
 `);
 });
 
@@ -927,7 +927,7 @@ test("eval complex match", () => {
     }
   `);
 
-  const r = new Function(`${out}; return m`)();
+  const r = new Function(`${out}; return Main$m`)();
   expect(r).toEqual("abcdef");
 });
 
@@ -940,15 +940,15 @@ test("two fns as args", () => {
     )
 `);
 
-  expect(out).toEqual(`const f = 0;
+  expect(out).toEqual(`const Main$f = 0;
 
-function x$GEN__0() {
+function Main$x$GEN__0() {
   return 0;
 }
-function x$GEN__1() {
+function Main$x$GEN__1() {
   return 1;
 }
-const x = f(x$GEN__0, x$GEN__1);
+const Main$x = Main$f(Main$x$GEN__0, Main$x$GEN__1);
 `);
 });
 
@@ -961,8 +961,8 @@ describe("TCO", () => {
     }
 `);
 
-    expect(out).toEqual(`function loop() {
-  return 1 + loop();
+    expect(out).toEqual(`function Main$loop() {
+  return 1 + Main$loop();
 }
 `);
   });
@@ -975,10 +975,10 @@ describe("TCO", () => {
     }
 `);
 
-    expect(out).toEqual(`const a = 0;
+    expect(out).toEqual(`const Main$a = 0;
 
-function loop() {
-  return a(loop());
+function Main$loop() {
+  return Main$a(Main$loop());
 }
 `);
   });
@@ -992,8 +992,8 @@ function loop() {
     
     `);
 
-    expect(out).toEqual(`function f(x) {
-  const a = f(x + 1);
+    expect(out).toEqual(`function Main$f(x) {
+  const a = Main$f(x + 1);
   return a;
 }
 `);
@@ -1006,7 +1006,7 @@ function loop() {
       }
   `);
 
-    expect(out).toEqual(`function loop() {
+    expect(out).toEqual(`function Main$loop() {
   while (true) {
   }
 }
@@ -1020,7 +1020,7 @@ function loop() {
       }
   `);
 
-    expect(out).toEqual(`function loop(GEN_TC__0, GEN_TC__1) {
+    expect(out).toEqual(`function Main$loop(GEN_TC__0, GEN_TC__1) {
   while (true) {
     const x = GEN_TC__0;
     const y = GEN_TC__1;
@@ -1043,7 +1043,7 @@ function loop() {
       }
   `);
 
-    expect(out).toEqual(`function to_zero(GEN_TC__0) {
+    expect(out).toEqual(`function Main$to_zero(GEN_TC__0) {
   while (true) {
     const x = GEN_TC__0;
     if (x == 0) {
@@ -1057,16 +1057,19 @@ function loop() {
   });
 
   test("Example: List.reduce", () => {
-    const out = compileSrc(`
+    const out = compileSrc(
+      `
       pub let reduce = fn lst, acc, f {
         match lst {
           Nil => acc,
           hd :: tl => reduce(lst, f(acc, hd), f),
         }
       }
-  `);
+  `,
+      "List",
+    );
 
-    expect(out).toEqual(`function reduce(GEN_TC__0, GEN_TC__1, GEN_TC__2) {
+    expect(out).toEqual(`function List$reduce(GEN_TC__0, GEN_TC__1, GEN_TC__2) {
   while (true) {
     const lst = GEN_TC__0;
     const acc = GEN_TC__1;
@@ -1101,11 +1104,11 @@ function loop() {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function ap(f) {
+      "function Main$ap(f) {
         return f(10);
       }
 
-      function f(GEN_TC__0) {
+      function Main$f(GEN_TC__0) {
         while (true) {
           const a = GEN_TC__0;
           if (a) {
@@ -1113,7 +1116,7 @@ function loop() {
             function id$GEN__0(x) {
               return x;
             }
-            const id = ap(id$GEN__0);
+            const id = Main$ap(id$GEN__0);
             return 0;
           }
         }
@@ -1132,18 +1135,18 @@ function loop() {
 `);
   });
 
-  test.todo("Local vars shadow tail calls", () => {
+  test("Local vars shadow tail calls", () => {
     const out = compileSrc(`
       let f1 = fn {
         let f1 = fn { 0 };
         f1()
       }`);
 
-    expect(out).toEqual(`function f1() {
-  function f1$f1() {
-    return 0
-  };
-  return f1$f1();
+    expect(out).toEqual(`function Main$f1() {
+  function f1() {
+    return 0;
+  }
+  return f1();
 }
 `);
   });
@@ -1395,13 +1398,8 @@ Main$main.exec();
 
 function compileSrc(src: string, ns?: string) {
   const parsed = unsafeParse(src);
-  const [program] = typecheck(
-    ns ?? "Main",
-    parsed,
-    {},
-    [],
-    testEntryPoint.type,
-  );
+  ns = ns ?? "Main";
+  const [program] = typecheck(ns, parsed, {}, [], testEntryPoint.type);
   const out = new Compiler().compile(program, ns);
   return out;
 }
