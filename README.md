@@ -22,7 +22,7 @@ Take a look at the [language tour](https://github.com/ascandone/kestrel-lang/blo
 
 ### Get started
 
-> You can try kestrel without install it on the [online playground](https://kestrel-playground.vercel.app/).
+> You can try kestrel without installing it on the [online playground](https://kestrel-playground.vercel.app/).
 
 Install the `kestrel` cli using npm:
 
