@@ -2887,6 +2887,7 @@ exports[`parse tuple sugar 1`] = `
         ],
         "caller": {
           "name": "Tuple2",
+          "namespace": "Tuple",
           "span": [
             8,
             14,
@@ -3296,6 +3297,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                 },
               ],
               "name": "Tuple2",
+              "namespace": "Tuple",
               "span": [
                 18,
                 32,
@@ -3944,6 +3946,7 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
                 },
               ],
               "name": "Tuple2",
+              "namespace": "Tuple",
               "span": [
                 18,
                 24,

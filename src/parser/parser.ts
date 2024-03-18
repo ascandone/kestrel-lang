@@ -142,6 +142,7 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
     return {
       type: "constructor",
       name,
+      namespace: "Tuple",
       args: [x.matchPattern(), ...xs_],
       span: getSpan(this),
     };
@@ -239,6 +240,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
       caller: {
         type: "identifier",
         name: `Tuple${count}`,
+        namespace: "Tuple",
         span: getSpan(this),
       },
       args: [x.expr(), ...xs_],
