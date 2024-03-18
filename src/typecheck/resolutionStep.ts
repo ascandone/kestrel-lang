@@ -747,7 +747,15 @@ class ResolutionStep {
   ): IdentifierResolution | undefined {
     namespace = namespace ?? this.ns;
     if (namespace === this.ns) {
-      return this.constructors[name];
+      const constructor = this.constructors[name];
+      if (constructor === undefined) {
+        this.errors.push({
+          description: new UnboundVariable(name),
+          span,
+        });
+        return undefined;
+      }
+      return constructor;
     }
 
     const module = this.deps[namespace];
