@@ -99,6 +99,11 @@ export function hoverOn(
           continue;
         }
 
+        const res = firstBy(variant.args, (arg) => hoverOnTypeAst(arg, offset));
+        if (res !== undefined) {
+          return res;
+        }
+
         return [
           variant.scheme,
           {

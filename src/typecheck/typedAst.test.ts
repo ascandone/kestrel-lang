@@ -225,6 +225,23 @@ describe("hoverOn", () => {
     });
   });
 
+  test("hover a type ast in constructor", () => {
+    const src = `
+      type X { }
+      type T { Constr(X) }
+    `;
+    const [, hoverable] = parseHover(src, "X", 2)!;
+    expect(hoverable).toEqual<Hovered>({
+      span: spanOf(src, "X", 2),
+      hovered: expect.objectContaining({
+        type: "type",
+        typeDecl: expect.objectContaining({
+          name: "X",
+        }),
+      }),
+    });
+  });
+
   test("snapshot when hovering on global fn", () => {
     const src = `let glb = fn x, y { y }`;
     const [scheme, hoverable] = parseHover(src, "glb")!;
