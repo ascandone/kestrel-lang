@@ -78,7 +78,9 @@ export type TypedModule = {
 
 export type Node = TypeMeta & SpanMeta;
 
-export type HoveredInfo = IdentifierResolution;
+export type HoveredInfo =
+  | IdentifierResolution
+  | { type: "type"; typeDecl: TypedTypeDeclaration; namespace: string };
 export type Hovered = SpanMeta & { hovered: HoveredInfo };
 
 export function hoverOn(
@@ -115,6 +117,13 @@ export function hoverOn(
   }
 
   for (const decl of module.declarations) {
+    if (decl.typeHint !== undefined) {
+      const res = hoverOnTypeAst(decl.typeHint, offset);
+      if (res !== undefined) {
+        return res;
+      }
+    }
+
     const d = hoverOnDecl(namespace, decl, offset);
     if (d !== undefined) {
       return [decl.scheme, d];
@@ -124,11 +133,62 @@ export function hoverOn(
   return undefined;
 }
 
+export function hoverOnTypeAst(
+  typeAst: TypedTypeAst,
+  offset: number,
+): [TypeScheme, Hovered] | undefined {
+  if (!contains(typeAst, offset)) {
+    return;
+  }
+
+  switch (typeAst.type) {
+    case "var":
+    case "any":
+      return undefined;
+    case "named": {
+      if (typeAst.resolution === undefined) {
+        return undefined;
+      }
+
+      const res = firstBy(typeAst.args, (arg) => hoverOnTypeAst(arg, offset));
+      if (res !== undefined) {
+        return res;
+      }
+
+      return [
+        {},
+        {
+          span: typeAst.span,
+          hovered: {
+            type: "type",
+            typeDecl: typeAst.resolution.declaration,
+            namespace: typeAst.resolution.namespace,
+          },
+        },
+      ];
+    }
+
+    case "fn": {
+      return (
+        firstBy(typeAst.args, (arg) => hoverOnTypeAst(arg, offset)) ??
+        hoverOnTypeAst(typeAst.return, offset)
+      );
+    }
+  }
+}
+
 export function hoverToMarkdown(
   scheme: TypeScheme,
   { hovered }: Hovered,
 ): string {
   switch (hovered.type) {
+    case "type":
+      return `\`\`\`
+type ${hovered.typeDecl.name}
+\`\`\`
+
+${hovered.typeDecl.docComment ?? ""}
+      `;
     case "local-variable": {
       const tpp = typeToString(hovered.binding.$.asType(), scheme);
       return `\`\`\`

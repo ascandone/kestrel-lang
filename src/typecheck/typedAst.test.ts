@@ -197,6 +197,21 @@ describe("hoverOn", () => {
     });
   });
 
+  test("hover a type ast", () => {
+    const src = `
+        type T { }
+        type Box<a> { }
+        extern let t: Fn() -> Box<T>
+    `;
+    const [, hoverable] = parseHover(src, "T", 2)!;
+    expect(hoverable).toEqual<Hovered>({
+      span: spanOf(src, "T", 2),
+      hovered: expect.objectContaining({
+        type: "type",
+      }),
+    });
+  });
+
   test("snapshot when hovering on global fn", () => {
     const src = `let glb = fn x, y { y }`;
     const [scheme, hoverable] = parseHover(src, "glb")!;
@@ -359,7 +374,11 @@ function parseHover(
 
   const parsed = unsafeParse(src);
   const [typed, _] = typecheck("Main", parsed);
-  return hoverOn("Ns", typed, offset);
+  const ret = hoverOn("Ns", typed, offset);
+  if (ret === undefined) {
+    throw new Error("Undefined hover");
+  }
+  return ret;
 }
 
 function parseGotoDef(
