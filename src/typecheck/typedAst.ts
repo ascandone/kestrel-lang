@@ -341,10 +341,57 @@ export function goToDefinitionOf(
       continue;
     }
 
+    if (st.typeHint !== undefined) {
+      const ret = goToDefinitionOfTypeAst(st.typeHint, offset);
+      if (ret !== undefined) {
+        return ret;
+      }
+    }
+
     return st.extern ? undefined : goToDefinitionOfExpr(st.value, offset);
   }
 
   return undefined;
+}
+
+function goToDefinitionOfTypeAst(
+  t: TypedTypeAst,
+  offset: number,
+): Location | undefined {
+  if (!spanContains(t.span, offset)) {
+    return undefined;
+  }
+
+  switch (t.type) {
+    case "var":
+    case "any":
+      return undefined;
+    case "named": {
+      const ret = firstBy(t.args, (arg) =>
+        goToDefinitionOfTypeAst(arg, offset),
+      );
+
+      if (ret !== undefined) {
+        return ret;
+      }
+
+      if (t.resolution === undefined) {
+        return undefined;
+      }
+
+      return {
+        span: t.resolution.declaration.span,
+        namespace: t.resolution.namespace,
+      };
+    }
+
+    case "fn": {
+      return (
+        firstBy(t.args, (arg) => goToDefinitionOfTypeAst(arg, offset)) ??
+        goToDefinitionOfTypeAst(t.return, offset)
+      );
+    }
+  }
 }
 
 function resolutionToLocation(resolution: IdentifierResolution): Location {

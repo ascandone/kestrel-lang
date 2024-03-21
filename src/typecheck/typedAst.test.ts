@@ -321,6 +321,16 @@ describe("goToDefinition", () => {
     const location = parseGotoDef(src, "a", 3);
     expect(location?.span).toEqual(spanOf(src, "a", 1));
   });
+
+  test("type ast", () => {
+    const src = `
+      type X {}
+      type Box<a> {}
+      extern let x: Box<Fn() -> X>
+    `;
+    const location = parseGotoDef(src, "X", 2);
+    expect(location?.span).toEqual(spanOf(src, "type X {}", 1));
+  });
 });
 
 function parseHover(
