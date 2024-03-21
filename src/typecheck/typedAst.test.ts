@@ -331,6 +331,19 @@ describe("goToDefinition", () => {
     const location = parseGotoDef(src, "X", 2);
     expect(location?.span).toEqual(spanOf(src, "type X {}", 1));
   });
+
+  test("type ast in constructors", () => {
+    const src = `
+      type X {}
+      type Box<a> {}
+
+      type Custom {
+        CustomConstr(Box<X>)
+      }
+    `;
+    const location = parseGotoDef(src, "X", 2);
+    expect(location?.span).toEqual(spanOf(src, "type X {}", 1));
+  });
 });
 
 function parseHover(

@@ -336,6 +336,30 @@ export function goToDefinitionOf(
     }
   }
 
+  for (const t of module.typeDeclarations) {
+    if (t.type === "extern") {
+      continue;
+    }
+
+    if (!spanContains(t.span, offset)) {
+      continue;
+    }
+
+    const ret = firstBy(t.variants, (variant) => {
+      if (!spanContains(variant.span, offset)) {
+        return undefined;
+      }
+
+      return firstBy(variant.args, (arg) =>
+        goToDefinitionOfTypeAst(arg, offset),
+      );
+    });
+
+    if (ret !== undefined) {
+      return ret;
+    }
+  }
+
   for (const st of module.declarations) {
     if (!spanContains(st.span, offset)) {
       continue;
