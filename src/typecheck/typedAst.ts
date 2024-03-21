@@ -93,27 +93,33 @@ export function hoverOn(
       continue;
     }
 
-    if (typeDecl.type !== "adt") {
-      continue;
-    }
+    if (typeDecl.type === "adt") {
+      for (const variant of typeDecl.variants) {
+        if (!contains(variant, offset)) {
+          continue;
+        }
 
-    for (const variant of typeDecl.variants) {
-      if (!contains(variant, offset)) {
-        continue;
-      }
-
-      return [
-        variant.scheme,
-        {
-          span: variant.span,
-          hovered: {
-            type: "constructor",
-            variant,
-            namespace,
+        return [
+          variant.scheme,
+          {
+            span: variant.span,
+            hovered: {
+              type: "constructor",
+              variant,
+              namespace,
+            },
           },
-        },
-      ];
+        ];
+      }
     }
+
+    return [
+      {},
+      {
+        span: typeDecl.span,
+        hovered: { type: "type", namespace, typeDecl: typeDecl },
+      },
+    ];
   }
 
   for (const decl of module.declarations) {

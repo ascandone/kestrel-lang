@@ -197,6 +197,19 @@ describe("hoverOn", () => {
     });
   });
 
+  test("hover a type def", () => {
+    const src = `
+      type T { }
+    `;
+    const [, hoverable] = parseHover(src, "T", 1)!;
+    expect(hoverable).toEqual<Hovered>({
+      span: spanOf(src, "type T { }", 1),
+      hovered: expect.objectContaining({
+        type: "type",
+      }),
+    });
+  });
+
   test("hover a type ast", () => {
     const src = `
         type T { }
