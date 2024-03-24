@@ -35,7 +35,7 @@ export async function fetchDeps(path: string, config: Config) {
   for (const [name, dep] of deps) {
     if (dep.type === "git") {
       process.stdout.write(
-        `${col.blue.tag`[info]`} Fetching ${name} from git...`,
+        `${col.blue.tag`[info]`} Fetching ${name} from git...\n`,
       );
       // This raises an err on failure
       await execP(`git clone --depth=1 ${dep.git} ${path}/deps/${name}`);
