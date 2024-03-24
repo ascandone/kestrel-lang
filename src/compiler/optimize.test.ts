@@ -155,40 +155,6 @@ let x = match 3 {
 `);
 });
 
-test.todo("Bug", () => {
-  // step1 (inlining)
-  // let example = fn x {
-  //   fn x { x() + x() } (fn {
-  //     x * 2
-  //   })
-  // }
-
-  // step2 (folding iif)
-  // let example = fn x {
-  //   let x = fn { x * 2 } // <- err: x has been shadowed
-  //   x() + x()
-  // }
-
-  expect(`
-  let example = fn x {
-    // its params shadow 'x' 
-    let shadower = fn x {
-      x() + x()
-    };
-    shadower(fn {
-      x * 2
-    }) 
-  }
-  `).not.toOptimizeAs(`
-let example = fn x {
-  let x = fn {
-    x * 2
-  };
-  x() + x()
-}
-`);
-});
-
 test("function inlining example", () => {
   expect(`
   let glb = {
