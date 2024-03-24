@@ -23,9 +23,15 @@ class Frame {
   constructor(
     public readonly data:
       | { type: "let"; name: string; binding: Binding<unknown> }
-      | { type: "fn" },
+      | { type: "fn"; params: string[] },
     private compiler: Compiler,
-  ) {}
+  ) {
+    if (data.type === "fn") {
+      for (const param of data.params) {
+        this.usedVars.set(param, 1);
+      }
+    }
+  }
 
   private usedVars = new Map<string, number>();
 
@@ -354,7 +360,12 @@ export class Compiler {
         const callerBinding =
           frame?.data.type === "let" ? frame.data.binding : undefined;
 
-        this.frames.push(new Frame({ type: "fn" }, this));
+        this.frames.push(
+          new Frame(
+            { type: "fn", params: src.params.map((p) => p.name) },
+            this,
+          ),
+        );
         for (const param of src.params) {
           this.localBindings.set(param, param.name);
         }

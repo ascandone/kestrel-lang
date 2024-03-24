@@ -153,6 +153,23 @@ const Main$x = Main$x$a$1;
 `);
 });
 
+test("shadowing fn params", () => {
+  const out = compileSrc(`
+    let f = fn msg {
+      let msg = msg;
+      msg
+    }
+  `);
+
+  expect(out).toMatchInlineSnapshot(`
+    "function Main$f(msg) {
+      const msg$1 = msg;
+      return msg$1;
+    }
+    "
+  `);
+});
+
 test("two let as fn args, shadowing", () => {
   const out = compileSrc(`
     let f = 0
