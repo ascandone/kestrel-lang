@@ -155,6 +155,19 @@ const Main$x = Main$x$a$1;
 
 test("shadowing fn params", () => {
   const out = compileSrc(`
+    let f = fn a, a { a }
+  `);
+
+  expect(out).toMatchInlineSnapshot(`
+    "function Main$f(a, a$1) {
+      return a$1;
+    }
+    "
+  `);
+});
+
+test("shadowing fn params with let", () => {
+  const out = compileSrc(`
     let f = fn msg {
       let msg = msg;
       msg

@@ -23,15 +23,9 @@ class Frame {
   constructor(
     public readonly data:
       | { type: "let"; name: string; binding: Binding<unknown> }
-      | { type: "fn"; params: string[] },
+      | { type: "fn" },
     private compiler: Compiler,
-  ) {
-    if (data.type === "fn") {
-      for (const param of data.params) {
-        this.usedVars.set(param, 1);
-      }
-    }
-  }
+  ) {}
 
   private usedVars = new Map<string, number>();
 
@@ -360,14 +354,11 @@ export class Compiler {
         const callerBinding =
           frame?.data.type === "let" ? frame.data.binding : undefined;
 
-        this.frames.push(
-          new Frame(
-            { type: "fn", params: src.params.map((p) => p.name) },
-            this,
-          ),
-        );
+        const newFrame = new Frame({ type: "fn" }, this);
+        this.frames.push(newFrame);
         for (const param of src.params) {
-          this.localBindings.set(param, param.name);
+          const paramName = newFrame.preventShadow(param.name);
+          this.localBindings.set(param, paramName);
         }
 
         const fnBody = this.compileAsStatements(
@@ -380,7 +371,7 @@ export class Compiler {
         this.tailCall = false;
         const params = isTailRec
           ? src.params.map((_, index) => `GEN_TC__${index}`)
-          : src.params.map((p) => p.name);
+          : src.params.map((p) => this.localBindings.get(p)!);
 
         this.frames.pop();
 
