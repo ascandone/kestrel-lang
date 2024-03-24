@@ -52,8 +52,11 @@ export async function fetchDeps(path: string, config: Config) {
 
 export async function readProjectWithDeps(
   path: string,
+  config?: Config,
 ): Promise<Record<string, RawModule>> {
-  const config = await readConfig(path);
+  if (config === undefined) {
+    config = await readConfig(path);
+  }
   let rawProject: Record<string, RawModule> = await readProject(path, config);
   if (config.type === "application") {
     const deps = Object.entries(config.dependencies ?? {});

@@ -23,6 +23,7 @@ import { readProjectWithDeps } from "../common";
 import { Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../formatter";
+import { Config, readConfig } from "../config";
 
 type Connection = _Connection;
 
@@ -31,6 +32,8 @@ type Result<Ok, Err> = { type: "OK"; value: Ok } | { type: "ERR"; error: Err };
 class State {
   private untypedProject: Record<string, UntypedModule> = {};
   private docs: Record<string, TextDocument> = {};
+
+  constructor(public readonly config: Config) {}
 
   private static parseDoc(
     textDoc: TextDocument,
@@ -153,8 +156,8 @@ class State {
 }
 
 async function initProject(connection: Connection, state: State) {
-  const rawProject = await readProjectWithDeps(process.cwd());
-
+  const path = process.cwd();
+  const rawProject = await readProjectWithDeps(path, state.config);
   for (const [ns, raw] of Object.entries(rawProject)) {
     const uri = `file://${raw.path}`;
     const textDoc = TextDocument.create(uri, "kestrel", 1, raw.content);
@@ -176,7 +179,9 @@ export async function lspCmd() {
     // @ts-ignore
     createConnection();
 
-  const state = new State();
+  const path = process.cwd();
+  const config = await readConfig(path);
+  const state = new State(config);
 
   // Do not await
   initProject(connection, state);
@@ -191,6 +196,17 @@ export async function lspCmd() {
       documentFormattingProvider: true,
     },
   }));
+
+  documents.onDidOpen((doc) => {
+    let ns = doc.document.uri.replace("file://", "").replace(process.cwd(), "");
+    for (const sourceDir of state.config["source-directories"]) {
+      const regexp = new RegExp(`^/${sourceDir}/`);
+      ns = ns.replace(regexp, "");
+    }
+    ns = ns.replace(/.kes$/, "");
+
+    state.addDocument(ns, doc.document);
+  });
 
   documents.onDidChangeContent((change) => {
     const errors = state.changeDocument(change.document);
