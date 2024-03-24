@@ -28,6 +28,8 @@ jobs:
         run: npm install -g kestrel-lang
       - name: Check if project is formatted
         run: kestrel format
+      - name: Install dependencies
+        run: kestrel deps install
       - name: Typecheck the project
         run: kestrel check
 `;
