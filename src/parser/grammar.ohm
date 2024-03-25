@@ -92,6 +92,7 @@ Program {
   lit
     = number
     | string
+    | char
 
   BlockContent
     = Exp  -- exp
@@ -129,13 +130,17 @@ Program {
     | digit+             -- whole
     | "-" number  -- neg
 
-   char
+   literalCh
     = "\\" any           -- escaped
     | ~"\"" any          -- nonEscaped
 
+  charDelimiter = "'"
+  char
+    = charDelimiter literalCh charDelimiter
+
   stringDelimiter = "\""
   string
-    = stringDelimiter (~stringDelimiter char)* stringDelimiter
+    = stringDelimiter (~stringDelimiter literalCh)* stringDelimiter
 
   keyword = "let" | "fn" | "if" | "else"
 

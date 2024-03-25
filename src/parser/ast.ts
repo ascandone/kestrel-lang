@@ -1,6 +1,7 @@
 export type ConstLiteral =
   | { type: "int"; value: number }
   | { type: "float"; value: number }
+  | { type: "char"; value: string }
   | { type: "string"; value: string };
 
 export type TypeAst<TypeResolutionMeta = unknown> = SpanMeta &

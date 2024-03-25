@@ -1806,6 +1806,41 @@ exports[`parse block with no let 1`] = `
 }
 `;
 
+exports[`parse chars 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        11,
+      ],
+      "value": {
+        "span": [
+          8,
+          11,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "char",
+          "value": "a",
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse cons operator is right-associative 1`] = `
 {
   "declarations": [

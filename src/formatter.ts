@@ -98,9 +98,10 @@ function constToDoc(lit: ConstLiteral): Doc {
       const str = lit.value.toString();
       return text(str.includes(".") ? str : `${str}.0`);
     }
-
     case "string":
       return text(`"${lit.value}"`);
+    case "char":
+      return text(`'${lit.value}'`);
   }
 }
 

@@ -461,6 +461,9 @@ function inferConstant(x: ConstLiteral): Type {
 
     case "string":
       return String;
+
+    case "char":
+      return Char;
   }
 }
 
@@ -560,6 +563,13 @@ const String: Type = {
   moduleName: "String",
   type: "named",
   name: "String",
+  args: [],
+};
+
+const Char: Type = {
+  moduleName: "Char",
+  type: "named",
+  name: "Char",
   args: [],
 };
 

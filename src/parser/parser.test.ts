@@ -79,6 +79,11 @@ test("parse nonempty strings", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse chars", () => {
+  const src = `let _ = 'a'`;
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 test("parse strings with newlines", () => {
   const src = `let _ = "ab\\nc"`;
   expect(unsafeParse(src)).toMatchSnapshot();

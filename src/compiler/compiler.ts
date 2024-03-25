@@ -560,6 +560,8 @@ function constToString(k: ConstLiteral): string {
       return k.value.toString();
     case "string":
       return `"${k.value}"`;
+    case "char":
+      return `'${k.value}'`;
   }
 }
 

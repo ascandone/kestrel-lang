@@ -18,6 +18,10 @@ test("string lit", () => {
   expect(`let x = "abc"\n`).toBeFormatted();
 });
 
+test("char lit", () => {
+  expect(`let x = 'a'\n`).toBeFormatted();
+});
+
 test("identifier", () => {
   expect(`let x = y\n`).toBeFormatted();
 });

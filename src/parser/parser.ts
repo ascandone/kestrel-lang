@@ -39,6 +39,10 @@ semantics.addOperation<ConstLiteral>("lit()", {
   string(_lDel, s, _rDel) {
     return { type: "string", value: s.sourceString };
   },
+
+  char(_lDel, s, _rDel) {
+    return { type: "char", value: s.sourceString };
+  },
 });
 
 function parseInfix(
