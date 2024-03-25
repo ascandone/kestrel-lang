@@ -15,7 +15,6 @@ import {
   TypedTypeAst,
 } from "./typedAst";
 import { CORE_MODULES, defaultImports } from "./defaultImports";
-import { topSortedModules } from "./project";
 import {
   TVar,
   Type,
@@ -36,6 +35,7 @@ import {
   UnboundTypeParam,
 } from "../errors";
 import { castAst } from "./resolutionStep";
+import { topologicalSort } from "../utils/topsort";
 
 export type TypeMeta = { $: TVar };
 
@@ -474,6 +474,28 @@ type TypeAstConversionType =
       params: string[];
       returning: Type & { type: "named" };
     };
+
+function topSortedModules(
+  project: Record<string, UntypedModule>,
+  implicitImports: UntypedImport[] = defaultImports,
+): string[] {
+  const implNsImports = implicitImports.map((i) => i.ns);
+
+  const dependencyGraph: Record<string, string[]> = {};
+  for (const [ns, program] of Object.entries(project)) {
+    const deps = CORE_MODULES.includes(ns)
+      ? getDependencies(program)
+      : [...implNsImports, ...getDependencies(program)];
+
+    dependencyGraph[ns] = deps;
+  }
+
+  return topologicalSort(dependencyGraph);
+}
+
+function getDependencies(program: UntypedModule): string[] {
+  return program.imports.map((i) => i.ns);
+}
 
 export function typecheckProject(
   project: Record<string, UntypedModule>,
