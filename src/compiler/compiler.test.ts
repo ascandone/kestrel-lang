@@ -705,7 +705,7 @@ const Main$x = Main$X;
 });
 
 test("allow non-js operators", () => {
-  const out = compileSrc(`let x = "a" <> "b"`);
+  const out = compileSrc(`let x = "a" ++ "b"`);
   expect(out).toEqual(`const Main$x = "a" + "b";
 `);
 });
@@ -962,7 +962,7 @@ test("eval complex match", () => {
     )
 
     let m = match x {
-      Z(Just(s1), Ok(Just(s2))) => s1 <> s2,
+      Z(Just(s1), Ok(Just(s2))) => s1 ++ s2,
     }
   `);
 

@@ -30,7 +30,7 @@ const constantFolding: Optimization = (src) => {
       switch (src.caller.name) {
         case "+":
         case "+.":
-        case "<>":
+        case "++":
           return foldInfix(src, (l, r) => ({
             type: l.type,
             value:

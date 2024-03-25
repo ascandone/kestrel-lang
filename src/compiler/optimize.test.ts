@@ -13,7 +13,7 @@ describe("constant folding", () => {
     expect("let x = 1 + 2").toOptimizeAs("let x = 3");
     expect("let x = 2 * 3").toOptimizeAs("let x = 6");
     expect("let x = 1.3 +. 2.4").toOptimizeAs("let x = 3.7");
-    expect(`let x = "a" <> "b"`).toOptimizeAs(`let x = "ab"`);
+    expect(`let x = "a" ++ "b"`).toOptimizeAs(`let x = "ab"`);
     expect("let x = 10 - 1").toOptimizeAs("let x = 9");
     expect("let x = 10.5 -. 1.2").toOptimizeAs("let x = 9.3");
   });

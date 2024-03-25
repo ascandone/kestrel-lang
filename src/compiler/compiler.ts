@@ -567,7 +567,7 @@ function constToString(k: ConstLiteral): string {
 
 function getJsInfix(srcName: string) {
   switch (srcName) {
-    case "<>":
+    case "++":
       return "+";
     case "+.":
       return "+";

@@ -53,7 +53,7 @@ export const defaultImports: UntypedImport[] = [
     ns: "String",
     exposing: [
       { type: "type", name: "String", exposeImpl: false, span: dummySpan },
-      { type: "value", name: "<>", span: dummySpan },
+      { type: "value", name: "++", span: dummySpan },
     ],
   },
   {

@@ -19,7 +19,7 @@ There are a bunch of pre-defined operators:
 // You have to use +. instead of + for floats:
 1.5 +. 2.5 // => 4
 
-"Hello " <> "world" // => "Hello world"
+"Hello " ++ "world" // => "Hello world"
 
 !True // => False
 True && False // => False
@@ -160,7 +160,7 @@ You can pattern match values using the `match` expression:
 ```rust
 match value {
   Nothing => "no values",
-  Just(value) => "value is: " <> value
+  Just(value) => "value is: " ++ value
 }
 ```
 
@@ -260,7 +260,7 @@ Sometimes we need to deeply nest function calls like in the following example:
 let program: Task<Unit> =
   Task.await(IO.println("Enter you name"), fn _ {
     Task.await(IO.readline, fn name {
-      IO.println("Hello " <> name <> "!")
+      IO.println("Hello " ++ name ++ "!")
     })
   })
 ```
@@ -271,7 +271,7 @@ However, such programs quickly become unreadable. To avoid that, we can use the 
 {
   let#Task.await _ = IO.println("Enter your name");
   let#Task.await name = IO.readline;
-  IO.println("Hello " <> name <> "!")
+  IO.println("Hello " ++ name ++ "!")
 }
 ```
 

@@ -56,7 +56,7 @@ Program {
     | AddExp "+." MulExp  -- plusFloat
     | AddExp "-" MulExp  -- minus
     | AddExp "-." MulExp  -- minusFloat
-    | AddExp "<>" MulExp  -- concat
+    | AddExp "++" MulExp  -- concat
     | MulExp
 
   mul = "/" ~"/"
