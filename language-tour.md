@@ -4,6 +4,7 @@
 
 Kestrel has basics datatypes such as:
 
+- values of type `Char`, such as `'x'`
 - values of type `String`, such as `"abc"`
 - values of type `Int`, such as `42`
 - values of type `Float`, such as `42.1`
