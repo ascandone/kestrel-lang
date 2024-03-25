@@ -2808,6 +2808,41 @@ exports[`parse singleton list sugar 1`] = `
 }
 `;
 
+exports[`parse strings with escaped quotes 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        15,
+      ],
+      "value": {
+        "span": [
+          8,
+          15,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "string",
+          "value": "ab\\"c",
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse strings with newlines 1`] = `
 {
   "declarations": [

@@ -129,9 +129,13 @@ Program {
     | digit+             -- whole
     | "-" number  -- neg
 
+   char
+    = "\\" any           -- escaped
+    | ~"\"" any          -- nonEscaped
+
   stringDelimiter = "\""
   string
-    = stringDelimiter (~stringDelimiter any)* stringDelimiter
+    = stringDelimiter (~stringDelimiter char)* stringDelimiter
 
   keyword = "let" | "fn" | "if" | "else"
 

@@ -84,6 +84,11 @@ test("parse strings with newlines", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse strings with escaped quotes", () => {
+  const src = `let _ = "ab\\"c"`;
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 test("parse + expr", () => {
   const src = "let _ = 1 + 2";
   expect(unsafeParse(src)).toMatchSnapshot();
