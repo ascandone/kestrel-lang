@@ -69,6 +69,52 @@ class State {
     };
   }
 
+  private newDocNs(uri: string) {
+    let ns = uri.replace("file://", "").replace(process.cwd(), "");
+    for (const sourceDir of this.config["source-directories"]) {
+      const regexp = new RegExp(`^/${sourceDir}/`);
+      ns = ns.replace(regexp, "");
+    }
+    ns = ns.replace(/.kes$/, "");
+    return ns;
+  }
+
+  insertByNs(
+    package_: string,
+    ns: string,
+    textDoc: TextDocument,
+  ): Result<null, PublishDiagnosticsParams> {
+    const result = State.parseDoc(textDoc);
+    switch (result.type) {
+      case "ERR":
+        return result;
+      case "OK":
+        this.docs[ns] = textDoc;
+        this.untypedProject[ns] = {
+          package: package_,
+          module: result.value,
+        };
+        return { type: "OK", value: null };
+    }
+  }
+
+  upsertByUri(
+    package_: string,
+    textDoc: TextDocument,
+  ): Result<null, PublishDiagnosticsParams> {
+    const oldNs = this.nsByUri(textDoc.uri);
+    if (oldNs !== undefined) {
+      return this.insertByNs(
+        this.untypedProject[oldNs]!.package,
+        oldNs,
+        textDoc,
+      );
+    }
+
+    const ns = this.newDocNs(textDoc.uri);
+    return this.insertByNs(package_, ns, textDoc);
+  }
+
   addDocument(
     package_: string,
     ns: string,
@@ -93,12 +139,12 @@ class State {
   }
 
   changeDocument(textDocument: TextDocument): PublishDiagnosticsParams[] {
-    let package_ = undefined;
-
-    const prev = this.nsByUri(textDocument.uri);
-    if (prev !== undefined) {
-      package_ = this.untypedProject[prev]?.package;
+    const ns = this.nsByUri(textDocument.uri);
+    if (ns === undefined) {
+      return [];
     }
+
+    const package_ = this.untypedProject[ns]?.package;
 
     const parseResult = State.parseDoc(textDocument);
     switch (parseResult.type) {
@@ -106,11 +152,6 @@ class State {
         return [parseResult.error];
 
       case "OK": {
-        const ns = this.nsByUri(textDocument.uri);
-        if (ns === undefined) {
-          return [];
-        }
-
         this.docs[ns] = textDocument;
         this.untypedProject[ns] = {
           package: package_ ?? this.packageName,
@@ -184,7 +225,7 @@ async function initProject(connection: Connection, state: State) {
   for (const [ns, raw] of Object.entries(rawProject)) {
     const uri = `file://${raw.path}`;
     const textDoc = TextDocument.create(uri, "kestrel", 1, raw.content);
-    const result = state.addDocument(raw.package, ns, textDoc);
+    const result = state.insertByNs(raw.package, ns, textDoc);
     if (result.type === "ERR") {
       connection.sendDiagnostics(result.error);
     }
@@ -219,25 +260,18 @@ export async function lspCmd() {
     },
   }));
 
-  documents.onDidOpen((doc) => {
-    const prev = state.nsByUri(doc.document.uri);
-    if (prev !== undefined) {
-      return;
-    }
-
-    let ns = doc.document.uri.replace("file://", "").replace(process.cwd(), "");
-    for (const sourceDir of state.config["source-directories"]) {
-      const regexp = new RegExp(`^/${sourceDir}/`);
-      ns = ns.replace(regexp, "");
-    }
-    ns = ns.replace(/.kes$/, "");
-    state.addDocument(state.packageName, ns, doc.document);
-  });
-
   documents.onDidChangeContent((change) => {
-    const errors = state.changeDocument(change.document);
-    for (const err of errors) {
-      connection.sendDiagnostics(err);
+    const result = state.upsertByUri(state.packageName, change.document);
+    switch (result.type) {
+      case "OK": {
+        const [, errors] = state.typecheckDocs();
+        for (const diagnostic of errors) {
+          connection.sendDiagnostics(diagnostic);
+        }
+        return;
+      }
+      case "ERR":
+        connection.sendDiagnostics(result.error);
     }
   });
 
