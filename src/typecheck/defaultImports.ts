@@ -2,17 +2,6 @@ import { Span, UntypedImport } from "../parser";
 
 const dummySpan: Span = [0, 0];
 
-/*
-import Int.{Int, (+), (-)} // ecc
-import Float.{Float}
-import Bool.{Bool(..), (&&), (||), (!)}
-import Unit.{Unit}
-import String.{String, (<>)}
-import List.{List, Cons}
-import Maybe.{Maybe(..)}
-import Result.{Result(..)}
-import Tuple.{Tuple2(..)}
-*/
 export const defaultImports: UntypedImport[] = [
   {
     span: dummySpan,
@@ -50,6 +39,13 @@ export const defaultImports: UntypedImport[] = [
 
       // Unit
       { type: "type", name: "Unit", exposeImpl: true, span: dummySpan },
+    ],
+  },
+  {
+    span: dummySpan,
+    ns: "Char",
+    exposing: [
+      { type: "type", name: "Char", exposeImpl: false, span: dummySpan },
     ],
   },
   {
@@ -105,6 +101,7 @@ export const CORE_MODULES = [
   "Maybe",
   "Result",
   "String",
+  "Char",
   "Task",
   "Tuple",
 ];
