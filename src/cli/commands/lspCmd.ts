@@ -260,6 +260,10 @@ export async function lspCmd() {
     },
   }));
 
+  documents.onDidClose(async ({ document }) => {
+    connection.sendDiagnostics({ uri: document.uri, diagnostics: [] });
+  });
+
   documents.onDidChangeContent((change) => {
     const result = state.upsertByUri(state.packageName, change.document);
     switch (result.type) {
