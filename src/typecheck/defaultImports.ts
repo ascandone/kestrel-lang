@@ -62,9 +62,9 @@ export const defaultImports: UntypedImport[] = [
   },
   {
     span: dummySpan,
-    ns: "Maybe",
+    ns: "Option",
     exposing: [
-      { type: "type", name: "Maybe", exposeImpl: true, span: dummySpan },
+      { type: "type", name: "Option", exposeImpl: true, span: dummySpan },
     ],
   },
   {
@@ -109,7 +109,7 @@ export const CORE_MODULES = [
   "Int",
   "IO",
   "List",
-  "Maybe",
+  "Option",
   "MVar",
   "Result",
   "Task",

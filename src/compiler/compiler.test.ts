@@ -940,9 +940,9 @@ const Main$x = Main$f(Main$x$GEN__0);
 
 test("eval complex match", () => {
   const out = compileSrc(`
-    type Maybe<a> {
-      Nothing,
-      Just(a),
+    type Option<a> {
+      None,
+      Some(a),
     }
     
     type Result<a, b> {
@@ -953,16 +953,16 @@ test("eval complex match", () => {
     type Data {
       A,
       B(Int),
-      Z(Maybe<String>, Result<Maybe<String>, String>),
+      Z(Option<String>, Result<Option<String>, String>),
     }
     
     let x = Z(
-      Just("abc"),
-      Ok(Just("def"))
+      Some("abc"),
+      Ok(Some("def"))
     )
 
     let m = match x {
-      Z(Just(s1), Ok(Just(s2))) => s1 ++ s2,
+      Z(Some(s1), Ok(Some(s2))) => s1 ++ s2,
     }
   `);
 

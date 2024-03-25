@@ -160,8 +160,8 @@ You can pattern match values using the `match` expression:
 
 ```rust
 match value {
-  Nothing => "no values",
-  Just(value) => "value is: " ++ value
+  None => "no values",
+  Some(value) => "value is: " ++ value
 }
 ```
 
@@ -276,4 +276,4 @@ However, such programs quickly become unreadable. To avoid that, we can use the 
 }
 ```
 
-This syntax can be used with any kind of type, including `Result` or `Maybe`
+This syntax can be used with any kind of type, including `Result` or `Option`

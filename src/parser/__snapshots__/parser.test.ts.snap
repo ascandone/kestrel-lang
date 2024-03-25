@@ -4784,7 +4784,7 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
       "pub": false,
       "span": [
         0,
-        22,
+        23,
       ],
       "typeHint": {
         "args": [
@@ -4792,23 +4792,23 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
             "args": [],
             "name": "Int",
             "span": [
-              14,
-              17,
+              15,
+              18,
             ],
             "type": "named",
           },
         ],
-        "name": "Maybe",
+        "name": "Option",
         "span": [
           8,
-          18,
+          19,
         ],
         "type": "named",
       },
       "value": {
         "span": [
-          21,
           22,
+          23,
         ],
         "type": "constant",
         "value": {

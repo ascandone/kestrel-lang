@@ -167,39 +167,39 @@ test("function inlining example", () => {
     pub let map = fn m, f {
       let and_then = fn m, f {
         match m {
-          Just(x) => f(x),
-          Nothing => Nothing,
+          Some(x) => f(x),
+          None => None,
         }
       };
 
       and_then(m, fn x {
-        Just(f(x))
+        Some(f(x))
       })
     }
   
   `).toOptimizeAs(`
 pub let map = fn m, f {
   match m {
-    Just(x) => Just(f(x)),
-    Nothing => Nothing,
+    Some(x) => Some(f(x)),
+    None => None,
   }
 }
 `);
 
   expect(`
   let glb = {
-    let maybe_map = fn x, f {
+    let opt_map = fn x, f {
       match x {
-        Nothing => Nothing,
-        Just(v) => f(v),
+        None => None,
+        Some(v) => f(v),
       }
     };
-    maybe_map(Just(42), fn x { x + 1 })
+    opt_map(Some(42), fn x { x + 1 })
   }
   `).toOptimizeAs(`
-let glb = match Just(42) {
-  Nothing => Nothing,
-  Just(v) => v + 1,
+let glb = match Some(42) {
+  None => None,
+  Some(v) => v + 1,
 }
 `);
 });

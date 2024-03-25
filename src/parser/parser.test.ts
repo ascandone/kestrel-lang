@@ -412,7 +412,7 @@ describe("type hints", () => {
   });
 
   test("parses concrete type with 1 arg", () => {
-    const src = "let x : Maybe<Int> = 0";
+    const src = "let x : Option<Int> = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
