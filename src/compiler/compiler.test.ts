@@ -235,7 +235,7 @@ test("== performs structural equality when type is unbound", () => {
 `);
 
   expect(out).toEqual(`function Main$f(x, y) {
-  return Basics$_eq(x, y);
+  return Bool$_eq(x, y);
 }
 `);
 });
@@ -247,9 +247,9 @@ test("== performs structural equality when type is adt", () => {
 `);
 
   expect(out).toEqual(`function Main$C(a0) {
-  return { type: "C", a0 };
+  return { $: "C", a0 };
 }
-const Main$f = Basics$_eq(Main$C(0), Main$C(1));
+const Main$f = Bool$_eq(Main$C(0), Main$C(1));
 `);
 });
 
@@ -669,7 +669,7 @@ test("allow custom types with zero args", () => {
     let x = X
   `);
 
-  expect(out).toEqual(`const Main$X = { type: "X" };
+  expect(out).toEqual(`const Main$X = { $: "X" };
 
 const Main$x = Main$X;
 `);
@@ -683,7 +683,7 @@ test("allow custom types with one arg", () => {
   `);
 
   expect(out).toEqual(`function Main$X(a0) {
-  return { type: "X", a0 };
+  return { $: "X", a0 };
 }
 const Main$x = Main$X;
 `);
@@ -698,7 +698,7 @@ test("allow custom types with two args", () => {
   `);
 
   expect(out).toEqual(`function Main$X(a0, a1) {
-  return { type: "X", a0, a1 };
+  return { $: "X", a0, a1 };
 }
 const Main$x = Main$X;
 `);
@@ -724,16 +724,16 @@ test("pattern matching (flat)", () => {
   }
 `);
   // TODO whitepace
-  expect(out).toEqual(`const Main$A = { type: "A" };
+  expect(out).toEqual(`const Main$A = { $: "A" };
 
 function Main$B(a0) {
-  return { type: "B", a0 };
+  return { $: "B", a0 };
 }
 const Main$x$GEN__0 = Main$B(42);
 let Main$x;
-if (Main$x$GEN__0.type === "A") {
+if (Main$x$GEN__0.$ === "A") {
   Main$x = 0;
-} else if (Main$x$GEN__0.type === "B") {
+} else if (Main$x$GEN__0.$ === "B") {
   Main$x = 1;
 } else {
   throw new Error("[non exhaustive match]")
@@ -754,11 +754,11 @@ test("pattern matching (ident)", () => {
 `);
   // TODO whitepace
   expect(out).toEqual(`function Main$C(a0) {
-  return { type: "C", a0 };
+  return { $: "C", a0 };
 }
 const Main$x$GEN__0 = Main$C(42);
 let Main$x;
-if (Main$x$GEN__0.type === "C") {
+if (Main$x$GEN__0.$ === "C") {
   Main$x = Main$x$GEN__0.a0;
 } else {
   throw new Error("[non exhaustive match]")
@@ -862,11 +862,11 @@ test("pattern matching nested value", () => {
   });
   // TODO whitepace
   expect(out).toEqual(`function Main$C(a0) {
-  return { type: "C", a0 };
+  return { $: "C", a0 };
 }
 const Main$x$GEN__0 = Main$C(true);
 let Main$x;
-if (Main$x$GEN__0.type === "C" && Main$x$GEN__0.a0) {
+if (Main$x$GEN__0.$ === "C" && Main$x$GEN__0.a0) {
   Main$x = 0;
 } else {
   throw new Error("[non exhaustive match]")
@@ -904,11 +904,11 @@ test("pattern matching in tail position (match constructor)", () => {
 `);
 
   expect(out).toEqual(`function Main$Box(a0) {
-  return { type: "Box", a0 };
+  return { $: "Box", a0 };
 }
 function Main$f() {
   const GEN__0 = Main$Box(42);
-  if (GEN__0.type === "Box") {
+  if (GEN__0.$ === "Box") {
     return GEN__0.a0 + 1;
   } else {
     throw new Error("[non exhaustive match]")
@@ -940,9 +940,9 @@ const Main$x = Main$f(Main$x$GEN__0);
 
 test("eval complex match", () => {
   const out = compileSrc(`
-    type Maybe<a> {
-      Nothing,
-      Just(a),
+    type Option<a> {
+      None,
+      Some(a),
     }
     
     type Result<a, b> {
@@ -953,16 +953,16 @@ test("eval complex match", () => {
     type Data {
       A,
       B(Int),
-      Z(Maybe<String>, Result<Maybe<String>, String>),
+      Z(Option<String>, Result<Option<String>, String>),
     }
     
     let x = Z(
-      Just("abc"),
-      Ok(Just("def"))
+      Some("abc"),
+      Ok(Some("def"))
     )
 
     let m = match x {
-      Z(Just(s1), Ok(Just(s2))) => s1 ++ s2,
+      Z(Some(s1), Ok(Some(s2))) => s1 ++ s2,
     }
   `);
 
@@ -1114,9 +1114,9 @@ function Main$loop() {
     const acc = GEN_TC__1;
     const f = GEN_TC__2;
     const GEN__0 = lst;
-    if (GEN__0.type === "Nil") {
+    if (GEN__0.$ === "Nil") {
       return acc;
-    } else if (GEN__0.type === "Cons") {
+    } else if (GEN__0.$ === "Cons") {
       GEN_TC__0 = lst;
       GEN_TC__1 = f(acc, GEN__0.a0);
       GEN_TC__2 = f;
@@ -1234,10 +1234,10 @@ const ExampleModule$a = ExampleModule$a$b;
       "MyModule",
     );
 
-    expect(out).toEqual(`const MyModule$C1 = { type: "C1" };
+    expect(out).toEqual(`const MyModule$C1 = { $: "C1" };
 
 function MyModule$C2(a0) {
-  return { type: "C2", a0 };
+  return { $: "C2", a0 };
 }
 const MyModule$c2_example = MyModule$C2(42);
 `);
@@ -1456,9 +1456,15 @@ function compileSrcWithDeps(rawProject: Record<string, string>): string {
 
 function parseProject(
   rawProject: Record<string, string>,
-): Record<string, UntypedModule> {
+): Record<string, { package: string; module: UntypedModule }> {
   return Object.fromEntries(
-    Object.entries(rawProject).map(([ns, src]) => [ns, unsafeParse(src)]),
+    Object.entries(rawProject).map(([ns, src]) => [
+      ns,
+      {
+        package: "example_package",
+        module: unsafeParse(src),
+      },
+    ]),
   );
 }
 

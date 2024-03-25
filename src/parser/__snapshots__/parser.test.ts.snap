@@ -1892,6 +1892,7 @@ exports[`parse cons operator is right-associative 1`] = `
             ],
             "caller": {
               "name": "Cons",
+              "namespace": "List",
               "span": [
                 15,
                 17,
@@ -1907,6 +1908,7 @@ exports[`parse cons operator is right-associative 1`] = `
         ],
         "caller": {
           "name": "Cons",
+          "namespace": "List",
           "span": [
             10,
             12,
@@ -1966,6 +1968,7 @@ exports[`parse conslist sugar 1`] = `
         ],
         "caller": {
           "name": "Cons",
+          "namespace": "List",
           "span": [
             11,
             13,
@@ -2004,6 +2007,7 @@ exports[`parse empty list sugar 1`] = `
       ],
       "value": {
         "name": "Nil",
+        "namespace": "List",
         "span": [
           0,
           -1,
@@ -2690,6 +2694,7 @@ exports[`parse list sugar with many values 1`] = `
                   },
                   {
                     "name": "Nil",
+                    "namespace": "List",
                     "span": [
                       0,
                       -1,
@@ -2699,6 +2704,7 @@ exports[`parse list sugar with many values 1`] = `
                 ],
                 "caller": {
                   "name": "Cons",
+                  "namespace": "List",
                   "span": [
                     0,
                     -1,
@@ -2714,6 +2720,7 @@ exports[`parse list sugar with many values 1`] = `
             ],
             "caller": {
               "name": "Cons",
+              "namespace": "List",
               "span": [
                 0,
                 -1,
@@ -2729,6 +2736,7 @@ exports[`parse list sugar with many values 1`] = `
         ],
         "caller": {
           "name": "Cons",
+          "namespace": "List",
           "span": [
             0,
             -1,
@@ -2815,6 +2823,7 @@ exports[`parse singleton list sugar 1`] = `
           },
           {
             "name": "Nil",
+            "namespace": "List",
             "span": [
               0,
               -1,
@@ -2824,6 +2833,7 @@ exports[`parse singleton list sugar 1`] = `
         ],
         "caller": {
           "name": "Cons",
+          "namespace": "List",
           "span": [
             0,
             -1,
@@ -3169,6 +3179,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
                 },
               ],
               "name": "Cons",
+              "namespace": "List",
               "span": [
                 18,
                 26,
@@ -3260,6 +3271,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
                     },
                   ],
                   "name": "Cons",
+                  "namespace": "List",
                   "span": [
                     24,
                     33,
@@ -3268,6 +3280,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
                 },
               ],
               "name": "Cons",
+              "namespace": "List",
               "span": [
                 18,
                 33,
@@ -3351,6 +3364,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                     },
                   ],
                   "name": "Cons",
+                  "namespace": "List",
                   "span": [
                     19,
                     28,
@@ -4770,7 +4784,7 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
       "pub": false,
       "span": [
         0,
-        22,
+        23,
       ],
       "typeHint": {
         "args": [
@@ -4778,23 +4792,23 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
             "args": [],
             "name": "Int",
             "span": [
-              14,
-              17,
+              15,
+              18,
             ],
             "type": "named",
           },
         ],
-        "name": "Maybe",
+        "name": "Option",
         "span": [
           8,
-          18,
+          19,
         ],
         "type": "named",
       },
       "value": {
         "span": [
-          21,
           22,
+          23,
         ],
         "type": "constant",
         "value": {

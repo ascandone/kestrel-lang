@@ -607,9 +607,9 @@ describe("custom types", () => {
     const [types, errs] = tc(
       `
     extern type Int
-    type Maybe<a> { }
+    type Option<a> { }
     type T {
-      C(Maybe<Int>, Int)
+      C(Option<Int>, Int)
     }
     pub let c = C
   `,
@@ -617,7 +617,7 @@ describe("custom types", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      c: "Fn(Maybe<Int>, Int) -> T",
+      c: "Fn(Option<Int>, Int) -> T",
     });
   });
 
@@ -920,14 +920,14 @@ describe("pattern matching", () => {
     const [types, errs] = tc(
       `
 
-      type Maybe<a> {
-        Nothing,
-        Just(a),
+      type Option<a> {
+        None,
+        Some(a),
       }
 
       pub let f = fn x {
         match x {
-          Nothing => 2,
+          None => 2,
         }
       }
     `,
@@ -935,7 +935,7 @@ describe("pattern matching", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(Maybe<a>) -> Int",
+      f: "Fn(Option<a>) -> Int",
     });
   });
 
@@ -1350,13 +1350,19 @@ describe("typecheck project", () => {
   test("single import", () => {
     const project = typecheckProject(
       {
-        A: unsafeParse(`
+        A: {
+          package: "kestrel_core",
+          module: unsafeParse(`
         pub let x = 42
       `),
-        B: unsafeParse(`
+        },
+        B: {
+          package: "kestrel_core",
+          module: unsafeParse(`
         import A.{x}
         pub let y = x
       `),
+        },
       },
       [],
     );
@@ -1379,13 +1385,19 @@ describe("typecheck project", () => {
   test("qualified imports", () => {
     const project = typecheckProject(
       {
-        A: unsafeParse(`
+        A: {
+          package: "kestrel_core",
+          module: unsafeParse(`
         pub let x = 42
       `),
-        B: unsafeParse(`
+        },
+        B: {
+          package: "kestrel_core",
+          module: unsafeParse(`
         import A
         pub let y = A.x
       `),
+        },
       },
       [],
     );

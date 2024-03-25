@@ -10,7 +10,7 @@ import {
   typeToString,
   unify,
 } from "./type";
-import { Bool, Int, List, Maybe, Tuple } from "../__test__/types";
+import { Bool, Int, List, Option, Tuple } from "../__test__/types";
 
 beforeEach(() => {
   TVar.resetId();
@@ -492,7 +492,7 @@ describe(typeToString.name, () => {
   });
 
   test("nested types", () => {
-    expect(typeToString(List(Maybe(Int)))).toBe("List<Maybe<Int>>");
+    expect(typeToString(List(Option(Int)))).toBe("List<Option<Int>>");
   });
 
   test("type var", () => {
@@ -537,8 +537,8 @@ describe(typeToString.name, () => {
   });
 
   test("n-arity type nested in a fn", () => {
-    const f = Fn([List(Int)], Maybe(Bool));
-    expect(typeToString(f)).toBe("Fn(List<Int>) -> Maybe<Bool>");
+    const f = Fn([List(Int)], Option(Bool));
+    expect(typeToString(f)).toBe("Fn(List<Int>) -> Option<Bool>");
   });
 
   test("handle scheme", () => {

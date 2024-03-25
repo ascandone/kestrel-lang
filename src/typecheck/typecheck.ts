@@ -14,8 +14,7 @@ import {
   TypedModule,
   TypedTypeAst,
 } from "./typedAst";
-import { CORE_MODULES, defaultImports } from "./defaultImports";
-import { topSortedModules } from "./project";
+import { defaultImports } from "./defaultImports";
 import {
   TVar,
   Type,
@@ -36,6 +35,7 @@ import {
   UnboundTypeParam,
 } from "../errors";
 import { castAst } from "./resolutionStep";
+import { topologicalSort } from "../utils/topsort";
 
 export type TypeMeta = { $: TVar };
 
@@ -475,8 +475,41 @@ type TypeAstConversionType =
       returning: Type & { type: "named" };
     };
 
+const CORE_PACKAGE = "kestrel_core";
+
+function topSortedModules(
+  project: UntypedProject,
+  implicitImports: UntypedImport[] = defaultImports,
+): string[] {
+  const implNsImports = implicitImports.map((i) => i.ns);
+
+  const dependencyGraph: Record<string, string[]> = {};
+  for (const [ns, { package: package_, module }] of Object.entries(project)) {
+    const deps =
+      package_ === CORE_PACKAGE
+        ? getDependencies(module)
+        : [...implNsImports, ...getDependencies(module)];
+
+    dependencyGraph[ns] = deps;
+  }
+
+  return topologicalSort(dependencyGraph);
+}
+
+function getDependencies(program: UntypedModule): string[] {
+  return program.imports.map((i) => i.ns);
+}
+
+export type UntypedProject = Record<
+  string,
+  {
+    package: string;
+    module: UntypedModule;
+  }
+>;
+
 export function typecheckProject(
-  project: Record<string, UntypedModule>,
+  project: UntypedProject,
   implicitImports: UntypedImport[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
 ): ProjectTypeCheckResult {
@@ -485,16 +518,16 @@ export function typecheckProject(
   const projectResult: ProjectTypeCheckResult = {};
   const deps: Deps = {};
   for (const ns of sortedModules) {
-    const module = project[ns];
-    if (module === undefined) {
+    const m = project[ns];
+    if (m === undefined) {
       // A module might import a module that do not exist
       continue;
     }
     const tc = typecheck(
       ns,
-      module,
+      m.module,
       deps,
-      CORE_MODULES.includes(ns) ? [] : implicitImports,
+      m.package === CORE_PACKAGE ? [] : implicitImports,
       mainType,
     );
     projectResult[ns] = tc;
@@ -540,20 +573,20 @@ function resolutionToType(resolution: IdentifierResolution): Type {
 // Keep this in sync with core
 const Bool: Type = {
   type: "named",
-  moduleName: "Basics",
+  moduleName: "Bool",
   name: "Bool",
   args: [],
 };
 
 const Int: Type = {
-  moduleName: "Basics",
+  moduleName: "Int",
   type: "named",
   name: "Int",
   args: [],
 };
 
 const Float: Type = {
-  moduleName: "Basics",
+  moduleName: "Float",
   type: "named",
   name: "Float",
   args: [],
@@ -575,7 +608,7 @@ const Char: Type = {
 
 const Unit: Type = {
   type: "named",
-  moduleName: "Basics",
+  moduleName: "Tuple",
   name: "Unit",
   args: [],
 };

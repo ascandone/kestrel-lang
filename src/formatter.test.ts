@@ -378,7 +378,7 @@ describe("type hints", () => {
   });
 
   test("concrete with one arg", () => {
-    expect(`extern let f: Maybe<Int>\n`).toBeFormatted();
+    expect(`extern let f: Option<Int>\n`).toBeFormatted();
   });
 
   test("concrete with many args", () => {
@@ -455,7 +455,7 @@ describe("type delc", () => {
 
   test("adts with a constructors with many args", () => {
     expect(`type Box {
-  Box(Int, a, Maybe<Int>),
+  Box(Int, a, Option<Int>),
 }
 `).toBeFormatted();
   });
@@ -557,7 +557,7 @@ describe("pattern matching", () => {
 
   test("nested pattern matching", () => {
     expect(`let m = match expr {
-  X(Just(a, _, Ok)) => ret,
+  X(Some(a, _, Ok)) => ret,
 }
 `).toBeFormatted();
   });
@@ -577,8 +577,8 @@ pub let range = fn from, to {
 pub let filter_map = fn lst, f {
   reduce_right(lst, [], fn x, xs {
     match f(x) {
-      Nothing => xs,
-      Just(hd) => hd :: xs,
+      None => xs,
+      Some(hd) => hd :: xs,
     }
   })
 }
@@ -657,7 +657,7 @@ describe("test dsl", () => {
   test("Test.test", () => {
     expect(`let t = Test.test("example", {
   f(a, b)
-  |> Expect.eq_just(Expect.eq_int, 0)
+  |> Expect.equal(Expect.eq_int, 0)
 })
 `).toBeFormatted();
   });

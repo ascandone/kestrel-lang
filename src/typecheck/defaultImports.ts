@@ -5,9 +5,8 @@ const dummySpan: Span = [0, 0];
 export const defaultImports: UntypedImport[] = [
   {
     span: dummySpan,
-    ns: "Basics",
+    ns: "Int",
     exposing: [
-      // Int
       { type: "type", name: "Int", exposeImpl: false, span: dummySpan },
       { type: "value", name: "+", span: dummySpan },
       { type: "value", name: "-", span: dummySpan },
@@ -15,30 +14,35 @@ export const defaultImports: UntypedImport[] = [
       { type: "value", name: "/", span: dummySpan },
       { type: "value", name: "^", span: dummySpan },
       { type: "value", name: "%", span: dummySpan },
-
-      // Float
+    ],
+  },
+  {
+    span: dummySpan,
+    ns: "Float",
+    exposing: [
       { type: "type", name: "Float", exposeImpl: false, span: dummySpan },
       { type: "value", name: "+.", span: dummySpan },
       { type: "value", name: "-.", span: dummySpan },
       { type: "value", name: "*.", span: dummySpan },
       { type: "value", name: "/.", span: dummySpan },
-
-      // Bool
+    ],
+  },
+  {
+    span: dummySpan,
+    ns: "Bool",
+    exposing: [
       { type: "type", name: "Bool", exposeImpl: true, span: dummySpan },
       { type: "value", name: "&&", span: dummySpan },
       { type: "value", name: "||", span: dummySpan },
       { type: "value", name: "!", span: dummySpan },
 
-      // Comp
+      // Comparasion operators
       { type: "value", name: "==", span: dummySpan },
       { type: "value", name: "!=", span: dummySpan },
       { type: "value", name: ">", span: dummySpan },
       { type: "value", name: "<", span: dummySpan },
       { type: "value", name: ">=", span: dummySpan },
       { type: "value", name: "<=", span: dummySpan },
-
-      // Unit
-      { type: "type", name: "Unit", exposeImpl: true, span: dummySpan },
     ],
   },
   {
@@ -58,9 +62,9 @@ export const defaultImports: UntypedImport[] = [
   },
   {
     span: dummySpan,
-    ns: "Maybe",
+    ns: "Option",
     exposing: [
-      { type: "type", name: "Maybe", exposeImpl: true, span: dummySpan },
+      { type: "type", name: "Option", exposeImpl: true, span: dummySpan },
     ],
   },
   {
@@ -74,6 +78,7 @@ export const defaultImports: UntypedImport[] = [
     span: dummySpan,
     ns: "Tuple",
     exposing: [
+      { type: "type", name: "Unit", exposeImpl: true, span: dummySpan },
       { type: "type", name: "Tuple2", exposeImpl: true, span: dummySpan },
       { type: "type", name: "Tuple3", exposeImpl: true, span: dummySpan },
       { type: "type", name: "Tuple4", exposeImpl: true, span: dummySpan },
@@ -93,15 +98,4 @@ export const defaultImports: UntypedImport[] = [
       { type: "type", name: "Task", exposeImpl: false, span: dummySpan },
     ],
   },
-];
-
-export const CORE_MODULES = [
-  "Basics",
-  "List",
-  "Maybe",
-  "Result",
-  "String",
-  "Char",
-  "Task",
-  "Tuple",
 ];

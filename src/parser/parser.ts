@@ -132,6 +132,7 @@ semantics.addOperation<MatchPattern>("matchPattern()", {
   MatchPattern_cons(l, _cons, r) {
     return {
       type: "constructor",
+      namespace: "List",
       name: "Cons",
       args: [l.matchPattern(), r.matchPattern()],
       span: getSpan(this),
@@ -191,7 +192,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
     const nil: UntypedExpr = {
       type: "identifier",
       name: "Nil",
-      // namespace: "List",
+      namespace: "List",
       span: [0, -1],
     };
 
@@ -204,7 +205,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
           caller: {
             type: "identifier",
             name: "Cons",
-            // namespace: "List",
+            namespace: "List",
             span: [0, -1],
           },
           args: [expr, acc],
@@ -228,6 +229,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
       caller: {
         type: "identifier",
         name: "Cons",
+        namespace: "List",
         span: getSpan(cons),
       },
       args: [hd.expr(), tl.expr()],

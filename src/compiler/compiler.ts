@@ -62,14 +62,14 @@ function isStructuralEq(caller: TypedExpr, args: TypedExpr[]): boolean {
 
   if (
     resolvedType.value.name === "Int" &&
-    resolvedType.value.moduleName === "Basics"
+    resolvedType.value.moduleName === "Int"
   ) {
     return false;
   }
 
   if (
     resolvedType.value.name === "Float" &&
-    resolvedType.value.moduleName === "Basics"
+    resolvedType.value.moduleName === "Float"
   ) {
     return false;
   }
@@ -176,7 +176,7 @@ export class Compiler {
       }
 
       case "structural-eq":
-        return this.compileJsApplicationHelper([], "Basics$_eq", [
+        return this.compileJsApplicationHelper([], "Bool$_eq", [
           jsCall.left,
           jsCall.right,
         ]);
@@ -721,12 +721,12 @@ function getVariantImpl(
   const nsName = moduleNamespacedBinding(name, ns);
 
   if (args.length === 0) {
-    return `const ${nsName} = { type: "${name}" };
+    return `const ${nsName} = { $: "${name}" };
 `;
   } else {
     const argsList = args.map((_t, i) => `a${i}`).join(", ");
     return `function ${nsName}(${argsList}) {
-  return { type: "${name}", ${argsList} };
+  return { $: "${name}", ${argsList} };
 }`;
   }
 }
@@ -743,7 +743,7 @@ function matchCondition(matchingIdent: string, patternName: string): string {
       return "true";
 
     default:
-      return `${matchingIdent}.type === "${patternName}"`;
+      return `${matchingIdent}.$ === "${patternName}"`;
   }
 }
 
@@ -787,7 +787,7 @@ export const defaultEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
     type: "named",
     moduleName: "Task",
     name: "Task",
-    args: [{ type: "named", name: "Unit", moduleName: "Basics", args: [] }],
+    args: [{ type: "named", name: "Unit", moduleName: "Tuple", args: [] }],
   },
 };
 

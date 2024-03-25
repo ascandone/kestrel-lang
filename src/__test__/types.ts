@@ -40,11 +40,12 @@ export function List(arg: Type): ConcreteType {
     args: [arg],
   };
 }
-export function Maybe(arg: Type): ConcreteType {
+
+export function Option(arg: Type): ConcreteType {
   return {
     moduleName: BASICS_MODULE,
     type: "named",
-    name: "Maybe",
+    name: "Option",
     args: [arg],
   };
 }
