@@ -540,20 +540,20 @@ function resolutionToType(resolution: IdentifierResolution): Type {
 // Keep this in sync with core
 const Bool: Type = {
   type: "named",
-  moduleName: "Basics",
+  moduleName: "Bool",
   name: "Bool",
   args: [],
 };
 
 const Int: Type = {
-  moduleName: "Basics",
+  moduleName: "Int",
   type: "named",
   name: "Int",
   args: [],
 };
 
 const Float: Type = {
-  moduleName: "Basics",
+  moduleName: "Float",
   type: "named",
   name: "Float",
   args: [],
@@ -575,7 +575,7 @@ const Char: Type = {
 
 const Unit: Type = {
   type: "named",
-  moduleName: "Basics",
+  moduleName: "Tuple",
   name: "Unit",
   args: [],
 };

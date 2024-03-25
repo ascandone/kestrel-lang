@@ -235,7 +235,7 @@ test("== performs structural equality when type is unbound", () => {
 `);
 
   expect(out).toEqual(`function Main$f(x, y) {
-  return Basics$_eq(x, y);
+  return Bool$_eq(x, y);
 }
 `);
 });
@@ -249,7 +249,7 @@ test("== performs structural equality when type is adt", () => {
   expect(out).toEqual(`function Main$C(a0) {
   return { type: "C", a0 };
 }
-const Main$f = Basics$_eq(Main$C(0), Main$C(1));
+const Main$f = Bool$_eq(Main$C(0), Main$C(1));
 `);
 });
 
