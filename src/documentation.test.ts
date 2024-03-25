@@ -125,7 +125,7 @@ function parseExtractDocs(src: string): ModuleDoc {
   const ns = "Example";
   const parsed = unsafeParse(src);
   const [tc, errors] = typecheck(ns, parsed, {}, []);
-  const e = errors.find((e) => (e.description.severity ?? "error") === "error");
+  const e = errors.find((e) => e.description.severity === "error");
   if (e !== undefined) {
     throw new Error("Typecheck error: " + e.description.shortDescription());
   }

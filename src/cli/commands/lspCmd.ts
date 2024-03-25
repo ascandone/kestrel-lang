@@ -182,7 +182,7 @@ class State {
             () =>
               `${e.description.errorName}\n\n${e.description.shortDescription()}`,
           ),
-          severity: toDiagnosticSeverity(e.description.severity ?? "error"),
+          severity: toDiagnosticSeverity(e.description.severity),
           range: spannedToRange(document, e.span),
         })),
       });

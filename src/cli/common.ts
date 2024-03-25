@@ -163,8 +163,7 @@ export async function checkProject(
     }
 
     for (const error of errors) {
-      const severity = error.description.severity ?? "error";
-      if (severity === "warning") {
+      if (error.description.severity === "warning") {
         warningsCount++;
       } else {
         errorsCount++;
