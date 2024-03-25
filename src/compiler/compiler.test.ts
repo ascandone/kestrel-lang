@@ -15,6 +15,12 @@ test("compile string constants", () => {
 `);
 });
 
+test("compile char constants", () => {
+  const out = compileSrc(`pub let x = 'a'`);
+  expect(out).toEqual(`const Main$x = new String("a");
+`);
+});
+
 test("compile string constants with newlines", () => {
   const out = compileSrc(`pub let x = "ab\nc"`);
   expect(out).toEqual(`const Main$x = "ab\nc";

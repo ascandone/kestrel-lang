@@ -561,7 +561,7 @@ function constToString(k: ConstLiteral): string {
     case "string":
       return `"${k.value}"`;
     case "char":
-      return `'${k.value}'`;
+      return `new String("${k.value}")`;
   }
 }
 
