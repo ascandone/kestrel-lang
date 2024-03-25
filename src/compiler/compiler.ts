@@ -721,12 +721,12 @@ function getVariantImpl(
   const nsName = moduleNamespacedBinding(name, ns);
 
   if (args.length === 0) {
-    return `const ${nsName} = { type: "${name}" };
+    return `const ${nsName} = { $: "${name}" };
 `;
   } else {
     const argsList = args.map((_t, i) => `a${i}`).join(", ");
     return `function ${nsName}(${argsList}) {
-  return { type: "${name}", ${argsList} };
+  return { $: "${name}", ${argsList} };
 }`;
   }
 }
@@ -743,7 +743,7 @@ function matchCondition(matchingIdent: string, patternName: string): string {
       return "true";
 
     default:
-      return `${matchingIdent}.type === "${patternName}"`;
+      return `${matchingIdent}.$ === "${patternName}"`;
   }
 }
 
