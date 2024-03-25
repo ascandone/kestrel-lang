@@ -18,6 +18,7 @@ import {
   goToDefinitionOf,
   hoverOn,
   hoverToMarkdown,
+  UntypedProject,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
 import { Severity } from "../../errors";
@@ -30,10 +31,14 @@ type Connection = _Connection;
 type Result<Ok, Err> = { type: "OK"; value: Ok } | { type: "ERR"; error: Err };
 
 class State {
-  private untypedProject: Record<string, UntypedModule> = {};
+  private untypedProject: UntypedProject = {};
   private docs: Record<string, TextDocument> = {};
 
   constructor(public readonly config: Config) {}
+
+  get packageName(): string {
+    return this.config.type === "package" ? this.config.name : "";
+  }
 
   private static parseDoc(
     textDoc: TextDocument,
@@ -65,21 +70,36 @@ class State {
   }
 
   addDocument(
+    package_: string,
     ns: string,
     textDoc: TextDocument,
   ): Result<null, PublishDiagnosticsParams> {
+    if (this.docs[ns]) {
+      return { type: "OK", value: null };
+    }
+
     const result = State.parseDoc(textDoc);
     switch (result.type) {
       case "ERR":
         return result;
       case "OK":
-        this.untypedProject[ns] = result.value;
+        this.untypedProject[ns] = {
+          package: package_,
+          module: result.value,
+        };
         this.docs[ns] = textDoc;
         return { type: "OK", value: null };
     }
   }
 
   changeDocument(textDocument: TextDocument): PublishDiagnosticsParams[] {
+    let package_ = undefined;
+
+    const prev = this.nsByUri(textDocument.uri);
+    if (prev !== undefined) {
+      package_ = this.untypedProject[prev]?.package;
+    }
+
     const parseResult = State.parseDoc(textDocument);
     switch (parseResult.type) {
       case "ERR":
@@ -92,7 +112,10 @@ class State {
         }
 
         this.docs[ns] = textDocument;
-        this.untypedProject[ns] = parseResult.value;
+        this.untypedProject[ns] = {
+          package: package_ ?? this.packageName,
+          module: parseResult.value,
+        };
 
         const [, errors] = this.typecheckDocs();
         return errors;
@@ -161,7 +184,7 @@ async function initProject(connection: Connection, state: State) {
   for (const [ns, raw] of Object.entries(rawProject)) {
     const uri = `file://${raw.path}`;
     const textDoc = TextDocument.create(uri, "kestrel", 1, raw.content);
-    const result = state.addDocument(ns, textDoc);
+    const result = state.addDocument(raw.package, ns, textDoc);
     if (result.type === "ERR") {
       connection.sendDiagnostics(result.error);
     }
@@ -183,8 +206,7 @@ export async function lspCmd() {
   const config = await readConfig(path);
   const state = new State(config);
 
-  // Do not await
-  initProject(connection, state);
+  await initProject(connection, state);
 
   connection.onInitialize(() => ({
     capabilities: {
@@ -198,14 +220,18 @@ export async function lspCmd() {
   }));
 
   documents.onDidOpen((doc) => {
+    const prev = state.nsByUri(doc.document.uri);
+    if (prev !== undefined) {
+      return;
+    }
+
     let ns = doc.document.uri.replace("file://", "").replace(process.cwd(), "");
     for (const sourceDir of state.config["source-directories"]) {
       const regexp = new RegExp(`^/${sourceDir}/`);
       ns = ns.replace(regexp, "");
     }
     ns = ns.replace(/.kes$/, "");
-
-    state.addDocument(ns, doc.document);
+    state.addDocument(state.packageName, ns, doc.document);
   });
 
   documents.onDidChangeContent((change) => {

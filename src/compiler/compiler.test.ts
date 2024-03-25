@@ -1456,9 +1456,15 @@ function compileSrcWithDeps(rawProject: Record<string, string>): string {
 
 function parseProject(
   rawProject: Record<string, string>,
-): Record<string, UntypedModule> {
+): Record<string, { package: string; module: UntypedModule }> {
   return Object.fromEntries(
-    Object.entries(rawProject).map(([ns, src]) => [ns, unsafeParse(src)]),
+    Object.entries(rawProject).map(([ns, src]) => [
+      ns,
+      {
+        package: "example_package",
+        module: unsafeParse(src),
+      },
+    ]),
   );
 }
 

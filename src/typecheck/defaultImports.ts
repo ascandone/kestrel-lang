@@ -99,21 +99,3 @@ export const defaultImports: UntypedImport[] = [
     ],
   },
 ];
-
-export const CORE_MODULES = [
-  "Async",
-  "Bool",
-  "Char",
-  "Debug",
-  "Float",
-  "Int",
-  "IO",
-  "List",
-  "Option",
-  "MVar",
-  "Result",
-  "Task",
-  "String",
-  "Time",
-  "Tuple",
-];

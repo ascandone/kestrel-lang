@@ -14,7 +14,7 @@ import {
   TypedModule,
   TypedTypeAst,
 } from "./typedAst";
-import { CORE_MODULES, defaultImports } from "./defaultImports";
+import { defaultImports } from "./defaultImports";
 import {
   TVar,
   Type,
@@ -475,17 +475,20 @@ type TypeAstConversionType =
       returning: Type & { type: "named" };
     };
 
+const CORE_PACKAGE = "kestrel_core";
+
 function topSortedModules(
-  project: Record<string, UntypedModule>,
+  project: UntypedProject,
   implicitImports: UntypedImport[] = defaultImports,
 ): string[] {
   const implNsImports = implicitImports.map((i) => i.ns);
 
   const dependencyGraph: Record<string, string[]> = {};
-  for (const [ns, program] of Object.entries(project)) {
-    const deps = CORE_MODULES.includes(ns)
-      ? getDependencies(program)
-      : [...implNsImports, ...getDependencies(program)];
+  for (const [ns, { package: package_, module }] of Object.entries(project)) {
+    const deps =
+      package_ === CORE_PACKAGE
+        ? getDependencies(module)
+        : [...implNsImports, ...getDependencies(module)];
 
     dependencyGraph[ns] = deps;
   }
@@ -497,8 +500,16 @@ function getDependencies(program: UntypedModule): string[] {
   return program.imports.map((i) => i.ns);
 }
 
+export type UntypedProject = Record<
+  string,
+  {
+    package: string;
+    module: UntypedModule;
+  }
+>;
+
 export function typecheckProject(
-  project: Record<string, UntypedModule>,
+  project: UntypedProject,
   implicitImports: UntypedImport[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
 ): ProjectTypeCheckResult {
@@ -507,16 +518,16 @@ export function typecheckProject(
   const projectResult: ProjectTypeCheckResult = {};
   const deps: Deps = {};
   for (const ns of sortedModules) {
-    const module = project[ns];
-    if (module === undefined) {
+    const m = project[ns];
+    if (m === undefined) {
       // A module might import a module that do not exist
       continue;
     }
     const tc = typecheck(
       ns,
-      module,
+      m.module,
       deps,
-      CORE_MODULES.includes(ns) ? [] : implicitImports,
+      m.package === CORE_PACKAGE ? [] : implicitImports,
       mainType,
     );
     projectResult[ns] = tc;

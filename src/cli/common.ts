@@ -1,6 +1,6 @@
 import { readFile, readdir, rmdir } from "node:fs/promises";
 import { parse, UntypedModule } from "../parser";
-import { typecheckProject, TypedModule } from "../typecheck";
+import { typecheckProject, TypedModule, UntypedProject } from "../typecheck";
 import { exit } from "node:process";
 import { compileProject, defaultEntryPoint } from "../compiler";
 import { col } from "../utils/colors";
@@ -15,6 +15,7 @@ const execP = promisify(exec);
 export const EXTENSION = "kes";
 
 export type RawModule = {
+  package: string;
   path: string;
   content: string;
   extern: string | undefined;
@@ -98,6 +99,7 @@ async function readProject(
       }
 
       res[moduleName!] = {
+        package: config.type === "package" ? config.name : "",
         path: filePath,
         content: fileBuf.toString(),
         extern,
@@ -133,7 +135,8 @@ export function parseModule(src: string): UntypedModule {
 export async function checkProject(
   rawProject: Record<string, RawModule>,
 ): Promise<[TypedProject | undefined, boolean]> {
-  const untypedProject: Record<string, UntypedModule> = {};
+  const untypedProject: UntypedProject = {};
+
   for (const [ns, info] of Object.entries(rawProject)) {
     const parseResult = parse(info.content);
     if (!parseResult.ok) {
@@ -142,7 +145,10 @@ export async function checkProject(
       );
       exit(1);
     }
-    untypedProject[ns] = parseResult.value;
+    untypedProject[ns] = {
+      package: info.package,
+      module: parseResult.value,
+    };
   }
 
   const typedProject = typecheckProject(untypedProject);

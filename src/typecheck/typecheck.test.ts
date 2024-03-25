@@ -1350,13 +1350,19 @@ describe("typecheck project", () => {
   test("single import", () => {
     const project = typecheckProject(
       {
-        A: unsafeParse(`
+        A: {
+          package: "kestrel_core",
+          module: unsafeParse(`
         pub let x = 42
       `),
-        B: unsafeParse(`
+        },
+        B: {
+          package: "kestrel_core",
+          module: unsafeParse(`
         import A.{x}
         pub let y = x
       `),
+        },
       },
       [],
     );
@@ -1379,13 +1385,19 @@ describe("typecheck project", () => {
   test("qualified imports", () => {
     const project = typecheckProject(
       {
-        A: unsafeParse(`
+        A: {
+          package: "kestrel_core",
+          module: unsafeParse(`
         pub let x = 42
       `),
-        B: unsafeParse(`
+        },
+        B: {
+          package: "kestrel_core",
+          module: unsafeParse(`
         import A
         pub let y = A.x
       `),
+        },
       },
       [],
     );
