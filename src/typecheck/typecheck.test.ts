@@ -24,6 +24,7 @@ import {
   UnboundTypeParam,
   UnboundVariable,
   UnimportedModule,
+  UnusedImport,
   UnusedVariable,
 } from "../errors";
 
@@ -1130,6 +1131,14 @@ describe("modules", () => {
     expect(types).toEqual({
       x: "Boxed",
     });
+  });
+
+  test("detects unused imports when there are not exposed vars", () => {
+    const [A] = tcProgram("A", ``);
+    const [, errs] = tc(`import A`, { A });
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(UnusedImport);
   });
 
   test("handles variants imports", () => {

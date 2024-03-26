@@ -1491,7 +1491,7 @@ function compileRawProject(
 
   const typedProject: Record<string, TypedModule> = {};
   for (const [ns, [typedModule, errs]] of Object.entries(typecheckResult)) {
-    if (errs.length !== 0) {
+    if (errs.filter((e) => e.description.severity === "error").length !== 0) {
       throw new Error(
         "Got errors while type checking: \n" + JSON.stringify(errs, null, 2),
       );

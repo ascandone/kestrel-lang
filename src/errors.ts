@@ -82,6 +82,15 @@ export class UnusedVariable implements ErrorDescription {
   }
 }
 
+export class UnusedImport implements ErrorDescription {
+  severity: Severity = "warning";
+  errorName: string = "Unused import";
+  constructor(public namespace: string) {}
+  shortDescription(): string {
+    return `Import is never used: ${this.namespace}`;
+  }
+}
+
 export class UnboundType implements ErrorDescription {
   constructor(public ident: string) {}
   severity: Severity = "error";

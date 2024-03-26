@@ -35,6 +35,7 @@ import {
   UnboundType,
   UnboundVariable,
   UnimportedModule,
+  UnusedImport,
   UnusedVariable,
 } from "../errors";
 import { FramesStack } from "./frame";
@@ -64,6 +65,7 @@ class ResolutionStep {
   private imports: TypedImport[] = [];
   private typeDeclarations: TypedTypeDeclaration[] = [];
   private unusedVariables = new WeakSet<TypedBinding>();
+  private unusedImports = new WeakSet<TypedImport>();
   private framesStack = new FramesStack<TypedBinding, TypedDeclaration>();
 
   private patternBindings: TypedBinding[] = [];
@@ -79,10 +81,16 @@ class ResolutionStep {
   ): [TypedModule, ErrorInfo[]] {
     TVar.resetId();
 
-    this.imports = [
-      ...this.annotateImports(implicitImports),
-      ...this.annotateImports(module.imports),
-    ];
+    const annotatedImplicitImports = this.annotateImports(implicitImports);
+    const annotatedImports = this.annotateImports(module.imports);
+
+    for (const import_ of annotatedImports) {
+      if (import_.exposing.length === 0) {
+        this.unusedImports.add(import_);
+      }
+    }
+
+    this.imports = [...annotatedImports, ...annotatedImplicitImports];
 
     for (const typeDeclaration of module.typeDeclarations) {
       // Warning: do not use Array.map, as we need to seed results asap
@@ -96,6 +104,15 @@ class ResolutionStep {
         this.errors.push({
           span: decl.binding.span,
           description: new UnusedVariable(decl.binding.name, "global"),
+        });
+      }
+    }
+
+    for (const import_ of annotatedImports) {
+      if (this.unusedImports.has(import_)) {
+        this.errors.push({
+          description: new UnusedImport(import_.ns),
+          span: import_.span,
         });
       }
     }
@@ -174,6 +191,8 @@ class ResolutionStep {
       if (import_ === undefined) {
         return undefined;
       }
+
+      this.unusedImports.delete(import_);
 
       const dep = this.deps[import_.ns];
       if (dep === undefined) {
@@ -359,6 +378,8 @@ class ResolutionStep {
       });
       return undefined;
     }
+
+    this.unusedImports.delete(import_);
 
     const dep = this.deps[import_.ns];
     if (dep === undefined) {
