@@ -35,6 +35,7 @@ import {
   UnboundType,
   UnboundVariable,
   UnimportedModule,
+  UnusedExposing,
   UnusedImport,
   UnusedVariable,
 } from "../errors";
@@ -66,6 +67,7 @@ class ResolutionStep {
   private typeDeclarations: TypedTypeDeclaration[] = [];
   private unusedVariables = new WeakSet<TypedBinding>();
   private unusedImports = new WeakSet<TypedImport>();
+  private unusedExposing = new WeakSet<TypedExposing>();
   private framesStack = new FramesStack<TypedBinding, TypedDeclaration>();
 
   private patternBindings: TypedBinding[] = [];
@@ -87,6 +89,12 @@ class ResolutionStep {
     for (const import_ of annotatedImports) {
       if (import_.exposing.length === 0) {
         this.unusedImports.add(import_);
+      }
+
+      for (const exposing of import_.exposing) {
+        if (exposing.type === "value" && exposing.declaration !== undefined) {
+          this.unusedExposing.add(exposing);
+        }
       }
     }
 
@@ -114,6 +122,15 @@ class ResolutionStep {
           description: new UnusedImport(import_.ns),
           span: import_.span,
         });
+      }
+
+      for (const exposing of import_.exposing) {
+        if (this.unusedExposing.has(exposing)) {
+          this.errors.push({
+            description: new UnusedExposing(exposing.name),
+            span: exposing.span,
+          });
+        }
       }
     }
 
@@ -453,13 +470,23 @@ class ResolutionStep {
     const resolved = this.framesStack.resolve(ast.name);
     if (resolved !== undefined) {
       switch (resolved.type) {
-        case "global":
+        case "global": {
           this.unusedVariables.delete(resolved.declaration.binding);
+
+          const import_ = this.imports.find(
+            (import_) => import_.ns === resolved.namespace,
+          );
+          const exposing = import_?.exposing.find((e) => e.name === ast.name);
+          if (exposing !== undefined) {
+            this.unusedExposing.delete(exposing);
+          }
+
           return {
             type: "global-variable",
             declaration: resolved.declaration,
             namespace: resolved.namespace,
           };
+        }
 
         case "local":
           this.unusedVariables.delete(resolved.binding);

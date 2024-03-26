@@ -91,6 +91,15 @@ export class UnusedImport implements ErrorDescription {
   }
 }
 
+export class UnusedExposing implements ErrorDescription {
+  severity: Severity = "warning";
+  errorName: string = "Unused import";
+  constructor(public name: string) {}
+  shortDescription(): string {
+    return `Exposed value is never used: "${this.name}"`;
+  }
+}
+
 export class UnboundType implements ErrorDescription {
   constructor(public ident: string) {}
   severity: Severity = "error";

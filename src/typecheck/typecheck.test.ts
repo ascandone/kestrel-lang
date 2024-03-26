@@ -24,6 +24,7 @@ import {
   UnboundTypeParam,
   UnboundVariable,
   UnimportedModule,
+  UnusedExposing,
   UnusedImport,
   UnusedVariable,
 } from "../errors";
@@ -1139,6 +1140,14 @@ describe("modules", () => {
 
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(UnusedImport);
+  });
+
+  test("detects unused exposed values", () => {
+    const [A] = tcProgram("A", `pub let x = 42`);
+    const [, errs] = tc(`import A.{x}`, { A });
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(UnusedExposing);
   });
 
   test("handles variants imports", () => {
