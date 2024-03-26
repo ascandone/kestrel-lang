@@ -1,5 +1,5 @@
 import { Binding, ConstLiteral } from "../parser";
-import { TypeMeta, TypedExpr, TypedModule } from "../typecheck";
+import { TypeMeta, TypedExpr, TypedModule, foldTree } from "../typecheck";
 
 type Optimization = (src: TypedExpr) => TypedExpr | undefined;
 
@@ -204,61 +204,21 @@ function countBindingUsages(
   binding: Binding<TypeMeta>,
   src: TypedExpr,
 ): number {
-  let count = 0;
-
-  function visit(src: TypedExpr) {
+  return foldTree(src, 0, (src, acc) => {
     switch (src.type) {
       case "identifier":
-        if (src.resolution === undefined) {
-          return;
-        }
-        switch (src.resolution.type) {
-          case "local-variable":
-            if (src.resolution.binding === binding) {
-              count++;
-            }
-            return;
-
-          case "global-variable":
-          case "constructor":
-            return;
+        if (
+          src.resolution !== undefined &&
+          src.resolution.type === "local-variable" &&
+          src.resolution.binding === binding
+        ) {
+          return acc + 1;
         }
 
-      case "constant":
-        return;
-      case "application":
-        visit(src.caller);
-        for (const arg of src.args) {
-          visit(arg);
-        }
-        return;
-
-      case "let":
-        visit(src.value);
-        visit(src.body);
-        return;
-
-      case "fn":
-        visit(src.body);
-        return;
-
-      case "match":
-        visit(src.expr);
-        for (const [, expr] of src.clauses) {
-          visit(expr);
-        }
-        return;
-      case "if":
-        visit(src.condition);
-        visit(src.then);
-        visit(src.else);
-        return;
+      default:
+        return acc;
     }
-  }
-
-  visit(src);
-
-  return count;
+  });
 }
 
 function substituteBinding(

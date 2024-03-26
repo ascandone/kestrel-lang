@@ -597,3 +597,42 @@ function goToDefinitionOfPattern(
       return resolutionToLocation(pattern.resolution);
   }
 }
+
+export function foldTree<T>(
+  src: TypedExpr,
+  acc: T,
+  f: (src: TypedExpr, acc: T) => T,
+): T {
+  switch (src.type) {
+    case "identifier":
+    case "constant":
+      return f(src, acc);
+
+    case "application":
+      acc = foldTree(src.caller, acc, f);
+      for (const arg of src.args) {
+        acc = foldTree(arg, acc, f);
+      }
+      return acc;
+
+    case "let":
+      acc = foldTree(src.value, acc, f);
+      acc = foldTree(src.body, acc, f);
+      return acc;
+
+    case "fn":
+      return foldTree(src.body, acc, f);
+
+    case "match":
+      acc = foldTree(src.expr, acc, f);
+      for (const [, expr] of src.clauses) {
+        acc = foldTree(expr, acc, f);
+      }
+      return acc;
+    case "if":
+      acc = foldTree(src.condition, acc, f);
+      acc = foldTree(src.then, acc, f);
+      acc = foldTree(src.else, acc, f);
+      return acc;
+  }
+}
