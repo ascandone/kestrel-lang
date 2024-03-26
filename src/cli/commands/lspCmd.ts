@@ -19,6 +19,7 @@ import {
   hoverOn,
   hoverToMarkdown,
   UntypedProject,
+  findReferences,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
 import { Severity } from "../../errors";
@@ -217,6 +218,10 @@ class State {
 
     return undefined;
   }
+
+  uriByNs(ns: string): string | undefined {
+    return this.docs[ns]?.uri;
+  }
 }
 
 async function initProject(connection: Connection, state: State) {
@@ -257,6 +262,7 @@ export async function lspCmd() {
       definitionProvider: true,
       codeLensProvider: { resolveProvider: true },
       documentFormattingProvider: true,
+      referencesProvider: true,
     },
   }));
 
@@ -277,6 +283,27 @@ export async function lspCmd() {
       case "ERR":
         connection.sendDiagnostics(result.error);
     }
+  });
+
+  connection.onReferences(({ textDocument, position }) => {
+    const ns = state.nsByUri(textDocument.uri);
+    if (ns === undefined) {
+      return;
+    }
+
+    const lookup = state.docByUri(textDocument.uri);
+    if (lookup === undefined) {
+      return;
+    }
+
+    const [doc, typed] = lookup;
+
+    return findReferences(ns, doc.offsetAt(position), { [ns]: typed }).map(
+      ([referenceNs, referenceExpr]) => {
+        const doc = state.docByNs(referenceNs);
+        return { uri: doc.uri, range: spannedToRange(doc, referenceExpr.span) };
+      },
+    );
   });
 
   connection.onDocumentFormatting(({ textDocument }) => {

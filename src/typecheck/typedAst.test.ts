@@ -5,9 +5,12 @@ import {
   hoverOn,
   hoverToMarkdown,
   Location,
+  findReferences,
+  TypedModule,
+  Identifier,
 } from "./typedAst";
 import { Span, unsafeParse } from "../parser";
-import { typecheck } from "./typecheck";
+import { UntypedProject, typecheck, typecheckProject } from "./typecheck";
 import { TypeScheme } from "./type";
 
 describe("hoverOn", () => {
@@ -390,6 +393,77 @@ describe("goToDefinition", () => {
     expect(location?.span).toEqual(spanOf(src, "type X {}", 1));
   });
 });
+
+function typecheckRaw(
+  rawProject: Record<string, string>,
+): Record<string, TypedModule> {
+  const untypedProject: UntypedProject = {};
+  for (const [ns, src] of Object.entries(rawProject)) {
+    untypedProject[ns] = { package: "", module: unsafeParse(src) };
+  }
+  const p = typecheckProject(untypedProject);
+  return Object.fromEntries(Object.entries(p).map(([k, [v]]) => [k, v]));
+}
+
+describe("find references", () => {
+  test("glb decl in the same module", () => {
+    const Main = `
+      let glb = 42
+      pub let x = glb
+    `;
+
+    const refs = findReferences(
+      "Main",
+      indexOf(Main, "glb", 1)!,
+      typecheckRaw({ Main }),
+    );
+
+    expect(refs).toEqual<[string, Identifier][]>([
+      [
+        "Main",
+        expect.objectContaining({
+          name: "glb",
+          span: spanOf(Main, "glb", 2),
+        }),
+      ],
+    ]);
+  });
+
+  test("glb decl in different modules", () => {
+    const ImportedModule = `
+      pub let glb = 42
+    `;
+
+    const Main = `
+      import ImportedModule
+      pub let example_var = ImportedModule.glb
+    `;
+
+    const bindings = parseFindReferences(
+      "ImportedModule",
+      indexOf(ImportedModule, "glb")!,
+      typecheckRaw({ Main, ImportedModule }),
+    );
+
+    expect(bindings).toEqual<[string, Identifier][]>([
+      [
+        "Main",
+        expect.objectContaining({
+          name: "glb",
+          span: spanOf(Main, "ImportedModule.glb"),
+        }),
+      ],
+    ]);
+  });
+});
+
+function parseFindReferences(
+  hoveringOnNamespace: string,
+  offset: number,
+  typedProject: Record<string, TypedModule> = {},
+): [string, Identifier][] {
+  return findReferences(hoveringOnNamespace, offset, typedProject);
+}
 
 function parseHover(
   src: string,

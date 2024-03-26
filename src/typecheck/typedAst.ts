@@ -622,3 +622,81 @@ export function foldTree<T>(
       return acc;
   }
 }
+
+export type Identifier = TypedExpr & { type: "identifier" };
+
+export function findReferences(
+  namespace: string,
+  offset: number,
+  typedProject: Record<string, TypedModule>,
+): [string, Identifier][] {
+  const srcModule = typedProject[namespace];
+  if (srcModule === undefined) {
+    throw new Error("[unreachable] module not found");
+  }
+
+  for (const decl of srcModule.declarations) {
+    if (!contains(decl, offset)) {
+      continue;
+    }
+
+    if (!contains(decl.binding, offset)) {
+      return [];
+    }
+
+    return findReferencesOfDeclaration(decl, typedProject);
+  }
+
+  return [];
+}
+
+function findReferencesOfDeclaration(
+  declaration: TypedDeclaration,
+  typedProject: Record<string, TypedModule>,
+): [string, Identifier][] {
+  const ret: [string, Identifier][] = [];
+  for (const [namespace, typedModule] of Object.entries(typedProject)) {
+    const lookups = findReferencesOfDeclarationInModule(
+      declaration,
+      typedModule,
+    );
+
+    for (const l of lookups) {
+      ret.push([namespace, l]);
+    }
+  }
+
+  return ret;
+}
+
+function findReferencesOfDeclarationInModule(
+  declaration: TypedDeclaration,
+  module: TypedModule,
+): Identifier[] {
+  const res: Identifier[] = [];
+  for (const decl of module.declarations) {
+    if (decl.extern) {
+      continue;
+    }
+
+    const res_ = foldTree<Identifier[]>(decl.value, [], (expr, acc) => {
+      switch (expr.type) {
+        case "identifier":
+          if (
+            expr.resolution !== undefined &&
+            expr.resolution.type === "global-variable" &&
+            expr.resolution.declaration === declaration
+          ) {
+            return acc.concat(expr);
+          }
+
+        default:
+          return acc;
+      }
+    });
+
+    res.push(...res_);
+  }
+
+  return res;
+}
