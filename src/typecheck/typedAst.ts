@@ -510,42 +510,28 @@ function goToDefinitionOfExpr(
   ast: TypedExpr,
   offset: number,
 ): Location | undefined {
-  if (!spanContains(ast.span, offset)) {
-    return;
+  if (!contains(ast, offset)) {
+    return undefined;
   }
 
   switch (ast.type) {
+    case "constant":
+      return undefined;
+
     case "identifier":
       if (ast.resolution === undefined) {
         return undefined;
       }
       return resolutionToLocation(ast.resolution);
 
-    case "constant":
-      return undefined;
+    case "fn":
+      return goToDefinitionOfExpr(ast.body, offset);
 
     case "application":
-      for (const arg of ast.args) {
-        const t = goToDefinitionOfExpr(arg, offset);
-        if (t !== undefined) {
-          return t;
-        }
-      }
-      return goToDefinitionOfExpr(ast.caller, offset);
-
-    case "let":
       return (
-        goToDefinitionOfExpr(ast.value, offset) ??
-        goToDefinitionOfExpr(ast.body, offset)
+        goToDefinitionOfExpr(ast.caller, offset) ??
+        firstBy(ast.args, (arg) => goToDefinitionOfExpr(arg, offset))
       );
-
-    case "fn":
-      for (const param of ast.params) {
-        if (spanContains(param.span, offset)) {
-          return undefined;
-        }
-      }
-      return goToDefinitionOfExpr(ast.body, offset);
 
     case "if":
       return (
@@ -554,18 +540,22 @@ function goToDefinitionOfExpr(
         goToDefinitionOfExpr(ast.else, offset)
       );
 
+    case "let":
+      return (
+        goToDefinitionOfExpr(ast.value, offset) ??
+        goToDefinitionOfExpr(ast.body, offset)
+      );
+
     case "match":
-      for (const [pattern, expr] of ast.clauses) {
-        const t =
-          goToDefinitionOfPattern(pattern, offset) ??
-          goToDefinitionOfExpr(expr, offset);
-
-        if (t !== undefined) {
-          return t;
-        }
-      }
-
-      return goToDefinitionOfExpr(ast.expr, offset);
+      return (
+        goToDefinitionOfExpr(ast.expr, offset) ??
+        firstBy(
+          ast.clauses,
+          ([pattern, expr]) =>
+            goToDefinitionOfPattern(pattern, offset) ??
+            goToDefinitionOfExpr(expr, offset),
+        )
+      );
   }
 }
 
