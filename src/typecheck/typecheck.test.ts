@@ -1150,6 +1150,14 @@ describe("modules", () => {
     expect(errs[0]?.description).toBeInstanceOf(UnusedExposing);
   });
 
+  test("detects unused types", () => {
+    const [A] = tcProgram("A", `pub type T { }`);
+    const [, errs] = tc(`import A.{T}`, { A });
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(UnusedExposing);
+  });
+
   test("handles variants imports", () => {
     const [A] = tcProgram(
       "A",

@@ -94,6 +94,12 @@ class ResolutionStep {
       for (const exposing of import_.exposing) {
         if (exposing.type === "value" && exposing.declaration !== undefined) {
           this.unusedExposing.add(exposing);
+        } else if (
+          exposing.type === "type" &&
+          !exposing.exposeImpl &&
+          exposing.resolved !== undefined
+        ) {
+          this.unusedExposing.add(exposing);
         }
       }
     }
@@ -240,6 +246,7 @@ class ResolutionStep {
     for (const import_ of this.imports) {
       for (const exposed of import_.exposing) {
         if (exposed.type === "type" && exposed.resolved?.name === typeName) {
+          this.unusedExposing.delete(exposed);
           return {
             declaration: exposed.resolved,
             namespace: import_.ns,
