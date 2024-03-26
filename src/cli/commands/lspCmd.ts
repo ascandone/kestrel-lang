@@ -41,6 +41,17 @@ class State {
     return this.config.type === "package" ? this.config.name : "";
   }
 
+  getTypedProject(): Record<string, TypedModule> {
+    const tc = typecheckProject(this.untypedProject);
+
+    const typedProject: Record<string, TypedModule> = {};
+    for (const [ns, [typed]] of Object.entries(tc)) {
+      typedProject[ns] = typed;
+    }
+
+    return typedProject;
+  }
+
   private static parseDoc(
     textDoc: TextDocument,
   ): Result<UntypedModule, PublishDiagnosticsParams> {
@@ -296,14 +307,16 @@ export async function lspCmd() {
       return;
     }
 
-    const [doc, typed] = lookup;
+    const [doc] = lookup;
 
-    return findReferences(ns, doc.offsetAt(position), { [ns]: typed }).map(
-      ([referenceNs, referenceExpr]) => {
-        const doc = state.docByNs(referenceNs);
-        return { uri: doc.uri, range: spannedToRange(doc, referenceExpr.span) };
-      },
-    );
+    return findReferences(
+      ns,
+      doc.offsetAt(position),
+      state.getTypedProject(),
+    ).map(([referenceNs, referenceExpr]) => {
+      const doc = state.docByNs(referenceNs);
+      return { uri: doc.uri, range: spannedToRange(doc, referenceExpr.span) };
+    });
   });
 
   connection.onDocumentFormatting(({ textDocument }) => {
