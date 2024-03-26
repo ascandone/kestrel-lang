@@ -363,10 +363,6 @@ function contains(spanned: SpanMeta, offset: number) {
   return start <= offset && end >= offset;
 }
 
-function spanContains([start, end]: Span, offset: number) {
-  return start <= offset && end >= offset;
-}
-
 export type Location = {
   namespace?: string;
   span: Span;
@@ -377,12 +373,12 @@ export function goToDefinitionOf(
   offset: number,
 ): Location | undefined {
   for (const import_ of module.imports) {
-    if (!spanContains(import_.span, offset)) {
+    if (!contains(import_, offset)) {
       continue;
     }
 
     for (const exposing of import_.exposing) {
-      if (!spanContains(exposing.span, offset)) {
+      if (!contains(exposing, offset)) {
         continue;
       }
 
@@ -412,12 +408,12 @@ export function goToDefinitionOf(
       continue;
     }
 
-    if (!spanContains(t.span, offset)) {
+    if (!contains(t, offset)) {
       continue;
     }
 
     const ret = firstBy(t.variants, (variant) => {
-      if (!spanContains(variant.span, offset)) {
+      if (!contains(variant, offset)) {
         return undefined;
       }
 
@@ -432,7 +428,7 @@ export function goToDefinitionOf(
   }
 
   for (const st of module.declarations) {
-    if (!spanContains(st.span, offset)) {
+    if (!contains(st, offset)) {
       continue;
     }
 
@@ -453,7 +449,7 @@ function goToDefinitionOfTypeAst(
   t: TypedTypeAst,
   offset: number,
 ): Location | undefined {
-  if (!spanContains(t.span, offset)) {
+  if (!contains(t, offset)) {
     return undefined;
   }
 
@@ -563,7 +559,7 @@ function goToDefinitionOfPattern(
   pattern: TypedMatchPattern,
   offset: number,
 ): Location | undefined {
-  if (!spanContains(pattern.span, offset)) {
+  if (!contains(pattern, offset)) {
     return;
   }
 
