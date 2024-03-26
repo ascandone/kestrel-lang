@@ -47,19 +47,15 @@ let a = {
 
 describe("inline let bindings", () => {
   test("does not apply to recursive functions that are only used once", () => {
-    expect(`
-    let glb = {
-      let rec = fn x { rec(x) };
-      rec(10)
-    }
-    `).toOptimizeAs(`
-let glb = {
+    const src = `let glb = {
   let rec = fn x {
     rec(x)
   };
   rec(10)
 }
-`);
+`;
+
+    expect(src).toOptimizeAs(src);
   });
 
   test("remove unused bindings", () => {

@@ -363,10 +363,6 @@ function contains(spanned: SpanMeta, offset: number) {
   return start <= offset && end >= offset;
 }
 
-function spanContains([start, end]: Span, offset: number) {
-  return start <= offset && end >= offset;
-}
-
 export type Location = {
   namespace?: string;
   span: Span;
@@ -377,12 +373,12 @@ export function goToDefinitionOf(
   offset: number,
 ): Location | undefined {
   for (const import_ of module.imports) {
-    if (!spanContains(import_.span, offset)) {
+    if (!contains(import_, offset)) {
       continue;
     }
 
     for (const exposing of import_.exposing) {
-      if (!spanContains(exposing.span, offset)) {
+      if (!contains(exposing, offset)) {
         continue;
       }
 
@@ -412,12 +408,12 @@ export function goToDefinitionOf(
       continue;
     }
 
-    if (!spanContains(t.span, offset)) {
+    if (!contains(t, offset)) {
       continue;
     }
 
     const ret = firstBy(t.variants, (variant) => {
-      if (!spanContains(variant.span, offset)) {
+      if (!contains(variant, offset)) {
         return undefined;
       }
 
@@ -432,7 +428,7 @@ export function goToDefinitionOf(
   }
 
   for (const st of module.declarations) {
-    if (!spanContains(st.span, offset)) {
+    if (!contains(st, offset)) {
       continue;
     }
 
@@ -453,7 +449,7 @@ function goToDefinitionOfTypeAst(
   t: TypedTypeAst,
   offset: number,
 ): Location | undefined {
-  if (!spanContains(t.span, offset)) {
+  if (!contains(t, offset)) {
     return undefined;
   }
 
@@ -510,42 +506,28 @@ function goToDefinitionOfExpr(
   ast: TypedExpr,
   offset: number,
 ): Location | undefined {
-  if (!spanContains(ast.span, offset)) {
-    return;
+  if (!contains(ast, offset)) {
+    return undefined;
   }
 
   switch (ast.type) {
+    case "constant":
+      return undefined;
+
     case "identifier":
       if (ast.resolution === undefined) {
         return undefined;
       }
       return resolutionToLocation(ast.resolution);
 
-    case "constant":
-      return undefined;
+    case "fn":
+      return goToDefinitionOfExpr(ast.body, offset);
 
     case "application":
-      for (const arg of ast.args) {
-        const t = goToDefinitionOfExpr(arg, offset);
-        if (t !== undefined) {
-          return t;
-        }
-      }
-      return goToDefinitionOfExpr(ast.caller, offset);
-
-    case "let":
       return (
-        goToDefinitionOfExpr(ast.value, offset) ??
-        goToDefinitionOfExpr(ast.body, offset)
+        goToDefinitionOfExpr(ast.caller, offset) ??
+        firstBy(ast.args, (arg) => goToDefinitionOfExpr(arg, offset))
       );
-
-    case "fn":
-      for (const param of ast.params) {
-        if (spanContains(param.span, offset)) {
-          return undefined;
-        }
-      }
-      return goToDefinitionOfExpr(ast.body, offset);
 
     case "if":
       return (
@@ -554,18 +536,22 @@ function goToDefinitionOfExpr(
         goToDefinitionOfExpr(ast.else, offset)
       );
 
+    case "let":
+      return (
+        goToDefinitionOfExpr(ast.value, offset) ??
+        goToDefinitionOfExpr(ast.body, offset)
+      );
+
     case "match":
-      for (const [pattern, expr] of ast.clauses) {
-        const t =
-          goToDefinitionOfPattern(pattern, offset) ??
-          goToDefinitionOfExpr(expr, offset);
-
-        if (t !== undefined) {
-          return t;
-        }
-      }
-
-      return goToDefinitionOfExpr(ast.expr, offset);
+      return (
+        goToDefinitionOfExpr(ast.expr, offset) ??
+        firstBy(
+          ast.clauses,
+          ([pattern, expr]) =>
+            goToDefinitionOfPattern(pattern, offset) ??
+            goToDefinitionOfExpr(expr, offset),
+        )
+      );
   }
 }
 
@@ -573,7 +559,7 @@ function goToDefinitionOfPattern(
   pattern: TypedMatchPattern,
   offset: number,
 ): Location | undefined {
-  if (!spanContains(pattern.span, offset)) {
+  if (!contains(pattern, offset)) {
     return;
   }
 
@@ -595,5 +581,44 @@ function goToDefinitionOfPattern(
       }
 
       return resolutionToLocation(pattern.resolution);
+  }
+}
+
+export function foldTree<T>(
+  src: TypedExpr,
+  acc: T,
+  f: (src: TypedExpr, acc: T) => T,
+): T {
+  switch (src.type) {
+    case "identifier":
+    case "constant":
+      return f(src, acc);
+
+    case "application":
+      acc = foldTree(src.caller, acc, f);
+      for (const arg of src.args) {
+        acc = foldTree(arg, acc, f);
+      }
+      return acc;
+
+    case "let":
+      acc = foldTree(src.value, acc, f);
+      acc = foldTree(src.body, acc, f);
+      return acc;
+
+    case "fn":
+      return foldTree(src.body, acc, f);
+
+    case "match":
+      acc = foldTree(src.expr, acc, f);
+      for (const [, expr] of src.clauses) {
+        acc = foldTree(expr, acc, f);
+      }
+      return acc;
+    case "if":
+      acc = foldTree(src.condition, acc, f);
+      acc = foldTree(src.then, acc, f);
+      acc = foldTree(src.else, acc, f);
+      return acc;
   }
 }
