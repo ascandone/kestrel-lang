@@ -22,66 +22,159 @@ import {
   findReferences,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
-import { Severity } from "../../errors";
+import { ErrorInfo, Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../formatter";
 import { Config, readConfig } from "../config";
+import { MatchResult } from "ohm-js";
 
 type Connection = _Connection;
 
-type Result<Ok, Err> = { type: "OK"; value: Ok } | { type: "ERR"; error: Err };
+type Module = {
+  ns: string;
+  package_: string;
+  document: TextDocument;
+  untyped?: UntypedModule;
+  typed?: TypedModule;
+};
+
+function parseErrToDiagnostic(
+  document: TextDocument,
+  matchResult: MatchResult,
+): PublishDiagnosticsParams {
+  const interval = matchResult.getInterval();
+  return {
+    uri: document.uri,
+    diagnostics: [
+      {
+        message: matchResult.message ?? "Parsing",
+        source: "Parsing",
+        severity: DiagnosticSeverity.Error,
+        range: spannedToRange(document, [interval.startIdx, interval.endIdx]),
+      },
+    ],
+  };
+}
+
+function errorInfoToDiagnostic(
+  errorsInfo: ErrorInfo[],
+  document: TextDocument,
+): PublishDiagnosticsParams {
+  return {
+    uri: document.uri,
+    diagnostics: errorsInfo.map((e) => ({
+      message: withDisabled(
+        false,
+        () =>
+          `${e.description.errorName}\n\n${e.description.shortDescription()}`,
+      ),
+      severity: toDiagnosticSeverity(e.description.severity),
+      range: spannedToRange(document, e.span),
+    })),
+  };
+}
 
 class State {
-  private untypedProject: UntypedProject = {};
-  private docs: Record<string, TextDocument> = {};
-
   constructor(public readonly config: Config) {}
-
-  get packageName(): string {
-    return this.config.type === "package" ? this.config.name : "";
-  }
+  private modulesByNs: Record<string, Module> = {};
 
   getTypedProject(): Record<string, TypedModule> {
-    const tc = typecheckProject(this.untypedProject);
-
     const typedProject: Record<string, TypedModule> = {};
-    for (const [ns, [typed]] of Object.entries(tc)) {
-      typedProject[ns] = typed;
+    for (const [ns, module] of Object.entries(this.modulesByNs)) {
+      if (module.typed !== undefined) {
+        typedProject[ns] = module.typed;
+      }
     }
 
     return typedProject;
   }
 
-  private static parseDoc(
-    textDoc: TextDocument,
-  ): Result<UntypedModule, PublishDiagnosticsParams> {
-    const parsed = parse(textDoc.getText());
-
-    if (parsed.ok) {
-      return { type: "OK", value: parsed.value };
-    }
-
-    const interval = parsed.matchResult.getInterval();
-    return {
-      type: "ERR",
-      error: {
-        uri: textDoc.uri,
-        diagnostics: [
-          {
-            message: parsed.matchResult.message ?? "Parsing",
-            source: "Parsing",
-            severity: DiagnosticSeverity.Error,
-            range: spannedToRange(textDoc, [
-              interval.startIdx,
-              interval.endIdx,
-            ]),
-          },
-        ],
-      },
-    };
+  getPackageName(): string {
+    return this.config.type === "package" ? this.config.name : "";
   }
 
-  private newDocNs(uri: string) {
+  moduleByUri(uri: string): Module | undefined {
+    const ns = this.nsByUri(uri);
+    if (ns === undefined) {
+      return undefined;
+    }
+    return this.moduleByNs(ns);
+  }
+
+  moduleByNs(ns: string): Module | undefined {
+    return this.modulesByNs[ns];
+  }
+
+  nsByUri(uri: string): string | undefined {
+    for (const [k, v] of Object.entries(this.modulesByNs)) {
+      if (v.document.uri === uri) {
+        return k;
+      }
+    }
+    return undefined;
+  }
+
+  upsertByUri(
+    package_: string,
+    textDoc: TextDocument,
+  ): PublishDiagnosticsParams[] {
+    const oldNs = this.nsByUri(textDoc.uri);
+    if (oldNs !== undefined) {
+      this.insertByNs(this.modulesByNs[oldNs]!.package_, oldNs, textDoc);
+    } else {
+      this.insertByUri(package_, textDoc);
+    }
+
+    return this.typecheckProject();
+  }
+
+  insertByUri(package_: string, document: TextDocument) {
+    const ns = this.makeNsByUri(document.uri);
+    return this.insertByNs(ns, package_, document);
+  }
+
+  typecheckProject(): PublishDiagnosticsParams[] {
+    const untypedProject: UntypedProject = {};
+    for (const [k, mod] of Object.entries(this.modulesByNs)) {
+      if (mod.untyped !== undefined) {
+        untypedProject[k] = { package: mod.package_, module: mod.untyped };
+      }
+    }
+
+    const diagnostics: PublishDiagnosticsParams[] = [];
+
+    const typecheckedProject = typecheckProject(untypedProject);
+    for (const [k, [typed, errors]] of Object.entries(typecheckedProject)) {
+      const module = this.modulesByNs[k]!;
+      this.modulesByNs[k]!.typed = typed;
+      diagnostics.push(errorInfoToDiagnostic(errors, module.document));
+    }
+
+    return diagnostics;
+  }
+
+  insertByNs(
+    package_: string,
+    ns: string,
+    document: TextDocument,
+    skipTypecheck: boolean = false,
+  ): PublishDiagnosticsParams[] {
+    this.modulesByNs[ns] = { ns, package_, document };
+    const parsed = parse(document.getText());
+
+    if (!parsed.ok) {
+      return [parseErrToDiagnostic(document, parsed.matchResult)];
+    }
+
+    this.modulesByNs[ns]!.untyped = parsed.value;
+    if (skipTypecheck) {
+      return [];
+    } else {
+      return this.typecheckProject();
+    }
+  }
+
+  private makeNsByUri(uri: string) {
     let ns = uri.replace("file://", "").replace(process.cwd(), "");
     for (const sourceDir of this.config["source-directories"]) {
       const regexp = new RegExp(`^/${sourceDir}/`);
@@ -90,165 +183,18 @@ class State {
     ns = ns.replace(/.kes$/, "");
     return ns;
   }
-
-  insertByNs(
-    package_: string,
-    ns: string,
-    textDoc: TextDocument,
-  ): Result<null, PublishDiagnosticsParams> {
-    const result = State.parseDoc(textDoc);
-    switch (result.type) {
-      case "ERR":
-        return result;
-      case "OK":
-        this.docs[ns] = textDoc;
-        this.untypedProject[ns] = {
-          package: package_,
-          module: result.value,
-        };
-        return { type: "OK", value: null };
-    }
-  }
-
-  upsertByUri(
-    package_: string,
-    textDoc: TextDocument,
-  ): Result<null, PublishDiagnosticsParams> {
-    const oldNs = this.nsByUri(textDoc.uri);
-    if (oldNs !== undefined) {
-      return this.insertByNs(
-        this.untypedProject[oldNs]!.package,
-        oldNs,
-        textDoc,
-      );
-    }
-
-    const ns = this.newDocNs(textDoc.uri);
-    return this.insertByNs(package_, ns, textDoc);
-  }
-
-  addDocument(
-    package_: string,
-    ns: string,
-    textDoc: TextDocument,
-  ): Result<null, PublishDiagnosticsParams> {
-    if (this.docs[ns]) {
-      return { type: "OK", value: null };
-    }
-
-    const result = State.parseDoc(textDoc);
-    switch (result.type) {
-      case "ERR":
-        return result;
-      case "OK":
-        this.untypedProject[ns] = {
-          package: package_,
-          module: result.value,
-        };
-        this.docs[ns] = textDoc;
-        return { type: "OK", value: null };
-    }
-  }
-
-  changeDocument(textDocument: TextDocument): PublishDiagnosticsParams[] {
-    const ns = this.nsByUri(textDocument.uri);
-    if (ns === undefined) {
-      return [];
-    }
-
-    const package_ = this.untypedProject[ns]?.package;
-
-    const parseResult = State.parseDoc(textDocument);
-    switch (parseResult.type) {
-      case "ERR":
-        return [parseResult.error];
-
-      case "OK": {
-        this.docs[ns] = textDocument;
-        this.untypedProject[ns] = {
-          package: package_ ?? this.packageName,
-          module: parseResult.value,
-        };
-
-        const [, errors] = this.typecheckDocs();
-        return errors;
-      }
-    }
-  }
-
-  typecheckDocs(): [Record<string, TypedModule>, PublishDiagnosticsParams[]] {
-    const typedProject: Record<string, TypedModule> = {};
-
-    const tc = typecheckProject(this.untypedProject);
-
-    const diagnostics: PublishDiagnosticsParams[] = [];
-    for (const [ns, [typed, errors]] of Object.entries(tc)) {
-      const document = this.docs[ns]!;
-      typedProject[ns] = typed;
-
-      diagnostics.push({
-        uri: document.uri,
-        diagnostics: errors.map((e) => ({
-          message: withDisabled(
-            false,
-            () =>
-              `${e.description.errorName}\n\n${e.description.shortDescription()}`,
-          ),
-          severity: toDiagnosticSeverity(e.description.severity),
-          range: spannedToRange(document, e.span),
-        })),
-      });
-    }
-
-    return [typedProject, diagnostics];
-  }
-
-  docByNs(ns: string): TextDocument {
-    return this.docs[ns]!;
-  }
-
-  docByUri(uri: string): [TextDocument, TypedModule, string] | undefined {
-    const ns = this.nsByUri(uri);
-
-    if (ns === undefined) {
-      return;
-    }
-
-    const [typed] = this.typecheckDocs();
-    const doc = this.docs[ns]!;
-    const ast = typed[ns]!;
-    return [doc, ast, ns];
-  }
-
-  nsByUri(uri: string): string | undefined {
-    for (const [ns, oldDoc] of Object.entries(this.docs)) {
-      if (oldDoc.uri === uri) {
-        return ns;
-      }
-    }
-
-    return undefined;
-  }
-
-  uriByNs(ns: string): string | undefined {
-    return this.docs[ns]?.uri;
-  }
 }
 
-async function initProject(connection: Connection, state: State) {
+async function initProject_(connection: Connection, state: State) {
   const path = process.cwd();
   const rawProject = await readProjectWithDeps(path, state.config);
   for (const [ns, raw] of Object.entries(rawProject)) {
     const uri = `file://${raw.path}`;
     const textDoc = TextDocument.create(uri, "kestrel", 1, raw.content);
-    const result = state.insertByNs(raw.package, ns, textDoc);
-    if (result.type === "ERR") {
-      connection.sendDiagnostics(result.error);
-    }
+    state.insertByNs(raw.package, ns, textDoc, true);
   }
 
-  const [, errors] = state.typecheckDocs();
-  for (const diagnostic of errors) {
+  for (const diagnostic of state.typecheckProject()) {
     connection.sendDiagnostics(diagnostic);
   }
 }
@@ -261,9 +207,10 @@ export async function lspCmd() {
 
   const path = process.cwd();
   const config = await readConfig(path);
+
   const state = new State(config);
 
-  await initProject(connection, state);
+  await initProject_(connection, state);
 
   connection.onInitialize(() => ({
     capabilities: {
@@ -282,17 +229,12 @@ export async function lspCmd() {
   });
 
   documents.onDidChangeContent((change) => {
-    const result = state.upsertByUri(state.packageName, change.document);
-    switch (result.type) {
-      case "OK": {
-        const [, errors] = state.typecheckDocs();
-        for (const diagnostic of errors) {
-          connection.sendDiagnostics(diagnostic);
-        }
-        return;
-      }
-      case "ERR":
-        connection.sendDiagnostics(result.error);
+    const diagnostics = state.upsertByUri(
+      state.getPackageName(),
+      change.document,
+    );
+    for (const diagnostic of diagnostics) {
+      connection.sendDiagnostics(diagnostic);
     }
   });
 
@@ -302,57 +244,59 @@ export async function lspCmd() {
       return;
     }
 
-    const lookup = state.docByUri(textDocument.uri);
-    if (lookup === undefined) {
+    const module = state.moduleByUri(textDocument.uri);
+    if (module === undefined) {
       return;
     }
 
-    const [doc] = lookup;
-
     return findReferences(
       ns,
-      doc.offsetAt(position),
+      module.document.offsetAt(position),
       state.getTypedProject(),
     ).map(([referenceNs, referenceExpr]) => {
-      const doc = state.docByNs(referenceNs);
-      return { uri: doc.uri, range: spannedToRange(doc, referenceExpr.span) };
+      const referenceModule = state.moduleByNs(referenceNs)!;
+
+      return {
+        uri: referenceModule.document.uri,
+        range: spannedToRange(referenceModule.document, referenceExpr.span),
+      };
     });
   });
 
   connection.onDocumentFormatting(({ textDocument }) => {
-    const pair = state.docByUri(textDocument.uri);
-    if (pair === undefined) {
-      return undefined;
-    }
-    const [doc] = pair;
-    const original = doc.getText();
-    // TODO this is inefficient
-    // store untyped ast too
-    const parsed = parse(original);
-    if (!parsed.ok) {
+    const module = state.moduleByUri(textDocument.uri);
+
+    if (module?.untyped === undefined) {
       return;
     }
-    const formatted = format(parsed.value);
+
+    const formatted_ = format(module.untyped);
     return [
       {
-        range: spannedToRange(doc, [0, original.length]),
-        newText: formatted,
+        range: spannedToRange(module.document, [
+          0,
+          module.document.getText().length,
+        ]),
+        newText: formatted_,
       } as TextEdit,
     ];
   });
 
   connection.onDocumentSymbol(({ textDocument }) => {
-    const ret = state.docByUri(textDocument.uri);
-    if (ret === undefined) {
+    const module = state.moduleByUri(textDocument.uri);
+    if (module === undefined) {
+      return undefined;
+    }
+
+    if (module.typed === undefined) {
       return;
     }
-    const [doc, ast] = ret;
 
-    const decls = ast.declarations.map((st) => ({
+    const decls = module.typed.declarations.map((st) => ({
       name: st.binding.name,
       span: st.span,
     }));
-    const typeDecl = ast.typeDeclarations.map((st) => ({
+    const typeDecl = module.typed.typeDeclarations.map((st) => ({
       name: st.name,
       span: st.span,
     }));
@@ -361,23 +305,22 @@ export async function lspCmd() {
       name,
       location: {
         uri: textDocument.uri,
-        range: spannedToRange(doc, span),
+        range: spannedToRange(module.document, span),
       },
     }));
   });
 
   connection.onCodeLens(({ textDocument }) => {
-    const res = state.docByUri(textDocument.uri);
-    if (res === undefined) {
+    const module = state.moduleByUri(textDocument.uri);
+    if (module?.typed === undefined) {
       return;
     }
-    const [doc, ast] = res;
 
-    return ast.declarations.map(({ span, binding, scheme }) => {
+    return module.typed.declarations.map(({ span, binding, scheme }) => {
       const tpp = typeToString(binding.$.asType(), scheme);
       return {
         command: { title: tpp, command: "noop" },
-        range: spannedToRange(doc, span),
+        range: spannedToRange(module.document, span),
       };
     });
   });
@@ -385,22 +328,21 @@ export async function lspCmd() {
   connection.onExecuteCommand(() => {});
 
   connection.onDefinition(({ textDocument, position }) => {
-    const res = state.docByUri(textDocument.uri);
-    if (res === undefined) {
+    const module = state.moduleByUri(textDocument.uri);
+    if (module?.typed === undefined) {
       return;
     }
-    const [doc, ast] = res;
 
-    const offset = doc.offsetAt(position);
-    const resolved = goToDefinitionOf(ast, offset);
+    const offset = module.document.offsetAt(position);
+    const resolved = goToDefinitionOf(module.typed, offset);
     if (resolved === undefined) {
       return undefined;
     }
 
     const definitionDoc =
       resolved.namespace === undefined
-        ? doc
-        : state.docByNs(resolved.namespace);
+        ? module.document
+        : state.moduleByNs(resolved.namespace)!.document;
 
     return {
       uri: definitionDoc.uri,
@@ -409,14 +351,13 @@ export async function lspCmd() {
   });
 
   connection.onHover(({ textDocument, position }) => {
-    const res = state.docByUri(textDocument.uri);
-    if (res === undefined) {
+    const module = state.moduleByUri(textDocument.uri);
+    if (module?.typed === undefined) {
       return;
     }
-    const [doc, ast, ns] = res;
 
-    const offset = doc.offsetAt(position);
-    const hoverData = hoverOn(ns, ast, offset);
+    const offset = module.document.offsetAt(position);
+    const hoverData = hoverOn(module.ns, module.typed, offset);
     if (hoverData === undefined) {
       return undefined;
     }
@@ -424,7 +365,7 @@ export async function lspCmd() {
     const [scheme, hover] = hoverData;
     const md = hoverToMarkdown(scheme, hover);
     return {
-      range: spannedToRange(doc, hover.span),
+      range: spannedToRange(module.document, hover.span),
       contents: {
         kind: MarkupKind.Markdown,
         value: md,
