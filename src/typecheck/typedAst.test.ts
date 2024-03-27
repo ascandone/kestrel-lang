@@ -418,7 +418,7 @@ describe("find references", () => {
       typecheckRaw({ Main }),
     );
 
-    expect(refs).toEqual<[string, Identifier][]>([
+    expect(refs?.references).toEqual<[string, Identifier][]>([
       [
         "Main",
         expect.objectContaining({
@@ -462,7 +462,7 @@ function parseFindReferences(
   offset: number,
   typedProject: Record<string, TypedModule> = {},
 ): [string, Identifier][] {
-  return findReferences(hoveringOnNamespace, offset, typedProject);
+  return findReferences(hoveringOnNamespace, offset, typedProject)!.references;
 }
 
 function parseHover(

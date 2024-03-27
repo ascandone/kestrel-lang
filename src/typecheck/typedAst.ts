@@ -625,29 +625,38 @@ export function foldTree<T>(
 
 export type Identifier = TypedExpr & { type: "identifier" };
 
+export type References = {
+  resolution: IdentifierResolution;
+  references: Array<[string, Identifier]>;
+};
+
+// TODO also rename exposed imports
 export function findReferences(
   namespace: string,
   offset: number,
   typedProject: Record<string, TypedModule>,
-): [string, Identifier][] {
+): References | undefined {
   const srcModule = typedProject[namespace];
   if (srcModule === undefined) {
     throw new Error("[unreachable] module not found");
   }
 
-  for (const decl of srcModule.declarations) {
-    if (!contains(decl, offset)) {
+  for (const declaration of srcModule.declarations) {
+    if (!contains(declaration, offset)) {
       continue;
     }
 
-    if (!contains(decl.binding, offset)) {
-      return [];
+    if (!contains(declaration.binding, offset)) {
+      return undefined;
     }
 
-    return findReferencesOfDeclaration(decl, typedProject);
+    return {
+      resolution: { type: "global-variable", declaration, namespace },
+      references: findReferencesOfDeclaration(declaration, typedProject),
+    };
   }
 
-  return [];
+  return undefined;
 }
 
 function findReferencesOfDeclaration(

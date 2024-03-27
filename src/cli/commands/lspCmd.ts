@@ -6,6 +6,7 @@ import {
   TextDocumentSyncKind,
   TextDocuments,
   TextEdit,
+  WorkspaceEdit,
   _Connection,
   createConnection,
 } from "vscode-languageserver";
@@ -221,6 +222,7 @@ export async function lspCmd() {
       codeLensProvider: { resolveProvider: true },
       documentFormattingProvider: true,
       referencesProvider: true,
+      renameProvider: true,
     },
   }));
 
@@ -249,11 +251,14 @@ export async function lspCmd() {
       return;
     }
 
-    return findReferences(
-      ns,
-      module.document.offsetAt(position),
-      state.getTypedProject(),
-    ).map(([referenceNs, referenceExpr]) => {
+    const refs =
+      findReferences(
+        ns,
+        module.document.offsetAt(position),
+        state.getTypedProject(),
+      )?.references ?? [];
+
+    return refs.map(([referenceNs, referenceExpr]) => {
       const referenceModule = state.moduleByNs(referenceNs)!;
 
       return {
@@ -261,6 +266,67 @@ export async function lspCmd() {
         range: spannedToRange(referenceModule.document, referenceExpr.span),
       };
     });
+  });
+
+  connection.onPrepareRename(() => {
+    return undefined;
+  });
+
+  connection.onRenameRequest(({ textDocument, position, newName }) => {
+    const ns = state.nsByUri(textDocument.uri);
+    if (ns === undefined) {
+      return;
+    }
+
+    const module = state.moduleByUri(textDocument.uri);
+    if (module === undefined) {
+      return;
+    }
+
+    const refs = findReferences(
+      ns,
+      module.document.offsetAt(position),
+      state.getTypedProject(),
+    );
+
+    if (refs === undefined) {
+      return;
+    }
+
+    const changes: NonNullable<WorkspaceEdit["changes"]> = {};
+    switch (refs.resolution.type) {
+      case "global-variable": {
+        const module = state.moduleByNs(refs.resolution.namespace)!;
+
+        getOrDefault(changes, module.document.uri, []).push({
+          newText: newName,
+          range: spannedToRange(
+            module.document,
+            refs.resolution.declaration.binding.span,
+          ),
+        });
+
+        break;
+      }
+      case "local-variable":
+        break;
+      case "constructor":
+        break;
+    }
+
+    for (const [ns, ident] of refs.references) {
+      const refModule = state.moduleByNs(ns);
+      if (refModule === undefined) {
+        continue;
+      }
+
+      getOrDefault(changes, refModule.document.uri, []).push({
+        newText: newName,
+        range: spannedToRange(refModule.document, ident.span),
+      });
+    }
+
+    return { changes };
   });
 
   connection.onDocumentFormatting(({ textDocument }) => {
@@ -391,4 +457,13 @@ function toDiagnosticSeverity(severity: Severity): DiagnosticSeverity {
     case "warning":
       return DiagnosticSeverity.Warning;
   }
+}
+
+function getOrDefault<V>(o: Record<string, V>, k: string, default_: V): V {
+  if (!(k in o)) {
+    o[k] = default_;
+    return default_;
+  }
+
+  return o[k]!;
 }
