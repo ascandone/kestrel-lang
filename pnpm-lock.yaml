@@ -6,7 +6,11 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    devDependencies:
+      turbo:
+        specifier: ^1.13.0
+        version: 1.13.0
 
   core:
     dependencies:
@@ -50,9 +54,6 @@ importers:
       prettier:
         specifier: ^3.2.1
         version: 3.2.5
-      turbo:
-        specifier: ^1.13.0
-        version: 1.13.0
       typescript:
         specifier: 5.3.3
         version: 5.3.3

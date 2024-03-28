@@ -8,5 +8,8 @@
     "linter:check": "turbo run linter:check",
     "ts:check": "turbo run ts:check",
     "test:run": "turbo run test:run"
+  },
+  "devDependencies": {
+    "turbo": "^1.13.0"
   }
 }
