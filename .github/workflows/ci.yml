@@ -5,16 +5,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: pnpm setup
+        uses: pnpm/action-setup@v3.0.0
+        with:
+          version: 8
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "yarn"
-      - run: yarn install --frozen-lockfile --prefer-offline
-      - run: yarn format:check
-      - run: yarn linter:check
-      - run: yarn gen:parser
-      - run: yarn ts:check
-      - run: yarn test:run
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: npm run format:check
+      - run: npm run linter:check
+      - run: npm run gen:parser
+      - run: npm run ts:check
+      - run: npm run test:run
       - uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
