@@ -4,54 +4,58 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-dependencies:
-  commander:
-    specifier: ^11.1.0
-    version: 11.1.0
-  ohm-js:
-    specifier: ^17.1.0
-    version: 17.1.0
-  ts-decode:
-    specifier: ^0.0.14
-    version: 0.0.14
-  vscode-languageserver:
-    specifier: ^9.0.1
-    version: 9.0.1
-  vscode-languageserver-textdocument:
-    specifier: ^1.0.11
-    version: 1.0.11
+importers:
 
-devDependencies:
-  '@ohm-js/cli':
-    specifier: ^2.0.0
-    version: 2.0.0(ohm-js@17.1.0)
-  '@types/node':
-    specifier: ^20.11.5
-    version: 20.11.30
-  '@typescript-eslint/eslint-plugin':
-    specifier: ^6.19.1
-    version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.57.0)(typescript@5.3.3)
-  '@typescript-eslint/parser':
-    specifier: ^6.19.1
-    version: 6.21.0(eslint@8.57.0)(typescript@5.3.3)
-  '@vitest/coverage-v8':
-    specifier: ^1.2.0
-    version: 1.4.0(vitest@1.4.0)
-  '@vitest/ui':
-    specifier: ^1.2.1
-    version: 1.4.0(vitest@1.4.0)
-  eslint:
-    specifier: ^8.56.0
-    version: 8.57.0
-  prettier:
-    specifier: ^3.2.1
-    version: 3.2.5
-  typescript:
-    specifier: 5.3.3
-    version: 5.3.3
-  vitest:
-    specifier: ^1.2.0
-    version: 1.4.0(@types/node@20.11.30)(@vitest/ui@1.4.0)
+  .: {}
+
+  core:
+    dependencies:
+      commander:
+        specifier: ^11.1.0
+        version: 11.1.0
+      ohm-js:
+        specifier: ^17.1.0
+        version: 17.1.0
+      ts-decode:
+        specifier: ^0.0.14
+        version: 0.0.14
+      vscode-languageserver:
+        specifier: ^9.0.1
+        version: 9.0.1
+      vscode-languageserver-textdocument:
+        specifier: ^1.0.11
+        version: 1.0.11
+    devDependencies:
+      '@ohm-js/cli':
+        specifier: ^2.0.0
+        version: 2.0.0(ohm-js@17.1.0)
+      '@types/node':
+        specifier: ^20.11.5
+        version: 20.11.30
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^6.19.1
+        version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.57.0)(typescript@5.3.3)
+      '@typescript-eslint/parser':
+        specifier: ^6.19.1
+        version: 6.21.0(eslint@8.57.0)(typescript@5.3.3)
+      '@vitest/coverage-v8':
+        specifier: ^1.2.0
+        version: 1.4.0(vitest@1.4.0)
+      '@vitest/ui':
+        specifier: ^1.2.1
+        version: 1.4.0(vitest@1.4.0)
+      eslint:
+        specifier: ^8.56.0
+        version: 8.57.0
+      prettier:
+        specifier: ^3.2.1
+        version: 3.2.5
+      typescript:
+        specifier: 5.3.3
+        version: 5.3.3
+      vitest:
+        specifier: ^1.2.0
+        version: 1.4.0(@types/node@20.11.30)(@vitest/ui@1.4.0)
 
 packages:
 
