@@ -2,6 +2,11 @@
   "name": "kestrel-lang",
   "version": "0.0.20",
   "description": "A pure, strongly typed functional language that compiles to js",
-  "license": "MIT"
-  
+  "license": "MIT",
+  "scripts": {
+    "format:check": "turbo run format:check",
+    "linter:check": "turbo run linter:check",
+    "ts:check": "turbo run ts:check",
+    "test:run": "turbo run test:run"
+  }
 }

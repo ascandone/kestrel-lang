@@ -5,3 +5,5 @@ coverage
 
 # Generated
 *.ohm-bundle.*
+
+.turbo

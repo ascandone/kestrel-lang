@@ -16,7 +16,7 @@
     "test:run": "vitest --run --coverage",
     "ts:build": "tsc --project tsconfig.build.json",
     "ts:watch": "tsc --watch",
-    "ts:check": "tsc --noEmit",
+    "ts:check": "npm run gen:parser && tsc --noEmit",
     "format:check": "prettier --check --cache ./**/*.ts",
     "format:write": "prettier --write --cache ./**/*.ts",
     "linter:check": "eslint .",
@@ -38,6 +38,7 @@
     "@vitest/ui": "^1.2.1",
     "eslint": "^8.56.0",
     "prettier": "^3.2.1",
+    "turbo": "^1.13.0",
     "typescript": "5.3.3",
     "vitest": "^1.2.0"
   }

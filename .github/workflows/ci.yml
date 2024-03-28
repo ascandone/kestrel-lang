@@ -18,7 +18,7 @@ jobs:
       - run: pnpm install --frozen-lockfile --prefer-offline
       - run: npm run format:check
       - run: npm run linter:check
-      - run: npm run gen:parser
+      # - run: npm run gen:parser
       - run: npm run ts:check
       - run: npm run test:run
       - uses: codecov/codecov-action@v3
