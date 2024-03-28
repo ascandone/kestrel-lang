@@ -24,6 +24,7 @@ import {
   UntypedProject,
   findReferences,
   autocompletable,
+  functionSignatureHint,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
 import { ErrorInfo, Severity } from "../../errors";
@@ -226,6 +227,9 @@ export async function lspCmd() {
       documentFormattingProvider: true,
       referencesProvider: true,
       renameProvider: true,
+      signatureHelpProvider: {
+        triggerCharacters: ["("],
+      },
       completionProvider: {
         triggerCharacters: ["."],
       },
@@ -246,11 +250,43 @@ export async function lspCmd() {
     }
   });
 
+  connection.onSignatureHelp(({ textDocument, position }) => {
+    const module = state.moduleByUri(textDocument.uri);
+
+    if (module?.typed === undefined) {
+      return;
+    }
+
+    const offset = module.document.offsetAt(position);
+
+    const hint = functionSignatureHint(module.typed, offset);
+
+    if (hint === undefined) {
+      return;
+    }
+
+    const label = `${hint.declaration.binding.name}: ${typeToString(hint.declaration.binding.$.asType())}`;
+
+    return {
+      signatures: [
+        {
+          label,
+          documentation:
+            hint.declaration.docComment === undefined
+              ? undefined
+              : {
+                  kind: MarkupKind.Markdown,
+                  value: hint.declaration.docComment,
+                },
+        },
+      ],
+    };
+  });
+
   connection.onCompletion(({ textDocument, position }) => {
     const module = state.moduleByUri(textDocument.uri);
 
     if (module?.typed === undefined) {
-      console.log("not typed");
       return;
     }
 

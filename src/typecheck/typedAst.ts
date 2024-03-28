@@ -163,6 +163,87 @@ export function autocompletable(
   return undefined;
 }
 
+type FunctionSignatureHint = {
+  declaration: TypedDeclaration;
+};
+
+export function functionSignatureHint(
+  module: TypedModule,
+  offset: number,
+): FunctionSignatureHint | undefined {
+  for (const decl of module.declarations) {
+    if (!contains(decl, offset)) {
+      continue;
+    }
+
+    if (decl.extern) {
+      continue;
+    }
+
+    return functionSignatureHintExpr(decl.value, offset);
+  }
+
+  return undefined;
+}
+
+function functionSignatureHintExpr(
+  expr: TypedExpr,
+  offset: number,
+): FunctionSignatureHint | undefined {
+  switch (expr.type) {
+    case "application": {
+      const inner =
+        functionSignatureHintExpr(expr.caller, offset) ??
+        firstBy(expr.args, (arg) => functionSignatureHintExpr(arg, offset));
+
+      if (inner !== undefined) {
+        return inner;
+      }
+
+      // if inner is undefined, we are the closest wrapping expr
+      if (
+        expr.caller.type !== "identifier" ||
+        expr.caller.resolution === undefined ||
+        expr.caller.resolution.type !== "global-variable"
+      ) {
+        return;
+      }
+
+      return {
+        declaration: expr.caller.resolution.declaration,
+      };
+    }
+
+    case "identifier":
+    case "constant":
+      return undefined;
+
+    case "fn":
+      return functionSignatureHintExpr(expr.body, offset);
+
+    case "if":
+      return (
+        functionSignatureHintExpr(expr.condition, offset) ??
+        functionSignatureHintExpr(expr.then, offset) ??
+        functionSignatureHintExpr(expr.else, offset)
+      );
+
+    case "let":
+      return (
+        functionSignatureHintExpr(expr.value, offset) ??
+        functionSignatureHintExpr(expr.body, offset)
+      );
+
+    case "match":
+      return (
+        functionSignatureHintExpr(expr.expr, offset) ??
+        firstBy(expr.clauses, ([_pattern, expr]) =>
+          functionSignatureHintExpr(expr, offset),
+        )
+      );
+  }
+}
+
 function autocompleteDecl(
   declaration: TypedDeclaration,
   offset: number,
