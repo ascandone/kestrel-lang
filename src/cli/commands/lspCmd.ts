@@ -265,18 +265,18 @@ export async function lspCmd() {
       return;
     }
 
-    const label = `${hint.declaration.binding.name}: ${typeToString(hint.declaration.binding.$.asType())}`;
+    const label = `${hint.name}: ${typeToString(hint.type, hint.scheme)}`;
 
     return {
       signatures: [
         {
           label,
           documentation:
-            hint.declaration.docComment === undefined
+            hint.docComment === undefined
               ? undefined
               : {
                   kind: MarkupKind.Markdown,
-                  value: hint.declaration.docComment,
+                  value: hint.docComment,
                 },
         },
       ],

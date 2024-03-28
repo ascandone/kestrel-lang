@@ -164,7 +164,10 @@ export function autocompletable(
 }
 
 type FunctionSignatureHint = {
-  declaration: TypedDeclaration;
+  name: string;
+  type: Type;
+  docComment?: string;
+  scheme?: TypeScheme;
 };
 
 export function functionSignatureHint(
@@ -203,15 +206,38 @@ function functionSignatureHintExpr(
       // if inner is undefined, we are the closest wrapping expr
       if (
         expr.caller.type !== "identifier" ||
-        expr.caller.resolution === undefined ||
-        expr.caller.resolution.type !== "global-variable"
+        expr.caller.resolution === undefined
       ) {
         return;
       }
 
-      return {
-        declaration: expr.caller.resolution.declaration,
-      };
+      switch (expr.caller.resolution.type) {
+        case "global-variable": {
+          const { declaration } = expr.caller.resolution;
+          return {
+            name: declaration.binding.name,
+            type: declaration.binding.$.asType(),
+            docComment: declaration.docComment,
+          };
+        }
+
+        case "local-variable": {
+          const { binding } = expr.caller.resolution;
+          return {
+            name: binding.name,
+            type: binding.$.asType(),
+          };
+        }
+
+        case "constructor": {
+          const { variant } = expr.caller.resolution;
+          return {
+            name: variant.name,
+            type: variant.mono,
+            scheme: variant.scheme,
+          };
+        }
+      }
     }
 
     case "identifier":
