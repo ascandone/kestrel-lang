@@ -1,14 +1,15 @@
 import { readFile, readdir, rmdir } from "node:fs/promises";
-import { parse, UntypedModule } from "../parser";
 import { typecheckProject, TypedModule, UntypedProject } from "../typecheck";
 import { exit } from "node:process";
 import { compileProject, defaultEntryPoint } from "../compiler";
-import { col } from "../utils/colors";
 import { exec } from "node:child_process";
 import { Config, Dependency, readConfig } from "./config";
 import { join } from "node:path";
-import { errorInfoToString } from "../errors";
 import { promisify } from "node:util";
+
+import { errorInfoToString } from "../errors";
+import { col } from "@kestrel-lang/shared";
+import { parse, UntypedModule } from "@kestrel-lang/core";
 
 const execP = promisify(exec);
 

@@ -1,5 +1,5 @@
-import { readConfig } from "../config";
-import { fetchDeps } from "../common";
+import { readConfig } from "../../../core/src/cli/config";
+import { fetchDeps } from "../../../core/src/cli/common";
 
 export async function depsInstall() {
   const path = process.cwd();

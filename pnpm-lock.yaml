@@ -12,14 +12,17 @@ importers:
         specifier: ^1.13.0
         version: 1.13.0
 
-  core:
+  cli:
     dependencies:
+      '@kestrel-lang/core':
+        specifier: workspace:*
+        version: link:../core
+      '@kestrel-lang/shared':
+        specifier: workspace:*
+        version: link:../shared
       commander:
         specifier: ^11.1.0
         version: 11.1.0
-      ohm-js:
-        specifier: ^17.1.0
-        version: 17.1.0
       ts-decode:
         specifier: ^0.0.14
         version: 0.0.14
@@ -30,12 +33,31 @@ importers:
         specifier: ^1.0.11
         version: 1.0.11
     devDependencies:
-      '@ohm-js/cli':
-        specifier: ^2.0.0
-        version: 2.0.0(ohm-js@17.1.0)
       '@types/node':
         specifier: ^20.11.5
         version: 20.11.30
+      prettier:
+        specifier: ^3.2.1
+        version: 3.2.5
+      typescript:
+        specifier: 5.3.3
+        version: 5.3.3
+      vitest:
+        specifier: ^1.2.0
+        version: 1.4.0(@types/node@20.11.30)
+
+  core:
+    dependencies:
+      '@kestrel-lang/shared':
+        specifier: workspace:*
+        version: link:../shared
+      ohm-js:
+        specifier: ^17.1.0
+        version: 17.1.0
+    devDependencies:
+      '@ohm-js/cli':
+        specifier: ^2.0.0
+        version: 2.0.0(ohm-js@17.1.0)
       '@typescript-eslint/eslint-plugin':
         specifier: ^6.19.1
         version: 6.21.0(@typescript-eslint/parser@6.21.0)(eslint@8.57.0)(typescript@5.3.3)
@@ -59,7 +81,9 @@ importers:
         version: 5.3.3
       vitest:
         specifier: ^1.2.0
-        version: 1.4.0(@types/node@20.11.30)(@vitest/ui@1.4.0)
+        version: 1.4.0(@vitest/ui@1.4.0)
+
+  shared: {}
 
 packages:
 
@@ -750,7 +774,7 @@ packages:
       strip-literal: 2.0.0
       test-exclude: 6.0.0
       v8-to-istanbul: 9.2.0
-      vitest: 1.4.0(@types/node@20.11.30)(@vitest/ui@1.4.0)
+      vitest: 1.4.0(@vitest/ui@1.4.0)
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -797,7 +821,7 @@ packages:
       pathe: 1.1.2
       picocolors: 1.0.0
       sirv: 2.0.4
-      vitest: 1.4.0(@types/node@20.11.30)(@vitest/ui@1.4.0)
+      vitest: 1.4.0(@vitest/ui@1.4.0)
     dev: true
 
   /@vitest/utils@1.4.0:
@@ -2070,7 +2094,7 @@ packages:
       fsevents: 2.3.3
     dev: true
 
-  /vitest@1.4.0(@types/node@20.11.30)(@vitest/ui@1.4.0):
+  /vitest@1.4.0(@types/node@20.11.30):
     resolution: {integrity: sha512-gujzn0g7fmwf83/WzrDTnncZt2UiXP41mHuFYFrdwaLRVQ6JYQEiME2IfEjU3vcFL3VKa75XhI3lFgn+hfVsQw==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -2096,6 +2120,61 @@ packages:
         optional: true
     dependencies:
       '@types/node': 20.11.30
+      '@vitest/expect': 1.4.0
+      '@vitest/runner': 1.4.0
+      '@vitest/snapshot': 1.4.0
+      '@vitest/spy': 1.4.0
+      '@vitest/utils': 1.4.0
+      acorn-walk: 8.3.2
+      chai: 4.4.1
+      debug: 4.3.4
+      execa: 8.0.1
+      local-pkg: 0.5.0
+      magic-string: 0.30.8
+      pathe: 1.1.2
+      picocolors: 1.0.0
+      std-env: 3.7.0
+      strip-literal: 2.0.0
+      tinybench: 2.6.0
+      tinypool: 0.8.3
+      vite: 5.2.6(@types/node@20.11.30)
+      vite-node: 1.4.0(@types/node@20.11.30)
+      why-is-node-running: 2.2.2
+    transitivePeerDependencies:
+      - less
+      - lightningcss
+      - sass
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+    dev: true
+
+  /vitest@1.4.0(@vitest/ui@1.4.0):
+    resolution: {integrity: sha512-gujzn0g7fmwf83/WzrDTnncZt2UiXP41mHuFYFrdwaLRVQ6JYQEiME2IfEjU3vcFL3VKa75XhI3lFgn+hfVsQw==}
+    engines: {node: ^18.0.0 || >=20.0.0}
+    hasBin: true
+    peerDependencies:
+      '@edge-runtime/vm': '*'
+      '@types/node': ^18.0.0 || >=20.0.0
+      '@vitest/browser': 1.4.0
+      '@vitest/ui': 1.4.0
+      happy-dom: '*'
+      jsdom: '*'
+    peerDependenciesMeta:
+      '@edge-runtime/vm':
+        optional: true
+      '@types/node':
+        optional: true
+      '@vitest/browser':
+        optional: true
+      '@vitest/ui':
+        optional: true
+      happy-dom:
+        optional: true
+      jsdom:
+        optional: true
+    dependencies:
       '@vitest/expect': 1.4.0
       '@vitest/runner': 1.4.0
       '@vitest/snapshot': 1.4.0

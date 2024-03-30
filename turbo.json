@@ -3,7 +3,7 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": ["dist/**"]
     },
     "test": {
       "dependsOn": ["build"],
@@ -11,7 +11,9 @@
     },
     "format:check": {},
     "linter:check": {},
-    "ts:check": {},
+    "ts:check": {
+      "dependsOn": ["^build"]
+    },
     "test:run": {}
   }
 }

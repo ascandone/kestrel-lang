@@ -1,4 +1,3 @@
-import { exit } from "process";
 import { Binding, ConstLiteral, MatchPattern, TypeVariant } from "../parser";
 import { TypedExpr, TypedModule } from "../typecheck";
 import { ConcreteType } from "../typecheck/type";
@@ -825,7 +824,7 @@ export function compileProject(
     const module = typedProject[ns];
     if (module === undefined) {
       console.error(col.red.tag`Error:`, `Could not find module '${ns}'`);
-      exit(1);
+      return;
     }
 
     for (const import_ of module.imports) {
