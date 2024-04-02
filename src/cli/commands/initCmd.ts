@@ -3,7 +3,7 @@ import { configDecoder, defaultConfig, writeConfig } from "../config";
 import { join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { fetchDeps } from "../common";
+import { fetchDeps } from "../deps";
 import { col } from "../../utils/colors";
 
 const execP = promisify(exec);

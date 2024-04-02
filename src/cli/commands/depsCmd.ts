@@ -1,5 +1,5 @@
 import { readConfig } from "../config";
-import { fetchDeps } from "../common";
+import { fetchDeps } from "../deps";
 
 export async function depsInstall() {
   const path = process.cwd();

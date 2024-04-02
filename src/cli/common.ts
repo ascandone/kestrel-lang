@@ -1,16 +1,12 @@
-import { readFile, readdir, rmdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { parse, UntypedModule } from "../parser";
 import { typecheckProject, TypedModule, UntypedProject } from "../typecheck";
 import { exit } from "node:process";
 import { compileProject, defaultEntryPoint } from "../compiler";
 import { col } from "../utils/colors";
-import { exec } from "node:child_process";
 import { Config, Dependency, readConfig } from "./config";
 import { join } from "node:path";
 import { errorInfoToString } from "../errors";
-import { promisify } from "node:util";
-
-const execP = promisify(exec);
 
 export const EXTENSION = "kes";
 
@@ -27,27 +23,6 @@ function dependencyToPath(name: string, dep: Dependency): string {
       return dep.path;
     case "git":
       return `deps/${name}`;
-  }
-}
-
-export async function fetchDeps(path: string, config: Config) {
-  const deps = Object.entries(config.dependencies ?? {});
-
-  try {
-    await rmdir(`${path}/deps`);
-  } catch {
-    //
-  }
-
-  for (const [name, dep] of deps) {
-    if (dep.type === "git") {
-      process.stdout.write(
-        `${col.blue.tag`[info]`} Fetching ${name} from git...\n`,
-      );
-      // This raises an err on failure
-      await execP(`git clone --depth=1 ${dep.git} ${path}/deps/${name}`);
-      process.stdout.write(` Done.`);
-    }
   }
 }
 
