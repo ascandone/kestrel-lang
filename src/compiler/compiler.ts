@@ -801,7 +801,7 @@ export function compileProject(
 ): string {
   const entry = typedProject[entrypoint.module];
   if (entry === undefined) {
-    throw new Error(`Entrypoint not found: ${entry}`);
+    throw new Error(`Entrypoint not found: '${entrypoint.module}'`);
   }
 
   const mainDecl = entry.declarations.find(
