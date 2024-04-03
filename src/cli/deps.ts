@@ -4,7 +4,7 @@ import { exec } from "node:child_process";
 import * as dec from "ts-decode";
 import { col } from "../utils/colors";
 import { readFile, rm, writeFile } from "node:fs/promises";
-import { Config } from "./config";
+import { Config, Dependency, readConfig } from "./config";
 import * as paths from "./paths";
 import { existsSync } from "node:fs";
 
@@ -170,12 +170,19 @@ export async function fetchDeps(path: string, config: Config) {
     await mkdir(paths.dependencies(path));
   }
 
-  const deps = Object.entries(config.dependencies ?? {});
-  for (const [dependencyName, dep] of deps) {
+  const visited = new Set<string>();
+
+  async function visit(dependencyName: string, dep: Dependency) {
+    if (visited.has(dependencyName)) {
+      return;
+    }
+    visited.add(dependencyName);
+
+    // VISIT DEP
     switch (dep.type) {
       case "git": {
         const updated = await fetchGitDep(
-          lockfile,
+          lockfile!,
           path,
           dependencyName,
           dep.git,
@@ -192,9 +199,21 @@ export async function fetchDeps(path: string, config: Config) {
         if (!existsSync(dependencyPath)) {
           await symlink(dep.path, dependencyPath, "dir");
         }
-        continue;
+        break;
       }
     }
+
+    // RECUR
+    const config = await readConfig(paths.dependency(path, dependencyName));
+    const deps = Object.entries(config.dependencies ?? {});
+    for (const [dependencyName, dep] of deps) {
+      visit(dependencyName, dep);
+    }
+  }
+
+  const deps = Object.entries(config.dependencies ?? {});
+  for (const [dependencyName, dep] of deps) {
+    visit(dependencyName, dep);
   }
 
   if (updatedLockfile) {
