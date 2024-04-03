@@ -1,10 +1,12 @@
 import { promisify } from "node:util";
+import { mkdir, symlink } from "node:fs/promises";
 import { exec } from "node:child_process";
 import * as dec from "ts-decode";
 import { col } from "../utils/colors";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { Config } from "./config";
 import * as paths from "./paths";
+import { existsSync } from "node:fs";
 
 const execP = promisify(exec);
 
@@ -164,6 +166,10 @@ export async function fetchDeps(path: string, config: Config) {
     };
   }
 
+  if (!existsSync(paths.dependencies(path))) {
+    await mkdir(paths.dependencies(path));
+  }
+
   const deps = Object.entries(config.dependencies ?? {});
   for (const [dependencyName, dep] of deps) {
     switch (dep.type) {
@@ -178,10 +184,16 @@ export async function fetchDeps(path: string, config: Config) {
         if (updated) {
           updatedLockfile = true;
         }
+        break;
       }
 
-      case "local":
+      case "local": {
+        const dependencyPath = paths.dependency(path, dependencyName);
+        if (!existsSync(dependencyPath)) {
+          await symlink(dep.path, dependencyPath, "dir");
+        }
         continue;
+      }
     }
   }
 
