@@ -112,10 +112,11 @@ Program {
     = (Qualifier ".")? typeIdent
 
   QualifiedName
-    = (Qualifier ".")? (ident | typeIdent)
+    = (Qualifier ".")? (ident | typeIdent)  -- validIdent
+    | (Qualifier ".") ""  -- emptyIdent
 
   Qualifier
-    = ListOf<moduleName, "/">
+    = NonemptyListOf<moduleName, "/">
 
   identHead
     = lower

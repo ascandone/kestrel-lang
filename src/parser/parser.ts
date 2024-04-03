@@ -283,7 +283,25 @@ semantics.addOperation<UntypedExpr>("expr()", {
     };
   },
 
-  QualifiedName(ns, _dot, id) {
+  QualifiedName_emptyIdent(ns, _dot, _emptyIdent) {
+    const namespace =
+      ns.numChildren === 0
+        ? undefined
+        : ns
+            .child(0)
+            .asIteration()
+            .children.map((c) => c.sourceString)
+            .join("/");
+
+    return {
+      type: "identifier",
+      span: getSpan(this),
+      namespace,
+      name: "",
+    };
+  },
+
+  QualifiedName_validIdent(ns, _dot, id) {
     const namespace =
       ns.numChildren === 0
         ? undefined

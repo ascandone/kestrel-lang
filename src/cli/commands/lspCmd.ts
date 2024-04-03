@@ -1,4 +1,6 @@
 import {
+  CompletionItem,
+  CompletionItemKind,
   DiagnosticSeverity,
   MarkupKind,
   PublishDiagnosticsParams,
@@ -21,6 +23,8 @@ import {
   hoverToMarkdown,
   UntypedProject,
   findReferences,
+  autocompletable,
+  functionSignatureHint,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
 import { ErrorInfo, Severity } from "../../errors";
@@ -223,6 +227,12 @@ export async function lspCmd() {
       documentFormattingProvider: true,
       referencesProvider: true,
       renameProvider: true,
+      signatureHelpProvider: {
+        triggerCharacters: ["("],
+      },
+      completionProvider: {
+        triggerCharacters: ["."],
+      },
     },
   }));
 
@@ -238,6 +248,79 @@ export async function lspCmd() {
     for (const diagnostic of diagnostics) {
       connection.sendDiagnostics(diagnostic);
     }
+  });
+
+  connection.onSignatureHelp(({ textDocument, position }) => {
+    const module = state.moduleByUri(textDocument.uri);
+
+    if (module?.typed === undefined) {
+      return;
+    }
+
+    const offset = module.document.offsetAt(position);
+
+    const hint = functionSignatureHint(module.typed, offset);
+
+    if (hint === undefined) {
+      return;
+    }
+
+    const label = `${hint.name}: ${typeToString(hint.type, hint.scheme)}`;
+
+    return {
+      signatures: [
+        {
+          label,
+          documentation:
+            hint.docComment === undefined
+              ? undefined
+              : {
+                  kind: MarkupKind.Markdown,
+                  value: hint.docComment,
+                },
+        },
+      ],
+    };
+  });
+
+  connection.onCompletion(({ textDocument, position }) => {
+    const module = state.moduleByUri(textDocument.uri);
+
+    if (module?.typed === undefined) {
+      return;
+    }
+
+    const offset = module.document.offsetAt(position);
+
+    const autocompletable_ = autocompletable(module.typed, offset);
+
+    if (autocompletable_ === undefined) {
+      return undefined;
+    }
+
+    const import_ = module.typed.imports.some(
+      (import_) => import_.ns === autocompletable_.namespace,
+    );
+
+    if (!import_) {
+      return;
+    }
+
+    const importedModule = state.moduleByNs(autocompletable_.namespace);
+    if (importedModule?.typed === undefined) {
+      return;
+    }
+
+    return importedModule.typed.declarations
+      .filter((d) => d.pub)
+      .map<CompletionItem>((d) => ({
+        label: d.binding.name,
+        kind: CompletionItemKind.Function,
+        documentation: {
+          kind: MarkupKind.Markdown,
+          value: d.docComment ?? "example doc",
+        },
+      }));
   });
 
   connection.onReferences(({ textDocument, position }) => {
@@ -320,8 +403,13 @@ export async function lspCmd() {
         continue;
       }
 
+      const newText =
+        ident.namespace === undefined
+          ? newName
+          : `${ident.namespace}.${newName}`;
+
       getOrDefault(changes, refModule.document.uri, []).push({
-        newText: newName,
+        newText,
         range: spannedToRange(refModule.document, ident.span),
       });
     }
