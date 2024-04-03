@@ -1,5 +1,6 @@
 import { Binding, ConstLiteral } from "../parser";
-import { TypeMeta, TypedExpr, TypedModule, foldTree } from "../typecheck";
+import { TypeMeta, TypedExpr, TypedModule } from "../typecheck";
+import { foldTree } from "../typecheck/typedAst/common";
 
 type Optimization = (src: TypedExpr) => TypedExpr | undefined;
 
