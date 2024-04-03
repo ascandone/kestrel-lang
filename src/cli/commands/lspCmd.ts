@@ -403,8 +403,13 @@ export async function lspCmd() {
         continue;
       }
 
+      const newText =
+        ident.namespace === undefined
+          ? newName
+          : `${ident.namespace}.${newName}`;
+
       getOrDefault(changes, refModule.document.uri, []).push({
-        newText: newName,
+        newText,
         range: spannedToRange(refModule.document, ident.span),
       });
     }
