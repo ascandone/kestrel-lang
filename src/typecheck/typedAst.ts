@@ -88,60 +88,70 @@ export function hoverOn(
   module: TypedModule,
   offset: number,
 ): [TypeScheme, Hovered] | undefined {
-  for (const typeDecl of module.typeDeclarations) {
-    if (!contains(typeDecl, offset)) {
-      continue;
-    }
+  const statement = statementByOffset(module, offset);
+  if (statement === undefined) {
+    return undefined;
+  }
 
-    if (typeDecl.type === "adt") {
-      for (const variant of typeDecl.variants) {
-        if (!contains(variant, offset)) {
-          continue;
-        }
-
-        const res = firstBy(variant.args, (arg) => hoverOnTypeAst(arg, offset));
+  switch (statement.type) {
+    case "declaration": {
+      if (statement.declaration.typeHint !== undefined) {
+        const res = hoverOnTypeAst(statement.declaration.typeHint, offset);
         if (res !== undefined) {
           return res;
         }
+      }
 
-        return [
-          variant.scheme,
-          {
-            span: variant.span,
-            hovered: {
-              type: "constructor",
-              variant,
-              namespace,
+      const d = hoverOnDecl(namespace, statement.declaration, offset);
+      if (d !== undefined) {
+        return [statement.declaration.scheme, d];
+      }
+      return undefined;
+    }
+
+    case "type-declaration":
+      if (statement.typeDeclaration.type === "adt") {
+        for (const variant of statement.typeDeclaration.variants) {
+          if (!contains(variant, offset)) {
+            continue;
+          }
+
+          const res = firstBy(variant.args, (arg) =>
+            hoverOnTypeAst(arg, offset),
+          );
+          if (res !== undefined) {
+            return res;
+          }
+
+          return [
+            variant.scheme,
+            {
+              span: variant.span,
+              hovered: {
+                type: "constructor",
+                variant,
+                namespace,
+              },
             },
+          ];
+        }
+      }
+
+      return [
+        {},
+        {
+          span: statement.typeDeclaration.span,
+          hovered: {
+            type: "type",
+            namespace,
+            typeDecl: statement.typeDeclaration,
           },
-        ];
-      }
-    }
+        },
+      ];
 
-    return [
-      {},
-      {
-        span: typeDecl.span,
-        hovered: { type: "type", namespace, typeDecl: typeDecl },
-      },
-    ];
+    case "import":
+      return undefined;
   }
-
-  for (const decl of module.declarations) {
-    if (decl.typeHint !== undefined) {
-      const res = hoverOnTypeAst(decl.typeHint, offset);
-      if (res !== undefined) {
-        return res;
-      }
-    }
-
-    const d = hoverOnDecl(namespace, decl, offset);
-    if (d !== undefined) {
-      return [decl.scheme, d];
-    }
-  }
-
-  return undefined;
 }
 
 type Autocompletable = {
@@ -897,4 +907,45 @@ function findReferencesOfDeclarationInModule(
   }
 
   return res;
+}
+
+export type StatementType =
+  | {
+      type: "declaration";
+      declaration: TypedDeclaration;
+    }
+  | {
+      type: "type-declaration";
+      typeDeclaration: TypedTypeDeclaration;
+    }
+  | {
+      type: "import";
+      import: TypedImport;
+    };
+
+export function statementByOffset(
+  module: TypedModule,
+  offset: number,
+): StatementType | undefined {
+  // TODO this can be optimized with a binary search
+  // or at least with an early exit
+  for (const declaration of module.declarations) {
+    if (contains(declaration, offset)) {
+      return { type: "declaration", declaration };
+    }
+  }
+
+  for (const import_ of module.imports) {
+    if (contains(import_, offset)) {
+      return { type: "import", import: import_ };
+    }
+  }
+
+  for (const typeDeclaration of module.typeDeclarations) {
+    if (contains(typeDeclaration, offset)) {
+      return { type: "type-declaration", typeDeclaration };
+    }
+  }
+
+  return undefined;
 }
