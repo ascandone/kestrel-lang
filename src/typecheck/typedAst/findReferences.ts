@@ -4,7 +4,7 @@ import {
   TypedDeclaration,
   TypedModule,
 } from "../typedAst";
-import { contains, foldTree } from "./common";
+import { contains, foldTree, statementByOffset } from "./common";
 
 export type References = {
   resolution: IdentifierResolution;
@@ -22,22 +22,34 @@ export function findReferences(
     throw new Error("[unreachable] module not found");
   }
 
-  for (const declaration of srcModule.declarations) {
-    if (!contains(declaration, offset)) {
-      continue;
-    }
-
-    if (!contains(declaration.binding, offset)) {
-      return undefined;
-    }
-
-    return {
-      resolution: { type: "global-variable", declaration, namespace },
-      references: findReferencesOfDeclaration(declaration, typedProject),
-    };
+  const statement = statementByOffset(srcModule, offset);
+  if (statement === undefined) {
+    return undefined;
   }
 
-  return undefined;
+  switch (statement.type) {
+    case "declaration":
+      if (!contains(statement.declaration.binding, offset)) {
+        return undefined;
+      }
+
+      return {
+        resolution: {
+          type: "global-variable",
+          declaration: statement.declaration,
+          namespace,
+        },
+        references: findReferencesOfDeclaration(
+          statement.declaration,
+          typedProject,
+        ),
+      };
+
+    case "type-declaration":
+      return undefined;
+    case "import":
+      return undefined;
+  }
 }
 
 function findReferencesOfDeclaration(

@@ -1,6 +1,6 @@
 import { Type, TypeScheme } from "../type";
 import { TypedExpr, TypedModule } from "../typedAst";
-import { contains, firstBy } from "./common";
+import { firstBy, statementByOffset } from "./common";
 
 export type FunctionSignatureHint = {
   name: string;
@@ -13,19 +13,24 @@ export function functionSignatureHint(
   module: TypedModule,
   offset: number,
 ): FunctionSignatureHint | undefined {
-  for (const decl of module.declarations) {
-    if (!contains(decl, offset)) {
-      continue;
-    }
-
-    if (decl.extern) {
-      continue;
-    }
-
-    return functionSignatureHintExpr(decl.value, offset);
+  const statement = statementByOffset(module, offset);
+  if (statement === undefined) {
+    return undefined;
   }
 
-  return undefined;
+  switch (statement.type) {
+    case "declaration":
+      if (statement.declaration.extern) {
+        return undefined;
+      }
+
+      return functionSignatureHintExpr(statement.declaration.value, offset);
+
+    case "type-declaration":
+      return undefined;
+    case "import":
+      return undefined;
+  }
 }
 
 function functionSignatureHintExpr(

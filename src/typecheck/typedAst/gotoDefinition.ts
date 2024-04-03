@@ -6,7 +6,7 @@ import {
   TypedModule,
   TypedTypeAst,
 } from "../typedAst";
-import { contains, firstBy } from "./common";
+import { contains, firstBy, statementByOffset } from "./common";
 
 export type Location = {
   namespace?: string;
@@ -17,77 +17,79 @@ export function goToDefinitionOf(
   module: TypedModule,
   offset: number,
 ): Location | undefined {
-  for (const import_ of module.imports) {
-    if (!contains(import_, offset)) {
-      continue;
-    }
-
-    for (const exposing of import_.exposing) {
-      if (!contains(exposing, offset)) {
-        continue;
-      }
-
-      switch (exposing.type) {
-        case "type":
-          if (exposing.resolved === undefined) {
-            return undefined;
-          }
-
-          return { namespace: import_.ns, span: exposing.resolved.span };
-
-        case "value":
-          if (exposing.declaration === undefined) {
-            return undefined;
-          }
-
-          return {
-            namespace: import_.ns,
-            span: exposing.declaration.span,
-          };
-      }
-    }
+  const statement = statementByOffset(module, offset);
+  if (statement === undefined) {
+    return undefined;
   }
 
-  for (const t of module.typeDeclarations) {
-    if (t.type === "extern") {
-      continue;
-    }
+  switch (statement.type) {
+    case "declaration":
+      if (statement.declaration.typeHint !== undefined) {
+        const ret = goToDefinitionOfTypeAst(
+          statement.declaration.typeHint,
+          offset,
+        );
+        if (ret !== undefined) {
+          return ret;
+        }
+      }
 
-    if (!contains(t, offset)) {
-      continue;
-    }
+      return statement.declaration.extern
+        ? undefined
+        : goToDefinitionOfExpr(statement.declaration.value, offset);
 
-    const ret = firstBy(t.variants, (variant) => {
-      if (!contains(variant, offset)) {
+    case "type-declaration": {
+      if (statement.typeDeclaration.type === "extern") {
         return undefined;
       }
 
-      return firstBy(variant.args, (arg) =>
-        goToDefinitionOfTypeAst(arg, offset),
-      );
-    });
+      const ret = firstBy(statement.typeDeclaration.variants, (variant) => {
+        if (!contains(variant, offset)) {
+          return undefined;
+        }
 
-    if (ret !== undefined) {
-      return ret;
-    }
-  }
+        return firstBy(variant.args, (arg) =>
+          goToDefinitionOfTypeAst(arg, offset),
+        );
+      });
 
-  for (const st of module.declarations) {
-    if (!contains(st, offset)) {
-      continue;
-    }
-
-    if (st.typeHint !== undefined) {
-      const ret = goToDefinitionOfTypeAst(st.typeHint, offset);
       if (ret !== undefined) {
         return ret;
       }
+
+      return undefined;
     }
 
-    return st.extern ? undefined : goToDefinitionOfExpr(st.value, offset);
-  }
+    case "import":
+      for (const exposing of statement.import.exposing) {
+        if (!contains(exposing, offset)) {
+          continue;
+        }
 
-  return undefined;
+        switch (exposing.type) {
+          case "type":
+            if (exposing.resolved === undefined) {
+              return undefined;
+            }
+
+            return {
+              namespace: statement.import.ns,
+              span: exposing.resolved.span,
+            };
+
+          case "value":
+            if (exposing.declaration === undefined) {
+              return undefined;
+            }
+
+            return {
+              namespace: statement.import.ns,
+              span: exposing.declaration.span,
+            };
+        }
+      }
+      return undefined;
+  }
 }
 
 function goToDefinitionOfTypeAst(
