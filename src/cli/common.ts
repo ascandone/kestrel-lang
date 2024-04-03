@@ -4,9 +4,10 @@ import { typecheckProject, TypedModule, UntypedProject } from "../typecheck";
 import { exit } from "node:process";
 import { compileProject, defaultEntryPoint } from "../compiler";
 import { col } from "../utils/colors";
-import { Config, Dependency, readConfig } from "./config";
+import { Config, readConfig } from "./config";
 import { join } from "node:path";
 import { errorInfoToString } from "../errors";
+import * as paths from "./paths";
 
 export const EXTENSION = "kes";
 
@@ -17,15 +18,6 @@ export type RawModule = {
   extern: string | undefined;
 };
 
-function dependencyToPath(name: string, dep: Dependency): string {
-  switch (dep.type) {
-    case "local":
-      return dep.path;
-    case "git":
-      return `deps/${name}`;
-  }
-}
-
 export async function readProjectWithDeps(
   path: string,
   config?: Config,
@@ -34,22 +26,23 @@ export async function readProjectWithDeps(
     config = await readConfig(path);
   }
   let rawProject: Record<string, RawModule> = await readProject(path, config);
-  if (config.type === "application") {
-    const deps = Object.entries(config.dependencies ?? {});
-    for (const [name, depInfo] of deps) {
-      const depPath = dependencyToPath(name, depInfo);
-      const depConfig = await readConfig(depPath);
-      const dep = await readProject(depPath, depConfig);
-      rawProject = { ...rawProject, ...dep };
-    }
+  const deps = await readdir(paths.dependencies(path));
+  for (const dependencyName of deps) {
+    const depPath = paths.dependency(path, dependencyName);
+    const dep = await readProject(depPath);
+    rawProject = { ...rawProject, ...dep };
   }
   return rawProject;
 }
 
 async function readProject(
   path: string,
-  config: Config,
+  config?: Config,
 ): Promise<Record<string, RawModule>> {
+  if (config === undefined) {
+    config = await readConfig(path);
+  }
+
   const res: Record<string, RawModule> = {};
   for (const sourceDir of config["source-directories"]) {
     const files = await readdir(join(path, sourceDir), { recursive: true });
