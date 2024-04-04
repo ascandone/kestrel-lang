@@ -220,18 +220,11 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
       return (
         hoverOnExpr(expr.body, offset) ??
         firstBy(expr.params, (param): Hovered | undefined => {
-          if (param.type !== "identifier") {
-            throw new Error("[TODO] pattern");
-          }
-
           if (!contains(param, offset)) {
             return undefined;
           }
 
-          return {
-            span: param.span,
-            hovered: { type: "local-variable", binding: param },
-          };
+          return hoverOnPattern(param, offset);
         })
       );
 
@@ -248,19 +241,17 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
         hoverOnExpr(expr.else, offset)
       );
 
-    case "let":
+    case "let": {
       if (expr.pattern.type !== "identifier") {
         throw new Error("[TODO] pattern");
       }
 
       if (contains(expr.pattern, offset)) {
-        return {
-          span: expr.pattern.span,
-          hovered: { type: "local-variable", binding: expr.pattern },
-        };
+        return hoverOnPattern(expr.pattern, offset);
       }
 
       return hoverOnExpr(expr.value, offset) ?? hoverOnExpr(expr.body, offset);
+    }
 
     case "match":
       return (
