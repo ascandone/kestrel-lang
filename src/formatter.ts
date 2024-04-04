@@ -337,7 +337,9 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
       }
 
       const inner = concat(
-        text(`let ${ast.pattern.name} = `),
+        text("let "),
+        patternToDoc(ast.pattern),
+        text(" = "),
         exprToDoc(ast.value, false),
         text(";"),
         break_(),
