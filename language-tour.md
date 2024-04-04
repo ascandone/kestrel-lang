@@ -338,3 +338,23 @@ Like in rust, you might want to combine this with `Result.map_err` in case the r
 You can apply a similar pattern in effectful computations using `Task.await_ok`, or to the `Option` type using `Option.and_then`.
 
 </details>
+
+<details>
+<summary> List comprehension </summary>
+
+While, for simplicity's sake, Kestrel doesn't have an ad-hoc list comprehension syntax, you can use `let#` to archieve the same goal.
+
+For example:
+
+```rust
+let comprehension = {
+  let#List.flat_map x = [1, 2, 3];
+  let#List.flat_map y = ['a', 'b'];
+  let#List.guard _unit = x <= 2;
+  [(x, y)]
+}
+```
+
+Will yield `[(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')]`
+
+</details>
