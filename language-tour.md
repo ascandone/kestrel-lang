@@ -253,9 +253,34 @@ arg
 |> f(y1)
 ```
 
-#### Monadic let
+#### `let#` syntax
 
-Sometimes we need to deeply nest function calls like in the following example:
+`let#` is a powerful syntax sugar that allows to rewrite this:
+
+```rust
+Mod.some_function(value, fn x {
+  body
+})
+```
+
+As the following:
+
+```rust
+{
+  let#Mod.some_function x = value;
+  body
+}
+```
+
+You can chain multiple `let#` expressions.
+This syntax is very useful in many situations, here are a couple of examples of idioms:
+
+<details>
+<summary> `await` syntax </summary>
+
+The `let#` syntax is useful to avoid deeply nested calls to `Task.await`, that might become something similar to callback hell:
+
+For example, the following expressions:
 
 ```rust
 let program: Task<Unit> =
@@ -266,7 +291,7 @@ let program: Task<Unit> =
   })
 ```
 
-However, such programs quickly become unreadable. To avoid that, we can use the following syntax sugar (only available inside blocks), that will desugar like in the example above:
+Can be rewritten as:
 
 ```rust
 {
@@ -275,5 +300,7 @@ However, such programs quickly become unreadable. To avoid that, we can use the 
   IO.println("Hello " ++ name ++ "!")
 }
 ```
+
+</details>
 
 This syntax can be used with any kind of type, including `Result` or `Option`
