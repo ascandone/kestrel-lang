@@ -303,4 +303,38 @@ Can be rewritten as:
 
 </details>
 
-This syntax can be used with any kind of type, including `Result` or `Option`
+<details>
+<summary> Errors early exit (similar to rust's `?` sugar) </summary>
+
+Since you don't have try-catch in Kestrel, errors have to be modelled as data, typically using the `Result` type.
+This results in lots of `Result.and_then` chained call.
+
+You can simplify this using `let#`:
+
+```rust
+let get_some_number: Fn(String) -> Result<Int, String>
+let get_data_by_id: Fn(Int) -> Result<MyData, String>
+
+// Inferred as `Result<MyData, String>`
+let get_data = {
+  let#Result.and_then int = get_some_number("example");
+  let#Result.and_then my_data = get_some_number(int);
+  Ok(my_data)
+}
+```
+
+This is similar to writing the following rust code:
+
+```rust
+fn get_data() {
+  let int = get_some_number("example")?;
+  let my_data = get_some_number(int)?;
+  Ok(my_data)
+}
+```
+
+Like in rust, you might want to combine this with `Result.map_err` in case the results have a different error type.
+
+You can apply a similar pattern in effectful computations using `Task.await_ok`, or to the `Option` type using `Option.and_then`.
+
+</details>
