@@ -634,33 +634,36 @@ class ResolutionStep {
           throw new Error("TODO");
         }
 
-        const binding: TypedMatchPattern = {
+        const pattern: TypedMatchPattern = {
           ...ast.pattern,
           $: TVar.fresh(),
         };
 
-        if (!binding.name.startsWith("_")) {
-          this.unusedVariables.add(binding);
+        if (!pattern.name.startsWith("_")) {
+          this.unusedVariables.add(pattern);
         }
 
-        this.framesStack.defineRecursiveLabel({ type: "local", binding });
+        this.framesStack.defineRecursiveLabel({
+          type: "local",
+          binding: pattern,
+        });
         const value = this.annotateExpr(ast.value);
-        this.framesStack.defineLocal(binding);
+        this.framesStack.defineLocal(pattern);
         const body = this.annotateExpr(ast.body);
         this.framesStack.exitLocal();
 
-        const node = {
+        const node: TypedExpr = {
           ...ast,
           $: TVar.fresh(),
-          binding,
+          pattern,
           value,
           body,
         };
 
-        if (this.unusedVariables.has(binding)) {
+        if (this.unusedVariables.has(pattern)) {
           this.errors.push({
-            span: binding.span,
-            description: new UnusedVariable(binding.name, "local"),
+            span: pattern.span,
+            description: new UnusedVariable(pattern.name, "local"),
           });
         }
 
