@@ -106,7 +106,7 @@ const inlineLetExpr: Optimization = (src) => {
   }
 
   if (src.pattern.type !== "identifier") {
-    throw new Error("[TODO] pattern different than ident");
+    return undefined;
   }
 
   const isRec = countBindingUsages(src.pattern, src.value);

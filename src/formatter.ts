@@ -332,10 +332,6 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
     }
 
     case "let": {
-      if (ast.pattern.type !== "identifier") {
-        throw new Error("[TODO] pattern");
-      }
-
       const inner = concat(
         text("let "),
         patternToDoc(ast.pattern),
