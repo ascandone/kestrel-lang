@@ -95,7 +95,7 @@ export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
     }
   | {
       type: "let";
-      binding: Binding<TypeMeta>;
+      pattern: MatchPattern<TypeMeta>;
       value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
       body: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
     }

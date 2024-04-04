@@ -400,7 +400,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
   BlockContent_let(_let, ident, _eq, value, _comma, body) {
     return {
       type: "let",
-      binding: ident.ident(),
+      pattern: ident.matchPattern(),
       value: value.expr(),
       body: body.expr(),
       span: getSpan(this),

@@ -630,8 +630,12 @@ class ResolutionStep {
         };
 
       case "let": {
-        const binding: TypedBinding = {
-          ...ast.binding,
+        if (ast.pattern.type !== "identifier") {
+          throw new Error("TODO");
+        }
+
+        const binding: TypedMatchPattern = {
+          ...ast.pattern,
           $: TVar.fresh(),
         };
 

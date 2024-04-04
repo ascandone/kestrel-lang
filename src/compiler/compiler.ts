@@ -130,16 +130,20 @@ export class Compiler {
   private localBindings = new WeakMap<Binding<unknown>, string>();
 
   private compileLetValue(src: TypedExpr & { type: "let" }): string[] {
-    const name = this.getCurrentFrame().preventShadow(src.binding.name);
+    if (src.pattern.type !== "identifier") {
+      throw new Error("[TODO] let pattern is not implemented yet");
+    }
+
+    const name = this.getCurrentFrame().preventShadow(src.pattern.name);
     this.frames.push(
-      new Frame({ type: "let", name, binding: src.binding }, this),
+      new Frame({ type: "let", name, binding: src.pattern }, this),
     );
     const scopedBinding = this.getBlockNs();
     if (scopedBinding === undefined) {
       throw new Error("[unreachable] empty ns stack");
     }
 
-    this.localBindings.set(src.binding, scopedBinding);
+    this.localBindings.set(src.pattern, scopedBinding);
     const value = this.compileAsStatements(
       src.value,
       { type: "assign_var", name: scopedBinding, declare: true },

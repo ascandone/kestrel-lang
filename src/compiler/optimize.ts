@@ -87,7 +87,10 @@ const iifFolding: Optimization = (src) => {
       type: "let",
       span: src.span,
       $: src.$,
-      binding,
+      pattern: {
+        type: "identifier",
+        ...binding,
+      },
       body: acc,
       value: arg,
     }),
@@ -100,16 +103,20 @@ const inlineLetExpr: Optimization = (src) => {
     return undefined;
   }
 
-  const isRec = countBindingUsages(src.binding, src.value);
+  if (src.pattern.type !== "identifier") {
+    throw new Error("[TODO] pattern different than ident");
+  }
+
+  const isRec = countBindingUsages(src.pattern, src.value);
   if (isRec) {
     return undefined;
   }
 
-  const count = countBindingUsages(src.binding, src.body);
+  const count = countBindingUsages(src.pattern, src.body);
   if (count === 0) {
     return src.body;
   } else if (count === 1) {
-    return substituteBinding(src.binding, src.value, src.body);
+    return substituteBinding(src.pattern, src.value, src.body);
   }
 
   return undefined;

@@ -2219,13 +2219,6 @@ exports[`parse fn with let 1`] = `
       ],
       "value": {
         "body": {
-          "binding": {
-            "name": "x",
-            "span": [
-              20,
-              21,
-            ],
-          },
           "body": {
             "span": [
               29,
@@ -2236,6 +2229,14 @@ exports[`parse fn with let 1`] = `
               "type": "int",
               "value": 1,
             },
+          },
+          "pattern": {
+            "name": "x",
+            "span": [
+              20,
+              21,
+            ],
+            "type": "identifier",
           },
           "span": [
             16,
@@ -2449,13 +2450,6 @@ exports[`parse if expr with a let expr 1`] = `
           47,
         ],
         "then": {
-          "binding": {
-            "name": "x",
-            "span": [
-              22,
-              23,
-            ],
-          },
           "body": {
             "span": [
               31,
@@ -2466,6 +2460,14 @@ exports[`parse if expr with a let expr 1`] = `
               "type": "int",
               "value": 0,
             },
+          },
+          "pattern": {
+            "name": "x",
+            "span": [
+              22,
+              23,
+            ],
+            "type": "identifier",
           },
           "span": [
             18,
@@ -2509,13 +2511,6 @@ exports[`parse let block with one let 1`] = `
         29,
       ],
       "value": {
-        "binding": {
-          "name": "x",
-          "span": [
-            17,
-            18,
-          ],
-        },
         "body": {
           "span": [
             26,
@@ -2526,6 +2521,14 @@ exports[`parse let block with one let 1`] = `
             "type": "int",
             "value": 1,
           },
+        },
+        "pattern": {
+          "name": "x",
+          "span": [
+            17,
+            18,
+          ],
+          "type": "identifier",
         },
         "span": [
           13,
@@ -2569,21 +2572,7 @@ exports[`parse let block with two let stmts 1`] = `
         42,
       ],
       "value": {
-        "binding": {
-          "name": "x",
-          "span": [
-            17,
-            18,
-          ],
-        },
         "body": {
-          "binding": {
-            "name": "y",
-            "span": [
-              30,
-              31,
-            ],
-          },
           "body": {
             "span": [
               39,
@@ -2594,6 +2583,14 @@ exports[`parse let block with two let stmts 1`] = `
               "type": "int",
               "value": 2,
             },
+          },
+          "pattern": {
+            "name": "y",
+            "span": [
+              30,
+              31,
+            ],
+            "type": "identifier",
           },
           "span": [
             26,
@@ -2611,6 +2608,14 @@ exports[`parse let block with two let stmts 1`] = `
               "value": 1,
             },
           },
+        },
+        "pattern": {
+          "name": "x",
+          "span": [
+            17,
+            18,
+          ],
+          "type": "identifier",
         },
         "span": [
           13,

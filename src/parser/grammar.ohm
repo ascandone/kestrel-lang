@@ -97,7 +97,7 @@ Program {
   BlockContent
     = Exp  -- exp
     | "let#" QualifiedIdent ident "=" Exp ";" BlockContent -- monadicLet
-    | "let" ident "=" Exp ";" BlockContent -- let
+    | "let" MatchPattern "=" Exp ";" BlockContent -- let
 
   ident
     = ~keyword identHead identBody*

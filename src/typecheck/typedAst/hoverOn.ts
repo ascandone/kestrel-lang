@@ -245,10 +245,10 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
       );
 
     case "let":
-      if (contains(expr.binding, offset)) {
+      if (contains(expr.pattern, offset)) {
         return {
-          span: expr.binding.span,
-          hovered: { type: "local-variable", binding: expr.binding },
+          span: expr.pattern.span,
+          hovered: { type: "local-variable", binding: expr.pattern },
         };
       }
 
