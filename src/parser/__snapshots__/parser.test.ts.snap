@@ -3854,6 +3854,101 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
 }
 `;
 
+exports[`pattern matching > matching pattern in let 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        37,
+      ],
+      "value": {
+        "body": {
+          "name": "res",
+          "namespace": undefined,
+          "span": [
+            32,
+            35,
+          ],
+          "type": "identifier",
+        },
+        "pattern": {
+          "args": [
+            {
+              "name": "a",
+              "span": [
+                16,
+                17,
+              ],
+              "type": "identifier",
+            },
+            {
+              "args": [
+                {
+                  "name": "b",
+                  "span": [
+                    19,
+                    20,
+                  ],
+                  "type": "identifier",
+                },
+                {
+                  "name": "c",
+                  "span": [
+                    24,
+                    25,
+                  ],
+                  "type": "identifier",
+                },
+              ],
+              "name": "Cons",
+              "namespace": "List",
+              "span": [
+                19,
+                25,
+              ],
+              "type": "constructor",
+            },
+          ],
+          "name": "X",
+          "namespace": undefined,
+          "span": [
+            14,
+            26,
+          ],
+          "type": "constructor",
+        },
+        "span": [
+          10,
+          35,
+        ],
+        "type": "let",
+        "value": {
+          "name": "x",
+          "namespace": undefined,
+          "span": [
+            29,
+            30,
+          ],
+          "type": "identifier",
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`pattern matching > matching qualified constructors 1`] = `
 {
   "declarations": [
