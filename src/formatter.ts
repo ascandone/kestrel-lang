@@ -289,10 +289,12 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
     }
 
     case "fn": {
-      const params = ast.params.map((p) => ` ${p.name}`).join(",");
+      const params = ast.params.map((p) => concat(text(" "), patternToDoc(p)));
 
       return concat(
-        text("fn", ...params, " "),
+        text("fn"),
+        sepByString(",", params),
+        text(" "),
         block_(exprToDoc(ast.body, true)),
       );
     }
@@ -313,7 +315,9 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         ast.mapper.namespace === undefined ? "" : `${ast.mapper.namespace}.`;
 
       const inner = concat(
-        text(`let#${ns}${ast.mapper.name} ${ast.binding.name} = `),
+        text(`let#${ns}${ast.mapper.name} `),
+        patternToDoc(ast.pattern),
+        text(` = `),
         exprToDoc(ast.value, false),
         text(";"),
         break_(),

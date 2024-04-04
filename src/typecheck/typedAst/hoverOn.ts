@@ -220,6 +220,10 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
       return (
         hoverOnExpr(expr.body, offset) ??
         firstBy(expr.params, (param): Hovered | undefined => {
+          if (param.type !== "identifier") {
+            throw new Error("[TODO] pattern");
+          }
+
           if (!contains(param, offset)) {
             return undefined;
           }

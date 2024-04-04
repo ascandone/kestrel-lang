@@ -32,6 +32,17 @@ let a = x * y
   `);
   });
 
+  test("with one arg", () => {
+    expect(`
+    let a = fn x { x * x } (expr())
+`).toOptimizeAs(`
+let a = {
+  let x = expr();
+  x * x
+}
+  `);
+  });
+
   test("with many args", () => {
     expect(`
     let a = fn x, y { x * x * y * y } (f(), g())

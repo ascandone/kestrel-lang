@@ -83,7 +83,7 @@ Program {
     | "[" ListOf<Exp, ","> ","? "]"  -- listLit
     | PriExp "(" ListOf<Exp, ","> ","? ")" -- apply
     | "{" BlockContent "}"  -- block
-    | "fn" ListOf<ident, ","> "{" BlockContent "}"  -- fn
+    | "fn" ListOf<MatchPattern, ","> "{" BlockContent "}"  -- fn
     | "if" Exp "{" BlockContent "}" "else" "{" BlockContent "}" -- if
     | "match" Exp "{" ListOf<MatchClause, ","> ","? "}" -- match
     | QualifiedName -- qualified
@@ -96,7 +96,7 @@ Program {
 
   BlockContent
     = Exp  -- exp
-    | "let#" QualifiedIdent ident "=" Exp ";" BlockContent -- monadicLet
+    | "let#" QualifiedIdent MatchPattern "=" Exp ";" BlockContent -- monadicLet
     | "let" MatchPattern "=" Exp ";" BlockContent -- let
 
   ident

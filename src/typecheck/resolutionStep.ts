@@ -549,7 +549,7 @@ class ResolutionStep {
             ast.value,
             {
               type: "fn",
-              params: [ast.binding],
+              params: [ast.pattern],
               body: ast.body,
               span: ast.span,
             },
@@ -570,10 +570,16 @@ class ResolutionStep {
         };
 
       case "fn": {
-        const params = ast.params.map<TypedBinding>((p) => ({
-          ...p,
-          $: TVar.fresh(),
-        }));
+        const params = ast.params.map<TypedBinding>((p) => {
+          if (p.type !== "identifier") {
+            throw new Error("[TODO] pattern");
+          }
+
+          return {
+            ...p,
+            $: TVar.fresh(),
+          };
+        });
 
         this.framesStack.pushFrame(params);
         // TODO frame name
@@ -600,6 +606,8 @@ class ResolutionStep {
           ...ast,
           $: TVar.fresh(),
           body,
+
+          // @ts-ignore
           params,
         };
       }

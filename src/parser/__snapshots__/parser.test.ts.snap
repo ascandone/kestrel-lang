@@ -951,13 +951,6 @@ exports[`monadic let syntax sugar 1`] = `
         58,
       ],
       "value": {
-        "binding": {
-          "name": "x",
-          "span": [
-            32,
-            33,
-          ],
-        },
         "body": {
           "name": "body",
           "namespace": undefined,
@@ -973,6 +966,14 @@ exports[`monadic let syntax sugar 1`] = `
           "span": [
             25,
             31,
+          ],
+          "type": "identifier",
+        },
+        "pattern": {
+          "name": "x",
+          "span": [
+            32,
+            33,
           ],
           "type": "identifier",
         },
@@ -1016,13 +1017,6 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
         61,
       ],
       "value": {
-        "binding": {
-          "name": "x",
-          "span": [
-            35,
-            36,
-          ],
-        },
         "body": {
           "name": "body",
           "namespace": undefined,
@@ -1038,6 +1032,14 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
           "span": [
             25,
             34,
+          ],
+          "type": "identifier",
+        },
+        "pattern": {
+          "name": "x",
+          "span": [
+            35,
+            36,
           ],
           "type": "identifier",
         },
@@ -2127,6 +2129,7 @@ exports[`parse fn with 1 arg 1`] = `
               12,
               13,
             ],
+            "type": "identifier",
           },
         ],
         "span": [
@@ -2178,6 +2181,7 @@ exports[`parse fn with 2 args 1`] = `
               12,
               13,
             ],
+            "type": "identifier",
           },
           {
             "name": "y",
@@ -2185,6 +2189,7 @@ exports[`parse fn with 2 args 1`] = `
               15,
               16,
             ],
+            "type": "identifier",
           },
         ],
         "span": [

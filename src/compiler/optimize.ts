@@ -1,5 +1,10 @@
 import { Binding, ConstLiteral } from "../parser";
-import { TypeMeta, TypedExpr, TypedModule } from "../typecheck";
+import {
+  TypeMeta,
+  TypedExpr,
+  TypedMatchPattern,
+  TypedModule,
+} from "../typecheck";
 import { foldTree } from "../typecheck/typedAst/common";
 
 type Optimization = (src: TypedExpr) => TypedExpr | undefined;
@@ -78,19 +83,16 @@ const iifFolding: Optimization = (src) => {
     return undefined;
   }
 
-  const zipped = src.caller.params.map<[Binding<TypeMeta>, TypedExpr]>(
-    (param, index) => [param, src.args[index]!] as const,
+  const zipped = src.caller.params.map<[TypedMatchPattern, TypedExpr]>(
+    (pattern, index) => [pattern, src.args[index]!] as const,
   );
 
   return zipped.reduceRight(
-    (acc, [binding, arg]): TypedExpr => ({
+    (acc, [pattern, arg]): TypedExpr => ({
       type: "let",
       span: src.span,
       $: src.$,
-      pattern: {
-        type: "identifier",
-        ...binding,
-      },
+      pattern,
       body: acc,
       value: arg,
     }),

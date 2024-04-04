@@ -361,6 +361,10 @@ export class Compiler {
         const newFrame = new Frame({ type: "fn" }, this);
         this.frames.push(newFrame);
         for (const param of src.params) {
+          if (param.type !== "identifier") {
+            throw new Error("[TODO] pattern");
+          }
+
           const paramName = newFrame.preventShadow(param.name);
           this.localBindings.set(param, paramName);
         }
@@ -375,7 +379,12 @@ export class Compiler {
         this.tailCall = false;
         const params = isTailRec
           ? src.params.map((_, index) => `GEN_TC__${index}`)
-          : src.params.map((p) => this.localBindings.get(p)!);
+          : src.params.map((p) => {
+              if (p.type !== "identifier") {
+                throw new Error("[TODO] pattern");
+              }
+              return this.localBindings.get(p)!;
+            });
 
         this.frames.pop();
 
@@ -383,7 +392,14 @@ export class Compiler {
           ? [
               "while (true) {",
               ...indentBlock([
-                ...params.map((p, i) => `const ${src.params[i]!.name} = ${p};`),
+                ...params.map((p, i) => {
+                  const param = src.params[i]!;
+                  if (param.type !== "identifier") {
+                    throw new Error("[TODO] param");
+                  }
+
+                  return `const ${param.name} = ${p};`;
+                }),
                 ...fnBody,
               ]),
               "}",

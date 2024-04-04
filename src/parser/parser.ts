@@ -357,7 +357,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
   PriExp_fn(_fn, params, _lbracket, block, _rbracket) {
     return {
       type: "fn",
-      params: params.asIteration().children.map((c) => c.ident()),
+      params: params.asIteration().children.map((c) => c.matchPattern()),
       body: block.expr(),
       span: getSpan(this),
     };
@@ -392,7 +392,7 @@ semantics.addOperation<UntypedExpr>("expr()", {
       mapper: mapper.ident(),
       body: body.expr(),
       value: value.expr(),
-      binding: ident.ident(),
+      pattern: ident.matchPattern(),
       span: getSpan(this),
     };
   },
