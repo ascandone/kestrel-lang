@@ -1128,6 +1128,29 @@ function Main$loop() {
 `);
   });
 
+  test("toplevel with match args", () => {
+    const out = compileSrc(`
+      type Box { Box(a) }
+
+      let loop = fn x, Box(y) {
+        loop(x + 1, Box(y))
+      }
+  `);
+
+    expect(out).toEqual(`function Main$Box(a0) {
+  return { $: "Box", a0 };
+}
+function Main$loop(GEN_TC__0, GEN_TC__1) {
+  while (true) {
+    const x = GEN_TC__0;
+    const GEN__0 = GEN_TC__1;
+    GEN_TC__0 = x + 1;
+    GEN_TC__1 = Main$Box(GEN__0.a0);
+  }
+}
+`);
+  });
+
   test("inside if", () => {
     const out = compileSrc(`
       extern let (==): Fn(a, a) -> Bool

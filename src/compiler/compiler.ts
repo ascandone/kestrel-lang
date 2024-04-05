@@ -376,17 +376,17 @@ export class Compiler {
         const newFrame = new Frame({ type: "fn" }, this);
         this.frames.push(newFrame);
 
-        const genParams: string[] = [];
-        for (const param of src.params) {
+        const params = src.params.map((param) => {
           if (param.type !== "identifier") {
             const name = this.getUniqueName();
-            genParams.push(name);
             this.compilePattern(name, param);
+            return name;
           } else {
             const paramName = newFrame.preventShadow(param.name);
             this.localBindings.set(param, paramName);
+            return paramName;
           }
-        }
+        });
 
         const fnBody = this.compileAsStatements(
           src.body,
@@ -396,14 +396,6 @@ export class Compiler {
 
         const isTailRec = this.tailCall;
         this.tailCall = false;
-        const params = isTailRec
-          ? src.params.map((_, index) => `GEN_TC__${index}`)
-          : src.params.map((p) => {
-              if (p.type !== "identifier") {
-                return genParams.pop()!;
-              }
-              return this.localBindings.get(p)!;
-            });
 
         this.frames.pop();
 
@@ -411,24 +403,21 @@ export class Compiler {
           ? [
               "while (true) {",
               ...indentBlock([
-                ...params.map((p, i) => {
-                  const param = src.params[i]!;
-                  if (param.type !== "identifier") {
-                    throw new Error("[TODO] param");
-                  }
-
-                  return `const ${param.name} = ${p};`;
-                }),
+                ...params.map((p, i) => `const ${p} = GEN_TC__${i};`),
                 ...fnBody,
               ]),
               "}",
             ]
           : fnBody;
 
+        const tcParams = isTailRec
+          ? src.params.map((_, index) => `GEN_TC__${index}`)
+          : params;
+
         this.tailCall = wasTailCall;
         return [
           //
-          `function ${name}(${params.join(", ")}) {`,
+          `function ${name}(${tcParams.join(", ")}) {`,
           ...indentBlock(wrappedFnBody),
           `}`,
           ...(as.type === "assign_var" && as.declare
