@@ -517,6 +517,19 @@ class ResolutionStep {
     return;
   }
 
+  private matchPatternBindings(pattern: TypedMatchPattern): TypedBinding[] {
+    switch (pattern.type) {
+      case "identifier":
+        return [pattern];
+      case "constructor":
+        return pattern.args.flatMap((pattern) =>
+          this.matchPatternBindings(pattern),
+        );
+      case "lit":
+        return [];
+    }
+  }
+
   private annotateExpr(ast: UntypedExpr): TypedExpr {
     switch (ast.type) {
       // syntax sugar
@@ -570,20 +583,13 @@ class ResolutionStep {
         };
 
       case "fn": {
-        const params = ast.params.map<TypedBinding>((p) => {
-          if (p.type !== "identifier") {
-            throw new Error("[TODO] pattern");
-          }
+        const params = ast.params.map((p) => this.annotateMatchPattern(p));
 
-          return {
-            ...p,
-            $: TVar.fresh(),
-          };
-        });
+        const idents = params.flatMap((p) => this.matchPatternBindings(p));
 
-        this.framesStack.pushFrame(params);
+        this.framesStack.pushFrame(idents);
         // TODO frame name
-        for (const param of params) {
+        for (const param of idents) {
           if (!param.name.startsWith("_")) {
             this.unusedVariables.add(param);
           }
@@ -591,7 +597,7 @@ class ResolutionStep {
 
         const body: TypedExpr = this.annotateExpr(ast.body);
 
-        for (const param of params) {
+        for (const param of idents) {
           if (this.unusedVariables.has(param)) {
             this.errors.push({
               span: param.span,
@@ -606,8 +612,6 @@ class ResolutionStep {
           ...ast,
           $: TVar.fresh(),
           body,
-
-          // @ts-ignore
           params,
         };
       }

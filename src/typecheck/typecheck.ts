@@ -395,7 +395,10 @@ class Typechecker {
       case "fn":
         this.unifyExpr(ast, ast.$.asType(), {
           type: "fn",
-          args: ast.params.map((p) => p.$.asType()),
+          args: ast.params.map((p) => {
+            this.typecheckPattern(p);
+            return p.$.asType();
+          }),
           return: ast.body.$.asType(),
         });
 

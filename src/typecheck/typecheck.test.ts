@@ -989,6 +989,20 @@ describe("pattern matching", () => {
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toBeInstanceOf(UnboundVariable);
   });
+
+  test("infers fn match param type", () => {
+    const [types, errs] = tc(`
+    extern type T
+    type Box { Boxed(T) }
+
+    pub let f = fn Boxed(n) { n }
+  `);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(Box) -> T",
+    });
+  });
 });
 
 describe("prelude", () => {
