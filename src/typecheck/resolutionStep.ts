@@ -644,25 +644,38 @@ class ResolutionStep {
         };
 
       case "let": {
-        if (ast.pattern.type !== "identifier") {
-          throw new Error("TODO");
+        let pattern: TypedMatchPattern;
+        let bindings: TypedBinding[];
+        if (ast.pattern.type === "identifier") {
+          const binding: TypedMatchPattern = {
+            ...ast.pattern,
+            $: TVar.fresh(),
+          };
+          pattern = binding;
+
+          this.framesStack.defineRecursiveLabel({
+            type: "local",
+            binding,
+          });
+
+          bindings = [binding];
+        } else {
+          pattern = this.annotateMatchPattern(ast.pattern, false);
+          bindings = this.matchPatternBindings(pattern);
         }
 
-        const pattern: TypedMatchPattern = {
-          ...ast.pattern,
-          $: TVar.fresh(),
-        };
-
-        if (!pattern.name.startsWith("_")) {
-          this.unusedVariables.add(pattern);
+        for (const binding of bindings) {
+          if (!binding.name.startsWith("_")) {
+            this.unusedVariables.add(binding);
+          }
         }
 
-        this.framesStack.defineRecursiveLabel({
-          type: "local",
-          binding: pattern,
-        });
         const value = this.annotateExpr(ast.value);
-        this.framesStack.defineLocal(pattern);
+
+        for (const binding of bindings) {
+          this.framesStack.defineLocal(binding);
+        }
+
         const body = this.annotateExpr(ast.body);
         this.framesStack.exitLocal();
 
@@ -674,11 +687,13 @@ class ResolutionStep {
           body,
         };
 
-        if (this.unusedVariables.has(pattern)) {
-          this.errors.push({
-            span: pattern.span,
-            description: new UnusedVariable(pattern.name, "local"),
-          });
+        for (const binding of bindings) {
+          if (this.unusedVariables.has(binding)) {
+            this.errors.push({
+              span: binding.span,
+              description: new UnusedVariable(binding.name, "local"),
+            });
+          }
         }
 
         return node;
@@ -825,7 +840,9 @@ class ResolutionStep {
         return {
           ...ast,
           resolution,
-          args: ast.args.map((arg) => this.annotateMatchPattern(arg)),
+          args: ast.args.map((arg) =>
+            this.annotateMatchPattern(arg, defineLocal),
+          ),
           $: TVar.fresh(),
         };
       }
