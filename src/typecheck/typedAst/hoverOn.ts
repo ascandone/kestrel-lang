@@ -243,10 +243,6 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
       );
 
     case "let": {
-      if (expr.pattern.type !== "identifier") {
-        throw new Error("[TODO] pattern");
-      }
-
       if (contains(expr.pattern, offset)) {
         return hoverOnPattern(expr.pattern, offset);
       }
