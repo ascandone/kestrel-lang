@@ -564,6 +564,10 @@ type Statement =
   | { type: "decl"; decl: UntypedDeclaration }
   | { type: "type"; decl: UntypedTypeDeclaration };
 
+export function formatExpr(expr: UntypedExpr): string {
+  return pprint(exprToDoc(expr, false));
+}
+
 export function format(ast: UntypedModule): string {
   const importsDocs = ast.imports
     .sort((i1, i2) => (i1.ns > i2.ns ? 1 : -1))
