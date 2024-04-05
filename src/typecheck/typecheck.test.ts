@@ -15,6 +15,7 @@ import {
   InvalidCatchall,
   InvalidPipe,
   InvalidTypeArity,
+  NonExhaustiveMatch,
   NonExistingImport,
   OccursCheck,
   TypeMismatch,
@@ -1019,6 +1020,43 @@ describe("pattern matching", () => {
     expect(types).toEqual({
       f: "Fn(Box) -> T",
     });
+  });
+
+  test("force exhaustive match in let binding when there are many values for a const", () => {
+    const [, errs] = tc(`
+    pub let f = {
+      let 42 = 42;
+      0
+    }
+  `);
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
+  });
+
+  test("force exhaustive match in let binding when there are many constructors", () => {
+    const [, errs] = tc(`
+    type Union { A, B }
+
+    pub let f = {
+      let A = A;
+      0
+    }
+  `);
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
+  });
+
+  test("force exhaustive match in fns binding when there are many constructors", () => {
+    const [, errs] = tc(`
+    type Union { A, B }
+
+    pub let f = fn A { 0 }
+  `);
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
   });
 });
 

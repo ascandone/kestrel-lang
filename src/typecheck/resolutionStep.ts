@@ -339,7 +339,7 @@ class ResolutionStep {
       case "adt": {
         const holes: Array<(decl: TypedTypeDeclaration) => void> = [];
 
-        const typedTypeDecl: TypedTypeDeclaration = {
+        const typedTypeDecl: TypedTypeDeclaration & { type: "adt" } = {
           ...typeDecl,
           variants: typeDecl.variants.map((variant) => {
             const typedVariant: TypedTypeVariant = {
@@ -358,11 +358,18 @@ class ResolutionStep {
               type: "constructor",
               variant: typedVariant,
               namespace: this.ns,
+
+              // This is unsafe
+              declaration: null as never,
             };
 
             return typedVariant;
           }),
         };
+
+        for (const variant of typedTypeDecl.variants) {
+          this.constructors[variant.name]!.declaration = typedTypeDecl;
+        }
 
         for (const hole of holes) {
           hole(typedTypeDecl);
@@ -426,7 +433,12 @@ class ResolutionStep {
       if (tDecl.type === "adt" && tDecl.pub === "..") {
         for (const variant of tDecl.variants) {
           if (variant.name === ast.name) {
-            return { type: "constructor", variant, namespace: ast.namespace };
+            return {
+              type: "constructor",
+              variant,
+              declaration: tDecl,
+              namespace: ast.namespace,
+            };
           }
         }
       }
@@ -767,6 +779,7 @@ class ResolutionStep {
                       this.constructors[variant.name] = {
                         type: "constructor",
                         variant,
+                        declaration: resolved,
                         namespace: import_.ns,
                       };
                     }
@@ -883,6 +896,7 @@ class ResolutionStep {
             return {
               type: "constructor",
               variant: variant,
+              declaration: typeDeclaration,
               namespace: namespace,
             };
           }

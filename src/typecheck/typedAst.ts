@@ -32,6 +32,7 @@ export type IdentifierResolution =
   | {
       type: "constructor";
       variant: TypedTypeVariant;
+      declaration: TypedTypeDeclaration & { type: "adt" };
       namespace: string;
     };
 

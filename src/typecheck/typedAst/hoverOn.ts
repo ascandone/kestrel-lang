@@ -63,6 +63,7 @@ export function hoverOn(
               hovered: {
                 type: "constructor",
                 variant,
+                declaration: statement.typeDeclaration,
                 namespace,
               },
             },
