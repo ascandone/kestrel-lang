@@ -133,7 +133,7 @@ export class Compiler {
     const name =
       src.pattern.type === "identifier"
         ? this.getCurrentFrame().preventShadow(src.pattern.name)
-        : `GEN__${this.getNextId()}`;
+        : this.getUniqueName();
 
     this.frames.push(
       new Frame(
