@@ -1003,6 +1003,23 @@ describe("pattern matching", () => {
       f: "Fn(Box) -> T",
     });
   });
+
+  test("infers let match type", () => {
+    const [types, errs] = tc(`
+    extern type T
+    type Box { Boxed(T) }
+
+    pub let f = fn box {
+      let Boxed(n) = box;
+      n
+    }
+  `);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(Box) -> T",
+    });
+  });
 });
 
 describe("prelude", () => {

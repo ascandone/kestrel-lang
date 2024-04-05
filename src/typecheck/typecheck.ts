@@ -418,6 +418,7 @@ class Typechecker {
         return;
 
       case "let":
+        this.typecheckPattern(ast.pattern);
         this.unifyExpr(ast, ast.pattern.$.asType(), ast.value.$.asType());
         this.unifyExpr(ast, ast.$.asType(), ast.body.$.asType());
         this.typecheckAnnotatedExpr(ast.value);
