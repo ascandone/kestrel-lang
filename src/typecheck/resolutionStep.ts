@@ -583,7 +583,9 @@ class ResolutionStep {
         };
 
       case "fn": {
-        const params = ast.params.map((p) => this.annotateMatchPattern(p));
+        const params = ast.params.map((p) =>
+          this.annotateMatchPattern(p, false),
+        );
 
         const idents = params.flatMap((p) => this.matchPatternBindings(p));
 
@@ -787,7 +789,10 @@ class ResolutionStep {
     };
   }
 
-  private annotateMatchPattern(ast: MatchPattern): TypedMatchPattern {
+  private annotateMatchPattern(
+    ast: MatchPattern,
+    defineLocal = true,
+  ): TypedMatchPattern {
     switch (ast.type) {
       case "lit":
         return {
@@ -801,9 +806,12 @@ class ResolutionStep {
           $: TVar.fresh(),
         };
         if (!ast.name.startsWith("_")) {
-          this.framesStack.defineLocal(typedBinding);
+          if (defineLocal) {
+            this.framesStack.defineLocal(typedBinding);
+            this.patternBindings.push(typedBinding);
+          }
+
           this.unusedVariables.add(typedBinding);
-          this.patternBindings.push(typedBinding);
         }
         return typedBinding;
       }

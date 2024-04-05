@@ -1,4 +1,3 @@
-import { formatExpr } from "../formatter";
 import { Binding, ConstLiteral } from "../parser";
 import {
   TypeMeta,

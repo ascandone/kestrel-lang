@@ -162,24 +162,6 @@ let x = match 3 {
 `);
 });
 
-test("temp", () => {
-  expect(`
-  pub let glb = fn m, f {
-    fn f {
-      match m {
-        Some(x) => f(x),
-      }
-    }(fn x { f(x) })
-  }
-  `).toOptimizeAs(`
-pub let glb = fn m, f {
-  match m {
-    Some(x) => f(x),
-  }
-}
-`);
-});
-
 test("function inlining example", () => {
   expect(`
   let glb = {
