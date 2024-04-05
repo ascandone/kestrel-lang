@@ -22,7 +22,7 @@ type CompilationMode =
 class Frame {
   constructor(
     public readonly data:
-      | { type: "let"; name: string; binding: Binding<unknown> }
+      | { type: "let"; name: string; binding?: Binding<unknown> }
       | { type: "fn" },
     private compiler: Compiler,
   ) {}
@@ -130,20 +130,35 @@ export class Compiler {
   private localBindings = new WeakMap<Binding<unknown>, string>();
 
   private compileLetValue(src: TypedExpr & { type: "let" }): string[] {
-    if (src.pattern.type !== "identifier") {
-      throw new Error("[TODO] let pattern is not implemented yet");
-    }
+    const name =
+      src.pattern.type === "identifier"
+        ? this.getCurrentFrame().preventShadow(src.pattern.name)
+        : `GEN__${this.getNextId()}`;
 
-    const name = this.getCurrentFrame().preventShadow(src.pattern.name);
     this.frames.push(
-      new Frame({ type: "let", name, binding: src.pattern }, this),
+      new Frame(
+        {
+          type: "let",
+          name,
+          binding: src.pattern.type === "identifier" ? src.pattern : undefined,
+        },
+        this,
+      ),
     );
+
+    // Ignore compiled output
     const scopedBinding = this.getBlockNs();
+
     if (scopedBinding === undefined) {
       throw new Error("[unreachable] empty ns stack");
     }
 
-    this.localBindings.set(src.pattern, scopedBinding);
+    if (src.pattern.type === "identifier") {
+      this.localBindings.set(src.pattern, scopedBinding);
+    } else {
+      this.compilePattern(name, src.pattern);
+    }
+
     const value = this.compileAsStatements(
       src.value,
       { type: "assign_var", name: scopedBinding, declare: true },

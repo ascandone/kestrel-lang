@@ -970,6 +970,46 @@ const Main$x = Main$f(Main$x$GEN__0);
     const r = new Function(`${out}; return Main$m`)();
     expect(r).toEqual("abcdef");
   });
+
+  test("compiling let match", () => {
+    const out = compileSrc(`
+    type Box { Box(Int) }
+
+    let f = fn b {
+      let Box(a) = b;
+      a
+    }
+  `);
+
+    expect(out).toEqual(`function Main$Box(a0) {
+  return { $: "Box", a0 };
+}
+function Main$f(b) {
+  const GEN__0 = b;
+  return GEN__0.a0;
+}
+`);
+  });
+
+  test("compiling nested let match", () => {
+    const out = compileSrc(`
+    type Pair { Pair(Int, Int) }
+
+    let f = fn b {
+      let Pair(_, Pair(a, _)) = b;
+      a
+    }
+  `);
+
+    expect(out).toEqual(`function Main$Pair(a0, a1) {
+  return { $: "Pair", a0, a1 };
+}
+function Main$f(b) {
+  const GEN__0 = b;
+  return GEN__0.a1.a0;
+}
+`);
+  });
 });
 
 test("two fns as args", () => {
