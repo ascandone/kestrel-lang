@@ -375,13 +375,17 @@ export class Compiler {
 
         const newFrame = new Frame({ type: "fn" }, this);
         this.frames.push(newFrame);
+
+        const genParams: string[] = [];
         for (const param of src.params) {
           if (param.type !== "identifier") {
-            throw new Error("[TODO] pattern");
+            const name = this.getUniqueName();
+            genParams.push(name);
+            this.compilePattern(name, param);
+          } else {
+            const paramName = newFrame.preventShadow(param.name);
+            this.localBindings.set(param, paramName);
           }
-
-          const paramName = newFrame.preventShadow(param.name);
-          this.localBindings.set(param, paramName);
         }
 
         const fnBody = this.compileAsStatements(
@@ -396,7 +400,7 @@ export class Compiler {
           ? src.params.map((_, index) => `GEN_TC__${index}`)
           : src.params.map((p) => {
               if (p.type !== "identifier") {
-                throw new Error("[TODO] pattern");
+                return genParams.pop()!;
               }
               return this.localBindings.get(p)!;
             });

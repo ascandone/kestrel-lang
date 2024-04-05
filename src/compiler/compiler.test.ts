@@ -1010,6 +1010,22 @@ function Main$f(b) {
 }
 `);
   });
+
+  test("compiling fn match", () => {
+    const out = compileSrc(`
+    type Box { Box(Int) }
+
+    let f = fn x, Box(a), y { a }
+  `);
+
+    expect(out).toEqual(`function Main$Box(a0) {
+  return { $: "Box", a0 };
+}
+function Main$f(x, GEN__0, y) {
+  return GEN__0.a0;
+}
+`);
+  });
 });
 
 test("two fns as args", () => {
