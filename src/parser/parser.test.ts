@@ -224,14 +224,6 @@ let _ = fn x { 0 }
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test("an ident name shouldn't be allowed as fn arg", () => {
-  const src = `
-let _ = fn X { 0 }
-`;
-
-  expect(() => unsafeParse(src)).toThrow();
-});
-
 test("parse fn with 2 args", () => {
   const src = `
 let _ = fn x, y { 0 }
@@ -551,6 +543,11 @@ describe("pattern matching", () => {
 
   test("matching qualified constructors", () => {
     const src = `let _ = match x { A/B.Constr(a, b) => 42 }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("matching pattern in let", () => {
+    const src = `let _ = { let X(a, b :: c) = x; res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });

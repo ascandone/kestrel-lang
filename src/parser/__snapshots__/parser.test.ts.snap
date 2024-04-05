@@ -951,13 +951,6 @@ exports[`monadic let syntax sugar 1`] = `
         58,
       ],
       "value": {
-        "binding": {
-          "name": "x",
-          "span": [
-            32,
-            33,
-          ],
-        },
         "body": {
           "name": "body",
           "namespace": undefined,
@@ -973,6 +966,14 @@ exports[`monadic let syntax sugar 1`] = `
           "span": [
             25,
             31,
+          ],
+          "type": "identifier",
+        },
+        "pattern": {
+          "name": "x",
+          "span": [
+            32,
+            33,
           ],
           "type": "identifier",
         },
@@ -1016,13 +1017,6 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
         61,
       ],
       "value": {
-        "binding": {
-          "name": "x",
-          "span": [
-            35,
-            36,
-          ],
-        },
         "body": {
           "name": "body",
           "namespace": undefined,
@@ -1038,6 +1032,14 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
           "span": [
             25,
             34,
+          ],
+          "type": "identifier",
+        },
+        "pattern": {
+          "name": "x",
+          "span": [
+            35,
+            36,
           ],
           "type": "identifier",
         },
@@ -2127,6 +2129,7 @@ exports[`parse fn with 1 arg 1`] = `
               12,
               13,
             ],
+            "type": "identifier",
           },
         ],
         "span": [
@@ -2178,6 +2181,7 @@ exports[`parse fn with 2 args 1`] = `
               12,
               13,
             ],
+            "type": "identifier",
           },
           {
             "name": "y",
@@ -2185,6 +2189,7 @@ exports[`parse fn with 2 args 1`] = `
               15,
               16,
             ],
+            "type": "identifier",
           },
         ],
         "span": [
@@ -2219,13 +2224,6 @@ exports[`parse fn with let 1`] = `
       ],
       "value": {
         "body": {
-          "binding": {
-            "name": "x",
-            "span": [
-              20,
-              21,
-            ],
-          },
           "body": {
             "span": [
               29,
@@ -2236,6 +2234,14 @@ exports[`parse fn with let 1`] = `
               "type": "int",
               "value": 1,
             },
+          },
+          "pattern": {
+            "name": "x",
+            "span": [
+              20,
+              21,
+            ],
+            "type": "identifier",
           },
           "span": [
             16,
@@ -2449,13 +2455,6 @@ exports[`parse if expr with a let expr 1`] = `
           47,
         ],
         "then": {
-          "binding": {
-            "name": "x",
-            "span": [
-              22,
-              23,
-            ],
-          },
           "body": {
             "span": [
               31,
@@ -2466,6 +2465,14 @@ exports[`parse if expr with a let expr 1`] = `
               "type": "int",
               "value": 0,
             },
+          },
+          "pattern": {
+            "name": "x",
+            "span": [
+              22,
+              23,
+            ],
+            "type": "identifier",
           },
           "span": [
             18,
@@ -2509,13 +2516,6 @@ exports[`parse let block with one let 1`] = `
         29,
       ],
       "value": {
-        "binding": {
-          "name": "x",
-          "span": [
-            17,
-            18,
-          ],
-        },
         "body": {
           "span": [
             26,
@@ -2526,6 +2526,14 @@ exports[`parse let block with one let 1`] = `
             "type": "int",
             "value": 1,
           },
+        },
+        "pattern": {
+          "name": "x",
+          "span": [
+            17,
+            18,
+          ],
+          "type": "identifier",
         },
         "span": [
           13,
@@ -2569,21 +2577,7 @@ exports[`parse let block with two let stmts 1`] = `
         42,
       ],
       "value": {
-        "binding": {
-          "name": "x",
-          "span": [
-            17,
-            18,
-          ],
-        },
         "body": {
-          "binding": {
-            "name": "y",
-            "span": [
-              30,
-              31,
-            ],
-          },
           "body": {
             "span": [
               39,
@@ -2594,6 +2588,14 @@ exports[`parse let block with two let stmts 1`] = `
               "type": "int",
               "value": 2,
             },
+          },
+          "pattern": {
+            "name": "y",
+            "span": [
+              30,
+              31,
+            ],
+            "type": "identifier",
           },
           "span": [
             26,
@@ -2611,6 +2613,14 @@ exports[`parse let block with two let stmts 1`] = `
               "value": 1,
             },
           },
+        },
+        "pattern": {
+          "name": "x",
+          "span": [
+            17,
+            18,
+          ],
+          "type": "identifier",
         },
         "span": [
           13,
@@ -3836,6 +3846,101 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
           43,
         ],
         "type": "match",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pattern matching > matching pattern in let 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        37,
+      ],
+      "value": {
+        "body": {
+          "name": "res",
+          "namespace": undefined,
+          "span": [
+            32,
+            35,
+          ],
+          "type": "identifier",
+        },
+        "pattern": {
+          "args": [
+            {
+              "name": "a",
+              "span": [
+                16,
+                17,
+              ],
+              "type": "identifier",
+            },
+            {
+              "args": [
+                {
+                  "name": "b",
+                  "span": [
+                    19,
+                    20,
+                  ],
+                  "type": "identifier",
+                },
+                {
+                  "name": "c",
+                  "span": [
+                    24,
+                    25,
+                  ],
+                  "type": "identifier",
+                },
+              ],
+              "name": "Cons",
+              "namespace": "List",
+              "span": [
+                19,
+                25,
+              ],
+              "type": "constructor",
+            },
+          ],
+          "name": "X",
+          "namespace": undefined,
+          "span": [
+            14,
+            26,
+          ],
+          "type": "constructor",
+        },
+        "span": [
+          10,
+          35,
+        ],
+        "type": "let",
+        "value": {
+          "name": "x",
+          "namespace": undefined,
+          "span": [
+            29,
+            30,
+          ],
+          "type": "identifier",
+        },
       },
     },
   ],

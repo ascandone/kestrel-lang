@@ -203,6 +203,14 @@ export class OccursCheck implements ErrorDescription {
   }
 }
 
+export class NonExhaustiveMatch implements ErrorDescription {
+  severity: Severity = "error";
+  errorName: string = "Non exhaustive match";
+  shortDescription(): string {
+    return "Match is not exhaustive";
+  }
+}
+
 export class TypeMismatch implements ErrorDescription {
   constructor(
     public expected: Type,

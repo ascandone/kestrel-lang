@@ -339,7 +339,7 @@ class ResolutionStep {
       case "adt": {
         const holes: Array<(decl: TypedTypeDeclaration) => void> = [];
 
-        const typedTypeDecl: TypedTypeDeclaration = {
+        const typedTypeDecl: TypedTypeDeclaration & { type: "adt" } = {
           ...typeDecl,
           variants: typeDecl.variants.map((variant) => {
             const typedVariant: TypedTypeVariant = {
@@ -358,11 +358,18 @@ class ResolutionStep {
               type: "constructor",
               variant: typedVariant,
               namespace: this.ns,
+
+              // This is unsafe
+              declaration: null as never,
             };
 
             return typedVariant;
           }),
         };
+
+        for (const variant of typedTypeDecl.variants) {
+          this.constructors[variant.name]!.declaration = typedTypeDecl;
+        }
 
         for (const hole of holes) {
           hole(typedTypeDecl);
@@ -426,7 +433,12 @@ class ResolutionStep {
       if (tDecl.type === "adt" && tDecl.pub === "..") {
         for (const variant of tDecl.variants) {
           if (variant.name === ast.name) {
-            return { type: "constructor", variant, namespace: ast.namespace };
+            return {
+              type: "constructor",
+              variant,
+              declaration: tDecl,
+              namespace: ast.namespace,
+            };
           }
         }
       }
@@ -517,6 +529,19 @@ class ResolutionStep {
     return;
   }
 
+  private matchPatternBindings(pattern: TypedMatchPattern): TypedBinding[] {
+    switch (pattern.type) {
+      case "identifier":
+        return [pattern];
+      case "constructor":
+        return pattern.args.flatMap((pattern) =>
+          this.matchPatternBindings(pattern),
+        );
+      case "lit":
+        return [];
+    }
+  }
+
   private annotateExpr(ast: UntypedExpr): TypedExpr {
     switch (ast.type) {
       // syntax sugar
@@ -549,7 +574,7 @@ class ResolutionStep {
             ast.value,
             {
               type: "fn",
-              params: [ast.binding],
+              params: [ast.pattern],
               body: ast.body,
               span: ast.span,
             },
@@ -570,14 +595,15 @@ class ResolutionStep {
         };
 
       case "fn": {
-        const params = ast.params.map<TypedBinding>((p) => ({
-          ...p,
-          $: TVar.fresh(),
-        }));
+        const params = ast.params.map((p) =>
+          this.annotateMatchPattern(p, false),
+        );
 
-        this.framesStack.pushFrame(params);
+        const idents = params.flatMap((p) => this.matchPatternBindings(p));
+
+        this.framesStack.pushFrame(idents);
         // TODO frame name
-        for (const param of params) {
+        for (const param of idents) {
           if (!param.name.startsWith("_")) {
             this.unusedVariables.add(param);
           }
@@ -585,7 +611,7 @@ class ResolutionStep {
 
         const body: TypedExpr = this.annotateExpr(ast.body);
 
-        for (const param of params) {
+        for (const param of idents) {
           if (this.unusedVariables.has(param)) {
             this.errors.push({
               span: param.span,
@@ -630,34 +656,56 @@ class ResolutionStep {
         };
 
       case "let": {
-        const binding: TypedBinding = {
-          ...ast.binding,
-          $: TVar.fresh(),
-        };
+        let pattern: TypedMatchPattern;
+        let bindings: TypedBinding[];
+        if (ast.pattern.type === "identifier") {
+          const binding: TypedMatchPattern = {
+            ...ast.pattern,
+            $: TVar.fresh(),
+          };
+          pattern = binding;
 
-        if (!binding.name.startsWith("_")) {
-          this.unusedVariables.add(binding);
+          this.framesStack.defineRecursiveLabel({
+            type: "local",
+            binding,
+          });
+
+          bindings = [binding];
+        } else {
+          pattern = this.annotateMatchPattern(ast.pattern, false);
+          bindings = this.matchPatternBindings(pattern);
         }
 
-        this.framesStack.defineRecursiveLabel({ type: "local", binding });
+        for (const binding of bindings) {
+          if (!binding.name.startsWith("_")) {
+            this.unusedVariables.add(binding);
+          }
+        }
+
         const value = this.annotateExpr(ast.value);
-        this.framesStack.defineLocal(binding);
+
+        for (const binding of bindings) {
+          this.framesStack.defineLocal(binding);
+        }
+
         const body = this.annotateExpr(ast.body);
         this.framesStack.exitLocal();
 
-        const node = {
+        const node: TypedExpr = {
           ...ast,
           $: TVar.fresh(),
-          binding,
+          pattern,
           value,
           body,
         };
 
-        if (this.unusedVariables.has(binding)) {
-          this.errors.push({
-            span: binding.span,
-            description: new UnusedVariable(binding.name, "local"),
-          });
+        for (const binding of bindings) {
+          if (this.unusedVariables.has(binding)) {
+            this.errors.push({
+              span: binding.span,
+              description: new UnusedVariable(binding.name, "local"),
+            });
+          }
         }
 
         return node;
@@ -731,6 +779,7 @@ class ResolutionStep {
                       this.constructors[variant.name] = {
                         type: "constructor",
                         variant,
+                        declaration: resolved,
                         namespace: import_.ns,
                       };
                     }
@@ -768,7 +817,10 @@ class ResolutionStep {
     };
   }
 
-  private annotateMatchPattern(ast: MatchPattern): TypedMatchPattern {
+  private annotateMatchPattern(
+    ast: MatchPattern,
+    defineLocal = true,
+  ): TypedMatchPattern {
     switch (ast.type) {
       case "lit":
         return {
@@ -782,9 +834,12 @@ class ResolutionStep {
           $: TVar.fresh(),
         };
         if (!ast.name.startsWith("_")) {
-          this.framesStack.defineLocal(typedBinding);
+          if (defineLocal) {
+            this.framesStack.defineLocal(typedBinding);
+            this.patternBindings.push(typedBinding);
+          }
+
           this.unusedVariables.add(typedBinding);
-          this.patternBindings.push(typedBinding);
         }
         return typedBinding;
       }
@@ -798,7 +853,9 @@ class ResolutionStep {
         return {
           ...ast,
           resolution,
-          args: ast.args.map((arg) => this.annotateMatchPattern(arg)),
+          args: ast.args.map((arg) =>
+            this.annotateMatchPattern(arg, defineLocal),
+          ),
           $: TVar.fresh(),
         };
       }
@@ -839,6 +896,7 @@ class ResolutionStep {
             return {
               type: "constructor",
               variant: variant,
+              declaration: typeDeclaration,
               namespace: namespace,
             };
           }

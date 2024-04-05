@@ -22,7 +22,7 @@ type CompilationMode =
 class Frame {
   constructor(
     public readonly data:
-      | { type: "let"; name: string; binding: Binding<unknown> }
+      | { type: "let"; name: string; binding?: Binding<unknown> }
       | { type: "fn" },
     private compiler: Compiler,
   ) {}
@@ -130,16 +130,35 @@ export class Compiler {
   private localBindings = new WeakMap<Binding<unknown>, string>();
 
   private compileLetValue(src: TypedExpr & { type: "let" }): string[] {
-    const name = this.getCurrentFrame().preventShadow(src.binding.name);
+    const name =
+      src.pattern.type === "identifier"
+        ? this.getCurrentFrame().preventShadow(src.pattern.name)
+        : this.getUniqueName();
+
     this.frames.push(
-      new Frame({ type: "let", name, binding: src.binding }, this),
+      new Frame(
+        {
+          type: "let",
+          name,
+          binding: src.pattern.type === "identifier" ? src.pattern : undefined,
+        },
+        this,
+      ),
     );
+
+    // Ignore compiled output
     const scopedBinding = this.getBlockNs();
+
     if (scopedBinding === undefined) {
       throw new Error("[unreachable] empty ns stack");
     }
 
-    this.localBindings.set(src.binding, scopedBinding);
+    if (src.pattern.type === "identifier") {
+      this.localBindings.set(src.pattern, scopedBinding);
+    } else {
+      this.compilePattern(name, src.pattern);
+    }
+
     const value = this.compileAsStatements(
       src.value,
       { type: "assign_var", name: scopedBinding, declare: true },
@@ -356,10 +375,18 @@ export class Compiler {
 
         const newFrame = new Frame({ type: "fn" }, this);
         this.frames.push(newFrame);
-        for (const param of src.params) {
-          const paramName = newFrame.preventShadow(param.name);
-          this.localBindings.set(param, paramName);
-        }
+
+        const params = src.params.map((param) => {
+          if (param.type !== "identifier") {
+            const name = this.getUniqueName();
+            this.compilePattern(name, param);
+            return name;
+          } else {
+            const paramName = newFrame.preventShadow(param.name);
+            this.localBindings.set(param, paramName);
+            return paramName;
+          }
+        });
 
         const fnBody = this.compileAsStatements(
           src.body,
@@ -369,9 +396,6 @@ export class Compiler {
 
         const isTailRec = this.tailCall;
         this.tailCall = false;
-        const params = isTailRec
-          ? src.params.map((_, index) => `GEN_TC__${index}`)
-          : src.params.map((p) => this.localBindings.get(p)!);
 
         this.frames.pop();
 
@@ -379,17 +403,21 @@ export class Compiler {
           ? [
               "while (true) {",
               ...indentBlock([
-                ...params.map((p, i) => `const ${src.params[i]!.name} = ${p};`),
+                ...params.map((p, i) => `const ${p} = GEN_TC__${i};`),
                 ...fnBody,
               ]),
               "}",
             ]
           : fnBody;
 
+        const tcParams = isTailRec
+          ? src.params.map((_, index) => `GEN_TC__${index}`)
+          : params;
+
         this.tailCall = wasTailCall;
         return [
           //
-          `function ${name}(${params.join(", ")}) {`,
+          `function ${name}(${tcParams.join(", ")}) {`,
           ...indentBlock(wrappedFnBody),
           `}`,
           ...(as.type === "assign_var" && as.declare

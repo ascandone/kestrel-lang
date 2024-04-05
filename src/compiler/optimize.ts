@@ -1,5 +1,10 @@
 import { Binding, ConstLiteral } from "../parser";
-import { TypeMeta, TypedExpr, TypedModule } from "../typecheck";
+import {
+  TypeMeta,
+  TypedExpr,
+  TypedMatchPattern,
+  TypedModule,
+} from "../typecheck";
 import { foldTree } from "../typecheck/typedAst/common";
 
 type Optimization = (src: TypedExpr) => TypedExpr | undefined;
@@ -78,16 +83,16 @@ const iifFolding: Optimization = (src) => {
     return undefined;
   }
 
-  const zipped = src.caller.params.map<[Binding<TypeMeta>, TypedExpr]>(
-    (param, index) => [param, src.args[index]!] as const,
+  const zipped = src.caller.params.map<[TypedMatchPattern, TypedExpr]>(
+    (pattern, index) => [pattern, src.args[index]!] as const,
   );
 
   return zipped.reduceRight(
-    (acc, [binding, arg]): TypedExpr => ({
+    (acc, [pattern, arg]): TypedExpr => ({
       type: "let",
       span: src.span,
       $: src.$,
-      binding,
+      pattern,
       body: acc,
       value: arg,
     }),
@@ -100,16 +105,20 @@ const inlineLetExpr: Optimization = (src) => {
     return undefined;
   }
 
-  const isRec = countBindingUsages(src.binding, src.value);
+  if (src.pattern.type !== "identifier") {
+    return undefined;
+  }
+
+  const isRec = countBindingUsages(src.pattern, src.value);
   if (isRec) {
     return undefined;
   }
 
-  const count = countBindingUsages(src.binding, src.body);
+  const count = countBindingUsages(src.pattern, src.body);
   if (count === 0) {
     return src.body;
   } else if (count === 1) {
-    return substituteBinding(src.binding, src.value, src.body);
+    return substituteBinding(src.pattern, src.value, src.body);
   }
 
   return undefined;

@@ -87,6 +87,18 @@ test("type ast", () => {
   expect(location?.span).toEqual(spanOf(src, "type X {}", 1));
 });
 
+test("do not leak bindings", () => {
+  const src = `
+  pub let glb = fn loc_var {
+    let _ = fn loc_var { 0 };
+    loc_var
+  }
+  `;
+
+  const location = parseGotoDef(src, "loc_var", 3);
+  expect(location?.span).toEqual(spanOf(src, "loc_var", 1));
+});
+
 test("type ast in constructors", () => {
   const src = `
       type X {}

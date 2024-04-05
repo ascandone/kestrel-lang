@@ -30,6 +30,7 @@ import {
   ErrorInfo,
   InvalidCatchall,
   InvalidTypeArity,
+  NonExhaustiveMatch,
   OccursCheck,
   TypeMismatch,
   UnboundTypeParam,
@@ -312,9 +313,18 @@ class Typechecker {
     decl.scheme = generalizeAsScheme(decl.value.$.asType());
   }
 
-  private typecheckPattern(pattern: TypedMatchPattern) {
+  private typecheckPattern(
+    pattern: TypedMatchPattern,
+    forceExhaustive = false,
+  ) {
     switch (pattern.type) {
       case "lit": {
+        if (forceExhaustive) {
+          this.errors.push({
+            description: new NonExhaustiveMatch(),
+            span: pattern.span,
+          });
+        }
         const t = inferConstant(pattern.literal);
         this.unifyNode(pattern, pattern.$.asType(), t);
       }
@@ -329,6 +339,16 @@ class Typechecker {
 
         if (pattern.resolution.type !== "constructor") {
           throw new Error("[unreachable] invalid resolution for constructor");
+        }
+
+        if (
+          forceExhaustive &&
+          pattern.resolution.declaration.variants.length > 1
+        ) {
+          this.errors.push({
+            span: pattern.span,
+            description: new NonExhaustiveMatch(),
+          });
         }
 
         const t = instantiateFromScheme(
@@ -353,7 +373,7 @@ class Typechecker {
 
           for (let i = 0; i < pattern.args.length && i < t.args.length; i++) {
             this.unifyNode(pattern, pattern.args[i]!.$.asType(), t.args[i]!);
-            this.typecheckPattern(pattern.args[i]!);
+            this.typecheckPattern(pattern.args[i]!, forceExhaustive);
           }
 
           if (t.args.length !== pattern.args.length) {
@@ -395,7 +415,10 @@ class Typechecker {
       case "fn":
         this.unifyExpr(ast, ast.$.asType(), {
           type: "fn",
-          args: ast.params.map((p) => p.$.asType()),
+          args: ast.params.map((p) => {
+            this.typecheckPattern(p, true);
+            return p.$.asType();
+          }),
           return: ast.body.$.asType(),
         });
 
@@ -415,7 +438,8 @@ class Typechecker {
         return;
 
       case "let":
-        this.unifyExpr(ast, ast.binding.$.asType(), ast.value.$.asType());
+        this.typecheckPattern(ast.pattern, true);
+        this.unifyExpr(ast, ast.pattern.$.asType(), ast.value.$.asType());
         this.unifyExpr(ast, ast.$.asType(), ast.body.$.asType());
         this.typecheckAnnotatedExpr(ast.value);
         this.typecheckAnnotatedExpr(ast.body);

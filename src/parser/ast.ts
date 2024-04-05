@@ -59,7 +59,7 @@ export type SyntaxSugar =
   | {
       type: "let#";
       mapper: SpanMeta & { namespace?: string; name: string };
-      binding: Binding;
+      pattern: MatchPattern;
       value: UntypedExpr;
       body: UntypedExpr;
     }
@@ -85,7 +85,7 @@ export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
     } & IdentifierResolutionMeta)
   | {
       type: "fn";
-      params: Binding<TypeMeta>[];
+      params: MatchPattern<TypeMeta, IdentifierResolutionMeta>[];
       body: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
     }
   | {
@@ -95,7 +95,7 @@ export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
     }
   | {
       type: "let";
-      binding: Binding<TypeMeta>;
+      pattern: MatchPattern<TypeMeta, IdentifierResolutionMeta>;
       value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
       body: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
     }
