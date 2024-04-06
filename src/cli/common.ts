@@ -26,12 +26,17 @@ export async function readProjectWithDeps(
     config = await readConfig(path);
   }
   let rawProject: Record<string, RawModule> = await readProject(path, config);
-  const deps = await readdir(paths.dependencies(path));
-  for (const dependencyName of deps) {
-    const depPath = paths.dependency(path, dependencyName);
-    const dep = await readProject(depPath);
-    rawProject = { ...rawProject, ...dep };
+  try {
+    const deps = await readdir(paths.dependencies(path));
+    for (const dependencyName of deps) {
+      const depPath = paths.dependency(path, dependencyName);
+      const dep = await readProject(depPath);
+      rawProject = { ...rawProject, ...dep };
+    }
+  } catch {
+    // Assume /deps/ is not present otherwise
   }
+
   return rawProject;
 }
 
