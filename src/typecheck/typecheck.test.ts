@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach } from "vitest";
+import { describe, expect, test } from "vitest";
 import { unsafeParse, UntypedImport } from "../parser";
 import {
   Deps,
@@ -29,12 +29,7 @@ import {
   UnusedImport,
   UnusedVariable,
 } from "../errors";
-import { TVar } from "./type";
-
-beforeEach(() => {
-  TVar.resetId();
-  TVar.resetTraitImpls();
-});
+import { TraitImpl } from "./defaultImports";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -563,14 +558,15 @@ describe("traits", () => {
   });
 
   test("succeeds to typecheck when a required trait is not implemented", () => {
-    TVar.registerTraitImpl("Int", "Int", "Show", []);
-
     const [, errs] = tc(
       `
         extern type String
         extern pub let show: Fn(a) -> String where a: Show
         pub let x = show(42)
       `,
+      {},
+      [],
+      [{ moduleName: "Int", typeName: "Int", trait: "Show" }],
     );
     expect(errs).toEqual([]);
   });
@@ -1553,13 +1549,19 @@ function tcProgram(
   src: string,
   deps: Deps = {},
   prelude: UntypedImport[] = [],
+  traitImpls: TraitImpl[] = [],
 ) {
   const parsedProgram = unsafeParse(src);
-  return typecheck(ns, parsedProgram, deps, prelude);
+  return typecheck(ns, parsedProgram, deps, prelude, traitImpls);
 }
 
-function tc(src: string, deps: Deps = {}, prelude: UntypedImport[] = []) {
-  const [typed, errors] = tcProgram("Main", src, deps, prelude);
+function tc(
+  src: string,
+  deps: Deps = {},
+  prelude: UntypedImport[] = [],
+  traitImpls: TraitImpl[] = [],
+) {
+  const [typed, errors] = tcProgram("Main", src, deps, prelude, traitImpls);
   return [programTypes(typed) as Record<string, string>, errors] as const;
 }
 

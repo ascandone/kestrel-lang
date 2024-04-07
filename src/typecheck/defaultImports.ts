@@ -99,3 +99,11 @@ export const defaultImports: UntypedImport[] = [
     ],
   },
 ];
+
+export type TraitImpl = {
+  moduleName: string;
+  typeName: string;
+  trait: string;
+};
+
+export const defaultTraitImpls: TraitImpl[] = [];

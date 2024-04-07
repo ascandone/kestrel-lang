@@ -14,7 +14,7 @@ import {
   TypedModule,
   TypedTypeAst,
 } from "./typedAst";
-import { defaultImports } from "./defaultImports";
+import { TraitImpl, defaultImports, defaultTraitImpls } from "./defaultImports";
 import {
   TVar,
   Type,
@@ -49,8 +49,14 @@ export function typecheck(
   module: UntypedModule,
   deps: Deps = {},
   implicitImports: UntypedImport[] = defaultImports,
+  traitImpls: TraitImpl[] = defaultTraitImpls,
   mainType = DEFAULT_MAIN_TYPE,
 ): [TypedModule, ErrorInfo[]] {
+  TVar.resetTraitImpls();
+  for (const impl of traitImpls) {
+    TVar.registerTraitImpl(impl.moduleName, impl.typeName, impl.trait, []);
+  }
+
   return new Typechecker(ns, mainType).run(module, deps, implicitImports);
 }
 
@@ -545,6 +551,7 @@ export type UntypedProject = Record<
 export function typecheckProject(
   project: UntypedProject,
   implicitImports: UntypedImport[] = defaultImports,
+  traitImpls: TraitImpl[] = defaultTraitImpls,
   mainType = DEFAULT_MAIN_TYPE,
 ): ProjectTypeCheckResult {
   const sortedModules = topSortedModules(project, implicitImports);
@@ -562,6 +569,7 @@ export function typecheckProject(
       m.module,
       deps,
       m.package === CORE_PACKAGE ? [] : implicitImports,
+      traitImpls,
       mainType,
     );
     projectResult[ns] = tc;
