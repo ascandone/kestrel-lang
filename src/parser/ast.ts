@@ -4,8 +4,14 @@ export type ConstLiteral =
   | { type: "char"; value: string }
   | { type: "string"; value: string };
 
+export type TraitDef = {
+  typeVar: string;
+  traits: string[];
+};
+
 export type PolyTypeAst<TypeResolutionMeta = unknown> = {
   mono: TypeAst<TypeResolutionMeta>;
+  where: TraitDef[];
 };
 
 export type TypeAst<TypeResolutionMeta = unknown> = SpanMeta &

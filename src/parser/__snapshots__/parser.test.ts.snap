@@ -167,6 +167,7 @@ exports[`Comments > doc comments on externs 1`] = `
           58,
           59,
         ],
+        "where": [],
       },
     },
   ],
@@ -330,6 +331,7 @@ exports[`extern bindings > let decls 1`] = `
           21,
           24,
         ],
+        "where": [],
       },
     },
   ],
@@ -369,6 +371,7 @@ exports[`extern bindings > let decls defining infix operators 1`] = `
           25,
           36,
         ],
+        "where": [],
       },
     },
   ],
@@ -583,6 +586,7 @@ exports[`imports > parse pub modifier on extern values 1`] = `
           18,
           21,
         ],
+        "where": [],
       },
     },
   ],
@@ -696,6 +700,7 @@ exports[`imports > type defs can be qualified 1`] = `
           14,
           24,
         ],
+        "where": [],
       },
     },
   ],
@@ -4468,6 +4473,14 @@ exports[`traits > parses traits in a polytype 1`] = `
           14,
           15,
         ],
+        "where": [
+          {
+            "traits": [
+              "Ord",
+            ],
+            "typeVar": "a",
+          },
+        ],
       },
     },
   ],
@@ -4833,6 +4846,7 @@ exports[`type hints > parses Fn type with args 1`] = `
           8,
           21,
         ],
+        "where": [],
       },
       "value": {
         "span": [
@@ -4891,6 +4905,7 @@ exports[`type hints > parses Fn type with no args 1`] = `
           8,
           19,
         ],
+        "where": [],
       },
       "value": {
         "span": [
@@ -4941,6 +4956,7 @@ exports[`type hints > parses a concrete type with no args as a type hint 1`] = `
           8,
           11,
         ],
+        "where": [],
       },
       "value": {
         "span": [
@@ -5001,6 +5017,7 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
           8,
           19,
         ],
+        "where": [],
       },
       "value": {
         "span": [
@@ -5070,6 +5087,7 @@ exports[`type hints > parses concrete type with 2 args 1`] = `
           8,
           25,
         ],
+        "where": [],
       },
       "value": {
         "span": [
@@ -5119,6 +5137,7 @@ exports[`type hints > parses type vars hints 1`] = `
           8,
           9,
         ],
+        "where": [],
       },
       "value": {
         "span": [
@@ -5167,6 +5186,7 @@ exports[`type hints > parses underscore type 1`] = `
           8,
           9,
         ],
+        "where": [],
       },
       "value": {
         "span": [
