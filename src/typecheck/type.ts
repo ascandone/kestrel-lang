@@ -28,10 +28,63 @@ export type UnifyError = {
   right: Type;
 };
 
+function getNamedTypeTraitId(
+  moduleName: string,
+  typeName: string,
+  trait: string,
+): string {
+  return `${moduleName}.${typeName}:${trait}`;
+}
+
 export class TVar {
   private constructor(
     private value: TVarResolution | { type: "linked"; to: TVar },
   ) {}
+
+  /**
+   * Example:
+   * { "Json/Encode.Json:eq": null }
+   */
+  private static namedTypesTraitImpls = new Set<string>();
+
+  /**
+   * E.g.
+   * // impl eq for Int
+   * registerTraitImpl("Basics", "Int", "eq")
+   *
+   * // impl eq for Result<a, b> where a: eq, b: eq
+   * registerTraitImpl("Basics", "Result", "eq", [["eq"], ["eq"]])
+   */
+  static registerTraitImpl(
+    moduleName: string,
+    typeName: string,
+    trait: string,
+  ) {
+    const id = getNamedTypeTraitId(moduleName, typeName, trait);
+    if (TVar.namedTypesTraitImpls.has(id)) {
+      throw new Error("Cannot register trait twice for the same type");
+    }
+
+    TVar.namedTypesTraitImpls.add(id);
+  }
+
+  private static concreteTypeImplementsTrait(
+    t: ConcreteType,
+    trait: string,
+  ): boolean {
+    if (t.type === "fn") {
+      return false;
+    }
+
+    const id = getNamedTypeTraitId(t.moduleName, t.name, trait);
+    // TODO check deps
+
+    return TVar.namedTypesTraitImpls.has(id);
+  }
+
+  static resetTraitImpls() {
+    TVar.namedTypesTraitImpls = new Set();
+  }
 
   static fresh(traits: string[] = []): TVar {
     return new TVar({ type: "unbound", id: TVar.unboundId++, traits });
@@ -52,13 +105,6 @@ export class TVar {
 
   asType(): Type & { type: "var" } {
     return { type: "var", var: this };
-  }
-
-  private static concreteTypeImplementsTrait(
-    _t: ConcreteType,
-    _trait: string,
-  ): boolean {
-    return false;
   }
 
   static unify(t1: Type, t2: Type): UnifyError | undefined {

@@ -14,6 +14,7 @@ import { Bool, Int, List, Option, Tuple } from "../__test__/types";
 
 beforeEach(() => {
   TVar.resetId();
+  TVar.resetTraitImpls();
 });
 
 describe("unify", () => {
@@ -630,6 +631,14 @@ describe("traits", () => {
       left: $b.asType(),
       right: Int,
     });
+  });
+
+  test("succeed to unify a tvar with a concrete type that implements the trait", () => {
+    TVar.registerTraitImpl("Basics", "Int", "ord");
+
+    const $a = TVar.fresh(["ord"]);
+
+    expect(unify($a.asType(), Int)).toEqual(undefined);
   });
 });
 
