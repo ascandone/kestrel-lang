@@ -100,8 +100,15 @@ export class TVar {
 
       const arg = t.args[i]!;
 
-      // TODO unify var
       if (arg.type === "var") {
+        const resolved = arg.var.resolve();
+        if (resolved.type === "unbound") {
+          if (!resolved.traits.includes(trait)) {
+            resolved.traits.push(trait);
+          }
+        }
+        // Is the `else` branch unreachable?
+
         return true;
       }
 

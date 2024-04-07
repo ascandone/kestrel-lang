@@ -668,6 +668,40 @@ describe("traits", () => {
 
     expect(unify($a.asType(), List(Int))).toEqual(undefined);
   });
+
+  test("traits are unified to type args", () => {
+    // impl ord for List<a> where a: ord
+    // unify(a: ord, List<b>)
+    // => b: ord
+
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+
+    const $a = TVar.fresh(["ord"]);
+    const $b = TVar.fresh();
+
+    expect(unify($a.asType(), List($b.asType()))).toEqual(undefined);
+
+    expect($b.resolve()).toEqual({
+      type: "unbound",
+      id: 1,
+      traits: ["ord"],
+    });
+  });
+
+  test("fails to unify dependencies when to not impl required trait", () => {
+    // impl ord for List<a> where a: ord
+    // unify(List<a: ord>, List<Int>) => fail
+
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+
+    const $a = TVar.fresh(["ord"]);
+
+    expect(unify(List($a.asType()), List(Int))).toEqual<UnifyError>({
+      type: "type-mismatch",
+      left: $a.asType(),
+      right: Int,
+    });
+  });
 });
 
 function Fn(args: Type[], ret: Type): ConcreteType {
