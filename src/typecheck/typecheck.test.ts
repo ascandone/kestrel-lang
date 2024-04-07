@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, beforeEach } from "vitest";
 import { unsafeParse, UntypedImport } from "../parser";
 import {
   Deps,
@@ -29,6 +29,12 @@ import {
   UnusedImport,
   UnusedVariable,
 } from "../errors";
+import { TVar } from "./type";
+
+beforeEach(() => {
+  TVar.resetId();
+  TVar.resetTraitImpls();
+});
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -536,6 +542,23 @@ describe("type hints", () => {
     expect(errs[0]!.description).toBeInstanceOf(UnboundType);
     expect(types).toEqual({
       x: "Int",
+    });
+  });
+});
+
+describe("traits", () => {
+  test("fails to typecheck when a required trait is not implemented", () => {
+    const [types, errs] = tc(
+      `
+        extern type String
+        extern pub let show: Fn(a) -> String where a: Show
+        pub let x = show(42)
+      `,
+    );
+    expect(errs).toHaveLength(1);
+    expect(types).toEqual({
+      show: "Fn(a) -> String where a: Show",
+      x: "String",
     });
   });
 });

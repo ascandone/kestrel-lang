@@ -192,8 +192,7 @@ class ResolutionStep {
         tDecl.typeHint = {
           mono: this.annotateTypeAst(decl.typeHint.mono),
           span: decl.typeHint.span,
-          // TODO set
-          where: [],
+          where: decl.typeHint.where,
         };
       }
 

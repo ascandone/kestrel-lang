@@ -137,6 +137,7 @@ class Typechecker {
                 returning: ret,
               },
               Object.fromEntries(generics.map(([p, t]) => [p, t])),
+              {},
             );
 
             return mono;
@@ -205,6 +206,7 @@ class Typechecker {
     ast: TypedTypeAst,
     opts: TypeAstConversionType,
     /* mut */ bound: Record<string, TVar>,
+    traitDefs: Record<string, string[]>,
   ): Type {
     switch (ast.type) {
       case "named": {
@@ -230,16 +232,21 @@ class Typechecker {
           type: "named",
           moduleName: ast.resolution.namespace,
           name: ast.name,
-          args: ast.args.map((arg) => this.typeAstToType(arg, opts, bound)),
+          args: ast.args.map((arg) =>
+            this.typeAstToType(arg, opts, bound, traitDefs),
+          ),
         };
       }
 
-      case "fn":
+      case "fn": {
         return {
           type: "fn",
-          args: ast.args.map((arg) => this.typeAstToType(arg, opts, bound)),
-          return: this.typeAstToType(ast.return, opts, bound),
+          args: ast.args.map((arg) =>
+            this.typeAstToType(arg, opts, bound, traitDefs),
+          ),
+          return: this.typeAstToType(ast.return, opts, bound, traitDefs),
         };
+      }
 
       case "var": {
         if (
@@ -254,7 +261,8 @@ class Typechecker {
 
         const bound_ = bound[ast.ident];
         if (bound_ === undefined) {
-          const $ = TVar.fresh();
+          const traits = traitDefs[ast.ident] ?? [];
+          const $ = TVar.fresh(traits);
           bound[ast.ident] = $;
           return $.asType();
         }
@@ -276,10 +284,12 @@ class Typechecker {
   private typecheckAnnotatedDecl(decl: TypedDeclaration) {
     if (decl.typeHint !== undefined) {
       const bound: Record<string, TVar> = {};
+      const traitDefs = decl.typeHint.where.map((d) => [d.typeVar, d.traits]);
       const th = this.typeAstToType(
         decl.typeHint.mono,
         { type: "type-hint" },
         bound,
+        Object.fromEntries(traitDefs),
       );
 
       const scheme: TypeScheme = {};
