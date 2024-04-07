@@ -702,6 +702,26 @@ describe("traits", () => {
       right: Int,
     });
   });
+
+  test("generalization and instantiation preserve traits", () => {
+    const initialTraits = ["ord"];
+    const ta = TVar.fresh(initialTraits).asType();
+
+    const scheme = generalizeAsScheme(ta);
+    const taI = instantiateFromScheme(ta, scheme);
+
+    if (taI.type !== "var") {
+      throw new Error();
+    }
+
+    const resolved = taI.var.resolve();
+
+    if (resolved.type !== "unbound") {
+      throw new Error("Expecting an unbound var");
+    }
+
+    expect(resolved.traits).toEqual(initialTraits);
+  });
 });
 
 function Fn(args: Type[], ret: Type): ConcreteType {

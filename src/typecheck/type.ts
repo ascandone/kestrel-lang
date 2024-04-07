@@ -405,7 +405,7 @@ export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
               return i.asType();
             }
 
-            const t = TVar.fresh();
+            const t = TVar.fresh(resolved.traits);
             instantiated.set(boundId, t);
             return t.asType();
           }
@@ -419,18 +419,34 @@ export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
   return recur(mono);
 }
 
-function typeToStringHelper(t: Type, scheme: TypeScheme): string {
+function typeToStringHelper(
+  t: Type,
+  scheme: TypeScheme,
+  collectTraits: Record<string, Set<string>>,
+): string {
   switch (t.type) {
     case "var": {
       const resolved = t.var.resolve();
       switch (resolved.type) {
         case "bound":
-          return typeToStringHelper(resolved.value, scheme);
+          return typeToStringHelper(resolved.value, scheme, collectTraits);
         case "unbound": {
           const id = scheme[resolved.id];
           if (id === undefined) {
             throw new Error("[unreachable] var not found: " + resolved.id);
           }
+          if (collectTraits !== undefined) {
+            if (!(id in collectTraits)) {
+              collectTraits[id] = new Set();
+            }
+            const lookup = collectTraits[id]!;
+            for (const trait of resolved.traits) {
+              lookup.add(trait);
+            }
+
+            resolved.traits;
+          }
+
           return id;
         }
       }
@@ -438,9 +454,9 @@ function typeToStringHelper(t: Type, scheme: TypeScheme): string {
 
     case "fn": {
       const args = t.args
-        .map((arg) => typeToStringHelper(arg, scheme))
+        .map((arg) => typeToStringHelper(arg, scheme, collectTraits))
         .join(", ");
-      return `Fn(${args}) -> ${typeToStringHelper(t.return, scheme)}`;
+      return `Fn(${args}) -> ${typeToStringHelper(t.return, scheme, collectTraits)}`;
     }
 
     case "named": {
@@ -449,11 +465,11 @@ function typeToStringHelper(t: Type, scheme: TypeScheme): string {
       }
 
       if (t.name === "Tuple2") {
-        return `(${typeToStringHelper(t.args[0]!, scheme)}, ${typeToStringHelper(t.args[1]!, scheme)})`;
+        return `(${typeToStringHelper(t.args[0]!, scheme, collectTraits)}, ${typeToStringHelper(t.args[1]!, scheme, collectTraits)})`;
       }
 
       const args = t.args
-        .map((arg) => typeToStringHelper(arg, scheme))
+        .map((arg) => typeToStringHelper(arg, scheme, collectTraits))
         .join(", ");
       return `${t.name}<${args}>`;
     }
@@ -462,5 +478,22 @@ function typeToStringHelper(t: Type, scheme: TypeScheme): string {
 
 export function typeToString(t: Type, scheme?: TypeScheme): string {
   scheme = generalizeAsScheme(t, scheme);
-  return typeToStringHelper(t, scheme);
+  const traits: Record<string, Set<string>> = {};
+  const ret = typeToStringHelper(t, scheme, traits);
+
+  const isThereAtLeastATrait = Object.values(traits).some((t) => t.size !== 0);
+  if (!isThereAtLeastATrait) {
+    return ret;
+  }
+
+  const sortedTraits = Object.entries(traits)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => {
+      const sortedTraits = [...v].sort().join(" + ");
+
+      return `${k}: ${sortedTraits}`;
+    })
+    .join(",");
+
+  return `${ret} where ${sortedTraits}`;
 }
