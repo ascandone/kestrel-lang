@@ -1,6 +1,6 @@
 import { ConcreteType, Type } from "../typecheck/type";
 
-const BASICS_MODULE = "Basics";
+export const BASICS_MODULE = "Basics";
 
 export const Int: ConcreteType = {
   moduleName: BASICS_MODULE,

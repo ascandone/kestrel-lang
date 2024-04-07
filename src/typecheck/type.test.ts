@@ -10,7 +10,14 @@ import {
   typeToString,
   unify,
 } from "./type";
-import { Bool, Int, List, Option, Tuple } from "../__test__/types";
+import {
+  BASICS_MODULE,
+  Bool,
+  Int,
+  List,
+  Option,
+  Tuple,
+} from "../__test__/types";
 
 beforeEach(() => {
   TVar.resetId();
@@ -634,11 +641,32 @@ describe("traits", () => {
   });
 
   test("succeed to unify a tvar with a concrete type that implements the trait", () => {
-    TVar.registerTraitImpl("Basics", "Int", "ord");
+    TVar.registerTraitImpl(BASICS_MODULE, "Int", "ord", []);
 
     const $a = TVar.fresh(["ord"]);
 
     expect(unify($a.asType(), Int)).toEqual(undefined);
+  });
+
+  test("fails to unify a tvar with a concrete type that implements the trait when type vars don't", () => {
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+
+    const $a = TVar.fresh(["ord"]);
+
+    expect(unify($a.asType(), List(Int))).toEqual<UnifyError>({
+      type: "type-mismatch",
+      left: $a.asType(),
+      right: List(Int),
+    });
+  });
+
+  test("succeeds to unify a tvar with a concrete type that implements the trait (including type args)", () => {
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+    TVar.registerTraitImpl(BASICS_MODULE, "Int", "ord", []);
+
+    const $a = TVar.fresh(["ord"]);
+
+    expect(unify($a.asType(), List(Int))).toEqual(undefined);
   });
 });
 

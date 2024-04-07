@@ -36,6 +36,7 @@ function getNamedTypeTraitId(
   return `${moduleName}.${typeName}:${trait}`;
 }
 
+export type TraitImplDependency = string[] | undefined;
 export class TVar {
   private constructor(
     private value: TVarResolution | { type: "linked"; to: TVar },
@@ -45,7 +46,10 @@ export class TVar {
    * Example:
    * { "Json/Encode.Json:eq": null }
    */
-  private static namedTypesTraitImpls = new Set<string>();
+  private static namedTypesTraitImpls = new Map<
+    string,
+    TraitImplDependency[]
+  >();
 
   /**
    * E.g.
@@ -59,13 +63,14 @@ export class TVar {
     moduleName: string,
     typeName: string,
     trait: string,
+    dependencies: TraitImplDependency[],
   ) {
     const id = getNamedTypeTraitId(moduleName, typeName, trait);
     if (TVar.namedTypesTraitImpls.has(id)) {
       throw new Error("Cannot register trait twice for the same type");
     }
 
-    TVar.namedTypesTraitImpls.add(id);
+    TVar.namedTypesTraitImpls.set(id, dependencies);
   }
 
   private static concreteTypeImplementsTrait(
@@ -77,13 +82,40 @@ export class TVar {
     }
 
     const id = getNamedTypeTraitId(t.moduleName, t.name, trait);
-    // TODO check deps
 
-    return TVar.namedTypesTraitImpls.has(id);
+    const lookup = TVar.namedTypesTraitImpls.get(id);
+    if (lookup === undefined) {
+      return false;
+    }
+
+    if (lookup.length !== t.args.length) {
+      throw new Error("[unreachable] invalid number of args or deps");
+    }
+
+    for (let i = 0; i < lookup.length; i++) {
+      const deps = lookup[i];
+      if (deps === undefined) {
+        continue;
+      }
+
+      const arg = t.args[i]!;
+
+      // TODO unify var
+      if (arg.type === "var") {
+        return true;
+      }
+
+      const argImplTrait = TVar.concreteTypeImplementsTrait(arg, trait);
+      if (!argImplTrait) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   static resetTraitImpls() {
-    TVar.namedTypesTraitImpls = new Set();
+    TVar.namedTypesTraitImpls = new Map();
   }
 
   static fresh(traits: string[] = []): TVar {
