@@ -608,6 +608,29 @@ describe("traits", () => {
       }),
     );
   });
+
+  test("fail when trying to unify a tvar with a concrete type that does implement the trait", () => {
+    const $a = TVar.fresh(["ord"]);
+
+    expect(unify($a.asType(), Int)).toEqual<UnifyError>({
+      type: "type-mismatch",
+      left: $a.asType(),
+      right: Int,
+    });
+  });
+
+  test("transitively fail when trying to unify a tvar with a concrete type that does implement the trait", () => {
+    const $a = TVar.fresh();
+    unify($a.asType(), Int);
+
+    const $b = TVar.fresh(["ord"]);
+
+    expect(unify($a.asType(), $b.asType())).toEqual<UnifyError>({
+      type: "type-mismatch",
+      left: $b.asType(),
+      right: Int,
+    });
+  });
 });
 
 function Fn(args: Type[], ret: Type): ConcreteType {

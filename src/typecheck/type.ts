@@ -54,6 +54,13 @@ export class TVar {
     return { type: "var", var: this };
   }
 
+  private static concreteTypeImplementsTrait(
+    _t: ConcreteType,
+    _trait: string,
+  ): boolean {
+    return false;
+  }
+
   static unify(t1: Type, t2: Type): UnifyError | undefined {
     // (Var, Var)
     if (t1.type === "var" && t2.type === "var") {
@@ -75,6 +82,17 @@ export class TVar {
         case "bound":
           return TVar.unify(t1.var.value.value, t2);
         case "unbound":
+          for (const trait of t1.var.value.traits) {
+            const impl = TVar.concreteTypeImplementsTrait(t2, trait);
+            // TODO better err
+            if (!impl) {
+              return {
+                type: "type-mismatch",
+                left: t1,
+                right: t2,
+              };
+            }
+          }
           t1.var.value = { type: "bound", value: t2 };
           return;
         case "linked":
