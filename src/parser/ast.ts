@@ -4,6 +4,10 @@ export type ConstLiteral =
   | { type: "char"; value: string }
   | { type: "string"; value: string };
 
+export type PolyTypeAst<TypeResolutionMeta = unknown> = {
+  mono: TypeAst<TypeResolutionMeta>;
+};
+
 export type TypeAst<TypeResolutionMeta = unknown> = SpanMeta &
   (
     | {
@@ -137,12 +141,12 @@ export type Declaration<
 } & (
     | {
         extern: false;
-        typeHint?: TypeAst<TypeResolutionMeta> & SpanMeta;
+        typeHint?: PolyTypeAst<TypeResolutionMeta> & SpanMeta;
         value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
       }
     | {
         extern: true;
-        typeHint: TypeAst<TypeResolutionMeta> & SpanMeta;
+        typeHint: PolyTypeAst<TypeResolutionMeta> & SpanMeta;
       }
   );
 

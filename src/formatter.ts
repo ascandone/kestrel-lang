@@ -464,7 +464,7 @@ function declToDoc(ast: UntypedDeclaration): Doc {
     text(`let ${name}`),
     ast.typeHint === undefined
       ? nil
-      : concat(text(": "), typeAstToDoc(ast.typeHint)),
+      : concat(text(": "), typeAstToDoc(ast.typeHint.mono)),
     ast.extern
       ? nil
       : concat(

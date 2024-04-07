@@ -168,12 +168,14 @@ class ResolutionStep {
           ...decl,
           scheme: {},
           binding,
+          typeHint: undefined!,
         };
       } else {
         tDecl = {
           ...decl,
           scheme: {},
           binding,
+          typeHint: undefined!,
           value: undefined!,
         };
 
@@ -187,7 +189,10 @@ class ResolutionStep {
       }
 
       if (decl.typeHint !== undefined) {
-        tDecl.typeHint = this.annotateTypeAst(decl.typeHint);
+        tDecl.typeHint = {
+          mono: this.annotateTypeAst(decl.typeHint.mono),
+          span: decl.typeHint.span,
+        };
       }
 
       if (!decl.pub) {

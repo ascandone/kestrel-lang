@@ -277,7 +277,7 @@ class Typechecker {
     if (decl.typeHint !== undefined) {
       const bound: Record<string, TVar> = {};
       const th = this.typeAstToType(
-        decl.typeHint,
+        decl.typeHint.mono,
         { type: "type-hint" },
         bound,
       );
