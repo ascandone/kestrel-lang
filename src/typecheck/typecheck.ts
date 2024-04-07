@@ -54,7 +54,12 @@ export function typecheck(
 ): [TypedModule, ErrorInfo[]] {
   TVar.resetTraitImpls();
   for (const impl of traitImpls) {
-    TVar.registerTraitImpl(impl.moduleName, impl.typeName, impl.trait, []);
+    TVar.registerTraitImpl(
+      impl.moduleName,
+      impl.typeName,
+      impl.trait,
+      impl.deps ?? [],
+    );
   }
 
   return new Typechecker(ns, mainType).run(module, deps, implicitImports);
