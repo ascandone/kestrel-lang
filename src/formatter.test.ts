@@ -404,6 +404,10 @@ describe("type hints", () => {
   test("Fn with many arg", () => {
     expect(`extern let f: Fn(A, B, C) -> Int\n`).toBeFormatted();
   });
+
+  test("type with trait annotations", () => {
+    expect(`extern let f: Fn(a) -> b where a: Show, b: Eq\n`).toBeFormatted();
+  });
 });
 
 describe("type delc", () => {
