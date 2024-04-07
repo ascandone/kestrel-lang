@@ -561,6 +561,19 @@ describe("traits", () => {
       x: "String",
     });
   });
+
+  test("succeeds to typecheck when a required trait is not implemented", () => {
+    TVar.registerTraitImpl("Int", "Int", "Show", []);
+
+    const [, errs] = tc(
+      `
+        extern type String
+        extern pub let show: Fn(a) -> String where a: Show
+        pub let x = show(42)
+      `,
+    );
+    expect(errs).toEqual([]);
+  });
 });
 
 describe("custom types", () => {
