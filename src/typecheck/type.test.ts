@@ -59,6 +59,7 @@ describe("unify", () => {
     expect($a.resolve()).toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
+      traits: [],
     });
   });
 
@@ -213,7 +214,11 @@ describe("unify", () => {
     const $a = TVar.fresh();
     const $b = TVar.fresh();
     unify($a.asType(), $b.asType());
-    expect($a.resolve()).toEqual<TVarResolution>({ type: "unbound", id: 0 });
+    expect($a.resolve()).toEqual<TVarResolution>({
+      type: "unbound",
+      id: 0,
+      traits: [],
+    });
     expect($a.resolve()).toEqual($b.resolve());
   });
 
@@ -274,14 +279,17 @@ describe("unify", () => {
     expect($a.resolve(), "a").toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
+      traits: [],
     });
     expect($b.resolve(), "b").toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
+      traits: [],
     });
     expect($b.resolve(), "c").toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
+      traits: [],
     });
 
     unify($a.asType(), Bool);
@@ -549,6 +557,56 @@ describe(typeToString.name, () => {
   test("closure", () => {
     const a = TVar.fresh().asType();
     expect(typeToString(a, {})).toBe("a");
+  });
+});
+
+describe("traits", () => {
+  test("types can be instantiated with traits", () => {
+    expect(TVar.fresh(["ord"]).resolve()).toEqual({
+      type: "unbound",
+      id: 0,
+      traits: ["ord"],
+    });
+  });
+
+  test("merge traits in unified tvars", () => {
+    const $a = TVar.fresh(["ord"]);
+    const $b = TVar.fresh(["eq"]);
+
+    unify($a.asType(), $b.asType());
+
+    expect($a.resolve()).toEqual<TVarResolution>(
+      expect.objectContaining({
+        traits: expect.arrayContaining(["ord", "eq"]),
+      }),
+    );
+
+    expect($b.resolve()).toEqual<TVarResolution>(
+      expect.objectContaining({
+        traits: expect.arrayContaining(["ord", "eq"]),
+      }),
+    );
+  });
+
+  test("transitively unify traits", () => {
+    const $a = TVar.fresh();
+    const $b = TVar.fresh();
+    unify($a.asType(), $b.asType());
+
+    const $c = TVar.fresh(["eq"]);
+    unify($a.asType(), $c.asType());
+
+    expect($a.resolve()).toEqual<TVarResolution>(
+      expect.objectContaining({
+        traits: expect.arrayContaining(["eq"]),
+      }),
+    );
+
+    expect($b.resolve()).toEqual<TVarResolution>(
+      expect.objectContaining({
+        traits: expect.arrayContaining(["eq"]),
+      }),
+    );
   });
 });
 

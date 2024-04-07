@@ -19,7 +19,7 @@ export type Type =
     };
 
 export type TVarResolution =
-  | { type: "unbound"; id: number }
+  | { type: "unbound"; id: number; traits: string[] }
   | { type: "bound"; value: ConcreteType };
 
 export type UnifyError = {
@@ -33,8 +33,8 @@ export class TVar {
     private value: TVarResolution | { type: "linked"; to: TVar },
   ) {}
 
-  static fresh(): TVar {
-    return new TVar({ type: "unbound", id: TVar.unboundId++ });
+  static fresh(traits: string[] = []): TVar {
+    return new TVar({ type: "unbound", id: TVar.unboundId++, traits });
   }
 
   resolve(): TVarResolution {
@@ -147,6 +147,13 @@ export class TVar {
     if (r1.type === "unbound" && r2.type === "unbound" && r1.id === r2.id) {
       // TVars are already linked
       return;
+    }
+
+    // Unify traits
+    for (const t of r2.traits) {
+      if (!r1.traits.includes(t)) {
+        r1.traits.push(t);
+      }
     }
 
     $2.value = { type: "linked", to: $1 };
