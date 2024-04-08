@@ -570,6 +570,41 @@ describe("traits", () => {
     );
     expect(errs).toEqual([]);
   });
+
+  test("propagates the trait constraint", () => {
+    const [types, errs] = tc(
+      `
+        extern type String
+        extern let show: Fn(a) -> String where a: Show
+
+        pub let use_show = fn value {
+          show(value)
+        }
+      `,
+    );
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      show: "Fn(a) -> String where a: Show",
+      use_show: "Fn(a) -> String where a: Show",
+    });
+  });
+
+  test("fails to typecheck when unify occurs later", () => {
+    const [, errs] = tc(
+      `
+        extern type String
+        extern let show: Fn(a) -> String where a: Show
+
+        extern type Int
+        extern pub let (+): Fn(Int, Int) -> Int
+        pub let f = fn x {
+          let _ = show(x);
+          x + 1
+        }
+      `,
+    );
+    expect(errs).not.toEqual([]);
+  });
 });
 
 describe("custom types", () => {
