@@ -605,6 +605,50 @@ describe("traits", () => {
     );
     expect(errs).not.toEqual([]);
   });
+
+  test("infers multiple traits", () => {
+    const [types, errs] = tc(
+      `
+        extern type Unit
+        extern let show: Fn(a) -> Unit where a: Show
+        extern let eq: Fn(a) -> Unit where a: Eq
+
+        pub let f = fn x {
+          let _ = show(x);
+          eq(x)
+        }
+      `,
+    );
+    expect(errs).toEqual([]);
+    expect(types).toEqual(
+      expect.objectContaining({
+        f: "Fn(a) -> Unit where a: Eq + Show",
+      }),
+    );
+  });
+
+  test.todo("does not break generalization", () => {
+    const [types, errs] = tc(
+      `
+        extern type Unit
+        extern let show: Fn(a) -> Unit where a: Show
+        extern let eq: Fn(a) -> Unit where a: Eq
+
+        pub let f = fn x {
+          let _ = show(x);
+          let _ = eq(x);
+          0
+        }
+      `,
+    );
+    expect(errs).toEqual([]);
+    expect(types).toEqual(
+      expect.objectContaining({
+        eq: "Fn(a) -> Unit where a: Eq",
+        show: "Fn(a) -> Unit where a: Show",
+      }),
+    );
+  });
 });
 
 describe("custom types", () => {
