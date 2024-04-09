@@ -627,7 +627,7 @@ describe("traits", () => {
     );
   });
 
-  test.todo("does not break generalization", () => {
+  test("does not break generalization", () => {
     const [types, errs] = tc(
       `
         extern type Unit
