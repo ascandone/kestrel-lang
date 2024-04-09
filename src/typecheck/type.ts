@@ -405,7 +405,7 @@ export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
               return i.asType();
             }
 
-            const t = TVar.fresh(resolved.traits);
+            const t = TVar.fresh([...resolved.traits]);
             instantiated.set(boundId, t);
             return t.asType();
           }
