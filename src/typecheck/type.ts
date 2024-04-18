@@ -73,37 +73,39 @@ export class TVar {
     TVar.namedTypesTraitImpls.set(id, dependencies);
   }
 
-  static typeImplementsTrait(t: Type, trait: string): boolean {
+  static typeImplementsTrait(
+    t: Type,
+    trait: string,
+  ): Array<{ id: number; traits: string[] }> | undefined {
     if (t.type === "var") {
       const resolved = t.var.resolve();
       if (resolved.type === "unbound") {
-        if (!resolved.traits.includes(trait)) {
-          resolved.traits.push(trait);
-        }
+        return [resolved];
       }
 
-      return true;
+      return this.typeImplementsTrait(resolved.value, trait);
     }
 
     if (t.type === "fn") {
-      return false;
+      return undefined;
     }
 
     const id = getNamedTypeTraitId(t.moduleName, t.name, trait);
 
     const lookup = TVar.namedTypesTraitImpls.get(id);
     if (lookup === undefined) {
-      return false;
+      return undefined;
     }
 
     if (lookup.length !== t.args.length) {
       // this error has been emitted somewhere else
-      return false;
+      return undefined;
       // throw new Error(
       //   `[unreachable] invalid number of args or deps (lookup: ${lookup.length}, args: ${t.args.length})`,
       // );
     }
 
+    const r: Array<{ id: number; traits: string[] }> = [];
     for (let i = 0; i < lookup.length; i++) {
       const deps = lookup[i];
       if (deps === undefined) {
@@ -113,12 +115,14 @@ export class TVar {
       const arg = t.args[i]!;
 
       const argImplTrait = TVar.typeImplementsTrait(arg, trait);
-      if (!argImplTrait) {
-        return false;
+      if (argImplTrait === undefined) {
+        return undefined;
       }
+
+      r.push(...argImplTrait);
     }
 
-    return true;
+    return r;
   }
 
   static resetTraitImpls() {
@@ -170,14 +174,21 @@ export class TVar {
           for (const trait of t1.var.value.traits) {
             const impl = TVar.typeImplementsTrait(t2, trait);
             // TODO better err
-            if (!impl) {
+            if (impl === undefined) {
               return {
                 type: "type-mismatch",
                 left: t1,
                 right: t2,
               };
             }
+
+            for (const i of impl) {
+              if (!i.traits.includes(trait)) {
+                i.traits.push(trait);
+              }
+            }
           }
+
           t1.var.value = { type: "bound", value: t2 };
           return;
         case "linked":

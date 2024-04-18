@@ -13,6 +13,7 @@ import {
   TypedMatchPattern,
   TypedModule,
   TypedTypeAst,
+  TypedTypeDeclaration,
 } from "./typedAst";
 import { TraitImpl, defaultImports, defaultTraitImpls } from "./defaultImports";
 import {
@@ -24,6 +25,7 @@ import {
   instantiateFromScheme,
   TypeScheme,
   PolyType,
+  TraitImplDependency,
 } from "./type";
 import {
   ArityMismatch,
@@ -44,14 +46,9 @@ export type TypeMeta = { $: TVar };
 
 export type Deps = Record<string, TypedModule>;
 
-export function typecheck(
-  ns: string,
-  module: UntypedModule,
-  deps: Deps = {},
-  implicitImports: UntypedImport[] = defaultImports,
+export function resetTraitsRegistry(
   traitImpls: TraitImpl[] = defaultTraitImpls,
-  mainType = DEFAULT_MAIN_TYPE,
-): [TypedModule, ErrorInfo[]] {
+) {
   TVar.resetTraitImpls();
   for (const impl of traitImpls) {
     TVar.registerTraitImpl(
@@ -61,7 +58,15 @@ export function typecheck(
       impl.deps ?? [],
     );
   }
+}
 
+export function typecheck(
+  ns: string,
+  module: UntypedModule,
+  deps: Deps = {},
+  implicitImports: UntypedImport[] = defaultImports,
+  mainType = DEFAULT_MAIN_TYPE,
+): [TypedModule, ErrorInfo[]] {
   return new Typechecker(ns, mainType).run(module, deps, implicitImports);
 }
 
@@ -72,6 +77,58 @@ class Typechecker {
     private ns: string,
     private mainType: Type,
   ) {}
+
+  private derive(
+    trait: string,
+    typeDecl: TypedTypeDeclaration & { type: "adt" },
+  ) {
+    const deps: TraitImplDependency[] = [];
+
+    const depParams = new Set<string>();
+
+    for (const variant of typeDecl.variants) {
+      const resolved = variant.$.resolve();
+      if (resolved.type === "unbound") {
+        throw new Error("[unrechable]");
+      }
+      const { value: concreteType } = resolved;
+
+      if (concreteType.type === "fn") {
+        for (const arg of concreteType.args) {
+          if (
+            arg.type === "named" &&
+            arg.moduleName === this.ns &&
+            arg.name === typeDecl.name
+          ) {
+            continue;
+          }
+
+          const impl = TVar.typeImplementsTrait(arg, trait);
+          if (impl === undefined) {
+            return;
+          }
+          for (const { id } of impl) {
+            const name = variant.scheme[id];
+            if (name !== undefined) {
+              depParams.add(name);
+            }
+          }
+        }
+      }
+
+      // Singleton always derive any trait
+    }
+
+    for (const param of typeDecl.params) {
+      if (depParams.has(param.name)) {
+        deps.push([trait]);
+      } else {
+        deps.push(undefined);
+      }
+    }
+
+    TVar.registerTraitImpl(this.ns, typeDecl.name, trait, deps);
+  }
 
   run(
     module: UntypedModule,
@@ -94,6 +151,9 @@ class Typechecker {
             throw new Error("[unreachable] adt type should be fresh initially");
           }
         }
+
+        this.derive("Eq", typeDecl);
+        this.derive("Show", typeDecl);
       }
     }
 
@@ -556,9 +616,10 @@ export type UntypedProject = Record<
 export function typecheckProject(
   project: UntypedProject,
   implicitImports: UntypedImport[] = defaultImports,
-  traitImpls: TraitImpl[] = defaultTraitImpls,
   mainType = DEFAULT_MAIN_TYPE,
 ): ProjectTypeCheckResult {
+  resetTraitsRegistry();
+
   const sortedModules = topSortedModules(project, implicitImports);
 
   const projectResult: ProjectTypeCheckResult = {};
@@ -574,7 +635,6 @@ export function typecheckProject(
       m.module,
       deps,
       m.package === CORE_PACKAGE ? [] : implicitImports,
-      traitImpls,
       mainType,
     );
     projectResult[ns] = tc;

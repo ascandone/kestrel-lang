@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { unsafeParse, UntypedImport } from "../parser";
 import {
   Deps,
+  resetTraitsRegistry,
   typecheck,
   typecheckProject,
   TypedModule,
@@ -648,6 +649,115 @@ describe("traits", () => {
         show: "Fn(a) -> Unit where a: Show",
       }),
     );
+  });
+
+  test("is able to derive Eq trait in ADTs with only a singleton", () => {
+    const [, errs] = tc(
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+        type MyType {
+          Singleton
+        }
+
+        pub let example = take_eq(Singleton)
+      `,
+    );
+
+    expect(errs).toEqual([]);
+  });
+
+  test("does not derive Eq trait in ADTs when at least one argument", () => {
+    const [, errs] = tc(
+      `
+        extern type NotEq
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type MyType {
+          Singleton,
+          Box(NotEq)
+        }
+
+        pub let example = take_eq(Singleton)
+      `,
+    );
+
+    expect(errs).toHaveLength(1);
+  });
+
+  test("derives Eq even when constructors have arguments that derive Eq", () => {
+    const [, errs] = tc(
+      `
+        type EqType { }
+
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type MyType {
+          Singleton,
+          Box(EqType)
+        }
+
+        pub let example = take_eq(Singleton)
+      `,
+    );
+
+    expect(errs).toEqual([]);
+  });
+
+  test("requires deps to derive Eq in order to derive Eq", () => {
+    const [, errs] = tc(
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type MyType<a> {
+          Box(a)
+        }
+
+        extern type NotEq
+        extern let my_type: MyType<NotEq>
+
+        pub let example = take_eq(my_type)
+      `,
+    );
+
+    expect(errs).toHaveLength(1);
+  });
+
+  test("derives Eq when dependencies derive Eq", () => {
+    const [, errs] = tc(
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        type IsEq { }
+
+        pub(..) type Option<a> {
+          Some(a),
+          None,
+        }
+
+        extern let is_eq: Option<IsEq>
+
+        pub let example = take_eq(is_eq)
+      `,
+    );
+
+    expect(errs).toEqual([]);
+  });
+
+  test("derives in self-recursive types", () => {
+    const [, errs] = tc(
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type Rec<a> {
+          End,
+          Nest(Rec<a>),
+        }
+
+        pub let example = take_eq(End)
+      `,
+    );
+
+    expect(errs).toEqual([]);
   });
 });
 
@@ -1631,7 +1741,8 @@ function tcProgram(
   traitImpls: TraitImpl[] = [],
 ) {
   const parsedProgram = unsafeParse(src);
-  return typecheck(ns, parsedProgram, deps, prelude, traitImpls);
+  resetTraitsRegistry(traitImpls);
+  return typecheck(ns, parsedProgram, deps, prelude);
 }
 
 function tc(
