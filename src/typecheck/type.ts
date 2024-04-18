@@ -73,10 +73,18 @@ export class TVar {
     TVar.namedTypesTraitImpls.set(id, dependencies);
   }
 
-  private static concreteTypeImplementsTrait(
-    t: ConcreteType,
-    trait: string,
-  ): boolean {
+  static typeImplementsTrait(t: Type, trait: string): boolean {
+    if (t.type === "var") {
+      const resolved = t.var.resolve();
+      if (resolved.type === "unbound") {
+        if (!resolved.traits.includes(trait)) {
+          resolved.traits.push(trait);
+        }
+      }
+
+      return true;
+    }
+
     if (t.type === "fn") {
       return false;
     }
@@ -89,7 +97,11 @@ export class TVar {
     }
 
     if (lookup.length !== t.args.length) {
-      throw new Error("[unreachable] invalid number of args or deps");
+      // this error has been emitted somewhere else
+      return false;
+      // throw new Error(
+      //   `[unreachable] invalid number of args or deps (lookup: ${lookup.length}, args: ${t.args.length})`,
+      // );
     }
 
     for (let i = 0; i < lookup.length; i++) {
@@ -100,19 +112,7 @@ export class TVar {
 
       const arg = t.args[i]!;
 
-      if (arg.type === "var") {
-        const resolved = arg.var.resolve();
-        if (resolved.type === "unbound") {
-          if (!resolved.traits.includes(trait)) {
-            resolved.traits.push(trait);
-          }
-        }
-        // Is the `else` branch unreachable?
-
-        return true;
-      }
-
-      const argImplTrait = TVar.concreteTypeImplementsTrait(arg, trait);
+      const argImplTrait = TVar.typeImplementsTrait(arg, trait);
       if (!argImplTrait) {
         return false;
       }
@@ -168,7 +168,7 @@ export class TVar {
           return TVar.unify(t1.var.value.value, t2);
         case "unbound":
           for (const trait of t1.var.value.traits) {
-            const impl = TVar.concreteTypeImplementsTrait(t2, trait);
+            const impl = TVar.typeImplementsTrait(t2, trait);
             // TODO better err
             if (!impl) {
               return {
