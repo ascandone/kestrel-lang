@@ -26,7 +26,7 @@ export function goToDefinitionOf(
     case "declaration":
       if (statement.declaration.typeHint !== undefined) {
         const ret = goToDefinitionOfTypeAst(
-          statement.declaration.typeHint,
+          statement.declaration.typeHint.mono,
           offset,
         );
         if (ret !== undefined) {

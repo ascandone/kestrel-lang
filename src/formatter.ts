@@ -1,6 +1,7 @@
 import {
   ConstLiteral,
   MatchPattern,
+  PolyTypeAst,
   TypeAst,
   UntypedDeclaration,
   UntypedExpr,
@@ -405,6 +406,26 @@ function patternToDoc(pattern: MatchPattern): Doc {
   }
 }
 
+function typeHintToDoc(poly: PolyTypeAst): Doc {
+  if (poly.where.length === 0) {
+    return typeAstToDoc(poly.mono);
+  }
+
+  const entries = poly.where
+    .map(({ typeVar, traits }) => [typeVar, traits] as const)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([tVar, traits]) => {
+      const traitsDocs = traits.map((s) => text(s));
+      return concat(text(tVar, ": "), sepBy(text(" + "), traitsDocs));
+    });
+
+  return concat(
+    typeAstToDoc(poly.mono),
+    text(" where "),
+    sepBy(text(", "), entries),
+  );
+}
+
 function typeAstToDoc(typeAst: TypeAst): Doc {
   switch (typeAst.type) {
     case "named": {
@@ -464,7 +485,7 @@ function declToDoc(ast: UntypedDeclaration): Doc {
     text(`let ${name}`),
     ast.typeHint === undefined
       ? nil
-      : concat(text(": "), typeAstToDoc(ast.typeHint)),
+      : concat(text(": "), typeHintToDoc(ast.typeHint)),
     ast.extern
       ? nil
       : concat(

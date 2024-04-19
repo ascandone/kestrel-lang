@@ -1,4 +1,5 @@
 import { Span, UntypedImport } from "../parser";
+import { TraitImplDependency } from "./type";
 
 const dummySpan: Span = [0, 0];
 
@@ -98,4 +99,34 @@ export const defaultImports: UntypedImport[] = [
       { type: "type", name: "Task", exposeImpl: false, span: dummySpan },
     ],
   },
+];
+
+export type TraitImpl = {
+  moduleName: string;
+  typeName: string;
+  trait: string;
+  deps?: TraitImplDependency[];
+};
+
+const Eq = "Eq",
+  Ord = "Ord",
+  Show = "Show";
+
+export const defaultTraitImpls: TraitImpl[] = [
+  // Extern types
+  { moduleName: "Char", typeName: "Char", trait: Eq },
+  { moduleName: "Char", typeName: "Char", trait: Ord },
+  { moduleName: "Char", typeName: "Char", trait: Show },
+
+  { moduleName: "String", typeName: "String", trait: Eq },
+  { moduleName: "String", typeName: "String", trait: Ord },
+  { moduleName: "String", typeName: "String", trait: Show },
+
+  { moduleName: "Int", typeName: "Int", trait: Eq },
+  { moduleName: "Int", typeName: "Int", trait: Ord },
+  { moduleName: "Int", typeName: "Int", trait: Show },
+
+  { moduleName: "Float", typeName: "Float", trait: Eq },
+  { moduleName: "Float", typeName: "Float", trait: Ord },
+  { moduleName: "Float", typeName: "Float", trait: Show },
 ];

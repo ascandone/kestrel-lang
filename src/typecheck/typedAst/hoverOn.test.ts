@@ -1,7 +1,7 @@
-import { test, expect } from "vitest";
+import { test, expect, beforeEach } from "vitest";
 import { Hovered, hoverOn, hoverToMarkdown } from "../typedAst";
 import { unsafeParse } from "../../parser";
-import { typecheck } from "../typecheck";
+import { resetTraitsRegistry, typecheck } from "../typecheck";
 import { TypeScheme } from "../type";
 import { indexOf, spanOf } from "./__test__/utils";
 
@@ -305,3 +305,7 @@ function parseHover(
   }
   return ret;
 }
+
+beforeEach(() => {
+  resetTraitsRegistry();
+});

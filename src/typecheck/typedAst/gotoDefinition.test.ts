@@ -1,7 +1,7 @@
-import { test, expect } from "vitest";
+import { test, expect, beforeEach } from "vitest";
 import { goToDefinitionOf, Location } from "../typedAst";
 import { unsafeParse } from "../../parser";
-import { typecheck } from "../typecheck";
+import { resetTraitsRegistry, typecheck } from "../typecheck";
 import { indexOf, spanOf } from "./__test__/utils";
 
 test("glb decl", () => {
@@ -122,8 +122,11 @@ function parseGotoDef(
   if (offset === undefined) {
     throw new Error("Invalid offset");
   }
-
   const parsed = unsafeParse(src);
   const [typed, _] = typecheck("Main", parsed);
   return goToDefinitionOf(typed, offset);
 }
+
+beforeEach(() => {
+  resetTraitsRegistry();
+});

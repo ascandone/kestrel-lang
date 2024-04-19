@@ -9,10 +9,16 @@ Program {
     = (ident | infixIdent) -- value
     | typeIdent ("(" ".." ")")? -- type
 
+  TraitDef
+    = typeVar ":" typeIdent
+
+  PolyType
+    = Type ("where" NonemptyListOf<TraitDef, ","> )?
+
   // --- Toplevel
   Declaration
-    = docCommentLine* "pub"? "let" ident (":" Type)? "=" Exp  -- letStmt
-    | docCommentLine* "extern" "pub"? "let" (ident | infixIdent) ":" Type -- externLetStmt
+    = docCommentLine* "pub"? "let" ident (":" PolyType)? "=" Exp  -- letStmt
+    | docCommentLine* "extern" "pub"? "let" (ident | infixIdent) ":" PolyType -- externLetStmt
 
   TypeDeclaration
     = docCommentLine* ("pub" "(..)"?)? "type" typeIdent ("<" NonemptyListOf<typeVar, ","> ">")? "{" ListOf<TypeVariant, ","> ","? "}" -- typeDef

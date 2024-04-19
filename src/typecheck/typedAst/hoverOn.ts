@@ -29,7 +29,7 @@ export function hoverOn(
   switch (statement.type) {
     case "declaration": {
       if (statement.declaration.typeHint !== undefined) {
-        const res = hoverOnTypeAst(statement.declaration.typeHint, offset);
+        const res = hoverOnTypeAst(statement.declaration.typeHint.mono, offset);
         if (res !== undefined) {
           return res;
         }

@@ -10,10 +10,18 @@ import {
   typeToString,
   unify,
 } from "./type";
-import { Bool, Int, List, Option, Tuple } from "../__test__/types";
+import {
+  BASICS_MODULE,
+  Bool,
+  Int,
+  List,
+  Option,
+  Tuple,
+} from "../__test__/types";
 
 beforeEach(() => {
   TVar.resetId();
+  TVar.resetTraitImpls();
 });
 
 describe("unify", () => {
@@ -59,6 +67,7 @@ describe("unify", () => {
     expect($a.resolve()).toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
+      traits: [],
     });
   });
 
@@ -213,7 +222,11 @@ describe("unify", () => {
     const $a = TVar.fresh();
     const $b = TVar.fresh();
     unify($a.asType(), $b.asType());
-    expect($a.resolve()).toEqual<TVarResolution>({ type: "unbound", id: 0 });
+    expect($a.resolve()).toEqual<TVarResolution>({
+      type: "unbound",
+      id: 0,
+      traits: [],
+    });
     expect($a.resolve()).toEqual($b.resolve());
   });
 
@@ -274,14 +287,17 @@ describe("unify", () => {
     expect($a.resolve(), "a").toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
+      traits: [],
     });
     expect($b.resolve(), "b").toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
+      traits: [],
     });
     expect($b.resolve(), "c").toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
+      traits: [],
     });
 
     unify($a.asType(), Bool);
@@ -549,6 +565,173 @@ describe(typeToString.name, () => {
   test("closure", () => {
     const a = TVar.fresh().asType();
     expect(typeToString(a, {})).toBe("a");
+  });
+
+  test("traits", () => {
+    const a = TVar.fresh(["Ord", "Show"]).asType();
+    const b = TVar.fresh().asType();
+    const c = TVar.fresh(["Read"]).asType();
+    const f: Type = { type: "fn", args: [a, b], return: c };
+
+    expect(typeToString(f, {})).toBe(
+      "Fn(a, b) -> c where a: Ord + Show, c: Read",
+    );
+  });
+});
+
+describe("traits", () => {
+  test("types can be instantiated with traits", () => {
+    expect(TVar.fresh(["ord"]).resolve()).toEqual({
+      type: "unbound",
+      id: 0,
+      traits: ["ord"],
+    });
+  });
+
+  test("merge traits in unified tvars", () => {
+    const $a = TVar.fresh(["ord"]);
+    const $b = TVar.fresh(["eq"]);
+
+    unify($a.asType(), $b.asType());
+
+    expect($a.resolve()).toEqual<TVarResolution>(
+      expect.objectContaining({
+        traits: expect.arrayContaining(["ord", "eq"]),
+      }),
+    );
+
+    expect($b.resolve()).toEqual<TVarResolution>(
+      expect.objectContaining({
+        traits: expect.arrayContaining(["ord", "eq"]),
+      }),
+    );
+  });
+
+  test("transitively unify traits", () => {
+    const $a = TVar.fresh();
+    const $b = TVar.fresh();
+    unify($a.asType(), $b.asType());
+
+    const $c = TVar.fresh(["eq"]);
+    unify($a.asType(), $c.asType());
+
+    expect($a.resolve()).toEqual<TVarResolution>(
+      expect.objectContaining({
+        traits: expect.arrayContaining(["eq"]),
+      }),
+    );
+
+    expect($b.resolve()).toEqual<TVarResolution>(
+      expect.objectContaining({
+        traits: expect.arrayContaining(["eq"]),
+      }),
+    );
+  });
+
+  test("fail when trying to unify a tvar with a concrete type that does implement the trait", () => {
+    const $a = TVar.fresh(["Ord"]);
+
+    expect(unify($a.asType(), Int)).toEqual<UnifyError>({
+      type: "missing-trait",
+      type_: Int,
+      trait: "Ord",
+    });
+  });
+
+  test("transitively fail when trying to unify a tvar with a concrete type that does implement the trait", () => {
+    const $a = TVar.fresh();
+    unify($a.asType(), Int);
+
+    const $b = TVar.fresh(["Ord"]);
+
+    expect(unify($a.asType(), $b.asType())).toEqual<UnifyError>({
+      type: "missing-trait",
+      type_: Int,
+      trait: "Ord",
+    });
+  });
+
+  test("succeed to unify a tvar with a concrete type that implements the trait", () => {
+    TVar.registerTraitImpl(BASICS_MODULE, "Int", "ord", []);
+
+    const $a = TVar.fresh(["ord"]);
+
+    expect(unify($a.asType(), Int)).toEqual(undefined);
+  });
+
+  test("fails to unify a tvar with a concrete type that implements the trait when type vars don't", () => {
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [["Ord"]]);
+
+    const $a = TVar.fresh(["Ord"]);
+
+    expect(unify($a.asType(), List(Int))).toEqual<UnifyError>({
+      type: "missing-trait",
+      type_: List(Int),
+      trait: "Ord",
+    });
+  });
+
+  test("succeeds to unify a tvar with a concrete type that implements the trait (including type args)", () => {
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+    TVar.registerTraitImpl(BASICS_MODULE, "Int", "ord", []);
+
+    const $a = TVar.fresh(["ord"]);
+
+    expect(unify($a.asType(), List(Int))).toEqual(undefined);
+  });
+
+  test("traits are unified to type args", () => {
+    // impl ord for List<a> where a: ord
+    // unify(a: ord, List<b>)
+    // => b: ord
+
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+
+    const $a = TVar.fresh(["ord"]);
+    const $b = TVar.fresh();
+
+    expect(unify($a.asType(), List($b.asType()))).toEqual(undefined);
+
+    expect($b.resolve()).toEqual({
+      type: "unbound",
+      id: 1,
+      traits: ["ord"],
+    });
+  });
+
+  test("fails to unify dependencies when to not impl required trait", () => {
+    // impl ord for List<a> where a: ord
+    // unify(List<a: ord>, List<Int>) => fail
+
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [["Ord"]]);
+
+    const $a = TVar.fresh(["Ord"]);
+
+    expect(unify(List($a.asType()), List(Int))).toEqual<UnifyError>({
+      type: "missing-trait",
+      trait: "Ord",
+      type_: Int,
+    });
+  });
+
+  test("generalization and instantiation preserve traits", () => {
+    const initialTraits = ["ord"];
+    const ta = TVar.fresh(initialTraits).asType();
+
+    const scheme = generalizeAsScheme(ta);
+    const taI = instantiateFromScheme(ta, scheme);
+
+    if (taI.type !== "var") {
+      throw new Error();
+    }
+
+    const resolved = taI.var.resolve();
+
+    if (resolved.type !== "unbound") {
+      throw new Error("Expecting an unbound var");
+    }
+
+    expect(resolved.traits).toEqual(initialTraits);
   });
 });
 

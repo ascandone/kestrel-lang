@@ -211,6 +211,22 @@ export class NonExhaustiveMatch implements ErrorDescription {
   }
 }
 
+export class TraitNotSatified implements ErrorDescription {
+  severity: Severity = "error";
+
+  errorName: string = "Trait not satisfied";
+
+  constructor(
+    public readonly type: Type,
+    public readonly trait: string,
+  ) {}
+
+  shortDescription(): string {
+    const type = typeToString(this.type);
+    return `Cannot satisfy trait ${this.trait} for type ${type}`;
+  }
+}
+
 export class TypeMismatch implements ErrorDescription {
   constructor(
     public expected: Type,

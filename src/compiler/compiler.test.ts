@@ -1,6 +1,11 @@
 import { describe, expect, test } from "vitest";
 import { CompileOptions, Compiler, compileProject } from "./compiler";
-import { TypedModule, typecheck, typecheckProject } from "../typecheck";
+import {
+  TypedModule,
+  resetTraitsRegistry,
+  typecheck,
+  typecheckProject,
+} from "../typecheck";
 import { UntypedModule, unsafeParse } from "../parser";
 
 test("compile int constants", () => {
@@ -1519,6 +1524,7 @@ Main$main.exec();
 function compileSrc(src: string, ns?: string) {
   const parsed = unsafeParse(src);
   ns = ns ?? "Main";
+  resetTraitsRegistry();
   const [program] = typecheck(ns, parsed, {}, [], testEntryPoint.type);
   const out = new Compiler().compile(program, ns);
   return out;
@@ -1526,6 +1532,7 @@ function compileSrc(src: string, ns?: string) {
 
 // Returns Main
 function compileSrcWithDeps(rawProject: Record<string, string>): string {
+  resetTraitsRegistry();
   const res = typecheckProject(
     parseProject(rawProject),
     [],
@@ -1563,6 +1570,7 @@ function compileRawProject(
   rawProject: Record<string, string>,
   options: CompileOptions = { entrypoint: testEntryPoint },
 ): string {
+  resetTraitsRegistry();
   const untypedProject = parseProject(rawProject);
   const typecheckResult = typecheckProject(
     untypedProject,

@@ -19,22 +19,117 @@ export type Type =
     };
 
 export type TVarResolution =
-  | { type: "unbound"; id: number }
+  | { type: "unbound"; id: number; traits: string[] }
   | { type: "bound"; value: ConcreteType };
 
-export type UnifyError = {
-  type: UnifyErrorType;
-  left: Type;
-  right: Type;
-};
+export type UnifyError =
+  | { type: "type-mismatch"; left: Type; right: Type }
+  | { type: "occurs-check"; left: Type; right: Type }
+  | { type: "missing-trait"; type_: Type; trait: string };
 
+function getNamedTypeTraitId(
+  moduleName: string,
+  typeName: string,
+  trait: string,
+): string {
+  return `${moduleName}.${typeName}:${trait}`;
+}
+
+export type TraitImplDependency = string[] | undefined;
 export class TVar {
   private constructor(
     private value: TVarResolution | { type: "linked"; to: TVar },
   ) {}
 
-  static fresh(): TVar {
-    return new TVar({ type: "unbound", id: TVar.unboundId++ });
+  /**
+   * Example:
+   * { "Json/Encode.Json:eq": null }
+   */
+  private static namedTypesTraitImpls = new Map<
+    string,
+    TraitImplDependency[]
+  >();
+
+  /**
+   * E.g.
+   * // impl eq for Int
+   * registerTraitImpl("Basics", "Int", "eq")
+   *
+   * // impl eq for Result<a, b> where a: eq, b: eq
+   * registerTraitImpl("Basics", "Result", "eq", [["eq"], ["eq"]])
+   */
+  static registerTraitImpl(
+    moduleName: string,
+    typeName: string,
+    trait: string,
+    dependencies: TraitImplDependency[],
+  ) {
+    const id = getNamedTypeTraitId(moduleName, typeName, trait);
+    if (TVar.namedTypesTraitImpls.has(id)) {
+      throw new Error("Cannot register trait twice for the same type");
+    }
+
+    TVar.namedTypesTraitImpls.set(id, dependencies);
+  }
+
+  static typeImplementsTrait(
+    t: Type,
+    trait: string,
+  ): Array<{ id: number; traits: string[] }> | undefined {
+    if (t.type === "var") {
+      const resolved = t.var.resolve();
+      if (resolved.type === "unbound") {
+        return [resolved];
+      }
+
+      return this.typeImplementsTrait(resolved.value, trait);
+    }
+
+    if (t.type === "fn") {
+      return undefined;
+    }
+
+    const id = getNamedTypeTraitId(t.moduleName, t.name, trait);
+
+    const lookup = TVar.namedTypesTraitImpls.get(id);
+    if (lookup === undefined) {
+      return undefined;
+    }
+
+    if (lookup.length !== t.args.length) {
+      // this error has been emitted somewhere else
+      return undefined;
+      // throw new Error(
+      //   `[unreachable] invalid number of args or deps (lookup: ${lookup.length}, args: ${t.args.length})`,
+      // );
+    }
+
+    const r: Array<{ id: number; traits: string[] }> = [];
+    for (let i = 0; i < lookup.length; i++) {
+      const deps = lookup[i];
+      if (deps === undefined) {
+        continue;
+      }
+
+      const arg = t.args[i]!;
+
+      const argImplTrait = TVar.typeImplementsTrait(arg, trait);
+      if (argImplTrait === undefined) {
+        return undefined;
+      }
+
+      r.push(...argImplTrait);
+    }
+
+    return r;
+  }
+
+  static resetTraitImpls() {
+    TVar.namedTypesTraitImpls = new Map();
+  }
+
+  static fresh(traits: string[] = []): TVar {
+    return new TVar({ type: "unbound", id: TVar.unboundId++, traits });
   }
 
   resolve(): TVarResolution {
@@ -75,6 +170,24 @@ export class TVar {
         case "bound":
           return TVar.unify(t1.var.value.value, t2);
         case "unbound":
+          for (const trait of t1.var.value.traits) {
+            const deps = TVar.typeImplementsTrait(t2, trait);
+            // TODO better err: should narrow this error to missing constraint source
+            if (deps === undefined) {
+              return {
+                type: "missing-trait",
+                type_: t2,
+                trait,
+              };
+            }
+
+            for (const dep of deps) {
+              if (!dep.traits.includes(trait)) {
+                dep.traits.push(trait);
+              }
+            }
+          }
+
           t1.var.value = { type: "bound", value: t2 };
           return;
         case "linked":
@@ -149,12 +262,17 @@ export class TVar {
       return;
     }
 
+    // Unify traits
+    for (const t of r2.traits) {
+      if (!r1.traits.includes(t)) {
+        r1.traits.push(t);
+      }
+    }
+
     $2.value = { type: "linked", to: $1 };
     return undefined;
   }
 }
-
-export type UnifyErrorType = "type-mismatch" | "occurs-check";
 
 export const unify = TVar.unify;
 
@@ -295,7 +413,7 @@ export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
               return i.asType();
             }
 
-            const t = TVar.fresh();
+            const t = TVar.fresh([...resolved.traits]);
             instantiated.set(boundId, t);
             return t.asType();
           }
@@ -309,18 +427,34 @@ export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
   return recur(mono);
 }
 
-function typeToStringHelper(t: Type, scheme: TypeScheme): string {
+function typeToStringHelper(
+  t: Type,
+  scheme: TypeScheme,
+  collectTraits: Record<string, Set<string>>,
+): string {
   switch (t.type) {
     case "var": {
       const resolved = t.var.resolve();
       switch (resolved.type) {
         case "bound":
-          return typeToStringHelper(resolved.value, scheme);
+          return typeToStringHelper(resolved.value, scheme, collectTraits);
         case "unbound": {
           const id = scheme[resolved.id];
           if (id === undefined) {
             throw new Error("[unreachable] var not found: " + resolved.id);
           }
+          if (collectTraits !== undefined) {
+            if (!(id in collectTraits)) {
+              collectTraits[id] = new Set();
+            }
+            const lookup = collectTraits[id]!;
+            for (const trait of resolved.traits) {
+              lookup.add(trait);
+            }
+
+            resolved.traits;
+          }
+
           return id;
         }
       }
@@ -328,9 +462,9 @@ function typeToStringHelper(t: Type, scheme: TypeScheme): string {
 
     case "fn": {
       const args = t.args
-        .map((arg) => typeToStringHelper(arg, scheme))
+        .map((arg) => typeToStringHelper(arg, scheme, collectTraits))
         .join(", ");
-      return `Fn(${args}) -> ${typeToStringHelper(t.return, scheme)}`;
+      return `Fn(${args}) -> ${typeToStringHelper(t.return, scheme, collectTraits)}`;
     }
 
     case "named": {
@@ -339,11 +473,11 @@ function typeToStringHelper(t: Type, scheme: TypeScheme): string {
       }
 
       if (t.name === "Tuple2") {
-        return `(${typeToStringHelper(t.args[0]!, scheme)}, ${typeToStringHelper(t.args[1]!, scheme)})`;
+        return `(${typeToStringHelper(t.args[0]!, scheme, collectTraits)}, ${typeToStringHelper(t.args[1]!, scheme, collectTraits)})`;
       }
 
       const args = t.args
-        .map((arg) => typeToStringHelper(arg, scheme))
+        .map((arg) => typeToStringHelper(arg, scheme, collectTraits))
         .join(", ");
       return `${t.name}<${args}>`;
     }
@@ -352,5 +486,29 @@ function typeToStringHelper(t: Type, scheme: TypeScheme): string {
 
 export function typeToString(t: Type, scheme?: TypeScheme): string {
   scheme = generalizeAsScheme(t, scheme);
-  return typeToStringHelper(t, scheme);
+  const traits: Record<string, Set<string>> = {};
+  const ret = typeToStringHelper(t, scheme, traits);
+
+  const isThereAtLeastATrait = Object.values(traits).some((t) => t.size !== 0);
+  if (!isThereAtLeastATrait) {
+    return ret;
+  }
+
+  const sortedTraits = Object.entries(traits)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .flatMap(([k, v]) => {
+      if (v.size === 0) {
+        return [];
+      }
+
+      const sortedTraits = [...v].sort().join(" + ");
+
+      return [`${k}: ${sortedTraits}`];
+    });
+
+  if (sortedTraits.length === 0) {
+    return ret;
+  }
+
+  return `${ret} where ${sortedTraits.join(", ")}`;
 }

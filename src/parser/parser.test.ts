@@ -429,6 +429,13 @@ describe("type hints", () => {
   });
 });
 
+describe("traits", () => {
+  test("parses traits in a polytype", () => {
+    const src = "extern let x: a where a: Ord";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+});
+
 describe("type declarations", () => {
   test("type with no variants", () => {
     const src = "type Never { }";

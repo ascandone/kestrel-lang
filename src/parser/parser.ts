@@ -12,6 +12,8 @@ import {
   UntypedExposedValue,
   UntypedImport,
   UntypedExpr,
+  PolyTypeAst,
+  TraitDef,
 } from "./ast";
 import type {
   IterationNode,
@@ -422,6 +424,32 @@ semantics.addOperation<{ namespace?: string; name: string }>(
   },
 );
 
+semantics.addOperation<TraitDef>("traitDef()", {
+  TraitDef(typeVar, _colon, trait) {
+    return {
+      typeVar: typeVar.sourceString,
+      traits: [trait.sourceString],
+    };
+  },
+});
+
+semantics.addOperation<PolyTypeAst>("poly()", {
+  PolyType(type_, _where, traitDefs) {
+    const traits =
+      traitDefs.numChildren === 0
+        ? []
+        : traitDefs
+            .child(0)
+            .asIteration()
+            .children.map((arg) => arg.traitDef());
+
+    return {
+      mono: type_.type(),
+      where: traits,
+    };
+  },
+});
+
 semantics.addOperation<TypeAst>("type()", {
   Type_any(_underscore) {
     return { type: "any", span: getSpan(this) };
@@ -555,6 +583,7 @@ semantics.addOperation<Statement>("statement()", {
       decl,
     };
   },
+
   Declaration_externLetStmt(
     docComments,
     _extern,
@@ -572,7 +601,7 @@ semantics.addOperation<Statement>("statement()", {
       binding: ident.ident(),
       span: getSpan(this),
       typeHint: {
-        ...typeHint.type(),
+        ...typeHint.poly(),
         span: getSpan(typeHint.child(0)),
       },
     };
@@ -609,7 +638,7 @@ semantics.addOperation<Statement>("statement()", {
 
     if (typeHint.numChildren > 0) {
       decl.typeHint = {
-        ...typeHint.child(0).type(),
+        ...typeHint.child(0).poly(),
         span: getSpan(typeHint.child(0)),
       };
     }

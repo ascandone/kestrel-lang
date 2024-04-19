@@ -154,13 +154,20 @@ exports[`Comments > doc comments on externs 1`] = `
         59,
       ],
       "typeHint": {
-        "args": [],
-        "name": "X",
+        "mono": {
+          "args": [],
+          "name": "X",
+          "span": [
+            58,
+            59,
+          ],
+          "type": "named",
+        },
         "span": [
           58,
           59,
         ],
-        "type": "named",
+        "where": [],
       },
     },
   ],
@@ -311,13 +318,20 @@ exports[`extern bindings > let decls 1`] = `
         24,
       ],
       "typeHint": {
-        "args": [],
-        "name": "Int",
+        "mono": {
+          "args": [],
+          "name": "Int",
+          "span": [
+            21,
+            24,
+          ],
+          "type": "named",
+        },
         "span": [
           21,
           24,
         ],
-        "type": "named",
+        "where": [],
       },
     },
   ],
@@ -344,13 +358,20 @@ exports[`extern bindings > let decls defining infix operators 1`] = `
         36,
       ],
       "typeHint": {
-        "args": [],
-        "name": "ExampleType",
+        "mono": {
+          "args": [],
+          "name": "ExampleType",
+          "span": [
+            25,
+            36,
+          ],
+          "type": "named",
+        },
         "span": [
           25,
           36,
         ],
-        "type": "named",
+        "where": [],
       },
     },
   ],
@@ -552,13 +573,20 @@ exports[`imports > parse pub modifier on extern values 1`] = `
         21,
       ],
       "typeHint": {
-        "args": [],
-        "name": "Int",
+        "mono": {
+          "args": [],
+          "name": "Int",
+          "span": [
+            18,
+            21,
+          ],
+          "type": "named",
+        },
         "span": [
           18,
           21,
         ],
-        "type": "named",
+        "where": [],
       },
     },
   ],
@@ -658,14 +686,21 @@ exports[`imports > type defs can be qualified 1`] = `
         24,
       ],
       "typeHint": {
-        "args": [],
-        "name": "MyType",
-        "namespace": "A/B",
+        "mono": {
+          "args": [],
+          "name": "MyType",
+          "namespace": "A/B",
+          "span": [
+            14,
+            24,
+          ],
+          "type": "named",
+        },
         "span": [
           14,
           24,
         ],
-        "type": "named",
+        "where": [],
       },
     },
   ],
@@ -4408,6 +4443,52 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
 }
 `;
 
+exports[`traits > parses traits in a polytype 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": true,
+      "pub": false,
+      "span": [
+        0,
+        28,
+      ],
+      "typeHint": {
+        "mono": {
+          "ident": "a",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "var",
+        },
+        "span": [
+          14,
+          15,
+        ],
+        "where": [
+          {
+            "traits": [
+              "Ord",
+            ],
+            "typeVar": "a",
+          },
+        ],
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`type declarations > many type params 1`] = `
 {
   "declarations": [],
@@ -4725,40 +4806,47 @@ exports[`type hints > parses Fn type with args 1`] = `
         25,
       ],
       "typeHint": {
-        "args": [
-          {
+        "mono": {
+          "args": [
+            {
+              "args": [],
+              "name": "X",
+              "span": [
+                11,
+                12,
+              ],
+              "type": "named",
+            },
+            {
+              "args": [],
+              "name": "Y",
+              "span": [
+                14,
+                15,
+              ],
+              "type": "named",
+            },
+          ],
+          "return": {
             "args": [],
-            "name": "X",
+            "name": "Z",
             "span": [
-              11,
-              12,
+              20,
+              21,
             ],
             "type": "named",
           },
-          {
-            "args": [],
-            "name": "Y",
-            "span": [
-              14,
-              15,
-            ],
-            "type": "named",
-          },
-        ],
-        "return": {
-          "args": [],
-          "name": "Z",
           "span": [
-            20,
+            8,
             21,
           ],
-          "type": "named",
+          "type": "fn",
         },
         "span": [
           8,
           21,
         ],
-        "type": "fn",
+        "where": [],
       },
       "value": {
         "span": [
@@ -4796,21 +4884,28 @@ exports[`type hints > parses Fn type with no args 1`] = `
         23,
       ],
       "typeHint": {
-        "args": [],
-        "return": {
+        "mono": {
           "args": [],
-          "name": "Int",
+          "return": {
+            "args": [],
+            "name": "Int",
+            "span": [
+              16,
+              19,
+            ],
+            "type": "named",
+          },
           "span": [
-            16,
+            8,
             19,
           ],
-          "type": "named",
+          "type": "fn",
         },
         "span": [
           8,
           19,
         ],
-        "type": "fn",
+        "where": [],
       },
       "value": {
         "span": [
@@ -4848,13 +4943,20 @@ exports[`type hints > parses a concrete type with no args as a type hint 1`] = `
         15,
       ],
       "typeHint": {
-        "args": [],
-        "name": "Int",
+        "mono": {
+          "args": [],
+          "name": "Int",
+          "span": [
+            8,
+            11,
+          ],
+          "type": "named",
+        },
         "span": [
           8,
           11,
         ],
-        "type": "named",
+        "where": [],
       },
       "value": {
         "span": [
@@ -4892,23 +4994,30 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
         23,
       ],
       "typeHint": {
-        "args": [
-          {
-            "args": [],
-            "name": "Int",
-            "span": [
-              15,
-              18,
-            ],
-            "type": "named",
-          },
-        ],
-        "name": "Option",
+        "mono": {
+          "args": [
+            {
+              "args": [],
+              "name": "Int",
+              "span": [
+                15,
+                18,
+              ],
+              "type": "named",
+            },
+          ],
+          "name": "Option",
+          "span": [
+            8,
+            19,
+          ],
+          "type": "named",
+        },
         "span": [
           8,
           19,
         ],
-        "type": "named",
+        "where": [],
       },
       "value": {
         "span": [
@@ -4946,32 +5055,39 @@ exports[`type hints > parses concrete type with 2 args 1`] = `
         29,
       ],
       "typeHint": {
-        "args": [
-          {
-            "args": [],
-            "name": "Int",
-            "span": [
-              15,
-              18,
-            ],
-            "type": "named",
-          },
-          {
-            "args": [],
-            "name": "Bool",
-            "span": [
-              20,
-              24,
-            ],
-            "type": "named",
-          },
-        ],
-        "name": "Result",
+        "mono": {
+          "args": [
+            {
+              "args": [],
+              "name": "Int",
+              "span": [
+                15,
+                18,
+              ],
+              "type": "named",
+            },
+            {
+              "args": [],
+              "name": "Bool",
+              "span": [
+                20,
+                24,
+              ],
+              "type": "named",
+            },
+          ],
+          "name": "Result",
+          "span": [
+            8,
+            25,
+          ],
+          "type": "named",
+        },
         "span": [
           8,
           25,
         ],
-        "type": "named",
+        "where": [],
       },
       "value": {
         "span": [
@@ -5009,12 +5125,19 @@ exports[`type hints > parses type vars hints 1`] = `
         13,
       ],
       "typeHint": {
-        "ident": "a",
+        "mono": {
+          "ident": "a",
+          "span": [
+            8,
+            9,
+          ],
+          "type": "var",
+        },
         "span": [
           8,
           9,
         ],
-        "type": "var",
+        "where": [],
       },
       "value": {
         "span": [
@@ -5052,11 +5175,18 @@ exports[`type hints > parses underscore type 1`] = `
         13,
       ],
       "typeHint": {
+        "mono": {
+          "span": [
+            8,
+            9,
+          ],
+          "type": "any",
+        },
         "span": [
           8,
           9,
         ],
-        "type": "any",
+        "where": [],
       },
       "value": {
         "span": [

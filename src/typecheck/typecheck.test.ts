@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { unsafeParse, UntypedImport } from "../parser";
 import {
   Deps,
+  resetTraitsRegistry,
   typecheck,
   typecheckProject,
   TypedModule,
@@ -29,6 +30,7 @@ import {
   UnusedImport,
   UnusedVariable,
 } from "../errors";
+import { TraitImpl } from "./defaultImports";
 
 test("infer int", () => {
   const [types, errors] = tc(`
@@ -537,6 +539,225 @@ describe("type hints", () => {
     expect(types).toEqual({
       x: "Int",
     });
+  });
+});
+
+describe("traits", () => {
+  test("fails to typecheck when a required trait is not implemented", () => {
+    const [types, errs] = tc(
+      `
+        extern type String
+        extern pub let show: Fn(a) -> String where a: Show
+        pub let x = show(42)
+      `,
+    );
+    expect(errs).toHaveLength(1);
+    expect(types).toEqual({
+      show: "Fn(a) -> String where a: Show",
+      x: "String",
+    });
+  });
+
+  test("succeeds to typecheck when a required trait is not implemented", () => {
+    const [, errs] = tc(
+      `
+        extern type String
+        extern pub let show: Fn(a) -> String where a: Show
+        pub let x = show(42)
+      `,
+      {},
+      [],
+      [{ moduleName: "Int", typeName: "Int", trait: "Show" }],
+    );
+    expect(errs).toEqual([]);
+  });
+
+  test("propagates the trait constraint", () => {
+    const [types, errs] = tc(
+      `
+        extern type String
+        extern let show: Fn(a) -> String where a: Show
+
+        pub let use_show = fn value {
+          show(value)
+        }
+      `,
+    );
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      show: "Fn(a) -> String where a: Show",
+      use_show: "Fn(a) -> String where a: Show",
+    });
+  });
+
+  test("fails to typecheck when unify occurs later", () => {
+    const [, errs] = tc(
+      `
+        extern type String
+        extern let show: Fn(a) -> String where a: Show
+
+        extern type Int
+        extern pub let (+): Fn(Int, Int) -> Int
+        pub let f = fn x {
+          let _ = show(x);
+          x + 1
+        }
+      `,
+    );
+    expect(errs).not.toEqual([]);
+  });
+
+  test("infers multiple traits", () => {
+    const [types, errs] = tc(
+      `
+        extern type Unit
+        extern let show: Fn(a) -> Unit where a: Show
+        extern let eq: Fn(a) -> Unit where a: Eq
+
+        pub let f = fn x {
+          let _ = show(x);
+          eq(x)
+        }
+      `,
+    );
+    expect(errs).toEqual([]);
+    expect(types).toEqual(
+      expect.objectContaining({
+        f: "Fn(a) -> Unit where a: Eq + Show",
+      }),
+    );
+  });
+
+  test("does not break generalization", () => {
+    const [types, errs] = tc(
+      `
+        extern type Unit
+        extern let show: Fn(a) -> Unit where a: Show
+        extern let eq: Fn(a) -> Unit where a: Eq
+
+        pub let f = fn x {
+          let _ = show(x);
+          let _ = eq(x);
+          0
+        }
+      `,
+    );
+    expect(errs).toEqual([]);
+    expect(types).toEqual(
+      expect.objectContaining({
+        eq: "Fn(a) -> Unit where a: Eq",
+        show: "Fn(a) -> Unit where a: Show",
+      }),
+    );
+  });
+
+  test("is able to derive Eq trait in ADTs with only a singleton", () => {
+    const [, errs] = tc(
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+        type MyType {
+          Singleton
+        }
+
+        pub let example = take_eq(Singleton)
+      `,
+    );
+
+    expect(errs).toEqual([]);
+  });
+
+  test("does not derive Eq trait in ADTs when at least one argument", () => {
+    const [, errs] = tc(
+      `
+        extern type NotEq
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type MyType {
+          Singleton,
+          Box(NotEq)
+        }
+
+        pub let example = take_eq(Singleton)
+      `,
+    );
+
+    expect(errs).toHaveLength(1);
+  });
+
+  test("derives Eq even when constructors have arguments that derive Eq", () => {
+    const [, errs] = tc(
+      `
+        type EqType { }
+
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type MyType {
+          Singleton,
+          Box(EqType)
+        }
+
+        pub let example = take_eq(Singleton)
+      `,
+    );
+
+    expect(errs).toEqual([]);
+  });
+
+  test("requires deps to derive Eq in order to derive Eq", () => {
+    const [, errs] = tc(
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type MyType<a> {
+          Box(a)
+        }
+
+        extern type NotEq
+        extern let my_type: MyType<NotEq>
+
+        pub let example = take_eq(my_type)
+      `,
+    );
+
+    expect(errs).toHaveLength(1);
+  });
+
+  test("derives Eq when dependencies derive Eq", () => {
+    const [, errs] = tc(
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        type IsEq { }
+
+        pub(..) type Option<a> {
+          Some(a),
+          None,
+        }
+
+        extern let is_eq: Option<IsEq>
+
+        pub let example = take_eq(is_eq)
+      `,
+    );
+
+    expect(errs).toEqual([]);
+  });
+
+  test("derives in self-recursive types", () => {
+    const [, errs] = tc(
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type Rec<a> {
+          End,
+          Nest(Rec<a>),
+        }
+
+        pub let example = take_eq(End)
+      `,
+    );
+
+    expect(errs).toEqual([]);
   });
 });
 
@@ -1517,13 +1738,20 @@ function tcProgram(
   src: string,
   deps: Deps = {},
   prelude: UntypedImport[] = [],
+  traitImpls: TraitImpl[] = [],
 ) {
   const parsedProgram = unsafeParse(src);
+  resetTraitsRegistry(traitImpls);
   return typecheck(ns, parsedProgram, deps, prelude);
 }
 
-function tc(src: string, deps: Deps = {}, prelude: UntypedImport[] = []) {
-  const [typed, errors] = tcProgram("Main", src, deps, prelude);
+function tc(
+  src: string,
+  deps: Deps = {},
+  prelude: UntypedImport[] = [],
+  traitImpls: TraitImpl[] = [],
+) {
+  const [typed, errors] = tcProgram("Main", src, deps, prelude, traitImpls);
   return [programTypes(typed) as Record<string, string>, errors] as const;
 }
 

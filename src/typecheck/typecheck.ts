@@ -13,8 +13,9 @@ import {
   TypedMatchPattern,
   TypedModule,
   TypedTypeAst,
+  TypedTypeDeclaration,
 } from "./typedAst";
-import { defaultImports } from "./defaultImports";
+import { TraitImpl, defaultImports, defaultTraitImpls } from "./defaultImports";
 import {
   TVar,
   Type,
@@ -24,6 +25,7 @@ import {
   instantiateFromScheme,
   TypeScheme,
   PolyType,
+  TraitImplDependency,
 } from "./type";
 import {
   ArityMismatch,
@@ -32,6 +34,7 @@ import {
   InvalidTypeArity,
   NonExhaustiveMatch,
   OccursCheck,
+  TraitNotSatified,
   TypeMismatch,
   UnboundTypeParam,
 } from "../errors";
@@ -43,6 +46,20 @@ export type TypeMeta = { $: TVar };
 // Record from namespace (e.g. "A.B.C" ) to the module
 
 export type Deps = Record<string, TypedModule>;
+
+export function resetTraitsRegistry(
+  traitImpls: TraitImpl[] = defaultTraitImpls,
+) {
+  TVar.resetTraitImpls();
+  for (const impl of traitImpls) {
+    TVar.registerTraitImpl(
+      impl.moduleName,
+      impl.typeName,
+      impl.trait,
+      impl.deps ?? [],
+    );
+  }
+}
 
 export function typecheck(
   ns: string,
@@ -61,6 +78,58 @@ class Typechecker {
     private ns: string,
     private mainType: Type,
   ) {}
+
+  private derive(
+    trait: string,
+    typeDecl: TypedTypeDeclaration & { type: "adt" },
+  ) {
+    const deps: TraitImplDependency[] = [];
+
+    const depParams = new Set<string>();
+
+    for (const variant of typeDecl.variants) {
+      const resolved = variant.$.resolve();
+      if (resolved.type === "unbound") {
+        throw new Error("[unrechable]");
+      }
+      const { value: concreteType } = resolved;
+
+      if (concreteType.type === "fn") {
+        for (const arg of concreteType.args) {
+          if (
+            arg.type === "named" &&
+            arg.moduleName === this.ns &&
+            arg.name === typeDecl.name
+          ) {
+            continue;
+          }
+
+          const impl = TVar.typeImplementsTrait(arg, trait);
+          if (impl === undefined) {
+            return;
+          }
+          for (const { id } of impl) {
+            const name = variant.scheme[id];
+            if (name !== undefined) {
+              depParams.add(name);
+            }
+          }
+        }
+      }
+
+      // Singleton always derive any trait
+    }
+
+    for (const param of typeDecl.params) {
+      if (depParams.has(param.name)) {
+        deps.push([trait]);
+      } else {
+        deps.push(undefined);
+      }
+    }
+
+    TVar.registerTraitImpl(this.ns, typeDecl.name, trait, deps);
+  }
 
   run(
     module: UntypedModule,
@@ -83,6 +152,9 @@ class Typechecker {
             throw new Error("[unreachable] adt type should be fresh initially");
           }
         }
+
+        this.derive("Eq", typeDecl);
+        this.derive("Show", typeDecl);
       }
     }
 
@@ -137,6 +209,7 @@ class Typechecker {
                 returning: ret,
               },
               Object.fromEntries(generics.map(([p, t]) => [p, t])),
+              {},
             );
 
             return mono;
@@ -154,6 +227,7 @@ class Typechecker {
     }
 
     if (
+      e.type === "type-mismatch" &&
       e.left.type === "fn" &&
       e.right.type === "fn" &&
       e.left.args.length !== e.right.args.length
@@ -205,6 +279,7 @@ class Typechecker {
     ast: TypedTypeAst,
     opts: TypeAstConversionType,
     /* mut */ bound: Record<string, TVar>,
+    traitDefs: Record<string, string[]>,
   ): Type {
     switch (ast.type) {
       case "named": {
@@ -230,16 +305,21 @@ class Typechecker {
           type: "named",
           moduleName: ast.resolution.namespace,
           name: ast.name,
-          args: ast.args.map((arg) => this.typeAstToType(arg, opts, bound)),
+          args: ast.args.map((arg) =>
+            this.typeAstToType(arg, opts, bound, traitDefs),
+          ),
         };
       }
 
-      case "fn":
+      case "fn": {
         return {
           type: "fn",
-          args: ast.args.map((arg) => this.typeAstToType(arg, opts, bound)),
-          return: this.typeAstToType(ast.return, opts, bound),
+          args: ast.args.map((arg) =>
+            this.typeAstToType(arg, opts, bound, traitDefs),
+          ),
+          return: this.typeAstToType(ast.return, opts, bound, traitDefs),
         };
+      }
 
       case "var": {
         if (
@@ -254,7 +334,8 @@ class Typechecker {
 
         const bound_ = bound[ast.ident];
         if (bound_ === undefined) {
-          const $ = TVar.fresh();
+          const traits = traitDefs[ast.ident] ?? [];
+          const $ = TVar.fresh(traits);
           bound[ast.ident] = $;
           return $.asType();
         }
@@ -276,10 +357,12 @@ class Typechecker {
   private typecheckAnnotatedDecl(decl: TypedDeclaration) {
     if (decl.typeHint !== undefined) {
       const bound: Record<string, TVar> = {};
+      const traitDefs = decl.typeHint.where.map((d) => [d.typeVar, d.traits]);
       const th = this.typeAstToType(
-        decl.typeHint,
+        decl.typeHint.mono,
         { type: "type-hint" },
         bound,
+        Object.fromEntries(traitDefs),
       );
 
       const scheme: TypeScheme = {};
@@ -537,6 +620,8 @@ export function typecheckProject(
   implicitImports: UntypedImport[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
 ): ProjectTypeCheckResult {
+  resetTraitsRegistry();
+
   const sortedModules = topSortedModules(project, implicitImports);
 
   const projectResult: ProjectTypeCheckResult = {};
@@ -565,6 +650,12 @@ export type ProjectTypeCheckResult = Record<string, [TypedModule, ErrorInfo[]]>;
 
 function unifyErr(node: SpanMeta, e: UnifyError): ErrorInfo {
   switch (e.type) {
+    case "missing-trait":
+      return {
+        span: node.span,
+        description: new TraitNotSatified(e.type_, e.trait),
+      };
+
     case "type-mismatch":
       return {
         span: node.span,
