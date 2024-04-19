@@ -90,7 +90,7 @@ class Typechecker {
     for (const variant of typeDecl.variants) {
       const resolved = variant.$.resolve();
       if (resolved.type === "unbound") {
-        throw new Error("[unrechable]");
+        throw new Error("[unreachable]");
       }
       const { value: concreteType } = resolved;
 

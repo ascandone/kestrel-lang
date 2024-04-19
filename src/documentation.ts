@@ -117,7 +117,7 @@ export function makeModuleDoc(
 function typeAstToString(typeAst: TypedTypeAst): string {
   switch (typeAst.type) {
     case "any":
-      throw new Error("[unrechable]");
+      throw new Error("[unreachable]");
     case "var":
       return typeAst.ident;
     case "named": {

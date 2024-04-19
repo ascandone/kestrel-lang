@@ -285,7 +285,7 @@ export function pprint(
 
       case "group": {
         if (mode === "forced-broken") {
-          throw new Error("[unrechable]");
+          throw new Error("[unreachable]");
         }
 
         const fit = fits(maxWidth - width, nestSize, {
