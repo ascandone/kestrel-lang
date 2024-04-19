@@ -172,9 +172,9 @@ export class TVar {
           return TVar.unify(t1.var.value.value, t2);
         case "unbound":
           for (const trait of t1.var.value.traits) {
-            const impl = TVar.typeImplementsTrait(t2, trait);
+            const deps = TVar.typeImplementsTrait(t2, trait);
             // TODO better err
-            if (impl === undefined) {
+            if (deps === undefined) {
               return {
                 type: "type-mismatch",
                 left: t1,
@@ -182,9 +182,9 @@ export class TVar {
               };
             }
 
-            for (const i of impl) {
-              if (!i.traits.includes(trait)) {
-                i.traits.push(trait);
+            for (const dep of deps) {
+              if (!dep.traits.includes(trait)) {
+                dep.traits.push(trait);
               }
             }
           }
