@@ -34,6 +34,7 @@ import {
   InvalidTypeArity,
   NonExhaustiveMatch,
   OccursCheck,
+  TraitNotSatified,
   TypeMismatch,
   UnboundTypeParam,
 } from "../errors";
@@ -226,6 +227,7 @@ class Typechecker {
     }
 
     if (
+      e.type === "type-mismatch" &&
       e.left.type === "fn" &&
       e.right.type === "fn" &&
       e.left.args.length !== e.right.args.length
@@ -648,6 +650,12 @@ export type ProjectTypeCheckResult = Record<string, [TypedModule, ErrorInfo[]]>;
 
 function unifyErr(node: SpanMeta, e: UnifyError): ErrorInfo {
   switch (e.type) {
+    case "missing-trait":
+      return {
+        span: node.span,
+        description: new TraitNotSatified(e.type_, e.trait),
+      };
+
     case "type-mismatch":
       return {
         span: node.span,

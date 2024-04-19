@@ -629,12 +629,12 @@ describe("traits", () => {
   });
 
   test("fail when trying to unify a tvar with a concrete type that does implement the trait", () => {
-    const $a = TVar.fresh(["ord"]);
+    const $a = TVar.fresh(["Ord"]);
 
     expect(unify($a.asType(), Int)).toEqual<UnifyError>({
-      type: "type-mismatch",
-      left: $a.asType(),
-      right: Int,
+      type: "missing-trait",
+      type_: Int,
+      trait: "Ord",
     });
   });
 
@@ -642,12 +642,12 @@ describe("traits", () => {
     const $a = TVar.fresh();
     unify($a.asType(), Int);
 
-    const $b = TVar.fresh(["ord"]);
+    const $b = TVar.fresh(["Ord"]);
 
     expect(unify($a.asType(), $b.asType())).toEqual<UnifyError>({
-      type: "type-mismatch",
-      left: $b.asType(),
-      right: Int,
+      type: "missing-trait",
+      type_: Int,
+      trait: "Ord",
     });
   });
 
@@ -660,14 +660,14 @@ describe("traits", () => {
   });
 
   test("fails to unify a tvar with a concrete type that implements the trait when type vars don't", () => {
-    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [["Ord"]]);
 
-    const $a = TVar.fresh(["ord"]);
+    const $a = TVar.fresh(["Ord"]);
 
     expect(unify($a.asType(), List(Int))).toEqual<UnifyError>({
-      type: "type-mismatch",
-      left: $a.asType(),
-      right: List(Int),
+      type: "missing-trait",
+      type_: List(Int),
+      trait: "Ord",
     });
   });
 
@@ -703,14 +703,14 @@ describe("traits", () => {
     // impl ord for List<a> where a: ord
     // unify(List<a: ord>, List<Int>) => fail
 
-    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [["Ord"]]);
 
-    const $a = TVar.fresh(["ord"]);
+    const $a = TVar.fresh(["Ord"]);
 
     expect(unify(List($a.asType()), List(Int))).toEqual<UnifyError>({
-      type: "type-mismatch",
-      left: $a.asType(),
-      right: Int,
+      type: "missing-trait",
+      trait: "Ord",
+      type_: Int,
     });
   });
 

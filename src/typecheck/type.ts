@@ -22,11 +22,10 @@ export type TVarResolution =
   | { type: "unbound"; id: number; traits: string[] }
   | { type: "bound"; value: ConcreteType };
 
-export type UnifyError = {
-  type: UnifyErrorType;
-  left: Type;
-  right: Type;
-};
+export type UnifyError =
+  | { type: "type-mismatch"; left: Type; right: Type }
+  | { type: "occurs-check"; left: Type; right: Type }
+  | { type: "missing-trait"; type_: Type; trait: string };
 
 function getNamedTypeTraitId(
   moduleName: string,
@@ -173,12 +172,12 @@ export class TVar {
         case "unbound":
           for (const trait of t1.var.value.traits) {
             const deps = TVar.typeImplementsTrait(t2, trait);
-            // TODO better err
+            // TODO better err: should narrow this error to missing constraint source
             if (deps === undefined) {
               return {
-                type: "type-mismatch",
-                left: t1,
-                right: t2,
+                type: "missing-trait",
+                type_: t2,
+                trait,
               };
             }
 
@@ -274,8 +273,6 @@ export class TVar {
     return undefined;
   }
 }
-
-export type UnifyErrorType = "type-mismatch" | "occurs-check";
 
 export const unify = TVar.unify;
 
