@@ -11,7 +11,7 @@ import {
   TypeVariant,
 } from "../parser";
 import { TypeMeta } from "./typecheck";
-import { Type, TypeScheme } from "./type";
+import { TypeScheme } from "./type";
 export * from "./typedAst/autocomplete";
 export * from "./typedAst/findReferences";
 export * from "./typedAst/gotoDefinition";
@@ -63,7 +63,7 @@ export type TypedExposing = ExposedValue<
 
 export type TypedImport = Import<TypedExposing>;
 
-export type PolyTypeMeta = { scheme: TypeScheme; mono: Type };
+export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
 export type TypedTypeVariant = TypeVariant<PolyTypeMeta>;
 export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 

@@ -77,7 +77,7 @@ function functionSignatureHintExpr(
           const { variant } = expr.caller.resolution;
           return {
             name: variant.name,
-            type: variant.mono,
+            type: variant.$.asType(),
             scheme: variant.scheme,
           };
         }

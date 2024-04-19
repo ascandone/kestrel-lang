@@ -78,7 +78,7 @@ class Typechecker {
         for (const variant of typeDecl.variants) {
           const [scheme, mono] = this.makeVariantType(typeDecl, variant);
           variant.scheme = scheme;
-          const err = unify(variant.mono, mono);
+          const err = unify(variant.$.asType(), mono);
           if (err !== undefined) {
             throw new Error("[unreachable] adt type should be fresh initially");
           }
@@ -352,7 +352,7 @@ class Typechecker {
         }
 
         const t = instantiateFromScheme(
-          pattern.resolution.variant.mono,
+          pattern.resolution.variant.$.asType(),
           pattern.resolution.variant.scheme,
         );
 
@@ -588,7 +588,7 @@ function resolutionToType(resolution: IdentifierResolution): Type {
 
     case "constructor":
       return instantiateFromScheme(
-        resolution.variant.mono,
+        resolution.variant.$.asType(),
         resolution.variant.scheme,
       );
   }

@@ -345,7 +345,7 @@ class ResolutionStep {
             const typedVariant: TypedTypeVariant = {
               ...variant,
               scheme: {},
-              mono: TVar.fresh().asType(),
+              $: TVar.fresh(),
               args: variant.args.map((arg) =>
                 this.annotateTypeAst(arg, {
                   holes,
