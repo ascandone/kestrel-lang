@@ -499,12 +499,19 @@ export function typeToString(t: Type, scheme?: TypeScheme): string {
 
   const sortedTraits = Object.entries(traits)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => {
+    .flatMap(([k, v]) => {
+      if (v.size === 0) {
+        return [];
+      }
+
       const sortedTraits = [...v].sort().join(" + ");
 
-      return `${k}: ${sortedTraits}`;
-    })
-    .join(",");
+      return [`${k}: ${sortedTraits}`];
+    });
 
-  return `${ret} where ${sortedTraits}`;
+  if (sortedTraits.length === 0) {
+    return ret;
+  }
+
+  return `${ret} where ${sortedTraits.join(", ")}`;
 }

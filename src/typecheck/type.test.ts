@@ -566,6 +566,17 @@ describe(typeToString.name, () => {
     const a = TVar.fresh().asType();
     expect(typeToString(a, {})).toBe("a");
   });
+
+  test("traits", () => {
+    const a = TVar.fresh(["Ord", "Show"]).asType();
+    const b = TVar.fresh().asType();
+    const c = TVar.fresh(["Read"]).asType();
+    const f: Type = { type: "fn", args: [a, b], return: c };
+
+    expect(typeToString(f, {})).toBe(
+      "Fn(a, b) -> c where a: Ord + Show, c: Read",
+    );
+  });
 });
 
 describe("traits", () => {
