@@ -472,8 +472,11 @@ function typeToStringHelper(
         return t.name;
       }
 
-      if (t.name === "Tuple2") {
-        return `(${typeToStringHelper(t.args[0]!, scheme, collectTraits)}, ${typeToStringHelper(t.args[1]!, scheme, collectTraits)})`;
+      if (t.moduleName === "Tuple" && /Tuple[0-9]+/.test(t.name)) {
+        const inner = t.args
+          .map((arg) => typeToStringHelper(arg, scheme, collectTraits))
+          .join(", ");
+        return `(${inner})`;
       }
 
       const args = t.args

@@ -405,6 +405,10 @@ describe("type hints", () => {
     expect(`extern let f: Fn(A, B, C) -> Int\n`).toBeFormatted();
   });
 
+  test("tuple sugar", () => {
+    expect(`extern let f: (Int, Option<Char>)\n`).toBeFormatted();
+  });
+
   test("type with trait annotations", () => {
     expect(`extern let f: Fn(a) -> b where a: Show, b: Eq\n`).toBeFormatted();
   });

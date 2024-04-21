@@ -56,8 +56,8 @@ export function Tuple(...args: Type[]): ConcreteType {
   }
 
   return {
-    moduleName: BASICS_MODULE,
     type: "named",
+    moduleName: "Tuple",
     name: `Tuple${args.length}`,
     args,
   };

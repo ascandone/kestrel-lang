@@ -429,6 +429,11 @@ function typeHintToDoc(poly: PolyTypeAst): Doc {
 function typeAstToDoc(typeAst: TypeAst): Doc {
   switch (typeAst.type) {
     case "named": {
+      if (isTupleN(typeAst.namespace, typeAst.name)) {
+        const args = typeAst.args.map(typeAstToDoc);
+        return concat(text("("), sepByString(", ", args), text(")"));
+      }
+
       const name = text(
         typeAst.namespace === undefined ? "" : `${typeAst.namespace}.`,
         typeAst.name,
@@ -629,9 +634,6 @@ export function format(ast: UntypedModule): string {
   return pprint({ type: "concat", docs });
 }
 
-function isTupleN(namespace: string | undefined, name: string) {
-  return (
-    namespace === "Tuple" &&
-    (name === "Tuple2" || name === "Tuple3" || name === "Tuple4")
-  );
+function isTupleN(namespace: string | undefined, name: string): boolean {
+  return namespace === "Tuple" && /Tuple[0-9]+/.test(name);
 }
