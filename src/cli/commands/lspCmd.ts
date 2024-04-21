@@ -316,10 +316,13 @@ export async function lspCmd() {
       .map<CompletionItem>((d) => ({
         label: d.binding.name,
         kind: CompletionItemKind.Function,
-        documentation: {
-          kind: MarkupKind.Markdown,
-          value: d.docComment ?? "example doc",
-        },
+        documentation:
+          d.docComment === undefined
+            ? undefined
+            : {
+                kind: MarkupKind.Markdown,
+                value: d.docComment,
+              },
       }));
   });
 
