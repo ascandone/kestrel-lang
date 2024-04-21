@@ -479,6 +479,20 @@ semantics.addOperation<TypeAst>("type()", {
       ...ident.qualifiedTypeAst(),
     };
   },
+  Type_tuple(_lparens, t, _comma, ts, _rparens) {
+    const ts_ = ts.asIteration().children.map((c) => c.type());
+
+    const count = 1 + ts_.length;
+    const name = `Tuple${count}`;
+
+    return {
+      type: "named",
+      namespace: "Tuple",
+      name,
+      args: [t.type(), ...ts_],
+      span: getSpan(this),
+    };
+  },
 });
 
 type Statement =

@@ -5107,6 +5107,87 @@ exports[`type hints > parses concrete type with 2 args 1`] = `
 }
 `;
 
+exports[`type hints > parses tuple type syntax sugar 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        29,
+      ],
+      "typeHint": {
+        "mono": {
+          "args": [
+            {
+              "args": [],
+              "name": "Int",
+              "span": [
+                9,
+                12,
+              ],
+              "type": "named",
+            },
+            {
+              "args": [
+                {
+                  "args": [],
+                  "name": "Int",
+                  "span": [
+                    20,
+                    23,
+                  ],
+                  "type": "named",
+                },
+              ],
+              "name": "Maybe",
+              "span": [
+                14,
+                24,
+              ],
+              "type": "named",
+            },
+          ],
+          "name": "Tuple2",
+          "namespace": "Tuple",
+          "span": [
+            8,
+            25,
+          ],
+          "type": "named",
+        },
+        "span": [
+          8,
+          25,
+        ],
+        "where": [],
+      },
+      "value": {
+        "span": [
+          28,
+          29,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`type hints > parses type vars hints 1`] = `
 {
   "declarations": [

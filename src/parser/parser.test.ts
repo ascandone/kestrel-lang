@@ -427,6 +427,11 @@ describe("type hints", () => {
     const src = "let x : a = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("parses tuple type syntax sugar", () => {
+    const src = "let x : (Int, Maybe<Int>) = 0";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("traits", () => {

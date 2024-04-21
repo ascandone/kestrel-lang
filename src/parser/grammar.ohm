@@ -175,6 +175,7 @@ Program {
     = QualifiedTypeIdent ("<" ListOf<Type, ","> ">")?  -- named
     | typeVar -- var
     | "Fn" "(" ListOf<Type, ","> ")" "->" Type -- fn
+    | "(" Type "," NonemptyListOf<Type, ","> ")" -- tuple
     | "_" -- any
 
   typeIdent
