@@ -31,6 +31,14 @@ Program {
 
   PipeExp
     = PipeExp "|>" CompExp  -- pipe
+    | AndExpr
+
+  AndExpr
+    = AndExpr "&&" OrExpr -- and
+    | OrExpr
+
+  OrExpr
+    = OrExpr "||" CompExp -- or
     | CompExp
 
   CompExp
@@ -41,16 +49,8 @@ Program {
     | EqExpr
 
   EqExpr
-    = EqExpr "==" AndExpr -- eq
-    | EqExpr "!=" AndExpr -- neq
-    | AndExpr
-
-  AndExpr
-    = AndExpr "&&" AndExpr -- and
-    | OrExpr
-
-  OrExpr
-    = OrExpr "||" ConsExpr -- or
+    = EqExpr "==" ConsExpr -- eq
+    | EqExpr "!=" ConsExpr -- neq
     | ConsExpr
 
   ConsExpr

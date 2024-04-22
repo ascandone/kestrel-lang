@@ -1408,6 +1408,73 @@ exports[`parse +. expr 1`] = `
 }
 `;
 
+exports[`parse <= and && prec 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "pub": false,
+      "span": [
+        0,
+        19,
+      ],
+      "value": {
+        "left": {
+          "left": {
+            "name": "a",
+            "namespace": undefined,
+            "span": [
+              8,
+              9,
+            ],
+            "type": "identifier",
+          },
+          "operator": "<=",
+          "right": {
+            "name": "b",
+            "namespace": undefined,
+            "span": [
+              13,
+              14,
+            ],
+            "type": "identifier",
+          },
+          "span": [
+            8,
+            14,
+          ],
+          "type": "infix",
+        },
+        "operator": "||",
+        "right": {
+          "name": "y",
+          "namespace": undefined,
+          "span": [
+            18,
+            19,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          19,
+        ],
+        "type": "infix",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`parse - expr 1`] = `
 {
   "declarations": [

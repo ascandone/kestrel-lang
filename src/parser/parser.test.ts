@@ -124,6 +124,11 @@ test("parse + and * prec", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
+test("parse <= and && prec", () => {
+  const src = "let _ = a <= b || y";
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
 test("parse + and * prec with parens", () => {
   const src = "let _ = (1 - 2) * 3";
   expect(unsafeParse(src)).toMatchSnapshot();

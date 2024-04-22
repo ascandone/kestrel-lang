@@ -99,6 +99,10 @@ test("keep parenthesis if needed by prec", () => {
   expect(`let x = (1 + 2) * 3\n`).toBeFormatted();
 });
 
+test("prec between && and <=", () => {
+  expect(`let x = a <= 'x' || y\n`).toBeFormatted();
+});
+
 test("mix infix and appl", () => {
   expect(`let x = 1 + f(2 + 3) + 4\n`).toBeFormatted();
 });
