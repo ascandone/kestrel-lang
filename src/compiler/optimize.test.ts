@@ -230,6 +230,62 @@ let glb = match Some(42) {
 `);
 });
 
+test("function inlining example (globals)", () => {
+  expect(`
+@inline
+let and_then = fn m, f {
+  match m {
+    Some(x) => f(x),
+    None => None,
+  }
+}
+
+pub let map = fn m, f {
+  and_then(m, fn x {
+    Some(f(x))
+  })
+}
+`).toOptimizeAs(`@inline
+let and_then = fn m, f {
+  match m {
+    Some(x) => f(x),
+    None => None,
+  }
+}
+
+pub let map = fn m, f {
+  match m {
+    Some(x) => Some(f(x)),
+    None => None,
+  }
+}
+`);
+
+  expect(`
+@inline
+let zip = fn m1, m2 {
+  match (m1, m2) {
+    (Some(m1), Some(m2)) => (m1, m2),
+    None => None,
+  }
+}
+
+pub let mapped = zip(None, None)
+`).toOptimizeAs(`@inline
+let zip = fn m1, m2 {
+  match (m1, m2) {
+    (Some(m1), Some(m2)) => (m1, m2),
+    None => None,
+  }
+}
+
+pub let mapped = match (None, None) {
+  (Some(m1), Some(m2)) => (m1, m2),
+  None => None,
+}
+`);
+});
+
 interface CustomMatchers<R = unknown> {
   toOptimizeAs: (formatted: string) => R;
 }
