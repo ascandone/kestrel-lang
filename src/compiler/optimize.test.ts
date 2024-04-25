@@ -92,6 +92,25 @@ let g = g(f())
   });
 });
 
+describe("inline globals", () => {
+  test("inline globals marked with @inline", () => {
+    const src = `
+@inline
+let inlinable = fn x { x + 1 }
+let example = inlinable(42)
+`;
+
+    expect(src).toOptimizeAs(`
+@inline
+let inlinable = fn x {
+  x + 1
+}
+
+let example = 43
+`);
+  });
+});
+
 test("apply opt to many statements", () => {
   expect(`
     let x = 1 + 2

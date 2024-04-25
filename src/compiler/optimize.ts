@@ -124,10 +124,31 @@ const inlineLetExpr: Optimization = (src) => {
   return undefined;
 };
 
+const inlineGlobals: Optimization = (src) => {
+  switch (src.type) {
+    case "identifier": {
+      if (
+        src.resolution !== undefined &&
+        src.resolution.type === "global-variable" &&
+        !src.resolution.declaration.extern &&
+        src.resolution.declaration.inline
+      ) {
+        return src.resolution.declaration.value;
+      }
+
+      return undefined;
+    }
+
+    default:
+      return undefined;
+  }
+};
+
 const OPTIMIZATIONS: Optimization[] = [
   constantFolding,
   iifFolding,
   inlineLetExpr,
+  inlineGlobals,
 ];
 
 class ChangeTracker {
