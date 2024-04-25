@@ -484,7 +484,7 @@ function declToDoc(ast: UntypedDeclaration): Doc {
 
   return concat(
     ast.docComment === undefined ? nil : handleDocComment(ast.docComment),
-
+    !ast.extern && ast.inline ? concat(text("@inline"), lines()) : nil,
     ast.extern ? text("extern ") : nil,
     ast.pub ? text("pub ") : nil,
     text(`let ${name}`),

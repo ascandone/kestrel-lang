@@ -575,6 +575,12 @@ describe("pattern matching", () => {
   });
 });
 
+test("inline attribute", () => {
+  expect(`@inline
+pub let x = 42
+`).toBeFormatted();
+});
+
 test("actual examples", () => {
   expect(
     `
@@ -716,10 +722,6 @@ expect.extend({
   toBeFormatted(received, expected = received) {
     const formatted = format(unsafeParse(received));
 
-    if (expected !== formatted) {
-      console.dir(unsafeParse(received).declarations, { depth: Infinity });
-      console.log(formatted);
-    }
     return {
       pass: expected === formatted,
       expected,
