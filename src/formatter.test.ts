@@ -576,7 +576,8 @@ describe("pattern matching", () => {
 });
 
 test("inline attribute", () => {
-  expect(`@inline
+  expect(`/// Comment
+@inline
 pub let x = 42
 `).toBeFormatted();
 });

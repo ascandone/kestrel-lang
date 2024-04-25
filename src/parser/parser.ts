@@ -631,8 +631,8 @@ semantics.addOperation<Statement>("statement()", {
     };
   },
   Declaration_letStmt(
-    inlineModifier,
     docComments,
+    inlineModifier,
     pubOpt,
     _let,
     ident,

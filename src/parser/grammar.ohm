@@ -17,7 +17,7 @@ Program {
 
   // --- Toplevel
   Declaration
-    = "@inline"? docCommentLine* "pub"? "let" ident (":" PolyType)? "=" Exp  -- letStmt
+    = docCommentLine* "@inline"? "pub"? "let" ident (":" PolyType)? "=" Exp  -- letStmt
     | docCommentLine* "extern" "pub"? "let" (ident | infixIdent) ":" PolyType -- externLetStmt
 
   TypeDeclaration
