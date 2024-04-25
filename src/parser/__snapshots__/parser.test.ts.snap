@@ -12,6 +12,7 @@ exports[`+ is left-associative 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -88,6 +89,7 @@ exports[`Comments > doc comments 1`] = `
  second line
 ",
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         5,
@@ -211,6 +213,7 @@ exports[`Comments > doc comments with many declrs 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         5,
@@ -239,6 +242,7 @@ exports[`Comments > doc comments with many declrs 1`] = `
       "docComment": " comment
 ",
       "extern": false,
+      "inline": false,
       "pub": true,
       "span": [
         20,
@@ -274,6 +278,7 @@ exports[`Comments > moduledoc comments 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         56,
@@ -296,6 +301,42 @@ exports[`Comments > moduledoc comments 1`] = `
   "moduleDoc": " Module level comment
  Second line
 ",
+  "typeDeclarations": [],
+}
+`;
+
+exports[`Decorators > inline decorator 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          16,
+          17,
+        ],
+      },
+      "extern": false,
+      "inline": true,
+      "pub": true,
+      "span": [
+        0,
+        21,
+      ],
+      "value": {
+        "span": [
+          20,
+          21,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+  "imports": [],
   "typeDeclarations": [],
 }
 `;
@@ -411,6 +452,7 @@ exports[`ignoring comments 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         30,
@@ -446,6 +488,7 @@ exports[`imports > identifiers can be qualified 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -513,6 +556,7 @@ exports[`imports > parse pub modifier 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": true,
       "span": [
         0,
@@ -647,6 +691,7 @@ exports[`imports > type constructors can be qualified 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -878,6 +923,7 @@ exports[`it should be possible to mix pipe with infix 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         5,
@@ -980,6 +1026,7 @@ exports[`monadic let syntax sugar 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         5,
@@ -1046,6 +1093,7 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         5,
@@ -1112,6 +1160,7 @@ exports[`parse * expr 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1166,6 +1215,7 @@ exports[`parse + and * prec 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1239,6 +1289,7 @@ exports[`parse + and * prec with parens 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1312,6 +1363,7 @@ exports[`parse + expr 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1366,6 +1418,7 @@ exports[`parse +. expr 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1420,6 +1473,7 @@ exports[`parse <= and && prec 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1487,6 +1541,7 @@ exports[`parse - expr 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1541,6 +1596,7 @@ exports[`parse appl with 1 arg 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1592,6 +1648,7 @@ exports[`parse appl with 3 args 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1661,6 +1718,7 @@ exports[`parse appl with nested expr 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1733,6 +1791,7 @@ exports[`parse appl with nested parens 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1786,6 +1845,7 @@ exports[`parse appl with no args 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1827,6 +1887,7 @@ exports[`parse appl with trailing comma 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1887,6 +1948,7 @@ exports[`parse block with no let 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         1,
@@ -1922,6 +1984,7 @@ exports[`parse chars 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -1957,6 +2020,7 @@ exports[`parse cons operator is right-associative 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -2044,6 +2108,7 @@ exports[`parse conslist sugar 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -2104,6 +2169,7 @@ exports[`parse empty list sugar 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -2137,6 +2203,7 @@ exports[`parse empty strings 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -2172,6 +2239,7 @@ exports[`parse float 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -2207,6 +2275,7 @@ exports[`parse fn with 1 arg 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         1,
@@ -2259,6 +2328,7 @@ exports[`parse fn with 2 args 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         1,
@@ -2319,6 +2389,7 @@ exports[`parse fn with let 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         1,
@@ -2388,6 +2459,7 @@ exports[`parse fn with no args 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         1,
@@ -2431,6 +2503,7 @@ exports[`parse ident 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -2464,6 +2537,7 @@ exports[`parse if expr 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         1,
@@ -2526,6 +2600,7 @@ exports[`parse if expr with a let expr 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         1,
@@ -2612,6 +2687,7 @@ exports[`parse let block with one let 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         1,
@@ -2673,6 +2749,7 @@ exports[`parse let block with two let stmts 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         1,
@@ -2760,6 +2837,7 @@ exports[`parse list sugar with many values 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -2880,6 +2958,7 @@ exports[`parse nonempty strings 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -2915,6 +2994,7 @@ exports[`parse singleton list sugar 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -2977,6 +3057,7 @@ exports[`parse strings with escaped quotes 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3012,6 +3093,7 @@ exports[`parse strings with newlines 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3047,6 +3129,7 @@ exports[`parse tuple sugar 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3111,6 +3194,7 @@ exports[`parse unary ! expr 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3161,6 +3245,7 @@ exports[`pattern matching > binding with identifier 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3222,6 +3307,7 @@ exports[`pattern matching > empty match expression 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3263,6 +3349,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3343,6 +3430,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3444,6 +3532,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3545,6 +3634,7 @@ exports[`pattern matching > matching constructor with no args 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3608,6 +3698,7 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3680,6 +3771,7 @@ exports[`pattern matching > matching float literals 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3744,6 +3836,7 @@ exports[`pattern matching > matching int literals 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3808,6 +3901,7 @@ exports[`pattern matching > matching many clauses, with trailing comma 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3888,6 +3982,7 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -3968,6 +4063,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -4063,6 +4159,7 @@ exports[`pattern matching > matching qualified constructors 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -4145,6 +4242,7 @@ exports[`pattern matching > matching str literals 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -4209,6 +4307,7 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -4289,6 +4388,7 @@ exports[`pipe syntax sugar 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         5,
@@ -4365,6 +4465,7 @@ exports[`pipe syntax sugar should be chainable 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         5,
@@ -4446,6 +4547,7 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         5,
@@ -4867,6 +4969,7 @@ exports[`type hints > parses Fn type with args 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -4945,6 +5048,7 @@ exports[`type hints > parses Fn type with no args 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -5004,6 +5108,7 @@ exports[`type hints > parses a concrete type with no args as a type hint 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -5055,6 +5160,7 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -5116,6 +5222,7 @@ exports[`type hints > parses concrete type with 2 args 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -5186,6 +5293,7 @@ exports[`type hints > parses tuple type syntax sugar 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -5267,6 +5375,7 @@ exports[`type hints > parses type vars hints 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,
@@ -5317,6 +5426,7 @@ exports[`type hints > parses underscore type 1`] = `
         ],
       },
       "extern": false,
+      "inline": false,
       "pub": false,
       "span": [
         0,

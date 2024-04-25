@@ -631,6 +631,7 @@ semantics.addOperation<Statement>("statement()", {
     };
   },
   Declaration_letStmt(
+    inlineModifier,
     docComments,
     pubOpt,
     _let,
@@ -641,9 +642,11 @@ semantics.addOperation<Statement>("statement()", {
     exp,
   ) {
     const pub = pubOpt.numChildren === 1;
+    const inline = inlineModifier.children.length === 1;
 
     const decl: UntypedDeclaration = {
       pub,
+      inline,
       extern: false,
       binding: ident.ident(),
       value: exp.expr(),

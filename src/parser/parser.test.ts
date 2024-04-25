@@ -11,6 +11,7 @@ test("parsing a declaration", () => {
       {
         pub: false,
         extern: false,
+        inline: false,
         binding: { name: "x", span: spanOf(src, "x") },
         value: {
           type: "constant",
@@ -35,6 +36,7 @@ test("parsing two declarations", () => {
       {
         pub: false,
         extern: false,
+        inline: false,
         binding: { name: "x", span: spanOf(src, "x") },
         value: {
           type: "constant",
@@ -49,6 +51,7 @@ test("parsing two declarations", () => {
       {
         pub: false,
         extern: false,
+        inline: false,
         binding: { name: "y", span: spanOf(src, "y") },
         value: {
           type: "constant",
@@ -725,6 +728,13 @@ describe("Comments", () => {
     //// Second line
     let x = 0
     `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+});
+
+describe("Decorators", () => {
+  test("inline decorator", () => {
+    const src = `@inline pub let x = 0`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });

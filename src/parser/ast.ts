@@ -146,6 +146,7 @@ export type Declaration<
   docComment?: string;
 } & (
     | {
+        inline: boolean;
         extern: false;
         typeHint?: PolyTypeAst<TypeResolutionMeta> & SpanMeta;
         value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
