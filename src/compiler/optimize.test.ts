@@ -286,6 +286,42 @@ pub let mapped = match (None, None) {
 `);
 });
 
+test.todo("bug", () => {
+  expect(`@inline
+pub let and_then = fn m, f {
+  match m {
+    Some(x) => f(x),
+    None => None,
+  }
+}
+
+pub let map2 = fn m1, m2, f {
+  and_then(m1, fn x1 {
+    and_then(m2, fn x2 {
+      Some(f(x1, x2))
+    })
+  })
+}
+
+`).not.toOptimizeAs(`@inline
+pub let and_then = fn m, f {
+  match m {
+    Some(x) => f(x),
+    None => None,
+  }
+}
+
+pub let map2 = fn m1, m2, f {
+  match m1 {
+    Some(x) => match m2 {
+      Some(x) => Some(f(x, x)),
+      None => None,
+    },
+    None => None,
+  }
+}
+`);
+});
 interface CustomMatchers<R = unknown> {
   toOptimizeAs: (formatted: string) => R;
 }
