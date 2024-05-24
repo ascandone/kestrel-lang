@@ -408,10 +408,10 @@ export class Compiler {
           if (this.tailCall) {
             this.pushStatements("while (true) {");
             this.indented(() => {
-              this.pushStatements(
-                ...params.map((p, i) => `const ${p} = GEN_TC__${i};`),
-                ...fnBody,
-              );
+              for (let i = 0; i < params.length; i++) {
+                this.pushStatements(`const ${params[i]} = GEN_TC__${i};`);
+              }
+              this.pushStatements(...fnBody);
             });
             this.pushStatements("}");
           } else {
@@ -419,12 +419,10 @@ export class Compiler {
           }
         });
 
-        this.pushStatements(
-          `}`,
-          ...(as.type === "assign_var" && as.declare
-            ? []
-            : [wrapJsExpr(name, as)]),
-        );
+        this.pushStatements(`}`);
+        if (!(as.type === "assign_var" && as.declare)) {
+          this.pushStatements(wrapJsExpr(name, as));
+        }
 
         this.tailCall = wasTailCall;
         return;
