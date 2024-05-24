@@ -110,11 +110,14 @@ export class Compiler {
   }
 
   private scopedBuffer(writer: VoidFunction): string[] {
+    const initialIndent = this.indentation;
     const initialBuf = this.statementsBuf;
     this.statementsBuf = [];
+    this.indentation = 0;
     writer();
     const buf = this.statementsBuf;
     this.statementsBuf = initialBuf;
+    this.indentation = initialIndent;
     return buf;
   }
 
@@ -304,7 +307,6 @@ export class Compiler {
           { type: "assign_var", name, declare: true },
           undefined,
         );
-
         return name;
       }
     }
@@ -404,6 +406,7 @@ export class Compiler {
           ? src.params.map((_, index) => `GEN_TC__${index}`)
           : params;
         this.pushStatements(`function ${name}(${tcParams.join(", ")}) {`);
+
         this.indented(() => {
           if (this.tailCall) {
             this.pushStatements("while (true) {");
@@ -418,12 +421,10 @@ export class Compiler {
             this.pushStatements(...fnBody);
           }
         });
-
         this.pushStatements(`}`);
         if (!(as.type === "assign_var" && as.declare)) {
           this.pushStatements(wrapJsExpr(name, as));
         }
-
         this.tailCall = wasTailCall;
         return;
       }

@@ -337,7 +337,7 @@ test("== doesn't perform structural equality when type is float", () => {
   `);
 });
 
-test.skip("fn inside if return", () => {
+test("fn inside if return", () => {
   const out = compileSrc(`
   let f =
     if 0 {
@@ -1357,7 +1357,7 @@ describe("TCO", () => {
       `);
   });
 
-  test.skip("a tc call should not leak into other expressions", () => {
+  test("a tc call should not leak into other expressions", () => {
     const out = compileSrc(`
     let ap = fn f { f(10) }
 
