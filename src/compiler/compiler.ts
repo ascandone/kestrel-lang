@@ -473,11 +473,11 @@ export class Compiler {
           first = false;
         }
 
-        this.pushStatements(
-          `} else {`,
-          ...indentBlock([`throw new Error("[non exhaustive match]")`]),
-          `}`,
-        );
+        this.pushStatements(`} else {`);
+        this.indented(() => {
+          this.pushStatements(`throw new Error("[non exhaustive match]")`);
+        });
+        this.pushStatements(`}`);
         return;
       }
     }
@@ -717,10 +717,6 @@ function needsParens(self: JsApplicationType, innerLeft: TypedExpr): boolean {
   const precSelf = precTable(self);
   const precInner = precTable(inner);
   return precInner < precSelf;
-}
-
-function indentBlock(lines: string[]): string[] {
-  return lines.map((line) => `  ${line}`);
 }
 
 function getVariantImpl(
