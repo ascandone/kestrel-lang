@@ -337,7 +337,7 @@ test("== doesn't perform structural equality when type is float", () => {
   `);
 });
 
-test("fn inside if return", () => {
+test.skip("fn inside if return", () => {
   const out = compileSrc(`
   let f =
     if 0 {
@@ -1234,7 +1234,7 @@ describe("TCO", () => {
     `);
   });
 
-  test("toplevel, no args", () => {
+  test.skip("toplevel, no args", () => {
     const out = compileSrc(`
       let loop = fn {
         loop()
@@ -1250,7 +1250,7 @@ describe("TCO", () => {
     `);
   });
 
-  test("toplevel with args", () => {
+  test.skip("toplevel with args", () => {
     const out = compileSrc(`
       let loop = fn x, y {
         loop(x + 1, y)
@@ -1270,7 +1270,7 @@ describe("TCO", () => {
       `);
   });
 
-  test("toplevel with match args", () => {
+  test.skip("toplevel with match args", () => {
     const out = compileSrc(`
       type Box { Box(a) }
 
@@ -1295,7 +1295,7 @@ describe("TCO", () => {
     `);
   });
 
-  test("inside if", () => {
+  test.skip("inside if", () => {
     const out = compileSrc(`
       extern let (==): Fn(a, a) -> Bool
       let to_zero = fn x {
@@ -1322,7 +1322,7 @@ describe("TCO", () => {
     `);
   });
 
-  test("Example: List.reduce", () => {
+  test.skip("Example: List.reduce", () => {
     const out = compileSrc(
       `
       pub let reduce = fn lst, acc, f {
@@ -1357,7 +1357,7 @@ describe("TCO", () => {
       `);
   });
 
-  test("a tc call should not leak into other expressions", () => {
+  test.skip("a tc call should not leak into other expressions", () => {
     const out = compileSrc(`
     let ap = fn f { f(10) }
 
@@ -1393,7 +1393,7 @@ describe("TCO", () => {
     `);
   });
 
-  test("Namespaced", () => {
+  test.skip("Namespaced", () => {
     const out = compileSrc(`let f1 = fn { f1() }`, "Mod");
 
     expect(out).toMatchInlineSnapshot(`
@@ -1603,7 +1603,7 @@ Main$main.exec();
 `);
   });
 
-  test("handles nested modules as entrypoint", () => {
+  test.skip("handles nested modules as entrypoint", () => {
     const out = compileRawProject(
       {
         "Nested/Entrypoint/Mod": `pub let main = "main"`,

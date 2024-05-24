@@ -94,6 +94,32 @@ export class Compiler {
     return this.nextId++;
   }
 
+  private indentation = 0;
+  private statementsBuf: string[] = [];
+  private pushStatements(...statements: string[]) {
+    const indentation = Array.from({ length: this.indentation })
+      .fill("  ")
+      .join("");
+
+    for (const statement of statements) {
+      this.statementsBuf.push(indentation + statement);
+    }
+  }
+  private indented(writer: VoidFunction) {
+    this.indentation++;
+    writer();
+    this.indentation--;
+  }
+
+  private scopedBuffer(writer: VoidFunction): string[] {
+    const initialBuf = this.statementsBuf;
+    this.statementsBuf = [];
+    writer();
+    const buf = this.statementsBuf;
+    this.statementsBuf = initialBuf;
+    return buf;
+  }
+
   private getUniqueName() {
     return this.getCurrentFrame().getUniqueName(this.getBlockNs());
   }
@@ -128,8 +154,7 @@ export class Compiler {
 
   // <Binding> => ns map
   private localBindings = new WeakMap<Binding<unknown>, string>();
-
-  private compileLetValue(src: TypedExpr & { type: "let" }): string[] {
+  private compileLetValue(src: TypedExpr & { type: "let" }): void {
     const name =
       src.pattern.type === "identifier"
         ? this.getCurrentFrame().preventShadow(src.pattern.name)
@@ -170,63 +195,56 @@ export class Compiler {
     return value;
   }
 
-  private compileJsApplication(jsCall: JsApplicationType): [string[], string] {
+  private compileJsApplication(jsCall: JsApplicationType): string {
     switch (jsCall.type) {
       case "infix": {
-        const [lStatements, lExpr] = this.compileAsExpr(jsCall.left);
-        const [rStatements, rExpr] = this.compileAsExpr(jsCall.right);
+        const lExpr = this.compileAsExpr(jsCall.left);
+        const rExpr = this.compileAsExpr(jsCall.right);
         const needsParens_ = needsParens(jsCall, jsCall.left);
         const lCWithParens = needsParens_ ? `(${lExpr})` : lExpr;
 
-        return [
-          [...lStatements, ...rStatements],
-          `${lCWithParens} ${jsCall.operator} ${rExpr}`,
-        ];
+        return `${lCWithParens} ${jsCall.operator} ${rExpr}`;
       }
 
       case "prefix": {
-        const [lStatements, compiledExpr] = this.compileAsExpr(jsCall.expr);
+        const compiledExpr = this.compileAsExpr(jsCall.expr);
         const needsParens_ = needsParens(jsCall, jsCall.expr);
         const compiledWithParens = needsParens_
           ? `(${compiledExpr})`
           : compiledExpr;
 
-        return [lStatements, `!${compiledWithParens}`];
+        return `!${compiledWithParens}`;
       }
 
       case "structural-eq":
-        return this.compileJsApplicationHelper([], "Bool$_eq", [
+        return this.compileJsApplicationHelper("Bool$_eq", [
           jsCall.left,
           jsCall.right,
         ]);
 
-      case "call":
-        return this.compileJsApplicationHelper(
-          ...this.compileAsExpr(jsCall.caller),
-          jsCall.args,
-        );
+      case "call": {
+        const expr = this.compileAsExpr(jsCall.caller);
+        return this.compileJsApplicationHelper(expr, jsCall.args);
+      }
     }
   }
 
   private compileJsApplicationHelper(
-    callerStatemens: string[],
     callerExpr: string,
     srcArgs: TypedExpr[],
-  ): [string[], string] {
-    const statements: string[] = [...callerStatemens];
+  ): string {
     const args: string[] = [];
     for (const arg of srcArgs) {
-      const [argStatements, argExpr] = this.compileAsExpr(arg);
+      const argExpr = this.compileAsExpr(arg);
       args.push(argExpr);
-      statements.push(...argStatements);
     }
-    return [statements, `${callerExpr}(${args.join(", ")})`];
+    return `${callerExpr}(${args.join(", ")})`;
   }
 
-  private compileAsExpr(src: TypedExpr): CompileExprResult {
+  private compileAsExpr(src: TypedExpr): string {
     switch (src.type) {
       case "constant":
-        return [[], constToString(src.value)];
+        return constToString(src.value);
 
       case "identifier": {
         if (src.resolution === undefined) {
@@ -237,26 +255,24 @@ export class Compiler {
           case "global-variable": {
             const ns = src.resolution.namespace ?? this.ns;
             if (ns === undefined) {
-              return [[], src.name];
+              return src.name;
             }
-
-            return [[], `${sanitizeNamespace(ns)}$${src.name}`];
+            return `${sanitizeNamespace(ns)}$${src.name}`;
           }
 
           case "constructor": {
             if (src.resolution.namespace) {
               const builtinLookup = builtinValues[src.name];
               if (builtinLookup !== undefined) {
-                return [[], builtinLookup];
+                return builtinLookup;
               }
             }
 
             const ns = src.resolution.namespace ?? this.ns;
             if (ns === undefined) {
-              return [[], src.name];
+              return src.name;
             }
-
-            return [[], `${sanitizeNamespace(ns)}$${src.name}`];
+            return `${sanitizeNamespace(ns)}$${src.name}`;
           }
 
           case "local-variable": {
@@ -266,7 +282,7 @@ export class Compiler {
                 `[unreachable] undefined identifier (${src.name})`,
               );
             }
-            return [[], lookup];
+            return lookup;
           }
         }
       }
@@ -277,22 +293,21 @@ export class Compiler {
       }
 
       case "let": {
-        const value = this.compileLetValue(src);
-        const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body);
-        return [[...value, ...bodyStatements], bodyExpr];
+        this.compileLetValue(src);
+        return this.compileAsExpr(src.body);
       }
 
       case "fn":
       case "if":
       case "match": {
         const name = this.getUniqueName();
-        const statements = this.compileAsStatements(
+        this.compileAsStatements(
           src,
           { type: "assign_var", name, declare: true },
           undefined,
         );
 
-        return [statements, name];
+        return name;
       }
     }
   }
@@ -327,7 +342,7 @@ export class Compiler {
     src: TypedExpr,
     as: CompilationMode,
     tailPosCaller: Binding<unknown> | undefined,
-  ): string[] {
+  ): void {
     switch (src.type) {
       case "application": {
         if (this.isTailCall(src, tailPosCaller)) {
@@ -335,29 +350,26 @@ export class Compiler {
           const ret: string[] = [];
           let i = 0;
           for (const arg of src.args) {
-            const [statements, expr] = this.compileAsExpr(arg);
-            ret.push(...statements);
+            const expr = this.compileAsExpr(arg);
+            // ret.push(...statements);
             ret.push(`GEN_TC__${i} = ${expr};`);
             i++;
           }
-          return ret;
+          // return ret;
         }
       }
 
       case "identifier":
       case "constant": {
-        const [statements, expr] = this.compileAsExpr(src);
-        return [...statements, wrapJsExpr(expr, as)];
+        const expr = this.compileAsExpr(src);
+        this.pushStatements(wrapJsExpr(expr, as));
+        return;
       }
 
       case "let": {
-        const value = this.compileLetValue(src);
-        const bodyStatements = this.compileAsStatements(
-          src.body,
-          as,
-          tailPosCaller,
-        );
-        return [...value, ...bodyStatements];
+        this.compileLetValue(src);
+        this.compileAsStatements(src.body, as, tailPosCaller);
+        return;
       }
 
       case "fn": {
@@ -388,72 +400,63 @@ export class Compiler {
           }
         });
 
-        const fnBody = this.compileAsStatements(
-          src.body,
-          { type: "return" },
-          callerBinding,
-        );
+        const fnBody = this.scopedBuffer(() => {
+          this.compileAsStatements(src.body, { type: "return" }, callerBinding);
+        });
 
         const isTailRec = this.tailCall;
         this.tailCall = false;
 
         this.frames.pop();
 
-        const wrappedFnBody = isTailRec
-          ? [
-              "while (true) {",
-              ...indentBlock([
-                ...params.map((p, i) => `const ${p} = GEN_TC__${i};`),
-                ...fnBody,
-              ]),
-              "}",
-            ]
-          : fnBody;
-
         const tcParams = isTailRec
           ? src.params.map((_, index) => `GEN_TC__${index}`)
           : params;
 
         this.tailCall = wasTailCall;
-        return [
-          //
-          `function ${name}(${tcParams.join(", ")}) {`,
-          ...indentBlock(wrappedFnBody),
+        this.pushStatements(`function ${name}(${tcParams.join(", ")}) {`);
+
+        this.indentation++;
+        if (isTailRec) {
+          this.pushStatements("while (true) {");
+          this.indented(() => {
+            this.pushStatements(
+              ...params.map((p, i) => `const ${p} = GEN_TC__${i};`),
+              ...fnBody,
+            );
+          });
+
+          this.pushStatements("}");
+        } else {
+          this.pushStatements(...fnBody);
+        }
+        this.indentation--;
+
+        this.pushStatements(
           `}`,
           ...(as.type === "assign_var" && as.declare
             ? []
             : [wrapJsExpr(name, as)]),
-        ];
+        );
+
+        return;
       }
 
       case "if": {
-        const [conditionStatements, conditionExpr] = this.compileAsExpr(
-          src.condition,
-        );
-
-        const thenBlock = this.compileAsStatements(
-          src.then,
-          doNotDeclare(as),
-
-          tailPosCaller,
-        );
-
-        const elseBlock = this.compileAsStatements(
-          src.else,
-          doNotDeclare(as),
-
-          tailPosCaller,
-        );
-
-        return [
-          ...conditionStatements,
+        const conditionExpr = this.compileAsExpr(src.condition);
+        this.pushStatements(
           ...declarationStatements(as),
           `if (${conditionExpr}) {`,
-          ...indentBlock(thenBlock),
-          `} else {`,
-          ...indentBlock(elseBlock),
-          `}`,
-        ];
+        );
+        this.indented(() => {
+          this.compileAsStatements(src.then, doNotDeclare(as), tailPosCaller);
+        });
+        this.pushStatements(`} else {`);
+        this.indented(() => {
+          this.compileAsStatements(src.else, doNotDeclare(as), tailPosCaller);
+        });
+        this.pushStatements(`}`);
+        return;
       }
 
       case "match": {
@@ -465,39 +468,31 @@ export class Compiler {
           undefined,
         );
 
-        const compiledMatchExpr: string[] = [
-          ...statements,
-          ...declarationStatements(as),
-        ];
+        this.pushStatements(...declarationStatements(as));
 
         let first = true;
         for (const [pattern, ret] of src.clauses) {
           const compiled = this.compilePattern(matched, pattern);
 
-          const retStatements = this.compileAsStatements(
-            ret,
-            doNotDeclare(as),
-
-            tailPosCaller,
-          );
-
           const condition =
             compiled.length === 0 ? "true" : compiled.join(" && ");
 
-          compiledMatchExpr.push(
+          this.pushStatements(
             first ? `if (${condition}) {` : `} else if (${condition}) {`,
-            ...indentBlock(retStatements),
           );
+          this.indented(() => {
+            this.compileAsStatements(ret, doNotDeclare(as), tailPosCaller);
+          });
+
           first = false;
         }
 
-        compiledMatchExpr.push(
+        this.pushStatements(
           `} else {`,
           ...indentBlock([`throw new Error("[non exhaustive match]")`]),
           `}`,
         );
-
-        return compiledMatchExpr;
+        return;
       }
     }
   }
@@ -537,13 +532,13 @@ export class Compiler {
         ),
       );
 
-      const statements = this.compileAsStatements(
+      this.compileAsStatements(
         decl.value,
         { type: "assign_var", name: nameSpacedBinding, declare: true },
         undefined,
       );
-
-      decls.push(...statements, "");
+      decls.push(...this.statementsBuf, "");
+      this.statementsBuf = [];
       this.frames.pop();
     }
 
