@@ -394,12 +394,9 @@ export class Compiler {
           callerBinding,
         );
 
-        const isTailRec = this.tailCall;
-        this.tailCall = false;
-
         this.frames.pop();
 
-        const wrappedFnBody = isTailRec
+        const wrappedFnBody = this.tailCall
           ? [
               "while (true) {",
               ...indentBlock([
@@ -410,7 +407,7 @@ export class Compiler {
             ]
           : fnBody;
 
-        const tcParams = isTailRec
+        const tcParams = this.tailCall
           ? src.params.map((_, index) => `GEN_TC__${index}`)
           : params;
 
