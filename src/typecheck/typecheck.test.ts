@@ -759,6 +759,43 @@ describe("traits", () => {
 
     expect(errs).toEqual([]);
   });
+
+  test("derives in self-recursive types (nested)", () => {
+    const [, errs] = tc(
+      `
+        type Box<a> { Box(a) }
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type Rec<a> {
+          End,
+          Nest(Box<Rec<a>>),
+        }
+
+        pub let example = take_eq(End)
+      `,
+    );
+
+    expect(errs).toEqual([]);
+  });
+
+  test("fails to derives in self-recursive types when not derivable (nested)", () => {
+    const [, errs] = tc(
+      `
+        type Box<a> { Box(a) }
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        extern type NotEq
+        pub(..) type Rec<a> {
+          End,
+          Nest(Box<Rec<a>>, NotEq),
+        }
+
+        pub let example = take_eq(End)
+      `,
+    );
+
+    expect(errs).not.toEqual([]);
+  });
 });
 
 describe("custom types", () => {

@@ -87,6 +87,14 @@ class Typechecker {
 
     const depParams = new Set<string>();
 
+    // Register recursive type
+    TVar.registerTraitImpl(
+      this.ns,
+      typeDecl.name,
+      trait,
+      typeDecl.params.map((_) => undefined),
+    );
+
     for (const variant of typeDecl.variants) {
       const resolved = variant.$.resolve();
       if (resolved.type === "unbound") {
@@ -96,16 +104,9 @@ class Typechecker {
 
       if (concreteType.type === "fn") {
         for (const arg of concreteType.args) {
-          if (
-            arg.type === "named" &&
-            arg.moduleName === this.ns &&
-            arg.name === typeDecl.name
-          ) {
-            continue;
-          }
-
           const impl = TVar.typeImplementsTrait(arg, trait);
           if (impl === undefined) {
+            TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
             return;
           }
           for (const { id } of impl) {
@@ -128,6 +129,7 @@ class Typechecker {
       }
     }
 
+    TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
     TVar.registerTraitImpl(this.ns, typeDecl.name, trait, deps);
   }
 

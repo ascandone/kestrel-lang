@@ -72,6 +72,11 @@ export class TVar {
     TVar.namedTypesTraitImpls.set(id, dependencies);
   }
 
+  static removeTraitImpl(moduleName: string, typeName: string, trait: string) {
+    const id = getNamedTypeTraitId(moduleName, typeName, trait);
+    TVar.namedTypesTraitImpls.delete(id);
+  }
+
   static typeImplementsTrait(
     t: Type,
     trait: string,
