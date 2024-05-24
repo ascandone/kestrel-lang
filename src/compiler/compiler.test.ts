@@ -1393,7 +1393,7 @@ describe("TCO", () => {
     `);
   });
 
-  test.skip("Namespaced", () => {
+  test("Namespaced", () => {
     const out = compileSrc(`let f1 = fn { f1() }`, "Mod");
 
     expect(out).toMatchInlineSnapshot(`
@@ -1603,7 +1603,7 @@ Main$main.exec();
 `);
   });
 
-  test.skip("handles nested modules as entrypoint", () => {
+  test("handles nested modules as entrypoint", () => {
     const out = compileRawProject(
       {
         "Nested/Entrypoint/Mod": `pub let main = "main"`,

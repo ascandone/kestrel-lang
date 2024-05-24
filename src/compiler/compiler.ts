@@ -11,8 +11,6 @@ const builtinValues: Scope = {
   Unit: "null",
 };
 
-type CompileExprResult = [statements: string[], expr: string];
-
 type Scope = Record<string, string>;
 
 type CompilationMode =
