@@ -408,25 +408,21 @@ export class Compiler {
         const tcParams = this.tailCall
           ? src.params.map((_, index) => `GEN_TC__${index}`)
           : params;
-
-        this.tailCall = wasTailCall;
         this.pushStatements(`function ${name}(${tcParams.join(", ")}) {`);
-
-        this.indentation++;
-        if (this.tailCall) {
-          this.pushStatements("while (true) {");
-          this.indented(() => {
-            this.pushStatements(
-              ...params.map((p, i) => `const ${p} = GEN_TC__${i};`),
-              ...fnBody,
-            );
-          });
-
-          this.pushStatements("}");
-        } else {
-          this.pushStatements(...fnBody);
-        }
-        this.indentation--;
+        this.indented(() => {
+          if (this.tailCall) {
+            this.pushStatements("while (true) {");
+            this.indented(() => {
+              this.pushStatements(
+                ...params.map((p, i) => `const ${p} = GEN_TC__${i};`),
+                ...fnBody,
+              );
+            });
+            this.pushStatements("}");
+          } else {
+            this.pushStatements(...fnBody);
+          }
+        });
 
         this.pushStatements(
           `}`,
@@ -435,6 +431,7 @@ export class Compiler {
             : [wrapJsExpr(name, as)]),
         );
 
+        this.tailCall = wasTailCall;
         return;
       }
 
