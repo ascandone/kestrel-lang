@@ -347,15 +347,13 @@ export class Compiler {
       case "application": {
         if (this.isTailCall(src, tailPosCaller)) {
           this.tailCall = true;
-          const ret: string[] = [];
           let i = 0;
           for (const arg of src.args) {
             const expr = this.compileAsExpr(arg);
-            // ret.push(...statements);
-            ret.push(`GEN_TC__${i} = ${expr};`);
+            this.pushStatements(`GEN_TC__${i} = ${expr};`);
             i++;
           }
-          // return ret;
+          return;
         }
       }
 
@@ -373,9 +371,6 @@ export class Compiler {
       }
 
       case "fn": {
-        const wasTailCall = this.tailCall;
-        this.tailCall = false;
-
         const name =
           as.type === "assign_var" && as.declare
             ? as.name
@@ -400,6 +395,8 @@ export class Compiler {
           }
         });
 
+        const wasTailCall = this.tailCall;
+        this.tailCall = false;
         const fnBody = this.scopedBuffer(() => {
           this.compileAsStatements(src.body, { type: "return" }, callerBinding);
         });
@@ -454,10 +451,9 @@ export class Compiler {
 
       case "match": {
         const matched = this.getUniqueName();
-        const statements = this.compileAsStatements(
+        this.compileAsStatements(
           src.expr,
           { type: "assign_var", name: matched, declare: true },
-
           undefined,
         );
 

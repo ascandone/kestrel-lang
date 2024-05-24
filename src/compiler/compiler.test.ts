@@ -1234,7 +1234,7 @@ describe("TCO", () => {
     `);
   });
 
-  test.skip("toplevel, no args", () => {
+  test("toplevel, no args", () => {
     const out = compileSrc(`
       let loop = fn {
         loop()
@@ -1250,7 +1250,7 @@ describe("TCO", () => {
     `);
   });
 
-  test.skip("toplevel with args", () => {
+  test("toplevel with args", () => {
     const out = compileSrc(`
       let loop = fn x, y {
         loop(x + 1, y)
@@ -1270,7 +1270,7 @@ describe("TCO", () => {
       `);
   });
 
-  test.skip("toplevel with match args", () => {
+  test("toplevel with match args", () => {
     const out = compileSrc(`
       type Box { Box(a) }
 
@@ -1295,7 +1295,7 @@ describe("TCO", () => {
     `);
   });
 
-  test.skip("inside if", () => {
+  test("inside if", () => {
     const out = compileSrc(`
       extern let (==): Fn(a, a) -> Bool
       let to_zero = fn x {
@@ -1322,7 +1322,7 @@ describe("TCO", () => {
     `);
   });
 
-  test.skip("Example: List.reduce", () => {
+  test("Example: List.reduce", () => {
     const out = compileSrc(
       `
       pub let reduce = fn lst, acc, f {
