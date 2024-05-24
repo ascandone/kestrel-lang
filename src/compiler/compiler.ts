@@ -403,13 +403,9 @@ export class Compiler {
         const fnBody = this.scopedBuffer(() => {
           this.compileAsStatements(src.body, { type: "return" }, callerBinding);
         });
-
-        const isTailRec = this.tailCall;
-        this.tailCall = false;
-
         this.frames.pop();
 
-        const tcParams = isTailRec
+        const tcParams = this.tailCall
           ? src.params.map((_, index) => `GEN_TC__${index}`)
           : params;
 
@@ -417,7 +413,7 @@ export class Compiler {
         this.pushStatements(`function ${name}(${tcParams.join(", ")}) {`);
 
         this.indentation++;
-        if (isTailRec) {
+        if (this.tailCall) {
           this.pushStatements("while (true) {");
           this.indented(() => {
             this.pushStatements(
