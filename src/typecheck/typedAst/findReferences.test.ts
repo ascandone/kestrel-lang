@@ -62,7 +62,9 @@ function typecheckRaw(
     untypedProject[ns] = { package: "", module: unsafeParse(src) };
   }
   const p = typecheckProject(untypedProject);
-  return Object.fromEntries(Object.entries(p).map(([k, [v]]) => [k, v]));
+  return Object.fromEntries(
+    Object.entries(p).map(([k, { typedModule }]) => [k, typedModule]),
+  );
 }
 
 function parseFindReferences(

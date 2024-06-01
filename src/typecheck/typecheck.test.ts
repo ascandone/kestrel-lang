@@ -1760,16 +1760,14 @@ describe("typecheck project", () => {
     );
 
     expect(project.A).not.toBeUndefined();
-    const [pA, errA] = project.A!;
-    expect(errA).toEqual([]);
-    expect(programTypes(pA)).toEqual({
+    expect(project.A!.errors).toEqual([]);
+    expect(programTypes(project.A!.typedModule)).toEqual({
       x: "Int",
     });
 
     expect(project.B).not.toBeUndefined();
-    const [pB, errB] = project.B!;
-    expect(errB).toEqual([]);
-    expect(programTypes(pB)).toEqual({
+    expect(project.B!.errors).toEqual([]);
+    expect(programTypes(project.B!.typedModule)).toEqual({
       y: "Int",
     });
   });
@@ -1795,9 +1793,9 @@ describe("typecheck project", () => {
     );
 
     expect(project.B).not.toBeUndefined();
-    const [pB, errB] = project.B!;
-    expect(errB).toEqual([]);
-    expect(programTypes(pB)).toEqual({
+
+    expect(project.B!.errors).toEqual([]);
+    expect(programTypes(project.B!.typedModule)).toEqual({
       y: "Int",
     });
   });

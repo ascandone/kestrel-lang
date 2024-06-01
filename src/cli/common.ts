@@ -129,8 +129,8 @@ export async function checkProject(
   const res: TypedProject = {};
   let errorsCount = 0,
     warningsCount = 0;
-  for (const [ns, [program, errors]] of Object.entries(typedProject)) {
-    res[ns] = program;
+  for (const [ns, { typedModule, errors }] of Object.entries(typedProject)) {
+    res[ns] = typedModule;
     if (errors.length !== 0) {
       console.log(col.blue.tag`-------- ${ns}.${EXTENSION}\n`);
     }
