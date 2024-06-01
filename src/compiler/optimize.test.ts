@@ -21,6 +21,10 @@ describe("constant folding", () => {
   test("fold constants (two steps)", () => {
     expect("let x = (1 + 1) * 4").toOptimizeAs("let x = 8");
   });
+
+  test("within lists", () => {
+    expect("let x = [1 + 2]").toOptimizeAs("let x = [3]");
+  });
 });
 
 describe("fold iif", () => {

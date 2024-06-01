@@ -164,9 +164,6 @@ class ChangeTracker {
     }
 
     switch (src.type) {
-      case "list-literal":
-        throw new Error("optimize list-lit");
-
       case "constant":
       case "identifier":
         return src;
@@ -203,6 +200,11 @@ class ChangeTracker {
           ...src,
           expr: this.runOnce(src.expr),
           clauses: src.clauses.map(([pat, e]) => [pat, this.runOnce(e)]),
+        };
+      case "list-literal":
+        return {
+          ...src,
+          values: src.values.map((value) => this.runOnce(value)),
         };
     }
   }
