@@ -130,6 +130,20 @@ test("hover a reference to a global binding inside a fn, application, if, let", 
   });
 });
 
+test("hover within a list", () => {
+  const src = `
+  let hovered_number = 42
+  let expr = [hovered_number]
+`;
+  const [, hoverable] = parseHover(src, "hovered_number", 2)!;
+  expect(hoverable).toEqual<Hovered>({
+    span: spanOf(src, "hovered_number", 2),
+    hovered: expect.objectContaining({
+      type: "global-variable",
+    }),
+  });
+});
+
 test("hover within a pipe call", () => {
   const src = `
         let id = fn x { x }
