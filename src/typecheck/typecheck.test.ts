@@ -436,6 +436,45 @@ test("closures with resursive bindings", () => {
   expect(errs[0]?.description).toBeInstanceOf(OccursCheck);
 });
 
+describe("list literal", () => {
+  test("typecheck empty list", () => {
+    const [types, errs] = tc(`pub let lst = []`);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      lst: "List<a>",
+    });
+  });
+
+  test("typecheck singleton list as the value's type", () => {
+    const [types, errs] = tc(`pub let lst = [42]`);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      lst: "List<Int>",
+    });
+  });
+
+  test("typecheck many values", () => {
+    const [types, errs] = tc(`pub let lst = [0, 1, 2]`);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      lst: "List<Int>",
+    });
+  });
+
+  test("fail typechecking when values have different type", () => {
+    const [types, errs] = tc(`pub let lst = [0, 1, "not an int"]`);
+
+    expect(errs).not.toEqual([]);
+    expect(errs[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(types).toEqual({
+      lst: "List<Int>",
+    });
+  });
+});
+
 describe("type hints", () => {
   test("type hints are used by typechecker", () => {
     const [types, errs] = tc(

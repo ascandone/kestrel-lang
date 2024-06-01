@@ -201,6 +201,11 @@ class ChangeTracker {
           expr: this.runOnce(src.expr),
           clauses: src.clauses.map(([pat, e]) => [pat, this.runOnce(e)]),
         };
+      case "list-literal":
+        return {
+          ...src,
+          values: src.values.map((value) => this.runOnce(value)),
+        };
     }
   }
 }
@@ -306,6 +311,13 @@ function substituteBinding(
           pat,
           substituteBinding(binding, with_, e),
         ]),
+      };
+    case "list-literal":
+      return {
+        ...src,
+        values: src.values.map((value) =>
+          substituteBinding(binding, with_, value),
+        ),
       };
   }
 }

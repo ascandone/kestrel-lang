@@ -211,6 +211,9 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
     case "constant":
       return undefined;
 
+    case "list-literal":
+      return firstBy(expr.values, (v) => hoverOnExpr(v, offset));
+
     case "identifier":
       if (expr.resolution === undefined) {
         return undefined;

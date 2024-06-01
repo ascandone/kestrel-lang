@@ -76,6 +76,9 @@ export function foldTree<T>(
     case "constant":
       return f(src, acc);
 
+    case "list-literal":
+      return src.values.reduce((acc, x) => f(x, acc), acc);
+
     case "application":
       acc = foldTree(src.caller, acc, f);
       for (const arg of src.args) {

@@ -21,6 +21,10 @@ describe("constant folding", () => {
   test("fold constants (two steps)", () => {
     expect("let x = (1 + 1) * 4").toOptimizeAs("let x = 8");
   });
+
+  test("within lists", () => {
+    expect("let x = [1 + 2]").toOptimizeAs("let x = [3]");
+  });
 });
 
 describe("fold iif", () => {
@@ -90,6 +94,17 @@ let g = {
 let g = g(f())
 `);
   });
+});
+
+test("inline let binding used within a list", () => {
+  expect(`
+  let g = {
+    let x = f();
+    [x]
+  }
+      `).toOptimizeAs(`
+  let g = [f()]
+  `);
 });
 
 describe("inline globals", () => {

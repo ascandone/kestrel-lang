@@ -486,6 +486,16 @@ class Typechecker {
         return;
       }
 
+      case "list-literal": {
+        const valueType = TVar.fresh().asType();
+        this.unifyExpr(ast, ast.$.asType(), List(valueType));
+        for (const value of ast.values) {
+          this.unifyExpr(value, value.$.asType(), valueType);
+          this.typecheckAnnotatedExpr(value);
+        }
+        return;
+      }
+
       case "identifier": {
         if (ast.resolution === undefined) {
           // Error was already emitted
@@ -729,6 +739,13 @@ const Unit: Type = {
   name: "Unit",
   args: [],
 };
+
+const List = (a: Type): Type => ({
+  type: "named",
+  moduleName: "List",
+  name: "List",
+  args: [a],
+});
 
 function Task(arg: Type): Type {
   return {

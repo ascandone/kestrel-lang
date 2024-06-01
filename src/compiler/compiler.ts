@@ -228,6 +228,16 @@ export class Compiler {
       case "constant":
         return [[], constToString(src.value)];
 
+      case "list-literal": {
+        const buf: string[] = [];
+        const ret = src.values.reduceRight((acc, x) => {
+          const [sts, expr] = this.compileAsExpr(x);
+          buf.push(...sts);
+          return `List$Cons(${expr}, ${acc})`;
+        }, "List$Nil");
+        return [buf, ret];
+      }
+
       case "identifier": {
         if (src.resolution === undefined) {
           throw new Error("[unreachable] unresolved var: " + src.name);
@@ -344,6 +354,7 @@ export class Compiler {
         }
       }
 
+      case "list-literal":
       case "identifier":
       case "constant": {
         const [statements, expr] = this.compileAsExpr(src);
