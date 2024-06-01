@@ -2176,13 +2176,12 @@ exports[`parse empty list sugar 1`] = `
         10,
       ],
       "value": {
-        "name": "Nil",
-        "namespace": "List",
         "span": [
-          0,
-          -1,
+          8,
+          10,
         ],
-        "type": "identifier",
+        "type": "list-literal",
+        "values": [],
       },
     },
   ],
@@ -2844,7 +2843,12 @@ exports[`parse list sugar with many values 1`] = `
         17,
       ],
       "value": {
-        "args": [
+        "span": [
+          8,
+          17,
+        ],
+        "type": "list-literal",
+        "values": [
           {
             "span": [
               9,
@@ -2857,87 +2861,28 @@ exports[`parse list sugar with many values 1`] = `
             },
           },
           {
-            "args": [
-              {
-                "span": [
-                  12,
-                  13,
-                ],
-                "type": "constant",
-                "value": {
-                  "type": "int",
-                  "value": 1,
-                },
-              },
-              {
-                "args": [
-                  {
-                    "span": [
-                      15,
-                      16,
-                    ],
-                    "type": "constant",
-                    "value": {
-                      "type": "int",
-                      "value": 2,
-                    },
-                  },
-                  {
-                    "name": "Nil",
-                    "namespace": "List",
-                    "span": [
-                      0,
-                      -1,
-                    ],
-                    "type": "identifier",
-                  },
-                ],
-                "caller": {
-                  "name": "Cons",
-                  "namespace": "List",
-                  "span": [
-                    0,
-                    -1,
-                  ],
-                  "type": "identifier",
-                },
-                "span": [
-                  8,
-                  17,
-                ],
-                "type": "application",
-              },
-            ],
-            "caller": {
-              "name": "Cons",
-              "namespace": "List",
-              "span": [
-                0,
-                -1,
-              ],
-              "type": "identifier",
-            },
             "span": [
-              8,
-              17,
+              12,
+              13,
             ],
-            "type": "application",
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 1,
+            },
+          },
+          {
+            "span": [
+              15,
+              16,
+            ],
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 2,
+            },
           },
         ],
-        "caller": {
-          "name": "Cons",
-          "namespace": "List",
-          "span": [
-            0,
-            -1,
-          ],
-          "type": "identifier",
-        },
-        "span": [
-          8,
-          17,
-        ],
-        "type": "application",
       },
     },
   ],
@@ -3001,7 +2946,12 @@ exports[`parse singleton list sugar 1`] = `
         12,
       ],
       "value": {
-        "args": [
+        "span": [
+          8,
+          12,
+        ],
+        "type": "list-literal",
+        "values": [
           {
             "span": [
               9,
@@ -3013,30 +2963,7 @@ exports[`parse singleton list sugar 1`] = `
               "value": 42,
             },
           },
-          {
-            "name": "Nil",
-            "namespace": "List",
-            "span": [
-              0,
-              -1,
-            ],
-            "type": "identifier",
-          },
         ],
-        "caller": {
-          "name": "Cons",
-          "namespace": "List",
-          "span": [
-            0,
-            -1,
-          ],
-          "type": "identifier",
-        },
-        "span": [
-          8,
-          12,
-        ],
-        "type": "application",
       },
     },
   ],

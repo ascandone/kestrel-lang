@@ -164,6 +164,9 @@ class ChangeTracker {
     }
 
     switch (src.type) {
+      case "list-literal":
+        throw new Error("optimize list-lit");
+
       case "constant":
       case "identifier":
         return src;
@@ -258,6 +261,9 @@ function substituteBinding(
   src: TypedExpr,
 ): TypedExpr {
   switch (src.type) {
+    case "list-literal":
+      throw new Error("TODO");
+
     case "identifier":
       if (src.resolution === undefined) {
         return src;

@@ -593,6 +593,14 @@ class ResolutionStep {
       case "constant":
         return { ...ast, $: TVar.fresh() };
 
+      case "list-literal": {
+        return {
+          ...ast,
+          values: ast.values.map((v) => this.annotateExpr(v)),
+          $: TVar.fresh(),
+        };
+      }
+
       case "identifier":
         return {
           ...ast,

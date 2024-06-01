@@ -72,6 +72,9 @@ export function foldTree<T>(
   f: (src: TypedExpr, acc: T) => T,
 ): T {
   switch (src.type) {
+    case "list-literal":
+      throw new Error("TODO");
+
     case "identifier":
     case "constant":
       return f(src, acc);

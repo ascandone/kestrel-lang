@@ -79,6 +79,7 @@ function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
         return selfBindingPower > bindingPower;
       }
 
+    case "list-literal":
     case "pipe":
     case "let#":
     case "constant":
@@ -141,32 +142,26 @@ function asBlock(isBlock: boolean, docs: Doc[]): Doc {
   return block_(...docs);
 }
 
-export type ConsEnd = { type: "nil" } | { type: "expr"; expr: UntypedExpr };
-
-function collectCons(ast: UntypedExpr): [UntypedExpr[], ConsEnd] {
-  const acc: UntypedExpr[] = [];
-
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    if (
-      ast.type === "application" &&
-      ast.caller.type === "identifier" &&
-      ast.caller.name === "Cons"
-    ) {
-      const left = ast.args[0]!;
-      acc.push(left);
-      ast = ast.args[1]!;
-    } else {
-      break;
-    }
-  }
-
-  const isNil = ast.type === "identifier" && ast.name === "Nil";
-  return [acc, isNil ? { type: "nil" } : { type: "expr", expr: ast }];
-}
-
 function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
   switch (ast.type) {
+    case "list-literal":
+      return group(
+        text("["),
+
+        indentWithSpaceBreak(
+          [
+            sepBy(
+              concat(text(","), break_()),
+              ast.values.map((expr) =>
+                exprToDoc(expr, expr.type !== "let" && expr.type !== "let#"),
+              ),
+            ),
+          ],
+          ",",
+        ),
+        text("]"),
+      );
+
     case "pipe":
       return broken(
         asBlock(block, [
@@ -181,10 +176,6 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
       return constToDoc(ast.value);
 
     case "identifier":
-      if (ast.name === "Nil") {
-        return text("[]");
-      }
-
       return text(
         ast.namespace === undefined ? "" : `${ast.namespace}.`,
         ast.name,
@@ -210,33 +201,6 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
     }
 
     case "application": {
-      consSugar: if (
-        ast.caller.type === "identifier" &&
-        ast.caller.name === "Cons" &&
-        ast.args.length === 2
-      ) {
-        const [xs, end] = collectCons(ast.args[1]!);
-        if (end.type === "expr") {
-          break consSugar;
-        }
-        return group(
-          text("["),
-
-          indentWithSpaceBreak(
-            [
-              sepBy(
-                concat(text(","), break_()),
-                [ast.args[0]!, ...xs].map((expr) =>
-                  exprToDoc(expr, expr.type !== "let" && expr.type !== "let#"),
-                ),
-              ),
-            ],
-            ",",
-          ),
-          text("]"),
-        );
-      }
-
       infix: if (ast.caller.type === "identifier") {
         const name = infixAliasForName(ast.caller.name);
         const infixIndex = getBindingPower(name);

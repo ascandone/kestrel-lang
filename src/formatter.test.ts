@@ -69,6 +69,10 @@ describe("list lit syntax", () => {
     expect(`let x = []\n`).toBeFormatted();
   });
 
+  test("check prec", () => {
+    expect(`let x = a :: []\n`).toBeFormatted();
+  });
+
   test("on singleton", () => {
     expect(`let x = [42]\n`).toBeFormatted();
   });
