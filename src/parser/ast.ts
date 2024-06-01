@@ -59,7 +59,6 @@ export type MatchPattern<
 export type Binding<TypeMeta = unknown> = { name: string } & TypeMeta &
   SpanMeta;
 
-// TODO add monadic let
 export type SyntaxSugar =
   | {
       type: "pipe";
