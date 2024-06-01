@@ -263,9 +263,6 @@ function substituteBinding(
   src: TypedExpr,
 ): TypedExpr {
   switch (src.type) {
-    case "list-literal":
-      throw new Error("TODO");
-
     case "identifier":
       if (src.resolution === undefined) {
         return src;
@@ -314,6 +311,13 @@ function substituteBinding(
           pat,
           substituteBinding(binding, with_, e),
         ]),
+      };
+    case "list-literal":
+      return {
+        ...src,
+        values: src.values.map((value) =>
+          substituteBinding(binding, with_, value),
+        ),
       };
   }
 }

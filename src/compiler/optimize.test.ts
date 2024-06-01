@@ -96,6 +96,17 @@ let g = g(f())
   });
 });
 
+test("inline let binding used within a list", () => {
+  expect(`
+  let g = {
+    let x = f();
+    [x]
+  }
+      `).toOptimizeAs(`
+  let g = [f()]
+  `);
+});
+
 describe("inline globals", () => {
   test("inline globals marked with @inline", () => {
     const src = `
