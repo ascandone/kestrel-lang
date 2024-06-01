@@ -33,12 +33,15 @@ export type ProjectDoc = {
 };
 
 export function makeProjectDoc(
+  package_: string,
   version: string,
   typedProject: TypedProject,
 ): ProjectDoc {
   const modules: ProjectDoc["modules"] = {};
   for (const mod in typedProject) {
-    modules[mod] = makeModuleDoc(mod, typedProject[mod]!);
+    if (typedProject[mod]?.package === package_) {
+      modules[mod] = makeModuleDoc(mod, typedProject[mod]!.typedModule);
+    }
   }
   return { version, modules };
 }
