@@ -651,7 +651,7 @@ export function typecheckProject(
       m.package === CORE_PACKAGE ? [] : implicitImports,
       mainType,
     );
-    projectResult[ns] = { typedModule, errors };
+    projectResult[ns] = { typedModule, errors, package: m.package };
     deps[ns] = typedModule;
   }
 
@@ -659,6 +659,7 @@ export function typecheckProject(
 }
 
 export type TypecheckedModule = {
+  package: string;
   typedModule: TypedModule;
   errors: ErrorInfo[];
 };
