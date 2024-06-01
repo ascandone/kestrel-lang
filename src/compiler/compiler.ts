@@ -225,11 +225,18 @@ export class Compiler {
 
   private compileAsExpr(src: TypedExpr): CompileExprResult {
     switch (src.type) {
-      case "list-literal":
-        throw new Error("TODO compileAsExpr:list-lit");
-
       case "constant":
         return [[], constToString(src.value)];
+
+      case "list-literal": {
+        const buf: string[] = [];
+        const ret = src.values.reduceRight((acc, x) => {
+          const [sts, expr] = this.compileAsExpr(x);
+          buf.push(...sts);
+          return `List$Cons(${expr}, ${acc})`;
+        }, "List$Nil");
+        return [buf, ret];
+      }
 
       case "identifier": {
         if (src.resolution === undefined) {
@@ -332,9 +339,6 @@ export class Compiler {
     tailPosCaller: Binding<unknown> | undefined,
   ): string[] {
     switch (src.type) {
-      case "list-literal":
-        throw new Error("compile as statement: list lit");
-
       case "application": {
         if (this.isTailCall(src, tailPosCaller)) {
           this.tailCall = true;
@@ -350,6 +354,7 @@ export class Compiler {
         }
       }
 
+      case "list-literal":
       case "identifier":
       case "constant": {
         const [statements, expr] = this.compileAsExpr(src);
