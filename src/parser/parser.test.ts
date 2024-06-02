@@ -137,7 +137,7 @@ test("parse + and * prec with parens", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse unary ! expr", () => {
+test("parse unary ! expr", () => {
   const src = "let _ = ! b";
   expect(unsafeParse(src)).toMatchSnapshot();
 });

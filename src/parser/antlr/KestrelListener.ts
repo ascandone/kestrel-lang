@@ -9,14 +9,15 @@ import { ParensContext } from "./KestrelParser";
 import { StringContext } from "./KestrelParser";
 import { MulDivContext } from "./KestrelParser";
 import { AddSubContext } from "./KestrelParser";
-import { CharContext } from "./KestrelParser";
-import { IdContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
 import { EqContext } from "./KestrelParser";
-import { BoolOrContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
-import { BoolAndContext } from "./KestrelParser";
 import { CompContext } from "./KestrelParser";
+import { CharContext } from "./KestrelParser";
+import { BoolNotContext } from "./KestrelParser";
+import { IdContext } from "./KestrelParser";
+import { BoolOrContext } from "./KestrelParser";
+import { BoolAndContext } from "./KestrelParser";
 
 
 /**
@@ -93,30 +94,6 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitAddSub?: (ctx: AddSubContext) => void;
 	/**
-	 * Enter a parse tree produced by the `char`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 */
-	enterChar?: (ctx: CharContext) => void;
-	/**
-	 * Exit a parse tree produced by the `char`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 */
-	exitChar?: (ctx: CharContext) => void;
-	/**
-	 * Enter a parse tree produced by the `id`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 */
-	enterId?: (ctx: IdContext) => void;
-	/**
-	 * Exit a parse tree produced by the `id`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 */
-	exitId?: (ctx: IdContext) => void;
-	/**
 	 * Enter a parse tree produced by the `float`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -141,18 +118,6 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitEq?: (ctx: EqContext) => void;
 	/**
-	 * Enter a parse tree produced by the `BoolOr`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 */
-	enterBoolOr?: (ctx: BoolOrContext) => void;
-	/**
-	 * Exit a parse tree produced by the `BoolOr`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 */
-	exitBoolOr?: (ctx: BoolOrContext) => void;
-	/**
 	 * Enter a parse tree produced by the `int`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -165,18 +130,6 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitInt?: (ctx: IntContext) => void;
 	/**
-	 * Enter a parse tree produced by the `BoolAnd`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 */
-	enterBoolAnd?: (ctx: BoolAndContext) => void;
-	/**
-	 * Exit a parse tree produced by the `BoolAnd`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 */
-	exitBoolAnd?: (ctx: BoolAndContext) => void;
-	/**
 	 * Enter a parse tree produced by the `Comp`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -188,5 +141,65 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitComp?: (ctx: CompContext) => void;
+	/**
+	 * Enter a parse tree produced by the `char`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterChar?: (ctx: CharContext) => void;
+	/**
+	 * Exit a parse tree produced by the `char`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitChar?: (ctx: CharContext) => void;
+	/**
+	 * Enter a parse tree produced by the `BoolNot`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterBoolNot?: (ctx: BoolNotContext) => void;
+	/**
+	 * Exit a parse tree produced by the `BoolNot`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitBoolNot?: (ctx: BoolNotContext) => void;
+	/**
+	 * Enter a parse tree produced by the `id`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterId?: (ctx: IdContext) => void;
+	/**
+	 * Exit a parse tree produced by the `id`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitId?: (ctx: IdContext) => void;
+	/**
+	 * Enter a parse tree produced by the `BoolOr`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterBoolOr?: (ctx: BoolOrContext) => void;
+	/**
+	 * Exit a parse tree produced by the `BoolOr`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitBoolOr?: (ctx: BoolOrContext) => void;
+	/**
+	 * Enter a parse tree produced by the `BoolAnd`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterBoolAnd?: (ctx: BoolAndContext) => void;
+	/**
+	 * Exit a parse tree produced by the `BoolAnd`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitBoolAnd?: (ctx: BoolAndContext) => void;
 }
 

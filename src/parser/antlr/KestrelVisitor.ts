@@ -9,14 +9,15 @@ import { ParensContext } from "./KestrelParser";
 import { StringContext } from "./KestrelParser";
 import { MulDivContext } from "./KestrelParser";
 import { AddSubContext } from "./KestrelParser";
-import { CharContext } from "./KestrelParser";
-import { IdContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
 import { EqContext } from "./KestrelParser";
-import { BoolOrContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
-import { BoolAndContext } from "./KestrelParser";
 import { CompContext } from "./KestrelParser";
+import { CharContext } from "./KestrelParser";
+import { BoolNotContext } from "./KestrelParser";
+import { IdContext } from "./KestrelParser";
+import { BoolOrContext } from "./KestrelParser";
+import { BoolAndContext } from "./KestrelParser";
 
 
 /**
@@ -68,20 +69,6 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitAddSub?: (ctx: AddSubContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `char`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitChar?: (ctx: CharContext) => Result;
-	/**
-	 * Visit a parse tree produced by the `id`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitId?: (ctx: IdContext) => Result;
-	/**
 	 * Visit a parse tree produced by the `float`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -96,13 +83,6 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitEq?: (ctx: EqContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `BoolOr`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitBoolOr?: (ctx: BoolOrContext) => Result;
-	/**
 	 * Visit a parse tree produced by the `int`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -110,18 +90,46 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitInt?: (ctx: IntContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `BoolAnd`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitBoolAnd?: (ctx: BoolAndContext) => Result;
-	/**
 	 * Visit a parse tree produced by the `Comp`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitComp?: (ctx: CompContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `char`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitChar?: (ctx: CharContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `BoolNot`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBoolNot?: (ctx: BoolNotContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `id`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitId?: (ctx: IdContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `BoolOr`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBoolOr?: (ctx: BoolOrContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `BoolAnd`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBoolAnd?: (ctx: BoolAndContext) => Result;
 }
 

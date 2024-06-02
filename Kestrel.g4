@@ -14,7 +14,8 @@ program: declaration* EOF;
 declaration: 'let' ID '=' expr;
 
 expr:
-	expr op = ('*' | '/' | '*.' | '/.' | '%') expr		# MulDiv
+	op = '!' expr										# BoolNot
+	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr	# MulDiv
 	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr	# AddSub
 	| expr op = ('==' | '!=') expr						# Eq
 	| expr op = ('<' | '<=' | '>' | '>=') expr			# Comp

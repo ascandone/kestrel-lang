@@ -70,6 +70,17 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 
+  visitBoolNot = (ctx: ParensContext): UntypedExpr => ({
+    type: "application",
+    caller: {
+      type: "identifier",
+      name: "!",
+      span: [ctx.start.start, ctx.start.start + 1],
+    },
+    args: [this.visit(ctx.expr())],
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+
   visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());
   visitAddSub = makeInfixOp;
   visitMulDiv = makeInfixOp;
