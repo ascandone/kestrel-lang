@@ -1,10 +1,12 @@
 import antlr4 from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
+  AddSubContext,
   CharContext,
   DeclarationContext,
   FloatContext,
   IntContext,
+  MulDivContext,
   StringContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
@@ -45,6 +47,22 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       type: "char",
       value: ctx.getText().slice(1, -1),
     },
+  });
+
+  visitAddSub = (ctx: AddSubContext): UntypedExpr => ({
+    type: "infix",
+    left: new ExpressionVisitor().visit(ctx.expr(0)),
+    right: new ExpressionVisitor().visit(ctx.expr(1)),
+    operator: ctx._op.text,
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+
+  visitMulDiv = (ctx: MulDivContext): UntypedExpr => ({
+    type: "infix",
+    left: new ExpressionVisitor().visit(ctx.expr(0)),
+    right: new ExpressionVisitor().visit(ctx.expr(1)),
+    operator: ctx._op.text,
+    span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 }
 

@@ -14,11 +14,11 @@ program: declaration* EOF;
 declaration: 'let' ID '=' expr;
 
 expr:
-	expr ('*' | '/') expr	# MulDiv
-	| expr ('+' | '-') expr	# AddSub
-	| INT					# int
-	| FLOAT					# float
-	| CHAR					# char
-	| STRING				# string
-	| ID					# id
-	| '(' expr ')'			# parens;
+	expr op = ('*' | '/') expr			# MulDiv
+	| expr op = ('+' | '-' | '+.') expr	# AddSub
+	| INT								# int
+	| FLOAT								# float
+	| CHAR								# char
+	| STRING							# string
+	| ID								# id
+	| '(' expr ')'						# parens;

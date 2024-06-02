@@ -97,32 +97,32 @@ test.skip("parse strings with escaped quotes", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse + expr", () => {
+test("parse + expr", () => {
   const src = "let _ = 1 + 2";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("+ is left-associative", () => {
+test("+ is left-associative", () => {
   const src = "let _ = 1 + 2 + 3";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse +. expr", () => {
+test("parse +. expr", () => {
   const src = "let _ = 1 +. 2";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse - expr", () => {
+test("parse - expr", () => {
   const src = "let _ = 1 - 2";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse * expr", () => {
+test("parse * expr", () => {
   const src = "let _ = 1 * 2";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse + and * prec", () => {
+test("parse + and * prec", () => {
   const src = "let _ = 1 - 2 * 3";
   expect(unsafeParse(src)).toMatchSnapshot();
 });

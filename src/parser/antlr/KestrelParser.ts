@@ -27,13 +27,14 @@ export default class KestrelParser extends Parser {
 	public static readonly T__5 = 6;
 	public static readonly T__6 = 7;
 	public static readonly T__7 = 8;
-	public static readonly ID = 9;
-	public static readonly INT = 10;
-	public static readonly CHAR = 11;
-	public static readonly STRING = 12;
-	public static readonly FLOAT = 13;
-	public static readonly NEWLINE = 14;
-	public static readonly WS = 15;
+	public static readonly T__8 = 9;
+	public static readonly ID = 10;
+	public static readonly INT = 11;
+	public static readonly CHAR = 12;
+	public static readonly STRING = 13;
+	public static readonly FLOAT = 14;
+	public static readonly NEWLINE = 15;
+	public static readonly WS = 16;
 	public static readonly EOF = Token.EOF;
 	public static readonly RULE_program = 0;
 	public static readonly RULE_declaration = 1;
@@ -41,16 +42,16 @@ export default class KestrelParser extends Parser {
 	public static readonly literalNames: (string | null)[] = [ null, "'let'", 
                                                             "'='", "'*'", 
                                                             "'/'", "'+'", 
-                                                            "'-'", "'('", 
-                                                            "')'" ];
+                                                            "'-'", "'+.'", 
+                                                            "'('", "')'" ];
 	public static readonly symbolicNames: (string | null)[] = [ null, null, 
                                                              null, null, 
                                                              null, null, 
                                                              null, null, 
-                                                             null, "ID", 
-                                                             "INT", "CHAR", 
-                                                             "STRING", "FLOAT", 
-                                                             "NEWLINE", 
+                                                             null, null, 
+                                                             "ID", "INT", 
+                                                             "CHAR", "STRING", 
+                                                             "FLOAT", "NEWLINE", 
                                                              "WS" ];
 	// tslint:disable:no-trailing-whitespace
 	public static readonly ruleNames: string[] = [
@@ -164,7 +165,7 @@ export default class KestrelParser extends Parser {
 			this.state = 29;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case 10:
+			case 11:
 				{
 				localctx = new IntContext(this, localctx);
 				this._ctx = localctx;
@@ -174,7 +175,7 @@ export default class KestrelParser extends Parser {
 				this.match(KestrelParser.INT);
 				}
 				break;
-			case 13:
+			case 14:
 				{
 				localctx = new FloatContext(this, localctx);
 				this._ctx = localctx;
@@ -183,7 +184,7 @@ export default class KestrelParser extends Parser {
 				this.match(KestrelParser.FLOAT);
 				}
 				break;
-			case 11:
+			case 12:
 				{
 				localctx = new CharContext(this, localctx);
 				this._ctx = localctx;
@@ -192,7 +193,7 @@ export default class KestrelParser extends Parser {
 				this.match(KestrelParser.CHAR);
 				}
 				break;
-			case 12:
+			case 13:
 				{
 				localctx = new StringContext(this, localctx);
 				this._ctx = localctx;
@@ -201,7 +202,7 @@ export default class KestrelParser extends Parser {
 				this.match(KestrelParser.STRING);
 				}
 				break;
-			case 9:
+			case 10:
 				{
 				localctx = new IdContext(this, localctx);
 				this._ctx = localctx;
@@ -210,17 +211,17 @@ export default class KestrelParser extends Parser {
 				this.match(KestrelParser.ID);
 				}
 				break;
-			case 7:
+			case 8:
 				{
 				localctx = new ParensContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
 				this.state = 25;
-				this.match(KestrelParser.T__6);
+				this.match(KestrelParser.T__7);
 				this.state = 26;
 				this.expr(0);
 				this.state = 27;
-				this.match(KestrelParser.T__7);
+				this.match(KestrelParser.T__8);
 				}
 				break;
 			default:
@@ -249,9 +250,10 @@ export default class KestrelParser extends Parser {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 8)");
 						}
 						this.state = 32;
+						(localctx as MulDivContext)._op = this._input.LT(1);
 						_la = this._input.LA(1);
 						if(!(_la===3 || _la===4)) {
-						this._errHandler.recoverInline(this);
+						    (localctx as MulDivContext)._op = this._errHandler.recoverInline(this);
 						}
 						else {
 							this._errHandler.reportMatch(this);
@@ -270,9 +272,10 @@ export default class KestrelParser extends Parser {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 7)");
 						}
 						this.state = 35;
+						(localctx as AddSubContext)._op = this._input.LT(1);
 						_la = this._input.LA(1);
-						if(!(_la===5 || _la===6)) {
-						this._errHandler.recoverInline(this);
+						if(!((((_la) & ~0x1F) === 0 && ((1 << _la) & 224) !== 0))) {
+						    (localctx as AddSubContext)._op = this._errHandler.recoverInline(this);
 						}
 						else {
 							this._errHandler.reportMatch(this);
@@ -323,15 +326,15 @@ export default class KestrelParser extends Parser {
 		return true;
 	}
 
-	public static readonly _serializedATN: number[] = [4,1,15,43,2,0,7,0,2,
+	public static readonly _serializedATN: number[] = [4,1,16,43,2,0,7,0,2,
 	1,7,1,2,2,7,2,1,0,5,0,8,8,0,10,0,12,0,11,9,0,1,0,1,0,1,1,1,1,1,1,1,1,1,
 	1,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,3,2,30,8,2,1,2,1,2,1,2,1,2,1,
-	2,1,2,5,2,38,8,2,10,2,12,2,41,9,2,1,2,0,1,4,3,0,2,4,0,2,1,0,3,4,1,0,5,6,
+	2,1,2,5,2,38,8,2,10,2,12,2,41,9,2,1,2,0,1,4,3,0,2,4,0,2,1,0,3,4,1,0,5,7,
 	47,0,9,1,0,0,0,2,14,1,0,0,0,4,29,1,0,0,0,6,8,3,2,1,0,7,6,1,0,0,0,8,11,1,
 	0,0,0,9,7,1,0,0,0,9,10,1,0,0,0,10,12,1,0,0,0,11,9,1,0,0,0,12,13,5,0,0,1,
-	13,1,1,0,0,0,14,15,5,1,0,0,15,16,5,9,0,0,16,17,5,2,0,0,17,18,3,4,2,0,18,
-	3,1,0,0,0,19,20,6,2,-1,0,20,30,5,10,0,0,21,30,5,13,0,0,22,30,5,11,0,0,23,
-	30,5,12,0,0,24,30,5,9,0,0,25,26,5,7,0,0,26,27,3,4,2,0,27,28,5,8,0,0,28,
+	13,1,1,0,0,0,14,15,5,1,0,0,15,16,5,10,0,0,16,17,5,2,0,0,17,18,3,4,2,0,18,
+	3,1,0,0,0,19,20,6,2,-1,0,20,30,5,11,0,0,21,30,5,14,0,0,22,30,5,12,0,0,23,
+	30,5,13,0,0,24,30,5,10,0,0,25,26,5,8,0,0,26,27,3,4,2,0,27,28,5,9,0,0,28,
 	30,1,0,0,0,29,19,1,0,0,0,29,21,1,0,0,0,29,22,1,0,0,0,29,23,1,0,0,0,29,24,
 	1,0,0,0,29,25,1,0,0,0,30,39,1,0,0,0,31,32,10,8,0,0,32,33,7,0,0,0,33,38,
 	3,4,2,9,34,35,10,7,0,0,35,36,7,1,0,0,36,38,3,4,2,8,37,31,1,0,0,0,37,34,
@@ -492,6 +495,7 @@ export class StringContext extends ExprContext {
 	}
 }
 export class MulDivContext extends ExprContext {
+	public _op!: Token;
 	constructor(parser: KestrelParser, ctx: ExprContext) {
 		super(parser, ctx.parentCtx, ctx.invokingState);
 		super.copyFrom(ctx);
@@ -522,6 +526,7 @@ export class MulDivContext extends ExprContext {
 	}
 }
 export class AddSubContext extends ExprContext {
+	public _op!: Token;
 	constructor(parser: KestrelParser, ctx: ExprContext) {
 		super(parser, ctx.parentCtx, ctx.invokingState);
 		super.copyFrom(ctx);
