@@ -26,4 +26,5 @@ expr:
 	| CHAR												# char
 	| STRING											# string
 	| ID												# id
-	| '(' expr ')'										# parens;
+	| '(' expr ')'										# parens
+	| expr '(' expr* ')'								# call;

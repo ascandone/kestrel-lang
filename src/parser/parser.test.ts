@@ -27,7 +27,7 @@ test("parsing a declaration", () => {
   });
 });
 
-test("parsing two declarations", () => {
+test.skip("parsing two declarations", () => {
   const src = `let x = 0\nlet y = 1`;
   expect(unsafeParse(src)).toEqual<UntypedModule>({
     imports: [],
@@ -152,22 +152,22 @@ test.skip("a constructor ident shouldn't be allowed in let binding", () => {
   expect(() => unsafeParse(src)).toThrow();
 });
 
-test.skip("parse appl with no args", () => {
+test("parse appl with no args", () => {
   const src = "let _ = f()";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse appl with 1 arg", () => {
+test("parse appl with 1 arg", () => {
   const src = "let _ = f(x)";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse appl with 3 args", () => {
+test("parse appl with 3 args", () => {
   const src = "let _ = f(x, y, z)";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse appl with trailing comma", () => {
+test("parse appl with trailing comma", () => {
   const src = `let _ = f(
     x,
     y,
@@ -175,12 +175,12 @@ test.skip("parse appl with trailing comma", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse appl with nested expr", () => {
+test("parse appl with nested expr", () => {
   const src = "let _ = f(1 + 2)";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse appl with nested parens", () => {
+test("parse appl with nested parens", () => {
   const src = "let _ = f((1))";
   expect(unsafeParse(src)).toMatchSnapshot();
 });

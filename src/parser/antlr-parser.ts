@@ -1,6 +1,7 @@
-import antlr4 from "antlr4";
+import antlr4, { ErrorListener } from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
+  CallContext,
   CharContext,
   DeclarationContext,
   ExprContext,
@@ -11,7 +12,7 @@ import Parser, {
   StringContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
-import { UntypedDeclaration, UntypedExpr, UntypedModule } from "./ast";
+import { Span, UntypedDeclaration, UntypedExpr, UntypedModule } from "./ast";
 
 interface InfixExprContext extends ExprContext {
   _op: { text: string };
@@ -81,6 +82,16 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 
+  visitCall = (ctx: CallContext): UntypedExpr => ({
+    type: "application",
+    caller: this.visit(ctx.expr(0)),
+    args: ctx
+      .expr_list()
+      .slice(1)
+      .map((e) => this.visit(e)),
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+
   visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());
   visitAddSub = makeInfixOp;
   visitMulDiv = makeInfixOp;
@@ -109,6 +120,31 @@ class DeclarationVisitor extends Visitor<UntypedDeclaration> {
   };
 }
 
+class ParsingError {
+  constructor(
+    public readonly span: Span,
+    public readonly description: string,
+  ) {}
+}
+
+class KestrelErrorListener extends ErrorListener<antlr4.Token> {
+  errors: ParsingError[] = [];
+
+  syntaxError(
+    _recognizer: antlr4.Recognizer<antlr4.Token>,
+    offendingSymbol: antlr4.Token,
+    _line: number,
+    _column: number,
+    msg: string,
+  ): void {
+    this.errors.push(
+      new ParsingError([offendingSymbol.start, offendingSymbol.stop], msg),
+    );
+
+    throw new Error(msg);
+  }
+}
+
 export function unsafeParse(input: string): UntypedModule {
   const chars = new antlr4.InputStream(input);
 
@@ -119,6 +155,7 @@ export function unsafeParse(input: string): UntypedModule {
 
   const tokens = new antlr4.CommonTokenStream(lexer);
   const parser = new Parser(tokens);
+  parser.addErrorListener(new KestrelErrorListener());
 
   const declCtx = parser.program();
 
