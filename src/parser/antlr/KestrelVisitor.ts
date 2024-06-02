@@ -6,8 +6,10 @@ import {ParseTreeVisitor} from 'antlr4';
 import { ProgramContext } from "./KestrelParser";
 import { DeclarationContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
+import { StringContext } from "./KestrelParser";
 import { MulDivContext } from "./KestrelParser";
 import { AddSubContext } from "./KestrelParser";
+import { CharContext } from "./KestrelParser";
 import { IdContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
@@ -41,6 +43,13 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitParens?: (ctx: ParensContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `string`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitString?: (ctx: StringContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `MulDiv`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -54,6 +63,13 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitAddSub?: (ctx: AddSubContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `char`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitChar?: (ctx: CharContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `id`
 	 * labeled alternative in `KestrelParser.expr`.

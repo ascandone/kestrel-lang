@@ -6,8 +6,10 @@ import {ParseTreeListener} from "antlr4";
 import { ProgramContext } from "./KestrelParser";
 import { DeclarationContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
+import { StringContext } from "./KestrelParser";
 import { MulDivContext } from "./KestrelParser";
 import { AddSubContext } from "./KestrelParser";
+import { CharContext } from "./KestrelParser";
 import { IdContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
@@ -51,6 +53,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitParens?: (ctx: ParensContext) => void;
 	/**
+	 * Enter a parse tree produced by the `string`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterString?: (ctx: StringContext) => void;
+	/**
+	 * Exit a parse tree produced by the `string`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitString?: (ctx: StringContext) => void;
+	/**
 	 * Enter a parse tree produced by the `MulDiv`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -74,6 +88,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitAddSub?: (ctx: AddSubContext) => void;
+	/**
+	 * Enter a parse tree produced by the `char`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterChar?: (ctx: CharContext) => void;
+	/**
+	 * Exit a parse tree produced by the `char`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitChar?: (ctx: CharContext) => void;
 	/**
 	 * Enter a parse tree produced by the `id`
 	 * labeled alternative in `KestrelParser.expr`.

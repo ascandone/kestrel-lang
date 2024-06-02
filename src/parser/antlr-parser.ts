@@ -1,9 +1,11 @@
 import antlr4 from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
+  CharContext,
   DeclarationContext,
   FloatContext,
   IntContext,
+  StringContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import { UntypedDeclaration, UntypedExpr, UntypedModule } from "./ast";
@@ -24,6 +26,24 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     value: {
       type: "float",
       value: Number(ctx.getText()),
+    },
+  });
+
+  visitString = (ctx: StringContext): UntypedExpr => ({
+    type: "constant",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    value: {
+      type: "string",
+      value: ctx.getText().slice(1, -1),
+    },
+  });
+
+  visitChar = (ctx: CharContext): UntypedExpr => ({
+    type: "constant",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    value: {
+      type: "char",
+      value: ctx.getText().slice(1, -1),
     },
   });
 }

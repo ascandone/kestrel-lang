@@ -72,22 +72,22 @@ test("parse float", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse empty strings", () => {
+test("parse empty strings", () => {
   const src = `let _ = ""`;
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse nonempty strings", () => {
+test("parse nonempty strings", () => {
   const src = `let _ = "abc"`;
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse chars", () => {
+test("parse chars", () => {
   const src = `let _ = 'a'`;
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse strings with newlines", () => {
+test("parse strings with newlines", () => {
   const src = `let _ = "ab\\nc"`;
   expect(unsafeParse(src)).toMatchSnapshot();
 });
