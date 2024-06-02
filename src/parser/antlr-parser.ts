@@ -5,6 +5,7 @@ import Parser, {
   DeclarationContext,
   ExprContext,
   FloatContext,
+  IdContext,
   IntContext,
   ParensContext,
   StringContext,
@@ -60,6 +61,13 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       type: "char",
       value: ctx.getText().slice(1, -1),
     },
+  });
+
+  visitId = (ctx: IdContext): UntypedExpr => ({
+    type: "identifier",
+    namespace: undefined,
+    name: ctx.getText(),
+    span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 
   visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());

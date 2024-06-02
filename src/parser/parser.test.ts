@@ -127,7 +127,7 @@ test("parse + and * prec", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse <= and && prec", () => {
+test("parse <= and && prec", () => {
   const src = "let _ = a <= b || y";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
@@ -142,7 +142,7 @@ test.skip("parse unary ! expr", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse ident", () => {
+test("parse ident", () => {
   const src = "let _ = x";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
