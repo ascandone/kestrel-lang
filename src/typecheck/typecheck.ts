@@ -644,21 +644,27 @@ export function typecheckProject(
       // A module might import a module that do not exist
       continue;
     }
-    const tc = typecheck(
+    const [typedModule, errors] = typecheck(
       ns,
       m.module,
       deps,
       m.package === CORE_PACKAGE ? [] : implicitImports,
       mainType,
     );
-    projectResult[ns] = tc;
-    deps[ns] = tc[0];
+    projectResult[ns] = { typedModule, errors, package: m.package };
+    deps[ns] = typedModule;
   }
 
   return projectResult;
 }
 
-export type ProjectTypeCheckResult = Record<string, [TypedModule, ErrorInfo[]]>;
+export type TypecheckedModule = {
+  package: string;
+  typedModule: TypedModule;
+  errors: ErrorInfo[];
+};
+
+export type ProjectTypeCheckResult = Record<string, TypecheckedModule>;
 
 function unifyErr(node: SpanMeta, e: UnifyError): ErrorInfo {
   switch (e.type) {

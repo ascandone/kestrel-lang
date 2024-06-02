@@ -149,9 +149,11 @@ class State {
     const diagnostics: PublishDiagnosticsParams[] = [];
 
     const typecheckedProject = typecheckProject(untypedProject);
-    for (const [k, [typed, errors]] of Object.entries(typecheckedProject)) {
+    for (const [k, { typedModule, errors }] of Object.entries(
+      typecheckedProject,
+    )) {
       const module = this.modulesByNs[k]!;
-      this.modulesByNs[k]!.typed = typed;
+      this.modulesByNs[k]!.typed = typedModule;
       diagnostics.push(errorInfoToDiagnostic(errors, module.document));
     }
 

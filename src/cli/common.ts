@@ -1,6 +1,11 @@
 import { readFile, readdir } from "node:fs/promises";
 import { parse, UntypedModule } from "../parser";
-import { typecheckProject, TypedModule, UntypedProject } from "../typecheck";
+import {
+  TypecheckedModule,
+  typecheckProject,
+  TypedModule,
+  UntypedProject,
+} from "../typecheck";
 import { exit } from "node:process";
 import { compileProject, defaultEntryPoint } from "../compiler";
 import { col } from "../utils/colors";
@@ -83,7 +88,7 @@ async function readProject(
   return res;
 }
 
-export type TypedProject = Record<string, TypedModule>;
+export type TypedProject = Record<string, TypecheckedModule>;
 
 export async function check(path: string): Promise<TypedProject | undefined> {
   const rawProject = await readProjectWithDeps(path);
@@ -129,13 +134,13 @@ export async function checkProject(
   const res: TypedProject = {};
   let errorsCount = 0,
     warningsCount = 0;
-  for (const [ns, [program, errors]] of Object.entries(typedProject)) {
-    res[ns] = program;
-    if (errors.length !== 0) {
+  for (const [ns, m] of Object.entries(typedProject)) {
+    res[ns] = m;
+    if (m.errors.length !== 0) {
       console.log(col.blue.tag`-------- ${ns}.${EXTENSION}\n`);
     }
 
-    for (const error of errors) {
+    for (const error of m.errors) {
       if (error.description.severity === "warning") {
         warningsCount++;
       } else {
@@ -182,7 +187,12 @@ export async function compilePath(
   }
 
   try {
-    return compileProject(typedProject, {
+    const project: Record<string, TypedModule> = {};
+    for (const [k, v] of Object.entries(typedProject)) {
+      project[k] = v.typedModule;
+    }
+
+    return compileProject(project, {
       externs,
       optimize,
       entrypoint: {

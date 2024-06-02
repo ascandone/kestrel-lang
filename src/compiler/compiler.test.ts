@@ -1767,7 +1767,7 @@ function compileSrcWithDeps(rawProject: Record<string, string>): string {
     testEntryPoint.type,
   );
   const Main = res.Main!;
-  return new Compiler().compile(Main[0], "Main");
+  return new Compiler().compile(Main.typedModule, "Main");
 }
 
 function parseProject(
@@ -1807,10 +1807,10 @@ function compileRawProject(
   );
 
   const typedProject: Record<string, TypedModule> = {};
-  for (const [ns, [typedModule, errs]] of Object.entries(typecheckResult)) {
-    if (errs.filter((e) => e.description.severity === "error").length !== 0) {
+  for (const [ns, { typedModule, errors }] of Object.entries(typecheckResult)) {
+    if (errors.filter((e) => e.description.severity === "error").length !== 0) {
       throw new Error(
-        "Got errors while type checking: \n" + JSON.stringify(errs, null, 2),
+        "Got errors while type checking: \n" + JSON.stringify(errors, null, 2),
       );
     }
 
