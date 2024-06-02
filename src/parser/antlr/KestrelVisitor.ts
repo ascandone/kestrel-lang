@@ -12,7 +12,11 @@ import { AddSubContext } from "./KestrelParser";
 import { CharContext } from "./KestrelParser";
 import { IdContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
+import { EqContext } from "./KestrelParser";
+import { BoolOrContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
+import { BoolAndContext } from "./KestrelParser";
+import { CompContext } from "./KestrelParser";
 
 
 /**
@@ -85,11 +89,39 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitFloat?: (ctx: FloatContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `Eq`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitEq?: (ctx: EqContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `BoolOr`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBoolOr?: (ctx: BoolOrContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `int`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitInt?: (ctx: IntContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `BoolAnd`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBoolAnd?: (ctx: BoolAndContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `Comp`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitComp?: (ctx: CompContext) => Result;
 }
 

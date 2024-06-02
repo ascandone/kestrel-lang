@@ -2,8 +2,10 @@ import antlr4 from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
   AddSubContext,
+  BoolAndContext,
   CharContext,
   DeclarationContext,
+  ExprContext,
   FloatContext,
   IntContext,
   MulDivContext,
@@ -11,6 +13,19 @@ import Parser, {
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import { UntypedDeclaration, UntypedExpr, UntypedModule } from "./ast";
+
+interface InfixExprContext extends ExprContext {
+  _op: { text: string };
+  expr(nth: number): ExprContext;
+}
+
+const makeInfixOp = <Ctx extends InfixExprContext>(ctx: Ctx): UntypedExpr => ({
+  type: "infix",
+  left: new ExpressionVisitor().visit(ctx.expr(0)),
+  right: new ExpressionVisitor().visit(ctx.expr(1)),
+  operator: ctx._op.text,
+  span: [ctx.start.start, ctx.stop!.stop + 1],
+});
 
 class ExpressionVisitor extends Visitor<UntypedExpr> {
   visitInt = (ctx: IntContext): UntypedExpr => ({
@@ -49,21 +64,11 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     },
   });
 
-  visitAddSub = (ctx: AddSubContext): UntypedExpr => ({
-    type: "infix",
-    left: new ExpressionVisitor().visit(ctx.expr(0)),
-    right: new ExpressionVisitor().visit(ctx.expr(1)),
-    operator: ctx._op.text,
-    span: [ctx.start.start, ctx.stop!.stop + 1],
-  });
-
-  visitMulDiv = (ctx: MulDivContext): UntypedExpr => ({
-    type: "infix",
-    left: new ExpressionVisitor().visit(ctx.expr(0)),
-    right: new ExpressionVisitor().visit(ctx.expr(1)),
-    operator: ctx._op.text,
-    span: [ctx.start.start, ctx.stop!.stop + 1],
-  });
+  visitAddSub = makeInfixOp;
+  visitMulDiv = makeInfixOp;
+  visitBoolAnd = makeInfixOp;
+  visitBoolOr = makeInfixOp;
+  visitComp = makeInfixOp;
 }
 
 class DeclarationVisitor extends Visitor<UntypedDeclaration> {
