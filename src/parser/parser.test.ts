@@ -132,7 +132,7 @@ test.skip("parse <= and && prec", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse + and * prec with parens", () => {
+test("parse + and * prec with parens", () => {
   const src = "let _ = (1 - 2) * 3";
   expect(unsafeParse(src)).toMatchSnapshot();
 });

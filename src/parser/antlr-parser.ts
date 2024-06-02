@@ -1,14 +1,12 @@
 import antlr4 from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
-  AddSubContext,
-  BoolAndContext,
   CharContext,
   DeclarationContext,
   ExprContext,
   FloatContext,
   IntContext,
-  MulDivContext,
+  ParensContext,
   StringContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
@@ -64,6 +62,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     },
   });
 
+  visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());
   visitAddSub = makeInfixOp;
   visitMulDiv = makeInfixOp;
   visitBoolAnd = makeInfixOp;
