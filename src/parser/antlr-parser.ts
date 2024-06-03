@@ -427,7 +427,10 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
               typeHint: {
                 mono: typeHint,
                 span: typeHint.span,
-                where: [],
+                where: ctx._typeHint.traitImplClause_list().map((t) => ({
+                  typeVar: t.ID().getText(),
+                  traits: t.TYPE_ID_list().map((t) => t.getText()),
+                })),
               },
             }),
         binding: {
@@ -462,7 +465,10 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
         typeHint: {
           mono: typeHint,
           span: typeHint.span,
-          where: [],
+          where: ctx._typeHint.traitImplClause_list().map((t) => ({
+            typeVar: t.ID().getText(),
+            traits: t.TYPE_ID_list().map((t) => t.getText()),
+          })),
         },
         binding: {
           name: normalizeInfix(ctx._binding.text),

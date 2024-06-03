@@ -4713,6 +4713,53 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
 }
 `;
 
+exports[`traits > parses many traits in a polytype for the same tvar 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": true,
+      "pub": false,
+      "span": [
+        0,
+        32,
+      ],
+      "typeHint": {
+        "mono": {
+          "ident": "a",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "var",
+        },
+        "span": [
+          14,
+          15,
+        ],
+        "where": [
+          {
+            "traits": [
+              "Ord",
+              "Eq",
+            ],
+            "typeVar": "a",
+          },
+        ],
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`traits > parses traits in a polytype 1`] = `
 {
   "declarations": [

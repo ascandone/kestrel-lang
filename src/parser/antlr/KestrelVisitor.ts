@@ -20,6 +20,7 @@ import { PubExposingContext } from "./KestrelParser";
 import { ParamsListContext } from "./KestrelParser";
 import { TypeVariantsContext } from "./KestrelParser";
 import { PolyTypeContext } from "./KestrelParser";
+import { TraitImplClauseContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
 import { FnTypeContext } from "./KestrelParser";
 import { GenericTypeContext } from "./KestrelParser";
@@ -180,6 +181,12 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitPolyType?: (ctx: PolyTypeContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.traitImplClause`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTraitImplClause?: (ctx: TraitImplClauseContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `namedType`
 	 * labeled alternative in `KestrelParser.type`.

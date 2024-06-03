@@ -63,7 +63,10 @@ paramsList: '<' ID (',' ID)* '>';
 typeVariants:
 	typeConstructorDecl (',' typeConstructorDecl)* ','?;
 
-polyType: type;
+polyType:
+	type ('where' traitImplClause (',' traitImplClause)*)?;
+traitImplClause: ID ':' (TYPE_ID (',' TYPE_ID)*);
+
 type:
 	(moduleNamespace '.')? name = TYPE_ID (
 		'<' type (',' type)* '>'

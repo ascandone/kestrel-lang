@@ -453,8 +453,13 @@ describe("type hints", () => {
 });
 
 describe("traits", () => {
-  test.skip("parses traits in a polytype", () => {
+  test("parses traits in a polytype", () => {
     const src = "extern let x: a where a: Ord";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("parses many traits in a polytype for the same tvar", () => {
+    const src = "extern let x: a where a: Ord, Eq";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });
