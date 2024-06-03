@@ -383,13 +383,13 @@ type DeclarationType =
 class ExposingVisitor extends Visitor<UntypedExposedValue> {
   visitValueExposing = (ctx: ValueExposingContext): UntypedExposedValue => ({
     type: "value",
-    name: ctx._name.text,
+    name: normalizeInfix(ctx._name.text),
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 
   visitTypeExposing = (ctx: TypeExposingContext): UntypedExposedValue => ({
     type: "type",
-    exposeImpl: ctx.exposingNested() != null,
+    exposeImpl: ctx.EXPOSING_NESTED() != null,
     name: ctx._name.text,
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
@@ -435,8 +435,6 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
   visitExternLetDeclaration = (
     ctx: ExternLetDeclarationContext,
   ): DeclarationType => {
-    const binding = ctx.ID();
-
     const typeHint: TypeAst =
       // @ts-ignore
       ctx._typeHint.accept(new TypeVisitor())[0];
@@ -452,8 +450,8 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
           where: [],
         },
         binding: {
-          name: binding.getText(),
-          span: [binding.symbol.start, binding.symbol.stop + 1],
+          name: normalizeInfix(ctx._binding.text),
+          span: [ctx._binding.start, ctx._binding.stop + 1],
         },
         span: [ctx.start.start, ctx.stop!.stop + 1],
       },
@@ -467,7 +465,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       pub:
         ctx._pub === undefined
           ? false
-          : ctx._pub.exposingNested()?.children == null
+          : ctx._pub.EXPOSING_NESTED() == null
             ? true
             : "..",
       name: ctx._name.text,
@@ -582,4 +580,8 @@ export function unsafeParse(input: string): UntypedModule {
       return [];
     }),
   };
+}
+
+function normalizeInfix(name: string) {
+  return name.startsWith("(") ? name.slice(1, -1) : name;
 }

@@ -614,7 +614,7 @@ describe("extern bindings", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("let decls defining infix operators", () => {
+  test("let decls defining infix operators", () => {
     const src = `
       extern let (>=>): ExampleType
     `;
@@ -664,7 +664,7 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("unqualified import of an infix value", () => {
+  test("unqualified import of an infix value", () => {
     const src = "import A.{(+)}";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

@@ -3,6 +3,8 @@ grammar Kestrel;
 // Common
 LineComment: '//' ~[\r\n]* -> channel(HIDDEN);
 
+EXPOSING_NESTED: '(' '..' ')';
+INFIX_ID: '(' INFIX_CHAR+ ')';
 ID: [_a-z]+; // TODO differentiate between ident and bindings
 TYPE_ID: [A-Z]+ [a-zA-Z0-9]*;
 INT: [0-9]+;
@@ -22,18 +24,17 @@ import_:
 	)?;
 
 importExposing:
-	name = ID							# valueExposing
-	| name = TYPE_ID exposingNested?	# typeExposing;
+	name = (ID | INFIX_ID)				# valueExposing
+	| name = TYPE_ID EXPOSING_NESTED?	# typeExposing;
 
 declaration:
-	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr						# letDeclaration
-	| 'extern' pub = 'pub'? 'let' ID ':' typeHint = polyType						# externLetDeclaration
+	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr							# letDeclaration
+	| 'extern' pub = 'pub'? 'let' (binding = (INFIX_ID | ID)) ':' typeHint = polyType	#
+		externLetDeclaration
 	| pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants? '}'	# typeDeclaration
 	| 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?						# externTypeDeclaration;
 
-exposingNested: '(' '..' ')';
-
-pubExposing: 'pub' exposingNested?;
+pubExposing: 'pub' EXPOSING_NESTED?;
 paramsList: '<' ID (',' ID)* '>';
 
 typeVariants:
@@ -100,3 +101,19 @@ matchPattern:
 	| STRING													# stringPattern
 	| <assoc = right> matchPattern '::' matchPattern			# consPattern
 	| '(' matchPattern ',' matchPattern (',' matchPattern)* ')'	# tuplePattern;
+
+INFIX_CHAR:
+	'+'
+	| '-'
+	| '*'
+	| '/'
+	| '^'
+	| '='
+	| '>'
+	| '<'
+	| '.'
+	| ':'
+	| '!'
+	| '%'
+	| '&'
+	| '|';
