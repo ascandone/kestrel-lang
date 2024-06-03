@@ -113,23 +113,19 @@ class TypeVisitor extends Visitor<TypeAst> {
 }
 
 class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
-  visitMatchIdent = (ctx: MatchIdentContext): UntypedMatchPattern => {
-    return {
-      type: "identifier",
-      span: [ctx.start.start, ctx.stop!.stop + 1],
-      name: ctx.ID().getText(),
-    };
-  };
+  visitMatchIdent = (ctx: MatchIdentContext): UntypedMatchPattern => ({
+    type: "identifier",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    name: ctx.ID().getText(),
+  });
 
-  visitConstructor = (ctx: ConstructorContext): UntypedMatchPattern => {
-    return {
-      type: "constructor",
-      span: [ctx.start.start, ctx.stop!.stop + 1],
-      name: ctx.TYPE_ID().getText(),
-      namespace: undefined,
-      args: [],
-    };
-  };
+  visitConstructor = (ctx: ConstructorContext): UntypedMatchPattern => ({
+    type: "constructor",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    name: ctx.TYPE_ID().getText(),
+    namespace: undefined,
+    args: [],
+  });
 }
 
 class ExpressionVisitor extends Visitor<UntypedExpr> {
