@@ -52,6 +52,7 @@ import { BlockContentExprContext } from "./KestrelParser";
 import { BlockContentLetHashExprContext } from "./KestrelParser";
 import { BlockContentLetExprContext } from "./KestrelParser";
 import { MatchIdentContext } from "./KestrelParser";
+import { ConstructorContext } from "./KestrelParser";
 
 
 /**
@@ -392,5 +393,12 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitMatchIdent?: (ctx: MatchIdentContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `constructor`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitConstructor?: (ctx: ConstructorContext) => Result;
 }
 

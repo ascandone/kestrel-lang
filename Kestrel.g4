@@ -87,4 +87,4 @@ blockContent:
 	| 'let' binding = ID '=' value = expr ';' body = blockContent # blockContentLetExpr;
 
 // Pattern matching syntax
-matchPattern: ID # matchIdent;
+matchPattern: ID # matchIdent | TYPE_ID # constructor;

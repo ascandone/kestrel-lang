@@ -9,6 +9,7 @@ import Parser, {
   CallContext,
   CharContext,
   ConsContext,
+  ConstructorContext,
   ExprContext,
   ExternLetDeclarationContext,
   ExternTypeDeclarationContext,
@@ -35,7 +36,6 @@ import Parser, {
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import {
-  MatchPattern,
   Span,
   TypeAst,
   UntypedDeclaration,
@@ -118,6 +118,16 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
       type: "identifier",
       span: [ctx.start.start, ctx.stop!.stop + 1],
       name: ctx.ID().getText(),
+    };
+  };
+
+  visitConstructor = (ctx: ConstructorContext): UntypedMatchPattern => {
+    return {
+      type: "constructor",
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      name: ctx.TYPE_ID().getText(),
+      namespace: undefined,
+      args: [],
     };
   };
 }

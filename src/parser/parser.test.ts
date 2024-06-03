@@ -521,7 +521,7 @@ describe("pattern matching", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching constructor with no args", () => {
+  test("matching constructor with no args", () => {
     const src = `let _ = match x { X => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
