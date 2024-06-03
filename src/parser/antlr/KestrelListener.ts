@@ -12,6 +12,10 @@ import { LetDeclarationContext } from "./KestrelParser";
 import { ExternLetDeclarationContext } from "./KestrelParser";
 import { TypeDeclarationContext } from "./KestrelParser";
 import { ExternTypeDeclarationContext } from "./KestrelParser";
+import { LetDeclaration_Context } from "./KestrelParser";
+import { ExternLetDeclaration_Context } from "./KestrelParser";
+import { TypeDeclaration_Context } from "./KestrelParser";
+import { ExternTypeDeclaration_Context } from "./KestrelParser";
 import { PubExposingContext } from "./KestrelParser";
 import { ParamsListContext } from "./KestrelParser";
 import { TypeVariantsContext } from "./KestrelParser";
@@ -58,6 +62,7 @@ import { FloatPatternContext } from "./KestrelParser";
 import { ConstructorContext } from "./KestrelParser";
 import { MatchIdentContext } from "./KestrelParser";
 import { StringPatternContext } from "./KestrelParser";
+import { DocCommentLineContext } from "./KestrelParser";
 
 
 /**
@@ -167,6 +172,46 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitExternTypeDeclaration?: (ctx: ExternTypeDeclarationContext) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.letDeclaration_`.
+	 * @param ctx the parse tree
+	 */
+	enterLetDeclaration_?: (ctx: LetDeclaration_Context) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.letDeclaration_`.
+	 * @param ctx the parse tree
+	 */
+	exitLetDeclaration_?: (ctx: LetDeclaration_Context) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.externLetDeclaration_`.
+	 * @param ctx the parse tree
+	 */
+	enterExternLetDeclaration_?: (ctx: ExternLetDeclaration_Context) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.externLetDeclaration_`.
+	 * @param ctx the parse tree
+	 */
+	exitExternLetDeclaration_?: (ctx: ExternLetDeclaration_Context) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.typeDeclaration_`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeDeclaration_?: (ctx: TypeDeclaration_Context) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.typeDeclaration_`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeDeclaration_?: (ctx: TypeDeclaration_Context) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.externTypeDeclaration_`.
+	 * @param ctx the parse tree
+	 */
+	enterExternTypeDeclaration_?: (ctx: ExternTypeDeclaration_Context) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.externTypeDeclaration_`.
+	 * @param ctx the parse tree
+	 */
+	exitExternTypeDeclaration_?: (ctx: ExternTypeDeclaration_Context) => void;
 	/**
 	 * Enter a parse tree produced by `KestrelParser.pubExposing`.
 	 * @param ctx the parse tree
@@ -701,5 +746,15 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitStringPattern?: (ctx: StringPatternContext) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.docCommentLine`.
+	 * @param ctx the parse tree
+	 */
+	enterDocCommentLine?: (ctx: DocCommentLineContext) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.docCommentLine`.
+	 * @param ctx the parse tree
+	 */
+	exitDocCommentLine?: (ctx: DocCommentLineContext) => void;
 }
 

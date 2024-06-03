@@ -28,11 +28,22 @@ importExposing:
 	| name = TYPE_ID EXPOSING_NESTED?	# typeExposing;
 
 declaration:
-	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr							# letDeclaration
-	| 'extern' pub = 'pub'? 'let' (binding = (INFIX_ID | ID)) ':' typeHint = polyType	#
-		externLetDeclaration
-	| pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants? '}'	# typeDeclaration
-	| 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?						# externTypeDeclaration;
+	letDeclaration_				# letDeclaration
+	| externLetDeclaration_		# externLetDeclaration
+	| typeDeclaration_			# typeDeclaration
+	| externTypeDeclaration_	# externTypeDeclaration;
+
+letDeclaration_:
+	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr;
+
+externLetDeclaration_:
+	'extern' pub = 'pub'? 'let' (binding = (INFIX_ID | ID)) ':' typeHint = polyType;
+
+typeDeclaration_:
+	pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants? '}';
+
+externTypeDeclaration_:
+	'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?;
 
 pubExposing: 'pub' EXPOSING_NESTED?;
 paramsList: '<' ID (',' ID)* '>';
@@ -117,3 +128,5 @@ INFIX_CHAR:
 	| '%'
 	| '&'
 	| '|';
+
+docCommentLine: '///' (~NEWLINE)* NEWLINE;

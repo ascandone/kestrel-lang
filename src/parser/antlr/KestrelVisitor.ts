@@ -12,6 +12,10 @@ import { LetDeclarationContext } from "./KestrelParser";
 import { ExternLetDeclarationContext } from "./KestrelParser";
 import { TypeDeclarationContext } from "./KestrelParser";
 import { ExternTypeDeclarationContext } from "./KestrelParser";
+import { LetDeclaration_Context } from "./KestrelParser";
+import { ExternLetDeclaration_Context } from "./KestrelParser";
+import { TypeDeclaration_Context } from "./KestrelParser";
+import { ExternTypeDeclaration_Context } from "./KestrelParser";
 import { PubExposingContext } from "./KestrelParser";
 import { ParamsListContext } from "./KestrelParser";
 import { TypeVariantsContext } from "./KestrelParser";
@@ -58,6 +62,7 @@ import { FloatPatternContext } from "./KestrelParser";
 import { ConstructorContext } from "./KestrelParser";
 import { MatchIdentContext } from "./KestrelParser";
 import { StringPatternContext } from "./KestrelParser";
+import { DocCommentLineContext } from "./KestrelParser";
 
 
 /**
@@ -128,6 +133,30 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitExternTypeDeclaration?: (ctx: ExternTypeDeclarationContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.letDeclaration_`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLetDeclaration_?: (ctx: LetDeclaration_Context) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.externLetDeclaration_`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitExternLetDeclaration_?: (ctx: ExternLetDeclaration_Context) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.typeDeclaration_`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTypeDeclaration_?: (ctx: TypeDeclaration_Context) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.externTypeDeclaration_`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitExternTypeDeclaration_?: (ctx: ExternTypeDeclaration_Context) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.pubExposing`.
 	 * @param ctx the parse tree
@@ -441,5 +470,11 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitStringPattern?: (ctx: StringPatternContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.docCommentLine`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitDocCommentLine?: (ctx: DocCommentLineContext) => Result;
 }
 
