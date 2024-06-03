@@ -361,7 +361,7 @@ test("pipe syntax sugar", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("pipe syntax sugar should handle qualified names", () => {
+test("pipe syntax sugar should handle qualified names", () => {
   const src = `
     let _ = Mod.a |> f(x, y)
   `;
