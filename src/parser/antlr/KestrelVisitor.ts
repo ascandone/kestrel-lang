@@ -19,6 +19,7 @@ import { CharContext } from "./KestrelParser";
 import { BoolNotContext } from "./KestrelParser";
 import { IdContext } from "./KestrelParser";
 import { BlockExprContext } from "./KestrelParser";
+import { IfContext } from "./KestrelParser";
 import { BoolOrContext } from "./KestrelParser";
 import { BoolAndContext } from "./KestrelParser";
 import { LetExprContext } from "./KestrelParser";
@@ -143,6 +144,13 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitBlockExpr?: (ctx: BlockExprContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `if`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitIf?: (ctx: IfContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `BoolOr`
 	 * labeled alternative in `KestrelParser.expr`.

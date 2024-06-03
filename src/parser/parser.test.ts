@@ -251,7 +251,7 @@ let _ = fn {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse if expr", () => {
+test("parse if expr", () => {
   const src = `
 let _ = if b { 0 } else { 1 }
 `;
@@ -267,7 +267,7 @@ test.todo("parse if-else syntax sugar", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse if expr with a let expr", () => {
+test("parse if expr with a let expr", () => {
   const src = `
 let _ = if b {
   let x = a;

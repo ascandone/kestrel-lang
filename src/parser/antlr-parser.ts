@@ -10,6 +10,7 @@ import Parser, {
   FloatContext,
   FnContext,
   IdContext,
+  IfContext,
   IntContext,
   ParensContext,
   StringContext,
@@ -123,6 +124,14 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       span: [idCtx.symbol.start, idCtx.symbol.stop + 1],
     })),
     body: this.visit(ctx.block()),
+  });
+
+  visitIf = (ctx: IfContext): UntypedExpr => ({
+    type: "if",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    condition: this.visit(ctx._condition),
+    then: this.visit(ctx._then),
+    else: this.visit(ctx._else_),
   });
 
   visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());
