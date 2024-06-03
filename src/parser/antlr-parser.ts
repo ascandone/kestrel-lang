@@ -159,9 +159,9 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
   });
 
   visitCharPattern = (ctx: CharPatternContext): UntypedMatchPattern => ({
-    type: "constant",
+    type: "lit",
     span: [ctx.start.start, ctx.stop!.stop + 1],
-    value: {
+    literal: {
       type: "char",
       value: ctx.getText().slice(1, -1),
     },
