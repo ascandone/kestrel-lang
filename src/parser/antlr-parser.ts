@@ -569,15 +569,15 @@ class KestrelErrorListener extends ErrorListener<antlr4.Token> {
   syntaxError(
     _recognizer: antlr4.Recognizer<antlr4.Token>,
     offendingSymbol: antlr4.Token,
-    _line: number,
-    _column: number,
+    line: number,
+    column: number,
     msg: string,
   ): void {
     this.errors.push(
       new ParsingError([offendingSymbol.start, offendingSymbol.stop], msg),
     );
 
-    throw new Error(msg);
+    throw new Error(`${msg} (at ${line}, ${column})`);
   }
 }
 
