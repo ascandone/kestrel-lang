@@ -28,13 +28,16 @@ import Parser, {
   TupleContext,
   TupleTypeContext,
   TypeDeclarationContext,
+  ValueExposingContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import {
   Span,
   TypeAst,
   UntypedDeclaration,
+  UntypedExposedValue,
   UntypedExpr,
+  UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
 } from "./ast";
@@ -286,6 +289,17 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 type DeclarationType =
   | { type: "value"; decl: UntypedDeclaration }
   | { type: "type"; decl: UntypedTypeDeclaration };
+
+class ExposingVisitor extends Visitor<UntypedExposedValue> {
+  visitValueExposing = (ctx: ValueExposingContext): UntypedExposedValue => {
+    return {
+      type: "value",
+      name: ctx._name.text,
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+    };
+  };
+}
+
 class DeclarationVisitor extends Visitor<DeclarationType> {
   visitLetDeclaration = (ctx: LetDeclarationContext): DeclarationType => {
     const binding = ctx.ID();
@@ -449,10 +463,12 @@ export function unsafeParse(input: string): UntypedModule {
     .map((d) => new DeclarationVisitor().visit(d));
 
   return {
-    imports: declCtx.import__list().map((i) => {
+    imports: declCtx.import__list().map((i): UntypedImport => {
       return {
         ns: i.moduleNamespace().getText(),
-        exposing: [],
+        exposing: i
+          .importExposing_list()
+          .map((e): UntypedExposedValue => new ExposingVisitor().visit(e)),
         span: [i.start.start, i.stop!.stop + 1],
       };
     }),

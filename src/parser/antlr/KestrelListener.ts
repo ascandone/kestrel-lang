@@ -6,6 +6,8 @@ import {ParseTreeListener} from "antlr4";
 import { ModuleNamespaceContext } from "./KestrelParser";
 import { ProgramContext } from "./KestrelParser";
 import { Import_Context } from "./KestrelParser";
+import { ValueExposingContext } from "./KestrelParser";
+import { TypeExposingContext } from "./KestrelParser";
 import { LetDeclarationContext } from "./KestrelParser";
 import { ExternLetDeclarationContext } from "./KestrelParser";
 import { TypeDeclarationContext } from "./KestrelParser";
@@ -82,6 +84,30 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitImport_?: (ctx: Import_Context) => void;
+	/**
+	 * Enter a parse tree produced by the `valueExposing`
+	 * labeled alternative in `KestrelParser.importExposing`.
+	 * @param ctx the parse tree
+	 */
+	enterValueExposing?: (ctx: ValueExposingContext) => void;
+	/**
+	 * Exit a parse tree produced by the `valueExposing`
+	 * labeled alternative in `KestrelParser.importExposing`.
+	 * @param ctx the parse tree
+	 */
+	exitValueExposing?: (ctx: ValueExposingContext) => void;
+	/**
+	 * Enter a parse tree produced by the `typeExposing`
+	 * labeled alternative in `KestrelParser.importExposing`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeExposing?: (ctx: TypeExposingContext) => void;
+	/**
+	 * Exit a parse tree produced by the `typeExposing`
+	 * labeled alternative in `KestrelParser.importExposing`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeExposing?: (ctx: TypeExposingContext) => void;
 	/**
 	 * Enter a parse tree produced by the `letDeclaration`
 	 * labeled alternative in `KestrelParser.declaration`.

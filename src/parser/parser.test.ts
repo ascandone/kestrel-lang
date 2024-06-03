@@ -639,7 +639,7 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("unqualified import of a value", () => {
+  test("unqualified import of a value", () => {
     const src = "import A/B/C.{imported}";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
@@ -649,7 +649,7 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("unqualified import of values", () => {
+  test("unqualified import of values", () => {
     const src = "import A/B/C.{x, y, z}";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

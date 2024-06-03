@@ -16,7 +16,14 @@ moduleNamespace: TYPE_ID ('/' TYPE_ID)*;
 
 program: import_* declaration* EOF;
 
-import_: 'import' moduleNamespace;
+import_:
+	'import' moduleNamespace (
+		'.' '{' importExposing (',' importExposing)* '}'
+	)?;
+
+importExposing:
+	name = ID	# valueExposing
+	| TYPE_ID	# typeExposing;
 
 declaration:
 	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr						# letDeclaration
