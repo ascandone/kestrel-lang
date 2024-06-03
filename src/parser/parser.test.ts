@@ -604,17 +604,17 @@ describe("extern bindings", () => {
 });
 
 describe("imports", () => {
-  test.skip("parse pub modifier", () => {
+  test("parse pub modifier", () => {
     const src = "pub let _ = 1.23";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parse pub modifier on extern values", () => {
+  test("parse pub modifier on extern values", () => {
     const src = "extern pub let _: Int";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parse pub modifier on types", () => {
+  test("parse pub modifier on types", () => {
     const src = "pub type T { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

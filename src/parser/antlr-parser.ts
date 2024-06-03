@@ -305,7 +305,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       decl: {
         extern: false,
         inline: false,
-        pub: false,
+        pub: ctx._pub !== undefined,
         ...(typeHint === undefined
           ? {}
           : {
@@ -338,7 +338,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       type: "value",
       decl: {
         extern: true,
-        pub: false,
+        pub: ctx._pub !== undefined,
         typeHint: {
           mono: typeHint,
           span: typeHint.span,
@@ -358,7 +358,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       type: "type",
       decl: {
         type: "adt",
-        pub: false,
+        pub: ctx._pub !== undefined,
         name: ctx._name.text,
         variants:
           ctx
