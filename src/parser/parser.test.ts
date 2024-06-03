@@ -350,7 +350,7 @@ test.skip("monadic let syntax sugar should not contain space", () => {
   expect(() => unsafeParse(src)).toThrow();
 });
 
-test.skip("pipe syntax sugar", () => {
+test("pipe syntax sugar", () => {
   const src = `
     let _ = a |> f(x, y)
   `;
@@ -369,7 +369,7 @@ test.skip("pipe syntax sugar should handle qualified names", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("pipe syntax sugar should be chainable", () => {
+test("pipe syntax sugar should be chainable", () => {
   const src = `
     let _ = a |> f() |> g()
   `;
@@ -380,7 +380,7 @@ test.skip("pipe syntax sugar should be chainable", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("it should be possible to mix pipe with infix", () => {
+test("it should be possible to mix pipe with infix", () => {
   const src = `
     let _ = 1 + 2 |> f() |> g()
   `;

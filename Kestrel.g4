@@ -33,7 +33,8 @@ expr:
 	| block														# blockExpr
 	| 'fn' (ID (',' ID)* ','?)? block							# fn
 	| 'if' condition = expr then = block 'else' else = block	# if
-	| '[' (expr (',' expr)* ','?)? ']'							# listLit;
+	| '[' (expr (',' expr)* ','?)? ']'							# listLit
+	| expr op = '|>' expr										# Pipe;
 
 block: '{' blockContent '}';
 

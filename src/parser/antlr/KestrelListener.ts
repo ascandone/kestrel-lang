@@ -11,6 +11,7 @@ import { StringContext } from "./KestrelParser";
 import { MulDivContext } from "./KestrelParser";
 import { AddSubContext } from "./KestrelParser";
 import { FnContext } from "./KestrelParser";
+import { PipeContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
 import { EqContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
@@ -128,6 +129,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitFn?: (ctx: FnContext) => void;
+	/**
+	 * Enter a parse tree produced by the `Pipe`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterPipe?: (ctx: PipeContext) => void;
+	/**
+	 * Exit a parse tree produced by the `Pipe`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitPipe?: (ctx: PipeContext) => void;
 	/**
 	 * Enter a parse tree produced by the `float`
 	 * labeled alternative in `KestrelParser.expr`.

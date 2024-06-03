@@ -18,6 +18,7 @@ import Parser, {
   IntContext,
   ListLitContext,
   ParensContext,
+  PipeContext,
   StringContext,
   TupleContext,
 } from "./antlr/KestrelParser";
@@ -207,6 +208,15 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     span: [ctx.start.start, ctx.stop!.stop + 1],
     values: ctx.expr_list().map((e) => this.visit(e)),
   });
+
+  visitPipe = (ctx: PipeContext): UntypedExpr => {
+    return {
+      type: "pipe",
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      left: this.visit(ctx.expr(0)),
+      right: this.visit(ctx.expr(1)),
+    };
+  };
 }
 
 class DeclarationVisitor extends Visitor<UntypedDeclaration> {
