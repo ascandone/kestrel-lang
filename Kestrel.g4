@@ -27,4 +27,4 @@ expr:
 	| STRING											# string
 	| ID												# id
 	| '(' expr ')'										# parens
-	| expr '(' expr* ')'								# call;
+	| expr '(' (expr (',' expr)* ','?)? ')'				# call;
