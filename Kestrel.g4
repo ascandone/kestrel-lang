@@ -89,6 +89,7 @@ expr:
 	| STRING																# string
 	| qualifiedId															# id
 	| op = '!' expr															# BoolNot
+	| expr '(' (expr (',' expr)* ','?)? ')'									# call
 	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr						# MulDiv
 	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr						# AddSub
 	| <assoc = right> expr op = '::' expr									# cons
@@ -98,7 +99,6 @@ expr:
 	| expr op = '&&' expr													# BoolAnd
 	| '(' expr ',' expr (',' expr)* ')'										# tuple
 	| '(' expr ')'															# parens
-	| expr '(' (expr (',' expr)* ','?)? ')'									# call
 	| block																	# blockExpr
 	| 'fn' (matchPattern (',' matchPattern)* ','?)? block					# fn
 	| 'if' condition = expr then = block 'else' else = block				# if
