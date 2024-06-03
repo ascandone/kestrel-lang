@@ -12,7 +12,11 @@ FLOAT: [0-9]* '.' [0-9]+;
 NEWLINE: '\r'? '\n' -> skip;
 WS: [ \t\r\n]+ -> skip;
 
-program: declaration* EOF;
+moduleNamespace: TYPE_ID ('/' TYPE_ID)*;
+
+program: import_* declaration* EOF;
+
+import_: 'import' moduleNamespace;
 
 declaration:
 	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr						# letDeclaration

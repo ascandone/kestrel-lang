@@ -3,7 +3,9 @@
 import {ParseTreeListener} from "antlr4";
 
 
+import { ModuleNamespaceContext } from "./KestrelParser";
 import { ProgramContext } from "./KestrelParser";
+import { Import_Context } from "./KestrelParser";
 import { LetDeclarationContext } from "./KestrelParser";
 import { ExternLetDeclarationContext } from "./KestrelParser";
 import { TypeDeclarationContext } from "./KestrelParser";
@@ -51,6 +53,16 @@ import { BlockContentLetExprContext } from "./KestrelParser";
  */
 export default class KestrelListener extends ParseTreeListener {
 	/**
+	 * Enter a parse tree produced by `KestrelParser.moduleNamespace`.
+	 * @param ctx the parse tree
+	 */
+	enterModuleNamespace?: (ctx: ModuleNamespaceContext) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.moduleNamespace`.
+	 * @param ctx the parse tree
+	 */
+	exitModuleNamespace?: (ctx: ModuleNamespaceContext) => void;
+	/**
 	 * Enter a parse tree produced by `KestrelParser.program`.
 	 * @param ctx the parse tree
 	 */
@@ -60,6 +72,16 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitProgram?: (ctx: ProgramContext) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.import_`.
+	 * @param ctx the parse tree
+	 */
+	enterImport_?: (ctx: Import_Context) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.import_`.
+	 * @param ctx the parse tree
+	 */
+	exitImport_?: (ctx: Import_Context) => void;
 	/**
 	 * Enter a parse tree produced by the `letDeclaration`
 	 * labeled alternative in `KestrelParser.declaration`.

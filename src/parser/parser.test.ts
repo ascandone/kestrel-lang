@@ -629,12 +629,12 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("import single module", () => {
+  test("import single module", () => {
     const src = "import A";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("import nested modules", () => {
+  test("import nested modules", () => {
     const src = "import A/B/C";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

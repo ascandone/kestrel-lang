@@ -449,7 +449,13 @@ export function unsafeParse(input: string): UntypedModule {
     .map((d) => new DeclarationVisitor().visit(d));
 
   return {
-    imports: [],
+    imports: declCtx.import__list().map((i) => {
+      return {
+        ns: i.moduleNamespace().getText(),
+        exposing: [],
+        span: [i.start.start, i.stop!.stop + 1],
+      };
+    }),
 
     declarations: declarations.flatMap((d) => {
       if (d.type === "value") {
