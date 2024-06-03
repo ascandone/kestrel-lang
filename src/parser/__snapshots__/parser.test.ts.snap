@@ -1115,7 +1115,6 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
             25,
             34,
           ],
-          "type": "identifier",
         },
         "pattern": {
           "name": "x",

@@ -23,6 +23,7 @@ import { GenericTypeContext } from "./KestrelParser";
 import { TupleTypeContext } from "./KestrelParser";
 import { FnTypeParamsContext } from "./KestrelParser";
 import { TypeConstructorDeclContext } from "./KestrelParser";
+import { QualifiedIdContext } from "./KestrelParser";
 import { ListLitContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
 import { StringContext } from "./KestrelParser";
@@ -188,6 +189,12 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitTypeConstructorDecl?: (ctx: TypeConstructorDeclContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.qualifiedId`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitQualifiedId?: (ctx: QualifiedIdContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `listLit`
 	 * labeled alternative in `KestrelParser.expr`.

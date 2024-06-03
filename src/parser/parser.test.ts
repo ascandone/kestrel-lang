@@ -328,7 +328,7 @@ test("monadic let syntax sugar", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("monadic let syntax sugar should handle qualified names", () => {
+test("monadic let syntax sugar should handle qualified names", () => {
   const src = `
     let _ = {
       let#Task.bind x = expr;

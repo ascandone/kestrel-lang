@@ -50,12 +50,14 @@ fnTypeParams: ( type (',' type)* ','?);
 
 typeConstructorDecl: name = TYPE_ID ('(' type (',' type)* ')')?;
 
+qualifiedId: (moduleNamespace '.')? (name = (ID | TYPE_ID));
+
 expr:
 	INT															# int
 	| FLOAT														# float
 	| CHAR														# char
 	| STRING													# string
-	| (moduleNamespace '.')? (name = (ID | TYPE_ID))			# id
+	| qualifiedId												# id
 	| op = '!' expr												# BoolNot
 	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr			# MulDiv
 	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr			# AddSub
@@ -76,7 +78,7 @@ expr:
 block: '{' blockContent '}';
 
 blockContent:
-	expr																		# blockContentExpr
-	| 'let#' mapper = ID binding = ID '=' value = expr ';' body = blockContent	#
+	expr																				# blockContentExpr
+	| 'let#' mapper = qualifiedId binding = ID '=' value = expr ';' body = blockContent	#
 		blockContentLetHashExpr
 	| 'let' binding = ID '=' value = expr ';' body = blockContent # blockContentLetExpr;

@@ -147,8 +147,8 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
   visitId = (ctx: IdContext): UntypedExpr => ({
     type: "identifier",
-    namespace: ctx.moduleNamespace()?.getText(),
-    name: ctx._name.text,
+    namespace: ctx.qualifiedId().moduleNamespace()?.getText(),
+    name: ctx.qualifiedId()._name.text,
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 
@@ -204,9 +204,9 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       span: [ctx._binding.start, ctx._binding.stop + 1],
     },
     mapper: {
-      name: ctx._mapper.text,
-      span: [ctx._mapper.start, ctx._mapper.stop + 1],
-      namespace: undefined,
+      name: ctx._mapper._name.text,
+      span: [ctx.qualifiedId().start.start, ctx.qualifiedId().stop!.stop + 1],
+      namespace: ctx.qualifiedId().moduleNamespace()?.getText(),
     },
     value: this.visit(ctx._value),
     body: this.visit(ctx._body),

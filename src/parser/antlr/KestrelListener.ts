@@ -23,6 +23,7 @@ import { GenericTypeContext } from "./KestrelParser";
 import { TupleTypeContext } from "./KestrelParser";
 import { FnTypeParamsContext } from "./KestrelParser";
 import { TypeConstructorDeclContext } from "./KestrelParser";
+import { QualifiedIdContext } from "./KestrelParser";
 import { ListLitContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
 import { StringContext } from "./KestrelParser";
@@ -275,6 +276,16 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitTypeConstructorDecl?: (ctx: TypeConstructorDeclContext) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.qualifiedId`.
+	 * @param ctx the parse tree
+	 */
+	enterQualifiedId?: (ctx: QualifiedIdContext) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.qualifiedId`.
+	 * @param ctx the parse tree
+	 */
+	exitQualifiedId?: (ctx: QualifiedIdContext) => void;
 	/**
 	 * Enter a parse tree produced by the `listLit`
 	 * labeled alternative in `KestrelParser.expr`.
