@@ -9,7 +9,6 @@ import Parser, {
   CallContext,
   CharContext,
   ConsContext,
-  DeclarationContext,
   ExprContext,
   FloatContext,
   FnContext,
@@ -18,6 +17,7 @@ import Parser, {
   IdContext,
   IfContext,
   IntContext,
+  LetDeclarationContext,
   ListLitContext,
   NamedTypeContext,
   ParensContext,
@@ -25,6 +25,7 @@ import Parser, {
   StringContext,
   TupleContext,
   TupleTypeContext,
+  TypeDeclarationContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import {
@@ -33,6 +34,7 @@ import {
   UntypedDeclaration,
   UntypedExpr,
   UntypedModule,
+  UntypedTypeDeclaration,
 } from "./ast";
 
 interface InfixExprContext extends ExprContext {
@@ -281,8 +283,11 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   };
 }
 
-class DeclarationVisitor extends Visitor<UntypedDeclaration> {
-  visitDeclaration = (ctx: DeclarationContext): UntypedDeclaration => {
+type DeclarationType =
+  | { type: "value"; decl: UntypedDeclaration }
+  | { type: "type"; decl: UntypedTypeDeclaration };
+class DeclarationVisitor extends Visitor<DeclarationType> {
+  visitLetDeclaration = (ctx: LetDeclarationContext): DeclarationType => {
     const binding = ctx.ID();
 
     const value = new ExpressionVisitor().visit(ctx.expr());
@@ -294,24 +299,41 @@ class DeclarationVisitor extends Visitor<UntypedDeclaration> {
           ctx._typeHint.accept(new TypeVisitor())[0];
 
     return {
-      extern: false,
-      inline: false,
-      pub: false,
-      ...(typeHint === undefined
-        ? {}
-        : {
-            typeHint: {
-              mono: typeHint,
-              span: typeHint.span,
-              where: [],
-            },
-          }),
-      binding: {
-        name: binding.getText(),
-        span: [binding.symbol.start, binding.symbol.stop + 1],
+      type: "value",
+      decl: {
+        extern: false,
+        inline: false,
+        pub: false,
+        ...(typeHint === undefined
+          ? {}
+          : {
+              typeHint: {
+                mono: typeHint,
+                span: typeHint.span,
+                where: [],
+              },
+            }),
+        binding: {
+          name: binding.getText(),
+          span: [binding.symbol.start, binding.symbol.stop + 1],
+        },
+        span: [ctx.start.start, ctx.stop!.stop + 1],
+        value,
       },
-      span: [ctx.start.start, ctx.stop!.stop + 1],
-      value,
+    };
+  };
+
+  visitTypeDeclaration = (ctx: TypeDeclarationContext): DeclarationType => {
+    return {
+      type: "type",
+      decl: {
+        type: "adt",
+        name: ctx._name.text,
+        variants: [],
+        pub: false,
+        params: [],
+        span: [ctx.start.start, ctx.stop!.stop + 1],
+      },
     };
   };
 }
@@ -357,11 +379,23 @@ export function unsafeParse(input: string): UntypedModule {
 
   const declarations = declCtx
     .declaration_list()
-    .map((d) => d.accept(new DeclarationVisitor()));
+    .map((d) => new DeclarationVisitor().visit(d));
 
   return {
-    declarations,
     imports: [],
-    typeDeclarations: [],
+
+    declarations: declarations.flatMap((d) => {
+      if (d.type === "value") {
+        return d.decl;
+      }
+      return [];
+    }),
+
+    typeDeclarations: declarations.flatMap((d) => {
+      if (d.type === "type") {
+        return d.decl;
+      }
+      return [];
+    }),
   };
 }

@@ -4,7 +4,8 @@ import {ParseTreeListener} from "antlr4";
 
 
 import { ProgramContext } from "./KestrelParser";
-import { DeclarationContext } from "./KestrelParser";
+import { LetDeclarationContext } from "./KestrelParser";
+import { TypeDeclarationContext } from "./KestrelParser";
 import { PolyTypeContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
 import { FnTypeContext } from "./KestrelParser";
@@ -54,15 +55,29 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitProgram?: (ctx: ProgramContext) => void;
 	/**
-	 * Enter a parse tree produced by `KestrelParser.declaration`.
+	 * Enter a parse tree produced by the `letDeclaration`
+	 * labeled alternative in `KestrelParser.declaration`.
 	 * @param ctx the parse tree
 	 */
-	enterDeclaration?: (ctx: DeclarationContext) => void;
+	enterLetDeclaration?: (ctx: LetDeclarationContext) => void;
 	/**
-	 * Exit a parse tree produced by `KestrelParser.declaration`.
+	 * Exit a parse tree produced by the `letDeclaration`
+	 * labeled alternative in `KestrelParser.declaration`.
 	 * @param ctx the parse tree
 	 */
-	exitDeclaration?: (ctx: DeclarationContext) => void;
+	exitLetDeclaration?: (ctx: LetDeclarationContext) => void;
+	/**
+	 * Enter a parse tree produced by the `typeDeclaration`
+	 * labeled alternative in `KestrelParser.declaration`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeDeclaration?: (ctx: TypeDeclarationContext) => void;
+	/**
+	 * Exit a parse tree produced by the `typeDeclaration`
+	 * labeled alternative in `KestrelParser.declaration`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeDeclaration?: (ctx: TypeDeclarationContext) => void;
 	/**
 	 * Enter a parse tree produced by `KestrelParser.polyType`.
 	 * @param ctx the parse tree

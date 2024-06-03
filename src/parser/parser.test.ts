@@ -450,7 +450,7 @@ describe("traits", () => {
 });
 
 describe("type declarations", () => {
-  test.skip("type with no variants", () => {
+  test("type with no variants", () => {
     const src = "type Never { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
