@@ -1,6 +1,8 @@
 import antlr4, { ErrorListener } from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
+  BlockContext,
+  BlockExprContext,
   CallContext,
   CharContext,
   DeclarationContext,
@@ -9,7 +11,6 @@ import Parser, {
   FnContext,
   IdContext,
   IntContext,
-  LetContext,
   ParensContext,
   StringContext,
 } from "./antlr/KestrelParser";
@@ -94,7 +95,10 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 
-  visitLet = (ctx: LetContext): UntypedExpr =>
+  visitBlockExpr = (ctx: BlockExprContext): UntypedExpr =>
+    this.visit(ctx.block());
+
+  visitBlock = (ctx: BlockContext): UntypedExpr =>
     ctx.letExpr_list().reduceRight(
       (acc, letExprCtx): UntypedExpr => ({
         type: "let",
@@ -118,7 +122,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       name: idCtx.getText(),
       span: [idCtx.symbol.start, idCtx.symbol.stop + 1],
     })),
-    body: this.visit(ctx.expr()),
+    body: this.visit(ctx.block()),
   });
 
   visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());

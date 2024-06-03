@@ -28,7 +28,9 @@ expr:
 	| expr op = '&&' expr								# BoolAnd
 	| '(' expr ')'										# parens
 	| expr '(' (expr (',' expr)* ','?)? ')'				# call
-	| '{' letExpr* expr '}'								# let
-	| 'fn' (ID (',' ID)* ','?)? '{' expr '}'			# fn;
+	| block												# blockExpr
+	| 'fn' (ID (',' ID)* ','?)? block					# fn;
 
 letExpr: 'let' ID '=' expr ';';
+
+block: '{' letExpr* expr '}';
