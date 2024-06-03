@@ -4,6 +4,7 @@ grammar Kestrel;
 LineComment: '//' ~[\r\n]* -> channel(HIDDEN);
 
 ID: [_a-z]+; // TODO differentiate between ident and bindings
+UNDERSCORE: '_';
 TYPE_ID: [A-Z]+ [a-z]*;
 INT: [0-9]+;
 CHAR: '\'' ~[']* '\'';
@@ -16,7 +17,9 @@ program: declaration* EOF;
 
 declaration: 'let' ID (':' typeHint = polyType)? '=' expr;
 polyType: type;
-type: name = TYPE_ID # namedType;
+type:
+	name = TYPE_ID ('<' type (',' type)* '>')?	# namedType
+	| UNDERSCORE								# underscoreType;
 
 expr:
 	INT															# int

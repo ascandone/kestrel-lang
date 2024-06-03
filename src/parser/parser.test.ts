@@ -411,12 +411,12 @@ describe("type hints", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parses concrete type with 1 arg", () => {
+  test("parses concrete type with 1 arg", () => {
     const src = "let x : Option<Int> = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parses concrete type with 2 args", () => {
+  test("parses concrete type with 2 args", () => {
     const src = "let x : Result<Int, Bool> = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

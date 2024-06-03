@@ -22,6 +22,7 @@ import Parser, {
   PipeContext,
   StringContext,
   TupleContext,
+  UnderscoreTypeContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import {
@@ -48,8 +49,13 @@ const makeInfixOp = <Ctx extends InfixExprContext>(ctx: Ctx): UntypedExpr => ({
 class TypeVisitor extends Visitor<TypeAst> {
   visitNamedType = (ctx: NamedTypeContext): TypeAst => ({
     type: "named",
-    args: [],
+    args: ctx.type__list().map((t) => this.visit(t)),
     name: ctx._name.text,
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+
+  visitUnderscoreType = (ctx: UnderscoreTypeContext): TypeAst => ({
+    type: "any",
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 }

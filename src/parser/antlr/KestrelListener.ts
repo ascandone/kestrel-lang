@@ -7,6 +7,7 @@ import { ProgramContext } from "./KestrelParser";
 import { DeclarationContext } from "./KestrelParser";
 import { PolyTypeContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
+import { UnderscoreTypeContext } from "./KestrelParser";
 import { ListLitContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
 import { StringContext } from "./KestrelParser";
@@ -81,6 +82,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitNamedType?: (ctx: NamedTypeContext) => void;
+	/**
+	 * Enter a parse tree produced by the `underscoreType`
+	 * labeled alternative in `KestrelParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterUnderscoreType?: (ctx: UnderscoreTypeContext) => void;
+	/**
+	 * Exit a parse tree produced by the `underscoreType`
+	 * labeled alternative in `KestrelParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitUnderscoreType?: (ctx: UnderscoreTypeContext) => void;
 	/**
 	 * Enter a parse tree produced by the `listLit`
 	 * labeled alternative in `KestrelParser.expr`.
