@@ -46,7 +46,7 @@ expr:
 	| FLOAT														# float
 	| CHAR														# char
 	| STRING													# string
-	| ID														# id
+	| (moduleNamespace '.')? (name = (ID | TYPE_ID))			# id
 	| op = '!' expr												# BoolNot
 	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr			# MulDiv
 	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr			# AddSub

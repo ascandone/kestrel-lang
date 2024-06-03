@@ -664,7 +664,7 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("identifiers can be qualified", () => {
+  test("identifiers can be qualified", () => {
     const src = "let x = A/B.name";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
@@ -674,7 +674,7 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("type constructors can be qualified", () => {
+  test("type constructors can be qualified", () => {
     const src = "let x = A/B.Name";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
