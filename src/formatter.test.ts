@@ -1,5 +1,5 @@
 import { test, expect, describe } from "vitest";
-import { unsafeParse } from "./parser";
+import { unsafeParse } from "./parser/antlr-parser";
 import { format } from "./formatter";
 
 test("int lit", () => {

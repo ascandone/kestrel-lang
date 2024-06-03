@@ -42,7 +42,7 @@ declaration:
 	| externTypeDeclaration_	# externTypeDeclaration;
 
 letDeclaration_:
-	(inline = '@inline')? (doc = DOC_COMMENT_LINE*) (
+	(doc = DOC_COMMENT_LINE*) (inline = '@inline')? (
 		pub = 'pub'?
 	) 'let' ID (':' typeHint = polyType)? '=' expr;
 
