@@ -489,12 +489,12 @@ describe("type declarations", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("single type param", () => {
+  test("single type param", () => {
     const src = `type T<a> { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("many type params", () => {
+  test("many type params", () => {
     const src = `type T<a, b, c> { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

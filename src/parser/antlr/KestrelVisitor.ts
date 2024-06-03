@@ -6,6 +6,7 @@ import {ParseTreeVisitor} from 'antlr4';
 import { ProgramContext } from "./KestrelParser";
 import { LetDeclarationContext } from "./KestrelParser";
 import { TypeDeclarationContext } from "./KestrelParser";
+import { ParamsListContext } from "./KestrelParser";
 import { TypeVariantsContext } from "./KestrelParser";
 import { PolyTypeContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
@@ -69,6 +70,12 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitTypeDeclaration?: (ctx: TypeDeclarationContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.paramsList`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitParamsList?: (ctx: ParamsListContext) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.typeVariants`.
 	 * @param ctx the parse tree
