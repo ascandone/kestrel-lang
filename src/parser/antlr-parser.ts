@@ -10,6 +10,7 @@ import Parser, {
   CharContext,
   CharPatternContext,
   ConsContext,
+  ConsPatternContext,
   ConstructorContext,
   ExprContext,
   ExternLetDeclarationContext,
@@ -176,6 +177,16 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
       name: `Tuple${args.length}`,
       namespace: "Tuple",
       args: args.map((a) => this.visit(a)),
+    };
+  };
+
+  visitConsPattern = (ctx: ConsPatternContext): UntypedMatchPattern => {
+    return {
+      type: "constructor",
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      namespace: "List",
+      name: "Cons",
+      args: [this.visit(ctx.matchPattern(0)), this.visit(ctx.matchPattern(1))],
     };
   };
 }

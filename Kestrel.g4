@@ -94,4 +94,5 @@ matchPattern:
 	| FLOAT														# floatPattern
 	| CHAR														# charPattern
 	| STRING													# stringPattern
+	| <assoc = right> matchPattern '::' matchPattern			# consPattern
 	| '(' matchPattern ',' matchPattern (',' matchPattern)* ')'	# tuplePattern;

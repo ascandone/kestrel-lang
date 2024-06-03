@@ -551,17 +551,17 @@ describe("pattern matching", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching cons literal (syntax sugar)", () => {
+  test("matching cons literal (syntax sugar)", () => {
     const src = `let _ = match x { hd :: tl => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching cons literal is right assoc", () => {
+  test("matching cons literal is right assoc", () => {
     const src = `let _ = match x { hd :: tl :: Nil => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching cons nested in tuple", () => {
+  test("matching cons nested in tuple", () => {
     const src = `let _ = match x { (hd :: Nil, y) => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
