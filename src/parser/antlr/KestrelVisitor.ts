@@ -8,7 +8,7 @@ import { DeclarationContext } from "./KestrelParser";
 import { PolyTypeContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
 import { FnTypeContext } from "./KestrelParser";
-import { UnderscoreTypeContext } from "./KestrelParser";
+import { GenericTypeContext } from "./KestrelParser";
 import { FnTypeParamsContext } from "./KestrelParser";
 import { ListLitContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
@@ -78,12 +78,12 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitFnType?: (ctx: FnTypeContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `underscoreType`
+	 * Visit a parse tree produced by the `genericType`
 	 * labeled alternative in `KestrelParser.type`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitUnderscoreType?: (ctx: UnderscoreTypeContext) => Result;
+	visitGenericType?: (ctx: GenericTypeContext) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.fnTypeParams`.
 	 * @param ctx the parse tree

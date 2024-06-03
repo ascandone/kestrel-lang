@@ -406,7 +406,7 @@ describe("type hints", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parses underscore type", () => {
+  test("parses underscore type", () => {
     const src = "let x : _ = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
@@ -431,7 +431,7 @@ describe("type hints", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parses type vars hints", () => {
+  test("parses type vars hints", () => {
     const src = "let x : a = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

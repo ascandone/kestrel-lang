@@ -4,7 +4,6 @@ grammar Kestrel;
 LineComment: '//' ~[\r\n]* -> channel(HIDDEN);
 
 ID: [_a-z]+; // TODO differentiate between ident and bindings
-UNDERSCORE: '_';
 TYPE_ID: [A-Z]+ [a-z]*;
 INT: [0-9]+;
 CHAR: '\'' ~[']* '\'';
@@ -20,7 +19,7 @@ polyType: type;
 type:
 	name = TYPE_ID ('<' type (',' type)* '>')?		# namedType
 	| 'Fn' '(' fnTypeParams? ')' '->' ret = type	# fnType
-	| UNDERSCORE									# underscoreType;
+	| ID											# genericType;
 
 fnTypeParams: ( type (',' type)* ','?);
 

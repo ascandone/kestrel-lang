@@ -14,6 +14,7 @@ import Parser, {
   FloatContext,
   FnContext,
   FnTypeContext,
+  GenericTypeContext,
   IdContext,
   IfContext,
   IntContext,
@@ -23,7 +24,6 @@ import Parser, {
   PipeContext,
   StringContext,
   TupleContext,
-  UnderscoreTypeContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import {
@@ -55,10 +55,22 @@ class TypeVisitor extends Visitor<TypeAst> {
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 
-  visitUnderscoreType = (ctx: UnderscoreTypeContext): TypeAst => ({
-    type: "any",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
-  });
+  visitGenericType = (ctx: GenericTypeContext): TypeAst => {
+    const id = ctx.ID().getText();
+
+    if (id === "_") {
+      return {
+        type: "any",
+        span: [ctx.start.start, ctx.stop!.stop + 1],
+      };
+    }
+
+    return {
+      type: "var",
+      ident: id,
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+    };
+  };
 
   visitFnType = (ctx: FnTypeContext): TypeAst => ({
     type: "fn",
