@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { UntypedImport } from "../parser";
-import { unsafeParse } from "../parser/antlr-parser";
+import { UntypedImport, unsafeParse } from "../parser";
 import {
   Deps,
   resetTraitsRegistry,

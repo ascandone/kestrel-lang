@@ -13,7 +13,13 @@ import {
   createConnection,
 } from "vscode-languageserver";
 import { TextDocument, Range } from "vscode-languageserver-textdocument";
-import { Span, UntypedModule, parse } from "../../parser";
+import {
+  AntlrLexerError as AntlrLexerError,
+  AntlrParsingError as AntlrParsingError,
+  Span,
+  UntypedModule,
+  parse,
+} from "../../parser";
 import {
   typecheckProject,
   typeToString,
@@ -31,7 +37,6 @@ import { ErrorInfo, Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../formatter";
 import { Config, readConfig } from "../config";
-import { MatchResult } from "ohm-js";
 
 type Connection = _Connection;
 
@@ -45,17 +50,33 @@ type Module = {
 
 function parseErrToDiagnostic(
   document: TextDocument,
-  matchResult: MatchResult,
+  err: AntlrParsingError,
 ): PublishDiagnosticsParams {
-  const interval = matchResult.getInterval();
   return {
     uri: document.uri,
     diagnostics: [
       {
-        message: matchResult.message ?? "Parsing",
+        message: err.description,
         source: "Parsing",
         severity: DiagnosticSeverity.Error,
-        range: spannedToRange(document, [interval.startIdx, interval.endIdx]),
+        range: spannedToRange(document, err.span),
+      },
+    ],
+  };
+}
+
+function lexerErrToDiagnostic(
+  document: TextDocument,
+  err: AntlrLexerError,
+): PublishDiagnosticsParams {
+  return {
+    uri: document.uri,
+    diagnostics: [
+      {
+        message: err.description,
+        source: "Parsing",
+        severity: DiagnosticSeverity.Error,
+        range: spannedToRange(document, err.span),
       },
     ],
   };
@@ -169,11 +190,15 @@ class State {
     this.modulesByNs[ns] = { ns, package_, document };
     const parsed = parse(document.getText());
 
-    if (!parsed.ok) {
-      return [parseErrToDiagnostic(document, parsed.matchResult)];
+    if (parsed.lexerErrors.length !== 0) {
+      return parsed.lexerErrors.map((e) => lexerErrToDiagnostic(document, e));
     }
 
-    this.modulesByNs[ns]!.untyped = parsed.value;
+    if (parsed.parsingErrors.length !== 0) {
+      return parsed.parsingErrors.map((e) => parseErrToDiagnostic(document, e));
+    }
+
+    this.modulesByNs[ns]!.untyped = parsed.parsed;
     if (skipTypecheck) {
       return [];
     } else {

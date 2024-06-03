@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
 import { findReferences, Identifier, TypedModule } from "../typedAst";
-import { unsafeParse } from "../../parser/antlr-parser";
+import { unsafeParse } from "../../parser";
 import { UntypedProject, typecheckProject } from "../typecheck";
 import { indexOf, spanOf } from "./__test__/utils";
 

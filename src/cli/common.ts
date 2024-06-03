@@ -101,13 +101,19 @@ export async function check(path: string): Promise<TypedProject | undefined> {
 
 export function parseModule(src: string): UntypedModule {
   const parseResult = parse(src);
-  if (!parseResult.ok) {
+  if (parseResult.lexerErrors.length !== 0) {
     console.log(
-      `${col.red.tag`Parsing error:`} ${parseResult.matchResult.message!}`,
+      `${col.red.tag`Parsing error:`} ${parseResult.parsingErrors[0]!.description!}`,
     );
     exit(1);
   }
-  return parseResult.value;
+  if (parseResult.parsingErrors.length !== 0) {
+    console.log(
+      `${col.red.tag`Parsing error:`} ${parseResult.parsingErrors[0]!.description!}`,
+    );
+    exit(1);
+  }
+  return parseResult.parsed;
 }
 
 export async function checkProject(
@@ -117,15 +123,23 @@ export async function checkProject(
 
   for (const [ns, info] of Object.entries(rawProject)) {
     const parseResult = parse(info.content);
-    if (!parseResult.ok) {
+    if (parseResult.lexerErrors.length !== 0) {
       console.log(
-        `${col.red.tag`Parsing error:`} ${parseResult.matchResult.message!}`,
+        `${col.red.tag`Parsing error:`} ${parseResult.parsingErrors[0]!.description!}`,
       );
       exit(1);
     }
+
+    if (parseResult.parsingErrors.length !== 0) {
+      console.log(
+        `${col.red.tag`Parsing error:`} ${parseResult.parsingErrors[0]!.description!}`,
+      );
+      exit(1);
+    }
+
     untypedProject[ns] = {
       package: info.package,
-      module: parseResult.value,
+      module: parseResult.parsed,
     };
   }
 

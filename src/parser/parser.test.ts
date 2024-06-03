@@ -1,5 +1,5 @@
 import { expect, test, describe } from "vitest";
-import { unsafeParse } from "./antlr-parser";
+import { unsafeParse } from "./parser";
 import { Span, UntypedModule } from "./ast";
 
 test("parsing a declaration", () => {
