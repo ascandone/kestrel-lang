@@ -3976,6 +3976,78 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
 }
 `;
 
+exports[`pattern matching > matching pattern in fn param 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        25,
+      ],
+      "value": {
+        "body": {
+          "span": [
+            21,
+            23,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 42,
+          },
+        },
+        "params": [
+          {
+            "args": [
+              {
+                "name": "a",
+                "span": [
+                  13,
+                  14,
+                ],
+                "type": "identifier",
+              },
+              {
+                "name": "b",
+                "span": [
+                  16,
+                  17,
+                ],
+                "type": "identifier",
+              },
+            ],
+            "name": "X",
+            "namespace": undefined,
+            "span": [
+              11,
+              18,
+            ],
+            "type": "constructor",
+          },
+        ],
+        "span": [
+          8,
+          25,
+        ],
+        "type": "fn",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`pattern matching > matching pattern in let 1`] = `
 {
   "declarations": [

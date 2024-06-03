@@ -70,7 +70,7 @@ expr:
 	| '(' expr ')'															# parens
 	| expr '(' (expr (',' expr)* ','?)? ')'									# call
 	| block																	# blockExpr
-	| 'fn' (ID (',' ID)* ','?)? block										# fn
+	| 'fn' (matchPattern (',' matchPattern)* ','?)? block					# fn
 	| 'if' condition = expr then = block 'else' else = block				# if
 	| 'match' matched = expr '{' (matchClause (',' matchClause)*)? ','? '}'	# match
 	| '[' (expr (',' expr)* ','?)? ']'										# listLit

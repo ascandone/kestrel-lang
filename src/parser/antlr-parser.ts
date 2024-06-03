@@ -293,11 +293,9 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   visitFn = (ctx: FnContext): UntypedExpr => ({
     type: "fn",
     span: [ctx.start.start, ctx.stop!.stop + 1],
-    params: ctx.ID_list().map((idCtx) => ({
-      type: "identifier",
-      name: idCtx.getText(),
-      span: [idCtx.symbol.start, idCtx.symbol.stop + 1],
-    })),
+    params: ctx
+      .matchPattern_list()
+      .map((patternCtx) => new MatchPatternVisitor().visit(patternCtx)),
     body: this.visit(ctx.block()),
   });
 

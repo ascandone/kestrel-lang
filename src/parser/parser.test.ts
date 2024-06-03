@@ -580,6 +580,11 @@ describe("pattern matching", () => {
     const src = `let _ = { let#ident X(a, b :: c) = x; res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("matching pattern in fn param", () => {
+    const src = `let _ = fn X(a, b) { 42 }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("extern bindings", () => {
