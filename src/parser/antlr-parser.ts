@@ -329,7 +329,11 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       decl: {
         type: "adt",
         name: ctx._name.text,
-        variants: [],
+        variants: ctx.typeConstructorDecl_list().map((v) => ({
+          name: v._name.text,
+          span: [v.start.start, v.stop!.stop + 1],
+          args: [],
+        })),
         pub: false,
         params: [],
         span: [ctx.start.start, ctx.stop!.stop + 1],

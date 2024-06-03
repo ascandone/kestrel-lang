@@ -15,8 +15,8 @@ WS: [ \t\r\n]+ -> skip;
 program: declaration* EOF;
 
 declaration:
-	'let' ID (':' typeHint = polyType)? '=' expr	# letDeclaration
-	| 'type' name = TYPE_ID '{' '}'					# typeDeclaration;
+	'let' ID (':' typeHint = polyType)? '=' expr			# letDeclaration
+	| 'type' name = TYPE_ID '{' typeConstructorDecl* '}'	# typeDeclaration;
 
 polyType: type;
 type:
@@ -26,6 +26,8 @@ type:
 	| '(' type ',' type (',' type)* ')'				# tupleType;
 
 fnTypeParams: ( type (',' type)* ','?);
+
+typeConstructorDecl: name = TYPE_ID;
 
 expr:
 	INT															# int

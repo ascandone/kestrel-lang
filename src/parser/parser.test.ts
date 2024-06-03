@@ -455,7 +455,7 @@ describe("type declarations", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("type with a variant with no args", () => {
+  test("type with a variant with no args", () => {
     const src = "type T { C }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
