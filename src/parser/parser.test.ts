@@ -27,7 +27,7 @@ test("parsing a declaration", () => {
   });
 });
 
-test.skip("parsing two declarations", () => {
+test("parsing two declarations", () => {
   const src = `let x = 0\nlet y = 1`;
   expect(unsafeParse(src)).toEqual<UntypedModule>({
     imports: [],
@@ -185,7 +185,7 @@ test("parse appl with nested parens", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse block with no let", () => {
+test("parse block with no let", () => {
   const src = `
 let _ = { 1 }
 `;

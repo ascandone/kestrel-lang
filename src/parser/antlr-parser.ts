@@ -8,6 +8,7 @@ import Parser, {
   FloatContext,
   IdContext,
   IntContext,
+  LetExprContext,
   ParensContext,
   StringContext,
 } from "./antlr/KestrelParser";
@@ -91,6 +92,16 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       .map((e) => this.visit(e)),
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
+
+  visitLetExpr = (ctx: LetExprContext): UntypedExpr => {
+    // return {
+    //   type: "let",
+    //   span: [ctx.start.start, ctx.stop!.stop + 1],
+    //   value: undefined,
+    // };
+
+    return this.visit(ctx.expr());
+  };
 
   visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());
   visitAddSub = makeInfixOp;

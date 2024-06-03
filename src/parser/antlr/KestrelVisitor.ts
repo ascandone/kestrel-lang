@@ -12,6 +12,7 @@ import { AddSubContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
 import { EqContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
+import { LetExprContext } from "./KestrelParser";
 import { CompContext } from "./KestrelParser";
 import { CallContext } from "./KestrelParser";
 import { CharContext } from "./KestrelParser";
@@ -90,6 +91,13 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitInt?: (ctx: IntContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `letExpr`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLetExpr?: (ctx: LetExprContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `Comp`
 	 * labeled alternative in `KestrelParser.expr`.

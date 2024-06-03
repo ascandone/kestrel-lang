@@ -12,6 +12,7 @@ import { AddSubContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
 import { EqContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
+import { LetExprContext } from "./KestrelParser";
 import { CompContext } from "./KestrelParser";
 import { CallContext } from "./KestrelParser";
 import { CharContext } from "./KestrelParser";
@@ -130,6 +131,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitInt?: (ctx: IntContext) => void;
+	/**
+	 * Enter a parse tree produced by the `letExpr`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterLetExpr?: (ctx: LetExprContext) => void;
+	/**
+	 * Exit a parse tree produced by the `letExpr`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitLetExpr?: (ctx: LetExprContext) => void;
 	/**
 	 * Enter a parse tree produced by the `Comp`
 	 * labeled alternative in `KestrelParser.expr`.

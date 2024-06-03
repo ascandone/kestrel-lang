@@ -9,7 +9,7 @@ FLOAT: [0-9]* '.' [0-9]+;
 NEWLINE: '\r'? '\n';
 WS: [ \t\r\n]+ -> skip; // toss out whitespace
 
-program: declaration* EOF;
+program: NEWLINE* (declaration NEWLINE?)* EOF;
 
 declaration: 'let' ID '=' expr;
 
@@ -27,4 +27,5 @@ expr:
 	| STRING											# string
 	| ID												# id
 	| '(' expr ')'										# parens
-	| expr '(' (expr (',' expr)* ','?)? ')'				# call;
+	| expr '(' (expr (',' expr)* ','?)? ')'				# call
+	| '{' expr '}'										# letExpr;
