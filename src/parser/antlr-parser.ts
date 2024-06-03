@@ -8,18 +8,21 @@ import Parser, {
   BlockExprContext,
   CallContext,
   CharContext,
+  CharPatternContext,
   ConsContext,
   ConstructorContext,
   ExprContext,
   ExternLetDeclarationContext,
   ExternTypeDeclarationContext,
   FloatContext,
+  FloatPatternContext,
   FnContext,
   FnTypeContext,
   GenericTypeContext,
   IdContext,
   IfContext,
   IntContext,
+  IntPatternContext,
   LetDeclarationContext,
   ListLitContext,
   MatchContext,
@@ -28,6 +31,7 @@ import Parser, {
   ParensContext,
   PipeContext,
   StringContext,
+  StringPatternContext,
   TupleContext,
   TupleTypeContext,
   TypeDeclarationContext,
@@ -125,6 +129,42 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
     name: ctx.TYPE_ID().getText(),
     namespace: undefined,
     args: ctx.matchPattern_list().map((p) => this.visit(p)),
+  });
+
+  visitIntPattern = (ctx: IntPatternContext): UntypedMatchPattern => ({
+    type: "lit",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    literal: {
+      type: "int",
+      value: Number(ctx.getText()),
+    },
+  });
+
+  visitFloatPattern = (ctx: FloatPatternContext): UntypedMatchPattern => ({
+    type: "lit",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    literal: {
+      type: "float",
+      value: Number(ctx.getText()),
+    },
+  });
+
+  visitStringPattern = (ctx: StringPatternContext): UntypedMatchPattern => ({
+    type: "lit",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    literal: {
+      type: "string",
+      value: ctx.getText().slice(1, -1),
+    },
+  });
+
+  visitCharPattern = (ctx: CharPatternContext): UntypedMatchPattern => ({
+    type: "constant",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    value: {
+      type: "char",
+      value: ctx.getText().slice(1, -1),
+    },
   });
 }
 

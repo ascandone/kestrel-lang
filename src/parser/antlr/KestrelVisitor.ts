@@ -53,6 +53,10 @@ import { BlockContentLetHashExprContext } from "./KestrelParser";
 import { BlockContentLetExprContext } from "./KestrelParser";
 import { MatchIdentContext } from "./KestrelParser";
 import { ConstructorContext } from "./KestrelParser";
+import { IntPatternContext } from "./KestrelParser";
+import { FloatPatternContext } from "./KestrelParser";
+import { CharPatternContext } from "./KestrelParser";
+import { StringPatternContext } from "./KestrelParser";
 
 
 /**
@@ -400,5 +404,33 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitConstructor?: (ctx: ConstructorContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `intPattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitIntPattern?: (ctx: IntPatternContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `floatPattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitFloatPattern?: (ctx: FloatPatternContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `charPattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitCharPattern?: (ctx: CharPatternContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `stringPattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitStringPattern?: (ctx: StringPatternContext) => Result;
 }
 

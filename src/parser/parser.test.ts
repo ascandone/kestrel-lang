@@ -531,17 +531,17 @@ describe("pattern matching", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching int literals", () => {
+  test("matching int literals", () => {
     const src = `let _ = match x { 42 => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching float literals", () => {
+  test("matching float literals", () => {
     const src = `let _ = match x { 1.1 => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching str literals", () => {
+  test("matching str literals", () => {
     const src = `let _ = match x { "abc" => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

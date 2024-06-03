@@ -89,4 +89,8 @@ blockContent:
 // Pattern matching syntax
 matchPattern:
 	ID														# matchIdent
-	| TYPE_ID ('(' matchPattern (',' matchPattern)* ')')?	# constructor;
+	| TYPE_ID ('(' matchPattern (',' matchPattern)* ')')?	# constructor
+	| INT													# intPattern
+	| FLOAT													# floatPattern
+	| CHAR													# charPattern
+	| STRING												# stringPattern;
