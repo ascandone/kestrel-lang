@@ -586,7 +586,7 @@ describe("extern bindings", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("let decls", () => {
+  test("let decls", () => {
     const src = `
       extern let x: Int
     `;

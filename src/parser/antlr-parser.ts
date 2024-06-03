@@ -10,6 +10,7 @@ import Parser, {
   CharContext,
   ConsContext,
   ExprContext,
+  ExternLetDeclarationContext,
   ExternTypeDeclarationContext,
   FloatContext,
   FnContext,
@@ -320,6 +321,34 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
         },
         span: [ctx.start.start, ctx.stop!.stop + 1],
         value,
+      },
+    };
+  };
+
+  visitExternLetDeclaration = (
+    ctx: ExternLetDeclarationContext,
+  ): DeclarationType => {
+    const binding = ctx.ID();
+
+    const typeHint: TypeAst =
+      // @ts-ignore
+      ctx._typeHint.accept(new TypeVisitor())[0];
+
+    return {
+      type: "value",
+      decl: {
+        extern: true,
+        pub: false,
+        typeHint: {
+          mono: typeHint,
+          span: typeHint.span,
+          where: [],
+        },
+        binding: {
+          name: binding.getText(),
+          span: [binding.symbol.start, binding.symbol.stop + 1],
+        },
+        span: [ctx.start.start, ctx.stop!.stop + 1],
       },
     };
   };

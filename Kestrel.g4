@@ -16,6 +16,7 @@ program: declaration* EOF;
 
 declaration:
 	'let' ID (':' typeHint = polyType)? '=' expr				# letDeclaration
+	| 'extern' 'let' ID ':' typeHint = polyType					# externLetDeclaration
 	| 'type' name = TYPE_ID paramsList? '{' typeVariants? '}'	# typeDeclaration
 	| 'extern' 'type' name = TYPE_ID paramsList?				# externTypeDeclaration;
 
