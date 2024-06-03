@@ -29,6 +29,6 @@ expr:
 	| '(' expr ')'										# parens
 	| expr '(' (expr (',' expr)* ','?)? ')'				# call
 	| '{' letExpr* expr '}'								# let
-	| 'fn' '{' expr '}'									# fn;
+	| 'fn' (ID (',' ID)* ','?)? '{' expr '}'			# fn;
 
 letExpr: 'let' ID '=' expr ';';

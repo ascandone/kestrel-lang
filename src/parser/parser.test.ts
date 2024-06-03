@@ -224,7 +224,7 @@ let _ = fn { 0 }
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse fn with 1 arg", () => {
+test("parse fn with 1 arg", () => {
   const src = `
 let _ = fn x { 0 }
 `;
@@ -232,7 +232,7 @@ let _ = fn x { 0 }
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse fn with 2 args", () => {
+test("parse fn with 2 args", () => {
   const src = `
 let _ = fn x, y { 0 }
 `;
