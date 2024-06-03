@@ -275,14 +275,12 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     values: ctx.expr_list().map((e) => this.visit(e)),
   });
 
-  visitPipe = (ctx: PipeContext): UntypedExpr => {
-    return {
-      type: "pipe",
-      span: [ctx.start.start, ctx.stop!.stop + 1],
-      left: this.visit(ctx.expr(0)),
-      right: this.visit(ctx.expr(1)),
-    };
-  };
+  visitPipe = (ctx: PipeContext): UntypedExpr => ({
+    type: "pipe",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    left: this.visit(ctx.expr(0)),
+    right: this.visit(ctx.expr(1)),
+  });
 }
 
 type DeclarationType =
@@ -353,62 +351,58 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
     };
   };
 
-  visitTypeDeclaration = (ctx: TypeDeclarationContext): DeclarationType => {
-    return {
-      type: "type",
-      decl: {
-        type: "adt",
-        pub:
-          ctx._pub === undefined
-            ? false
-            : ctx._pub._exposing === undefined
-              ? true
-              : "..",
-        name: ctx._name.text,
-        variants:
-          ctx
-            .typeVariants()
-            ?.typeConstructorDecl_list()
-            .map((v) => ({
-              name: v._name.text,
-              span: [v.start.start, v.stop!.stop + 1],
-              args: v.type__list().map((t) => new TypeVisitor().visit(t)),
-            })) ?? [],
-        params:
-          ctx
-            .paramsList()
-            ?.ID_list()
-            .map((i) => ({
-              name: i.getText(),
-              span: [i.symbol.start, i.symbol.stop + 1],
-            })) ?? [],
-        span: [ctx.start.start, ctx.stop!.stop + 1],
-      },
-    };
-  };
+  visitTypeDeclaration = (ctx: TypeDeclarationContext): DeclarationType => ({
+    type: "type",
+    decl: {
+      type: "adt",
+      pub:
+        ctx._pub === undefined
+          ? false
+          : ctx._pub._exposing === undefined
+            ? true
+            : "..",
+      name: ctx._name.text,
+      variants:
+        ctx
+          .typeVariants()
+          ?.typeConstructorDecl_list()
+          .map((v) => ({
+            name: v._name.text,
+            span: [v.start.start, v.stop!.stop + 1],
+            args: v.type__list().map((t) => new TypeVisitor().visit(t)),
+          })) ?? [],
+      params:
+        ctx
+          .paramsList()
+          ?.ID_list()
+          .map((i) => ({
+            name: i.getText(),
+            span: [i.symbol.start, i.symbol.stop + 1],
+          })) ?? [],
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+    },
+  });
 
   visitExternTypeDeclaration = (
     ctx: ExternTypeDeclarationContext,
-  ): DeclarationType => {
-    return {
-      type: "type",
-      decl: {
-        type: "extern",
-        pub: ctx._pub !== undefined,
-        name: ctx._name.text,
+  ): DeclarationType => ({
+    type: "type",
+    decl: {
+      type: "extern",
+      pub: ctx._pub !== undefined,
+      name: ctx._name.text,
 
-        params:
-          ctx
-            .paramsList()
-            ?.ID_list()
-            .map((i) => ({
-              name: i.getText(),
-              span: [i.symbol.start, i.symbol.stop + 1],
-            })) ?? [],
-        span: [ctx.start.start, ctx.stop!.stop + 1],
-      },
-    };
-  };
+      params:
+        ctx
+          .paramsList()
+          ?.ID_list()
+          .map((i) => ({
+            name: i.getText(),
+            span: [i.symbol.start, i.symbol.stop + 1],
+          })) ?? [],
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+    },
+  });
 }
 
 class ParsingError {
