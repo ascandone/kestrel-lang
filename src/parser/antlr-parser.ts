@@ -128,7 +128,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
   visitConstructor = (ctx: ConstructorContext): UntypedMatchPattern => ({
     type: "constructor",
     span: [ctx.start.start, ctx.stop!.stop + 1],
-    name: ctx.TYPE_ID().getText(),
+    name: ctx._name.text,
     namespace: undefined,
     args: ctx.matchPattern_list().map((p) => this.visit(p)),
   });

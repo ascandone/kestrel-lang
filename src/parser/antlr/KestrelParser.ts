@@ -1742,7 +1742,7 @@ export default class KestrelParser extends Parser {
 				this._ctx = localctx;
 				_prevctx = localctx;
 				this.state = 383;
-				this.match(KestrelParser.TYPE_ID);
+				(localctx as ConstructorContext)._name = this.match(KestrelParser.TYPE_ID);
 				this.state = 395;
 				this._errHandler.sync(this);
 				switch ( this._interp.adaptivePredict(this._input, 48, this._ctx) ) {
@@ -3857,6 +3857,7 @@ export class FloatPatternContext extends MatchPatternContext {
 	}
 }
 export class ConstructorContext extends MatchPatternContext {
+	public _name!: Token;
 	constructor(parser: KestrelParser, ctx: MatchPatternContext) {
 		super(parser, ctx.parentCtx, ctx.invokingState);
 		super.copyFrom(ctx);
