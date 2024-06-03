@@ -28,6 +28,7 @@ import Parser, {
   TupleContext,
   TupleTypeContext,
   TypeDeclarationContext,
+  TypeExposingContext,
   ValueExposingContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
@@ -291,13 +292,18 @@ type DeclarationType =
   | { type: "type"; decl: UntypedTypeDeclaration };
 
 class ExposingVisitor extends Visitor<UntypedExposedValue> {
-  visitValueExposing = (ctx: ValueExposingContext): UntypedExposedValue => {
-    return {
-      type: "value",
-      name: ctx._name.text,
-      span: [ctx.start.start, ctx.stop!.stop + 1],
-    };
-  };
+  visitValueExposing = (ctx: ValueExposingContext): UntypedExposedValue => ({
+    type: "value",
+    name: ctx._name.text,
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+
+  visitTypeExposing = (ctx: TypeExposingContext): UntypedExposedValue => ({
+    type: "type",
+    exposeImpl: false,
+    name: ctx._name.text,
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
 }
 
 class DeclarationVisitor extends Visitor<DeclarationType> {

@@ -4,7 +4,7 @@ grammar Kestrel;
 LineComment: '//' ~[\r\n]* -> channel(HIDDEN);
 
 ID: [_a-z]+; // TODO differentiate between ident and bindings
-TYPE_ID: [A-Z]+ [a-z]*;
+TYPE_ID: [A-Z]+ [a-z0-9]*;
 INT: [0-9]+;
 CHAR: '\'' ~[']* '\'';
 STRING: '"' ~["]* '"';
@@ -22,8 +22,8 @@ import_:
 	)?;
 
 importExposing:
-	name = ID	# valueExposing
-	| TYPE_ID	# typeExposing;
+	name = ID			# valueExposing
+	| name = TYPE_ID	# typeExposing;
 
 declaration:
 	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr						# letDeclaration

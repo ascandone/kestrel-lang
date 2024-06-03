@@ -337,7 +337,7 @@ export default class KestrelParser extends Parser {
 				this.enterOuterAlt(localctx, 2);
 				{
 				this.state = 69;
-				this.match(KestrelParser.TYPE_ID);
+				(localctx as TypeExposingContext)._name = this.match(KestrelParser.TYPE_ID);
 				}
 				break;
 			default:
@@ -1871,6 +1871,7 @@ export class ValueExposingContext extends ImportExposingContext {
 	}
 }
 export class TypeExposingContext extends ImportExposingContext {
+	public _name!: Token;
 	constructor(parser: KestrelParser, ctx: ImportExposingContext) {
 		super(parser, ctx.parentCtx, ctx.invokingState);
 		super.copyFrom(ctx);

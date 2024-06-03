@@ -654,7 +654,7 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("unqualified import of types", () => {
+  test("unqualified import of types", () => {
     const src = "import A/B/C.{T1, T2}";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
