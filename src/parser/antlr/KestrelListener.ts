@@ -7,7 +7,9 @@ import { ProgramContext } from "./KestrelParser";
 import { DeclarationContext } from "./KestrelParser";
 import { PolyTypeContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
+import { FnTypeContext } from "./KestrelParser";
 import { UnderscoreTypeContext } from "./KestrelParser";
+import { FnTypeParamsContext } from "./KestrelParser";
 import { ListLitContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
 import { StringContext } from "./KestrelParser";
@@ -83,6 +85,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitNamedType?: (ctx: NamedTypeContext) => void;
 	/**
+	 * Enter a parse tree produced by the `fnType`
+	 * labeled alternative in `KestrelParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterFnType?: (ctx: FnTypeContext) => void;
+	/**
+	 * Exit a parse tree produced by the `fnType`
+	 * labeled alternative in `KestrelParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitFnType?: (ctx: FnTypeContext) => void;
+	/**
 	 * Enter a parse tree produced by the `underscoreType`
 	 * labeled alternative in `KestrelParser.type`.
 	 * @param ctx the parse tree
@@ -94,6 +108,16 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitUnderscoreType?: (ctx: UnderscoreTypeContext) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.fnTypeParams`.
+	 * @param ctx the parse tree
+	 */
+	enterFnTypeParams?: (ctx: FnTypeParamsContext) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.fnTypeParams`.
+	 * @param ctx the parse tree
+	 */
+	exitFnTypeParams?: (ctx: FnTypeParamsContext) => void;
 	/**
 	 * Enter a parse tree produced by the `listLit`
 	 * labeled alternative in `KestrelParser.expr`.

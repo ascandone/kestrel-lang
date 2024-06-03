@@ -421,12 +421,12 @@ describe("type hints", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parses Fn type with no args", () => {
+  test("parses Fn type with no args", () => {
     const src = "let x : Fn() -> Int = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parses Fn type with args", () => {
+  test("parses Fn type with args", () => {
     const src = "let x : Fn(X, Y) -> Z = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

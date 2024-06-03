@@ -13,6 +13,7 @@ import Parser, {
   ExprContext,
   FloatContext,
   FnContext,
+  FnTypeContext,
   IdContext,
   IfContext,
   IntContext,
@@ -57,6 +58,17 @@ class TypeVisitor extends Visitor<TypeAst> {
   visitUnderscoreType = (ctx: UnderscoreTypeContext): TypeAst => ({
     type: "any",
     span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+
+  visitFnType = (ctx: FnTypeContext): TypeAst => ({
+    type: "fn",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    args:
+      ctx
+        .fnTypeParams()
+        ?.type__list()
+        .map((p) => this.visit(p)) ?? [],
+    return: this.visit(ctx._ret),
   });
 }
 

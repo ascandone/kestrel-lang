@@ -18,8 +18,11 @@ program: declaration* EOF;
 declaration: 'let' ID (':' typeHint = polyType)? '=' expr;
 polyType: type;
 type:
-	name = TYPE_ID ('<' type (',' type)* '>')?	# namedType
-	| UNDERSCORE								# underscoreType;
+	name = TYPE_ID ('<' type (',' type)* '>')?		# namedType
+	| 'Fn' '(' fnTypeParams? ')' '->' ret = type	# fnType
+	| UNDERSCORE									# underscoreType;
+
+fnTypeParams: ( type (',' type)* ','?);
 
 expr:
 	INT															# int
