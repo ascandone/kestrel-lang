@@ -1,6 +1,8 @@
 import antlr4, { ErrorListener } from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
+  BlockContentExprContext,
+  BlockContentLetExprContext,
   BlockContext,
   BlockExprContext,
   CallContext,
@@ -102,21 +104,25 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   visitBlockExpr = (ctx: BlockExprContext): UntypedExpr =>
     this.visit(ctx.block());
 
+  visitBlockContentExpr = (ctx: BlockContentExprContext): UntypedExpr =>
+    this.visit(ctx.expr());
+
+  visitBlockContentLetExpr = (
+    ctx: BlockContentLetExprContext,
+  ): UntypedExpr => ({
+    type: "let",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    pattern: {
+      type: "identifier",
+      name: ctx.ID().getText(),
+      span: [ctx.ID().symbol.start, ctx.ID().symbol.stop + 1],
+    },
+    value: this.visit(ctx._value),
+    body: this.visit(ctx._body),
+  });
+
   visitBlock = (ctx: BlockContext): UntypedExpr =>
-    ctx.letExpr_list().reduceRight(
-      (acc, letExprCtx): UntypedExpr => ({
-        type: "let",
-        pattern: {
-          type: "identifier",
-          name: letExprCtx.ID().getText(),
-          span: [letExprCtx.ID().symbol.start, letExprCtx.ID().symbol.stop + 1],
-        },
-        span: [letExprCtx.start.start, ctx.expr().stop!.stop + 1],
-        value: this.visit(letExprCtx.expr()),
-        body: acc,
-      }),
-      this.visit(ctx.expr()),
-    );
+    this.visit(ctx.blockContent());
 
   visitFn = (ctx: FnContext): UntypedExpr => ({
     type: "fn",

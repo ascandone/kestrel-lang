@@ -25,8 +25,9 @@ import { IfContext } from "./KestrelParser";
 import { BoolOrContext } from "./KestrelParser";
 import { BoolAndContext } from "./KestrelParser";
 import { ConsContext } from "./KestrelParser";
-import { LetExprContext } from "./KestrelParser";
 import { BlockContext } from "./KestrelParser";
+import { BlockContentExprContext } from "./KestrelParser";
+import { BlockContentLetExprContext } from "./KestrelParser";
 
 
 /**
@@ -295,16 +296,6 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitCons?: (ctx: ConsContext) => void;
 	/**
-	 * Enter a parse tree produced by `KestrelParser.letExpr`.
-	 * @param ctx the parse tree
-	 */
-	enterLetExpr?: (ctx: LetExprContext) => void;
-	/**
-	 * Exit a parse tree produced by `KestrelParser.letExpr`.
-	 * @param ctx the parse tree
-	 */
-	exitLetExpr?: (ctx: LetExprContext) => void;
-	/**
 	 * Enter a parse tree produced by `KestrelParser.block`.
 	 * @param ctx the parse tree
 	 */
@@ -314,5 +305,29 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitBlock?: (ctx: BlockContext) => void;
+	/**
+	 * Enter a parse tree produced by the `blockContentExpr`
+	 * labeled alternative in `KestrelParser.blockContent`.
+	 * @param ctx the parse tree
+	 */
+	enterBlockContentExpr?: (ctx: BlockContentExprContext) => void;
+	/**
+	 * Exit a parse tree produced by the `blockContentExpr`
+	 * labeled alternative in `KestrelParser.blockContent`.
+	 * @param ctx the parse tree
+	 */
+	exitBlockContentExpr?: (ctx: BlockContentExprContext) => void;
+	/**
+	 * Enter a parse tree produced by the `blockContentLetExpr`
+	 * labeled alternative in `KestrelParser.blockContent`.
+	 * @param ctx the parse tree
+	 */
+	enterBlockContentLetExpr?: (ctx: BlockContentLetExprContext) => void;
+	/**
+	 * Exit a parse tree produced by the `blockContentLetExpr`
+	 * labeled alternative in `KestrelParser.blockContent`.
+	 * @param ctx the parse tree
+	 */
+	exitBlockContentLetExpr?: (ctx: BlockContentLetExprContext) => void;
 }
 

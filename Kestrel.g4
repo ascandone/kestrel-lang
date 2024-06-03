@@ -35,6 +35,8 @@ expr:
 	| 'if' condition = expr then = block 'else' else = block	# if
 	| '[' (expr (',' expr)* ','?)? ']'							# listLit;
 
-letExpr: 'let' ID '=' expr ';';
+block: '{' blockContent '}';
 
-block: '{' letExpr* expr '}';
+blockContent:
+	expr												# blockContentExpr
+	| 'let' ID '=' value = expr ';' body = blockContent	# blockContentLetExpr;
