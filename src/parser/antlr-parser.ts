@@ -332,7 +332,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
         variants: ctx.typeConstructorDecl_list().map((v) => ({
           name: v._name.text,
           span: [v.start.start, v.stop!.stop + 1],
-          args: [],
+          args: v.type__list().map((t) => new TypeVisitor().visit(t)),
         })),
         pub: false,
         params: [],

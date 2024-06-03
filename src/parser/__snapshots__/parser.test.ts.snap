@@ -4758,6 +4758,54 @@ exports[`type declarations > type with a variant with complex args 1`] = `
 }
 `;
 
+exports[`type declarations > type with a variant with many args 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "params": [],
+      "pub": false,
+      "span": [
+        0,
+        18,
+      ],
+      "type": "adt",
+      "variants": [
+        {
+          "args": [
+            {
+              "args": [],
+              "name": "A",
+              "span": [
+                11,
+                12,
+              ],
+              "type": "named",
+            },
+            {
+              "args": [],
+              "name": "B",
+              "span": [
+                14,
+                15,
+              ],
+              "type": "named",
+            },
+          ],
+          "name": "C",
+          "span": [
+            9,
+            16,
+          ],
+        },
+      ],
+    },
+  ],
+}
+`;
+
 exports[`type declarations > type with a variant with no args 1`] = `
 {
   "declarations": [],
@@ -4787,7 +4835,7 @@ exports[`type declarations > type with a variant with no args 1`] = `
 }
 `;
 
-exports[`type declarations > type with a variant with no args 2`] = `
+exports[`type declarations > type with a variant with one arg 1`] = `
 {
   "declarations": [],
   "imports": [],

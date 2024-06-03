@@ -27,7 +27,7 @@ type:
 
 fnTypeParams: ( type (',' type)* ','?);
 
-typeConstructorDecl: name = TYPE_ID;
+typeConstructorDecl: name = TYPE_ID ('(' type (',' type)* ')')?;
 
 expr:
 	INT															# int

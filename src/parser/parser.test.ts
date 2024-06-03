@@ -460,12 +460,17 @@ describe("type declarations", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("type with a variant with no args", () => {
+  test("type with a variant with one arg", () => {
     const src = "type T { C(Arg) }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("type with a variant with complex args", () => {
+  test("type with a variant with many args", () => {
+    const src = "type T { C(A, B) }";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("type with a variant with complex args", () => {
     const src = `
       type T {
         C(Example<a, Nested<Int>>)
