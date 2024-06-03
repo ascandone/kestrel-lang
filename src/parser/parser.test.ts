@@ -763,7 +763,7 @@ describe("Comments", () => {
 });
 
 describe("Decorators", () => {
-  test.skip("inline decorator", () => {
+  test("inline decorator", () => {
     const src = `@inline pub let x = 0`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

@@ -418,7 +418,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       type: "value",
       decl: {
         extern: false,
-        inline: false,
+        inline: ctx._inline !== undefined,
         pub: ctx._pub !== undefined,
         ...(docs === "" ? {} : { docComment: docs }),
         ...(typeHint === undefined
