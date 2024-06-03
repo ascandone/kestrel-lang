@@ -10,6 +10,7 @@ import Parser, {
   CharContext,
   ConsContext,
   ExprContext,
+  ExternTypeDeclarationContext,
   FloatContext,
   FnContext,
   FnTypeContext,
@@ -339,6 +340,29 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
               span: [v.start.start, v.stop!.stop + 1],
               args: v.type__list().map((t) => new TypeVisitor().visit(t)),
             })) ?? [],
+        params:
+          ctx
+            .paramsList()
+            ?.ID_list()
+            .map((i) => ({
+              name: i.getText(),
+              span: [i.symbol.start, i.symbol.stop + 1],
+            })) ?? [],
+        span: [ctx.start.start, ctx.stop!.stop + 1],
+      },
+    };
+  };
+
+  visitExternTypeDeclaration = (
+    ctx: ExternTypeDeclarationContext,
+  ): DeclarationType => {
+    return {
+      type: "type",
+      decl: {
+        type: "extern",
+        pub: false,
+        name: ctx._name.text,
+
         params:
           ctx
             .paramsList()

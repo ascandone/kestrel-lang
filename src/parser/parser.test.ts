@@ -578,7 +578,7 @@ describe("pattern matching", () => {
 });
 
 describe("extern bindings", () => {
-  test.skip("types", () => {
+  test("types", () => {
     const src = `
       extern type T
     `;
