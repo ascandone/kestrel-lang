@@ -391,7 +391,7 @@ test("it should be possible to mix pipe with infix", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("ignoring comments", () => {
+test("ignoring comments", () => {
   const src = `
     // ignoring comments
     let _ = 42

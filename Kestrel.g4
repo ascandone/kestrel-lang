@@ -1,6 +1,8 @@
 grammar Kestrel;
 
 // Common
+LineComment: '//' ~[\r\n]* -> channel(HIDDEN);
+
 ID: [_a-zA-Z]+; // TODO differentiate between ident and bindings
 INT: [0-9]+;
 CHAR: '\'' ~[']* '\'';
