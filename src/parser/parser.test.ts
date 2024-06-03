@@ -479,12 +479,12 @@ describe("type declarations", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("type with many variants", () => {
+  test("type with many variants", () => {
     const src = `type T { A, B }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("trailing comma after variants", () => {
+  test("trailing comma after variants", () => {
     const src = `type T { A, B, }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

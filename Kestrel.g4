@@ -15,8 +15,11 @@ WS: [ \t\r\n]+ -> skip;
 program: declaration* EOF;
 
 declaration:
-	'let' ID (':' typeHint = polyType)? '=' expr			# letDeclaration
-	| 'type' name = TYPE_ID '{' typeConstructorDecl* '}'	# typeDeclaration;
+	'let' ID (':' typeHint = polyType)? '=' expr	# letDeclaration
+	| 'type' name = TYPE_ID '{' typeVariants? '}'	# typeDeclaration;
+
+typeVariants:
+	typeConstructorDecl (',' typeConstructorDecl)* ','?;
 
 polyType: type;
 type:
