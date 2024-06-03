@@ -329,6 +329,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   visitBoolAnd = makeInfixOp;
   visitBoolOr = makeInfixOp;
   visitComp = makeInfixOp;
+  visitEq = makeInfixOp;
 
   visitCons = (ctx: ConsContext): UntypedExpr => ({
     type: "application",
