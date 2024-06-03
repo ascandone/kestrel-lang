@@ -124,7 +124,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
     span: [ctx.start.start, ctx.stop!.stop + 1],
     name: ctx.TYPE_ID().getText(),
     namespace: undefined,
-    args: [],
+    args: ctx.matchPattern_list().map((p) => this.visit(p)),
   });
 }
 
