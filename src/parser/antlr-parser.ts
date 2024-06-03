@@ -556,6 +556,13 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
   };
 }
 
+class LexerError {
+  constructor(
+    public readonly span: Span,
+    public readonly description: string,
+  ) {}
+}
+
 class ParsingError {
   constructor(
     public readonly span: Span,
@@ -563,31 +570,45 @@ class ParsingError {
   ) {}
 }
 
-class KestrelErrorListener extends ErrorListener<antlr4.Token> {
+class LexerErrorListener extends ErrorListener<number> {
+  errors: LexerError[] = [];
+}
+
+class ParsingErrorListener extends ErrorListener<antlr4.Token> {
   errors: ParsingError[] = [];
 
   syntaxError(
     _recognizer: antlr4.Recognizer<antlr4.Token>,
     offendingSymbol: antlr4.Token,
-    line: number,
-    column: number,
+    _line: number,
+    _column: number,
     msg: string,
   ): void {
     this.errors.push(
       new ParsingError([offendingSymbol.start, offendingSymbol.stop], msg),
     );
-
-    throw new Error(`${msg} (at ${line}, ${column})`);
   }
 }
 
-export function unsafeParse(input: string): UntypedModule {
+export type ParseResult = {
+  parsed: UntypedModule;
+
+  lexerErrors: LexerError[];
+  parsingErrors: ParsingError[];
+};
+
+export function parse(input: string): ParseResult {
   const chars = new antlr4.CharStream(input);
   const lexer = new Lexer(chars);
 
+  const lexerErrorListener = new LexerErrorListener();
+  lexer.addErrorListener(lexerErrorListener);
+
   const tokens = new antlr4.CommonTokenStream(lexer);
   const parser = new Parser(tokens);
-  parser.addErrorListener(new KestrelErrorListener());
+
+  const parsingErrorListener = new ParsingErrorListener();
+  parser.addErrorListener(parsingErrorListener);
 
   const declCtx = parser.program();
 
@@ -600,7 +621,7 @@ export function unsafeParse(input: string): UntypedModule {
     .declaration_list()
     .map((d) => new DeclarationVisitor().visit(d));
 
-  return {
+  const parsed: UntypedModule = {
     ...(docs === "" ? {} : { moduleDoc: docs }),
     imports: declCtx.import__list().map((i): UntypedImport => {
       return {
@@ -626,6 +647,25 @@ export function unsafeParse(input: string): UntypedModule {
       return [];
     }),
   };
+
+  return {
+    parsed,
+    parsingErrors: parsingErrorListener.errors,
+    lexerErrors: lexerErrorListener.errors,
+  };
+}
+
+export function unsafeParse(input: string): UntypedModule {
+  const parsed = parse(input);
+  if (parsed.lexerErrors.length !== 0) {
+    throw new Error(`Lexing error: ${parsed.lexerErrors[0]!.description}`);
+  }
+
+  if (parsed.parsingErrors.length !== 0) {
+    throw new Error(`Parsing error: ${parsed.parsingErrors[0]!.description}`);
+  }
+
+  return parsed.parsed;
 }
 
 function normalizeInfix(name: string) {
