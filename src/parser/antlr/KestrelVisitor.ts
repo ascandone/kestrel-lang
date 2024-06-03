@@ -57,6 +57,7 @@ import { IntPatternContext } from "./KestrelParser";
 import { FloatPatternContext } from "./KestrelParser";
 import { CharPatternContext } from "./KestrelParser";
 import { StringPatternContext } from "./KestrelParser";
+import { TuplePatternContext } from "./KestrelParser";
 
 
 /**
@@ -432,5 +433,12 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitStringPattern?: (ctx: StringPatternContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `tuplePattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTuplePattern?: (ctx: TuplePatternContext) => Result;
 }
 

@@ -57,6 +57,7 @@ import { IntPatternContext } from "./KestrelParser";
 import { FloatPatternContext } from "./KestrelParser";
 import { CharPatternContext } from "./KestrelParser";
 import { StringPatternContext } from "./KestrelParser";
+import { TuplePatternContext } from "./KestrelParser";
 
 
 /**
@@ -686,5 +687,17 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitStringPattern?: (ctx: StringPatternContext) => void;
+	/**
+	 * Enter a parse tree produced by the `tuplePattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	enterTuplePattern?: (ctx: TuplePatternContext) => void;
+	/**
+	 * Exit a parse tree produced by the `tuplePattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	exitTuplePattern?: (ctx: TuplePatternContext) => void;
 }
 

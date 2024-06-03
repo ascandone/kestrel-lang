@@ -33,6 +33,7 @@ import Parser, {
   StringContext,
   StringPatternContext,
   TupleContext,
+  TuplePatternContext,
   TupleTypeContext,
   TypeDeclarationContext,
   TypeExposingContext,
@@ -166,6 +167,17 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
       value: ctx.getText().slice(1, -1),
     },
   });
+
+  visitTuplePattern = (ctx: TuplePatternContext): UntypedMatchPattern => {
+    const args = ctx.matchPattern_list();
+    return {
+      type: "constructor",
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      name: `Tuple${args.length}`,
+      namespace: "Tuple",
+      args: args.map((a) => this.visit(a)),
+    };
+  };
 }
 
 class ExpressionVisitor extends Visitor<UntypedExpr> {

@@ -546,7 +546,7 @@ describe("pattern matching", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching tuples literal (syntax sugar)", () => {
+  test("matching tuples literal (syntax sugar)", () => {
     const src = `let _ = match x { (x, y) => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
