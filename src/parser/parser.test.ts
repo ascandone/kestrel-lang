@@ -501,7 +501,7 @@ describe("type declarations", () => {
 });
 
 describe("pattern matching", () => {
-  test.skip("empty match expression", () => {
+  test("empty match expression", () => {
     const src = `let _ = match x {}`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

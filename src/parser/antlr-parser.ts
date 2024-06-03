@@ -21,6 +21,7 @@ import Parser, {
   IntContext,
   LetDeclarationContext,
   ListLitContext,
+  MatchContext,
   NamedTypeContext,
   ParensContext,
   PipeContext,
@@ -232,6 +233,13 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     condition: this.visit(ctx._condition),
     then: this.visit(ctx._then),
     else: this.visit(ctx._else_),
+  });
+
+  visitMatch = (ctx: MatchContext): UntypedExpr => ({
+    type: "match",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    expr: this.visit(ctx._matched),
+    clauses: [],
   });
 
   visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());

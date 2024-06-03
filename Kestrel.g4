@@ -72,6 +72,7 @@ expr:
 	| block														# blockExpr
 	| 'fn' (ID (',' ID)* ','?)? block							# fn
 	| 'if' condition = expr then = block 'else' else = block	# if
+	| 'match' matched = expr '{' '}'							# match
 	| '[' (expr (',' expr)* ','?)? ']'							# listLit
 	| expr op = '|>' expr										# Pipe;
 
@@ -82,3 +83,5 @@ blockContent:
 	| 'let#' mapper = qualifiedId binding = ID '=' value = expr ';' body = blockContent	#
 		blockContentLetHashExpr
 	| 'let' binding = ID '=' value = expr ';' body = blockContent # blockContentLetExpr;
+
+// Pattern matching syntax

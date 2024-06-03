@@ -30,6 +30,7 @@ import { StringContext } from "./KestrelParser";
 import { MulDivContext } from "./KestrelParser";
 import { AddSubContext } from "./KestrelParser";
 import { FnContext } from "./KestrelParser";
+import { MatchContext } from "./KestrelParser";
 import { PipeContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
 import { EqContext } from "./KestrelParser";
@@ -237,6 +238,13 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitFn?: (ctx: FnContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `match`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitMatch?: (ctx: MatchContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `Pipe`
 	 * labeled alternative in `KestrelParser.expr`.
