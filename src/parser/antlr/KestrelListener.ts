@@ -12,14 +12,15 @@ import { AddSubContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
 import { EqContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
-import { LetExprContext } from "./KestrelParser";
 import { CompContext } from "./KestrelParser";
 import { CallContext } from "./KestrelParser";
 import { CharContext } from "./KestrelParser";
 import { BoolNotContext } from "./KestrelParser";
+import { LetContext } from "./KestrelParser";
 import { IdContext } from "./KestrelParser";
 import { BoolOrContext } from "./KestrelParser";
 import { BoolAndContext } from "./KestrelParser";
+import { LetExprContext } from "./KestrelParser";
 
 
 /**
@@ -132,18 +133,6 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitInt?: (ctx: IntContext) => void;
 	/**
-	 * Enter a parse tree produced by the `letExpr`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 */
-	enterLetExpr?: (ctx: LetExprContext) => void;
-	/**
-	 * Exit a parse tree produced by the `letExpr`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 */
-	exitLetExpr?: (ctx: LetExprContext) => void;
-	/**
 	 * Enter a parse tree produced by the `Comp`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -192,6 +181,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitBoolNot?: (ctx: BoolNotContext) => void;
 	/**
+	 * Enter a parse tree produced by the `let`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterLet?: (ctx: LetContext) => void;
+	/**
+	 * Exit a parse tree produced by the `let`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitLet?: (ctx: LetContext) => void;
+	/**
 	 * Enter a parse tree produced by the `id`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -227,5 +228,15 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitBoolAnd?: (ctx: BoolAndContext) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.letExpr`.
+	 * @param ctx the parse tree
+	 */
+	enterLetExpr?: (ctx: LetExprContext) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.letExpr`.
+	 * @param ctx the parse tree
+	 */
+	exitLetExpr?: (ctx: LetExprContext) => void;
 }
 

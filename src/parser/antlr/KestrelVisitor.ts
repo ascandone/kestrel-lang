@@ -12,14 +12,15 @@ import { AddSubContext } from "./KestrelParser";
 import { FloatContext } from "./KestrelParser";
 import { EqContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
-import { LetExprContext } from "./KestrelParser";
 import { CompContext } from "./KestrelParser";
 import { CallContext } from "./KestrelParser";
 import { CharContext } from "./KestrelParser";
 import { BoolNotContext } from "./KestrelParser";
+import { LetContext } from "./KestrelParser";
 import { IdContext } from "./KestrelParser";
 import { BoolOrContext } from "./KestrelParser";
 import { BoolAndContext } from "./KestrelParser";
+import { LetExprContext } from "./KestrelParser";
 
 
 /**
@@ -92,13 +93,6 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitInt?: (ctx: IntContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `letExpr`
-	 * labeled alternative in `KestrelParser.expr`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitLetExpr?: (ctx: LetExprContext) => Result;
-	/**
 	 * Visit a parse tree produced by the `Comp`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -127,6 +121,13 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitBoolNot?: (ctx: BoolNotContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `let`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLet?: (ctx: LetContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `id`
 	 * labeled alternative in `KestrelParser.expr`.
 	 * @param ctx the parse tree
@@ -147,5 +148,11 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitBoolAnd?: (ctx: BoolAndContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.letExpr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitLetExpr?: (ctx: LetExprContext) => Result;
 }
 

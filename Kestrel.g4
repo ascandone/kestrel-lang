@@ -6,10 +6,10 @@ INT: [0-9]+;
 CHAR: '\'' ~[']* '\'';
 STRING: '"' ~["]* '"';
 FLOAT: [0-9]* '.' [0-9]+;
-NEWLINE: '\r'? '\n';
-WS: [ \t\r\n]+ -> skip; // toss out whitespace
+NEWLINE: '\r'? '\n' -> skip;
+WS: [ \t\r\n]+ -> skip;
 
-program: NEWLINE* (declaration NEWLINE?)* EOF;
+program: declaration* EOF;
 
 declaration: 'let' ID '=' expr;
 
@@ -28,4 +28,6 @@ expr:
 	| ID												# id
 	| '(' expr ')'										# parens
 	| expr '(' (expr (',' expr)* ','?)? ')'				# call
-	| '{' expr '}'										# letExpr;
+	| '{' letExpr* expr '}'								# let;
+
+letExpr: 'let' ID '=' expr ';';

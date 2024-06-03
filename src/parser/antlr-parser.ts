@@ -8,6 +8,7 @@ import Parser, {
   FloatContext,
   IdContext,
   IntContext,
+  LetContext,
   LetExprContext,
   ParensContext,
   StringContext,
@@ -93,15 +94,21 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 
-  visitLetExpr = (ctx: LetExprContext): UntypedExpr => {
-    // return {
-    //   type: "let",
-    //   span: [ctx.start.start, ctx.stop!.stop + 1],
-    //   value: undefined,
-    // };
-
-    return this.visit(ctx.expr());
-  };
+  visitLet = (ctx: LetContext): UntypedExpr =>
+    ctx.letExpr_list().reduce(
+      (acc, letExprCtx): UntypedExpr => ({
+        type: "let",
+        pattern: {
+          type: "identifier",
+          name: letExprCtx.ID().getText(),
+          span: [letExprCtx.ID().symbol.start, letExprCtx.ID().symbol.stop + 1],
+        },
+        span: [letExprCtx.start.start, ctx.expr().stop!.stop + 1],
+        value: this.visit(letExprCtx.expr()),
+        body: acc,
+      }),
+      this.visit(ctx.expr()),
+    );
 
   visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());
   visitAddSub = makeInfixOp;

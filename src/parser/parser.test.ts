@@ -193,7 +193,7 @@ let _ = { 1 }
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse let block with one let", () => {
+test("parse let block with one let", () => {
   const src = `
 let _ = {
   let x = 0;
