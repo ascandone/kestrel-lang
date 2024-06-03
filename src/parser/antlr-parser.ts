@@ -129,7 +129,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
     type: "constructor",
     span: [ctx.start.start, ctx.stop!.stop + 1],
     name: ctx._name.text,
-    namespace: undefined,
+    namespace: ctx.moduleNamespace()?.getText(),
     args: ctx.matchPattern_list().map((p) => this.visit(p)),
   });
 

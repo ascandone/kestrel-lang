@@ -88,11 +88,13 @@ blockContent:
 
 // Pattern matching syntax
 matchPattern:
-	ID																# matchIdent
-	| name = TYPE_ID ('(' matchPattern (',' matchPattern)* ')')?	# constructor
-	| INT															# intPattern
-	| FLOAT															# floatPattern
-	| CHAR															# charPattern
-	| STRING														# stringPattern
-	| <assoc = right> matchPattern '::' matchPattern				# consPattern
-	| '(' matchPattern ',' matchPattern (',' matchPattern)* ')'		# tuplePattern;
+	ID # matchIdent
+	| (moduleNamespace '.')? name = TYPE_ID (
+		'(' matchPattern (',' matchPattern)* ')'
+	)?															# constructor
+	| INT														# intPattern
+	| FLOAT														# floatPattern
+	| CHAR														# charPattern
+	| STRING													# stringPattern
+	| <assoc = right> matchPattern '::' matchPattern			# consPattern
+	| '(' matchPattern ',' matchPattern (',' matchPattern)* ')'	# tuplePattern;

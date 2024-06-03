@@ -566,7 +566,7 @@ describe("pattern matching", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching qualified constructors", () => {
+  test("matching qualified constructors", () => {
     const src = `let _ = match x { A/B.Constr(a, b) => 42 }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
