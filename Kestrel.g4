@@ -4,7 +4,7 @@ grammar Kestrel;
 LineComment: '//' ~[\r\n]* -> channel(HIDDEN);
 
 ID: [_a-z]+; // TODO differentiate between ident and bindings
-TYPE_ID: [A-Z]+ [a-z0-9]*;
+TYPE_ID: [A-Z]+ [a-zA-Z0-9]*;
 INT: [0-9]+;
 CHAR: '\'' ~[']* '\'';
 STRING: '"' ~["]* '"';
@@ -41,7 +41,9 @@ typeVariants:
 
 polyType: type;
 type:
-	name = TYPE_ID ('<' type (',' type)* '>')?		# namedType
+	(moduleNamespace '.')? name = TYPE_ID (
+		'<' type (',' type)* '>'
+	)?												# namedType
 	| 'Fn' '(' fnTypeParams? ')' '->' ret = type	# fnType
 	| ID											# genericType
 	| '(' type ',' type (',' type)* ')'				# tupleType;

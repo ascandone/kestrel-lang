@@ -406,6 +406,16 @@ describe("type hints", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
+  test("parses a concrete type with no args as a type hint (no whitespace after binding)", () => {
+    const src = "let x: Int = 0";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("parses a concrete type with no args as a type hint (extern)", () => {
+    const src = "extern let x: Int";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
   test("parses underscore type", () => {
     const src = "let x : _ = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
@@ -679,7 +689,7 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("type defs can be qualified", () => {
+  test("type defs can be qualified", () => {
     const src = "extern let x: A/B.MyType";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

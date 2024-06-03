@@ -67,12 +67,16 @@ const makeInfixOp = <Ctx extends InfixExprContext>(ctx: Ctx): UntypedExpr => ({
 });
 
 class TypeVisitor extends Visitor<TypeAst> {
-  visitNamedType = (ctx: NamedTypeContext): TypeAst => ({
-    type: "named",
-    args: ctx.type__list().map((t) => this.visit(t)),
-    name: ctx._name.text,
-    span: [ctx.start.start, ctx.stop!.stop + 1],
-  });
+  visitNamedType = (ctx: NamedTypeContext): TypeAst => {
+    const namespace = ctx.moduleNamespace()?.getText();
+    return {
+      type: "named",
+      args: ctx.type__list().map((t) => this.visit(t)),
+      name: ctx._name.text,
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      ...(namespace === undefined ? {} : { namespace }),
+    };
+  };
 
   visitGenericType = (ctx: GenericTypeContext): TypeAst => {
     const id = ctx.ID().getText();

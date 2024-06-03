@@ -5245,6 +5245,98 @@ exports[`type hints > parses Fn type with no args 1`] = `
 }
 `;
 
+exports[`type hints > parses a concrete type with no args as a type hint (extern) 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": true,
+      "pub": false,
+      "span": [
+        0,
+        17,
+      ],
+      "typeHint": {
+        "mono": {
+          "args": [],
+          "name": "Int",
+          "span": [
+            14,
+            17,
+          ],
+          "type": "named",
+        },
+        "span": [
+          14,
+          17,
+        ],
+        "where": [],
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`type hints > parses a concrete type with no args as a type hint (no whitespace after binding) 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        14,
+      ],
+      "typeHint": {
+        "mono": {
+          "args": [],
+          "name": "Int",
+          "span": [
+            7,
+            10,
+          ],
+          "type": "named",
+        },
+        "span": [
+          7,
+          10,
+        ],
+        "where": [],
+      },
+      "value": {
+        "span": [
+          13,
+          14,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`type hints > parses a concrete type with no args as a type hint 1`] = `
 {
   "declarations": [
