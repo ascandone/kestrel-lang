@@ -22,8 +22,8 @@ import_:
 	)?;
 
 importExposing:
-	name = ID			# valueExposing
-	| name = TYPE_ID	# typeExposing;
+	name = ID							# valueExposing
+	| name = TYPE_ID exposingNested?	# typeExposing;
 
 declaration:
 	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr						# letDeclaration
@@ -31,7 +31,9 @@ declaration:
 	| pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants? '}'	# typeDeclaration
 	| 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?						# externTypeDeclaration;
 
-pubExposing: 'pub' (exposing = '(' '..' ')')?;
+exposingNested: '(' '..' ')';
+
+pubExposing: 'pub' exposingNested?;
 paramsList: '<' ID (',' ID)* '>';
 
 typeVariants:

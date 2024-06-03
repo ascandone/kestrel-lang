@@ -300,7 +300,7 @@ class ExposingVisitor extends Visitor<UntypedExposedValue> {
 
   visitTypeExposing = (ctx: TypeExposingContext): UntypedExposedValue => ({
     type: "type",
-    exposeImpl: false,
+    exposeImpl: ctx.exposingNested() != null,
     name: ctx._name.text,
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
@@ -378,7 +378,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       pub:
         ctx._pub === undefined
           ? false
-          : ctx._pub._exposing === undefined
+          : ctx._pub.exposingNested()?.children == null
             ? true
             : "..",
       name: ctx._name.text,

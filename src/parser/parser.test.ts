@@ -659,7 +659,7 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("unqualified import of types (non-opaque)", () => {
+  test("unqualified import of types (non-opaque)", () => {
     const src = "import A/B/C.{T1(..)}";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

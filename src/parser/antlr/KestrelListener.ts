@@ -12,6 +12,7 @@ import { LetDeclarationContext } from "./KestrelParser";
 import { ExternLetDeclarationContext } from "./KestrelParser";
 import { TypeDeclarationContext } from "./KestrelParser";
 import { ExternTypeDeclarationContext } from "./KestrelParser";
+import { ExposingNestedContext } from "./KestrelParser";
 import { PubExposingContext } from "./KestrelParser";
 import { ParamsListContext } from "./KestrelParser";
 import { TypeVariantsContext } from "./KestrelParser";
@@ -156,6 +157,16 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitExternTypeDeclaration?: (ctx: ExternTypeDeclarationContext) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.exposingNested`.
+	 * @param ctx the parse tree
+	 */
+	enterExposingNested?: (ctx: ExposingNestedContext) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.exposingNested`.
+	 * @param ctx the parse tree
+	 */
+	exitExposingNested?: (ctx: ExposingNestedContext) => void;
 	/**
 	 * Enter a parse tree produced by `KestrelParser.pubExposing`.
 	 * @param ctx the parse tree
