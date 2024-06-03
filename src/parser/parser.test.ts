@@ -240,7 +240,7 @@ let _ = fn x, y { 0 }
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse fn with let", () => {
+test("parse fn with let", () => {
   const src = `
 let _ = fn {
   let x = 0;
