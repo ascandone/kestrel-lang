@@ -216,7 +216,7 @@ let _ = {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse fn with no args", () => {
+test("parse fn with no args", () => {
   const src = `
 let _ = fn { 0 }
 `;
