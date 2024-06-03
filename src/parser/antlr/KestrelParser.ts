@@ -1656,7 +1656,7 @@ export default class KestrelParser extends Parser {
 				this.state = 365;
 				(localctx as BlockContentLetHashExprContext)._mapper = this.qualifiedId();
 				this.state = 366;
-				(localctx as BlockContentLetHashExprContext)._binding = this.match(KestrelParser.ID);
+				(localctx as BlockContentLetHashExprContext)._pattern = this.matchPattern(0);
 				this.state = 367;
 				this.match(KestrelParser.T__9);
 				this.state = 368;
@@ -2072,7 +2072,7 @@ export default class KestrelParser extends Parser {
 	29,1,0,0,0,354,352,1,0,0,0,355,356,3,36,18,0,356,357,5,44,0,0,357,358,3,
 	28,14,0,358,31,1,0,0,0,359,360,5,4,0,0,360,361,3,34,17,0,361,362,5,6,0,
 	0,362,33,1,0,0,0,363,380,3,28,14,0,364,365,5,45,0,0,365,366,3,26,13,0,366,
-	367,5,48,0,0,367,368,5,10,0,0,368,369,3,28,14,0,369,370,5,46,0,0,370,371,
+	367,3,36,18,0,367,368,5,10,0,0,368,369,3,28,14,0,369,370,5,46,0,0,370,371,
 	3,34,17,0,371,380,1,0,0,0,372,373,5,8,0,0,373,374,3,36,18,0,374,375,5,10,
 	0,0,375,376,3,28,14,0,376,377,5,46,0,0,377,378,3,34,17,0,378,380,1,0,0,
 	0,379,363,1,0,0,0,379,364,1,0,0,0,379,372,1,0,0,0,380,35,1,0,0,0,381,382,
@@ -3650,7 +3650,7 @@ export class BlockContentLetExprContext extends BlockContentContext {
 }
 export class BlockContentLetHashExprContext extends BlockContentContext {
 	public _mapper!: QualifiedIdContext;
-	public _binding!: Token;
+	public _pattern!: MatchPatternContext;
 	public _value!: ExprContext;
 	public _body!: BlockContentContext;
 	constructor(parser: KestrelParser, ctx: BlockContentContext) {
@@ -3660,8 +3660,8 @@ export class BlockContentLetHashExprContext extends BlockContentContext {
 	public qualifiedId(): QualifiedIdContext {
 		return this.getTypedRuleContext(QualifiedIdContext, 0) as QualifiedIdContext;
 	}
-	public ID(): TerminalNode {
-		return this.getToken(KestrelParser.ID, 0);
+	public matchPattern(): MatchPatternContext {
+		return this.getTypedRuleContext(MatchPatternContext, 0) as MatchPatternContext;
 	}
 	public expr(): ExprContext {
 		return this.getTypedRuleContext(ExprContext, 0) as ExprContext;

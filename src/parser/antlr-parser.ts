@@ -277,11 +277,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   ): UntypedExpr => ({
     type: "let#",
     span: [ctx.start.start, ctx.stop!.stop + 1],
-    pattern: {
-      type: "identifier",
-      name: ctx._binding.text,
-      span: [ctx._binding.start, ctx._binding.stop + 1],
-    },
+    pattern: new MatchPatternVisitor().visit(ctx._pattern),
     mapper: {
       name: ctx._mapper._name.text,
       span: [ctx.qualifiedId().start.start, ctx.qualifiedId().stop!.stop + 1],

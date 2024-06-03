@@ -81,8 +81,8 @@ matchClause: matchPattern '=>' expr;
 block: '{' blockContent '}';
 
 blockContent:
-	expr																				# blockContentExpr
-	| 'let#' mapper = qualifiedId binding = ID '=' value = expr ';' body = blockContent	#
+	expr																							# blockContentExpr
+	| 'let#' mapper = qualifiedId pattern = matchPattern '=' value = expr ';' body = blockContent	#
 		blockContentLetHashExpr
 	| 'let' pattern = matchPattern '=' value = expr ';' body = blockContent # blockContentLetExpr;
 

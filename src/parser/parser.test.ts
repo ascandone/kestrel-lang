@@ -575,6 +575,11 @@ describe("pattern matching", () => {
     const src = `let _ = { let X(a, b :: c) = x; res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("matching pattern in let#", () => {
+    const src = `let _ = { let#ident X(a, b :: c) = x; res }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("extern bindings", () => {
