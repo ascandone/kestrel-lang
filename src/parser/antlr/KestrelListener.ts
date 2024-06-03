@@ -15,6 +15,7 @@ import { EqContext } from "./KestrelParser";
 import { IntContext } from "./KestrelParser";
 import { CompContext } from "./KestrelParser";
 import { CallContext } from "./KestrelParser";
+import { TupleContext } from "./KestrelParser";
 import { CharContext } from "./KestrelParser";
 import { BoolNotContext } from "./KestrelParser";
 import { IdContext } from "./KestrelParser";
@@ -171,6 +172,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitCall?: (ctx: CallContext) => void;
+	/**
+	 * Enter a parse tree produced by the `tuple`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterTuple?: (ctx: TupleContext) => void;
+	/**
+	 * Exit a parse tree produced by the `tuple`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitTuple?: (ctx: TupleContext) => void;
 	/**
 	 * Enter a parse tree produced by the `char`
 	 * labeled alternative in `KestrelParser.expr`.

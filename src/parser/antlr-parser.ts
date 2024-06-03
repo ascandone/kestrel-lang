@@ -14,6 +14,7 @@ import Parser, {
   IntContext,
   ParensContext,
   StringContext,
+  TupleContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import { Span, UntypedDeclaration, UntypedExpr, UntypedModule } from "./ast";
@@ -140,6 +141,26 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   visitBoolAnd = makeInfixOp;
   visitBoolOr = makeInfixOp;
   visitComp = makeInfixOp;
+
+  visitTuple = (ctx: TupleContext): UntypedExpr => {
+    // TODO this should be in the AST
+    const args = ctx.expr_list().map((e) => this.visit(e));
+    const count = args.length;
+
+    const span: Span = [ctx.start.start, ctx.stop!.start + 1];
+
+    return {
+      type: "application",
+      caller: {
+        type: "identifier",
+        name: `Tuple${count}`,
+        namespace: "Tuple",
+        span,
+      },
+      args,
+      span,
+    };
+  };
 }
 
 class DeclarationVisitor extends Visitor<UntypedDeclaration> {

@@ -26,6 +26,7 @@ expr:
 	| expr op = ('<' | '<=' | '>' | '>=') expr					# Comp
 	| expr op = '||' expr										# BoolOr
 	| expr op = '&&' expr										# BoolAnd
+	| '(' expr ',' expr (',' expr)* ')'							# tuple
 	| '(' expr ')'												# parens
 	| expr '(' (expr (',' expr)* ','?)? ')'						# call
 	| block														# blockExpr

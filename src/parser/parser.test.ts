@@ -280,7 +280,7 @@ let _ = if b {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse tuple sugar", () => {
+test("parse tuple sugar", () => {
   const src = "let _ = (1, 2)";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
