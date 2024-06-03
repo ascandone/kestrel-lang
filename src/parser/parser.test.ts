@@ -506,17 +506,17 @@ describe("pattern matching", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("binding with identifier", () => {
+  test("binding with identifier", () => {
     const src = `let _ = match x { a => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching many clauses, without trailing comma", () => {
+  test("matching many clauses, without trailing comma", () => {
     const src = `let _ = match x { a => ret_a, b => ret_b  }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching many clauses, with trailing comma", () => {
+  test("matching many clauses, with trailing comma", () => {
     const src = `let _ = match x { a => ret_a, b => ret_b,  }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

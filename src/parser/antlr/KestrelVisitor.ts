@@ -46,10 +46,12 @@ import { IfContext } from "./KestrelParser";
 import { BoolOrContext } from "./KestrelParser";
 import { BoolAndContext } from "./KestrelParser";
 import { ConsContext } from "./KestrelParser";
+import { MatchClauseContext } from "./KestrelParser";
 import { BlockContext } from "./KestrelParser";
 import { BlockContentExprContext } from "./KestrelParser";
 import { BlockContentLetHashExprContext } from "./KestrelParser";
 import { BlockContentLetExprContext } from "./KestrelParser";
+import { MatchIdentContext } from "./KestrelParser";
 
 
 /**
@@ -351,6 +353,12 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitCons?: (ctx: ConsContext) => Result;
 	/**
+	 * Visit a parse tree produced by `KestrelParser.matchClause`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitMatchClause?: (ctx: MatchClauseContext) => Result;
+	/**
 	 * Visit a parse tree produced by `KestrelParser.block`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -377,5 +385,12 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitBlockContentLetExpr?: (ctx: BlockContentLetExprContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `matchIdent`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitMatchIdent?: (ctx: MatchIdentContext) => Result;
 }
 

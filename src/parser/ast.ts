@@ -35,6 +35,8 @@ export type TypeAst<TypeResolutionMeta = unknown> = SpanMeta &
     | { type: "any" }
   );
 
+export type UntypedMatchPattern = MatchPattern;
+
 export type MatchPattern<
   TypeMeta = unknown,
   IdentifierResolutionMeta = unknown,

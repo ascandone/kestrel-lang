@@ -53,28 +53,30 @@ typeConstructorDecl: name = TYPE_ID ('(' type (',' type)* ')')?;
 qualifiedId: (moduleNamespace '.')? (name = (ID | TYPE_ID));
 
 expr:
-	INT															# int
-	| FLOAT														# float
-	| CHAR														# char
-	| STRING													# string
-	| qualifiedId												# id
-	| op = '!' expr												# BoolNot
-	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr			# MulDiv
-	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr			# AddSub
-	| <assoc = right> expr op = '::' expr						# cons
-	| expr op = ('==' | '!=') expr								# Eq
-	| expr op = ('<' | '<=' | '>' | '>=') expr					# Comp
-	| expr op = '||' expr										# BoolOr
-	| expr op = '&&' expr										# BoolAnd
-	| '(' expr ',' expr (',' expr)* ')'							# tuple
-	| '(' expr ')'												# parens
-	| expr '(' (expr (',' expr)* ','?)? ')'						# call
-	| block														# blockExpr
-	| 'fn' (ID (',' ID)* ','?)? block							# fn
-	| 'if' condition = expr then = block 'else' else = block	# if
-	| 'match' matched = expr '{' '}'							# match
-	| '[' (expr (',' expr)* ','?)? ']'							# listLit
-	| expr op = '|>' expr										# Pipe;
+	INT																		# int
+	| FLOAT																	# float
+	| CHAR																	# char
+	| STRING																# string
+	| qualifiedId															# id
+	| op = '!' expr															# BoolNot
+	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr						# MulDiv
+	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr						# AddSub
+	| <assoc = right> expr op = '::' expr									# cons
+	| expr op = ('==' | '!=') expr											# Eq
+	| expr op = ('<' | '<=' | '>' | '>=') expr								# Comp
+	| expr op = '||' expr													# BoolOr
+	| expr op = '&&' expr													# BoolAnd
+	| '(' expr ',' expr (',' expr)* ')'										# tuple
+	| '(' expr ')'															# parens
+	| expr '(' (expr (',' expr)* ','?)? ')'									# call
+	| block																	# blockExpr
+	| 'fn' (ID (',' ID)* ','?)? block										# fn
+	| 'if' condition = expr then = block 'else' else = block				# if
+	| 'match' matched = expr '{' (matchClause (',' matchClause)*)? ','? '}'	# match
+	| '[' (expr (',' expr)* ','?)? ']'										# listLit
+	| expr op = '|>' expr													# Pipe;
+
+matchClause: matchPattern '=>' expr;
 
 block: '{' blockContent '}';
 
@@ -85,3 +87,4 @@ blockContent:
 	| 'let' binding = ID '=' value = expr ';' body = blockContent # blockContentLetExpr;
 
 // Pattern matching syntax
+matchPattern: ID # matchIdent;

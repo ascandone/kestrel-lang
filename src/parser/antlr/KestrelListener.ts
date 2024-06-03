@@ -46,10 +46,12 @@ import { IfContext } from "./KestrelParser";
 import { BoolOrContext } from "./KestrelParser";
 import { BoolAndContext } from "./KestrelParser";
 import { ConsContext } from "./KestrelParser";
+import { MatchClauseContext } from "./KestrelParser";
 import { BlockContext } from "./KestrelParser";
 import { BlockContentExprContext } from "./KestrelParser";
 import { BlockContentLetHashExprContext } from "./KestrelParser";
 import { BlockContentLetExprContext } from "./KestrelParser";
+import { MatchIdentContext } from "./KestrelParser";
 
 
 /**
@@ -552,6 +554,16 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitCons?: (ctx: ConsContext) => void;
 	/**
+	 * Enter a parse tree produced by `KestrelParser.matchClause`.
+	 * @param ctx the parse tree
+	 */
+	enterMatchClause?: (ctx: MatchClauseContext) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.matchClause`.
+	 * @param ctx the parse tree
+	 */
+	exitMatchClause?: (ctx: MatchClauseContext) => void;
+	/**
 	 * Enter a parse tree produced by `KestrelParser.block`.
 	 * @param ctx the parse tree
 	 */
@@ -597,5 +609,17 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitBlockContentLetExpr?: (ctx: BlockContentLetExprContext) => void;
+	/**
+	 * Enter a parse tree produced by the `matchIdent`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	enterMatchIdent?: (ctx: MatchIdentContext) => void;
+	/**
+	 * Exit a parse tree produced by the `matchIdent`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	exitMatchIdent?: (ctx: MatchIdentContext) => void;
 }
 

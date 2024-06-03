@@ -22,6 +22,7 @@ import Parser, {
   LetDeclarationContext,
   ListLitContext,
   MatchContext,
+  MatchIdentContext,
   NamedTypeContext,
   ParensContext,
   PipeContext,
@@ -34,12 +35,14 @@ import Parser, {
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import {
+  MatchPattern,
   Span,
   TypeAst,
   UntypedDeclaration,
   UntypedExposedValue,
   UntypedExpr,
   UntypedImport,
+  UntypedMatchPattern,
   UntypedModule,
   UntypedTypeDeclaration,
 } from "./ast";
@@ -105,6 +108,16 @@ class TypeVisitor extends Visitor<TypeAst> {
       namespace: "Tuple",
       args,
       span,
+    };
+  };
+}
+
+class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
+  visitMatchIdent = (ctx: MatchIdentContext): UntypedMatchPattern => {
+    return {
+      type: "identifier",
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      name: ctx.ID().getText(),
     };
   };
 }
@@ -239,7 +252,12 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     type: "match",
     span: [ctx.start.start, ctx.stop!.stop + 1],
     expr: this.visit(ctx._matched),
-    clauses: [],
+    clauses: ctx
+      .matchClause_list()
+      .map((clause) => [
+        new MatchPatternVisitor().visit(clause.matchPattern()),
+        this.visit(clause.expr()),
+      ]),
   });
 
   visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());
