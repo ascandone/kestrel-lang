@@ -95,7 +95,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   });
 
   visitLet = (ctx: LetContext): UntypedExpr =>
-    ctx.letExpr_list().reduce(
+    ctx.letExpr_list().reduceRight(
       (acc, letExprCtx): UntypedExpr => ({
         type: "let",
         pattern: {

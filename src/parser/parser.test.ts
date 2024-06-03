@@ -204,7 +204,7 @@ let _ = {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse let block with two let stmts", () => {
+test("parse let block with two let stmts", () => {
   const src = `
 let _ = {
   let x = 0;
