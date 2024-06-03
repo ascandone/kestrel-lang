@@ -24,6 +24,7 @@ import { BlockExprContext } from "./KestrelParser";
 import { IfContext } from "./KestrelParser";
 import { BoolOrContext } from "./KestrelParser";
 import { BoolAndContext } from "./KestrelParser";
+import { ConsContext } from "./KestrelParser";
 import { LetExprContext } from "./KestrelParser";
 import { BlockContext } from "./KestrelParser";
 
@@ -281,6 +282,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitBoolAnd?: (ctx: BoolAndContext) => void;
+	/**
+	 * Enter a parse tree produced by the `cons`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterCons?: (ctx: ConsContext) => void;
+	/**
+	 * Exit a parse tree produced by the `cons`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitCons?: (ctx: ConsContext) => void;
 	/**
 	 * Enter a parse tree produced by `KestrelParser.letExpr`.
 	 * @param ctx the parse tree

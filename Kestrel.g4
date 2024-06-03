@@ -1,7 +1,7 @@
 grammar Kestrel;
 
 // Common
-ID: [_a-z]+;
+ID: [_a-zA-Z]+; // TODO differentiate between ident and bindings
 INT: [0-9]+;
 CHAR: '\'' ~[']* '\'';
 STRING: '"' ~["]* '"';
@@ -22,6 +22,7 @@ expr:
 	| op = '!' expr												# BoolNot
 	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr			# MulDiv
 	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr			# AddSub
+	| <assoc = right> expr op = '::' expr						# cons
 	| expr op = ('==' | '!=') expr								# Eq
 	| expr op = ('<' | '<=' | '>' | '>=') expr					# Comp
 	| expr op = '||' expr										# BoolOr

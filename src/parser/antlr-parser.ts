@@ -5,6 +5,7 @@ import Parser, {
   BlockExprContext,
   CallContext,
   CharContext,
+  ConsContext,
   DeclarationContext,
   ExprContext,
   FloatContext,
@@ -142,6 +143,18 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   visitBoolAnd = makeInfixOp;
   visitBoolOr = makeInfixOp;
   visitComp = makeInfixOp;
+
+  visitCons = (ctx: ConsContext): UntypedExpr => ({
+    type: "application",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    caller: {
+      type: "identifier",
+      name: "Cons",
+      namespace: "List",
+      span: [ctx._op.start, ctx._op.stop + 1],
+    },
+    args: [this.visit(ctx.expr(0)), this.visit(ctx.expr(1))],
+  });
 
   visitTuple = (ctx: TupleContext): UntypedExpr => {
     // TODO this should be in the AST

@@ -300,12 +300,12 @@ test("parse list sugar with many values", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse conslist sugar", () => {
+test("parse conslist sugar", () => {
   const src = "let _ = hd :: tl";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse cons operator is right-associative", () => {
+test("parse cons operator is right-associative", () => {
   const src = "let _ = a :: b :: Nil";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
