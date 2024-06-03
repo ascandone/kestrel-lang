@@ -62,7 +62,6 @@ import { FloatPatternContext } from "./KestrelParser";
 import { ConstructorContext } from "./KestrelParser";
 import { MatchIdentContext } from "./KestrelParser";
 import { StringPatternContext } from "./KestrelParser";
-import { DocCommentLineContext } from "./KestrelParser";
 
 
 /**
@@ -746,15 +745,5 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitStringPattern?: (ctx: StringPatternContext) => void;
-	/**
-	 * Enter a parse tree produced by `KestrelParser.docCommentLine`.
-	 * @param ctx the parse tree
-	 */
-	enterDocCommentLine?: (ctx: DocCommentLineContext) => void;
-	/**
-	 * Exit a parse tree produced by `KestrelParser.docCommentLine`.
-	 * @param ctx the parse tree
-	 */
-	exitDocCommentLine?: (ctx: DocCommentLineContext) => void;
 }
 

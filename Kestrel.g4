@@ -1,7 +1,10 @@
 grammar Kestrel;
 
-// Common
-LineComment: '//' ~[\r\n]* -> channel(HIDDEN);
+SLASH_4: '////';
+SLASH_3: '///';
+SLASH_2: '//';
+
+LineComment: SLASH_2 ~[\r\n]* -> channel(HIDDEN);
 
 EXPOSING_NESTED: '(' '..' ')';
 INFIX_ID: '(' INFIX_CHAR+ ')';
@@ -14,9 +17,13 @@ FLOAT: [0-9]* '.' [0-9]+;
 NEWLINE: '\r'? '\n' -> skip;
 WS: [ \t\r\n]+ -> skip;
 
+MODULEDOC_COMMENT_LINE: SLASH_4 (~'\n')* NEWLINE;
+DOC_COMMENT_LINE: SLASH_3 (~'\n')* NEWLINE;
+
 moduleNamespace: TYPE_ID ('/' TYPE_ID)*;
 
-program: import_* declaration* EOF;
+program:
+	(doc = MODULEDOC_COMMENT_LINE*) import_* declaration* EOF;
 
 import_:
 	'import' moduleNamespace (
@@ -34,16 +41,21 @@ declaration:
 	| externTypeDeclaration_	# externTypeDeclaration;
 
 letDeclaration_:
-	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr;
+	(doc = DOC_COMMENT_LINE*) (pub = 'pub'?) 'let' ID (
+		':' typeHint = polyType
+	)? '=' expr;
 
 externLetDeclaration_:
-	'extern' pub = 'pub'? 'let' (binding = (INFIX_ID | ID)) ':' typeHint = polyType;
+	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'let' (
+		binding = (INFIX_ID | ID)
+	) ':' typeHint = polyType;
 
 typeDeclaration_:
-	pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants? '}';
+	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants?
+		'}';
 
 externTypeDeclaration_:
-	'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?;
+	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?;
 
 pubExposing: 'pub' EXPOSING_NESTED?;
 paramsList: '<' ID (',' ID)* '>';
@@ -128,5 +140,3 @@ INFIX_CHAR:
 	| '%'
 	| '&'
 	| '|';
-
-docCommentLine: '///' (~NEWLINE)* NEWLINE;

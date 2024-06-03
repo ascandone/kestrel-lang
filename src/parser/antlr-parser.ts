@@ -409,12 +409,18 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
         : // @ts-ignore
           ctx._typeHint.accept(new TypeVisitor())[0];
 
+    const docs = ctx
+      .DOC_COMMENT_LINE_list()
+      .map((d) => d.getText().slice(3))
+      .join("");
+
     return {
       type: "value",
       decl: {
         extern: false,
         inline: false,
         pub: ctx._pub !== undefined,
+        ...(docs === "" ? {} : { docComment: docs }),
         ...(typeHint === undefined
           ? {}
           : {
@@ -443,6 +449,11 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       // @ts-ignore
       ctx._typeHint.accept(new TypeVisitor())[0];
 
+    const docs = ctx
+      .DOC_COMMENT_LINE_list()
+      .map((d) => d.getText().slice(3))
+      .join("");
+
     return {
       type: "value",
       decl: {
@@ -457,6 +468,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
           name: normalizeInfix(ctx._binding.text),
           span: [ctx._binding.start, ctx._binding.stop + 1],
         },
+        ...(docs === "" ? {} : { docComment: docs }),
         span: [ctx.start.start, ctx.stop!.stop + 1],
       },
     };
@@ -466,6 +478,11 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
     typeDecl: TypeDeclarationContext,
   ): DeclarationType => {
     const ctx = typeDecl.typeDeclaration_();
+
+    const docs = ctx
+      .DOC_COMMENT_LINE_list()
+      .map((d) => d.getText().slice(3))
+      .join("");
 
     return {
       type: "type",
@@ -495,6 +512,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
               name: i.getText(),
               span: [i.symbol.start, i.symbol.stop + 1],
             })) ?? [],
+        ...(docs === "" ? {} : { docComment: docs }),
         span: [ctx.start.start, ctx.stop!.stop + 1],
       },
     };
@@ -504,6 +522,11 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
     typeDecl: ExternTypeDeclarationContext,
   ): DeclarationType => {
     const ctx = typeDecl.externTypeDeclaration_();
+
+    const docs = ctx
+      .DOC_COMMENT_LINE_list()
+      .map((d) => d.getText().slice(3))
+      .join("");
 
     return {
       type: "type",
@@ -520,6 +543,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
               name: i.getText(),
               span: [i.symbol.start, i.symbol.stop + 1],
             })) ?? [],
+        ...(docs === "" ? {} : { docComment: docs }),
         span: [ctx.start.start, ctx.stop!.stop + 1],
       },
     };
@@ -565,11 +589,17 @@ export function unsafeParse(input: string): UntypedModule {
 
   const declCtx = parser.program();
 
+  const docs = declCtx
+    .MODULEDOC_COMMENT_LINE_list()
+    .map((d) => d.getText().slice(4))
+    .join("");
+
   const declarations = declCtx
     .declaration_list()
     .map((d) => new DeclarationVisitor().visit(d));
 
   return {
+    ...(docs === "" ? {} : { moduleDoc: docs }),
     imports: declCtx.import__list().map((i): UntypedImport => {
       return {
         ns: i.moduleNamespace().getText(),

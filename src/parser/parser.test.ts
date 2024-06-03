@@ -701,7 +701,7 @@ describe("imports", () => {
 });
 
 describe("Comments", () => {
-  test.skip("doc comments", () => {
+  test("doc comments", () => {
     const src = `
     /// first line
     /// second line
@@ -710,7 +710,7 @@ describe("Comments", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("doc comments on externs", () => {
+  test("doc comments on externs", () => {
     const src = `
     /// first line
     /// second line
@@ -719,7 +719,7 @@ describe("Comments", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("doc comments with many declrs", () => {
+  test("doc comments with many declrs", () => {
     const src = `
     let x = 0
 
@@ -729,7 +729,7 @@ describe("Comments", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("doc comments on types", () => {
+  test("doc comments on types", () => {
     const src = `
     /// first line
     /// second line
@@ -738,7 +738,7 @@ describe("Comments", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("doc comments on extern types", () => {
+  test("doc comments on extern types", () => {
     const src = `
     /// first line
     /// second line
@@ -747,7 +747,7 @@ describe("Comments", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("moduledoc comments", () => {
+  test("moduledoc comments", () => {
     const src = `
     //// Module level comment
     //// Second line
