@@ -1,5 +1,5 @@
 import { ModuleDoc, makeModuleDoc } from "./documentation";
-import { unsafeParse } from "./parser";
+import { unsafeParse } from "./parser/antlr-parser";
 import { typecheck } from "./typecheck";
 import { test, expect } from "vitest";
 
