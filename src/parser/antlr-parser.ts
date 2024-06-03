@@ -12,6 +12,7 @@ import Parser, {
   IdContext,
   IfContext,
   IntContext,
+  ListLitContext,
   ParensContext,
   StringContext,
   TupleContext,
@@ -161,6 +162,12 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       span,
     };
   };
+
+  visitListLit = (ctx: ListLitContext): UntypedExpr => ({
+    type: "list-literal",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    values: ctx.expr_list().map((e) => this.visit(e)),
+  });
 }
 
 class DeclarationVisitor extends Visitor<UntypedDeclaration> {

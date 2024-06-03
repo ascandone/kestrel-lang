@@ -31,7 +31,8 @@ expr:
 	| expr '(' (expr (',' expr)* ','?)? ')'						# call
 	| block														# blockExpr
 	| 'fn' (ID (',' ID)* ','?)? block							# fn
-	| 'if' condition = expr then = block 'else' else = block	# if;
+	| 'if' condition = expr then = block 'else' else = block	# if
+	| '[' (expr (',' expr)* ','?)? ']'							# listLit;
 
 letExpr: 'let' ID '=' expr ';';
 

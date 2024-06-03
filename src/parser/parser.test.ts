@@ -285,17 +285,17 @@ test("parse tuple sugar", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse empty list sugar", () => {
+test("parse empty list sugar", () => {
   const src = "let _ = []";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse singleton list sugar", () => {
+test("parse singleton list sugar", () => {
   const src = "let _ = [42]";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse list sugar with many values", () => {
+test("parse list sugar with many values", () => {
   const src = "let _ = [0, 1, 2]";
   expect(unsafeParse(src)).toMatchSnapshot();
 });

@@ -5,6 +5,7 @@ import {ParseTreeListener} from "antlr4";
 
 import { ProgramContext } from "./KestrelParser";
 import { DeclarationContext } from "./KestrelParser";
+import { ListLitContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
 import { StringContext } from "./KestrelParser";
 import { MulDivContext } from "./KestrelParser";
@@ -52,6 +53,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitDeclaration?: (ctx: DeclarationContext) => void;
+	/**
+	 * Enter a parse tree produced by the `listLit`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterListLit?: (ctx: ListLitContext) => void;
+	/**
+	 * Exit a parse tree produced by the `listLit`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitListLit?: (ctx: ListLitContext) => void;
 	/**
 	 * Enter a parse tree produced by the `parens`
 	 * labeled alternative in `KestrelParser.expr`.
