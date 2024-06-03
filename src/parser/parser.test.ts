@@ -436,7 +436,7 @@ describe("type hints", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parses tuple type syntax sugar", () => {
+  test("parses tuple type syntax sugar", () => {
     const src = "let x : (Int, Maybe<Int>) = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

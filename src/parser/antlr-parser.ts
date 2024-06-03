@@ -24,6 +24,7 @@ import Parser, {
   PipeContext,
   StringContext,
   TupleContext,
+  TupleTypeContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import {
@@ -82,6 +83,21 @@ class TypeVisitor extends Visitor<TypeAst> {
         .map((p) => this.visit(p)) ?? [],
     return: this.visit(ctx._ret),
   });
+  visitTupleType = (ctx: TupleTypeContext): TypeAst => {
+    // TODO this should be in the AST
+    const args = ctx.type__list().map((e) => this.visit(e));
+    const count = args.length;
+
+    const span: Span = [ctx.start.start, ctx.stop!.start + 1];
+
+    return {
+      type: "named",
+      name: `Tuple${count}`,
+      namespace: "Tuple",
+      args,
+      span,
+    };
+  };
 }
 
 class ExpressionVisitor extends Visitor<UntypedExpr> {

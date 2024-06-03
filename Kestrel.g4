@@ -19,7 +19,8 @@ polyType: type;
 type:
 	name = TYPE_ID ('<' type (',' type)* '>')?		# namedType
 	| 'Fn' '(' fnTypeParams? ')' '->' ret = type	# fnType
-	| ID											# genericType;
+	| ID											# genericType
+	| '(' type ',' type (',' type)* ')'				# tupleType;
 
 fnTypeParams: ( type (',' type)* ','?);
 

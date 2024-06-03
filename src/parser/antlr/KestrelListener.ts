@@ -9,6 +9,7 @@ import { PolyTypeContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
 import { FnTypeContext } from "./KestrelParser";
 import { GenericTypeContext } from "./KestrelParser";
+import { TupleTypeContext } from "./KestrelParser";
 import { FnTypeParamsContext } from "./KestrelParser";
 import { ListLitContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
@@ -108,6 +109,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitGenericType?: (ctx: GenericTypeContext) => void;
+	/**
+	 * Enter a parse tree produced by the `tupleType`
+	 * labeled alternative in `KestrelParser.type`.
+	 * @param ctx the parse tree
+	 */
+	enterTupleType?: (ctx: TupleTypeContext) => void;
+	/**
+	 * Exit a parse tree produced by the `tupleType`
+	 * labeled alternative in `KestrelParser.type`.
+	 * @param ctx the parse tree
+	 */
+	exitTupleType?: (ctx: TupleTypeContext) => void;
 	/**
 	 * Enter a parse tree produced by `KestrelParser.fnTypeParams`.
 	 * @param ctx the parse tree

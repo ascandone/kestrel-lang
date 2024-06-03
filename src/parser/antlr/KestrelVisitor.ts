@@ -9,6 +9,7 @@ import { PolyTypeContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
 import { FnTypeContext } from "./KestrelParser";
 import { GenericTypeContext } from "./KestrelParser";
+import { TupleTypeContext } from "./KestrelParser";
 import { FnTypeParamsContext } from "./KestrelParser";
 import { ListLitContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
@@ -84,6 +85,13 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitGenericType?: (ctx: GenericTypeContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `tupleType`
+	 * labeled alternative in `KestrelParser.type`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitTupleType?: (ctx: TupleTypeContext) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.fnTypeParams`.
 	 * @param ctx the parse tree
