@@ -1,6 +1,6 @@
 import { test, expect, beforeEach } from "vitest";
 import { Hovered, hoverOn, hoverToMarkdown } from "../typedAst";
-import { unsafeParse } from "../../parser";
+import { unsafeParse } from "../../parser/antlr-parser";
 import { resetTraitsRegistry, typecheck } from "../typecheck";
 import { TypeScheme } from "../type";
 import { indexOf, spanOf } from "./__test__/utils";
