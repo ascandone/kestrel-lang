@@ -582,12 +582,8 @@ class KestrelErrorListener extends ErrorListener<antlr4.Token> {
 }
 
 export function unsafeParse(input: string): UntypedModule {
-  const chars = new antlr4.InputStream(input);
-
-  const lexer = new Lexer(
-    // @ts-ignore
-    chars,
-  );
+  const chars = new antlr4.CharStream(input);
+  const lexer = new Lexer(chars);
 
   const tokens = new antlr4.CommonTokenStream(lexer);
   const parser = new Parser(tokens);
