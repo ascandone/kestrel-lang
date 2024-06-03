@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { format } from "../formatter";
-import { unsafeParse } from "../parser";
+import { unsafeParse } from "../parser/antlr-parser";
 import { optimizeModule } from "./optimize";
 import { typecheck } from "../typecheck";
 
