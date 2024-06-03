@@ -571,7 +571,7 @@ describe("pattern matching", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("matching pattern in let", () => {
+  test("matching pattern in let", () => {
     const src = `let _ = { let X(a, b :: c) = x; res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

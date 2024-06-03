@@ -84,7 +84,7 @@ blockContent:
 	expr																				# blockContentExpr
 	| 'let#' mapper = qualifiedId binding = ID '=' value = expr ';' body = blockContent	#
 		blockContentLetHashExpr
-	| 'let' binding = ID '=' value = expr ';' body = blockContent # blockContentLetExpr;
+	| 'let' pattern = matchPattern '=' value = expr ';' body = blockContent # blockContentLetExpr;
 
 // Pattern matching syntax
 matchPattern:

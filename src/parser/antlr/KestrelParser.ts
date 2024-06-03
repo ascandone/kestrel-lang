@@ -1674,7 +1674,7 @@ export default class KestrelParser extends Parser {
 				this.state = 372;
 				this.match(KestrelParser.T__7);
 				this.state = 373;
-				(localctx as BlockContentLetExprContext)._binding = this.match(KestrelParser.ID);
+				(localctx as BlockContentLetExprContext)._pattern = this.matchPattern(0);
 				this.state = 374;
 				this.match(KestrelParser.T__9);
 				this.state = 375;
@@ -2073,7 +2073,7 @@ export default class KestrelParser extends Parser {
 	28,14,0,358,31,1,0,0,0,359,360,5,4,0,0,360,361,3,34,17,0,361,362,5,6,0,
 	0,362,33,1,0,0,0,363,380,3,28,14,0,364,365,5,45,0,0,365,366,3,26,13,0,366,
 	367,5,48,0,0,367,368,5,10,0,0,368,369,3,28,14,0,369,370,5,46,0,0,370,371,
-	3,34,17,0,371,380,1,0,0,0,372,373,5,8,0,0,373,374,5,48,0,0,374,375,5,10,
+	3,34,17,0,371,380,1,0,0,0,372,373,5,8,0,0,373,374,3,36,18,0,374,375,5,10,
 	0,0,375,376,3,28,14,0,376,377,5,46,0,0,377,378,3,34,17,0,378,380,1,0,0,
 	0,379,363,1,0,0,0,379,364,1,0,0,0,379,372,1,0,0,0,380,35,1,0,0,0,381,382,
 	6,18,-1,0,382,420,5,48,0,0,383,384,3,0,0,0,384,385,5,3,0,0,385,387,1,0,
@@ -3613,15 +3613,15 @@ export class BlockContentContext extends ParserRuleContext {
 	}
 }
 export class BlockContentLetExprContext extends BlockContentContext {
-	public _binding!: Token;
+	public _pattern!: MatchPatternContext;
 	public _value!: ExprContext;
 	public _body!: BlockContentContext;
 	constructor(parser: KestrelParser, ctx: BlockContentContext) {
 		super(parser, ctx.parentCtx, ctx.invokingState);
 		super.copyFrom(ctx);
 	}
-	public ID(): TerminalNode {
-		return this.getToken(KestrelParser.ID, 0);
+	public matchPattern(): MatchPatternContext {
+		return this.getTypedRuleContext(MatchPatternContext, 0) as MatchPatternContext;
 	}
 	public expr(): ExprContext {
 		return this.getTypedRuleContext(ExprContext, 0) as ExprContext;
