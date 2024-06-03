@@ -619,12 +619,12 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parse pub(..) modifier on types", () => {
+  test("parse pub(..) modifier on types", () => {
     const src = "pub(..) type T { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.skip("parse pub modifier on extern types", () => {
+  test("parse pub modifier on extern types", () => {
     const src = "extern pub type T";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

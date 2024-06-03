@@ -358,7 +358,12 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       type: "type",
       decl: {
         type: "adt",
-        pub: ctx._pub !== undefined,
+        pub:
+          ctx._pub === undefined
+            ? false
+            : ctx._pub._exposing === undefined
+              ? true
+              : "..",
         name: ctx._name.text,
         variants:
           ctx
@@ -389,7 +394,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       type: "type",
       decl: {
         type: "extern",
-        pub: false,
+        pub: ctx._pub !== undefined,
         name: ctx._name.text,
 
         params:

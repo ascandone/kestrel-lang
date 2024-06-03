@@ -8,6 +8,7 @@ import { LetDeclarationContext } from "./KestrelParser";
 import { ExternLetDeclarationContext } from "./KestrelParser";
 import { TypeDeclarationContext } from "./KestrelParser";
 import { ExternTypeDeclarationContext } from "./KestrelParser";
+import { PubExposingContext } from "./KestrelParser";
 import { ParamsListContext } from "./KestrelParser";
 import { TypeVariantsContext } from "./KestrelParser";
 import { PolyTypeContext } from "./KestrelParser";
@@ -86,6 +87,12 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitExternTypeDeclaration?: (ctx: ExternTypeDeclarationContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.pubExposing`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitPubExposing?: (ctx: PubExposingContext) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.paramsList`.
 	 * @param ctx the parse tree

@@ -15,11 +15,12 @@ WS: [ \t\r\n]+ -> skip;
 program: declaration* EOF;
 
 declaration:
-	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr				# letDeclaration
-	| 'extern' pub = 'pub'? 'let' ID ':' typeHint = polyType				# externLetDeclaration
-	| pub = 'pub'? 'type' name = TYPE_ID paramsList? '{' typeVariants? '}'	# typeDeclaration
-	| 'extern' 'type' name = TYPE_ID paramsList?							# externTypeDeclaration;
+	pub = 'pub'? 'let' ID (':' typeHint = polyType)? '=' expr						# letDeclaration
+	| 'extern' pub = 'pub'? 'let' ID ':' typeHint = polyType						# externLetDeclaration
+	| pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants? '}'	# typeDeclaration
+	| 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?						# externTypeDeclaration;
 
+pubExposing: 'pub' (exposing = '(' '..' ')')?;
 paramsList: '<' ID (',' ID)* '>';
 
 typeVariants:
