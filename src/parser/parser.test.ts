@@ -306,7 +306,7 @@ test("parse conslist sugar", () => {
 });
 
 test("parse cons operator is right-associative", () => {
-  const src = "let _ = a :: b :: Nil";
+  const src = "let _ = a :: b :: nil";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
@@ -401,7 +401,7 @@ test("ignoring comments", () => {
 });
 
 describe("type hints", () => {
-  test.skip("parses a concrete type with no args as a type hint", () => {
+  test("parses a concrete type with no args as a type hint", () => {
     const src = "let x : Int = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });

@@ -17,13 +17,20 @@ import Parser, {
   IfContext,
   IntContext,
   ListLitContext,
+  NamedTypeContext,
   ParensContext,
   PipeContext,
   StringContext,
   TupleContext,
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
-import { Span, UntypedDeclaration, UntypedExpr, UntypedModule } from "./ast";
+import {
+  Span,
+  TypeAst,
+  UntypedDeclaration,
+  UntypedExpr,
+  UntypedModule,
+} from "./ast";
 
 interface InfixExprContext extends ExprContext {
   _op: { text: string };
@@ -37,6 +44,15 @@ const makeInfixOp = <Ctx extends InfixExprContext>(ctx: Ctx): UntypedExpr => ({
   operator: ctx._op.text,
   span: [ctx.start.start, ctx.stop!.stop + 1],
 });
+
+class TypeVisitor extends Visitor<TypeAst> {
+  visitNamedType = (ctx: NamedTypeContext): TypeAst => ({
+    type: "named",
+    args: [],
+    name: ctx._name.text,
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+}
 
 class ExpressionVisitor extends Visitor<UntypedExpr> {
   visitInt = (ctx: IntContext): UntypedExpr => ({
@@ -225,10 +241,25 @@ class DeclarationVisitor extends Visitor<UntypedDeclaration> {
 
     const value = new ExpressionVisitor().visit(ctx.expr());
 
+    const typeHint: TypeAst | undefined =
+      ctx._typeHint === undefined
+        ? undefined
+        : // @ts-ignore
+          ctx._typeHint.accept(new TypeVisitor())[0];
+
     return {
       extern: false,
       inline: false,
       pub: false,
+      ...(typeHint === undefined
+        ? {}
+        : {
+            typeHint: {
+              mono: typeHint,
+              span: typeHint.span,
+              where: [],
+            },
+          }),
       binding: {
         name: binding.getText(),
         span: [binding.symbol.start, binding.symbol.stop + 1],

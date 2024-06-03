@@ -2048,7 +2048,7 @@ exports[`parse cons operator is right-associative 1`] = `
                 "type": "identifier",
               },
               {
-                "name": "Nil",
+                "name": "nil",
                 "namespace": undefined,
                 "span": [
                   18,

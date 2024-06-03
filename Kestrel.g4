@@ -3,7 +3,8 @@ grammar Kestrel;
 // Common
 LineComment: '//' ~[\r\n]* -> channel(HIDDEN);
 
-ID: [_a-zA-Z]+; // TODO differentiate between ident and bindings
+ID: [_a-z]+; // TODO differentiate between ident and bindings
+TYPE_ID: [A-Z]+ [a-z]*;
 INT: [0-9]+;
 CHAR: '\'' ~[']* '\'';
 STRING: '"' ~["]* '"';
@@ -13,7 +14,9 @@ WS: [ \t\r\n]+ -> skip;
 
 program: declaration* EOF;
 
-declaration: 'let' ID '=' expr;
+declaration: 'let' ID (':' typeHint = polyType)? '=' expr;
+polyType: type;
+type: name = TYPE_ID # namedType;
 
 expr:
 	INT															# int
