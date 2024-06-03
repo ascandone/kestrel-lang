@@ -1049,7 +1049,6 @@ exports[`monadic let syntax sugar 1`] = `
             25,
             31,
           ],
-          "type": "identifier",
         },
         "pattern": {
           "name": "x",

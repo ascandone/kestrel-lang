@@ -3,6 +3,7 @@ import Lexer from "./antlr/KestrelLexer";
 import Parser, {
   BlockContentExprContext,
   BlockContentLetExprContext,
+  BlockContentLetHashExprContext,
   BlockContext,
   BlockExprContext,
   CallContext,
@@ -114,8 +115,27 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     span: [ctx.start.start, ctx.stop!.stop + 1],
     pattern: {
       type: "identifier",
-      name: ctx.ID().getText(),
-      span: [ctx.ID().symbol.start, ctx.ID().symbol.stop + 1],
+      name: ctx._binding.text,
+      span: [ctx._binding.start, ctx._binding.stop + 1],
+    },
+    value: this.visit(ctx._value),
+    body: this.visit(ctx._body),
+  });
+
+  visitBlockContentLetHashExpr = (
+    ctx: BlockContentLetHashExprContext,
+  ): UntypedExpr => ({
+    type: "let#",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    pattern: {
+      type: "identifier",
+      name: ctx._binding.text,
+      span: [ctx._binding.start, ctx._binding.stop + 1],
+    },
+    mapper: {
+      name: ctx._mapper.text,
+      span: [ctx._mapper.start, ctx._mapper.stop + 1],
+      namespace: undefined,
     },
     value: this.visit(ctx._value),
     body: this.visit(ctx._body),

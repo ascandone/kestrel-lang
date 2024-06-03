@@ -52,13 +52,14 @@ export default class KestrelParser extends Parser {
 	public static readonly T__30 = 31;
 	public static readonly T__31 = 32;
 	public static readonly T__32 = 33;
-	public static readonly ID = 34;
-	public static readonly INT = 35;
-	public static readonly CHAR = 36;
-	public static readonly STRING = 37;
-	public static readonly FLOAT = 38;
-	public static readonly NEWLINE = 39;
-	public static readonly WS = 40;
+	public static readonly T__33 = 34;
+	public static readonly ID = 35;
+	public static readonly INT = 36;
+	public static readonly CHAR = 37;
+	public static readonly STRING = 38;
+	public static readonly FLOAT = 39;
+	public static readonly NEWLINE = 40;
+	public static readonly WS = 41;
 	public static readonly EOF = Token.EOF;
 	public static readonly RULE_program = 0;
 	public static readonly RULE_declaration = 1;
@@ -81,7 +82,8 @@ export default class KestrelParser extends Parser {
                                                             "'fn'", "'if'", 
                                                             "'else'", "'['", 
                                                             "']'", "'{'", 
-                                                            "'}'", "';'" ];
+                                                            "'}'", "'let#'", 
+                                                            "';'" ];
 	public static readonly symbolicNames: (string | null)[] = [ null, null, 
                                                              null, null, 
                                                              null, null, 
@@ -99,9 +101,10 @@ export default class KestrelParser extends Parser {
                                                              null, null, 
                                                              null, null, 
                                                              null, null, 
-                                                             "ID", "INT", 
-                                                             "CHAR", "STRING", 
-                                                             "FLOAT", "NEWLINE", 
+                                                             null, "ID", 
+                                                             "INT", "CHAR", 
+                                                             "STRING", "FLOAT", 
+                                                             "NEWLINE", 
                                                              "WS" ];
 	// tslint:disable:no-trailing-whitespace
 	public static readonly ruleNames: string[] = [
@@ -337,7 +340,7 @@ export default class KestrelParser extends Parser {
 				this.state = 61;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la===34) {
+				if (_la===35) {
 					{
 					this.state = 50;
 					this.match(KestrelParser.ID);
@@ -403,7 +406,7 @@ export default class KestrelParser extends Parser {
 				this.state = 82;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 2894069768) !== 0) || ((((_la - 34)) & ~0x1F) === 0 && ((1 << (_la - 34)) & 31) !== 0)) {
+				if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 2894069768) !== 0) || ((((_la - 35)) & ~0x1F) === 0 && ((1 << (_la - 35)) & 31) !== 0)) {
 					{
 					this.state = 71;
 					this.expr(0);
@@ -600,7 +603,7 @@ export default class KestrelParser extends Parser {
 						this.state = 121;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
-						if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 2894069768) !== 0) || ((((_la - 34)) & ~0x1F) === 0 && ((1 << (_la - 34)) & 31) !== 0)) {
+						if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 2894069768) !== 0) || ((((_la - 35)) & ~0x1F) === 0 && ((1 << (_la - 35)) & 31) !== 0)) {
 							{
 							this.state = 110;
 							this.expr(0);
@@ -696,7 +699,7 @@ export default class KestrelParser extends Parser {
 		let localctx: BlockContentContext = new BlockContentContext(this, this._ctx, this.state);
 		this.enterRule(localctx, 8, KestrelParser.RULE_blockContent);
 		try {
-			this.state = 141;
+			this.state = 149;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case 3:
@@ -705,11 +708,11 @@ export default class KestrelParser extends Parser {
 			case 27:
 			case 29:
 			case 31:
-			case 34:
 			case 35:
 			case 36:
 			case 37:
 			case 38:
+			case 39:
 				localctx = new BlockContentExprContext(this, localctx);
 				this.enterOuterAlt(localctx, 1);
 				{
@@ -717,21 +720,41 @@ export default class KestrelParser extends Parser {
 				this.expr(0);
 				}
 				break;
-			case 1:
-				localctx = new BlockContentLetExprContext(this, localctx);
+			case 33:
+				localctx = new BlockContentLetHashExprContext(this, localctx);
 				this.enterOuterAlt(localctx, 2);
 				{
 				this.state = 134;
-				this.match(KestrelParser.T__0);
-				this.state = 135;
-				this.match(KestrelParser.ID);
-				this.state = 136;
-				this.match(KestrelParser.T__1);
-				this.state = 137;
-				(localctx as BlockContentLetExprContext)._value = this.expr(0);
-				this.state = 138;
 				this.match(KestrelParser.T__32);
+				this.state = 135;
+				(localctx as BlockContentLetHashExprContext)._mapper = this.match(KestrelParser.ID);
+				this.state = 136;
+				(localctx as BlockContentLetHashExprContext)._binding = this.match(KestrelParser.ID);
+				this.state = 137;
+				this.match(KestrelParser.T__1);
+				this.state = 138;
+				(localctx as BlockContentLetHashExprContext)._value = this.expr(0);
 				this.state = 139;
+				this.match(KestrelParser.T__33);
+				this.state = 140;
+				(localctx as BlockContentLetHashExprContext)._body = this.blockContent();
+				}
+				break;
+			case 1:
+				localctx = new BlockContentLetExprContext(this, localctx);
+				this.enterOuterAlt(localctx, 3);
+				{
+				this.state = 142;
+				this.match(KestrelParser.T__0);
+				this.state = 143;
+				(localctx as BlockContentLetExprContext)._binding = this.match(KestrelParser.ID);
+				this.state = 144;
+				this.match(KestrelParser.T__1);
+				this.state = 145;
+				(localctx as BlockContentLetExprContext)._value = this.expr(0);
+				this.state = 146;
+				this.match(KestrelParser.T__33);
+				this.state = 147;
 				(localctx as BlockContentLetExprContext)._body = this.blockContent();
 				}
 				break;
@@ -783,7 +806,7 @@ export default class KestrelParser extends Parser {
 		return true;
 	}
 
-	public static readonly _serializedATN: number[] = [4,1,40,144,2,0,7,0,2,
+	public static readonly _serializedATN: number[] = [4,1,41,152,2,0,7,0,2,
 	1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,1,0,5,0,12,8,0,10,0,12,0,15,9,0,1,0,1,0,1,
 	1,1,1,1,1,1,1,1,1,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,
 	2,5,2,38,8,2,10,2,12,2,41,9,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,
@@ -792,44 +815,47 @@ export default class KestrelParser extends Parser {
 	3,2,83,8,2,1,2,3,2,86,8,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,
 	2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,5,2,114,8,2,10,
 	2,12,2,117,9,2,1,2,3,2,120,8,2,3,2,122,8,2,1,2,5,2,125,8,2,10,2,12,2,128,
-	9,2,1,3,1,3,1,3,1,3,1,4,1,4,1,4,1,4,1,4,1,4,1,4,1,4,3,4,142,8,4,1,4,0,1,
-	4,5,0,2,4,6,8,0,4,1,0,4,8,1,0,9,13,1,0,15,16,1,0,17,20,169,0,13,1,0,0,0,
-	2,18,1,0,0,0,4,85,1,0,0,0,6,129,1,0,0,0,8,141,1,0,0,0,10,12,3,2,1,0,11,
-	10,1,0,0,0,12,15,1,0,0,0,13,11,1,0,0,0,13,14,1,0,0,0,14,16,1,0,0,0,15,13,
-	1,0,0,0,16,17,5,0,0,1,17,1,1,0,0,0,18,19,5,1,0,0,19,20,5,34,0,0,20,21,5,
-	2,0,0,21,22,3,4,2,0,22,3,1,0,0,0,23,24,6,2,-1,0,24,86,5,35,0,0,25,86,5,
-	38,0,0,26,86,5,36,0,0,27,86,5,37,0,0,28,86,5,34,0,0,29,30,5,3,0,0,30,86,
-	3,4,2,15,31,32,5,23,0,0,32,33,3,4,2,0,33,34,5,24,0,0,34,39,3,4,2,0,35,36,
-	5,24,0,0,36,38,3,4,2,0,37,35,1,0,0,0,38,41,1,0,0,0,39,37,1,0,0,0,39,40,
-	1,0,0,0,40,42,1,0,0,0,41,39,1,0,0,0,42,43,5,25,0,0,43,86,1,0,0,0,44,45,
-	5,23,0,0,45,46,3,4,2,0,46,47,5,25,0,0,47,86,1,0,0,0,48,86,3,6,3,0,49,61,
-	5,26,0,0,50,55,5,34,0,0,51,52,5,24,0,0,52,54,5,34,0,0,53,51,1,0,0,0,54,
-	57,1,0,0,0,55,53,1,0,0,0,55,56,1,0,0,0,56,59,1,0,0,0,57,55,1,0,0,0,58,60,
-	5,24,0,0,59,58,1,0,0,0,59,60,1,0,0,0,60,62,1,0,0,0,61,50,1,0,0,0,61,62,
-	1,0,0,0,62,63,1,0,0,0,63,86,3,6,3,0,64,65,5,27,0,0,65,66,3,4,2,0,66,67,
-	3,6,3,0,67,68,5,28,0,0,68,69,3,6,3,0,69,86,1,0,0,0,70,82,5,29,0,0,71,76,
-	3,4,2,0,72,73,5,24,0,0,73,75,3,4,2,0,74,72,1,0,0,0,75,78,1,0,0,0,76,74,
-	1,0,0,0,76,77,1,0,0,0,77,80,1,0,0,0,78,76,1,0,0,0,79,81,5,24,0,0,80,79,
-	1,0,0,0,80,81,1,0,0,0,81,83,1,0,0,0,82,71,1,0,0,0,82,83,1,0,0,0,83,84,1,
-	0,0,0,84,86,5,30,0,0,85,23,1,0,0,0,85,25,1,0,0,0,85,26,1,0,0,0,85,27,1,
-	0,0,0,85,28,1,0,0,0,85,29,1,0,0,0,85,31,1,0,0,0,85,44,1,0,0,0,85,48,1,0,
-	0,0,85,49,1,0,0,0,85,64,1,0,0,0,85,70,1,0,0,0,86,126,1,0,0,0,87,88,10,14,
-	0,0,88,89,7,0,0,0,89,125,3,4,2,15,90,91,10,13,0,0,91,92,7,1,0,0,92,125,
-	3,4,2,14,93,94,10,12,0,0,94,95,5,14,0,0,95,125,3,4,2,12,96,97,10,11,0,0,
-	97,98,7,2,0,0,98,125,3,4,2,12,99,100,10,10,0,0,100,101,7,3,0,0,101,125,
-	3,4,2,11,102,103,10,9,0,0,103,104,5,21,0,0,104,125,3,4,2,10,105,106,10,
-	8,0,0,106,107,5,22,0,0,107,125,3,4,2,9,108,109,10,5,0,0,109,121,5,23,0,
-	0,110,115,3,4,2,0,111,112,5,24,0,0,112,114,3,4,2,0,113,111,1,0,0,0,114,
-	117,1,0,0,0,115,113,1,0,0,0,115,116,1,0,0,0,116,119,1,0,0,0,117,115,1,0,
-	0,0,118,120,5,24,0,0,119,118,1,0,0,0,119,120,1,0,0,0,120,122,1,0,0,0,121,
-	110,1,0,0,0,121,122,1,0,0,0,122,123,1,0,0,0,123,125,5,25,0,0,124,87,1,0,
-	0,0,124,90,1,0,0,0,124,93,1,0,0,0,124,96,1,0,0,0,124,99,1,0,0,0,124,102,
-	1,0,0,0,124,105,1,0,0,0,124,108,1,0,0,0,125,128,1,0,0,0,126,124,1,0,0,0,
-	126,127,1,0,0,0,127,5,1,0,0,0,128,126,1,0,0,0,129,130,5,31,0,0,130,131,
-	3,8,4,0,131,132,5,32,0,0,132,7,1,0,0,0,133,142,3,4,2,0,134,135,5,1,0,0,
-	135,136,5,34,0,0,136,137,5,2,0,0,137,138,3,4,2,0,138,139,5,33,0,0,139,140,
-	3,8,4,0,140,142,1,0,0,0,141,133,1,0,0,0,141,134,1,0,0,0,142,9,1,0,0,0,15,
-	13,39,55,59,61,76,80,82,85,115,119,121,124,126,141];
+	9,2,1,3,1,3,1,3,1,3,1,4,1,4,1,4,1,4,1,4,1,4,1,4,1,4,1,4,1,4,1,4,1,4,1,4,
+	1,4,1,4,1,4,3,4,150,8,4,1,4,0,1,4,5,0,2,4,6,8,0,4,1,0,4,8,1,0,9,13,1,0,
+	15,16,1,0,17,20,178,0,13,1,0,0,0,2,18,1,0,0,0,4,85,1,0,0,0,6,129,1,0,0,
+	0,8,149,1,0,0,0,10,12,3,2,1,0,11,10,1,0,0,0,12,15,1,0,0,0,13,11,1,0,0,0,
+	13,14,1,0,0,0,14,16,1,0,0,0,15,13,1,0,0,0,16,17,5,0,0,1,17,1,1,0,0,0,18,
+	19,5,1,0,0,19,20,5,35,0,0,20,21,5,2,0,0,21,22,3,4,2,0,22,3,1,0,0,0,23,24,
+	6,2,-1,0,24,86,5,36,0,0,25,86,5,39,0,0,26,86,5,37,0,0,27,86,5,38,0,0,28,
+	86,5,35,0,0,29,30,5,3,0,0,30,86,3,4,2,15,31,32,5,23,0,0,32,33,3,4,2,0,33,
+	34,5,24,0,0,34,39,3,4,2,0,35,36,5,24,0,0,36,38,3,4,2,0,37,35,1,0,0,0,38,
+	41,1,0,0,0,39,37,1,0,0,0,39,40,1,0,0,0,40,42,1,0,0,0,41,39,1,0,0,0,42,43,
+	5,25,0,0,43,86,1,0,0,0,44,45,5,23,0,0,45,46,3,4,2,0,46,47,5,25,0,0,47,86,
+	1,0,0,0,48,86,3,6,3,0,49,61,5,26,0,0,50,55,5,35,0,0,51,52,5,24,0,0,52,54,
+	5,35,0,0,53,51,1,0,0,0,54,57,1,0,0,0,55,53,1,0,0,0,55,56,1,0,0,0,56,59,
+	1,0,0,0,57,55,1,0,0,0,58,60,5,24,0,0,59,58,1,0,0,0,59,60,1,0,0,0,60,62,
+	1,0,0,0,61,50,1,0,0,0,61,62,1,0,0,0,62,63,1,0,0,0,63,86,3,6,3,0,64,65,5,
+	27,0,0,65,66,3,4,2,0,66,67,3,6,3,0,67,68,5,28,0,0,68,69,3,6,3,0,69,86,1,
+	0,0,0,70,82,5,29,0,0,71,76,3,4,2,0,72,73,5,24,0,0,73,75,3,4,2,0,74,72,1,
+	0,0,0,75,78,1,0,0,0,76,74,1,0,0,0,76,77,1,0,0,0,77,80,1,0,0,0,78,76,1,0,
+	0,0,79,81,5,24,0,0,80,79,1,0,0,0,80,81,1,0,0,0,81,83,1,0,0,0,82,71,1,0,
+	0,0,82,83,1,0,0,0,83,84,1,0,0,0,84,86,5,30,0,0,85,23,1,0,0,0,85,25,1,0,
+	0,0,85,26,1,0,0,0,85,27,1,0,0,0,85,28,1,0,0,0,85,29,1,0,0,0,85,31,1,0,0,
+	0,85,44,1,0,0,0,85,48,1,0,0,0,85,49,1,0,0,0,85,64,1,0,0,0,85,70,1,0,0,0,
+	86,126,1,0,0,0,87,88,10,14,0,0,88,89,7,0,0,0,89,125,3,4,2,15,90,91,10,13,
+	0,0,91,92,7,1,0,0,92,125,3,4,2,14,93,94,10,12,0,0,94,95,5,14,0,0,95,125,
+	3,4,2,12,96,97,10,11,0,0,97,98,7,2,0,0,98,125,3,4,2,12,99,100,10,10,0,0,
+	100,101,7,3,0,0,101,125,3,4,2,11,102,103,10,9,0,0,103,104,5,21,0,0,104,
+	125,3,4,2,10,105,106,10,8,0,0,106,107,5,22,0,0,107,125,3,4,2,9,108,109,
+	10,5,0,0,109,121,5,23,0,0,110,115,3,4,2,0,111,112,5,24,0,0,112,114,3,4,
+	2,0,113,111,1,0,0,0,114,117,1,0,0,0,115,113,1,0,0,0,115,116,1,0,0,0,116,
+	119,1,0,0,0,117,115,1,0,0,0,118,120,5,24,0,0,119,118,1,0,0,0,119,120,1,
+	0,0,0,120,122,1,0,0,0,121,110,1,0,0,0,121,122,1,0,0,0,122,123,1,0,0,0,123,
+	125,5,25,0,0,124,87,1,0,0,0,124,90,1,0,0,0,124,93,1,0,0,0,124,96,1,0,0,
+	0,124,99,1,0,0,0,124,102,1,0,0,0,124,105,1,0,0,0,124,108,1,0,0,0,125,128,
+	1,0,0,0,126,124,1,0,0,0,126,127,1,0,0,0,127,5,1,0,0,0,128,126,1,0,0,0,129,
+	130,5,31,0,0,130,131,3,8,4,0,131,132,5,32,0,0,132,7,1,0,0,0,133,150,3,4,
+	2,0,134,135,5,33,0,0,135,136,5,35,0,0,136,137,5,35,0,0,137,138,5,2,0,0,
+	138,139,3,4,2,0,139,140,5,34,0,0,140,141,3,8,4,0,141,150,1,0,0,0,142,143,
+	5,1,0,0,143,144,5,35,0,0,144,145,5,2,0,0,145,146,3,4,2,0,146,147,5,34,0,
+	0,147,148,3,8,4,0,148,150,1,0,0,0,149,133,1,0,0,0,149,134,1,0,0,0,149,142,
+	1,0,0,0,150,9,1,0,0,0,15,13,39,55,59,61,76,80,82,85,115,119,121,124,126,
+	149];
 
 	private static __ATN: ATN;
 	public static get _ATN(): ATN {
@@ -1570,6 +1596,7 @@ export class BlockContentContext extends ParserRuleContext {
 	}
 }
 export class BlockContentLetExprContext extends BlockContentContext {
+	public _binding!: Token;
 	public _value!: ExprContext;
 	public _body!: BlockContentContext;
 	constructor(parser: KestrelParser, ctx: BlockContentContext) {
@@ -1599,6 +1626,46 @@ export class BlockContentLetExprContext extends BlockContentContext {
 	public accept<Result>(visitor: KestrelVisitor<Result>): Result {
 		if (visitor.visitBlockContentLetExpr) {
 			return visitor.visitBlockContentLetExpr(this);
+		} else {
+			return visitor.visitChildren(this);
+		}
+	}
+}
+export class BlockContentLetHashExprContext extends BlockContentContext {
+	public _mapper!: Token;
+	public _binding!: Token;
+	public _value!: ExprContext;
+	public _body!: BlockContentContext;
+	constructor(parser: KestrelParser, ctx: BlockContentContext) {
+		super(parser, ctx.parentCtx, ctx.invokingState);
+		super.copyFrom(ctx);
+	}
+	public ID_list(): TerminalNode[] {
+	    	return this.getTokens(KestrelParser.ID);
+	}
+	public ID(i: number): TerminalNode {
+		return this.getToken(KestrelParser.ID, i);
+	}
+	public expr(): ExprContext {
+		return this.getTypedRuleContext(ExprContext, 0) as ExprContext;
+	}
+	public blockContent(): BlockContentContext {
+		return this.getTypedRuleContext(BlockContentContext, 0) as BlockContentContext;
+	}
+	public enterRule(listener: KestrelListener): void {
+	    if(listener.enterBlockContentLetHashExpr) {
+	 		listener.enterBlockContentLetHashExpr(this);
+		}
+	}
+	public exitRule(listener: KestrelListener): void {
+	    if(listener.exitBlockContentLetHashExpr) {
+	 		listener.exitBlockContentLetHashExpr(this);
+		}
+	}
+	// @Override
+	public accept<Result>(visitor: KestrelVisitor<Result>): Result {
+		if (visitor.visitBlockContentLetHashExpr) {
+			return visitor.visitBlockContentLetHashExpr(this);
 		} else {
 			return visitor.visitChildren(this);
 		}

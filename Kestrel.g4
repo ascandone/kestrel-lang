@@ -38,5 +38,7 @@ expr:
 block: '{' blockContent '}';
 
 blockContent:
-	expr												# blockContentExpr
-	| 'let' ID '=' value = expr ';' body = blockContent	# blockContentLetExpr;
+	expr																		# blockContentExpr
+	| 'let#' mapper = ID binding = ID '=' value = expr ';' body = blockContent	#
+		blockContentLetHashExpr
+	| 'let' binding = ID '=' value = expr ';' body = blockContent # blockContentLetExpr;

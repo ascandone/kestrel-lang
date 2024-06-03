@@ -27,6 +27,7 @@ import { BoolAndContext } from "./KestrelParser";
 import { ConsContext } from "./KestrelParser";
 import { BlockContext } from "./KestrelParser";
 import { BlockContentExprContext } from "./KestrelParser";
+import { BlockContentLetHashExprContext } from "./KestrelParser";
 import { BlockContentLetExprContext } from "./KestrelParser";
 
 
@@ -317,6 +318,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitBlockContentExpr?: (ctx: BlockContentExprContext) => void;
+	/**
+	 * Enter a parse tree produced by the `blockContentLetHashExpr`
+	 * labeled alternative in `KestrelParser.blockContent`.
+	 * @param ctx the parse tree
+	 */
+	enterBlockContentLetHashExpr?: (ctx: BlockContentLetHashExprContext) => void;
+	/**
+	 * Exit a parse tree produced by the `blockContentLetHashExpr`
+	 * labeled alternative in `KestrelParser.blockContent`.
+	 * @param ctx the parse tree
+	 */
+	exitBlockContentLetHashExpr?: (ctx: BlockContentLetHashExprContext) => void;
 	/**
 	 * Enter a parse tree produced by the `blockContentLetExpr`
 	 * labeled alternative in `KestrelParser.blockContent`.

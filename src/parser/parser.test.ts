@@ -310,7 +310,7 @@ test("parse cons operator is right-associative", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("monadic let syntax sugar", () => {
+test("monadic let syntax sugar", () => {
   const src = `
     let _ = {
       let#bind_f x = expr;
