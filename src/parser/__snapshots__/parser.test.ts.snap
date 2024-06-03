@@ -2504,14 +2504,14 @@ exports[`parse ident 1`] = `
       "pub": false,
       "span": [
         0,
-        9,
+        13,
       ],
       "value": {
-        "name": "x",
+        "name": "ab_c2",
         "namespace": undefined,
         "span": [
           8,
-          9,
+          13,
         ],
         "type": "identifier",
       },

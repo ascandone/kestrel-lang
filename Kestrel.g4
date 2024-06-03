@@ -8,7 +8,8 @@ LineComment: SLASH_2 ~[\r\n]* -> channel(HIDDEN);
 
 EXPOSING_NESTED: '(' '..' ')';
 INFIX_ID: '(' INFIX_CHAR+ ')';
-ID: [_a-z]+; // TODO differentiate between ident and bindings
+ID:
+	[_a-z] [_a-z0-9]*; // TODO differentiate between ident and bindings
 TYPE_ID: [A-Z]+ [a-zA-Z0-9]*;
 INT: [0-9]+;
 CHAR: '\'' ~[']* '\'';

@@ -143,7 +143,7 @@ test("parse unary ! expr", () => {
 });
 
 test("parse ident", () => {
-  const src = "let _ = x";
+  const src = "let _ = ab_c2";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
