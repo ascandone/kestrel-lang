@@ -72,6 +72,7 @@ export function foldTree<T>(
   f: (src: TypedExpr, acc: T) => T,
 ): T {
   switch (src.type) {
+    case "syntax-err":
     case "identifier":
     case "constant":
       return f(src, acc);

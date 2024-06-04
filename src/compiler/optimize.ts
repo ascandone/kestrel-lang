@@ -164,6 +164,9 @@ class ChangeTracker {
     }
 
     switch (src.type) {
+      case "syntax-err":
+        throw new Error("[unreachable]");
+
       case "constant":
       case "identifier":
         return src;
@@ -263,6 +266,9 @@ function substituteBinding(
   src: TypedExpr,
 ): TypedExpr {
   switch (src.type) {
+    case "syntax-err":
+      throw new Error("[unreachable]");
+
     case "identifier":
       if (src.resolution === undefined) {
         return src;

@@ -1,6 +1,7 @@
 import antlr4, { ErrorListener } from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
+  AddSubContext,
   BlockContentExprContext,
   BlockContentLetExprContext,
   BlockContentLetHashExprContext,
@@ -58,13 +59,17 @@ interface InfixExprContext extends ExprContext {
   expr(nth: number): ExprContext;
 }
 
-const makeInfixOp = <Ctx extends InfixExprContext>(ctx: Ctx): UntypedExpr => ({
-  type: "infix",
-  left: new ExpressionVisitor().visit(ctx.expr(0)),
-  right: new ExpressionVisitor().visit(ctx.expr(1)),
-  operator: ctx._op.text,
-  span: [ctx.start.start, ctx.stop!.stop + 1],
-});
+const makeInfixOp = <Ctx extends InfixExprContext>(ctx: Ctx): UntypedExpr => {
+  const r = ctx.expr(1);
+
+  return {
+    type: "infix",
+    left: new ExpressionVisitor().visit(ctx.expr(0)),
+    right: new ExpressionVisitor().visit(r),
+    operator: ctx._op.text,
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  };
+};
 
 class TypeVisitor extends Visitor<TypeAst> {
   visitNamedType = (ctx: NamedTypeContext): TypeAst => {
@@ -196,6 +201,18 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
 }
 
 class ExpressionVisitor extends Visitor<UntypedExpr> {
+  visit(expr: ExprContext): UntypedExpr {
+    const e = super.visit(expr);
+    if (expr.exception !== null) {
+      return {
+        type: "syntax-err",
+        span: [expr.start.start, expr.stop!.stop + 1],
+      };
+    }
+
+    return e;
+  }
+
   visitInt = (ctx: IntContext): UntypedExpr => ({
     type: "constant",
     span: [ctx.start.start, ctx.stop!.stop + 1],

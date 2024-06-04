@@ -86,6 +86,9 @@ export type UntypedExpr = Expr<unknown, unknown, SyntaxSugar>;
 export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
   | SyntaxSugar
   | {
+      type: "syntax-err";
+    }
+  | {
       type: "list-literal";
       values: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>[];
     }

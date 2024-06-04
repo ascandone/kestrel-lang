@@ -1,5 +1,5 @@
 import { expect, test, describe } from "vitest";
-import { unsafeParse } from "./parser";
+import { parse, unsafeParse } from "./parser";
 import { Span, UntypedModule } from "./ast";
 
 test("parsing a declaration", () => {
@@ -766,6 +766,13 @@ describe("Decorators", () => {
   test("inline decorator", () => {
     const src = `@inline pub let x = 0`;
     expect(unsafeParse(src)).toMatchSnapshot();
+  });
+});
+
+describe("Fault tolerance", () => {
+  test("faulty infix", () => {
+    const src = `let x = 1 +`;
+    expect(parse(src).parsed).toMatchSnapshot();
   });
 });
 

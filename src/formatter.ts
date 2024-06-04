@@ -79,6 +79,7 @@ function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
         return selfBindingPower > bindingPower;
       }
 
+    case "syntax-err":
     case "list-literal":
     case "pipe":
     case "let#":
@@ -144,6 +145,9 @@ function asBlock(isBlock: boolean, docs: Doc[]): Doc {
 
 function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
   switch (ast.type) {
+    case "syntax-err":
+      throw new Error("[unreachable]");
+
     case "list-literal":
       return group(
         text("["),
