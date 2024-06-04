@@ -88,12 +88,12 @@ test("parse chars", () => {
 });
 
 test("parse strings with newlines", () => {
-  const src = `let _ = "ab\\nc"`;
+  const src = String.raw`let _ = "ab\nc"`;
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("parse strings with escaped quotes", () => {
-  const src = `let _ = "ab\\"c"`;
+test("parse strings with escaped quotes", () => {
+  const src = String.raw`let _ = "ab\"c"`;
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 

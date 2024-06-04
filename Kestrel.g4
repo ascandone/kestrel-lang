@@ -13,7 +13,11 @@ ID:
 TYPE_ID: [A-Z]+ [a-zA-Z0-9]*;
 INT: [0-9]+;
 CHAR: '\'' ~[']* '\'';
-STRING: '"' ~["]* '"';
+
+STRING: '"' DoubleStringCharacter* '"';
+
+fragment DoubleStringCharacter: ~'"' | '\\' .;
+
 FLOAT: [0-9]* '.' [0-9]+;
 NEWLINE: '\r'? '\n' -> skip;
 WS: [ \t\r\n]+ -> skip;
