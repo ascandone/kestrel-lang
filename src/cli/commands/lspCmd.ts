@@ -3,6 +3,7 @@ import {
   CompletionItemKind,
   DiagnosticSeverity,
   MarkupKind,
+  Position,
   PublishDiagnosticsParams,
   SymbolKind,
   TextDocumentSyncKind,
@@ -14,8 +15,8 @@ import {
 } from "vscode-languageserver";
 import { TextDocument, Range } from "vscode-languageserver-textdocument";
 import {
-  AntlrLexerError as AntlrLexerError,
-  AntlrParsingError as AntlrParsingError,
+  AntlrLexerError,
+  AntlrParsingError,
   Span,
   UntypedModule,
   parse,
@@ -69,6 +70,11 @@ function lexerErrToDiagnostic(
   document: TextDocument,
   err: AntlrLexerError,
 ): PublishDiagnosticsParams {
+  const position: Position = {
+    character: err.column,
+    line: err.line,
+  };
+
   return {
     uri: document.uri,
     diagnostics: [
@@ -76,7 +82,7 @@ function lexerErrToDiagnostic(
         message: err.description,
         source: "Parsing",
         severity: DiagnosticSeverity.Error,
-        range: spannedToRange(document, err.span),
+        range: { start: position, end: position },
       },
     ],
   };
@@ -190,19 +196,16 @@ class State {
     this.modulesByNs[ns] = { ns, package_, document };
     const parsed = parse(document.getText());
 
-    if (parsed.lexerErrors.length !== 0) {
-      return parsed.lexerErrors.map((e) => lexerErrToDiagnostic(document, e));
-    }
-
-    if (parsed.parsingErrors.length !== 0) {
-      return parsed.parsingErrors.map((e) => parseErrToDiagnostic(document, e));
-    }
+    const diagnostics: PublishDiagnosticsParams[] = [
+      ...parsed.lexerErrors.map((e) => lexerErrToDiagnostic(document, e)),
+      ...parsed.parsingErrors.map((e) => parseErrToDiagnostic(document, e)),
+    ];
 
     this.modulesByNs[ns]!.untyped = parsed.parsed;
     if (skipTypecheck) {
-      return [];
+      return diagnostics;
     } else {
-      return this.typecheckProject();
+      return [...diagnostics, ...this.typecheckProject()];
     }
   }
 
@@ -223,7 +226,21 @@ async function initProject_(connection: Connection, state: State) {
   for (const [ns, raw] of Object.entries(rawProject)) {
     const uri = `file://${raw.path}`;
     const textDoc = TextDocument.create(uri, "kestrel", 1, raw.content);
-    state.insertByNs(raw.package, ns, textDoc, true);
+    const diagnosticParams = state.insertByNs(raw.package, ns, textDoc, true);
+
+    for (const p of diagnosticParams) {
+      for (const d of p.diagnostics) {
+        console.log(
+          "SENDING",
+          `${p.uri}:${d.range.start.line}:${d.range.end.character}`,
+        );
+      }
+
+      await connection.sendDiagnostics(p);
+      console.log("DONE.", JSON.stringify(p, null, 2));
+
+      return;
+    }
   }
 
   for (const diagnostic of state.typecheckProject()) {
@@ -268,6 +285,8 @@ export async function lspCmd() {
   });
 
   documents.onDidChangeContent((change) => {
+    console.log("CHANGED", change.document.uri);
+
     const diagnostics = state.upsertByUri(
       state.getPackageName(),
       change.document,

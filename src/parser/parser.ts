@@ -559,7 +559,8 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
 
 export class AntlrLexerError {
   constructor(
-    public readonly span: Span,
+    public readonly line: number,
+    public readonly column: number,
     public readonly description: string,
   ) {}
 }
@@ -576,15 +577,13 @@ class LexerErrorListener extends ErrorListener<number> {
 
   syntaxError(
     _recognizer: antlr4.Recognizer<number>,
-    offendingSymbol: number,
-    _line: number,
-    _column: number,
+    _offendingSymbol: number,
+    line: number,
+    column: number,
     msg: string,
     _e: antlr4.RecognitionException | undefined,
   ): void {
-    this.errors.push(
-      new AntlrParsingError([offendingSymbol, offendingSymbol], msg),
-    );
+    this.errors.push(new AntlrLexerError(line, column, msg));
   }
 }
 
@@ -616,12 +615,14 @@ export function parse(input: string): ParseResult {
   const lexer = new Lexer(chars);
 
   const lexerErrorListener = new LexerErrorListener();
+  lexer.removeErrorListeners();
   lexer.addErrorListener(lexerErrorListener);
 
   const tokens = new antlr4.CommonTokenStream(lexer);
   const parser = new Parser(tokens);
 
   const parsingErrorListener = new ParsingErrorListener();
+  parser.removeErrorListeners();
   parser.addErrorListener(parsingErrorListener);
 
   const declCtx = parser.program();
