@@ -201,8 +201,11 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
 }
 
 class ExpressionVisitor extends Visitor<UntypedExpr> {
+  visitErrorNode(node: antlr4.ErrorNode): UntypedExpr {
+    throw new Error("ERROR NODE");
+  }
+
   visit(expr: ExprContext): UntypedExpr {
-    const e = super.visit(expr);
     if (expr.exception !== null) {
       return {
         type: "syntax-err",
@@ -210,7 +213,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       };
     }
 
-    return e;
+    return super.visit(expr);
   }
 
   visitInt = (ctx: IntContext): UntypedExpr => ({
@@ -396,7 +399,8 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
 type DeclarationType =
   | { type: "value"; decl: UntypedDeclaration }
-  | { type: "type"; decl: UntypedTypeDeclaration };
+  | { type: "type"; decl: UntypedTypeDeclaration }
+  | { type: "syntax-err" };
 
 class ExposingVisitor extends Visitor<UntypedExposedValue> {
   visitValueExposing = (ctx: ValueExposingContext): UntypedExposedValue => ({
@@ -419,7 +423,11 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
 
     const binding = ctx.ID();
 
-    const value = new ExpressionVisitor().visit(ctx.expr());
+    const e = ctx.expr();
+    if (e === null) {
+      return { type: "syntax-err" };
+    }
+    const value: UntypedExpr = new ExpressionVisitor().visit(e);
 
     const typeHint: TypeAst | undefined =
       ctx._typeHint === undefined

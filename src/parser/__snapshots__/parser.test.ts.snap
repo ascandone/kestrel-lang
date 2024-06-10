@@ -341,6 +341,42 @@ exports[`Decorators > inline decorator 1`] = `
 }
 `;
 
+exports[`Fault tolerance > faulty decl 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          21,
+          22,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        7,
+        27,
+      ],
+      "value": {
+        "span": [
+          25,
+          27,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 42,
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`Fault tolerance > faulty infix 1`] = `
 {
   "declarations": [
