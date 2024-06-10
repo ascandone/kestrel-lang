@@ -782,6 +782,13 @@ describe("Fault tolerance", () => {
     `;
     expect(parse(src).parsed).toMatchSnapshot();
   });
+
+  test("missing expr", () => {
+    const src = `
+      let x = 
+    `;
+    expect(parse(src).parsed).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

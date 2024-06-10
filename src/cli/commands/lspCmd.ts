@@ -46,6 +46,8 @@ type Module = {
   package_: string;
   document: TextDocument;
   untyped?: UntypedModule;
+  lexerErrors: AntlrLexerError[];
+  parsingErrors: AntlrParsingError[];
   typed?: TypedModule;
 };
 
@@ -193,7 +195,14 @@ class State {
     document: TextDocument,
     skipTypecheck: boolean = false,
   ): PublishDiagnosticsParams[] {
-    this.modulesByNs[ns] = { ns, package_, document };
+    const module: Module = {
+      ns,
+      package_,
+      document,
+      parsingErrors: [],
+      lexerErrors: [],
+    };
+
     const parsed = parse(document.getText());
 
     const diagnostics: PublishDiagnosticsParams[] = [
@@ -201,7 +210,11 @@ class State {
       ...parsed.parsingErrors.map((e) => parseErrToDiagnostic(document, e)),
     ];
 
-    this.modulesByNs[ns]!.untyped = parsed.parsed;
+    module.untyped = parsed.parsed;
+    module.parsingErrors = parsed.parsingErrors;
+    module.lexerErrors = parsed.lexerErrors;
+    this.modulesByNs[ns] = module;
+
     if (skipTypecheck) {
       return diagnostics;
     } else {
@@ -469,7 +482,11 @@ export async function lspCmd() {
   connection.onDocumentFormatting(({ textDocument }) => {
     const module = state.moduleByUri(textDocument.uri);
 
-    if (module?.untyped === undefined) {
+    if (module === undefined || module?.untyped === undefined) {
+      return;
+    }
+
+    if (module.lexerErrors.length !== 0 || module.parsingErrors.length !== 0) {
       return;
     }
 
