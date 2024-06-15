@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { CompileOptions, Compiler, compileProject } from "./compiler";
+import { CompileOptions, Compiler, compileProject } from "./";
 import {
   TypedModule,
   resetTraitsRegistry,

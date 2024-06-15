@@ -2,6 +2,9 @@ import { defineConfig, configDefaults } from "vitest/config";
 
 export default defineConfig({
   test: {
-    exclude: [...configDefaults.exclude, "src/parser/antlr/*"],
+    coverage: {
+      include: ["src/**"],
+      exclude: ["src/parser/antlr/**"],
+    },
   },
 });
