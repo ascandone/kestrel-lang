@@ -1,7 +1,6 @@
 import antlr4, { ErrorListener } from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
-  AddSubContext,
   BlockContentExprContext,
   BlockContentLetExprContext,
   BlockContentLetHashExprContext,
@@ -201,7 +200,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
 }
 
 class ExpressionVisitor extends Visitor<UntypedExpr> {
-  visitErrorNode(node: antlr4.ErrorNode): UntypedExpr {
+  visitErrorNode(_node_: antlr4.ErrorNode): UntypedExpr {
     throw new Error("ERROR NODE");
   }
 
