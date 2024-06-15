@@ -13,7 +13,7 @@
     "dist/**/*.d.ts"
   ],
   "scripts": {
-    "gen:parser": "antlr4 -Dlanguage=TypeScript Kestrel.g4 -visitor -o src/parser/antlr",
+    "gen:parser": "bash ./gen-parser.sh",
     "test:watch": "vitest",
     "test:w": "npm run test:watch",
     "test:run": "vitest --run --coverage",
