@@ -68,6 +68,22 @@ function parseErrToDiagnostic(
   };
 }
 
+function dedupParams(
+  params: PublishDiagnosticsParams[],
+): PublishDiagnosticsParams[] {
+  const params_: PublishDiagnosticsParams[] = [];
+  for (const p of params) {
+    const prev = params_.find((p2) => p2.uri === p.uri);
+    if (prev !== undefined) {
+      prev.diagnostics.push(...p.diagnostics);
+    } else {
+      params_.push(p);
+    }
+  }
+
+  return params_;
+}
+
 function lexerErrToDiagnostic(
   document: TextDocument,
   err: AntlrLexerError,
@@ -153,16 +169,18 @@ class State {
     textDoc: TextDocument,
   ): PublishDiagnosticsParams[] {
     const oldNs = this.nsByUri(textDoc.uri);
-    if (oldNs !== undefined) {
-      this.insertByNs(this.modulesByNs[oldNs]!.package_, oldNs, textDoc);
-    } else {
-      this.insertByUri(package_, textDoc);
-    }
 
-    return this.typecheckProject();
+    if (oldNs !== undefined) {
+      return this.insertByNs(this.modulesByNs[oldNs]!.package_, oldNs, textDoc);
+    } else {
+      return this.insertByUri(package_, textDoc);
+    }
   }
 
-  insertByUri(package_: string, document: TextDocument) {
+  insertByUri(
+    package_: string,
+    document: TextDocument,
+  ): PublishDiagnosticsParams[] {
     const ns = this.makeNsByUri(document.uri);
     return this.insertByNs(ns, package_, document);
   }
@@ -195,14 +213,6 @@ class State {
     document: TextDocument,
     skipTypecheck: boolean = false,
   ): PublishDiagnosticsParams[] {
-    const module: Module = {
-      ns,
-      package_,
-      document,
-      parsingErrors: [],
-      lexerErrors: [],
-    };
-
     const parsed = parse(document.getText());
 
     const diagnostics: PublishDiagnosticsParams[] = [
@@ -210,15 +220,19 @@ class State {
       ...parsed.parsingErrors.map((e) => parseErrToDiagnostic(document, e)),
     ];
 
-    module.untyped = parsed.parsed;
-    module.parsingErrors = parsed.parsingErrors;
-    module.lexerErrors = parsed.lexerErrors;
-    this.modulesByNs[ns] = module;
+    this.modulesByNs[ns] = {
+      ns,
+      package_,
+      document,
+      parsingErrors: parsed.parsingErrors,
+      lexerErrors: parsed.lexerErrors,
+      untyped: parsed.parsed,
+    };
 
     if (skipTypecheck) {
       return diagnostics;
     } else {
-      return [...diagnostics, ...this.typecheckProject()];
+      return dedupParams([...diagnostics, ...this.typecheckProject()]);
     }
   }
 
@@ -242,16 +256,7 @@ async function initProject_(connection: Connection, state: State) {
     const diagnosticParams = state.insertByNs(raw.package, ns, textDoc, true);
 
     for (const p of diagnosticParams) {
-      for (const d of p.diagnostics) {
-        console.log(
-          "SENDING",
-          `${p.uri}:${d.range.start.line}:${d.range.end.character}`,
-        );
-      }
-
       await connection.sendDiagnostics(p);
-      console.log("DONE.", JSON.stringify(p, null, 2));
-
       return;
     }
   }
@@ -298,8 +303,6 @@ export async function lspCmd() {
   });
 
   documents.onDidChangeContent((change) => {
-    console.log("CHANGED", change.document.uri);
-
     const diagnostics = state.upsertByUri(
       state.getPackageName(),
       change.document,
