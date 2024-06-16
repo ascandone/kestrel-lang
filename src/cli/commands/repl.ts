@@ -1,16 +1,11 @@
 import { createInterface } from "node:readline";
-import {
-  ReplInput,
-  Span,
-  UntypedDeclaration,
-  UntypedModule,
-  parseReplInput,
-} from "../../parser";
+import { ReplInput, Span, UntypedModule, parseReplInput } from "../../parser";
 import { Deps, TypedModule, typeToString, typecheck } from "../../typecheck";
 import { TypedProject, checkProject, readProjectWithDeps } from "../common";
 import { errorInfoToString } from "../../errors";
 import { compileProject, defaultEntryPoint } from "../../compiler";
 import { TVar } from "../../typecheck/type";
+import { Worker } from "worker_threads";
 
 const DUMMY_SPAN: Span = [0, 0];
 
@@ -27,8 +22,8 @@ class ReplState {
   };
 
   public static readonly REPL_NS = "Repl";
-  public static readonly REPL_MAIN_NS = "$$REPL_MAIN";
-  public static readonly REPL_EXPR_NAME = "$$REPL_EXPR";
+  public static readonly REPL_MAIN_NS = "REPL_MAIN";
+  public static readonly REPL_EXPR_NAME = "REPL_EXPR";
 
   private shadowDecl(name: string) {
     this.moduleBuf.declarations = this.moduleBuf.declarations.filter(
@@ -75,7 +70,10 @@ class ReplState {
     }
   }
 
-  input(src: string, input: ReplInput): string | undefined {
+  input(
+    src: string,
+    input: ReplInput,
+  ): [signature: string, compiled: string | undefined] | undefined {
     const name = this.pushInput(input);
     if (name === undefined) {
       return;
@@ -108,8 +106,7 @@ class ReplState {
     const traitDeps = TVar.typeImplementsTrait(expr.binding.$.asType(), "Show");
     if (traitDeps === undefined) {
       // Cannot show
-      console.log(`#<Internals> : ${expressionStringifiedType}`);
-      return;
+      return [expressionStringifiedType, undefined];
     }
 
     // TODO handle errors
@@ -122,8 +119,9 @@ class ReplState {
       },
     );
 
-    if (mainErrors.length !== 0) {
-      console.log(mainErrors);
+    if (
+      mainErrors.filter((e) => e.description.severity === "error").length !== 0
+    ) {
       throw new Error("errors while compiling");
     }
 
@@ -144,14 +142,14 @@ class ReplState {
           ...defaultEntryPoint,
           module: ReplState.REPL_MAIN_NS,
         },
-        externs: this.externs,
+        externs: {
+          ...this.externs,
+          [ReplState.REPL_MAIN_NS]: ReplMainExtern,
+        },
       },
     );
 
-    const main = new Function(compiled);
-    main();
-
-    return expressionStringifiedType;
+    return [expressionStringifiedType, compiled];
   }
 }
 
@@ -182,63 +180,123 @@ export async function runRepl() {
     rl.question("> ", (inp) => {
       const { parsed } = parseReplInput(inp);
 
-      const sig = replState.input(inp, parsed);
-
-      if (sig) {
-        console.log(sig);
+      const ret = replState.input(inp, parsed);
+      if (ret === undefined) {
+        return loop();
       }
 
-      loop();
+      const [sig, compiled] = ret;
+
+      if (compiled === undefined) {
+        console.log(`#<Internals> : ${sig}`);
+        loop();
+      } else {
+        const w = new Worker(compiled, { eval: true });
+        w.on("message", (msg) => {
+          console.log(`${msg} : ${sig}`);
+          loop();
+        });
+      }
     });
   }
 
   loop();
 }
 
-const mainDeclaration: UntypedDeclaration = {
-  binding: { name: "main", span: DUMMY_SPAN },
-  extern: false,
-  inline: false,
-  pub: true,
-  span: DUMMY_SPAN,
-  value: {
-    type: "application",
-    caller: {
-      type: "identifier",
-      span: DUMMY_SPAN,
-      namespace: "IO",
-      name: "println",
-    },
-    args: [
-      {
-        type: "application",
-        span: DUMMY_SPAN,
-        caller: {
-          type: "identifier",
-          span: DUMMY_SPAN,
-          namespace: "Debug",
-          name: "inspect",
-        },
-        args: [
-          {
-            type: "identifier",
-            span: DUMMY_SPAN,
-            namespace: ReplState.REPL_NS,
-            name: ReplState.REPL_EXPR_NAME,
-          },
-        ],
-      },
-    ],
-    span: DUMMY_SPAN,
-  },
-};
+const ReplMainExtern = `
+function ${ReplState.REPL_MAIN_NS}$post_string(str) {
+  return new Task$Task((resolve) => {
+    const { parentPort } = require('worker_threads')
+    parentPort.postMessage(str)
+    resolve(null)
+  })
+}
+`;
 
 const mainModule: UntypedModule = {
   imports: [
     { ns: ReplState.REPL_NS, span: DUMMY_SPAN, exposing: [] },
-    { span: DUMMY_SPAN, ns: "IO", exposing: [] },
     { span: DUMMY_SPAN, ns: "Debug", exposing: [] },
+    { span: DUMMY_SPAN, ns: "Task", exposing: [] },
   ],
   typeDeclarations: [],
-  declarations: [mainDeclaration],
+  declarations: [
+    // extern let post_string: Fn(String) -> Task<Unit>
+    {
+      extern: true,
+      span: DUMMY_SPAN,
+      binding: { name: "post_string", span: DUMMY_SPAN },
+      pub: false,
+      typeHint: {
+        mono: {
+          type: "fn",
+          args: [
+            {
+              type: "named",
+              namespace: "String",
+              name: "String",
+              span: DUMMY_SPAN,
+              args: [],
+            },
+          ],
+          return: {
+            type: "named",
+            name: "Task",
+            namespace: "Task",
+            args: [
+              {
+                type: "named",
+                namespace: "Tuple",
+                name: "Unit",
+                span: DUMMY_SPAN,
+                args: [],
+              },
+            ],
+            span: DUMMY_SPAN,
+          },
+          span: DUMMY_SPAN,
+        },
+        where: [],
+        span: DUMMY_SPAN,
+      },
+    },
+
+    // let main = post_string(Debug.inspect(Repl.$$REPL_EXPR_NAME))
+    {
+      binding: { name: "main", span: DUMMY_SPAN },
+      extern: false,
+      inline: false,
+      pub: true,
+      span: DUMMY_SPAN,
+      value: {
+        type: "application",
+        caller: {
+          type: "identifier",
+          span: DUMMY_SPAN,
+          name: "post_string",
+        },
+        args: [
+          {
+            type: "application",
+            span: DUMMY_SPAN,
+            caller: {
+              type: "identifier",
+              span: DUMMY_SPAN,
+              namespace: "Debug",
+              name: "inspect",
+            },
+            args: [
+              {
+                type: "identifier",
+                span: DUMMY_SPAN,
+                namespace: ReplState.REPL_NS,
+                name: ReplState.REPL_EXPR_NAME,
+              },
+            ],
+          },
+        ],
+        span: DUMMY_SPAN,
+      },
+    },
+  ],
 };
