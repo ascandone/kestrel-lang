@@ -70,7 +70,7 @@ typeVariants:
 
 polyType:
 	type ('where' traitImplClause (',' traitImplClause)*)?;
-traitImplClause: ID ':' (TYPE_ID (',' TYPE_ID)*);
+traitImplClause: ID ':' (TYPE_ID ('+' TYPE_ID)*);
 
 type:
 	(moduleNamespace '.')? name = TYPE_ID (

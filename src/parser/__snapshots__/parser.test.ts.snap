@@ -4944,7 +4944,7 @@ exports[`traits > parses many traits in a polytype for the same tvar 1`] = `
       "pub": false,
       "span": [
         0,
-        32,
+        33,
       ],
       "typeHint": {
         "mono": {
@@ -4966,6 +4966,77 @@ exports[`traits > parses many traits in a polytype for the same tvar 1`] = `
               "Eq",
             ],
             "typeVar": "a",
+          },
+        ],
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`traits > parses traits for many vars 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": true,
+      "pub": false,
+      "span": [
+        0,
+        42,
+      ],
+      "typeHint": {
+        "mono": {
+          "args": [
+            {
+              "ident": "a",
+              "span": [
+                15,
+                16,
+              ],
+              "type": "var",
+            },
+            {
+              "ident": "b",
+              "span": [
+                18,
+                19,
+              ],
+              "type": "var",
+            },
+          ],
+          "name": "Tuple2",
+          "namespace": "Tuple",
+          "span": [
+            14,
+            20,
+          ],
+          "type": "named",
+        },
+        "span": [
+          14,
+          20,
+        ],
+        "where": [
+          {
+            "traits": [
+              "Ord",
+            ],
+            "typeVar": "a",
+          },
+          {
+            "traits": [
+              "Show",
+            ],
+            "typeVar": "b",
           },
         ],
       },

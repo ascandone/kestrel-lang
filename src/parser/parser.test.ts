@@ -459,7 +459,12 @@ describe("traits", () => {
   });
 
   test("parses many traits in a polytype for the same tvar", () => {
-    const src = "extern let x: a where a: Ord, Eq";
+    const src = "extern let x: a where a: Ord + Eq";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("parses traits for many vars", () => {
+    const src = "extern let x: (a, b) where a: Ord, b: Show";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });
