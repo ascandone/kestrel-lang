@@ -4929,6 +4929,132 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
 }
 `;
 
+exports[`repl > expression 1`] = `
+{
+  "expr": {
+    "left": {
+      "span": [
+        0,
+        2,
+      ],
+      "type": "constant",
+      "value": {
+        "type": "int",
+        "value": 42,
+      },
+    },
+    "operator": "+",
+    "right": {
+      "span": [
+        5,
+        6,
+      ],
+      "type": "constant",
+      "value": {
+        "type": "int",
+        "value": 2,
+      },
+    },
+    "span": [
+      0,
+      6,
+    ],
+    "type": "infix",
+  },
+  "type": "expression",
+}
+`;
+
+exports[`repl > import 1`] = `
+{
+  "import": {
+    "exposing": [
+      {
+        "name": "x",
+        "span": [
+          12,
+          13,
+        ],
+        "type": "value",
+      },
+    ],
+    "ns": "A/B",
+    "span": [
+      0,
+      14,
+    ],
+  },
+  "type": "import",
+}
+`;
+
+exports[`repl > let decl 1`] = `
+{
+  "decl": {
+    "binding": {
+      "name": "x",
+      "span": [
+        4,
+        5,
+      ],
+    },
+    "extern": false,
+    "inline": false,
+    "pub": false,
+    "span": [
+      0,
+      10,
+    ],
+    "value": {
+      "span": [
+        8,
+        10,
+      ],
+      "type": "constant",
+      "value": {
+        "type": "int",
+        "value": 42,
+      },
+    },
+  },
+  "type": "declaration",
+}
+`;
+
+exports[`repl > type decl 1`] = `
+{
+  "decl": {
+    "name": "Example",
+    "params": [],
+    "pub": false,
+    "span": [
+      0,
+      21,
+    ],
+    "type": "adt",
+    "variants": [
+      {
+        "args": [],
+        "name": "A",
+        "span": [
+          15,
+          16,
+        ],
+      },
+      {
+        "args": [],
+        "name": "B",
+        "span": [
+          18,
+          19,
+        ],
+      },
+    ],
+  },
+  "type": "typeDecl",
+}
+`;
+
 exports[`traits > parses many traits in a polytype for the same tvar 1`] = `
 {
   "declarations": [

@@ -5,6 +5,10 @@ import {ParseTreeListener} from "antlr4";
 
 import { ModuleNamespaceContext } from "./KestrelParser";
 import { ProgramContext } from "./KestrelParser";
+import { ReplExprContext } from "./KestrelParser";
+import { ReplImportContext } from "./KestrelParser";
+import { ReplDeclarationContext } from "./KestrelParser";
+import { ReplTypeDeclarationContext } from "./KestrelParser";
 import { Import_Context } from "./KestrelParser";
 import { ValueExposingContext } from "./KestrelParser";
 import { TypeExposingContext } from "./KestrelParser";
@@ -90,6 +94,54 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitProgram?: (ctx: ProgramContext) => void;
+	/**
+	 * Enter a parse tree produced by the `replExpr`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 */
+	enterReplExpr?: (ctx: ReplExprContext) => void;
+	/**
+	 * Exit a parse tree produced by the `replExpr`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 */
+	exitReplExpr?: (ctx: ReplExprContext) => void;
+	/**
+	 * Enter a parse tree produced by the `replImport`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 */
+	enterReplImport?: (ctx: ReplImportContext) => void;
+	/**
+	 * Exit a parse tree produced by the `replImport`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 */
+	exitReplImport?: (ctx: ReplImportContext) => void;
+	/**
+	 * Enter a parse tree produced by the `replDeclaration`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 */
+	enterReplDeclaration?: (ctx: ReplDeclarationContext) => void;
+	/**
+	 * Exit a parse tree produced by the `replDeclaration`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 */
+	exitReplDeclaration?: (ctx: ReplDeclarationContext) => void;
+	/**
+	 * Enter a parse tree produced by the `replTypeDeclaration`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 */
+	enterReplTypeDeclaration?: (ctx: ReplTypeDeclarationContext) => void;
+	/**
+	 * Exit a parse tree produced by the `replTypeDeclaration`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 */
+	exitReplTypeDeclaration?: (ctx: ReplTypeDeclarationContext) => void;
 	/**
 	 * Enter a parse tree produced by `KestrelParser.import_`.
 	 * @param ctx the parse tree

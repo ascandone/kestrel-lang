@@ -30,6 +30,12 @@ moduleNamespace: TYPE_ID ('/' TYPE_ID)*;
 program:
 	(doc = MODULEDOC_COMMENT_LINE*) import_* declaration* EOF;
 
+replInput:
+	expr				# replExpr
+	| import_			# replImport
+	| letDeclaration_	# replDeclaration
+	| typeDeclaration_	# replTypeDeclaration;
+
 import_:
 	'import' moduleNamespace (
 		'.' '{' importExposing (',' importExposing)* '}'
