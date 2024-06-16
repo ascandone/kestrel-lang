@@ -3381,6 +3381,71 @@ exports[`pattern matching > empty match expression 1`] = `
 }
 `;
 
+exports[`pattern matching > matching char literals 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        30,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "literal": {
+                "type": "char",
+                "value": "a",
+              },
+              "span": [
+                18,
+                21,
+              ],
+              "type": "lit",
+            },
+            {
+              "name": "res",
+              "namespace": undefined,
+              "span": [
+                25,
+                28,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "namespace": undefined,
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          30,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
 {
   "declarations": [

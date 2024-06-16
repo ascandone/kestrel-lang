@@ -561,6 +561,11 @@ describe("pattern matching", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
+  test("matching char literals", () => {
+    const src = `let _ = match x { 'a' => res }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
   test("matching tuples literal (syntax sugar)", () => {
     const src = `let _ = match x { (x, y) => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();

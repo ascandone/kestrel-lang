@@ -63,6 +63,8 @@ function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
   switch (other.type) {
     case "infix": {
       const selfBindingPower = getBindingPower(other.operator);
+
+      /* v8 ignore next 3 */
       if (selfBindingPower === undefined) {
         throw new Error("[unreachable] unknown infix operator");
       }
@@ -145,6 +147,7 @@ function asBlock(isBlock: boolean, docs: Doc[]): Doc {
 
 function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
   switch (ast.type) {
+    /* v8 ignore next 2 */
     case "syntax-err":
       throw new Error("[unreachable]");
 
