@@ -9,6 +9,7 @@ import { initCmd } from "./commands/initCmd";
 import { formatCmd } from "./commands/formatCmd";
 import { depsInstall } from "./commands/depsCmd";
 import { makeDocs, checkDocs } from "./commands/docsCmd";
+import { runRepl } from "./commands/repl";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require("../../package.json");
 
@@ -49,6 +50,8 @@ program
   .option("--path <path>")
   .option("--write")
   .action(formatCmd);
+
+program.command("repl").description("Run a REPL session").action(runRepl);
 
 program
   .command("run [entrypoint]")
