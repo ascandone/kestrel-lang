@@ -420,6 +420,12 @@ describe("type hints", () => {
   test("type with trait annotations", () => {
     expect(`extern let f: Fn(a) -> b where a: Show, b: Eq\n`).toBeFormatted();
   });
+
+  test("type with many traits for each var", () => {
+    expect(
+      `extern let x: (a, b) where a: Show + Eq, b: Ord + Show\n`,
+    ).toBeFormatted();
+  });
 });
 
 describe("type delc", () => {
