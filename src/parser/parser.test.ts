@@ -794,6 +794,14 @@ describe("Fault tolerance", () => {
     `;
     expect(parse(src).parsed).toMatchSnapshot();
   });
+
+  test("missing string lit termination", () => {
+    const src = `
+      let x = "
+    `;
+
+    expect(parse(src).parsed).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

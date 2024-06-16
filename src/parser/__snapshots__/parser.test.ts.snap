@@ -460,6 +460,38 @@ exports[`Fault tolerance > missing expr 1`] = `
 }
 `;
 
+exports[`Fault tolerance > missing string lit termination 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        7,
+        14,
+      ],
+      "value": {
+        "span": [
+          21,
+          14,
+        ],
+        "type": "syntax-err",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`extern bindings > let decls 1`] = `
 {
   "declarations": [
