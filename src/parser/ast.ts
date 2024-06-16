@@ -35,6 +35,8 @@ export type TypeAst<TypeResolutionMeta = unknown> = SpanMeta &
     | { type: "any" }
   );
 
+export type UntypedMatchPattern = MatchPattern;
+
 export type MatchPattern<
   TypeMeta = unknown,
   IdentifierResolutionMeta = unknown,
@@ -83,6 +85,9 @@ export type UntypedExpr = Expr<unknown, unknown, SyntaxSugar>;
 
 export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
   | SyntaxSugar
+  | {
+      type: "syntax-err";
+    }
   | {
       type: "list-literal";
       values: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>[];

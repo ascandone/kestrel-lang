@@ -1,229 +1,373 @@
-import grammar from "./grammar.ohm-bundle";
+import antlr4, { ErrorListener } from "antlr4";
+import Lexer from "./antlr/KestrelLexer";
+import Parser, {
+  BlockContentExprContext,
+  BlockContentLetExprContext,
+  BlockContentLetHashExprContext,
+  BlockContext,
+  BlockExprContext,
+  CallContext,
+  CharContext,
+  CharPatternContext,
+  ConsContext,
+  ConsPatternContext,
+  ConstructorContext,
+  ExprContext,
+  ExternLetDeclarationContext,
+  ExternTypeDeclarationContext,
+  FloatContext,
+  FloatPatternContext,
+  FnContext,
+  FnTypeContext,
+  GenericTypeContext,
+  IdContext,
+  IfContext,
+  IntContext,
+  IntPatternContext,
+  LetDeclarationContext,
+  ListLitContext,
+  MatchContext,
+  MatchIdentContext,
+  NamedTypeContext,
+  ParensContext,
+  PipeContext,
+  StringContext,
+  StringPatternContext,
+  TupleContext,
+  TuplePatternContext,
+  TupleTypeContext,
+  TypeDeclarationContext,
+  TypeExposingContext,
+  ValueExposingContext,
+} from "./antlr/KestrelParser";
+import Visitor from "./antlr/KestrelVisitor";
 import {
-  ConstLiteral,
   Span,
-  SpanMeta,
   TypeAst,
-  TypeVariant,
-  MatchPattern,
-  UntypedModule,
-  UntypedTypeDeclaration,
   UntypedDeclaration,
   UntypedExposedValue,
-  UntypedImport,
   UntypedExpr,
-  PolyTypeAst,
-  TraitDef,
+  UntypedImport,
+  UntypedMatchPattern,
+  UntypedModule,
+  UntypedTypeDeclaration,
 } from "./ast";
-import type {
-  IterationNode,
-  MatchResult,
-  NonterminalNode,
-  Node as OhmNode,
-  TerminalNode,
-} from "ohm-js";
 
-function getSpan({ source }: OhmNode): Span {
-  return [source.startIdx, source.endIdx];
+interface InfixExprContext extends ExprContext {
+  _op: { text: string };
+  expr(nth: number): ExprContext;
 }
 
-const semantics = grammar.createSemantics();
+const makeInfixOp = <Ctx extends InfixExprContext>(ctx: Ctx): UntypedExpr => {
+  const r = ctx.expr(1);
 
-semantics.addOperation<ConstLiteral>("lit()", {
-  number_whole(node) {
-    return { type: "int", value: Number(node.sourceString) };
-  },
-
-  number_fract(_intPart, _comma, _floatPart) {
-    return { type: "float", value: Number(this.sourceString) };
-  },
-
-  string(_lDel, s, _rDel) {
-    return { type: "string", value: s.sourceString };
-  },
-
-  char(_lDel, s, _rDel) {
-    return { type: "char", value: s.sourceString };
-  },
-});
-
-function parseInfix(
-  this: NonterminalNode,
-  left: NonterminalNode,
-  op: TerminalNode,
-  right: NonterminalNode,
-): UntypedExpr {
   return {
     type: "infix",
-    span: getSpan(this),
-    operator: op.sourceString,
-    left: left.expr(),
-    right: right.expr(),
+    left: new ExpressionVisitor().visit(ctx.expr(0)),
+    right: new ExpressionVisitor().visit(r),
+    operator: ctx._op.text,
+    span: [ctx.start.start, ctx.stop!.stop + 1],
   };
-}
+};
 
-function parsePrefix(
-  this: NonterminalNode,
-  op: TerminalNode,
-  exp: NonterminalNode,
-): UntypedExpr {
-  return {
-    type: "application",
-    span: getSpan(this),
-    caller: {
-      type: "identifier",
-      name: op.sourceString,
-      span: getSpan(op),
-    },
-    args: [exp.expr()],
+class TypeVisitor extends Visitor<TypeAst> {
+  visitNamedType = (ctx: NamedTypeContext): TypeAst => {
+    const namespace = ctx.moduleNamespace()?.getText();
+    return {
+      type: "named",
+      args: ctx.type__list().map((t) => this.visit(t)),
+      name: ctx._name.text,
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      ...(namespace === undefined ? {} : { namespace }),
+    };
   };
-}
 
-semantics.addOperation<{ name: string; namespace?: string } & SpanMeta>(
-  "ident()",
-  {
-    QualifiedIdent(ns, _dot, id) {
-      const namespace =
-        ns.numChildren === 0
-          ? undefined
-          : ns
-              .child(0)
-              .asIteration()
-              .children.map((c) => c.sourceString)
-              .join("/");
+  visitGenericType = (ctx: GenericTypeContext): TypeAst => {
+    const id = ctx.ID().getText();
 
+    if (id === "_") {
       return {
-        type: "identifier",
-        span: getSpan(this),
-        namespace,
-        name: id.sourceString,
+        type: "any",
+        span: [ctx.start.start, ctx.stop!.stop + 1],
       };
-    },
-
-    infixIdent(_lparens, ident, _rparens) {
-      return {
-        name: ident.sourceString,
-        span: getSpan(this),
-      };
-    },
-    ident(_hd, _tl) {
-      return {
-        name: this.sourceString,
-        span: getSpan(this),
-      };
-    },
-  },
-);
-
-semantics.addOperation<MatchPattern>("matchPattern()", {
-  ConstructorPattern_ident(ident) {
-    return {
-      type: "identifier",
-      name: ident.sourceString,
-      span: getSpan(this),
-    };
-  },
-  ConstructorPattern_lit(lit) {
-    return {
-      type: "lit",
-      literal: lit.lit(),
-      span: getSpan(this),
-    };
-  },
-
-  MatchPattern_cons(l, _cons, r) {
-    return {
-      type: "constructor",
-      namespace: "List",
-      name: "Cons",
-      args: [l.matchPattern(), r.matchPattern()],
-      span: getSpan(this),
-    };
-  },
-
-  ConstructorPattern_tuple(_lparens, x, _comma, xs, _rparens) {
-    const xs_ = xs.asIteration().children.map((c) => c.matchPattern());
-
-    const count = 1 + xs_.length;
-    const name = `Tuple${count}`;
-    return {
-      type: "constructor",
-      name,
-      namespace: "Tuple",
-      args: [x.matchPattern(), ...xs_],
-      span: getSpan(this),
-    };
-  },
-  ConstructorPattern_constructor(ident, _lparent, args, _rparens) {
-    const { name, namespace } = ident.qualifiedTypeAst();
-
-    let args_: MatchPattern[] = [];
-    if (args.numChildren > 0) {
-      args_ = args
-        .child(0)
-        .asIteration()
-        .children.map((a) => a.matchPattern());
     }
 
     return {
+      type: "var",
+      ident: id,
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+    };
+  };
+
+  visitFnType = (ctx: FnTypeContext): TypeAst => ({
+    type: "fn",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    args:
+      ctx
+        .fnTypeParams()
+        ?.type__list()
+        .map((p) => this.visit(p)) ?? [],
+    return: this.visit(ctx._ret),
+  });
+  visitTupleType = (ctx: TupleTypeContext): TypeAst => {
+    // TODO this should be in the AST
+    const args = ctx.type__list().map((e) => this.visit(e));
+    const count = args.length;
+
+    const span: Span = [ctx.start.start, ctx.stop!.start + 1];
+
+    return {
+      type: "named",
+      name: `Tuple${count}`,
+      namespace: "Tuple",
+      args,
+      span,
+    };
+  };
+}
+
+class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
+  visitMatchIdent = (ctx: MatchIdentContext): UntypedMatchPattern => ({
+    type: "identifier",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    name: ctx.ID().getText(),
+  });
+
+  visitConstructor = (ctx: ConstructorContext): UntypedMatchPattern => ({
+    type: "constructor",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    name: ctx._name.text,
+    namespace: ctx.moduleNamespace()?.getText(),
+    args: ctx.matchPattern_list().map((p) => this.visit(p)),
+  });
+
+  visitIntPattern = (ctx: IntPatternContext): UntypedMatchPattern => ({
+    type: "lit",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    literal: {
+      type: "int",
+      value: Number(ctx.getText()),
+    },
+  });
+
+  visitFloatPattern = (ctx: FloatPatternContext): UntypedMatchPattern => ({
+    type: "lit",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    literal: {
+      type: "float",
+      value: Number(ctx.getText()),
+    },
+  });
+
+  visitStringPattern = (ctx: StringPatternContext): UntypedMatchPattern => ({
+    type: "lit",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    literal: {
+      type: "string",
+      value: ctx.getText().slice(1, -1),
+    },
+  });
+
+  visitCharPattern = (ctx: CharPatternContext): UntypedMatchPattern => ({
+    type: "lit",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    literal: {
+      type: "char",
+      value: ctx.getText().slice(1, -1),
+    },
+  });
+
+  visitTuplePattern = (ctx: TuplePatternContext): UntypedMatchPattern => {
+    const args = ctx.matchPattern_list();
+    return {
       type: "constructor",
-      name,
-      namespace,
-      args: args_,
-      span: getSpan(this),
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      name: `Tuple${args.length}`,
+      namespace: "Tuple",
+      args: args.map((a) => this.visit(a)),
     };
-  },
-});
+  };
 
-semantics.addOperation<[MatchPattern, UntypedExpr]>("matchClause()", {
-  MatchClause_clause(match, _arrow, expr) {
-    return [match.matchPattern(), expr.expr()];
-  },
-});
-
-semantics.addOperation<UntypedExpr>("expr()", {
-  PipeExp_pipe(left, _pipe, right) {
+  visitConsPattern = (ctx: ConsPatternContext): UntypedMatchPattern => {
     return {
-      type: "pipe",
-      left: left.expr(),
-      right: right.expr(),
-      span: getSpan(this),
+      type: "constructor",
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      namespace: "List",
+      name: "Cons",
+      args: [this.visit(ctx.matchPattern(0)), this.visit(ctx.matchPattern(1))],
     };
-  },
-  PriExp_listLit(_lbracket, args, _trailingComma, _rbracket) {
-    return {
-      type: "list-literal",
-      span: getSpan(this),
-      values: args.asIteration().children.map((c) => c.expr() as UntypedExpr),
-    };
-  },
+  };
+}
 
-  PriExp_literal(n) {
-    return {
-      type: "constant",
-      value: n.lit(),
-      span: getSpan(this),
-    };
-  },
+class ExpressionVisitor extends Visitor<UntypedExpr> {
+  visitErrorNode(_node_: antlr4.ErrorNode): UntypedExpr {
+    throw new Error("ERROR NODE");
+  }
 
-  ConsExpr_cons(hd, cons, tl) {
-    return {
-      type: "application",
-      span: getSpan(this),
-      caller: {
-        type: "identifier",
-        name: "Cons",
-        namespace: "List",
-        span: getSpan(cons),
-      },
-      args: [hd.expr(), tl.expr()],
-    };
-  },
+  visit(expr: ExprContext): UntypedExpr {
+    if (expr.exception !== null) {
+      return {
+        type: "syntax-err",
+        span: [expr.start.start, expr.stop!.stop + 1],
+      };
+    }
 
-  PriExp_tuple(_lparens, x, _comma, xs, _rparens) {
-    const xs_ = xs.asIteration().children.map((m) => m.expr());
+    return super.visit(expr);
+  }
 
-    const count = 1 + xs_.length;
+  visitInt = (ctx: IntContext): UntypedExpr => ({
+    type: "constant",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    value: {
+      type: "int",
+      value: Number(ctx.getText()),
+    },
+  });
+
+  visitFloat = (ctx: FloatContext): UntypedExpr => ({
+    type: "constant",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    value: {
+      type: "float",
+      value: Number(ctx.getText()),
+    },
+  });
+
+  visitString = (ctx: StringContext): UntypedExpr => ({
+    type: "constant",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    value: {
+      type: "string",
+      value: ctx.getText().slice(1, -1),
+    },
+  });
+
+  visitChar = (ctx: CharContext): UntypedExpr => ({
+    type: "constant",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    value: {
+      type: "char",
+      value: ctx.getText().slice(1, -1),
+    },
+  });
+
+  visitId = (ctx: IdContext): UntypedExpr => ({
+    type: "identifier",
+    namespace: ctx.qualifiedId().moduleNamespace()?.getText(),
+    name: ctx.qualifiedId()._name.text,
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+
+  visitBoolNot = (ctx: ParensContext): UntypedExpr => ({
+    type: "application",
+    caller: {
+      type: "identifier",
+      name: "!",
+      span: [ctx.start.start, ctx.start.start + 1],
+    },
+    args: [this.visit(ctx.expr())],
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+
+  visitCall = (ctx: CallContext): UntypedExpr => ({
+    type: "application",
+    caller: this.visit(ctx.expr(0)),
+    args: ctx
+      .expr_list()
+      .slice(1)
+      .map((e) => this.visit(e)),
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+
+  visitBlockExpr = (ctx: BlockExprContext): UntypedExpr =>
+    this.visit(ctx.block());
+
+  visitBlockContentExpr = (ctx: BlockContentExprContext): UntypedExpr =>
+    this.visit(ctx.expr());
+
+  visitBlockContentLetExpr = (
+    ctx: BlockContentLetExprContext,
+  ): UntypedExpr => ({
+    type: "let",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    pattern: new MatchPatternVisitor().visit(ctx._pattern),
+    value: this.visit(ctx._value),
+    body: this.visit(ctx._body),
+  });
+
+  visitBlockContentLetHashExpr = (
+    ctx: BlockContentLetHashExprContext,
+  ): UntypedExpr => ({
+    type: "let#",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    pattern: new MatchPatternVisitor().visit(ctx._pattern),
+    mapper: {
+      name: ctx._mapper._name.text,
+      span: [ctx.qualifiedId().start.start, ctx.qualifiedId().stop!.stop + 1],
+      namespace: ctx.qualifiedId().moduleNamespace()?.getText(),
+    },
+    value: this.visit(ctx._value),
+    body: this.visit(ctx._body),
+  });
+
+  visitBlock = (ctx: BlockContext): UntypedExpr =>
+    this.visit(ctx.blockContent());
+
+  visitFn = (ctx: FnContext): UntypedExpr => ({
+    type: "fn",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    params: ctx
+      .matchPattern_list()
+      .map((patternCtx) => new MatchPatternVisitor().visit(patternCtx)),
+    body: this.visit(ctx.block()),
+  });
+
+  visitIf = (ctx: IfContext): UntypedExpr => ({
+    type: "if",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    condition: this.visit(ctx._condition),
+    then: this.visit(ctx._then),
+    else: this.visit(ctx._else_),
+  });
+
+  visitMatch = (ctx: MatchContext): UntypedExpr => ({
+    type: "match",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    expr: this.visit(ctx._matched),
+    clauses: ctx
+      .matchClause_list()
+      .map((clause) => [
+        new MatchPatternVisitor().visit(clause.matchPattern()),
+        this.visit(clause.expr()),
+      ]),
+  });
+
+  visitParens = (ctx: ParensContext): UntypedExpr => this.visit(ctx.expr());
+  visitAddSub = makeInfixOp;
+  visitMulDiv = makeInfixOp;
+  visitBoolAnd = makeInfixOp;
+  visitBoolOr = makeInfixOp;
+  visitComp = makeInfixOp;
+  visitEq = makeInfixOp;
+
+  visitCons = (ctx: ConsContext): UntypedExpr => ({
+    type: "application",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    caller: {
+      type: "identifier",
+      name: "Cons",
+      namespace: "List",
+      span: [ctx._op.start, ctx._op.stop + 1],
+    },
+    args: [this.visit(ctx.expr(0)), this.visit(ctx.expr(1))],
+  });
+
+  visitTuple = (ctx: TupleContext): UntypedExpr => {
+    // TODO this should be in the AST
+    const args = ctx.expr_list().map((e) => this.visit(e));
+    const count = args.length;
+
+    const span: Span = [ctx.start.start, ctx.stop!.start + 1];
 
     return {
       type: "application",
@@ -231,517 +375,338 @@ semantics.addOperation<UntypedExpr>("expr()", {
         type: "identifier",
         name: `Tuple${count}`,
         namespace: "Tuple",
-        span: getSpan(this),
+        span,
       },
-      args: [x.expr(), ...xs_],
-      span: getSpan(this),
+      args,
+      span,
     };
-  },
-  PriExp_paren(_open, e, _close) {
-    return e.expr();
-  },
+  };
 
-  ident(_hd, _tl) {
-    return {
-      type: "identifier",
-      span: getSpan(this),
-      ...this.ident(),
-    };
-  },
+  visitListLit = (ctx: ListLitContext): UntypedExpr => ({
+    type: "list-literal",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    values: ctx.expr_list().map((e) => this.visit(e)),
+  });
 
-  QualifiedIdent(ns, _dot, id) {
-    const namespace =
-      ns.numChildren === 0
-        ? undefined
-        : ns
-            .child(0)
-            .asIteration()
-            .children.map((c) => c.sourceString)
-            .join("/");
-
-    return {
-      type: "identifier",
-      span: getSpan(this),
-      namespace,
-      name: id.sourceString,
-    };
-  },
-
-  QualifiedName_emptyIdent(ns, _dot, _emptyIdent) {
-    const namespace =
-      ns.numChildren === 0
-        ? undefined
-        : ns
-            .child(0)
-            .asIteration()
-            .children.map((c) => c.sourceString)
-            .join("/");
-
-    return {
-      type: "identifier",
-      span: getSpan(this),
-      namespace,
-      name: "",
-    };
-  },
-
-  QualifiedName_validIdent(ns, _dot, id) {
-    const namespace =
-      ns.numChildren === 0
-        ? undefined
-        : ns
-            .child(0)
-            .asIteration()
-            .children.map((c) => c.sourceString)
-            .join("/");
-
-    return {
-      type: "identifier",
-      span: getSpan(this),
-      namespace,
-      name: id.sourceString,
-    };
-  },
-
-  CompExp_lt: parseInfix,
-  CompExp_gt: parseInfix,
-  CompExp_gte: parseInfix,
-  CompExp_lte: parseInfix,
-  EqExpr_eq: parseInfix,
-  EqExpr_neq: parseInfix,
-  OrExpr_or: parseInfix,
-  AndExpr_and: parseInfix,
-  AddExp_plus: parseInfix,
-  AddExp_plusFloat: parseInfix,
-  AddExp_minus: parseInfix,
-  AddExp_minusFloat: parseInfix,
-  MulExp_mult: parseInfix,
-  MulExp_multFloat: parseInfix,
-  MulExp_divide: parseInfix,
-  MulExp_divideFloat: parseInfix,
-  MulExp_rem: parseInfix,
-  ExpExp_power: parseInfix,
-  AddExp_concat: parseInfix,
-
-  NotExp_not: parsePrefix,
-
-  PriExp_apply(f, _lpar, args, _trailingComma, _rpar) {
-    return {
-      type: "application",
-      caller: f.expr(),
-      args: args.asIteration().children.map((c) => c.expr()),
-      span: getSpan(this),
-    };
-  },
-
-  PriExp_block(_lbracket, block, _rbracket) {
-    return block.expr();
-  },
-
-  PriExp_fn(_fn, params, _lbracket, block, _rbracket) {
-    return {
-      type: "fn",
-      params: params.asIteration().children.map((c) => c.matchPattern()),
-      body: block.expr(),
-      span: getSpan(this),
-    };
-  },
-
-  PriExp_if(_if, cond, _lb1, x, _rb1, _else, _lb2, y, _rb2) {
-    return {
-      type: "if",
-      condition: cond.expr(),
-      then: x.expr(),
-      else: y.expr(),
-      span: getSpan(this),
-    };
-  },
-
-  PriExp_match(_match, expr, _lbracket, clauses, _comma, _rbracket) {
-    return {
-      type: "match",
-      expr: expr.expr(),
-      clauses: clauses.asIteration().children.map((c) => c.matchClause()),
-      span: getSpan(this),
-    };
-  },
-
-  BlockContent_exp(e) {
-    return e.expr();
-  },
-
-  BlockContent_monadicLet(_let, mapper, ident, _eq, value, _comma, body) {
-    return {
-      type: "let#",
-      mapper: mapper.ident(),
-      body: body.expr(),
-      value: value.expr(),
-      pattern: ident.matchPattern(),
-      span: getSpan(this),
-    };
-  },
-
-  BlockContent_let(_let, ident, _eq, value, _comma, body) {
-    return {
-      type: "let",
-      pattern: ident.matchPattern(),
-      value: value.expr(),
-      body: body.expr(),
-      span: getSpan(this),
-    };
-  },
-});
-
-semantics.addOperation<{ namespace?: string; name: string }>(
-  "qualifiedTypeAst()",
-  {
-    QualifiedTypeIdent(namespace, _dot, name) {
-      return {
-        name: name.sourceString,
-        ...(namespace.numChildren === 0
-          ? {}
-          : { namespace: namespace.child(0).sourceString }),
-      };
-    },
-  },
-);
-
-semantics.addOperation<TraitDef>("traitDef()", {
-  TraitDef(typeVar, _colon, trait) {
-    return {
-      typeVar: typeVar.sourceString,
-      traits: [trait.sourceString],
-    };
-  },
-});
-
-semantics.addOperation<PolyTypeAst>("poly()", {
-  PolyType(type_, _where, traitDefs) {
-    const traits =
-      traitDefs.numChildren === 0
-        ? []
-        : traitDefs
-            .child(0)
-            .asIteration()
-            .children.map((arg) => arg.traitDef());
-
-    return {
-      mono: type_.type(),
-      where: traits,
-    };
-  },
-});
-
-semantics.addOperation<TypeAst>("type()", {
-  Type_any(_underscore) {
-    return { type: "any", span: getSpan(this) };
-  },
-
-  Type_var(ident) {
-    return { type: "var", ident: ident.sourceString, span: getSpan(this) };
-  },
-
-  Type_fn(_fn, _lparens, args, _rparens, _arrow, ret) {
-    const args_ = args.asIteration().children.map((arg) => arg.type());
-    return { type: "fn", args: args_, return: ret.type(), span: getSpan(this) };
-  },
-
-  Type_named(ident, _lbracket, args, _rbracket) {
-    let args_: TypeAst[] = [];
-    if (args.numChildren > 0) {
-      args_ = args
-        .child(0)
-        .asIteration()
-        .children.map((c) => c.type());
-    }
-    return {
-      type: "named",
-      args: args_,
-      span: getSpan(this),
-      ...ident.qualifiedTypeAst(),
-    };
-  },
-  Type_tuple(_lparens, t, _comma, ts, _rparens) {
-    const ts_ = ts.asIteration().children.map((c) => c.type());
-
-    const count = 1 + ts_.length;
-    const name = `Tuple${count}`;
-
-    return {
-      type: "named",
-      namespace: "Tuple",
-      name,
-      args: [t.type(), ...ts_],
-      span: getSpan(this),
-    };
-  },
-});
-
-type Statement =
-  | { type: "typeDeclaration"; decl: UntypedTypeDeclaration }
-  | { type: "declaration"; decl: UntypedDeclaration };
-
-semantics.addOperation<TypeVariant<unknown>>("typeVariant()", {
-  TypeVariant(name, _lparens, args, _rparens) {
-    let args_: TypeAst[] = [];
-    if (args.numChildren > 0) {
-      args_ = args
-        .child(0)
-        .asIteration()
-        .children.map((c) => c.type());
-    }
-
-    return { name: name.sourceString, args: args_, span: getSpan(this) };
-  },
-});
-
-function parseParams(params: IterationNode) {
-  let params_: Array<{ name: string } & SpanMeta> = [];
-  if (params.numChildren > 0) {
-    params_ = params
-      .child(0)
-      .asIteration()
-      .children.map((c) => ({
-        name: c.sourceString,
-        span: getSpan(c),
-      }));
-  }
-  return params_;
+  visitPipe = (ctx: PipeContext): UntypedExpr => ({
+    type: "pipe",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    left: this.visit(ctx.expr(0)),
+    right: this.visit(ctx.expr(1)),
+  });
 }
 
-semantics.addOperation<Statement>("statement()", {
-  TypeDeclaration_externType(
-    docComment,
-    _extern,
-    pubOpt,
-    _type,
-    typeName,
-    _lT,
-    params,
-    _rT,
-  ) {
-    const pub = pubOpt.numChildren === 1;
+type DeclarationType =
+  | { type: "value"; decl: UntypedDeclaration }
+  | { type: "type"; decl: UntypedTypeDeclaration }
+  | { type: "syntax-err" };
 
-    const decl: UntypedTypeDeclaration = {
-      type: "extern",
-      pub,
-      params: parseParams(params),
-      name: typeName.sourceString,
-      span: getSpan(this),
-    };
+class ExposingVisitor extends Visitor<UntypedExposedValue> {
+  visitValueExposing = (ctx: ValueExposingContext): UntypedExposedValue => ({
+    type: "value",
+    name: normalizeInfix(ctx._name.text),
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
 
-    const doc = handleDocString(docComment.sourceString);
-    if (doc !== "") {
-      decl.docComment = doc;
+  visitTypeExposing = (ctx: TypeExposingContext): UntypedExposedValue => ({
+    type: "type",
+    exposeImpl: ctx.EXPOSING_NESTED() != null,
+    name: ctx._name.text,
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  });
+}
+
+class DeclarationVisitor extends Visitor<DeclarationType> {
+  visitLetDeclaration = (letDecl: LetDeclarationContext): DeclarationType => {
+    const ctx = letDecl.letDeclaration_();
+
+    const binding = ctx.ID();
+
+    const e = ctx.expr();
+    if (e === null) {
+      return { type: "syntax-err" };
     }
+    const value: UntypedExpr = new ExpressionVisitor().visit(e);
 
-    return {
-      type: "typeDeclaration",
-      decl,
-    };
-  },
+    const typeHint: TypeAst | undefined =
+      ctx._typeHint === undefined
+        ? undefined
+        : // @ts-ignore
+          ctx._typeHint.accept(new TypeVisitor())[0];
 
-  TypeDeclaration_typeDef(
-    docComment,
-    pubOpt,
-    nestedPubOpt,
-    _type,
-    typeName,
-    _lT,
-    params,
-    _rT,
-    _lbracket,
-    variants,
-    _trailingComma,
-    _rbracket,
-  ) {
-    const pub = pubOpt.numChildren === 1;
-    const variants_ = variants
-      .asIteration()
-      .children.map<TypeVariant<unknown>>((n) => n.typeVariant());
+    const docs = ctx
+      .DOC_COMMENT_LINE_list()
+      .map((d) => d.getText().slice(3))
+      .join("");
 
-    const decl: UntypedTypeDeclaration = {
-      type: "adt",
-      pub: pub && nestedPubOpt.child(0).numChildren === 1 ? ".." : pub,
-      params: parseParams(params),
-      name: typeName.sourceString,
-      variants: variants_,
-      span: getSpan(this),
-    };
-
-    const doc = handleDocString(docComment.sourceString);
-    if (doc !== "") {
-      decl.docComment = doc;
-    }
-
-    return {
-      type: "typeDeclaration",
-      decl,
-    };
-  },
-
-  Declaration_externLetStmt(
-    docComments,
-    _extern,
-    pubOpt,
-    _let,
-    ident,
-    _colon,
-    typeHint,
-  ) {
-    const pub = pubOpt.numChildren === 1;
-
-    const decl: UntypedDeclaration = {
-      pub,
-      extern: true,
-      binding: ident.ident(),
-      span: getSpan(this),
-      typeHint: {
-        ...typeHint.poly(),
-        span: getSpan(typeHint.child(0)),
-      },
-    };
-
-    const dc = handleDocString(docComments.sourceString);
-    if (dc !== "") {
-      decl.docComment = dc;
-    }
-
-    return {
-      type: "declaration",
-      decl,
-    };
-  },
-  Declaration_letStmt(
-    docComments,
-    inlineModifier,
-    pubOpt,
-    _let,
-    ident,
-    _colon,
-    typeHint,
-    _eq,
-    exp,
-  ) {
-    const pub = pubOpt.numChildren === 1;
-    const inline = inlineModifier.children.length === 1;
-
-    const decl: UntypedDeclaration = {
-      pub,
-      inline,
-      extern: false,
-      binding: ident.ident(),
-      value: exp.expr(),
-      span: getSpan(this),
-    };
-
-    if (typeHint.numChildren > 0) {
-      decl.typeHint = {
-        ...typeHint.child(0).poly(),
-        span: getSpan(typeHint.child(0)),
-      };
-    }
-
-    const dc = handleDocString(docComments.sourceString);
-    if (dc !== "") {
-      decl.docComment = dc;
-    }
-
-    return {
-      type: "declaration",
-      decl,
-    };
-  },
-});
-
-semantics.addOperation<UntypedExposedValue>("exposing()", {
-  Exposing_value(ident) {
     return {
       type: "value",
-      ...ident.ident(),
+      decl: {
+        extern: false,
+        inline: ctx._inline !== undefined,
+        pub: ctx._pub !== undefined,
+        ...(docs === "" ? {} : { docComment: docs }),
+        ...(typeHint === undefined
+          ? {}
+          : {
+              typeHint: {
+                mono: typeHint,
+                span: typeHint.span,
+                where: ctx._typeHint.traitImplClause_list().map((t) => ({
+                  typeVar: t.ID().getText(),
+                  traits: t.TYPE_ID_list().map((t) => t.getText()),
+                })),
+              },
+            }),
+        binding: {
+          name: binding.getText(),
+          span: [binding.symbol.start, binding.symbol.stop + 1],
+        },
+        span: [ctx.start.start, ctx.stop!.stop + 1],
+        value,
+      },
     };
-  },
-  Exposing_type(ident, _parens, dots, _rparens) {
-    const exposeImpl = dots.numChildren === 1;
+  };
+
+  visitExternLetDeclaration = (
+    letDecl: ExternLetDeclarationContext,
+  ): DeclarationType => {
+    const ctx = letDecl.externLetDeclaration_();
+
+    const typeHint: TypeAst =
+      // @ts-ignore
+      ctx._typeHint.accept(new TypeVisitor())[0];
+
+    const docs = ctx
+      .DOC_COMMENT_LINE_list()
+      .map((d) => d.getText().slice(3))
+      .join("");
+
+    return {
+      type: "value",
+      decl: {
+        extern: true,
+        pub: ctx._pub !== undefined,
+        typeHint: {
+          mono: typeHint,
+          span: typeHint.span,
+          where: ctx._typeHint.traitImplClause_list().map((t) => ({
+            typeVar: t.ID().getText(),
+            traits: t.TYPE_ID_list().map((t) => t.getText()),
+          })),
+        },
+        binding: {
+          name: normalizeInfix(ctx._binding.text),
+          span: [ctx._binding.start, ctx._binding.stop + 1],
+        },
+        ...(docs === "" ? {} : { docComment: docs }),
+        span: [ctx.start.start, ctx.stop!.stop + 1],
+      },
+    };
+  };
+
+  visitTypeDeclaration = (
+    typeDecl: TypeDeclarationContext,
+  ): DeclarationType => {
+    const ctx = typeDecl.typeDeclaration_();
+
+    const docs = ctx
+      .DOC_COMMENT_LINE_list()
+      .map((d) => d.getText().slice(3))
+      .join("");
 
     return {
       type: "type",
-      exposeImpl,
-      name: ident.sourceString,
-      span: getSpan(this),
+      decl: {
+        type: "adt",
+        pub:
+          ctx._pub === undefined
+            ? false
+            : ctx._pub.EXPOSING_NESTED() == null
+              ? true
+              : "..",
+        name: ctx._name.text,
+        variants:
+          ctx
+            .typeVariants()
+            ?.typeConstructorDecl_list()
+            .map((v) => ({
+              name: v._name.text,
+              span: [v.start.start, v.stop!.stop + 1],
+              args: v.type__list().map((t) => new TypeVisitor().visit(t)),
+            })) ?? [],
+        params:
+          ctx
+            .paramsList()
+            ?.ID_list()
+            .map((i) => ({
+              name: i.getText(),
+              span: [i.symbol.start, i.symbol.stop + 1],
+            })) ?? [],
+        ...(docs === "" ? {} : { docComment: docs }),
+        span: [ctx.start.start, ctx.stop!.stop + 1],
+      },
     };
-  },
-});
+  };
 
-semantics.addOperation<UntypedImport>("import_()", {
-  Import(_import, mod, _dot, _lparens, exposing, _rparens) {
-    const exposing_ =
-      exposing.numChildren === 0
-        ? []
-        : exposing
-            .child(0)
-            .asIteration()
-            .children.map((c) => c.exposing());
+  visitExternTypeDeclaration = (
+    typeDecl: ExternTypeDeclarationContext,
+  ): DeclarationType => {
+    const ctx = typeDecl.externTypeDeclaration_();
+
+    const docs = ctx
+      .DOC_COMMENT_LINE_list()
+      .map((d) => d.getText().slice(3))
+      .join("");
+
     return {
-      ns: mod.sourceString,
-      exposing: exposing_,
-      span: getSpan(this),
+      type: "type",
+      decl: {
+        type: "extern",
+        pub: ctx._pub !== undefined,
+        name: ctx._name.text,
+
+        params:
+          ctx
+            .paramsList()
+            ?.ID_list()
+            .map((i) => ({
+              name: i.getText(),
+              span: [i.symbol.start, i.symbol.stop + 1],
+            })) ?? [],
+        ...(docs === "" ? {} : { docComment: docs }),
+        span: [ctx.start.start, ctx.stop!.stop + 1],
+      },
     };
-  },
-});
+  };
+}
 
-semantics.addOperation<UntypedModule>("parse()", {
-  MAIN(moduleDoc, imports, statements) {
-    const statements_ = statements.children.map<Statement>((child) =>
-      child.statement(),
-    );
+export class AntlrLexerError {
+  constructor(
+    public readonly line: number,
+    public readonly column: number,
+    public readonly description: string,
+  ) {}
+}
 
-    const untypedModule: UntypedModule = {
-      imports: imports.children.map((c) => c.import_()),
-      typeDeclarations: statements_.flatMap((st) =>
-        st.type === "typeDeclaration" ? [st.decl] : [],
-      ),
-      declarations: statements_.flatMap((st) =>
-        st.type === "declaration" ? [st.decl] : [],
-      ),
-    };
+export class AntlrParsingError {
+  constructor(
+    public readonly span: Span,
+    public readonly description: string,
+  ) {}
+}
 
-    const moduleDocContent = handleDocString(moduleDoc.sourceString, "////");
-    if (moduleDocContent !== "") {
-      untypedModule.moduleDoc = moduleDocContent;
-    }
+class LexerErrorListener extends ErrorListener<number> {
+  errors: AntlrLexerError[] = [];
 
-    return untypedModule;
-  },
-});
-
-export type ParseResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; matchResult: MatchResult };
-
-export function parse(input: string): ParseResult<UntypedModule> {
-  const matchResult = grammar.match(input);
-  if (matchResult.failed()) {
-    return { ok: false, matchResult };
+  syntaxError(
+    _recognizer: antlr4.Recognizer<number>,
+    _offendingSymbol: number,
+    line: number,
+    column: number,
+    msg: string,
+    _e: antlr4.RecognitionException | undefined,
+  ): void {
+    this.errors.push(new AntlrLexerError(line, column, msg));
   }
+}
 
-  return { ok: true, value: semantics(matchResult).parse() };
+class ParsingErrorListener extends ErrorListener<antlr4.Token> {
+  errors: AntlrParsingError[] = [];
+
+  syntaxError(
+    _recognizer: antlr4.Recognizer<antlr4.Token>,
+    offendingSymbol: antlr4.Token,
+    _line: number,
+    _column: number,
+    msg: string,
+  ): void {
+    this.errors.push(
+      new AntlrParsingError([offendingSymbol.start, offendingSymbol.stop], msg),
+    );
+  }
+}
+
+export type ParseResult = {
+  parsed: UntypedModule;
+
+  lexerErrors: AntlrLexerError[];
+  parsingErrors: AntlrParsingError[];
+};
+
+export function parse(input: string): ParseResult {
+  const chars = new antlr4.CharStream(input);
+  const lexer = new Lexer(chars);
+
+  const lexerErrorListener = new LexerErrorListener();
+  lexer.removeErrorListeners();
+  lexer.addErrorListener(lexerErrorListener);
+
+  const tokens = new antlr4.CommonTokenStream(lexer);
+  const parser = new Parser(tokens);
+
+  const parsingErrorListener = new ParsingErrorListener();
+  parser.removeErrorListeners();
+  parser.addErrorListener(parsingErrorListener);
+
+  const declCtx = parser.program();
+
+  const docs = declCtx
+    .MODULEDOC_COMMENT_LINE_list()
+    .map((d) => d.getText().slice(4))
+    .join("");
+
+  const declarations = declCtx
+    .declaration_list()
+    .map((d) => new DeclarationVisitor().visit(d));
+
+  const parsed: UntypedModule = {
+    ...(docs === "" ? {} : { moduleDoc: docs }),
+    imports: declCtx.import__list().map((i): UntypedImport => {
+      return {
+        ns: i.moduleNamespace().getText(),
+        exposing: i
+          .importExposing_list()
+          .map((e): UntypedExposedValue => new ExposingVisitor().visit(e)),
+        span: [i.start.start, i.stop!.stop + 1],
+      };
+    }),
+
+    declarations: declarations.flatMap((d) => {
+      if (d.type === "value") {
+        return d.decl;
+      }
+      return [];
+    }),
+
+    typeDeclarations: declarations.flatMap((d) => {
+      if (d.type === "type") {
+        return d.decl;
+      }
+      return [];
+    }),
+  };
+
+  return {
+    parsed,
+    parsingErrors: parsingErrorListener.errors,
+    lexerErrors: lexerErrorListener.errors,
+  };
 }
 
 export function unsafeParse(input: string): UntypedModule {
-  const res = parse(input);
-  if (res.ok) {
-    return res.value;
+  const parsed = parse(input);
+  if (parsed.lexerErrors.length !== 0) {
+    throw new Error(`Lexing error: ${parsed.lexerErrors[0]!.description}`);
   }
 
-  throw new Error(res.matchResult.message!);
+  if (parsed.parsingErrors.length !== 0) {
+    throw new Error(`Parsing error: ${parsed.parsingErrors[0]!.description}`);
+  }
+
+  return parsed.parsed;
 }
 
-function handleDocString(raw: string, commentStart = "///") {
-  const buf: string[] = [];
-  for (const line of raw.split("\n")) {
-    buf.push(line.trimStart().replace(commentStart, ""));
-  }
-
-  return buf.join("\n");
+function normalizeInfix(name: string) {
+  return name.startsWith("(") ? name.slice(1, -1) : name;
 }

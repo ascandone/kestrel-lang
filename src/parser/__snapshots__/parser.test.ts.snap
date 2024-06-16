@@ -341,6 +341,157 @@ exports[`Decorators > inline decorator 1`] = `
 }
 `;
 
+exports[`Fault tolerance > faulty decl 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          21,
+          22,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        7,
+        27,
+      ],
+      "value": {
+        "span": [
+          25,
+          27,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 42,
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`Fault tolerance > faulty infix 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        11,
+      ],
+      "value": {
+        "left": {
+          "span": [
+            8,
+            9,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 1,
+          },
+        },
+        "operator": "+",
+        "right": {
+          "span": [
+            11,
+            11,
+          ],
+          "type": "syntax-err",
+        },
+        "span": [
+          8,
+          11,
+        ],
+        "type": "infix",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`Fault tolerance > missing expr 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        7,
+        14,
+      ],
+      "value": {
+        "span": [
+          20,
+          14,
+        ],
+        "type": "syntax-err",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`Fault tolerance > missing string lit termination 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        7,
+        14,
+      ],
+      "value": {
+        "span": [
+          21,
+          14,
+        ],
+        "type": "syntax-err",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`extern bindings > let decls 1`] = `
 {
   "declarations": [
@@ -1049,7 +1200,6 @@ exports[`monadic let syntax sugar 1`] = `
             25,
             31,
           ],
-          "type": "identifier",
         },
         "pattern": {
           "name": "x",
@@ -1116,7 +1266,6 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
             25,
             34,
           ],
-          "type": "identifier",
         },
         "pattern": {
           "name": "x",
@@ -2049,7 +2198,7 @@ exports[`parse cons operator is right-associative 1`] = `
                 "type": "identifier",
               },
               {
-                "name": "Nil",
+                "name": "nil",
                 "namespace": undefined,
                 "span": [
                   18,
@@ -2506,14 +2655,14 @@ exports[`parse ident 1`] = `
       "pub": false,
       "span": [
         0,
-        9,
+        13,
       ],
       "value": {
-        "name": "x",
+        "name": "ab_c2",
         "namespace": undefined,
         "span": [
           8,
-          9,
+          13,
         ],
         "type": "identifier",
       },
@@ -3264,6 +3413,71 @@ exports[`pattern matching > empty match expression 1`] = `
 }
 `;
 
+exports[`pattern matching > matching char literals 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        30,
+      ],
+      "value": {
+        "clauses": [
+          [
+            {
+              "literal": {
+                "type": "char",
+                "value": "a",
+              },
+              "span": [
+                18,
+                21,
+              ],
+              "type": "lit",
+            },
+            {
+              "name": "res",
+              "namespace": undefined,
+              "span": [
+                25,
+                28,
+              ],
+              "type": "identifier",
+            },
+          ],
+        ],
+        "expr": {
+          "name": "x",
+          "namespace": undefined,
+          "span": [
+            14,
+            15,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          30,
+        ],
+        "type": "match",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
 {
   "declarations": [
@@ -3978,6 +4192,78 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
 }
 `;
 
+exports[`pattern matching > matching pattern in fn param 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        25,
+      ],
+      "value": {
+        "body": {
+          "span": [
+            21,
+            23,
+          ],
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 42,
+          },
+        },
+        "params": [
+          {
+            "args": [
+              {
+                "name": "a",
+                "span": [
+                  13,
+                  14,
+                ],
+                "type": "identifier",
+              },
+              {
+                "name": "b",
+                "span": [
+                  16,
+                  17,
+                ],
+                "type": "identifier",
+              },
+            ],
+            "name": "X",
+            "namespace": undefined,
+            "span": [
+              11,
+              18,
+            ],
+            "type": "constructor",
+          },
+        ],
+        "span": [
+          8,
+          25,
+        ],
+        "type": "fn",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`pattern matching > matching pattern in let 1`] = `
 {
   "declarations": [
@@ -4063,6 +4349,110 @@ exports[`pattern matching > matching pattern in let 1`] = `
           "span": [
             29,
             30,
+          ],
+          "type": "identifier",
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`pattern matching > matching pattern in let# 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        43,
+      ],
+      "value": {
+        "body": {
+          "name": "res",
+          "namespace": undefined,
+          "span": [
+            38,
+            41,
+          ],
+          "type": "identifier",
+        },
+        "mapper": {
+          "name": "ident",
+          "namespace": undefined,
+          "span": [
+            14,
+            19,
+          ],
+        },
+        "pattern": {
+          "args": [
+            {
+              "name": "a",
+              "span": [
+                22,
+                23,
+              ],
+              "type": "identifier",
+            },
+            {
+              "args": [
+                {
+                  "name": "b",
+                  "span": [
+                    25,
+                    26,
+                  ],
+                  "type": "identifier",
+                },
+                {
+                  "name": "c",
+                  "span": [
+                    30,
+                    31,
+                  ],
+                  "type": "identifier",
+                },
+              ],
+              "name": "Cons",
+              "namespace": "List",
+              "span": [
+                25,
+                31,
+              ],
+              "type": "constructor",
+            },
+          ],
+          "name": "X",
+          "namespace": undefined,
+          "span": [
+            20,
+            32,
+          ],
+          "type": "constructor",
+        },
+        "span": [
+          10,
+          41,
+        ],
+        "type": "let#",
+        "value": {
+          "name": "x",
+          "namespace": undefined,
+          "span": [
+            35,
+            36,
           ],
           "type": "identifier",
         },
@@ -4539,6 +4929,124 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
 }
 `;
 
+exports[`traits > parses many traits in a polytype for the same tvar 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": true,
+      "pub": false,
+      "span": [
+        0,
+        33,
+      ],
+      "typeHint": {
+        "mono": {
+          "ident": "a",
+          "span": [
+            14,
+            15,
+          ],
+          "type": "var",
+        },
+        "span": [
+          14,
+          15,
+        ],
+        "where": [
+          {
+            "traits": [
+              "Ord",
+              "Eq",
+            ],
+            "typeVar": "a",
+          },
+        ],
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`traits > parses traits for many vars 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": true,
+      "pub": false,
+      "span": [
+        0,
+        42,
+      ],
+      "typeHint": {
+        "mono": {
+          "args": [
+            {
+              "ident": "a",
+              "span": [
+                15,
+                16,
+              ],
+              "type": "var",
+            },
+            {
+              "ident": "b",
+              "span": [
+                18,
+                19,
+              ],
+              "type": "var",
+            },
+          ],
+          "name": "Tuple2",
+          "namespace": "Tuple",
+          "span": [
+            14,
+            20,
+          ],
+          "type": "named",
+        },
+        "span": [
+          14,
+          20,
+        ],
+        "where": [
+          {
+            "traits": [
+              "Ord",
+            ],
+            "typeVar": "a",
+          },
+          {
+            "traits": [
+              "Show",
+            ],
+            "typeVar": "b",
+          },
+        ],
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`traits > parses traits in a polytype 1`] = `
 {
   "declarations": [
@@ -4759,6 +5267,54 @@ exports[`type declarations > type with a variant with complex args 1`] = `
 }
 `;
 
+exports[`type declarations > type with a variant with many args 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "name": "T",
+      "params": [],
+      "pub": false,
+      "span": [
+        0,
+        18,
+      ],
+      "type": "adt",
+      "variants": [
+        {
+          "args": [
+            {
+              "args": [],
+              "name": "A",
+              "span": [
+                11,
+                12,
+              ],
+              "type": "named",
+            },
+            {
+              "args": [],
+              "name": "B",
+              "span": [
+                14,
+                15,
+              ],
+              "type": "named",
+            },
+          ],
+          "name": "C",
+          "span": [
+            9,
+            16,
+          ],
+        },
+      ],
+    },
+  ],
+}
+`;
+
 exports[`type declarations > type with a variant with no args 1`] = `
 {
   "declarations": [],
@@ -4788,7 +5344,7 @@ exports[`type declarations > type with a variant with no args 1`] = `
 }
 `;
 
-exports[`type declarations > type with a variant with no args 2`] = `
+exports[`type declarations > type with a variant with one arg 1`] = `
 {
   "declarations": [],
   "imports": [],
@@ -5009,6 +5565,98 @@ exports[`type hints > parses Fn type with no args 1`] = `
         "span": [
           22,
           23,
+        ],
+        "type": "constant",
+        "value": {
+          "type": "int",
+          "value": 0,
+        },
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`type hints > parses a concrete type with no args as a type hint (extern) 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": true,
+      "pub": false,
+      "span": [
+        0,
+        17,
+      ],
+      "typeHint": {
+        "mono": {
+          "args": [],
+          "name": "Int",
+          "span": [
+            14,
+            17,
+          ],
+          "type": "named",
+        },
+        "span": [
+          14,
+          17,
+        ],
+        "where": [],
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`type hints > parses a concrete type with no args as a type hint (no whitespace after binding) 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        14,
+      ],
+      "typeHint": {
+        "mono": {
+          "args": [],
+          "name": "Int",
+          "span": [
+            7,
+            10,
+          ],
+          "type": "named",
+        },
+        "span": [
+          7,
+          10,
+        ],
+        "where": [],
+      },
+      "value": {
+        "span": [
+          13,
+          14,
         ],
         "type": "constant",
         "value": {

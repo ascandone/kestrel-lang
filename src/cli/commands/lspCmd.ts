@@ -3,6 +3,7 @@ import {
   CompletionItemKind,
   DiagnosticSeverity,
   MarkupKind,
+  Position,
   PublishDiagnosticsParams,
   SymbolKind,
   TextDocumentSyncKind,
@@ -13,7 +14,13 @@ import {
   createConnection,
 } from "vscode-languageserver";
 import { TextDocument, Range } from "vscode-languageserver-textdocument";
-import { Span, UntypedModule, parse } from "../../parser";
+import {
+  AntlrLexerError,
+  AntlrParsingError,
+  Span,
+  UntypedModule,
+  parse,
+} from "../../parser";
 import {
   typecheckProject,
   typeToString,
@@ -31,7 +38,6 @@ import { ErrorInfo, Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../formatter";
 import { Config, readConfig } from "../config";
-import { MatchResult } from "ohm-js";
 
 type Connection = _Connection;
 
@@ -40,22 +46,61 @@ type Module = {
   package_: string;
   document: TextDocument;
   untyped?: UntypedModule;
+  lexerErrors: AntlrLexerError[];
+  parsingErrors: AntlrParsingError[];
   typed?: TypedModule;
 };
 
 function parseErrToDiagnostic(
   document: TextDocument,
-  matchResult: MatchResult,
+  err: AntlrParsingError,
 ): PublishDiagnosticsParams {
-  const interval = matchResult.getInterval();
   return {
     uri: document.uri,
     diagnostics: [
       {
-        message: matchResult.message ?? "Parsing",
+        message: err.description,
         source: "Parsing",
         severity: DiagnosticSeverity.Error,
-        range: spannedToRange(document, [interval.startIdx, interval.endIdx]),
+        range: spannedToRange(document, err.span),
+      },
+    ],
+  };
+}
+
+function dedupParams(
+  params: PublishDiagnosticsParams[],
+): PublishDiagnosticsParams[] {
+  const params_: PublishDiagnosticsParams[] = [];
+  for (const p of params) {
+    const prev = params_.find((p2) => p2.uri === p.uri);
+    if (prev !== undefined) {
+      prev.diagnostics.push(...p.diagnostics);
+    } else {
+      params_.push(p);
+    }
+  }
+
+  return params_;
+}
+
+function lexerErrToDiagnostic(
+  document: TextDocument,
+  err: AntlrLexerError,
+): PublishDiagnosticsParams {
+  const position: Position = {
+    character: err.column,
+    line: err.line,
+  };
+
+  return {
+    uri: document.uri,
+    diagnostics: [
+      {
+        message: err.description,
+        source: "Parsing",
+        severity: DiagnosticSeverity.Error,
+        range: { start: position, end: position },
       },
     ],
   };
@@ -124,16 +169,18 @@ class State {
     textDoc: TextDocument,
   ): PublishDiagnosticsParams[] {
     const oldNs = this.nsByUri(textDoc.uri);
-    if (oldNs !== undefined) {
-      this.insertByNs(this.modulesByNs[oldNs]!.package_, oldNs, textDoc);
-    } else {
-      this.insertByUri(package_, textDoc);
-    }
 
-    return this.typecheckProject();
+    if (oldNs !== undefined) {
+      return this.insertByNs(this.modulesByNs[oldNs]!.package_, oldNs, textDoc);
+    } else {
+      return this.insertByUri(package_, textDoc);
+    }
   }
 
-  insertByUri(package_: string, document: TextDocument) {
+  insertByUri(
+    package_: string,
+    document: TextDocument,
+  ): PublishDiagnosticsParams[] {
     const ns = this.makeNsByUri(document.uri);
     return this.insertByNs(ns, package_, document);
   }
@@ -166,18 +213,26 @@ class State {
     document: TextDocument,
     skipTypecheck: boolean = false,
   ): PublishDiagnosticsParams[] {
-    this.modulesByNs[ns] = { ns, package_, document };
     const parsed = parse(document.getText());
 
-    if (!parsed.ok) {
-      return [parseErrToDiagnostic(document, parsed.matchResult)];
-    }
+    const diagnostics: PublishDiagnosticsParams[] = [
+      ...parsed.lexerErrors.map((e) => lexerErrToDiagnostic(document, e)),
+      ...parsed.parsingErrors.map((e) => parseErrToDiagnostic(document, e)),
+    ];
 
-    this.modulesByNs[ns]!.untyped = parsed.value;
+    this.modulesByNs[ns] = {
+      ns,
+      package_,
+      document,
+      parsingErrors: parsed.parsingErrors,
+      lexerErrors: parsed.lexerErrors,
+      untyped: parsed.parsed,
+    };
+
     if (skipTypecheck) {
-      return [];
+      return diagnostics;
     } else {
-      return this.typecheckProject();
+      return dedupParams([...diagnostics, ...this.typecheckProject()]);
     }
   }
 
@@ -198,7 +253,12 @@ async function initProject_(connection: Connection, state: State) {
   for (const [ns, raw] of Object.entries(rawProject)) {
     const uri = `file://${raw.path}`;
     const textDoc = TextDocument.create(uri, "kestrel", 1, raw.content);
-    state.insertByNs(raw.package, ns, textDoc, true);
+    const diagnosticParams = state.insertByNs(raw.package, ns, textDoc, true);
+
+    for (const p of diagnosticParams) {
+      await connection.sendDiagnostics(p);
+      return;
+    }
   }
 
   for (const diagnostic of state.typecheckProject()) {
@@ -425,7 +485,11 @@ export async function lspCmd() {
   connection.onDocumentFormatting(({ textDocument }) => {
     const module = state.moduleByUri(textDocument.uri);
 
-    if (module?.untyped === undefined) {
+    if (module === undefined || module?.untyped === undefined) {
+      return;
+    }
+
+    if (module.lexerErrors.length !== 0 || module.parsingErrors.length !== 0) {
       return;
     }
 

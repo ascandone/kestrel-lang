@@ -590,6 +590,7 @@ class ResolutionStep {
 
       // Actual ast
 
+      case "syntax-err":
       case "constant":
         return { ...ast, $: TVar.fresh() };
 

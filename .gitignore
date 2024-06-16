@@ -4,4 +4,4 @@ dist
 coverage
 
 # Generated
-*.ohm-bundle.*
+.antlr

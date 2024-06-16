@@ -225,6 +225,9 @@ export class Compiler {
 
   private compileAsExpr(src: TypedExpr): CompileExprResult {
     switch (src.type) {
+      case "syntax-err":
+        throw new Error("[unreachable]");
+
       case "constant":
         return [[], constToString(src.value)];
 
@@ -339,6 +342,9 @@ export class Compiler {
     tailPosCaller: Binding<unknown> | undefined,
   ): string[] {
     switch (src.type) {
+      case "syntax-err":
+        throw new Error("[unreachable]");
+
       case "application": {
         if (this.isTailCall(src, tailPosCaller)) {
           this.tailCall = true;

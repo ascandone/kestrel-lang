@@ -33,5 +33,5 @@ module.exports = {
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": "off",
   },
-  ignorePatterns: ["*.ohm-bundle.*", "**/dist/*", "src/Prelude.js"],
+  ignorePatterns: ["**/dist/*", "src/Prelude.js", "src/parser/antlr"],
 };
