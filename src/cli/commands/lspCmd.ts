@@ -32,6 +32,7 @@ import {
   findReferences,
   autocompletable,
   functionSignatureHint,
+  getInlayHints,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
 import { ErrorInfo, Severity } from "../../errors";
@@ -295,8 +296,20 @@ export async function lspCmd() {
       completionProvider: {
         triggerCharacters: ["."],
       },
+      inlayHintProvider: true,
     },
   }));
+
+  connection.languages.inlayHint.on((ctx) => {
+    const module = state.moduleByUri(ctx.textDocument.uri);
+    if (module?.typed === undefined) {
+      return;
+    }
+    return getInlayHints(module.typed).map((hint) => ({
+      label: hint.label,
+      position: module.document.positionAt(hint.offset),
+    }));
+  });
 
   documents.onDidClose(async ({ document }) => {
     connection.sendDiagnostics({ uri: document.uri, diagnostics: [] });
