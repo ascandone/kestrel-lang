@@ -570,6 +570,10 @@ export class Compiler {
   ): string[] {
     switch (pattern.type) {
       case "lit":
+        if (pattern.literal.type === "char") {
+          return [`${matchSubject}.toString() === "${pattern.literal.value}"`];
+        }
+
         return [`${matchSubject} === ${constToString(pattern.literal)}`];
       case "identifier":
         this.localBindings.set(pattern, matchSubject);

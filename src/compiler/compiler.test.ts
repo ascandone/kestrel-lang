@@ -910,7 +910,7 @@ describe("pattern matching", () => {
     `);
   });
 
-  test("pattern matching literals", () => {
+  test("pattern matching str literals", () => {
     const out = compileSrc(`
   let x = match "subject" {
     "constraint" => 0,
@@ -921,6 +921,25 @@ describe("pattern matching", () => {
       "const Main$x$GEN__0 = "subject";
       let Main$x;
       if (Main$x$GEN__0 === "constraint") {
+        Main$x = 0;
+      } else {
+        throw new Error("[non exhaustive match]")
+      }
+      "
+    `);
+  });
+
+  test("pattern matching char literals", () => {
+    const out = compileSrc(`
+  let x = match 'a' {
+    'x' => 0,
+  }
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x$GEN__0 = new String("a");
+      let Main$x;
+      if (Main$x$GEN__0.toString() === "x") {
         Main$x = 0;
       } else {
         throw new Error("[non exhaustive match]")
