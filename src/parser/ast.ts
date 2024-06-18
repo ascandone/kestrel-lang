@@ -110,6 +110,7 @@ export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
       type: "application";
       caller: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
       args: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>[];
+      isPipe?: boolean;
     }
   | {
       type: "let";

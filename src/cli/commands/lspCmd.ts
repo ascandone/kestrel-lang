@@ -2,6 +2,8 @@ import {
   CompletionItem,
   CompletionItemKind,
   DiagnosticSeverity,
+  InlayHint,
+  InlayHintKind,
   MarkupKind,
   Position,
   PublishDiagnosticsParams,
@@ -305,10 +307,14 @@ export async function lspCmd() {
     if (module?.typed === undefined) {
       return;
     }
-    return getInlayHints(module.typed).map((hint) => ({
-      label: hint.label,
-      position: module.document.positionAt(hint.offset),
-    }));
+    return getInlayHints(module.typed).map(
+      (hint): InlayHint => ({
+        label: hint.label,
+        paddingLeft: true,
+        kind: InlayHintKind.Type,
+        position: module.document.positionAt(hint.offset),
+      }),
+    );
   });
 
   documents.onDidClose(async ({ document }) => {
