@@ -310,7 +310,7 @@ export async function lspCmd() {
     return getInlayHints(module.typed).map(
       (hint): InlayHint => ({
         label: hint.label,
-        paddingLeft: true,
+        paddingLeft: hint.paddingLeft,
         kind: InlayHintKind.Type,
         position: module.document.positionAt(hint.offset),
       }),
