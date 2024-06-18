@@ -31,11 +31,14 @@ class InlayHintBuf {
             return;
           }
 
-          this.inlayHints.push({
-            label: typeToString(arg.$.asType(), this.scheme),
-            offset: arg.span[1],
-            paddingLeft: true,
-          });
+          const argWasPipe = arg.type === "application" && arg.isPipe;
+          if (!argWasPipe) {
+            this.inlayHints.push({
+              label: typeToString(arg.$.asType(), this.scheme),
+              offset: arg.span[1],
+              paddingLeft: true,
+            });
+          }
 
           this.inlayHints.push({
             label: typeToString(resolved.value.return, this.scheme),

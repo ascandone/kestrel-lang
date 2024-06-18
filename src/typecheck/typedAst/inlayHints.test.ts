@@ -6,7 +6,8 @@ import { spanOf } from "./__test__/utils";
 
 test("no inlay hints on empty program", () => {
   const src = ``;
-  expect(getInlayHintsOf(src)).toEqual([]);
+  const hints = getInlayHintsOf(src);
+  expect(hints).toEqual([]);
 });
 
 describe("pipe inlay hints", () => {
@@ -20,7 +21,9 @@ describe("pipe inlay hints", () => {
         |> to_str()
     `;
 
-    expect(getInlayHintsOf(src)).toEqual<InlayHint[]>(
+    const hints = getInlayHintsOf(src);
+    expect(hints).toHaveLength(3);
+    expect(hints).toEqual<InlayHint[]>(
       expect.arrayContaining([
         {
           label: "Int",
@@ -54,7 +57,9 @@ describe("pipe inlay hints", () => {
     }
     `;
 
-    expect(getInlayHintsOf(src)).toEqual<InlayHint[]>(
+    const hints = getInlayHintsOf(src);
+    expect(hints).toHaveLength(2);
+    expect(hints).toEqual<InlayHint[]>(
       expect.arrayContaining([
         {
           label: "Int",
@@ -83,7 +88,9 @@ describe("pipe inlay hints", () => {
       }
     `;
 
-    expect(getInlayHintsOf(src)).toEqual<InlayHint[]>(
+    const hints = getInlayHintsOf(src);
+    expect(hints).toHaveLength(2);
+    expect(hints).toEqual<InlayHint[]>(
       expect.arrayContaining([
         {
           label: "Int",
@@ -105,7 +112,8 @@ describe("pipe inlay hints", () => {
     let x = identity(42)
   `;
 
-    expect(getInlayHintsOf(src)).toEqual<InlayHint[]>([]);
+    const hints = getInlayHintsOf(src);
+    expect(hints).toEqual<InlayHint[]>([]);
   });
 
   test("inlay hints honor the type schemes in the toplevel statement", () => {
@@ -117,7 +125,9 @@ describe("pipe inlay hints", () => {
       }
   `;
 
-    expect(getInlayHintsOf(src)).toEqual<InlayHint[]>([
+    const hints = getInlayHintsOf(src);
+    expect(hints).toHaveLength(2);
+    expect(hints).toEqual<InlayHint[]>([
       {
         label: "b",
         offset: spanOf(src, "arg2", 2)[1],
