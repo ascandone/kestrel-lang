@@ -307,7 +307,7 @@ export async function lspCmd() {
     if (module?.typed === undefined) {
       return;
     }
-    return getInlayHints(module.typed).map(
+    return getInlayHints(module.typed, module.document).map(
       (hint): InlayHint => ({
         label: hint.label,
         paddingLeft: hint.paddingLeft,
