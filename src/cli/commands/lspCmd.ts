@@ -2,6 +2,8 @@ import {
   CompletionItem,
   CompletionItemKind,
   DiagnosticSeverity,
+  InlayHint,
+  InlayHintKind,
   MarkupKind,
   Position,
   PublishDiagnosticsParams,
@@ -32,6 +34,7 @@ import {
   findReferences,
   autocompletable,
   functionSignatureHint,
+  getInlayHints,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
 import { ErrorInfo, Severity } from "../../errors";
@@ -295,8 +298,24 @@ export async function lspCmd() {
       completionProvider: {
         triggerCharacters: ["."],
       },
+      inlayHintProvider: true,
     },
   }));
+
+  connection.languages.inlayHint.on((ctx) => {
+    const module = state.moduleByUri(ctx.textDocument.uri);
+    if (module?.typed === undefined) {
+      return;
+    }
+    return getInlayHints(module.typed, module.document).map(
+      (hint): InlayHint => ({
+        label: hint.label,
+        paddingLeft: hint.paddingLeft,
+        kind: InlayHintKind.Type,
+        position: module.document.positionAt(hint.offset),
+      }),
+    );
+  });
 
   documents.onDidClose(async ({ document }) => {
     connection.sendDiagnostics({ uri: document.uri, diagnostics: [] });

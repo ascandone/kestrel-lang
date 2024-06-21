@@ -562,6 +562,7 @@ class ResolutionStep {
 
         return this.annotateExpr({
           type: "application",
+          isPipe: true,
           span: ast.span,
           caller: ast.right.caller,
           args: [ast.left, ...ast.right.args],
