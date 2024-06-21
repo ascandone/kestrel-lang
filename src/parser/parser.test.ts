@@ -1,5 +1,5 @@
 import { expect, test, describe } from "vitest";
-import { parse, unsafeParse } from "./parser";
+import { parse, parseReplInput, unsafeParse } from "./parser";
 import { Span, UntypedModule } from "./ast";
 
 test("parsing a declaration", () => {
@@ -806,6 +806,28 @@ describe("Fault tolerance", () => {
     `;
 
     expect(parse(src).parsed).toMatchSnapshot();
+  });
+});
+
+describe("repl", () => {
+  test("expression", () => {
+    const src = `42 + 2`;
+    expect(parseReplInput(src).parsed).toMatchSnapshot();
+  });
+
+  test("let decl", () => {
+    const src = `let x = 42`;
+    expect(parseReplInput(src).parsed).toMatchSnapshot();
+  });
+
+  test("import", () => {
+    const src = `import A/B.{x}`;
+    expect(parseReplInput(src).parsed).toMatchSnapshot();
+  });
+
+  test("type decl", () => {
+    const src = `type Example { A, B }`;
+    expect(parseReplInput(src).parsed).toMatchSnapshot();
   });
 });
 

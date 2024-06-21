@@ -22,21 +22,28 @@ import Parser, {
   GenericTypeContext,
   IdContext,
   IfContext,
+  Import_Context,
   IntContext,
   IntPatternContext,
   LetDeclarationContext,
+  LetDeclaration_Context,
   ListLitContext,
   MatchContext,
   MatchIdentContext,
   NamedTypeContext,
   ParensContext,
   PipeContext,
+  ReplDeclarationContext,
+  ReplExprContext,
+  ReplImportContext,
+  ReplTypeDeclarationContext,
   StringContext,
   StringPatternContext,
   TupleContext,
   TuplePatternContext,
   TupleTypeContext,
   TypeDeclarationContext,
+  TypeDeclaration_Context,
   TypeExposingContext,
   ValueExposingContext,
 } from "./antlr/KestrelParser";
@@ -416,56 +423,92 @@ class ExposingVisitor extends Visitor<UntypedExposedValue> {
   });
 }
 
+function visitLetDeclaration_(ctx: LetDeclaration_Context): UntypedDeclaration {
+  const binding = ctx.ID();
+  const e = ctx.expr();
+
+  const value: UntypedExpr = new ExpressionVisitor().visit(e);
+
+  const typeHint: TypeAst | undefined =
+    ctx._typeHint === undefined
+      ? undefined
+      : // @ts-ignore
+        ctx._typeHint.accept(new TypeVisitor())[0];
+
+  const docs = ctx
+    .DOC_COMMENT_LINE_list()
+    .map((d) => d.getText().slice(3))
+    .join("");
+
+  return {
+    extern: false,
+    inline: ctx._inline !== undefined,
+    pub: ctx._pub !== undefined,
+    ...(docs === "" ? {} : { docComment: docs }),
+    ...(typeHint === undefined
+      ? {}
+      : {
+          typeHint: {
+            mono: typeHint,
+            span: typeHint.span,
+            where: ctx._typeHint.traitImplClause_list().map((t) => ({
+              typeVar: t.ID().getText(),
+              traits: t.TYPE_ID_list().map((t) => t.getText()),
+            })),
+          },
+        }),
+    binding: {
+      name: binding.getText(),
+      span: [binding.symbol.start, binding.symbol.stop + 1],
+    },
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    value,
+  };
+}
+
+function visitTypeDeclaration(
+  ctx: TypeDeclaration_Context,
+): UntypedTypeDeclaration {
+  const docs = ctx
+    .DOC_COMMENT_LINE_list()
+    .map((d) => d.getText().slice(3))
+    .join("");
+
+  return {
+    type: "adt",
+    pub:
+      ctx._pub === undefined
+        ? false
+        : ctx._pub.EXPOSING_NESTED() == null
+          ? true
+          : "..",
+    name: ctx._name.text,
+    variants:
+      ctx
+        .typeVariants()
+        ?.typeConstructorDecl_list()
+        .map((v) => ({
+          name: v._name.text,
+          span: [v.start.start, v.stop!.stop + 1],
+          args: v.type__list().map((t) => new TypeVisitor().visit(t)),
+        })) ?? [],
+    params:
+      ctx
+        .paramsList()
+        ?.ID_list()
+        .map((i) => ({
+          name: i.getText(),
+          span: [i.symbol.start, i.symbol.stop + 1],
+        })) ?? [],
+    ...(docs === "" ? {} : { docComment: docs }),
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+  };
+}
+
 class DeclarationVisitor extends Visitor<DeclarationType> {
   visitLetDeclaration = (letDecl: LetDeclarationContext): DeclarationType => {
     const ctx = letDecl.letDeclaration_();
-
-    const binding = ctx.ID();
-
-    const e = ctx.expr();
-    if (e === null) {
-      return { type: "syntax-err" };
-    }
-    const value: UntypedExpr = new ExpressionVisitor().visit(e);
-
-    const typeHint: TypeAst | undefined =
-      ctx._typeHint === undefined
-        ? undefined
-        : // @ts-ignore
-          ctx._typeHint.accept(new TypeVisitor())[0];
-
-    const docs = ctx
-      .DOC_COMMENT_LINE_list()
-      .map((d) => d.getText().slice(3))
-      .join("");
-
-    return {
-      type: "value",
-      decl: {
-        extern: false,
-        inline: ctx._inline !== undefined,
-        pub: ctx._pub !== undefined,
-        ...(docs === "" ? {} : { docComment: docs }),
-        ...(typeHint === undefined
-          ? {}
-          : {
-              typeHint: {
-                mono: typeHint,
-                span: typeHint.span,
-                where: ctx._typeHint.traitImplClause_list().map((t) => ({
-                  typeVar: t.ID().getText(),
-                  traits: t.TYPE_ID_list().map((t) => t.getText()),
-                })),
-              },
-            }),
-        binding: {
-          name: binding.getText(),
-          span: [binding.symbol.start, binding.symbol.stop + 1],
-        },
-        span: [ctx.start.start, ctx.stop!.stop + 1],
-        value,
-      },
-    };
+    return { type: "value", decl: visitLetDeclaration_(ctx) };
   };
 
   visitExternLetDeclaration = (
@@ -507,47 +550,10 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
 
   visitTypeDeclaration = (
     typeDecl: TypeDeclarationContext,
-  ): DeclarationType => {
-    const ctx = typeDecl.typeDeclaration_();
-
-    const docs = ctx
-      .DOC_COMMENT_LINE_list()
-      .map((d) => d.getText().slice(3))
-      .join("");
-
-    return {
-      type: "type",
-      decl: {
-        type: "adt",
-        pub:
-          ctx._pub === undefined
-            ? false
-            : ctx._pub.EXPOSING_NESTED() == null
-              ? true
-              : "..",
-        name: ctx._name.text,
-        variants:
-          ctx
-            .typeVariants()
-            ?.typeConstructorDecl_list()
-            .map((v) => ({
-              name: v._name.text,
-              span: [v.start.start, v.stop!.stop + 1],
-              args: v.type__list().map((t) => new TypeVisitor().visit(t)),
-            })) ?? [],
-        params:
-          ctx
-            .paramsList()
-            ?.ID_list()
-            .map((i) => ({
-              name: i.getText(),
-              span: [i.symbol.start, i.symbol.stop + 1],
-            })) ?? [],
-        ...(docs === "" ? {} : { docComment: docs }),
-        span: [ctx.start.start, ctx.stop!.stop + 1],
-      },
-    };
-  };
+  ): DeclarationType => ({
+    type: "type",
+    decl: visitTypeDeclaration(typeDecl.typeDeclaration_()),
+  });
 
   visitExternTypeDeclaration = (
     typeDecl: ExternTypeDeclarationContext,
@@ -627,12 +633,21 @@ class ParsingErrorListener extends ErrorListener<antlr4.Token> {
   }
 }
 
-export type ParseResult = {
-  parsed: UntypedModule;
-
+export type ParseResult<T = UntypedModule> = {
+  parsed: T;
   lexerErrors: AntlrLexerError[];
   parsingErrors: AntlrParsingError[];
 };
+
+function visitImport(importContext: Import_Context): UntypedImport {
+  return {
+    ns: importContext.moduleNamespace().getText(),
+    exposing: importContext
+      .importExposing_list()
+      .map((e): UntypedExposedValue => new ExposingVisitor().visit(e)),
+    span: [importContext.start.start, importContext.stop!.stop + 1],
+  };
+}
 
 export function parse(input: string): ParseResult {
   const chars = new antlr4.CharStream(input);
@@ -662,16 +677,7 @@ export function parse(input: string): ParseResult {
 
   const parsed: UntypedModule = {
     ...(docs === "" ? {} : { moduleDoc: docs }),
-    imports: declCtx.import__list().map((i): UntypedImport => {
-      return {
-        ns: i.moduleNamespace().getText(),
-        exposing: i
-          .importExposing_list()
-          .map((e): UntypedExposedValue => new ExposingVisitor().visit(e)),
-        span: [i.start.start, i.stop!.stop + 1],
-      };
-    }),
-
+    imports: declCtx.import__list().map(visitImport),
     declarations: declarations.flatMap((d) => {
       if (d.type === "value") {
         return d.decl;
@@ -705,6 +711,59 @@ export function unsafeParse(input: string): UntypedModule {
   }
 
   return parsed.parsed;
+}
+
+export type ReplInput =
+  | { type: "expression"; expr: UntypedExpr }
+  | { type: "declaration"; decl: UntypedDeclaration }
+  | { type: "import"; import: UntypedImport }
+  | { type: "typeDecl"; decl: UntypedTypeDeclaration };
+
+class ReplInputVisitor extends Visitor<ReplInput> {
+  visitReplExpr = (ctx: ReplExprContext): ReplInput => ({
+    type: "expression",
+    expr: new ExpressionVisitor().visit(ctx.expr()),
+  });
+  visitReplDeclaration = (ctx: ReplDeclarationContext): ReplInput => ({
+    type: "declaration",
+    decl: visitLetDeclaration_(ctx.letDeclaration_()),
+  });
+
+  visitReplImport = (ctx: ReplImportContext): ReplInput => ({
+    type: "import",
+    import: visitImport(ctx.import_()),
+  });
+
+  visitReplTypeDeclaration = (ctx: ReplTypeDeclarationContext): ReplInput => ({
+    type: "typeDecl",
+    decl: visitTypeDeclaration(ctx.typeDeclaration_()),
+  });
+}
+
+export function parseReplInput(input: string): ParseResult<ReplInput> {
+  const chars = new antlr4.CharStream(input);
+  const lexer = new Lexer(chars);
+
+  const lexerErrorListener = new LexerErrorListener();
+  lexer.removeErrorListeners();
+  lexer.addErrorListener(lexerErrorListener);
+
+  const tokens = new antlr4.CommonTokenStream(lexer);
+  const parser = new Parser(tokens);
+
+  const parsingErrorListener = new ParsingErrorListener();
+  parser.removeErrorListeners();
+  parser.addErrorListener(parsingErrorListener);
+
+  const replInput = parser.replInput();
+
+  const visited = new ReplInputVisitor().visit(replInput);
+
+  return {
+    parsed: visited,
+    parsingErrors: parsingErrorListener.errors,
+    lexerErrors: lexerErrorListener.errors,
+  };
 }
 
 function normalizeInfix(name: string) {

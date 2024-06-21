@@ -5,6 +5,10 @@ import {ParseTreeVisitor} from 'antlr4';
 
 import { ModuleNamespaceContext } from "./KestrelParser";
 import { ProgramContext } from "./KestrelParser";
+import { ReplExprContext } from "./KestrelParser";
+import { ReplImportContext } from "./KestrelParser";
+import { ReplDeclarationContext } from "./KestrelParser";
+import { ReplTypeDeclarationContext } from "./KestrelParser";
 import { Import_Context } from "./KestrelParser";
 import { ValueExposingContext } from "./KestrelParser";
 import { TypeExposingContext } from "./KestrelParser";
@@ -85,6 +89,34 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitProgram?: (ctx: ProgramContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `replExpr`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitReplExpr?: (ctx: ReplExprContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `replImport`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitReplImport?: (ctx: ReplImportContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `replDeclaration`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitReplDeclaration?: (ctx: ReplDeclarationContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `replTypeDeclaration`
+	 * labeled alternative in `KestrelParser.replInput`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitReplTypeDeclaration?: (ctx: ReplTypeDeclarationContext) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.import_`.
 	 * @param ctx the parse tree
