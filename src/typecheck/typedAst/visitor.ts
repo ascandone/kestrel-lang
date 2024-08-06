@@ -1,11 +1,16 @@
-import { TypedExpr } from "../typedAst";
+import { TypedExpr, TypedMatchPattern } from "../typedAst";
 
 export interface ExpressionVisitor {
+  onExprEnter?(ast: TypedExpr): void;
   visitApplication?(ast: TypedExpr & { type: "application" }): void;
   visitConstant?(ast: TypedExpr & { type: "constant" }): void;
+  visitIdentifier?(ast: TypedExpr & { type: "identifier" }): void;
+
+  visitPattern?(pattern: TypedMatchPattern): void;
 }
 
 export function visitExpression(ast: TypedExpr, visitor: ExpressionVisitor) {
+  visitor.onExprEnter?.(ast);
   switch (ast.type) {
     case "syntax-err":
       return;
@@ -45,4 +50,31 @@ export function visitExpression(ast: TypedExpr, visitor: ExpressionVisitor) {
       }
       return;
   }
+}
+
+class StopVisiting<T> {
+  constructor(public readonly value: T) {}
+}
+
+export type EarlyReturnVisitor<T> = (
+  stopVisiting: (value: T) => never,
+) => ExpressionVisitor;
+export function visitExpressionEarlyReturn<T>(
+  ast: TypedExpr,
+  visitor: EarlyReturnVisitor<T>,
+): T | undefined {
+  try {
+    const visitor_ = visitor((value) => {
+      throw new StopVisiting(value);
+    });
+
+    visitExpression(ast, visitor_);
+  } catch (error) {
+    if (error instanceof StopVisiting) {
+      return error.value;
+    }
+    throw error;
+  }
+
+  return undefined;
 }

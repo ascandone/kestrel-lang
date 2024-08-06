@@ -10,6 +10,11 @@ import {
   TypedTypeDeclaration,
 } from "../typedAst";
 import { contains, firstBy, statementByOffset } from "./common";
+import {
+  EarlyReturnVisitor,
+  ExpressionVisitor,
+  visitExpressionEarlyReturn,
+} from "./visitor";
 
 export type HoveredInfo =
   | IdentifierResolution
@@ -200,6 +205,26 @@ function hoverOnDecl(
   }
 
   return undefined;
+}
+
+class HoverVisitor implements ExpressionVisitor {
+  constructor(
+    private readonly onStopVisiting: (value: Hovered | undefined) => never,
+    private readonly offset: number,
+  ) {}
+}
+
+function hoverOnExpr_(expr: TypedExpr, offset: number) {
+  return visitExpressionEarlyReturn<Hovered | undefined>(
+    expr,
+    (stopVisiting) => ({
+      onExprEnter(ast) {
+        if (!contains(expr, offset)) {
+          stopVisiting(undefined);
+        }
+      },
+    }),
+  );
 }
 
 function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
