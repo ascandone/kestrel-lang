@@ -28,7 +28,7 @@ test("compile string constants", () => {
 test("compile char constants", () => {
   const out = compileSrc(`pub let x = 'a'`);
   expect(out).toMatchInlineSnapshot(`
-    "const Main$x = new String("a");
+    "const Main$x = "a";
     "
   `);
 });
@@ -1523,7 +1523,7 @@ describe("pattern matching", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x$GEN__0 = new String("a");
+      "const Main$x$GEN__0 = "a";
       let Main$x;
       if (Main$x$GEN__0.toString() === "x") {
         Main$x = 0;

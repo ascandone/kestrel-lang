@@ -1149,9 +1149,8 @@ function constToString(k: ConstLiteral): string {
     case "float":
       return k.value.toString();
     case "string":
-      return `"${k.value}"`;
     case "char":
-      return `new String("${k.value}")`;
+      return `"${k.value}"`;
   }
 }
 
