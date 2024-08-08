@@ -275,7 +275,7 @@ test("== performs structural equality when type is unbound", () => {
 
   expect(out).toMatchInlineSnapshot(`
     "const Main$f = (x, y) => {
-      return Bool$_eq(x, y);
+      return Main$_eq(x, y);
     }
     "
   `);
@@ -283,15 +283,16 @@ test("== performs structural equality when type is unbound", () => {
 
 test("== performs structural equality when type is adt", () => {
   const out = compileSrc(`
-  type T { C(Int) }
-  let f = C(0) == C(1)
+    extern let (==): Fn(a, a) -> Bool
+    type T { C(Int) }
+    let f = C(0) == C(1)
 `);
 
   expect(out).toMatchInlineSnapshot(`
     "function Main$C(a0) {
       return { $: "C", a0 };
     }
-    const Main$f = Bool$_eq(Main$C(0), Main$C(1));
+    const Main$f = Main$_eq(Main$C(0), Main$C(1));
     "
   `);
 });
@@ -1226,6 +1227,44 @@ describe("traits compilation", () => {
       const Main$None = { $: "None" };
 
       const Main$x = Main$show(Show_Option(undefined))(Main$None);
+      "
+    `);
+  });
+
+  test("== handles traits dicts", () => {
+    const out = compileSrc(`
+  extern let (==): Fn(a, a) -> Bool where a: Eq
+  let f = fn x, y { x == y }
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+    "const Main$f = (Eq_11) => (x, y) => {
+      return Main$_eq(Eq_11)(x, y);
+    }
+    "
+  `);
+  });
+
+  test.todo("== handles traits dicts on adts", () => {
+    const out = compileSrc(
+      `
+    extern type Int
+    extern type Bool
+    extern let (==): Fn(a, a) -> Bool where a: Eq
+    type T { C(Int) }
+    let f = C(0) == C(1)
+`,
+      { allowDeriving: ["Eq"] },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$C(a0) {
+        return { $: "C", a0 };
+      }
+      const Eq_Main$T = (x, y) => {
+        return Eq_Main$Int(x.a0, y.a0);
+      }
+      const Main$f = Main$_eq(Eq_Main$T)(Main$C(0), Main$C(1));
       "
     `);
   });

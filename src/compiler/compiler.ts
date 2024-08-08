@@ -218,12 +218,6 @@ export class Compiler {
         return [lStatements, `!${compiledWithParens}`];
       }
 
-      case "structural-eq":
-        return this.compileJsApplicationHelper([], "Bool$_eq", [
-          jsCall.left,
-          jsCall.right,
-        ]);
-
       case "call":
         return this.compileJsApplicationHelper(
           ...this.compileAsExpr(jsCall.caller),
@@ -284,7 +278,8 @@ export class Compiler {
               return [[], src.name + traitArgs];
             }
 
-            return [[], `${sanitizeNamespace(ns)}$${src.name}${traitArgs}`];
+            const fName = src.name === "==" ? "_eq" : src.name;
+            return [[], `${sanitizeNamespace(ns)}$${fName}${traitArgs}`];
           }
 
           case "constructor": {
@@ -1080,8 +1075,7 @@ type JsPrefix = NonNullable<ReturnType<typeof getJsPrefix>>;
 type JsApplicationType =
   | { type: "infix"; operator: JsInfix; left: TypedExpr; right: TypedExpr }
   | { type: "prefix"; operator: JsPrefix; expr: TypedExpr }
-  | { type: "call"; caller: TypedExpr; args: TypedExpr[] }
-  | { type: "structural-eq"; left: TypedExpr; right: TypedExpr };
+  | { type: "call"; caller: TypedExpr; args: TypedExpr[] };
 
 // left-to-right operators
 const infixPrecTable: Record<JsInfix, number> = {
@@ -1117,7 +1111,6 @@ function precTable(appType: JsApplicationType): number {
       return prefixPrecTable[appType.operator];
 
     case "call":
-    case "structural-eq":
       return 17;
   }
 }
@@ -1127,9 +1120,9 @@ function toApplicationType(
 ): JsApplicationType {
   if (isStructuralEq(src.caller, src.args)) {
     return {
-      type: "structural-eq",
-      left: src.args[0]!,
-      right: src.args[1]!,
+      type: "call",
+      caller: src.caller,
+      args: src.args,
     };
   }
 
