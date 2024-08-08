@@ -1068,7 +1068,7 @@ describe("traits compilation", () => {
   });
 
   // Should it be forbidden by type checker?
-  test.skip("when a type is instantiated as T<a> and there are no args, pass undefined as dict", () => {
+  test("when a type is instantiated as T<a> and there are no args, pass undefined as dict", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
 

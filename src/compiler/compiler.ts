@@ -95,6 +95,7 @@ export class Compiler {
   private ns: string | undefined;
 
   private nextId = 0;
+  private dictParams: string[] = [];
   getNextId() {
     return this.nextId++;
   }
@@ -262,6 +263,7 @@ export class Compiler {
             const traitArgs = resolvePassedDicts(
               src.resolution.declaration.binding.$,
               src.$,
+              this.dictParams,
             );
 
             const ns = src.resolution.namespace ?? this.ns;
@@ -568,8 +570,6 @@ export class Compiler {
         continue;
       }
 
-      const dictParams = findDeclarationDictsParams(decl.binding.$.asType());
-
       this.frames.push(
         new Frame(
           {
@@ -581,13 +581,17 @@ export class Compiler {
         ),
       );
 
+      const dictParams = findDeclarationDictsParams(decl.binding.$.asType());
+      this.dictParams = dictParams;
+
       const statements = this.compileAsStatements(
         decl.value,
         {
           type: "assign_var",
           name: nameSpacedBinding,
           declare: true,
-          dictParams,
+          dictParams:
+            dictParams.length === 0 ? "" : `(${dictParams.join(", ")}) => `,
         },
         undefined,
       );
@@ -634,7 +638,7 @@ export class Compiler {
   }
 }
 
-function findDeclarationDictsParams(type: Type): string {
+function findDeclarationDictsParams(type: Type): string[] {
   const buf: string[] = [];
 
   function helper(type: Type) {
@@ -674,11 +678,7 @@ function findDeclarationDictsParams(type: Type): string {
 
   helper(type);
 
-  if (buf.length !== 0) {
-    return `(${buf.join(", ")}) => `;
-  }
-
-  return "";
+  return buf;
 }
 
 function traitDepsForNamedType(
@@ -745,7 +745,11 @@ function traitParamName(trait: string, t: Type): string {
   }
 }
 
-function applyTraitToType(type: Type, trait: string): string {
+function applyTraitToType(
+  type: Type,
+  trait: string,
+  polyDict: string[],
+): string {
   const resolved = resolveType(type);
   switch (resolved.type) {
     case "unbound":
@@ -762,9 +766,18 @@ function applyTraitToType(type: Type, trait: string): string {
           throw new Error("TODO bound fn");
         case "named": {
           let name = `${trait}_${resolved.value.name}`;
-          const deps = traitDepsForNamedType(resolved.value, trait).map((dep) =>
-            applyTraitToType(dep, trait),
-          );
+          const deps = traitDepsForNamedType(resolved.value, trait)
+            .map((dep) => applyTraitToType(dep, trait, polyDict))
+            .map((t) => {
+              if (!polyDict.includes(t)) {
+                // This type is not in the polytype's variables constrained by traits.
+                // therefore it has to be a free variable that can never be instantiated
+                // e.g. in the 'None' expression (of type Option<a> where a is free)
+                return "undefined";
+              }
+              return t;
+            });
+
           if (deps.length !== 0) {
             name += `(${deps.join(", ")})`;
           }
@@ -775,7 +788,11 @@ function applyTraitToType(type: Type, trait: string): string {
   }
 }
 
-function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
+function resolvePassedDicts(
+  genExpr: TVar,
+  instantiatedExpr: TVar,
+  polyDict: string[],
+): string {
   const buf: string[] = [];
 
   // e.g. { 0 => Set("Show", "Debug") }
@@ -878,7 +895,7 @@ function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
                   checkedPush(
                     resolvedGenExpr.id,
                     trait,
-                    applyTraitToType(instantiatedExpr, trait),
+                    applyTraitToType(instantiatedExpr, trait, polyDict),
                   );
                 }
               }
