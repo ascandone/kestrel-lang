@@ -431,7 +431,7 @@ export class Compiler {
         this.tailCall = wasTailCall;
         return [
           //
-          `function ${name}(${tcParams.join(", ")}) {`,
+          `const ${name} = (${tcParams.join(", ")}) => {`,
           ...indentBlock(wrappedFnBody),
           `}`,
           ...(as.type === "assign_var" && as.declare

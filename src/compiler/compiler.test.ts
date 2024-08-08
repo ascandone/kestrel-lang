@@ -203,7 +203,7 @@ test("shadowing fn params", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f(a, a$1) {
+    "const Main$f = (a, a$1) => {
       return a$1;
     }
     "
@@ -219,7 +219,7 @@ test("shadowing fn params with let", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f(msg) {
+    "const Main$f = (msg) => {
       const msg$1 = msg;
       return msg$1;
     }
@@ -252,7 +252,7 @@ test("toplevel fn without params", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f() {
+    "const Main$f = () => {
       return 42;
     }
     "
@@ -265,7 +265,7 @@ test("toplevel fn with params", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f(x, y) {
+    "const Main$f = (x, y) => {
       return y;
     }
     "
@@ -279,7 +279,7 @@ test("== performs structural equality when type is unbound", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f(x, y) {
+    "const Main$f = (x, y) => {
       return Bool$_eq(x, y);
     }
     "
@@ -350,7 +350,7 @@ test("fn inside if return", () => {
   expect(out).toMatchInlineSnapshot(`
     "let Main$f;
     if (0) {
-      function Main$f$GEN__0() {
+      const Main$f$GEN__0 = () => {
         return 1;
       }
       Main$f = Main$f$GEN__0;
@@ -371,7 +371,7 @@ test("let inside scope", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f() {
+    "const Main$f = () => {
       const x = 0;
       const y = 1;
       return x;
@@ -447,7 +447,7 @@ test("tail position if", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$is_zero(n) {
+    "const Main$is_zero = (n) => {
       if (n == 0) {
         return "yes";
       } else {
@@ -476,7 +476,7 @@ test("nested ifs", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$is_zero(n) {
+    "const Main$is_zero = (n) => {
       if (n == 0) {
         return "zero";
       } else {
@@ -539,7 +539,7 @@ test("fn inside let", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$x$f() {
+    "const Main$x$f = () => {
       return 0;
     }
     const Main$x = Main$x$f(1);
@@ -558,7 +558,7 @@ test("fn as expr", () => {
   expect(out).toMatchInlineSnapshot(`
     "const Main$f = 0;
 
-    function Main$x$GEN__0() {
+    const Main$x$GEN__0 = () => {
       return 1;
     }
     const Main$x = Main$f(Main$x$GEN__0);
@@ -611,7 +611,7 @@ test("iifs", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$a$GEN__0() {
+    "const Main$a$GEN__0 = () => {
       return 42;
     }
     const Main$a = Main$a$GEN__0();
@@ -629,7 +629,7 @@ test("(let) closures", () => {
 
   expect(out).toMatchInlineSnapshot(`
     "const Main$a$captured = 42;
-    function Main$a() {
+    const Main$a = () => {
       return Main$a$captured;
     }
     "
@@ -646,8 +646,8 @@ test("fn closures", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$a() {
-      function GEN__0() {
+    "const Main$a = () => {
+      const GEN__0 = () => {
         return 100;
       }
       return GEN__0;
@@ -666,8 +666,8 @@ test("recursion in closures", () => {
 
   expect(out).toMatchInlineSnapshot(
     `
-    "function Main$f$x() {
-      function GEN__0() {
+    "const Main$f$x = () => {
+      const GEN__0 = () => {
         return Main$f$x();
       }
       return GEN__0;
@@ -1055,7 +1055,7 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$f() {
+      "const Main$f = () => {
         const GEN__0 = 42;
         if (true) {
           return GEN__0;
@@ -1082,7 +1082,7 @@ describe("pattern matching", () => {
       "function Main$Box(a0) {
         return { $: "Box", a0 };
       }
-      function Main$f() {
+      const Main$f = () => {
         const GEN__0 = Main$Box(42);
         if (GEN__0.$ === "Box") {
           return GEN__0.a0 + 1;
@@ -1163,7 +1163,7 @@ describe("pattern matching", () => {
       "function Main$Box(a0) {
         return { $: "Box", a0 };
       }
-      function Main$f(b) {
+      const Main$f = (b) => {
         const GEN__0 = b;
         return GEN__0.a0;
       }
@@ -1185,7 +1185,7 @@ describe("pattern matching", () => {
       "function Main$Pair(a0, a1) {
         return { $: "Pair", a0, a1 };
       }
-      function Main$f(b) {
+      const Main$f = (b) => {
         const GEN__0 = b;
         return GEN__0.a1.a0;
       }
@@ -1204,7 +1204,7 @@ describe("pattern matching", () => {
       "function Main$Box(a0) {
         return { $: "Box", a0 };
       }
-      function Main$f(x, GEN__0, y) {
+      const Main$f = (x, GEN__0, y) => {
         return GEN__0.a0;
       }
       "
@@ -1224,10 +1224,10 @@ test("two fns as args", () => {
   expect(out).toMatchInlineSnapshot(`
     "const Main$f = 0;
 
-    function Main$x$GEN__0() {
+    const Main$x$GEN__0 = () => {
       return 0;
     }
-    function Main$x$GEN__1() {
+    const Main$x$GEN__1 = () => {
       return 1;
     }
     const Main$x = Main$f(Main$x$GEN__0, Main$x$GEN__1);
@@ -1245,7 +1245,7 @@ describe("TCO", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$loop() {
+      "const Main$loop = () => {
         return 1 + Main$loop();
       }
       "
@@ -1263,7 +1263,7 @@ describe("TCO", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$a = 0;
 
-      function Main$loop() {
+      const Main$loop = () => {
         return Main$a(Main$loop());
       }
       "
@@ -1280,7 +1280,7 @@ describe("TCO", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$f(x) {
+      "const Main$f = (x) => {
         const a = Main$f(x + 1);
         return a;
       }
@@ -1296,7 +1296,7 @@ describe("TCO", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$loop() {
+      "const Main$loop = () => {
         while (true) {
         }
       }
@@ -1312,16 +1312,16 @@ describe("TCO", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-        "function Main$loop(GEN_TC__0, GEN_TC__1) {
-          while (true) {
-            const x = GEN_TC__0;
-            const y = GEN_TC__1;
-            GEN_TC__0 = x + 1;
-            GEN_TC__1 = y;
-          }
+      "const Main$loop = (GEN_TC__0, GEN_TC__1) => {
+        while (true) {
+          const x = GEN_TC__0;
+          const y = GEN_TC__1;
+          GEN_TC__0 = x + 1;
+          GEN_TC__1 = y;
         }
-        "
-      `);
+      }
+      "
+    `);
   });
 
   test("toplevel with match args", () => {
@@ -1337,7 +1337,7 @@ describe("TCO", () => {
       "function Main$Box(a0) {
         return { $: "Box", a0 };
       }
-      function Main$loop(GEN_TC__0, GEN_TC__1) {
+      const Main$loop = (GEN_TC__0, GEN_TC__1) => {
         while (true) {
           const x = GEN_TC__0;
           const GEN__0 = GEN_TC__1;
@@ -1362,7 +1362,7 @@ describe("TCO", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$to_zero(GEN_TC__0) {
+      "const Main$to_zero = (GEN_TC__0) => {
         while (true) {
           const x = GEN_TC__0;
           if (x == 0) {
@@ -1390,25 +1390,25 @@ describe("TCO", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-        "function List$reduce(GEN_TC__0, GEN_TC__1, GEN_TC__2) {
-          while (true) {
-            const lst = GEN_TC__0;
-            const acc = GEN_TC__1;
-            const f = GEN_TC__2;
-            const GEN__0 = lst;
-            if (GEN__0.$ === "Nil") {
-              return acc;
-            } else if (GEN__0.$ === "Cons") {
-              GEN_TC__0 = lst;
-              GEN_TC__1 = f(acc, GEN__0.a0);
-              GEN_TC__2 = f;
-            } else {
-              throw new Error("[non exhaustive match]")
-            }
+      "const List$reduce = (GEN_TC__0, GEN_TC__1, GEN_TC__2) => {
+        while (true) {
+          const lst = GEN_TC__0;
+          const acc = GEN_TC__1;
+          const f = GEN_TC__2;
+          const GEN__0 = lst;
+          if (GEN__0.$ === "Nil") {
+            return acc;
+          } else if (GEN__0.$ === "Cons") {
+            GEN_TC__0 = lst;
+            GEN_TC__1 = f(acc, GEN__0.a0);
+            GEN_TC__2 = f;
+          } else {
+            throw new Error("[non exhaustive match]")
           }
         }
-        "
-      `);
+      }
+      "
+    `);
   });
 
   test("a tc call should not leak into other expressions", () => {
@@ -1426,16 +1426,16 @@ describe("TCO", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$ap(f) {
+      "const Main$ap = (f) => {
         return f(10);
       }
 
-      function Main$f(GEN_TC__0) {
+      const Main$f = (GEN_TC__0) => {
         while (true) {
           const a = GEN_TC__0;
           if (a) {
           } else {
-            function id$GEN__0(x) {
+            const id$GEN__0 = (x) => {
               return x;
             }
             const id = Main$ap(id$GEN__0);
@@ -1451,7 +1451,7 @@ describe("TCO", () => {
     const out = compileSrc(`let f1 = fn { f1() }`, "Mod");
 
     expect(out).toMatchInlineSnapshot(`
-      "function Mod$f1() {
+      "const Mod$f1 = () => {
         while (true) {
         }
       }
@@ -1467,8 +1467,8 @@ describe("TCO", () => {
       }`);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$f1() {
-        function f1() {
+      "const Main$f1 = () => {
+        const f1 = () => {
           return 0;
         }
         return f1();
