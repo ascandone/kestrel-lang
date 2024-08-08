@@ -581,7 +581,10 @@ export class Compiler {
         // Bool equality is implemented inside core
         typeDecl.name !== "Bool"
       ) {
-        decls.push(this.deriveEq(typeDecl));
+        const o = this.deriveEq(typeDecl);
+        if (o != undefined) {
+          decls.push(o);
+        }
       }
 
       if (
@@ -590,7 +593,10 @@ export class Compiler {
         // Bool show is implemented inside core
         typeDecl.name !== "Bool"
       ) {
-        decls.push(this.deriveShow(typeDecl));
+        const o = this.deriveShow(typeDecl);
+        if (o !== undefined) {
+          decls.push(o);
+        }
       }
     }
 
@@ -636,9 +642,22 @@ export class Compiler {
   // TODO can this be static?
   private deriveEq(
     typedDeclaration: TypedTypeDeclaration & { type: "adt" },
-  ): string {
+  ): string | undefined {
     if (this.ns === undefined) {
       throw new Error("TODO handle undefined namespace");
+    }
+
+    const deps = TVar.typeImplementsTrait(
+      {
+        type: "named",
+        name: typedDeclaration.name,
+        moduleName: this.ns,
+        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
+      },
+      "Eq",
+    );
+    if (deps === undefined) {
+      return undefined;
     }
 
     const usedVars: string[] = [];
@@ -720,9 +739,22 @@ ${cases}
 
   private deriveShow(
     typedDeclaration: TypedTypeDeclaration & { type: "adt" },
-  ): string {
+  ): string | undefined {
     if (this.ns === undefined) {
       throw new Error("TODO handle undefined namespace");
+    }
+
+    const deps = TVar.typeImplementsTrait(
+      {
+        type: "named",
+        name: typedDeclaration.name,
+        moduleName: this.ns,
+        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
+      },
+      "Show",
+    );
+    if (deps === undefined) {
+      return undefined;
     }
 
     const usedVars: string[] = [];

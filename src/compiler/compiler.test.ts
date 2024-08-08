@@ -842,6 +842,21 @@ describe("list literal", () => {
 });
 
 describe("derive Eq instance", () => {
+  test("do not derive underivable types", () => {
+    const out = compileSrc(
+      `
+      extern type DoNotDerive
+      type T { X(DoNotDerive) }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }"
+    `);
+  });
+
   test("no variants", () => {
     const out = compileSrc(
       `
@@ -878,7 +893,10 @@ describe("derive Eq instance", () => {
       extern type Int
       type T { X(Int) }
     `,
-      { allowDeriving: ["Eq"] },
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+      },
     );
     expect(out).toMatchInlineSnapshot(`
       "function Main$X(a0) {
@@ -914,7 +932,13 @@ describe("derive Eq instance", () => {
       extern type Bool
       type T { X(Int, Bool) }
     `,
-      { allowDeriving: ["Eq"] },
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [
+          { moduleName: "Main", typeName: "Int", trait: "Eq" },
+          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+        ],
+      },
     );
     expect(out).toMatchInlineSnapshot(`
       "function Main$X(a0, a1) {
@@ -937,8 +961,15 @@ describe("derive Eq instance", () => {
         C,
       }
     `,
-      { allowDeriving: ["Eq"] },
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [
+          { moduleName: "Main", typeName: "Int", trait: "Eq" },
+          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+        ],
+      },
     );
+
     expect(out).toMatchInlineSnapshot(`
       "function Main$A(a0) {
         return { $: "A", a0 };
@@ -966,6 +997,21 @@ describe("derive Eq instance", () => {
 });
 
 describe("Derive Show instance", () => {
+  test("do not derive underivable types", () => {
+    const out = compileSrc(
+      `
+      extern type DoNotDerive
+      type T { X(DoNotDerive) }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }"
+    `);
+  });
+
   test.todo("List");
   test.todo("rec data structures");
 
@@ -1005,7 +1051,10 @@ describe("Derive Show instance", () => {
       extern type Int
       type T { X(Int) }
     `,
-      { allowDeriving: ["Show"] },
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+      },
     );
 
     expect(out).toMatchInlineSnapshot(`
@@ -1046,7 +1095,10 @@ describe("Derive Show instance", () => {
         C(b),
       }
     `,
-      { allowDeriving: ["Show"] },
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+      },
     );
 
     expect(out).toMatchInlineSnapshot(`
