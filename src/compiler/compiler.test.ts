@@ -877,8 +877,6 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.todo("unresolved traits (partial appl)");
-
   test("higher order fn", () => {
     const out = compileSrc(`
       extern type String
@@ -909,7 +907,70 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.todo("do not duplicate vars");
+  test("do not duplicate vars", () => {
+    const out = compileSrc(`
+      extern let show2: Fn(a, a) -> String where a: Show
+      let f = show2
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (Show_5) => Main$show2(Show_5);
+      "
+    `);
+  });
+
+  test("handle multiple traits", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a, a) -> String where a: Show + Debug
+      let f = show
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (Show_5, Debug_5) => Main$show(Show_5, Debug_5);
+      "
+    `);
+  });
+
+  test("do not duplicate when there's only one var to pass", () => {
+    const out = compileSrc(`
+      extern let show2: Fn(a, a) -> String where a: Show
+      let f = fn arg {
+        show2(arg, "hello")
+      }
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (arg) => {
+        return Main$show2(Show_String)(arg, "hello");
+      }
+      "
+    `);
+  });
+
+  test("pass an arg twice if needed", () => {
+    const out = compileSrc(`
+      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      let f =  show2("a", "b")
+    
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = Main$show2(Show_String, Show_String)("a", "b");
+      "
+    `);
+  });
+
+  test("partial application", () => {
+    const out = compileSrc(`
+      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      let f = fn arg {
+        show2(arg, "hello")
+      }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (Show_11) => (arg) => {
+        return Main$show2(Show_11, Show_String)(arg, "hello");
+      }
+      "
+    `);
+  });
 });
 
 describe("pattern matching", () => {

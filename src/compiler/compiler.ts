@@ -658,7 +658,10 @@ function findDeclarationDictsParams(type: Type): string {
             return;
           case "unbound":
             for (const trait of resolved.traits) {
-              buf.push(`${trait}_${resolved.id}`);
+              const name = `${trait}_${resolved.id}`;
+              if (!buf.includes(name)) {
+                buf.push(name);
+              }
             }
             return;
         }
@@ -699,7 +702,28 @@ function traitParamName(t: Type) {
 }
 
 function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
-  const out: string[] = [];
+  const buf: string[] = [];
+
+  // e.g. { 0 => Set("Show", "Debug") }
+  const alreadyVisitedVarsIds: Map<number, Set<string>> = new Map();
+
+  function checkedPush(genExprId: number, trait: string, traitId: string) {
+    const name = `${trait}_${traitId}`;
+
+    let lookup = alreadyVisitedVarsIds.get(genExprId);
+    if (lookup === undefined) {
+      lookup = new Set();
+      alreadyVisitedVarsIds.set(genExprId, lookup);
+    }
+
+    if (lookup.has(trait)) {
+      // Do not add again
+      return;
+    }
+
+    lookup.add(trait);
+    buf.push(name);
+  }
 
   function helper(genExpr: Type, instantiatedExpr: Type) {
     switch (genExpr.type) {
@@ -729,6 +753,7 @@ function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
 
       case "named":
         // TODO handle
+        // throw new Error("TODO named: " + genExpr.name);
         return;
 
       case "var": {
@@ -743,12 +768,15 @@ function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
               const impl = TVar.typeImplementsTrait(instantiatedExpr, trait);
               if (impl === undefined || impl.length === 0) {
                 // Concrete type implements the type. The instantiated variables should receive the Trait_Type arg
-                const name = `${trait}_${traitParamName(instantiatedExpr)}`;
-                out.push(name);
+                checkedPush(
+                  resolvedGenExpr.id,
+                  trait,
+                  traitParamName(instantiatedExpr),
+                );
               } else {
                 for (const i of impl) {
                   for (const trait of i.traits) {
-                    out.push(`${trait}_${i.id}`);
+                    checkedPush(resolvedGenExpr.id, trait, i.id.toString());
                   }
                 }
               }
@@ -761,10 +789,10 @@ function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
   }
 
   helper(genExpr.asType(), instantiatedExpr.asType());
-  if (out.length === 0) {
+  if (buf.length === 0) {
     return "";
   }
-  return `(${out.join(", ")})`;
+  return `(${buf.join(", ")})`;
 }
 
 function constToString(k: ConstLiteral): string {
