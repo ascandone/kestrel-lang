@@ -1040,10 +1040,8 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.todo(
-    "pass higher order trait dicts for types with params when they do have deps, even when the constructor does not have args",
-    () => {
-      const out = compileSrc(`
+  test("pass higher order trait dicts for types when their deps is in scope", () => {
+    const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
 
       type Option<a> {
@@ -1051,20 +1049,47 @@ describe("traits compilation", () => {
         None,
       }
       
-      let x = show(None)
+      let f = fn x {
+        show(Some(x))
+      }
     `);
 
-      expect(out).toMatchInlineSnapshot(`
+    expect(out).toMatchInlineSnapshot(`
       "function Main$Some(a0) {
         return { $: "Some", a0 };
       }
       const Main$None = { $: "None" };
 
-      const Main$x = (Show_12) => Main$show(Show_Option(Show_12))(Main$None);
+      const Main$f = (Show_16) => (x) => {
+        return Main$show(Show_Option(Show_16))(Main$Some(x));
+      }
       "
     `);
-    },
-  );
+  });
+
+  // Should it be forbidden by type checker?
+  test.skip("when a type is instantiated as T<a> and there are no args, pass undefined as dict", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+
+      type Option<a> {
+        Some(a),
+        None,
+      }
+      
+      let x = show(None) // None : Option<a1>
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$Some(a0) {
+        return { $: "Some", a0 };
+      }
+      const Main$None = { $: "None" };
+
+      const Main$x = Main$show(Show_Option(undefined))(Main$None);
+      "
+    `);
+  });
 
   test.todo("fn return arg");
 });

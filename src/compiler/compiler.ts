@@ -681,7 +681,41 @@ function findDeclarationDictsParams(type: Type): string {
   return "";
 }
 
-function traitParamName(trait: string, t: Type) {
+function traitDepsForNamedType(
+  t: Type & { type: "named" },
+  trait: string,
+): Type[] {
+  const freshArgs = t.args.map((_) => TVar.fresh());
+
+  // TODO simplify this workaround
+  const genericType: Type = {
+    type: "named",
+    moduleName: t.moduleName,
+    name: t.name,
+    args: freshArgs.map((a) => a.asType()),
+  };
+
+  const deps = TVar.typeImplementsTrait(genericType, trait);
+  if (deps === undefined) {
+    throw new Error("[unreachable] type does not implement given trait");
+  }
+
+  const out: Type[] = [];
+
+  for (const dep of deps) {
+    const index = freshArgs.findIndex((v) => {
+      const r = v.resolve();
+      return r.type === "unbound" && r.id === dep.id;
+    });
+
+    const a = t.args[index]!;
+    out.push(a);
+  }
+
+  return out;
+}
+
+function traitParamName(trait: string, t: Type): string {
   // TODO refactor with resolveType
 
   switch (t.type) {
@@ -696,35 +730,11 @@ function traitParamName(trait: string, t: Type) {
     }
 
     case "named": {
-      const freshArgs = t.args.map((_) => TVar.fresh());
-
-      // TODO simplify this workaround
-      const genericType: Type = {
-        type: "named",
-        moduleName: t.moduleName,
-        name: t.name,
-        args: freshArgs.map((a) => a.asType()),
-      };
-
-      const deps = TVar.typeImplementsTrait(genericType, trait);
-      if (deps === undefined) {
-        throw new Error("[unreachable] type does not implement given trait");
-      }
+      const deps = traitDepsForNamedType(t, trait);
 
       if (deps.length !== 0) {
-        const params: string[] = [];
-
-        for (const dep of deps) {
-          const index = freshArgs.findIndex((v) => {
-            const r = v.resolve();
-            return r.type === "unbound" && r.id === dep.id;
-          });
-
-          const paramName = traitParamName(trait, t.args[index]!);
-          params.push(paramName);
-        }
-
-        return `${trait}_${t.name}(${params.join(", ")})`;
+        const params = deps.map((dep) => traitParamName(trait, dep)).join(", ");
+        return `${trait}_${t.name}(${params})`;
       }
 
       return `${trait}_${t.name}`;
@@ -732,6 +742,36 @@ function traitParamName(trait: string, t: Type) {
 
     case "fn":
       throw new Error("TODO trait name for fn");
+  }
+}
+
+function applyTraitToType(type: Type, trait: string): string {
+  const resolved = resolveType(type);
+  switch (resolved.type) {
+    case "unbound":
+      if (resolved.traits.includes(trait)) {
+        return `${trait}_${resolved.id}`;
+      }
+      throw new Error(
+        "TODO unbound does not impl needed trait: " + JSON.stringify(resolved),
+      );
+
+    case "bound":
+      switch (resolved.value.type) {
+        case "fn":
+          throw new Error("TODO bound fn");
+        case "named": {
+          let name = `${trait}_${resolved.value.name}`;
+          const deps = traitDepsForNamedType(resolved.value, trait).map((dep) =>
+            applyTraitToType(dep, trait),
+          );
+          if (deps.length !== 0) {
+            name += `(${deps.join(", ")})`;
+          }
+
+          return name;
+        }
+      }
   }
 }
 
@@ -835,7 +875,11 @@ function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
 
               for (const i of impl) {
                 for (const trait of i.traits) {
-                  checkedPush(resolvedGenExpr.id, trait, `${trait}_${i.id}`);
+                  checkedPush(
+                    resolvedGenExpr.id,
+                    trait,
+                    applyTraitToType(instantiatedExpr, trait),
+                  );
                 }
               }
             }

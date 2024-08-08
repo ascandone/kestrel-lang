@@ -30,7 +30,7 @@ export function resolveType(t: Type): TVarResolution {
           return { type: "bound", value: resolved.value };
 
         case "unbound":
-          throw new Error("TODO");
+          return resolved;
       }
     }
   }
