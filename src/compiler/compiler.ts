@@ -646,9 +646,12 @@ function findDeclarationDictsParams(type: Type): string {
         }
         return;
 
-      case "named":
-        // throw new Error("TODO traverse named type");
+      case "named": {
+        for (const arg of type.args) {
+          helper(arg);
+        }
         return;
+      }
 
       case "var": {
         const resolved = type.var.resolve();
@@ -780,10 +783,28 @@ function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
         return;
       }
 
-      case "named":
-        // TODO handle
-        // throw new Error("TODO named: " + genExpr.name);
+      case "named": {
+        const i = resolveType(instantiatedExpr);
+        if (i.type !== "bound") {
+          throw new Error("[unreachable] unexpected unbound type");
+        }
+
+        if (i.value.type !== "named") {
+          throw new Error(
+            "[unreachable] unexpected value of kind: " + i.value.type,
+          );
+        }
+
+        const instantiatedConcreteType = i.value;
+
+        for (let i = 0; i < genExpr.args.length; i++) {
+          const genArg = genExpr.args[i]!,
+            instArg = instantiatedConcreteType.args[i]!;
+
+          helper(genArg, instArg);
+        }
         return;
+      }
 
       case "var": {
         const resolvedGenExpr = genExpr.var.resolve();
@@ -795,18 +816,26 @@ function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
             const traits = resolvedGenExpr.traits;
             for (const trait of traits) {
               const impl = TVar.typeImplementsTrait(instantiatedExpr, trait);
-              if (impl === undefined || impl.length === 0) {
+
+              if (impl === undefined) {
+                throw new Error(
+                  "[unrechable] type does not implement required trait",
+                );
+              }
+
+              if (impl.length === 0) {
                 // Concrete type implements the type. The instantiated variables should receive the Trait_Type arg
                 checkedPush(
                   resolvedGenExpr.id,
                   trait,
                   traitParamName(trait, instantiatedExpr),
                 );
-              } else {
-                for (const i of impl) {
-                  for (const trait of i.traits) {
-                    checkedPush(resolvedGenExpr.id, trait, `${trait}_${i.id}`);
-                  }
+                return;
+              }
+
+              for (const i of impl) {
+                for (const trait of i.traits) {
+                  checkedPush(resolvedGenExpr.id, trait, `${trait}_${i.id}`);
                 }
               }
             }

@@ -1009,6 +1009,37 @@ describe("traits compilation", () => {
     `);
   });
 
+  test("trait deps in args when param aren't traits dependencies", () => {
+    const out = compileSrc(`
+      type IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
+      extern let s: IsShow<a> where a: Show
+      let x = s
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = { $: "X" };
+
+      const Main$x = (Show_6) => Main$s(Show_6);
+      "
+    `);
+  });
+
+  test("trait deps in args when param aren traits dependencies", () => {
+    const out = compileSrc(`
+      type Option<a, b, c> { Some(b) } 
+      extern let s: Option<a, b, c> where b: Show
+      let x = s
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$Some(a0) {
+        return { $: "Some", a0 };
+      }
+      const Main$x = (Show_11) => Main$s(Show_11);
+      "
+    `);
+  });
+
   test.todo(
     "pass higher order trait dicts for types with params when they do have deps, even when the constructor does not have args",
     () => {
