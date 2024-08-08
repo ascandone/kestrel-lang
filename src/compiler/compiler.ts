@@ -1,6 +1,11 @@
 import { exit } from "process";
 import { Binding, ConstLiteral, MatchPattern, TypeVariant } from "../parser";
-import { TypedExpr, TypedModule } from "../typecheck";
+import {
+  TypedExpr,
+  TypedModule,
+  TypedTypeDeclaration,
+  TypedTypeVariant,
+} from "../typecheck";
 import { ConcreteType, TVar, Type, resolveType } from "../typecheck/type";
 import { col } from "../utils/colors";
 import { optimizeModule } from "./optimize";
@@ -88,7 +93,15 @@ function isStructuralEq(caller: TypedExpr, args: TypedExpr[]): boolean {
 
   return true;
 }
+
 export class Compiler {
+  /**
+   * Allowlist of trait to derive. Intented for test purposes (to be mutated directly)
+   *
+   * `undefined == *`
+   */
+  public allowDeriving: string[] | undefined;
+
   private frames: Frame[] = [];
   private tailCall = false;
 
@@ -562,6 +575,13 @@ export class Compiler {
         const def = getVariantImpl(variant, ns);
         decls.push(def);
       }
+
+      if (
+        this.allowDeriving === undefined ||
+        this.allowDeriving.includes("Eq")
+      ) {
+        decls.push(this.deriveEq(typeDecl));
+      }
     }
 
     for (const decl of src.declarations) {
@@ -601,6 +621,88 @@ export class Compiler {
     }
 
     return decls.join("\n");
+  }
+
+  // TODO can this be static?
+  private deriveEq(
+    typedDeclaration: TypedTypeDeclaration & { type: "adt" },
+  ): string {
+    if (this.ns === undefined) {
+      throw new Error("TODO handle undefined namespace");
+    }
+
+    const usedVars: string[] = [];
+
+    function variantEq(variant: TypedTypeVariant | undefined): string {
+      if (variant === undefined || variant.args.length === 0) {
+        return `true`;
+      }
+
+      const buf: string[] = [];
+
+      for (let i = 0; i < variant.args.length; i++) {
+        const arg = variant.args[i]!;
+
+        switch (arg.type) {
+          case "any":
+            throw new Error("[unreachable] any in constructor args");
+          case "fn":
+            throw new Error("[unreachable] cannot derive fns");
+
+          case "named": {
+            if (arg.resolution === undefined) {
+              throw new Error(
+                "[unreachable] undefined resolution for type: " + arg.name,
+              );
+            }
+
+            const ns = sanitizeNamespace(arg.resolution.namespace);
+
+            // We assume this type impls the trait
+            buf.push(`Eq_${ns}$${arg.name}(x.a${i}, y.a${i})`);
+            break;
+          }
+
+          case "var":
+            usedVars.push(arg.ident);
+            buf.push(`Eq_${arg.ident}(x.a${i}, y.a${i})`);
+            break;
+        }
+      }
+
+      return buf.join(" && ");
+    }
+
+    let body: string;
+    if (typedDeclaration.variants.length <= 1) {
+      const v = variantEq(typedDeclaration.variants[0]);
+      body = `return ${v};`;
+    } else {
+      const cases = typedDeclaration.variants
+        .map((variant) => {
+          const v = variantEq(variant);
+
+          return `    case "${variant.name}":
+      return ${v};`;
+        })
+        .join("\n");
+
+      body = `switch (x.type) {
+${cases}
+  }`;
+    }
+
+    let dictsArg: string;
+    if (usedVars.length === 0) {
+      dictsArg = "";
+    } else {
+      const params = usedVars.map((x) => `Eq_${x}`).join(", ");
+      dictsArg = `(${params}) => `;
+    }
+
+    return `const Eq_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x, y) => {
+  ${body}
+}`;
   }
 
   private compilePattern(

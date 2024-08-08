@@ -840,6 +840,127 @@ describe("list literal", () => {
   });
 });
 
+describe("derive Eq instance", () => {
+  test("singleton with no variants", () => {
+    const out = compileSrc(
+      `
+      type T { }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$T = (x, y) => {
+        return true;
+      }"
+    `);
+  });
+
+  test("singleton without args", () => {
+    const out = compileSrc(
+      `
+      type T { X }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = { $: "X" };
+
+      const Eq_Main$T = (x, y) => {
+        return true;
+      }"
+    `);
+  });
+
+  test("singleton with concrete arg", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T { X(Int) }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Eq_Main$T = (x, y) => {
+        return Eq_Main$Int(x.a0, y.a0);
+      }"
+    `);
+  });
+
+  test("singleton with var args", () => {
+    const out = compileSrc(
+      `
+      type T<a, b, c, d> { X(b) }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Eq_Main$T = (Eq_b) => (x, y) => {
+        return Eq_b(x.a0, y.a0);
+      }"
+    `);
+  });
+
+  test("singleton with concrete args", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Bool
+      type T { X(Int, Bool) }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0, a1) {
+        return { $: "X", a0, a1 };
+      }
+      const Eq_Main$T = (x, y) => {
+        return Eq_Main$Int(x.a0, y.a0) && Eq_Main$Bool(x.a1, y.a1);
+      }"
+    `);
+  });
+
+  test("type with many variants", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Bool
+      type T<a> {
+        A(Int),
+        B(a, Int),
+        C,
+      }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$A(a0) {
+        return { $: "A", a0 };
+      }
+      function Main$B(a0, a1) {
+        return { $: "B", a0, a1 };
+      }
+      const Main$C = { $: "C" };
+
+      const Eq_Main$T = (Eq_a) => (x, y) => {
+        switch (x.type) {
+          case "A":
+            return Eq_Main$Int(x.a0, y.a0);
+          case "B":
+            return Eq_a(x.a0, y.a0) && Eq_Main$Int(x.a1, y.a1);
+          case "C":
+            return true;
+        }
+      }"
+    `);
+  });
+});
+
 describe("traits compilation", () => {
   test("non-fn values", () => {
     const out = compileSrc(`
@@ -2029,16 +2150,19 @@ Main$main.exec();
 type CompileSrcOpts = {
   ns?: string;
   traitImpl?: TraitImpl[];
+  allowDeriving?: string[] | undefined;
 };
 
 function compileSrc(
   src: string,
-  { ns = "Main", traitImpl = [] }: CompileSrcOpts = {},
+  { ns = "Main", traitImpl = [], allowDeriving = [] }: CompileSrcOpts = {},
 ) {
   const parsed = unsafeParse(src);
   resetTraitsRegistry(traitImpl);
   const [program] = typecheck(ns, parsed, {}, [], testEntryPoint.type);
-  const out = new Compiler().compile(program, ns);
+  const compiler = new Compiler();
+  compiler.allowDeriving = allowDeriving;
+  const out = compiler.compile(program, ns);
   return out;
 }
 
@@ -2051,7 +2175,9 @@ function compileSrcWithDeps(rawProject: Record<string, string>): string {
     testEntryPoint.type,
   );
   const Main = res.Main!;
-  return new Compiler().compile(Main.typedModule, "Main");
+  const compiler = new Compiler();
+  compiler.allowDeriving = [];
+  return compiler.compile(Main.typedModule, "Main");
 }
 
 function parseProject(
