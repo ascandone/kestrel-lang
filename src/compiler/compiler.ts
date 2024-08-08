@@ -275,7 +275,6 @@ export class Compiler {
               src.resolution.declaration.binding.$,
               src.$,
               this.dictParams,
-              this.ns,
             );
 
             const ns = src.resolution.namespace ?? this.ns;
@@ -856,7 +855,6 @@ function applyTraitToType(
   type: Type,
   trait: string,
   polyDict: string[],
-  ns: string,
 ): string {
   const resolved = resolveType(type);
   switch (resolved.type) {
@@ -873,9 +871,9 @@ function applyTraitToType(
         case "fn":
           throw new Error("TODO bound fn");
         case "named": {
-          let name = `${trait}_${sanitizeNamespace(ns)}$${resolved.value.name}`;
+          let name = `${trait}_${sanitizeNamespace(resolved.value.moduleName)}$${resolved.value.name}`;
           const deps = traitDepsForNamedType(resolved.value, trait)
-            .map((dep) => applyTraitToType(dep, trait, polyDict, ns))
+            .map((dep) => applyTraitToType(dep, trait, polyDict))
             .map((t) => {
               if (!polyDict.includes(t)) {
                 // This type is not in the polytype's variables constrained by traits.
@@ -900,7 +898,6 @@ function resolvePassedDicts(
   genExpr: TVar,
   instantiatedExpr: TVar,
   polyDict: string[],
-  ns: string,
 ): string {
   const buf: string[] = [];
 
@@ -1004,7 +1001,7 @@ function resolvePassedDicts(
                   checkedPush(
                     resolvedGenExpr.id,
                     trait,
-                    applyTraitToType(instantiatedExpr, trait, polyDict, ns),
+                    applyTraitToType(instantiatedExpr, trait, polyDict),
                   );
                 }
               }
