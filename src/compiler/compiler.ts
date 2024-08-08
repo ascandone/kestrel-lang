@@ -1,7 +1,7 @@
 import { exit } from "process";
 import { Binding, ConstLiteral, MatchPattern, TypeVariant } from "../parser";
 import { TypedExpr, TypedModule } from "../typecheck";
-import { ConcreteType } from "../typecheck/type";
+import { ConcreteType, TVar, Type, resolveType } from "../typecheck/type";
 import { col } from "../utils/colors";
 import { optimizeModule } from "./optimize";
 
@@ -16,7 +16,12 @@ type CompileExprResult = [statements: string[], expr: string];
 type Scope = Record<string, string>;
 
 type CompilationMode =
-  | { type: "assign_var"; name: string; declare: boolean }
+  | {
+      type: "assign_var";
+      name: string;
+      declare: boolean;
+      dictParams: string;
+    }
   | { type: "return" };
 
 class Frame {
@@ -161,7 +166,12 @@ export class Compiler {
 
     const value = this.compileAsStatements(
       src.value,
-      { type: "assign_var", name: scopedBinding, declare: true },
+      {
+        type: "assign_var",
+        name: scopedBinding,
+        declare: true,
+        dictParams: "", // <- TODO check
+      },
 
       undefined,
     );
@@ -248,12 +258,18 @@ export class Compiler {
 
         switch (src.resolution.type) {
           case "global-variable": {
+            // TODO what about let exprs?
+            const traitArgs = resolvePassedDicts(
+              src.resolution.declaration.binding.$,
+              src.$,
+            );
+
             const ns = src.resolution.namespace ?? this.ns;
             if (ns === undefined) {
-              return [[], src.name];
+              return [[], src.name + traitArgs];
             }
 
-            return [[], `${sanitizeNamespace(ns)}$${src.name}`];
+            return [[], `${sanitizeNamespace(ns)}$${src.name}${traitArgs}`];
           }
 
           case "constructor": {
@@ -301,7 +317,12 @@ export class Compiler {
         const name = this.getUniqueName();
         const statements = this.compileAsStatements(
           src,
-          { type: "assign_var", name, declare: true },
+          {
+            type: "assign_var",
+            name,
+            declare: true,
+            dictParams: "", // <- TODO check
+          },
           undefined,
         );
 
@@ -429,9 +450,11 @@ export class Compiler {
           : params;
 
         this.tailCall = wasTailCall;
+        const dictParams = as.type === "assign_var" ? as.dictParams : "";
+
         return [
           //
-          `const ${name} = (${tcParams.join(", ")}) => {`,
+          `const ${name} = ${dictParams}(${tcParams.join(", ")}) => {`,
           ...indentBlock(wrappedFnBody),
           `}`,
           ...(as.type === "assign_var" && as.declare
@@ -474,7 +497,12 @@ export class Compiler {
         const matched = this.getUniqueName();
         const statements = this.compileAsStatements(
           src.expr,
-          { type: "assign_var", name: matched, declare: true },
+          {
+            type: "assign_var",
+            name: matched,
+            declare: true,
+            dictParams: "", // <- TODO check
+          },
 
           undefined,
         );
@@ -540,6 +568,8 @@ export class Compiler {
         continue;
       }
 
+      const dictParams = findDeclarationDictsParams(decl.binding.$.asType());
+
       this.frames.push(
         new Frame(
           {
@@ -553,7 +583,12 @@ export class Compiler {
 
       const statements = this.compileAsStatements(
         decl.value,
-        { type: "assign_var", name: nameSpacedBinding, declare: true },
+        {
+          type: "assign_var",
+          name: nameSpacedBinding,
+          declare: true,
+          dictParams,
+        },
         undefined,
       );
 
@@ -597,6 +632,139 @@ export class Compiler {
       }
     }
   }
+}
+
+function findDeclarationDictsParams(type: Type): string {
+  const buf: string[] = [];
+
+  function helper(type: Type) {
+    switch (type.type) {
+      case "fn":
+        // TODO traverse return type
+        for (const arg of type.args) {
+          helper(arg);
+        }
+        return;
+
+      case "named":
+        // throw new Error("TODO traverse named type");
+        return;
+
+      case "var": {
+        const resolved = type.var.resolve();
+        switch (resolved.type) {
+          case "bound":
+            helper(resolved.value);
+            return;
+          case "unbound":
+            for (const trait of resolved.traits) {
+              buf.push(`${trait}_${resolved.id}`);
+            }
+            return;
+        }
+      }
+    }
+  }
+
+  helper(type);
+
+  if (buf.length !== 0) {
+    return `(${buf.join(", ")}) => `;
+  }
+
+  return "";
+}
+
+function traitParamName(t: Type) {
+  switch (t.type) {
+    case "var": {
+      const resolved = t.var.resolve();
+      switch (resolved.type) {
+        case "unbound":
+          throw new Error("TODO trait name for unbound var");
+        case "bound":
+          return traitParamName(resolved.value);
+      }
+    }
+
+    case "named":
+      if (t.args.length != 0) {
+        throw new Error("TODO handle named type args");
+      }
+      return t.name;
+
+    case "fn":
+      throw new Error("TODO trait name for fn");
+  }
+}
+
+function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
+  const out: string[] = [];
+
+  function helper(genExpr: Type, instantiatedExpr: Type) {
+    switch (genExpr.type) {
+      case "fn": {
+        const i = resolveType(instantiatedExpr);
+        if (i.type !== "bound") {
+          throw new Error("[unreachable] unexpected unbound type");
+        }
+
+        if (i.value.type !== "fn") {
+          throw new Error(
+            "[unreachable] unexpected value of kind: " + i.value.type,
+          );
+        }
+
+        const instantiatedFn = i.value;
+
+        // TODO handle return types
+        for (let i = 0; i < genExpr.args.length; i++) {
+          const genArg = genExpr.args[i]!,
+            instArg = instantiatedFn.args[i]!;
+
+          helper(genArg, instArg);
+        }
+        return;
+      }
+
+      case "named":
+        // TODO handle
+        return;
+
+      case "var": {
+        const resolvedGenExpr = genExpr.var.resolve();
+        switch (resolvedGenExpr.type) {
+          case "bound":
+            return helper(resolvedGenExpr.value, instantiatedExpr);
+
+          case "unbound": {
+            const traits = resolvedGenExpr.traits;
+            for (const trait of traits) {
+              const impl = TVar.typeImplementsTrait(instantiatedExpr, trait);
+              if (impl === undefined || impl.length === 0) {
+                // Concrete type implements the type. The instantiated variables should receive the Trait_Type arg
+                const name = `${trait}_${traitParamName(instantiatedExpr)}`;
+                out.push(name);
+              } else {
+                for (const i of impl) {
+                  for (const trait of i.traits) {
+                    out.push(`${trait}_${i.id}`);
+                  }
+                }
+              }
+            }
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  helper(genExpr.asType(), instantiatedExpr.asType());
+  if (out.length === 0) {
+    return "";
+  }
+  return `(${out.join(", ")})`;
 }
 
 function constToString(k: ConstLiteral): string {
@@ -805,7 +973,7 @@ function wrapJsExpr(expr: string, as: CompilationMode) {
   switch (as.type) {
     case "assign_var": {
       const constModifier = as.declare ? "const " : "";
-      return `${constModifier}${as.name} = ${expr};`;
+      return `${constModifier}${as.name} = ${as.dictParams}${expr};`;
     }
 
     case "return":

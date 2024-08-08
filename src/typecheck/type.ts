@@ -18,6 +18,24 @@ export type Type =
       var: TVar;
     };
 
+export function resolveType(t: Type): TVarResolution {
+  switch (t.type) {
+    case "fn":
+    case "named":
+      return { type: "bound", value: t };
+    case "var": {
+      const resolved = t.var.resolve();
+      switch (resolved.type) {
+        case "bound":
+          return { type: "bound", value: resolved.value };
+
+        case "unbound":
+          throw new Error("TODO");
+      }
+    }
+  }
+}
+
 export type TVarResolution =
   | { type: "unbound"; id: number; traits: string[] }
   | { type: "bound"; value: ConcreteType };

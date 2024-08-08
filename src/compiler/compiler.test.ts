@@ -840,7 +840,22 @@ describe("list literal", () => {
 });
 
 describe("traits compilation", () => {
-  test.todo("applying with concrete types", () => {
+  test("non-fn values", () => {
+    const out = compileSrc(`
+      extern let p: a where a: Show
+
+      extern type Int
+      extern let take_int: Fn(Int) -> a
+
+      let x = take_int(p)
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = Main$take_int(Main$p(Show_Int));
+      "
+    `);
+  });
+
+  test("applying with concrete types", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
       let x = show("abc")
@@ -851,18 +866,50 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.todo("applying with type variables", () => {
+  test("unresolved traits", () => {
+    const out = compileSrc(`
+      extern let p: a  where a: Show
+      let x = p //: a1 where a1: Show 
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = (Show_1) => Main$p(Show_1);
+      "
+    `);
+  });
+
+  test.todo("unresolved traits (partial appl)");
+
+  test("higher order fn", () => {
+    const out = compileSrc(`
+      extern type String
+      let id = fn x { x }
+      extern let show: Fn(a) -> String where a: Show
+      let f = id(show)(42)
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$id = (x) => {
+        return x;
+      }
+
+      const Main$f = Main$id(Main$show(Show_Int))(42);
+      "
+    `);
+  });
+
+  test("applying with type variables", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$f = (Show_a) => (x) => {
-        return Main$show(Show_a)(x);
+      "const Main$f = (Show_9) => (x) => {
+        return Main$show(Show_9)(x);
       }
       "
     `);
   });
+
+  test.todo("do not duplicate vars");
 });
 
 describe("pattern matching", () => {
@@ -1511,7 +1558,8 @@ describe("modules", () => {
 
   test("extern declarations from modules different than Main are resolved correctly", () => {
     const out = compileSrc(
-      `extern let a: Int
+      `extern type Int
+      extern let a: Int
       let x = a`,
       "ExampleModule",
     );
