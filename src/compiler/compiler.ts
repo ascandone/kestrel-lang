@@ -1105,7 +1105,7 @@ function resolvePassedDicts(
 
               if (impl === undefined) {
                 throw new Error(
-                  "[unrechable] type does not implement required trait",
+                  "[unreachable] type does not implement required trait",
                 );
               }
 
@@ -1116,16 +1116,15 @@ function resolvePassedDicts(
                   trait,
                   traitParamName(trait, instantiatedExpr),
                 );
-                return;
-              }
-
-              for (const i of impl) {
-                for (const trait of i.traits) {
-                  checkedPush(
-                    resolvedGenExpr.id,
-                    trait,
-                    applyTraitToType(instantiatedExpr, trait, polyDict),
-                  );
+              } else {
+                for (const i of impl) {
+                  for (const trait of i.traits) {
+                    checkedPush(
+                      resolvedGenExpr.id,
+                      trait,
+                      applyTraitToType(instantiatedExpr, trait, polyDict),
+                    );
+                  }
                 }
               }
             }

@@ -1211,11 +1211,26 @@ describe("traits compilation", () => {
 
   test("handle multiple traits", () => {
     const out = compileSrc(`
-      extern let show: Fn(a, a) -> String where a: Show + Debug
+      extern let show: Fn(a, a) -> String where a: Eq + Show
       let f = show
     `);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$f = (Show_5, Debug_5) => Main$show(Show_5, Debug_5);
+      "const Main$f = (Eq_5, Show_5) => Main$show(Eq_5, Show_5);
+      "
+    `);
+  });
+
+  test("handle multiple traits when applying to concrete args", () => {
+    const out = compileSrc(
+      `
+      extern let show: Fn(a, a) -> String where a: Eq + Show
+      let f = show("a", "b")
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = Main$show(Eq_String$String, Show_String$String)("a", "b");
       "
     `);
   });
