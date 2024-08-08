@@ -266,11 +266,16 @@ export class Compiler {
 
         switch (src.resolution.type) {
           case "global-variable": {
+            if (this.ns === undefined) {
+              throw new Error("TODO handle empty ns");
+            }
+
             // TODO what about let exprs?
             const traitArgs = resolvePassedDicts(
               src.resolution.declaration.binding.$,
               src.$,
               this.dictParams,
+              this.ns,
             );
 
             const ns = src.resolution.namespace ?? this.ns;
@@ -572,8 +577,10 @@ export class Compiler {
       }
 
       if (
-        this.allowDeriving === undefined ||
-        this.allowDeriving.includes("Eq")
+        (this.allowDeriving === undefined ||
+          this.allowDeriving.includes("Eq")) &&
+        // Bool equality is implemented inside core
+        typeDecl.name !== "Bool"
       ) {
         decls.push(this.deriveEq(typeDecl));
       }
@@ -682,7 +689,10 @@ export class Compiler {
         })
         .join("\n");
 
-      body = `switch (x.type) {
+      body = `if (x.$ !== y.$) {
+    return false;
+  }
+  switch (x.$) {
 ${cases}
   }`;
     }
@@ -846,6 +856,7 @@ function applyTraitToType(
   type: Type,
   trait: string,
   polyDict: string[],
+  ns: string,
 ): string {
   const resolved = resolveType(type);
   switch (resolved.type) {
@@ -862,9 +873,9 @@ function applyTraitToType(
         case "fn":
           throw new Error("TODO bound fn");
         case "named": {
-          let name = `${trait}_${resolved.value.name}`;
+          let name = `${trait}_${sanitizeNamespace(ns)}$${resolved.value.name}`;
           const deps = traitDepsForNamedType(resolved.value, trait)
-            .map((dep) => applyTraitToType(dep, trait, polyDict))
+            .map((dep) => applyTraitToType(dep, trait, polyDict, ns))
             .map((t) => {
               if (!polyDict.includes(t)) {
                 // This type is not in the polytype's variables constrained by traits.
@@ -889,6 +900,7 @@ function resolvePassedDicts(
   genExpr: TVar,
   instantiatedExpr: TVar,
   polyDict: string[],
+  ns: string,
 ): string {
   const buf: string[] = [];
 
@@ -992,7 +1004,7 @@ function resolvePassedDicts(
                   checkedPush(
                     resolvedGenExpr.id,
                     trait,
-                    applyTraitToType(instantiatedExpr, trait, polyDict),
+                    applyTraitToType(instantiatedExpr, trait, polyDict, ns),
                   );
                 }
               }

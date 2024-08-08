@@ -949,7 +949,10 @@ describe("derive Eq instance", () => {
       const Main$C = { $: "C" };
 
       const Eq_Main$T = (Eq_a) => (x, y) => {
-        switch (x.type) {
+        if (x.$ !== y.$) {
+          return false;
+        }
+        switch (x.$) {
           case "A":
             return Eq_Main$Int(x.a0, y.a0);
           case "B":
@@ -1201,7 +1204,7 @@ describe("traits compilation", () => {
       const Main$None = { $: "None" };
 
       const Main$f = (Show_16) => (x) => {
-        return Main$show(Show_Option(Show_16))(Main$Some(x));
+        return Main$show(Show_Main$Option(Show_16))(Main$Some(x));
       }
       "
     `);
@@ -1226,7 +1229,7 @@ describe("traits compilation", () => {
       }
       const Main$None = { $: "None" };
 
-      const Main$x = Main$show(Show_Option(undefined))(Main$None);
+      const Main$x = Main$show(Show_Main$Option(undefined))(Main$None);
       "
     `);
   });
