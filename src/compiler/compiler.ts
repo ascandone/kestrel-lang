@@ -734,10 +734,10 @@ function traitParamName(trait: string, t: Type): string {
 
       if (deps.length !== 0) {
         const params = deps.map((dep) => traitParamName(trait, dep)).join(", ");
-        return `${trait}_${t.name}(${params})`;
+        return `${trait}_${t.moduleName}$${t.name}(${params})`;
       }
 
-      return `${trait}_${t.name}`;
+      return `${trait}_${t.moduleName}$${t.name}`;
     }
 
     case "fn":

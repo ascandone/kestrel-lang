@@ -851,7 +851,7 @@ describe("traits compilation", () => {
       let x = take_int(p)
     `);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x = Main$take_int(Main$p(Show_Int));
+      "const Main$x = Main$take_int(Main$p(Show_Main$Int));
       "
     `);
   });
@@ -865,7 +865,7 @@ describe("traits compilation", () => {
       { traitImpl: defaultTraitImpls },
     );
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x = Main$show(Show_String)("abc");
+      "const Main$x = Main$show(Show_String$String)("abc");
       "
     `);
   });
@@ -896,7 +896,7 @@ describe("traits compilation", () => {
         return x;
       }
 
-      const Main$f = Main$id(Main$show(Show_Int))(42);
+      const Main$f = Main$id(Main$show(Show_Int$Int))(42);
       "
     `);
   });
@@ -948,7 +948,7 @@ describe("traits compilation", () => {
     );
     expect(out).toMatchInlineSnapshot(`
       "const Main$f = (arg) => {
-        return Main$show2(Show_String)(arg, "hello");
+        return Main$show2(Show_String$String)(arg, "hello");
       }
       "
     `);
@@ -963,7 +963,7 @@ describe("traits compilation", () => {
       { traitImpl: defaultTraitImpls },
     );
     expect(out).toMatchInlineSnapshot(`
-      "const Main$f = Main$show2(Show_String, Show_String)("a", "b");
+      "const Main$f = Main$show2(Show_String$String, Show_String$String)("a", "b");
       "
     `);
   });
@@ -981,7 +981,7 @@ describe("traits compilation", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$f = (Show_11) => (arg) => {
-        return Main$show2(Show_11, Show_String)(arg, "hello");
+        return Main$show2(Show_11, Show_String$String)(arg, "hello");
       }
       "
     `);
@@ -999,7 +999,7 @@ describe("traits compilation", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$X = { $: "X" };
 
-      const Main$x = Main$show(Show_AlwaysShow)(Main$X);
+      const Main$x = Main$show(Show_Main$AlwaysShow)(Main$X);
       "
     `);
   });
@@ -1022,7 +1022,7 @@ describe("traits compilation", () => {
       "function Main$Some(a0) {
         return { $: "Some", a0 };
       }
-      const Main$x = Main$show(Show_Option(Show_Int))(Main$Some(42));
+      const Main$x = Main$show(Show_Main$Option(Show_Int$Int))(Main$Some(42));
       "
     `);
   });
