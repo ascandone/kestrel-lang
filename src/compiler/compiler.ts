@@ -678,7 +678,9 @@ function findDeclarationDictsParams(type: Type): string {
   return "";
 }
 
-function traitParamName(t: Type) {
+function traitParamName(trait: string, t: Type) {
+  // TODO refactor with resolveType
+
   switch (t.type) {
     case "var": {
       const resolved = t.var.resolve();
@@ -686,15 +688,44 @@ function traitParamName(t: Type) {
         case "unbound":
           throw new Error("TODO trait name for unbound var");
         case "bound":
-          return traitParamName(resolved.value);
+          return traitParamName(trait, resolved.value);
       }
     }
 
-    case "named":
-      if (t.args.length != 0) {
-        throw new Error("TODO handle named type args");
+    case "named": {
+      const freshArgs = t.args.map((_) => TVar.fresh());
+
+      // TODO simplify this workaround
+      const genericType: Type = {
+        type: "named",
+        moduleName: t.moduleName,
+        name: t.name,
+        args: freshArgs.map((a) => a.asType()),
+      };
+
+      const deps = TVar.typeImplementsTrait(genericType, trait);
+      if (deps === undefined) {
+        throw new Error("[unreachable] type does not implement given trait");
       }
-      return t.name;
+
+      if (deps.length !== 0) {
+        const params: string[] = [];
+
+        for (const dep of deps) {
+          const index = freshArgs.findIndex((v) => {
+            const r = v.resolve();
+            return r.type === "unbound" && r.id === dep.id;
+          });
+
+          const paramName = traitParamName(trait, t.args[index]!);
+          params.push(paramName);
+        }
+
+        return `${trait}_${t.name}(${params.join(", ")})`;
+      }
+
+      return `${trait}_${t.name}`;
+    }
 
     case "fn":
       throw new Error("TODO trait name for fn");
@@ -707,9 +738,7 @@ function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
   // e.g. { 0 => Set("Show", "Debug") }
   const alreadyVisitedVarsIds: Map<number, Set<string>> = new Map();
 
-  function checkedPush(genExprId: number, trait: string, traitId: string) {
-    const name = `${trait}_${traitId}`;
-
+  function checkedPush(genExprId: number, trait: string, name: string) {
     let lookup = alreadyVisitedVarsIds.get(genExprId);
     if (lookup === undefined) {
       lookup = new Set();
@@ -771,12 +800,12 @@ function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
                 checkedPush(
                   resolvedGenExpr.id,
                   trait,
-                  traitParamName(instantiatedExpr),
+                  traitParamName(trait, instantiatedExpr),
                 );
               } else {
                 for (const i of impl) {
                   for (const trait of i.traits) {
-                    checkedPush(resolvedGenExpr.id, trait, i.id.toString());
+                    checkedPush(resolvedGenExpr.id, trait, `${trait}_${i.id}`);
                   }
                 }
               }

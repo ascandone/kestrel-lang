@@ -844,7 +844,7 @@ describe("traits compilation", () => {
     const out = compileSrc(`
       extern let p: a where a: Show
 
-      extern type Int
+      type Int {}
       extern let take_int: Fn(Int) -> a
 
       let x = take_int(p)
@@ -971,6 +971,71 @@ describe("traits compilation", () => {
       "
     `);
   });
+
+  test("pass trait dicts for types with params when they do not have deps", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+
+      type AlwaysShow<a> { X }
+      
+      let x = show(X)
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = { $: "X" };
+
+      const Main$x = Main$show(Show_AlwaysShow)(Main$X);
+      "
+    `);
+  });
+
+  test("pass higher order trait dicts for types with params when they do have deps", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+
+      type Option<a, b> { Some(b) }
+      
+      let x = show(Some(42))
+    `);
+
+    // Some(42) : Option<Int>
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$Some(a0) {
+        return { $: "Some", a0 };
+      }
+      const Main$x = Main$show(Show_Option(Show_Int))(Main$Some(42));
+      "
+    `);
+  });
+
+  test.todo(
+    "pass higher order trait dicts for types with params when they do have deps, even when the constructor does not have args",
+    () => {
+      const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+
+      type Option<a> {
+        Some(a),
+        None,
+      }
+      
+      let x = show(None)
+    `);
+
+      expect(out).toMatchInlineSnapshot(`
+      "function Main$Some(a0) {
+        return { $: "Some", a0 };
+      }
+      const Main$None = { $: "None" };
+
+      const Main$x = (Show_12) => Main$show(Show_Option(Show_12))(Main$None);
+      "
+    `);
+    },
+  );
+
+  test.todo("fn return arg");
 });
 
 describe("pattern matching", () => {
