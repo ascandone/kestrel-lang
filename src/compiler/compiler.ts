@@ -583,6 +583,15 @@ export class Compiler {
       ) {
         decls.push(this.deriveEq(typeDecl));
       }
+
+      if (
+        (this.allowDeriving === undefined ||
+          this.allowDeriving.includes("Show")) &&
+        // Bool show is implemented inside core
+        typeDecl.name !== "Bool"
+      ) {
+        decls.push(this.deriveShow(typeDecl));
+      }
     }
 
     for (const decl of src.declarations) {
@@ -706,6 +715,88 @@ ${cases}
 
     return `const Eq_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x, y) => {
   ${body}
+}`;
+  }
+
+  private deriveShow(
+    typedDeclaration: TypedTypeDeclaration & { type: "adt" },
+  ): string {
+    if (this.ns === undefined) {
+      throw new Error("TODO handle undefined namespace");
+    }
+
+    const usedVars: string[] = [];
+
+    function showVariant(variant: TypedTypeVariant): string {
+      if (variant.args.length === 0) {
+        return `"${variant.name}"`;
+      }
+
+      const args = variant.args
+        .map((arg, i) => {
+          switch (arg.type) {
+            case "any":
+              throw new Error("[unreachable] any in constructor args");
+            case "fn":
+              throw new Error("[unreachable] cannot derive fns");
+
+            case "var":
+              usedVars.push(arg.ident);
+              return `\${Show_${arg.ident}(x.a${i})}`;
+
+            case "named": {
+              if (arg.resolution === undefined) {
+                throw new Error(
+                  "[unreachable] undefined resolution for type: " + arg.name,
+                );
+              }
+
+              return `\${Show_${arg.resolution.namespace}$${arg.name}(x.a${i})}`;
+            }
+          }
+        })
+        .join(", ");
+
+      return `\`${variant.name}(${args})\``;
+    }
+
+    let body: string;
+    switch (typedDeclaration.variants.length) {
+      case 0:
+        body = `  return "never";`;
+        break;
+
+      case 1: {
+        const v = showVariant(typedDeclaration.variants[0]!);
+        body = `  return ${v};`;
+        break;
+      }
+
+      default: {
+        const variants = typedDeclaration.variants
+          .map((v) => {
+            return `    case "${v.name}":
+      return ${showVariant(v)};`;
+          })
+          .join("\n");
+
+        body = `  switch (x.$) {
+${variants}
+  }`;
+        break;
+      }
+    }
+
+    let dictsArg: string;
+    if (usedVars.length === 0) {
+      dictsArg = "";
+    } else {
+      const params = usedVars.map((x) => `Show_${x}`).join(", ");
+      dictsArg = `(${params}) => `;
+    }
+
+    return `const Show_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x) => {
+${body}
 }`;
   }
 

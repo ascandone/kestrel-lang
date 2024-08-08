@@ -842,7 +842,7 @@ describe("list literal", () => {
 });
 
 describe("derive Eq instance", () => {
-  test("singleton with no variants", () => {
+  test("no variants", () => {
     const out = compileSrc(
       `
       type T { }
@@ -959,6 +959,113 @@ describe("derive Eq instance", () => {
             return Eq_a(x.a0, y.a0) && Eq_Main$Int(x.a1, y.a1);
           case "C":
             return true;
+        }
+      }"
+    `);
+  });
+});
+
+describe("Derive Show instance", () => {
+  test.todo("List");
+  test.todo("rec data structures");
+
+  test("no variants", () => {
+    const out = compileSrc(
+      `
+      type T {  }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Show_Main$T = (x) => {
+        return "never";
+      }"
+    `);
+  });
+
+  test("singleton without args", () => {
+    const out = compileSrc(
+      `
+      type T { X }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = { $: "X" };
+
+      const Show_Main$T = (x) => {
+        return "X";
+      }"
+    `);
+  });
+
+  test("single variant, with concrete args", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T { X(Int) }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Show_Main$T = (x) => {
+        return \`X(\${Show_Main$Int(x.a0)})\`;
+      }"
+    `);
+  });
+
+  test("single variant with var arg", () => {
+    const out = compileSrc(
+      `
+      type T<a, b, c, d> { X(c) }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Show_Main$T = (Show_c) => (x) => {
+        return \`X(\${Show_c(x.a0)})\`;
+      }"
+    `);
+  });
+
+  test("many variants", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T<a, b> {
+        A,
+        B(Int, a),
+        C(b),
+      }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$A = { $: "A" };
+
+      function Main$B(a0, a1) {
+        return { $: "B", a0, a1 };
+      }
+      function Main$C(a0) {
+        return { $: "C", a0 };
+      }
+      const Show_Main$T = (Show_a, Show_b) => (x) => {
+        switch (x.$) {
+          case "A":
+            return "A";
+          case "B":
+            return \`B(\${Show_Main$Int(x.a0)}, \${Show_a(x.a1)})\`;
+          case "C":
+            return \`C(\${Show_b(x.a0)})\`;
         }
       }"
     `);
@@ -1248,6 +1355,7 @@ describe("traits compilation", () => {
   `);
   });
 
+  // TODO fix
   test.todo("== handles traits dicts on adts", () => {
     const out = compileSrc(
       `
