@@ -1625,7 +1625,7 @@ describe("TCO", () => {
         }
       }
   `,
-      "List",
+      { ns: "List" },
     );
 
     expect(out).toMatchInlineSnapshot(`
@@ -1687,7 +1687,7 @@ describe("TCO", () => {
   });
 
   test("Namespaced", () => {
-    const out = compileSrc(`let f1 = fn { f1() }`, "Mod");
+    const out = compileSrc(`let f1 = fn { f1() }`, { ns: "Mod" });
 
     expect(out).toMatchInlineSnapshot(`
       "const Mod$f1 = () => {
@@ -1719,7 +1719,7 @@ describe("TCO", () => {
 
 describe("modules", () => {
   test("variables from modules different than Main are namespaced", () => {
-    const out = compileSrc(`let a = 42`, "ExampleModule");
+    const out = compileSrc(`let a = 42`, { ns: "ExampleModule" });
     expect(out).toMatchInlineSnapshot(`
       "const ExampleModule$a = 42;
       "
@@ -1727,7 +1727,7 @@ describe("modules", () => {
   });
 
   test("declarations from modules different than Main are resolved correctly", () => {
-    const out = compileSrc(`let a = 42\nlet x = a`, "ExampleModule");
+    const out = compileSrc(`let a = 42\nlet x = a`, { ns: "ExampleModule" });
     expect(out).toMatchInlineSnapshot(
       `
       "const ExampleModule$a = 42;
@@ -1743,7 +1743,7 @@ describe("modules", () => {
       `extern type Int
       extern let a: Int
       let x = a`,
-      "ExampleModule",
+      { ns: "ExampleModule" },
     );
     expect(out).toMatchInlineSnapshot(
       `
@@ -1754,7 +1754,7 @@ describe("modules", () => {
   });
 
   test("variables are scoped in nested modules", () => {
-    const out = compileSrc(`let a = 42`, "A/B/C");
+    const out = compileSrc(`let a = 42`, { ns: "A/B/C" });
     expect(out).toMatchInlineSnapshot(`
       "const A$B$C$a = 42;
       "
@@ -1762,7 +1762,7 @@ describe("modules", () => {
   });
 
   test("local variables from modules different than Main are namespaced", () => {
-    const out = compileSrc(`let a = { let b = 42; b}`, "ExampleModule");
+    const out = compileSrc(`let a = { let b = 42; b}`, { ns: "ExampleModule" });
     expect(out).toMatchInlineSnapshot(`
       "const ExampleModule$a$b = 42;
       const ExampleModule$a = ExampleModule$a$b;
@@ -1776,7 +1776,7 @@ describe("modules", () => {
       type MyType { C1, C2(Int) }
       let c2_example = C2(42)
     `,
-      "MyModule",
+      { ns: "MyModule" },
     );
 
     expect(out).toMatchInlineSnapshot(`
@@ -2008,9 +2008,12 @@ Main$main.exec();
   test.todo("error when extern types are not found");
 });
 
-function compileSrc(src: string, ns?: string) {
+type CompileSrcOpts = {
+  ns?: string;
+};
+
+function compileSrc(src: string, { ns = "Main" }: CompileSrcOpts = {}) {
   const parsed = unsafeParse(src);
-  ns = ns ?? "Main";
   resetTraitsRegistry();
   const [program] = typecheck(ns, parsed, {}, [], testEntryPoint.type);
   const out = new Compiler().compile(program, ns);
