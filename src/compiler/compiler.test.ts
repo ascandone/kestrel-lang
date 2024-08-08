@@ -7,6 +7,7 @@ import {
   typecheckProject,
 } from "../typecheck";
 import { UntypedModule, unsafeParse } from "../parser";
+import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
 
 test("compile int constants", () => {
   const out = compileSrc(`pub let x = 42`);
@@ -856,10 +857,13 @@ describe("traits compilation", () => {
   });
 
   test("applying with concrete types", () => {
-    const out = compileSrc(`
+    const out = compileSrc(
+      `
       extern let show: Fn(a) -> String where a: Show
       let x = show("abc")
-    `);
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
     expect(out).toMatchInlineSnapshot(`
       "const Main$x = Main$show(Show_String)("abc");
       "
@@ -878,12 +882,15 @@ describe("traits compilation", () => {
   });
 
   test("higher order fn", () => {
-    const out = compileSrc(`
+    const out = compileSrc(
+      `
       extern type String
       let id = fn x { x }
       extern let show: Fn(a) -> String where a: Show
       let f = id(show)(42)
-    `);
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
     expect(out).toMatchInlineSnapshot(`
       "const Main$id = (x) => {
         return x;
@@ -930,12 +937,15 @@ describe("traits compilation", () => {
   });
 
   test("do not duplicate when there's only one var to pass", () => {
-    const out = compileSrc(`
+    const out = compileSrc(
+      `
       extern let show2: Fn(a, a) -> String where a: Show
       let f = fn arg {
         show2(arg, "hello")
       }
-    `);
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
     expect(out).toMatchInlineSnapshot(`
       "const Main$f = (arg) => {
         return Main$show2(Show_String)(arg, "hello");
@@ -945,11 +955,13 @@ describe("traits compilation", () => {
   });
 
   test("pass an arg twice if needed", () => {
-    const out = compileSrc(`
+    const out = compileSrc(
+      `
       extern let show2: Fn(a, b) -> String where a: Show, b: Show
       let f =  show2("a", "b")
-    
-    `);
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
     expect(out).toMatchInlineSnapshot(`
       "const Main$f = Main$show2(Show_String, Show_String)("a", "b");
       "
@@ -957,12 +969,15 @@ describe("traits compilation", () => {
   });
 
   test("partial application", () => {
-    const out = compileSrc(`
+    const out = compileSrc(
+      `
       extern let show2: Fn(a, b) -> String where a: Show, b: Show
       let f = fn arg {
         show2(arg, "hello")
       }
-    `);
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$f = (Show_11) => (arg) => {
@@ -990,13 +1005,16 @@ describe("traits compilation", () => {
   });
 
   test("pass higher order trait dicts for types with params when they do have deps", () => {
-    const out = compileSrc(`
+    const out = compileSrc(
+      `
       extern let show: Fn(a) -> String where a: Show
 
       type Option<a, b> { Some(b) }
       
       let x = show(Some(42))
-    `);
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
 
     // Some(42) : Option<Int>
 
@@ -2010,11 +2028,15 @@ Main$main.exec();
 
 type CompileSrcOpts = {
   ns?: string;
+  traitImpl?: TraitImpl[];
 };
 
-function compileSrc(src: string, { ns = "Main" }: CompileSrcOpts = {}) {
+function compileSrc(
+  src: string,
+  { ns = "Main", traitImpl = [] }: CompileSrcOpts = {},
+) {
   const parsed = unsafeParse(src);
-  resetTraitsRegistry();
+  resetTraitsRegistry(traitImpl);
   const [program] = typecheck(ns, parsed, {}, [], testEntryPoint.type);
   const out = new Compiler().compile(program, ns);
   return out;
