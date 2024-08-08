@@ -104,27 +104,23 @@ test("refer to previously defined idents", () => {
 
 test("function calls with no args", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn() -> a
     let y = f()
   `);
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    const Main$y = Main$f();
+    "const Main$y = Main$f();
     "
   `);
 });
 
 test("function calls with args", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a, a) -> a
     let y = f(1, 2)
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    const Main$y = Main$f(1, 2);
+    "const Main$y = Main$f(1, 2);
     "
   `);
 });
@@ -229,7 +225,7 @@ test("shadowing fn params with let", () => {
 
 test("two let as fn args, shadowing", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a, a) -> a
     let x = f(
       { let a = 0; a },
       { let a = 1; a },
@@ -237,9 +233,7 @@ test("two let as fn args, shadowing", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    const Main$x$a = 0;
+    "const Main$x$a = 0;
     const Main$x$a$1 = 1;
     const Main$x = Main$f(Main$x$a, Main$x$a$1);
     "
@@ -382,7 +376,7 @@ test("let inside scope", () => {
 
 test("let inside arg of a function", () => {
   const out = compileSrc(`
-  let f = 0
+  extern let f: Fn(a) -> a
   let a = f({
     let x = 0;
     x
@@ -390,9 +384,7 @@ test("let inside arg of a function", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    const Main$a$x = 0;
+    "const Main$a$x = 0;
     const Main$a = Main$f(Main$a$x);
     "
   `);
@@ -401,13 +393,15 @@ test("let inside arg of a function", () => {
 test("function with a scoped identified as caller", () => {
   const out = compileSrc(`
   let x = {
-    let f = 0;
+    let f = fn { 0 };
     f()
   }
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$x$f = 0;
+    "const Main$x$f = () => {
+      return 0;
+    }
     const Main$x = Main$x$f();
     "
   `);
@@ -549,16 +543,14 @@ test("fn inside let", () => {
 
 test("fn as expr", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a) -> a
     let x = f(fn {
       1
     })
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    const Main$x$GEN__0 = () => {
+    "const Main$x$GEN__0 = () => {
       return 1;
     }
     const Main$x = Main$f(Main$x$GEN__0);
@@ -568,7 +560,7 @@ test("fn as expr", () => {
 
 test("ifs as expr", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a) -> a
     let x = f(
       if 0 == 1 {
         "a" 
@@ -578,9 +570,7 @@ test("ifs as expr", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    let Main$x$GEN__0;
+    "let Main$x$GEN__0;
     if (0 == 1) {
       Main$x$GEN__0 = "a";
     } else {
@@ -849,6 +839,32 @@ describe("list literal", () => {
   });
 });
 
+describe("traits compilation", () => {
+  test.todo("applying with concrete types", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+      let x = show("abc")
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = Main$show(Show_String)("abc");
+      "
+    `);
+  });
+
+  test.todo("applying with type variables", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+      let f = fn x { show(x) }
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (Show_a) => (x) => {
+        return Main$show(Show_a)(x);
+      }
+      "
+    `);
+  });
+});
+
 describe("pattern matching", () => {
   test("pattern matching (flat)", () => {
     const out = compileSrc(`
@@ -1096,16 +1112,14 @@ describe("pattern matching", () => {
 
   test("pattern matching as fn arg", () => {
     const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a) -> a
     let x = f(match 42 {
       _ => 0,
     })
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$f = 0;
-
-      const Main$x$GEN__1 = 42;
+      "const Main$x$GEN__1 = 42;
       let Main$x$GEN__0;
       if (true) {
         Main$x$GEN__0 = 0;
@@ -1214,7 +1228,7 @@ describe("pattern matching", () => {
 
 test("two fns as args", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a) -> a
     let x = f(
       fn { 0 },
       fn { 1 },
@@ -1222,9 +1236,7 @@ test("two fns as args", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    const Main$x$GEN__0 = () => {
+    "const Main$x$GEN__0 = () => {
       return 0;
     }
     const Main$x$GEN__1 = () => {
@@ -1254,16 +1266,14 @@ describe("TCO", () => {
 
   test("does not apply inside application", () => {
     const out = compileSrc(`
-    let a = 0
+    extern let a: Fn(a) -> a
     let loop = fn {
       a(loop())
     }
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$a = 0;
-
-      const Main$loop = () => {
+      "const Main$loop = () => {
         return Main$a(Main$loop());
       }
       "
