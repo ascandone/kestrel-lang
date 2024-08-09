@@ -1235,6 +1235,38 @@ describe("traits compilation", () => {
     `);
   });
 
+  test("do not pass extra args", () => {
+    const out = compileSrc(
+      `
+      extern type String
+      extern type Bool
+
+      extern let inspect: Fn(a) -> String where a: Show
+      extern let (==): Fn(a, a) -> Bool where a: Eq
+
+      let equal = fn x, y {
+        if x == y {
+          "ok"
+        } else {
+          inspect(x)
+        }
+      }
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$equal = (Eq_17, Show_17) => (x, y) => {
+        if (Main$_eq(Eq_17)(x, y)) {
+          return "ok";
+        } else {
+          return Main$inspect(Show_17)(x);
+        }
+      }
+      "
+    `);
+  });
+
   test("do not duplicate when there's only one var to pass", () => {
     const out = compileSrc(
       `

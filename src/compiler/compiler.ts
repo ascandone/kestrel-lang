@@ -944,36 +944,6 @@ function traitDepsForNamedType(
   return out;
 }
 
-function traitParamName(trait: string, t: Type): string {
-  // TODO refactor with resolveType
-
-  switch (t.type) {
-    case "var": {
-      const resolved = t.var.resolve();
-      switch (resolved.type) {
-        case "unbound":
-          throw new Error("TODO trait name for unbound var");
-        case "bound":
-          return traitParamName(trait, resolved.value);
-      }
-    }
-
-    case "named": {
-      const deps = traitDepsForNamedType(t, trait);
-
-      if (deps.length !== 0) {
-        const params = deps.map((dep) => traitParamName(trait, dep)).join(", ");
-        return `${trait}_${t.moduleName}$${t.name}(${params})`;
-      }
-
-      return `${trait}_${t.moduleName}$${t.name}`;
-    }
-
-    case "fn":
-      throw new Error("TODO trait name for fn");
-  }
-}
-
 function applyTraitToType(
   type: Type,
   trait: string,
@@ -998,7 +968,10 @@ function applyTraitToType(
           const deps = traitDepsForNamedType(resolved.value, trait)
             .map((dep) => applyTraitToType(dep, trait, polyDict))
             .map((t) => {
-              if (!polyDict.includes(t)) {
+              // TODO fix this hack
+              const isTypeVar = /\d/.test(t.split("_")[1]!);
+
+              if (isTypeVar && !polyDict.includes(t)) {
                 // This type is not in the polytype's variables constrained by traits.
                 // therefore it has to be a free variable that can never be instantiated
                 // e.g. in the 'None' expression (of type Option<a> where a is free)
@@ -1099,35 +1072,14 @@ function resolvePassedDicts(
             return helper(resolvedGenExpr.value, instantiatedExpr);
 
           case "unbound": {
-            const traits = resolvedGenExpr.traits;
-            for (const trait of traits) {
-              const impl = TVar.typeImplementsTrait(instantiatedExpr, trait);
-
-              if (impl === undefined) {
-                throw new Error(
-                  "[unreachable] type does not implement required trait",
-                );
-              }
-
-              if (impl.length === 0) {
-                // Concrete type implements the type. The instantiated variables should receive the Trait_Type arg
-                checkedPush(
-                  resolvedGenExpr.id,
-                  trait,
-                  traitParamName(trait, instantiatedExpr),
-                );
-              } else {
-                for (const i of impl) {
-                  for (const trait of i.traits) {
-                    checkedPush(
-                      resolvedGenExpr.id,
-                      trait,
-                      applyTraitToType(instantiatedExpr, trait, polyDict),
-                    );
-                  }
-                }
-              }
+            for (const trait of resolvedGenExpr.traits) {
+              checkedPush(
+                resolvedGenExpr.id,
+                trait,
+                applyTraitToType(instantiatedExpr, trait, polyDict),
+              );
             }
+
             return;
           }
         }
