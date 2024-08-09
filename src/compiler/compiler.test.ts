@@ -1481,6 +1481,31 @@ describe("traits compilation", () => {
     `);
   });
 
+  test("deeply nested higher order traits", () => {
+    const out = compileSrc(
+      `
+      extern let show: Fn(a) -> String where a: Show
+
+      type Tuple2<a, b> { Tuple2(a, b) }
+      type Option<a> { Some(a) }
+      
+      let x = show(Tuple2(Some(42), 2))
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$Tuple2(a0, a1) {
+        return { $: "Tuple2", a0, a1 };
+      }
+      function Main$Some(a0) {
+        return { $: "Some", a0 };
+      }
+      const Main$x = Main$show(Show_Main$Tuple2(Show_Main$Option(Show_Int$Int), Show_Int$Int))(Main$Tuple2(Main$Some(42), 2));
+      "
+    `);
+  });
+
   test("trait deps in args when param aren't traits dependencies", () => {
     const out = compileSrc(`
       type IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
