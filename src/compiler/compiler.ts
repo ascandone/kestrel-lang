@@ -973,13 +973,24 @@ function applyTraitToType(
 ): string {
   const resolved = resolveType(type);
   switch (resolved.type) {
-    case "unbound":
-      if (resolved.traits.includes(trait)) {
-        return `${trait}_${resolved.id}`;
+    case "unbound": {
+      if (!resolved.traits.includes(trait)) {
+        throw new Error(
+          "TODO unbound does not impl needed trait: " +
+            JSON.stringify(resolved),
+        );
       }
-      throw new Error(
-        "TODO unbound does not impl needed trait: " + JSON.stringify(resolved),
-      );
+
+      const name = `${trait}_${resolved.id}`;
+      if (!polyDict.includes(name)) {
+        // This type is not in the polytype's variables constrained by traits.
+        // therefore it has to be a free variable that can never be instantiated
+        // e.g. in the 'None' expression (of type Option<a> where a is free)
+        return "undefined";
+      }
+
+      return name;
+    }
 
     case "bound":
       switch (resolved.value.type) {
@@ -987,20 +998,9 @@ function applyTraitToType(
           throw new Error("TODO bound fn");
         case "named": {
           let name = `${trait}_${sanitizeNamespace(resolved.value.moduleName)}$${resolved.value.name}`;
-          const deps = traitDepsForNamedType(resolved.value, trait)
-            .map((dep) => applyTraitToType(dep, trait, polyDict))
-            .map((t) => {
-              // TODO fix this hack
-              const isTypeVar = /\d/.test(t.split("_")[1]![0]!);
-
-              if (isTypeVar && !polyDict.includes(t)) {
-                // This type is not in the polytype's variables constrained by traits.
-                // therefore it has to be a free variable that can never be instantiated
-                // e.g. in the 'None' expression (of type Option<a> where a is free)
-                return "undefined";
-              }
-              return t;
-            });
+          const deps = traitDepsForNamedType(resolved.value, trait).map((dep) =>
+            applyTraitToType(dep, trait, polyDict),
+          );
 
           if (deps.length !== 0) {
             name += `(${deps.join(", ")})`;
