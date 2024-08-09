@@ -739,28 +739,7 @@ ${cases}
       }
 
       const args = variant.args
-        .map((arg, i) => {
-          switch (arg.type) {
-            case "any":
-              throw new Error("[unreachable] any in constructor args");
-            case "fn":
-              throw new Error("[unreachable] cannot derive fns");
-
-            case "var":
-              usedVars.push(arg.ident);
-              return `\${Show_${arg.ident}(x.a${i})}`;
-
-            case "named": {
-              if (arg.resolution === undefined) {
-                throw new Error(
-                  "[unreachable] undefined resolution for type: " + arg.name,
-                );
-              }
-
-              return `\${Show_${arg.resolution.namespace}$${arg.name}(x.a${i})}`;
-            }
-          }
-        })
+        .map((arg, i) => `\${${deriveShowArg(usedVars, arg)}(x.a${i})}`)
         .join(", ");
 
       return `\`${variant.name}(${args})\``;
@@ -837,6 +816,40 @@ ${body}
 
         return conditions;
       }
+    }
+  }
+}
+
+function deriveShowArg(usedVars: string[], arg: TypedTypeAst) {
+  switch (arg.type) {
+    case "any":
+      throw new Error("[unreachable] any in constructor args");
+    case "fn":
+      throw new Error("[unreachable] cannot derive fns");
+
+    case "var":
+      if (!usedVars.includes(arg.ident)) {
+        usedVars.push(arg.ident);
+      }
+      return `Show_${arg.ident}`;
+
+    case "named": {
+      if (arg.resolution === undefined) {
+        throw new Error(
+          "[unreachable] undefined resolution for type: " + arg.name,
+        );
+      }
+
+      const subArgs = arg.args.map((subArg) => deriveShowArg(usedVars, subArg));
+
+      let subCall: string;
+      if (subArgs.length === 0) {
+        subCall = "";
+      } else {
+        subCall = `(${subArgs.join(", ")})`;
+      }
+
+      return `Show_${arg.resolution.namespace}$${arg.name}${subCall}`;
     }
   }
 }

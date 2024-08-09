@@ -1185,6 +1185,66 @@ describe("Derive Show instance", () => {
       }"
     `);
   });
+
+  test("parametric arg", () => {
+    const out = compileSrc(
+      `
+      type X<a> { X(a) }
+
+      type Y<b> {
+        Y(X<b>),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Show_Main$X = (Show_a) => (x) => {
+        return \`X(\${Show_a(x.a0)})\`;
+      }
+      function Main$Y(a0) {
+        return { $: "Y", a0 };
+      }
+      const Show_Main$Y = (Show_b) => (x) => {
+        return \`Y(\${Show_Main$X(Show_b)(x.a0)})\`;
+      }"
+    `);
+  });
+
+  test.todo("recursive data structures", () => {
+    const out = compileSrc(
+      `
+      type List<a> {
+        None,
+        Cons(a, List<a>),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$None = { $: "None" };
+
+      function Main$Cons(a0, a1) {
+        return { $: "Cons", a0, a1 };
+      }
+      const Show_Main$List = (Show_a) => (x) => {
+        switch (x.$) {
+          case "None":
+            return "None";
+          case "Cons":
+            return \`Cons(\${Show_a(x.a0)}, \${Show_Main$List(x.a1)})\`;
+        }
+      }"
+    `);
+  });
 });
 
 describe("traits compilation", () => {
