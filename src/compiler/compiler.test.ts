@@ -1075,9 +1075,6 @@ describe("Derive Show instance", () => {
     `);
   });
 
-  test.todo("List");
-  test.todo("rec data structures");
-
   test("no variants", () => {
     const out = compileSrc(
       `
@@ -1216,12 +1213,12 @@ describe("Derive Show instance", () => {
     `);
   });
 
-  test.todo("recursive data structures", () => {
+  test("recursive data structures", () => {
     const out = compileSrc(
       `
-      type List<a> {
+      type Lst<a> {
         None,
-        Cons(a, List<a>),
+        Cons(a, Lst<a>),
       }
     `,
       {
@@ -1235,12 +1232,12 @@ describe("Derive Show instance", () => {
       function Main$Cons(a0, a1) {
         return { $: "Cons", a0, a1 };
       }
-      const Show_Main$List = (Show_a) => (x) => {
+      const Show_Main$Lst = (Show_a) => (x) => {
         switch (x.$) {
           case "None":
             return "None";
           case "Cons":
-            return \`Cons(\${Show_a(x.a0)}, \${Show_Main$List(x.a1)})\`;
+            return \`Cons(\${Show_a(x.a0)}, \${Show_Main$Lst(Show_a)(x.a1)})\`;
         }
       }"
     `);

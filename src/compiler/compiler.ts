@@ -591,8 +591,9 @@ export class Compiler {
       if (
         (this.allowDeriving === undefined ||
           this.allowDeriving.includes("Show")) &&
-        // Bool show is implemented inside core
-        typeDecl.name !== "Bool"
+        // Bool and List show are implemented inside core
+        typeDecl.name !== "Bool" &&
+        typeDecl.name !== "List"
       ) {
         const o = this.deriveShow(typeDecl);
         if (o !== undefined) {
