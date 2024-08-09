@@ -734,7 +734,7 @@ ${cases}
 
     const usedVars: string[] = [];
 
-    function showVariant(variant: TypedTypeVariant): string {
+    const showVariant = (variant: TypedTypeVariant): string => {
       if (variant.args.length === 0) {
         return `"${variant.name}"`;
       }
@@ -743,8 +743,13 @@ ${cases}
         .map((arg, i) => `\${${deriveShowArg(usedVars, arg)}(x.a${i})}`)
         .join(", ");
 
+      const isTuple = this.ns === "Tuple" && /Tuple[0-9]+/.test(variant.name);
+      if (isTuple) {
+        return `\`(${args})\``;
+      }
+
       return `\`${variant.name}(${args})\``;
-    }
+    };
 
     let body: string;
     switch (typedDeclaration.variants.length) {

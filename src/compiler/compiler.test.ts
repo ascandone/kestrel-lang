@@ -1242,6 +1242,29 @@ describe("Derive Show instance", () => {
       }"
     `);
   });
+
+  test("handle special tuple syntax", () => {
+    const out = compileSrc(
+      `
+      type Tuple2<a, b> {
+        Tuple2(a, b),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+        ns: "Tuple",
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Tuple$Tuple2(a0, a1) {
+        return { $: "Tuple2", a0, a1 };
+      }
+      const Show_Tuple$Tuple2 = (Show_a, Show_b) => (x) => {
+        return \`(\${Show_a(x.a0)}, \${Show_b(x.a1)})\`;
+      }"
+    `);
+  });
 });
 
 describe("traits compilation", () => {
