@@ -994,6 +994,69 @@ describe("derive Eq instance", () => {
       }"
     `);
   });
+
+  test("parametric arg", () => {
+    const out = compileSrc(
+      `
+      type X<a> { X(a) }
+
+      type Y<b> {
+        Y(X<b>),
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Eq_Main$X = (Eq_a) => (x, y) => {
+        return Eq_a(x.a0, y.a0);
+      }
+      function Main$Y(a0) {
+        return { $: "Y", a0 };
+      }
+      const Eq_Main$Y = (Eq_b) => (x, y) => {
+        return Eq_Main$X(Eq_b)(x.a0, y.a0);
+      }"
+    `);
+  });
+
+  test("recursive data structures", () => {
+    const out = compileSrc(
+      `
+      type List<a> {
+        None,
+        Cons(a, List<a>),
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$None = { $: "None" };
+
+      function Main$Cons(a0, a1) {
+        return { $: "Cons", a0, a1 };
+      }
+      const Eq_Main$List = (Eq_a) => (x, y) => {
+        if (x.$ !== y.$) {
+          return false;
+        }
+        switch (x.$) {
+          case "None":
+            return true;
+          case "Cons":
+            return Eq_a(x.a0, y.a0) && Eq_Main$List(Eq_a)(x.a1, y.a1);
+        }
+      }"
+    `);
+  });
 });
 
 describe("Derive Show instance", () => {

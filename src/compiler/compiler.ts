@@ -3,6 +3,7 @@ import { Binding, ConstLiteral, MatchPattern, TypeVariant } from "../parser";
 import {
   TypedExpr,
   TypedModule,
+  TypedTypeAst,
   TypedTypeDeclaration,
   TypedTypeVariant,
 } from "../typecheck";
@@ -667,39 +668,12 @@ export class Compiler {
         return `true`;
       }
 
-      const buf: string[] = [];
-
-      for (let i = 0; i < variant.args.length; i++) {
-        const arg = variant.args[i]!;
-
-        switch (arg.type) {
-          case "any":
-            throw new Error("[unreachable] any in constructor args");
-          case "fn":
-            throw new Error("[unreachable] cannot derive fns");
-
-          case "named": {
-            if (arg.resolution === undefined) {
-              throw new Error(
-                "[unreachable] undefined resolution for type: " + arg.name,
-              );
-            }
-
-            const ns = sanitizeNamespace(arg.resolution.namespace);
-
-            // We assume this type impls the trait
-            buf.push(`Eq_${ns}$${arg.name}(x.a${i}, y.a${i})`);
-            break;
-          }
-
-          case "var":
-            usedVars.push(arg.ident);
-            buf.push(`Eq_${arg.ident}(x.a${i}, y.a${i})`);
-            break;
-        }
-      }
-
-      return buf.join(" && ");
+      return variant.args
+        .map((variant, i) => {
+          const callEXpr = deriveEqArg(usedVars, variant);
+          return `${callEXpr}(x.a${i}, y.a${i})`;
+        })
+        .join(" && ");
     }
 
     let body: string;
@@ -864,6 +838,41 @@ ${body}
         return conditions;
       }
     }
+  }
+}
+
+function deriveEqArg(usedVars: string[], arg: TypedTypeAst): string {
+  switch (arg.type) {
+    case "any":
+      throw new Error("[unreachable] any in constructor args");
+    case "fn":
+      throw new Error("[unreachable] cannot derive fns");
+
+    case "named": {
+      if (arg.resolution === undefined) {
+        throw new Error(
+          "[unreachable] undefined resolution for type: " + arg.name,
+        );
+      }
+
+      const subArgs = arg.args.map((subArg) => deriveEqArg(usedVars, subArg));
+
+      const ns = sanitizeNamespace(arg.resolution.namespace);
+      let subCall: string;
+      if (subArgs.length === 0) {
+        subCall = "";
+      } else {
+        subCall = `(${subArgs.join(", ")})`;
+      }
+      // We assume this type impls the trait
+      return `Eq_${ns}$${arg.name}${subCall}`;
+    }
+
+    case "var":
+      if (!usedVars.includes(arg.ident)) {
+        usedVars.push(arg.ident);
+      }
+      return `Eq_${arg.ident}`;
   }
 }
 
