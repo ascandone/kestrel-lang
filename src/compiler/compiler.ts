@@ -901,10 +901,10 @@ function findDeclarationDictsParams(type: Type): string[] {
   function helper(type: Type) {
     switch (type.type) {
       case "fn":
-        // TODO traverse return type
         for (const arg of type.args) {
           helper(arg);
         }
+        helper(type.return);
         return;
 
       case "named": {
@@ -1060,13 +1060,14 @@ function resolvePassedDicts(
 
         const instantiatedFn = i.value;
 
-        // TODO handle return types
         for (let i = 0; i < genExpr.args.length; i++) {
           const genArg = genExpr.args[i]!,
             instArg = instantiatedFn.args[i]!;
 
           helper(genArg, instArg);
         }
+
+        helper(genExpr.return, instantiatedFn.return);
         return;
       }
 

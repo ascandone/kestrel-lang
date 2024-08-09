@@ -1647,7 +1647,76 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.todo("fn return arg");
+  test("fn returning arg with traits", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Json
+      extern type Option<a>
+
+      extern let from_json: Fn(Json) -> Option<a> where a: FromJson
+      extern let take_opt_int: Fn(Option<Int>) -> Int
+      extern let json: Json
+
+
+      let example = 
+        from_json(json)
+        |> take_opt_int()
+    `,
+      {
+        traitImpl: [
+          {
+            typeName: "Int",
+            moduleName: "Main",
+            trait: "FromJson",
+          },
+          {
+            typeName: "Option",
+            moduleName: "Main",
+            trait: "FromJson",
+            deps: [["FromJson"]],
+          },
+        ],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$example = Main$take_opt_int(Main$from_json(FromJson_Main$Int)(Main$json));
+      "
+    `);
+  });
+
+  test("fn returning arg handles params", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Json
+      extern type Option<a>
+
+      extern let from_json: Fn(Json) -> Option<a> where a: FromJson
+      extern let take_opt_int: Fn(Option<Int>) -> x
+      extern let json: Json
+
+      let called = from_json(json)
+    `,
+      {
+        traitImpl: [
+          { typeName: "Int", moduleName: "Main", trait: "FromJson" },
+          {
+            typeName: "Option",
+            moduleName: "Main",
+            trait: "FromJson",
+            deps: [["FromJson"]],
+          },
+        ],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$called = (FromJson_9) => Main$from_json(FromJson_9)(Main$json);
+      "
+    `);
+  });
 });
 
 describe("pattern matching", () => {
