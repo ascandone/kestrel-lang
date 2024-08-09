@@ -991,7 +991,7 @@ function applyTraitToType(
             .map((dep) => applyTraitToType(dep, trait, polyDict))
             .map((t) => {
               // TODO fix this hack
-              const isTypeVar = /\d/.test(t.split("_")[1]!);
+              const isTypeVar = /\d/.test(t.split("_")[1]![0]!);
 
               if (isTypeVar && !polyDict.includes(t)) {
                 // This type is not in the polytype's variables constrained by traits.
