@@ -4949,6 +4949,81 @@ exports[`structs > empty struct 1`] = `
 }
 `;
 
+exports[`structs > pub modifier 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [],
+      "name": "Person",
+      "params": [],
+      "pub": true,
+      "span": [
+        0,
+        26,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
+exports[`structs > pub(..) modifier 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [],
+      "name": "Person",
+      "params": [],
+      "pub": "..",
+      "span": [
+        0,
+        30,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
+exports[`structs > type params 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [],
+      "name": "Person",
+      "params": [
+        {
+          "name": "a",
+          "span": [
+            12,
+            13,
+          ],
+        },
+        {
+          "name": "b",
+          "span": [
+            15,
+            16,
+          ],
+        },
+      ],
+      "pub": false,
+      "span": [
+        0,
+        28,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
 exports[`traits > parses many traits in a polytype for the same tvar 1`] = `
 {
   "declarations": [

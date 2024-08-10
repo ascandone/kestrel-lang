@@ -525,6 +525,21 @@ describe("structs", () => {
     const src = `type Person struct { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("pub modifier", () => {
+    const src = `pub type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("pub(..) modifier", () => {
+    const src = `pub(..) type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("type params", () => {
+    const src = `type Person<a, b> struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("pattern matching", () => {
