@@ -5027,7 +5027,13 @@ exports[`structs > field access 1`] = `
         18,
       ],
       "value": {
-        "fieldName": "my_field",
+        "field": {
+          "name": "my_field",
+          "span": [
+            10,
+            18,
+          ],
+        },
         "left": {
           "name": "s",
           "namespace": undefined,

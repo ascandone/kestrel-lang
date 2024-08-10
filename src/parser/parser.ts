@@ -264,7 +264,10 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     return {
       type: "field-access",
       left: this.visit(ctx.expr()),
-      fieldName: ctx.ID().getText(),
+      field: {
+        name: ctx.ID().getText(),
+        span: [ctx.ID().symbol.start, ctx.ID().symbol.stop + 1],
+      },
       span: [ctx.start.start, ctx.stop!.stop + 1],
     };
   };
