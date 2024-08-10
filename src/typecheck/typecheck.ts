@@ -556,27 +556,29 @@ class Typechecker {
         }
         return;
 
-      case "field-access":
+      case "field-access": {
         this.typecheckAnnotatedExpr(ast.left);
-
-        if (ast.resolution !== undefined) {
-          const leftType: Type = {
-            type: "named",
-            moduleName: this.ns, // TODO use resolution's namespace
-            name: ast.resolution.declaration.name,
-            args: [], // TODO params
-          };
-          this.unifyExpr(ast.left, ast.left.$.asType(), leftType);
-
-          const returnType = instantiateFromScheme(
-            ast.resolution.field.$.asType(),
-            {}, // TODO scheme
-          );
-
-          this.unifyExpr(ast, ast.$.asType(), returnType);
+        if (ast.resolution === undefined) {
+          return;
         }
 
+        const leftType: Type = {
+          type: "named",
+          moduleName: this.ns, // TODO use resolution's namespace
+          name: ast.resolution.declaration.name,
+          args: [], // TODO params
+        };
+        this.unifyExpr(ast.left, ast.left.$.asType(), leftType);
+
+        const returnType = instantiateFromScheme(
+          ast.resolution.field.$.asType(),
+          {}, // TODO scheme
+        );
+
+        this.unifyExpr(ast, ast.$.asType(), returnType);
+
         return;
+      }
 
       case "let":
         this.typecheckPattern(ast.pattern, true);
