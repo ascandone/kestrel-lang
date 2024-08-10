@@ -5008,6 +5008,48 @@ exports[`structs > field 1`] = `
 }
 `;
 
+exports[`structs > field access 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        18,
+      ],
+      "value": {
+        "fieldName": "my_field",
+        "left": {
+          "name": "s",
+          "namespace": undefined,
+          "span": [
+            8,
+            9,
+          ],
+          "type": "identifier",
+        },
+        "span": [
+          8,
+          18,
+        ],
+        "type": "field-access",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`structs > many fields 1`] = `
 {
   "declarations": [],

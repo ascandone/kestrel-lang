@@ -99,6 +99,7 @@ expr:
 	| FLOAT																	# float
 	| CHAR																	# char
 	| STRING																# string
+	| expr '.' ID															# fieldAccess
 	| qualifiedId															# id
 	| op = '!' expr															# BoolNot
 	| expr '(' (expr (',' expr)* ','?)? ')'									# call

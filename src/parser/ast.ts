@@ -113,6 +113,11 @@ export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
       isPipe?: boolean;
     }
   | {
+      type: "field-access";
+      left: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      fieldName: string;
+    }
+  | {
       type: "let";
       pattern: MatchPattern<TypeMeta, IdentifierResolutionMeta>;
       value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;

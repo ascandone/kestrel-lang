@@ -15,6 +15,7 @@ import Parser, {
   ExprContext,
   ExternLetDeclarationContext,
   ExternTypeDeclarationContext,
+  FieldAccessContext,
   FloatContext,
   FloatPatternContext,
   FnContext,
@@ -258,6 +259,15 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     name: ctx.qualifiedId()._name.text,
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
+
+  visitFieldAccess = (ctx: FieldAccessContext): UntypedExpr => {
+    return {
+      type: "field-access",
+      left: this.visit(ctx.expr()),
+      fieldName: ctx.ID().getText(),
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+    };
+  };
 
   visitBoolNot = (ctx: ParensContext): UntypedExpr => ({
     type: "application",

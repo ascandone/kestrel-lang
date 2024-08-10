@@ -37,6 +37,7 @@ import { ParensContext } from "./KestrelParser";
 import { StringContext } from "./KestrelParser";
 import { MulDivContext } from "./KestrelParser";
 import { AddSubContext } from "./KestrelParser";
+import { FieldAccessContext } from "./KestrelParser";
 import { FnContext } from "./KestrelParser";
 import { MatchContext } from "./KestrelParser";
 import { PipeContext } from "./KestrelParser";
@@ -446,6 +447,18 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitAddSub?: (ctx: AddSubContext) => void;
+	/**
+	 * Enter a parse tree produced by the `fieldAccess`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	enterFieldAccess?: (ctx: FieldAccessContext) => void;
+	/**
+	 * Exit a parse tree produced by the `fieldAccess`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 */
+	exitFieldAccess?: (ctx: FieldAccessContext) => void;
 	/**
 	 * Enter a parse tree produced by the `fn`
 	 * labeled alternative in `KestrelParser.expr`.

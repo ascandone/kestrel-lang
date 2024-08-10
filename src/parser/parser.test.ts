@@ -563,6 +563,11 @@ describe("structs", () => {
     `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("field access", () => {
+    const src = `let _ = s.my_field`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("pattern matching", () => {

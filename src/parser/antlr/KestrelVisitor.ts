@@ -37,6 +37,7 @@ import { ParensContext } from "./KestrelParser";
 import { StringContext } from "./KestrelParser";
 import { MulDivContext } from "./KestrelParser";
 import { AddSubContext } from "./KestrelParser";
+import { FieldAccessContext } from "./KestrelParser";
 import { FnContext } from "./KestrelParser";
 import { MatchContext } from "./KestrelParser";
 import { PipeContext } from "./KestrelParser";
@@ -297,6 +298,13 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitAddSub?: (ctx: AddSubContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `fieldAccess`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitFieldAccess?: (ctx: FieldAccessContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `fn`
 	 * labeled alternative in `KestrelParser.expr`.
