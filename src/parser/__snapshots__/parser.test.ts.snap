@@ -4949,6 +4949,94 @@ exports[`structs > empty struct 1`] = `
 }
 `;
 
+exports[`structs > field 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [
+        {
+          "name": "age",
+          "span": [
+            21,
+            29,
+          ],
+          "type_": {
+            "args": [],
+            "name": "Int",
+            "span": [
+              26,
+              29,
+            ],
+            "type": "named",
+          },
+        },
+      ],
+      "name": "Person",
+      "params": [],
+      "pub": false,
+      "span": [
+        0,
+        31,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
+exports[`structs > many fields 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [
+        {
+          "name": "name",
+          "span": [
+            36,
+            43,
+          ],
+          "type_": {
+            "ident": "a",
+            "span": [
+              42,
+              43,
+            ],
+            "type": "var",
+          },
+        },
+        {
+          "name": "age",
+          "span": [
+            53,
+            59,
+          ],
+          "type_": {
+            "ident": "b",
+            "span": [
+              58,
+              59,
+            ],
+            "type": "var",
+          },
+        },
+      ],
+      "name": "Person",
+      "params": [],
+      "pub": false,
+      "span": [
+        7,
+        69,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
 exports[`structs > pub modifier 1`] = `
 {
   "declarations": [],

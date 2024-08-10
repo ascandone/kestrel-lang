@@ -555,11 +555,22 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
   ): DeclarationType => {
     const ctx = structDecl.structDeclaration_();
 
+    // TODO docs
+
     return {
       type: "type",
       decl: {
         type: "struct",
-        fields: [],
+        fields:
+          ctx
+            .fields()
+            ?.fieldDecl_list()
+            .map((v) => ({
+              name: v.ID().getText(),
+              span: [v.start.start, v.stop!.stop + 1],
+              // args: v.type__list().map((t) => new TypeVisitor().visit(t)),
+              type_: new TypeVisitor().visit(v.type_()),
+            })) ?? [],
 
         params:
           ctx

@@ -61,7 +61,8 @@ typeDeclaration_:
 		'}';
 
 structDeclaration_:
-	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? 'struct' '{' '}';
+	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? 'struct' '{'
+		fields? '}';
 
 externTypeDeclaration_:
 	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?;
@@ -71,6 +72,9 @@ paramsList: '<' ID (',' ID)* '>';
 
 typeVariants:
 	typeConstructorDecl (',' typeConstructorDecl)* ','?;
+
+fieldDecl: ID ':' type;
+fields: fieldDecl (',' fieldDecl)* ','?;
 
 polyType:
 	type ('where' traitImplClause (',' traitImplClause)*)?;

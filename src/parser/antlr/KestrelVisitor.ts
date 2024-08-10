@@ -21,6 +21,8 @@ import { ExternTypeDeclaration_Context } from "./KestrelParser";
 import { PubExposingContext } from "./KestrelParser";
 import { ParamsListContext } from "./KestrelParser";
 import { TypeVariantsContext } from "./KestrelParser";
+import { FieldDeclContext } from "./KestrelParser";
+import { FieldsContext } from "./KestrelParser";
 import { PolyTypeContext } from "./KestrelParser";
 import { TraitImplClauseContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
@@ -190,6 +192,18 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitTypeVariants?: (ctx: TypeVariantsContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.fieldDecl`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitFieldDecl?: (ctx: FieldDeclContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.fields`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitFields?: (ctx: FieldsContext) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.polyType`.
 	 * @param ctx the parse tree

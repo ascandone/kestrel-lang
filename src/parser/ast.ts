@@ -184,7 +184,7 @@ export type TypeDeclaration<TypeMeta> = SpanMeta & {
   docComment?: string;
 } & (
     | { type: "adt"; variants: TypeVariant<TypeMeta>[]; pub: boolean | ".." }
-    | { type: "struct"; fields: never[]; pub: boolean | ".." }
+    | { type: "struct"; fields: StructField<TypeMeta>[]; pub: boolean | ".." }
     | { type: "extern"; pub: boolean }
   );
 

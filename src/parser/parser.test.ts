@@ -540,6 +540,21 @@ describe("structs", () => {
     const src = `type Person<a, b> struct { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test("field", () => {
+    const src = `type Person struct { age: Int }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("many fields", () => {
+    const src = `
+      type Person struct {
+        name: a,
+        age: b, 
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
 });
 
 describe("pattern matching", () => {

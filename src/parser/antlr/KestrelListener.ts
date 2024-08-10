@@ -21,6 +21,8 @@ import { ExternTypeDeclaration_Context } from "./KestrelParser";
 import { PubExposingContext } from "./KestrelParser";
 import { ParamsListContext } from "./KestrelParser";
 import { TypeVariantsContext } from "./KestrelParser";
+import { FieldDeclContext } from "./KestrelParser";
+import { FieldsContext } from "./KestrelParser";
 import { PolyTypeContext } from "./KestrelParser";
 import { TraitImplClauseContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
@@ -266,6 +268,26 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitTypeVariants?: (ctx: TypeVariantsContext) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.fieldDecl`.
+	 * @param ctx the parse tree
+	 */
+	enterFieldDecl?: (ctx: FieldDeclContext) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.fieldDecl`.
+	 * @param ctx the parse tree
+	 */
+	exitFieldDecl?: (ctx: FieldDeclContext) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.fields`.
+	 * @param ctx the parse tree
+	 */
+	enterFields?: (ctx: FieldsContext) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.fields`.
+	 * @param ctx the parse tree
+	 */
+	exitFields?: (ctx: FieldsContext) => void;
 	/**
 	 * Enter a parse tree produced by `KestrelParser.polyType`.
 	 * @param ctx the parse tree
