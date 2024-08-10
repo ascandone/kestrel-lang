@@ -33,6 +33,7 @@ import Parser, {
   PipeContext,
   StringContext,
   StringPatternContext,
+  StructDeclarationContext,
   TupleContext,
   TuplePatternContext,
   TupleTypeContext,
@@ -544,6 +545,37 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
               span: [i.symbol.start, i.symbol.stop + 1],
             })) ?? [],
         ...(docs === "" ? {} : { docComment: docs }),
+        span: [ctx.start.start, ctx.stop!.stop + 1],
+      },
+    };
+  };
+
+  visitStructDeclaration = (
+    structDecl: StructDeclarationContext,
+  ): DeclarationType => {
+    const ctx = structDecl.structDeclaration_();
+
+    return {
+      type: "type",
+      decl: {
+        type: "struct",
+        fields: [],
+
+        params:
+          ctx
+            .paramsList()
+            ?.ID_list()
+            .map((i) => ({
+              name: i.getText(),
+              span: [i.symbol.start, i.symbol.stop + 1],
+            })) ?? [],
+        pub:
+          ctx._pub === undefined
+            ? false
+            : ctx._pub.EXPOSING_NESTED() == null
+              ? true
+              : "..",
+        name: ctx._name.text,
         span: [ctx.start.start, ctx.stop!.stop + 1],
       },
     };

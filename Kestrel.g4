@@ -43,6 +43,7 @@ declaration:
 	letDeclaration_				# letDeclaration
 	| externLetDeclaration_		# externLetDeclaration
 	| typeDeclaration_			# typeDeclaration
+	| structDeclaration_		# structDeclaration
 	| externTypeDeclaration_	# externTypeDeclaration;
 
 letDeclaration_:
@@ -58,6 +59,9 @@ externLetDeclaration_:
 typeDeclaration_:
 	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants?
 		'}';
+
+structDeclaration_:
+	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? 'struct' '{' '}';
 
 externTypeDeclaration_:
 	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?;

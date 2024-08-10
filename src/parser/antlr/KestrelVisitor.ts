@@ -11,10 +11,12 @@ import { TypeExposingContext } from "./KestrelParser";
 import { LetDeclarationContext } from "./KestrelParser";
 import { ExternLetDeclarationContext } from "./KestrelParser";
 import { TypeDeclarationContext } from "./KestrelParser";
+import { StructDeclarationContext } from "./KestrelParser";
 import { ExternTypeDeclarationContext } from "./KestrelParser";
 import { LetDeclaration_Context } from "./KestrelParser";
 import { ExternLetDeclaration_Context } from "./KestrelParser";
 import { TypeDeclaration_Context } from "./KestrelParser";
+import { StructDeclaration_Context } from "./KestrelParser";
 import { ExternTypeDeclaration_Context } from "./KestrelParser";
 import { PubExposingContext } from "./KestrelParser";
 import { ParamsListContext } from "./KestrelParser";
@@ -127,6 +129,13 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitTypeDeclaration?: (ctx: TypeDeclarationContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `structDeclaration`
+	 * labeled alternative in `KestrelParser.declaration`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitStructDeclaration?: (ctx: StructDeclarationContext) => Result;
+	/**
 	 * Visit a parse tree produced by the `externTypeDeclaration`
 	 * labeled alternative in `KestrelParser.declaration`.
 	 * @param ctx the parse tree
@@ -151,6 +160,12 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitTypeDeclaration_?: (ctx: TypeDeclaration_Context) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.structDeclaration_`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitStructDeclaration_?: (ctx: StructDeclaration_Context) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.externTypeDeclaration_`.
 	 * @param ctx the parse tree

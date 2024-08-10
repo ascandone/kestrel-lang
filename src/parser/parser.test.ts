@@ -520,6 +520,13 @@ describe("type declarations", () => {
   });
 });
 
+describe("structs", () => {
+  test("empty struct", () => {
+    const src = `type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+});
+
 describe("pattern matching", () => {
   test("empty match expression", () => {
     const src = `let _ = match x {}`;

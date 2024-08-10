@@ -4929,6 +4929,26 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
 }
 `;
 
+exports[`structs > empty struct 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [],
+      "name": "Person",
+      "params": [],
+      "pub": false,
+      "span": [
+        0,
+        22,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
 exports[`traits > parses many traits in a polytype for the same tvar 1`] = `
 {
   "declarations": [

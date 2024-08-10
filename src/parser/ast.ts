@@ -171,6 +171,11 @@ export type TypeVariant<TypeMeta> = (TypeMeta & SpanMeta) & {
   args: TypeAst[];
 };
 
+export type StructField<TypeMeta> = (TypeMeta & SpanMeta) & {
+  name: string;
+  type_: TypeAst;
+};
+
 export type UntypedTypeVariant = TypeVariant<unknown>;
 export type UntypedTypeDeclaration = TypeDeclaration<unknown>;
 export type TypeDeclaration<TypeMeta> = SpanMeta & {
@@ -179,6 +184,7 @@ export type TypeDeclaration<TypeMeta> = SpanMeta & {
   docComment?: string;
 } & (
     | { type: "adt"; variants: TypeVariant<TypeMeta>[]; pub: boolean | ".." }
+    | { type: "struct"; fields: never[]; pub: boolean | ".." }
     | { type: "extern"; pub: boolean }
   );
 
