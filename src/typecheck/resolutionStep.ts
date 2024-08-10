@@ -9,6 +9,7 @@ import {
   UntypedTypeDeclaration,
 } from "../parser";
 import {
+  FieldResolution,
   IdentifierResolution,
   TypeResolution,
   TypedBinding,
@@ -347,6 +348,7 @@ class ResolutionStep {
 
         const typedTypeDecl: TypedTypeDeclaration & { type: "adt" } = {
           ...typeDecl,
+
           variants: typeDecl.variants.map((variant) => {
             const typedVariant: TypedTypeVariant = {
               ...variant,
@@ -380,6 +382,31 @@ class ResolutionStep {
         for (const hole of holes) {
           hole(typedTypeDecl);
         }
+
+        return typedTypeDecl;
+      }
+
+      case "struct": {
+        const holes: Array<(decl: TypedTypeDeclaration) => void> = [];
+
+        const typedTypeDecl: TypedTypeDeclaration & { type: "struct" } = {
+          ...typeDecl,
+
+          fields: typeDecl.fields.map((untypedField) => ({
+            ...untypedField,
+            $: TVar.fresh(),
+            scheme: {},
+            type_: this.annotateTypeAst(untypedField.type_, {
+              holes,
+              name: typeDecl.name,
+            }),
+          })),
+        };
+
+        for (const hole of holes) {
+          hole(typedTypeDecl);
+        }
+
         return typedTypeDecl;
       }
     }
@@ -662,6 +689,14 @@ class ResolutionStep {
           args: ast.args.map((arg) => this.annotateExpr(arg)),
         };
 
+      case "field-access":
+        return {
+          ...ast,
+          left: this.annotateExpr(ast.left),
+          resolution: this.resolveField(ast),
+          $: TVar.fresh(),
+        };
+
       case "if":
         return {
           ...ast,
@@ -752,6 +787,27 @@ class ResolutionStep {
         };
       }
     }
+  }
+
+  private resolveField(
+    ast: UntypedExpr & { type: "field-access" },
+  ): FieldResolution | undefined {
+    // TODO access imported fields too
+    for (const td of this.typeDeclarations) {
+      if (td.type === "struct") {
+        // All fields are visible in the same module
+        for (const f of td.fields) {
+          if (f.name === ast.field.name) {
+            return {
+              field: f,
+              declaration: td,
+            };
+          }
+        }
+      }
+    }
+
+    return undefined;
   }
 
   private annotateImport(

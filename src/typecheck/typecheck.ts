@@ -157,6 +157,30 @@ class Typechecker {
 
         this.derive("Eq", typeDecl);
         this.derive("Show", typeDecl);
+      } else if (typeDecl.type === "struct") {
+        for (const field of typeDecl.fields) {
+          const fieldType = this.typeAstToType(
+            field.type_,
+            { type: "type-hint" },
+            {}, // TODO bound
+            {}, // TODO traits
+          );
+
+          const err = unify(field.$.asType(), fieldType);
+          if (err !== undefined) {
+            throw new Error(
+              "[unreachable] struct type should be fresh initially",
+            );
+          }
+        }
+
+        // TODO derive Show, Eq
+
+        // variant.scheme = scheme;
+        // const err = unify(variant.$.asType(), mono);
+        // if (err !== undefined) {
+        //   throw new Error("[unreachable] struct type should be fresh initially");
+        // }
       }
     }
 
@@ -530,6 +554,28 @@ class Typechecker {
         for (const arg of ast.args) {
           this.typecheckAnnotatedExpr(arg);
         }
+        return;
+
+      case "field-access":
+        this.typecheckAnnotatedExpr(ast.left);
+
+        if (ast.resolution !== undefined) {
+          const leftType: Type = {
+            type: "named",
+            moduleName: this.ns, // TODO use resolution's namespace
+            name: ast.resolution.declaration.name,
+            args: [], // TODO params
+          };
+          this.unifyExpr(ast.left, ast.left.$.asType(), leftType);
+
+          const returnType = instantiateFromScheme(
+            ast.resolution.field.$.asType(),
+            {}, // TODO scheme
+          );
+
+          this.unifyExpr(ast, ast.$.asType(), returnType);
+        }
+
         return;
 
       case "let":

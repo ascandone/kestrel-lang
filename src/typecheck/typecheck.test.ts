@@ -1057,6 +1057,70 @@ describe("custom types", () => {
   });
 });
 
+describe("struct", () => {
+  test("allow creating types", () => {
+    const [, errs] = tc(`
+      type Person struct { }
+
+      extern pub let p: Person
+    `);
+
+    expect(errs).toHaveLength(0);
+  });
+
+  test("allow recursive types", () => {
+    const [, errs] = tc(`
+      extern type List<a>
+      type Person struct {
+        friends: List<Person>,
+      }
+    `);
+
+    expect(errs).toHaveLength(0);
+  });
+
+  test("allow accessing a type's field", () => {
+    const [types, errs] = tc(`
+      extern type String
+
+      type Person struct {
+        name: String
+      }
+
+      extern let p: Person
+
+      pub let p_name = p.name
+    `);
+
+    console.log(errs);
+
+    expect(errs).toHaveLength(0);
+    expect(types).toEqual({
+      p: "Person",
+      p_name: "String",
+    });
+  });
+
+  test("infer type when accessing known field", () => {
+    const [types, errs] = tc(`
+      extern type String
+
+      type Person struct {
+        name: String
+      }
+
+      pub let p_name = fn p { p.name }
+    `);
+
+    console.log(errs);
+
+    expect(errs).toHaveLength(0);
+    expect(types).toEqual({
+      p_name: "Fn(Person) -> String",
+    });
+  });
+});
+
 describe("pattern matching", () => {
   test("typechecks matched expressions", () => {
     const [, errs] = tc(`pub let v = match unbound { }`);

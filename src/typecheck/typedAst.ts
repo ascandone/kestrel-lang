@@ -6,6 +6,7 @@ import {
   Import,
   MatchPattern,
   SpanMeta,
+  StructField,
   TypeAst,
   TypeDeclaration,
   TypeVariant,
@@ -51,11 +52,25 @@ export type TypeResolutionMeta = {
   resolution: TypeResolution | undefined;
 };
 
+export type FieldResolution = {
+  declaration: TypedTypeDeclaration & { type: "struct" };
+  field: StructField<TypeMeta>;
+};
+
+export type FieldResolutionMeta = {
+  resolution: FieldResolution | undefined;
+};
+
 export type TypedMatchPattern = MatchPattern<
   TypeMeta,
   IdentifierResolutionMeta
 >;
-export type TypedExpr = Expr<TypeMeta, IdentifierResolutionMeta, never>;
+export type TypedExpr = Expr<
+  TypeMeta,
+  IdentifierResolutionMeta,
+  FieldResolutionMeta,
+  never
+>;
 
 export type TypedExposing = ExposedValue<
   { resolved?: TypedTypeDeclaration },
@@ -73,6 +88,7 @@ export type TypedDeclaration = { scheme: TypeScheme } & Declaration<
   TypeMeta,
   IdentifierResolutionMeta,
   TypeResolutionMeta,
+  FieldResolutionMeta,
   never
 >;
 
