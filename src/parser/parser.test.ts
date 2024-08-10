@@ -541,6 +541,14 @@ describe("structs", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
+  test("doc comments", () => {
+    const src = `
+      /// example docs
+      type Person struct { }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
   test("field", () => {
     const src = `type Person struct { age: Int }`;
     expect(unsafeParse(src)).toMatchSnapshot();

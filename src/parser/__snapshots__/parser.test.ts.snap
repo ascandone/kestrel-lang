@@ -4929,6 +4929,28 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
 }
 `;
 
+exports[`structs > doc comments 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "docComment": " example docs
+",
+      "fields": [],
+      "name": "Person",
+      "params": [],
+      "pub": false,
+      "span": [
+        7,
+        52,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
 exports[`structs > empty struct 1`] = `
 {
   "declarations": [],

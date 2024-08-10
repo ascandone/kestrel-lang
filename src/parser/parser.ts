@@ -555,7 +555,10 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
   ): DeclarationType => {
     const ctx = structDecl.structDeclaration_();
 
-    // TODO docs
+    const docs = ctx
+      .DOC_COMMENT_LINE_list()
+      .map((d) => d.getText().slice(3))
+      .join("");
 
     return {
       type: "type",
@@ -587,6 +590,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
               ? true
               : "..",
         name: ctx._name.text,
+        ...(docs === "" ? {} : { docComment: docs }),
         span: [ctx.start.start, ctx.stop!.stop + 1],
       },
     };
