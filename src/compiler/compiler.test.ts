@@ -1584,30 +1584,6 @@ describe("traits compilation", () => {
     `);
   });
 
-  // Should it be forbidden by type checker?
-  test("when a type is instantiated as T<a> and there are no args, pass undefined as dict", () => {
-    const out = compileSrc(`
-      extern let show: Fn(a) -> String where a: Show
-
-      type Option<a> {
-        Some(a),
-        None,
-      }
-      
-      let x = show(None) // None : Option<a1>
-    `);
-
-    expect(out).toMatchInlineSnapshot(`
-      "function Main$Some(a0) {
-        return { $: "Some", a0 };
-      }
-      const Main$None = { $: "None" };
-
-      const Main$x = Main$show(Show_Main$Option(undefined))(Main$None);
-      "
-    `);
-  });
-
   test("== handles traits dicts", () => {
     const out = compileSrc(`
   extern let (==): Fn(a, a) -> Bool where a: Eq

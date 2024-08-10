@@ -18,16 +18,25 @@ export type Type =
       var: TVar;
     };
 
-export function resolveType(t: Type): TVarResolution {
+export type UnboundType = {
+  type: "unbound";
+  id: number;
+  traits: string[];
+};
+
+export type TypeResolution = ConcreteType | UnboundType;
+
+export function resolveType(t: Type): TypeResolution {
   switch (t.type) {
     case "fn":
     case "named":
-      return { type: "bound", value: t };
+      return t;
+
     case "var": {
       const resolved = t.var.resolve();
       switch (resolved.type) {
         case "bound":
-          return { type: "bound", value: resolved.value };
+          return resolveType(resolved.value);
 
         case "unbound":
           return resolved;
@@ -537,4 +546,35 @@ export function typeToString(t: Type, scheme?: TypeScheme): string {
   }
 
   return `${ret} where ${sortedTraits.join(", ")}`;
+}
+
+export function findUnboundTypeVars(t: Type): UnboundType[] {
+  const vars: UnboundType[] = [];
+
+  function helper(t: Type) {
+    const resolved = resolveType(t);
+
+    switch (resolved.type) {
+      case "fn":
+        for (const arg of resolved.args) {
+          helper(arg);
+        }
+        helper(resolved.return);
+        return;
+
+      case "named":
+        for (const arg of resolved.args) {
+          helper(arg);
+        }
+        return;
+
+      case "unbound":
+        vars.push(resolved);
+        return;
+    }
+  }
+
+  helper(t);
+
+  return vars;
 }

@@ -109,7 +109,6 @@ export class Compiler {
   private ns: string | undefined;
 
   private nextId = 0;
-  private dictParams: string[] = [];
   getNextId() {
     return this.nextId++;
   }
@@ -275,7 +274,6 @@ export class Compiler {
             const traitArgs = resolvePassedDicts(
               src.resolution.declaration.binding.$,
               src.$,
-              this.dictParams,
             );
 
             const ns = src.resolution.namespace ?? this.ns;
@@ -620,7 +618,6 @@ export class Compiler {
       );
 
       const dictParams = findDeclarationDictsParams(decl.binding.$.asType());
-      this.dictParams = dictParams;
 
       const statements = this.compileAsStatements(
         decl.value,
@@ -972,13 +969,26 @@ function traitDepsForNamedType(
   return out;
 }
 
-function applyTraitToType(
-  type: Type,
-  trait: string,
-  polyDict: string[],
-): string {
+function applyTraitToType(type: Type, trait: string): string {
   const resolved = resolveType(type);
+
   switch (resolved.type) {
+    case "fn":
+      throw new Error("TODO bound fn");
+
+    case "named": {
+      let name = `${trait}_${sanitizeNamespace(resolved.moduleName)}$${resolved.name}`;
+      const deps = traitDepsForNamedType(resolved, trait).map((dep) =>
+        applyTraitToType(dep, trait),
+      );
+
+      if (deps.length !== 0) {
+        name += `(${deps.join(", ")})`;
+      }
+
+      return name;
+    }
+
     case "unbound": {
       if (!resolved.traits.includes(trait)) {
         throw new Error(
@@ -987,42 +997,12 @@ function applyTraitToType(
         );
       }
 
-      const name = `${trait}_${resolved.id}`;
-      if (!polyDict.includes(name)) {
-        // This type is not in the polytype's variables constrained by traits.
-        // therefore it has to be a free variable that can never be instantiated
-        // e.g. in the 'None' expression (of type Option<a> where a is free)
-        return "undefined";
-      }
-
-      return name;
+      return `${trait}_${resolved.id}`;
     }
-
-    case "bound":
-      switch (resolved.value.type) {
-        case "fn":
-          throw new Error("TODO bound fn");
-        case "named": {
-          let name = `${trait}_${sanitizeNamespace(resolved.value.moduleName)}$${resolved.value.name}`;
-          const deps = traitDepsForNamedType(resolved.value, trait).map((dep) =>
-            applyTraitToType(dep, trait, polyDict),
-          );
-
-          if (deps.length !== 0) {
-            name += `(${deps.join(", ")})`;
-          }
-
-          return name;
-        }
-      }
   }
 }
 
-function resolvePassedDicts(
-  genExpr: TVar,
-  instantiatedExpr: TVar,
-  polyDict: string[],
-): string {
+function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
   const buf: string[] = [];
 
   // e.g. { 0 => Set("Show", "Debug") }
@@ -1047,18 +1027,15 @@ function resolvePassedDicts(
   function helper(genExpr: Type, instantiatedExpr: Type) {
     switch (genExpr.type) {
       case "fn": {
-        const i = resolveType(instantiatedExpr);
-        if (i.type !== "bound") {
-          throw new Error("[unreachable] unexpected unbound type");
-        }
+        const resolved = resolveType(instantiatedExpr);
 
-        if (i.value.type !== "fn") {
+        if (resolved.type !== "fn") {
           throw new Error(
-            "[unreachable] unexpected value of kind: " + i.value.type,
+            "[unreachable] unexpected value of kind: " + resolved.type,
           );
         }
 
-        const instantiatedFn = i.value;
+        const instantiatedFn = resolved;
 
         for (let i = 0; i < genExpr.args.length; i++) {
           const genArg = genExpr.args[i]!,
@@ -1072,18 +1049,14 @@ function resolvePassedDicts(
       }
 
       case "named": {
-        const i = resolveType(instantiatedExpr);
-        if (i.type !== "bound") {
-          throw new Error("[unreachable] unexpected unbound type");
-        }
-
-        if (i.value.type !== "named") {
+        const resolved = resolveType(instantiatedExpr);
+        if (resolved.type !== "named") {
           throw new Error(
-            "[unreachable] unexpected value of kind: " + i.value.type,
+            "[unreachable] unexpected value of kind: " + resolved.type,
           );
         }
 
-        const instantiatedConcreteType = i.value;
+        const instantiatedConcreteType = resolved;
 
         for (let i = 0; i < genExpr.args.length; i++) {
           const genArg = genExpr.args[i]!,
@@ -1105,7 +1078,7 @@ function resolvePassedDicts(
               checkedPush(
                 resolvedGenExpr.id,
                 trait,
-                applyTraitToType(instantiatedExpr, trait, polyDict),
+                applyTraitToType(instantiatedExpr, trait),
               );
             }
 
