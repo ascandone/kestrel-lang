@@ -119,7 +119,7 @@ test("forbid duplicate identifiers", () => {
 
 test("fn returning a constant", () => {
   const [types, errors] = tc(`
-    pub let f = fn { 42 }
+    pub let f = || { 42 }
   `);
 
   expect(errors).toEqual([]);
@@ -197,7 +197,7 @@ test("typecheck fn args", () => {
     extern type Int
     extern type Bool
     extern pub let (>): Fn(Int, Int) -> Bool
-    pub let f = fn x, y { x > y }
+    pub let f = |x, y| x > y
   `,
   );
 
@@ -230,7 +230,7 @@ test("unify if clauses", () => {
   const [types] = tc(
     `
     type Bool { True }
-    let f = fn x {
+    let f = |x| {
       if True {
         0
       } else {
@@ -248,7 +248,7 @@ test("unify if clauses", () => {
 test("typecheck if condition", () => {
   const [types] = tc(
     `
-    let f = fn x {
+    let f = |x| {
       if x {
         0
       } else {
@@ -282,7 +282,7 @@ test("typecheck let expr", () => {
 test("typecheck generic values", () => {
   const [types, errs] = tc(
     `
-    pub let id = fn x { x }
+    pub let id = |x| { x }
   `,
   );
 
@@ -295,7 +295,7 @@ test("typecheck generic values", () => {
 test("generalize values", () => {
   const [types, errs] = tc(
     `
-    pub let id = fn x { x }
+    pub let id = |x| { x }
     pub let v = id(42)
   `,
   );
@@ -311,7 +311,7 @@ test("recursive let exprs", () => {
   const [types, errs] = tc(
     `
     pub let f = {
-      let g = fn _ { g(1) };
+      let g = |_| { g(1) };
       g
   }
   `,
@@ -326,7 +326,7 @@ test("recursive let exprs", () => {
 test("recursive let declarations", () => {
   const [types, errs] = tc(
     `
-    pub let f = fn _ { f(42) }
+    pub let f = |_| { f(42) }
   `,
   );
 
@@ -369,7 +369,7 @@ test.todo(
     const [, errs] = tc(
       `
     pub let a = b
-    pub let b = fn { a }
+    pub let b = || { a }
   `,
     );
 
@@ -429,8 +429,8 @@ test("unused globals does not trigger when private vars are used", () => {
 test("closures with resursive bindings", () => {
   const [, errs] = tc(
     `
-    pub let f = fn {
-      fn { f }
+    pub let f = || {
+      || { f }
     }
   `,
   );
@@ -497,7 +497,7 @@ describe("type hints", () => {
     const [types, errs] = tc(
       `
         type T { C }
-        pub let x: Fn() -> T = fn { 42 }
+        pub let x: Fn() -> T = || { 42 }
         `,
     );
     expect(errs).toHaveLength(1);
@@ -515,7 +515,7 @@ describe("type hints", () => {
       extern type Bool
       extern type Int
       extern pub let (!): Fn(Bool) -> Bool
-      pub let x: Fn(Bool) -> Int = fn x { !x }
+      pub let x: Fn(Bool) -> Int = |x| { !x }
       `,
     );
     expect(errs).toHaveLength(1);
@@ -548,7 +548,7 @@ describe("type hints", () => {
   });
 
   test.todo("unify generalized values", () => {
-    const [types, errs] = tc("let f: Fn(ta) -> tb = fn x { x }");
+    const [types, errs] = tc("let f: Fn(ta) -> tb = |x| { x }");
     expect(errs[0]!.description).toBeInstanceOf(TypeMismatch);
     expect(types).toEqual({
       f: "Fn(ta) -> tb",
@@ -556,7 +556,7 @@ describe("type hints", () => {
   });
 
   test.todo("vars type hints are used by typechecker", () => {
-    const [types, errs] = tc("pub let eq: Fn(a, a, b) -> a = fn x, y, z { x }");
+    const [types, errs] = tc("pub let eq: Fn(a, a, b) -> a = |x, y, z| { x }");
     expect(errs).toEqual([]);
     expect(types).toEqual({
       eq: "Fn(a, a, b) -> a",
@@ -566,7 +566,7 @@ describe("type hints", () => {
   test("type hints instantiate polytypes", () => {
     const [types, errs] = tc(`
       extern type Int
-      pub let f: Fn(Int) -> Int = fn x { x }
+      pub let f: Fn(Int) -> Int = |x| { x }
     `);
     expect(errs).toEqual([]);
     expect(types).toEqual({
@@ -620,7 +620,7 @@ describe("traits", () => {
         extern type String
         extern let show: Fn(a) -> String where a: Show
 
-        pub let use_show = fn value {
+        pub let use_show = |value| {
           show(value)
         }
       `,
@@ -640,7 +640,7 @@ describe("traits", () => {
 
         extern type Int
         extern pub let (+): Fn(Int, Int) -> Int
-        pub let f = fn x {
+        pub let f = |x| {
           let _ = show(x);
           x + 1
         }
@@ -656,7 +656,7 @@ describe("traits", () => {
         extern let show: Fn(a) -> Unit where a: Show
         extern let eq: Fn(a) -> Unit where a: Eq
 
-        pub let f = fn x {
+        pub let f = |x| {
           let _ = show(x);
           eq(x)
         }
@@ -677,7 +677,7 @@ describe("traits", () => {
         extern let show: Fn(a) -> Unit where a: Show
         extern let eq: Fn(a) -> Unit where a: Eq
 
-        pub let f = fn x {
+        pub let f = |x| {
           let _ = show(x);
           let _ = eq(x);
           0
@@ -897,7 +897,7 @@ describe("traits", () => {
       extern let find: Fn(List<a>, Fn(a) -> Bool) -> Option<a>
       extern let (==): Fn(a, a) -> Bool where a: Eq
 
-      pub let res = None == find(Nil, fn _ {
+      pub let res = None == find(Nil, |_| {
         False
       })
     `,
@@ -914,7 +914,7 @@ describe("traits", () => {
       extern let show: Fn(a) -> String where a: Show
 
       pub let e = {
-        let _ = fn s {
+        let _ = |s| {
           show(s)
         };
         42
@@ -997,7 +997,7 @@ describe("custom types", () => {
     extern pub let x: X
 
     type T { }
-    pub let f: Fn(T) -> X = fn _ { x }
+    pub let f: Fn(T) -> X = |_| { x }
   `,
     );
 
@@ -1259,7 +1259,7 @@ describe("struct", () => {
         name: String
       }
 
-      pub let p_name = fn p { p.name }
+      pub let p_name = |p| { p.name }
     `);
 
     expect(errs).toEqual([]);
@@ -1303,7 +1303,7 @@ describe("struct", () => {
     const [types, errs] = tc(
       `
       import Person.{Person(..)}
-      pub let name = fn p { p.name }
+      pub let name = |p| { p.name }
     `,
       { Person },
     );
@@ -1315,7 +1315,7 @@ describe("struct", () => {
   });
 
   test("forbid unknown field on unbound value", () => {
-    const [, errs] = tc(`pub let f = fn p { p.invalid_field }`);
+    const [, errs] = tc(`pub let f = |p| { p.invalid_field }`);
 
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toEqual(
@@ -1340,7 +1340,7 @@ describe("struct", () => {
 
       extern pub let x: Person // <- this prevents UnusedExposing err
 
-      pub let name = fn p { p.name }
+      pub let name = |p| { p.name }
     `,
       { Person },
     );
@@ -1388,7 +1388,7 @@ describe("struct", () => {
           name: String
         }
 
-        pub let name = fn p {
+        pub let name = |p| {
           p.Person#name
         }
     `,
@@ -1405,7 +1405,7 @@ describe("struct", () => {
       `
         type Person struct { }
 
-        pub let name = fn p {
+        pub let name = |p| {
           p.Person#invalid_field
         }
     `,
@@ -1432,7 +1432,7 @@ describe("struct", () => {
       `
       import Person.{Person}
 
-      pub let name = fn p {
+      pub let name = |p| {
         p.Person#name
       }
     `,
@@ -1448,7 +1448,7 @@ describe("struct", () => {
   test("emit error when struct of qualified field does not exist", () => {
     const [, errs] = tc(
       `
-      pub let name = fn p {
+      pub let name = |p| {
         p.InvalidType#name
       }
     `,
@@ -1469,7 +1469,7 @@ describe("struct", () => {
     const [, errs] = tc(
       `
       import Person.{Person}
-      pub let name = fn p {
+      pub let name = |p| {
         p.Person#invalid_field
       }
     `,
@@ -1496,7 +1496,7 @@ describe("struct", () => {
     const [, errs] = tc(
       `
       import Person.{Person}
-      pub let name = fn p {
+      pub let name = |p| {
         p.Person#private_field
       }
     `,
@@ -1599,7 +1599,7 @@ describe("struct", () => {
           field: a
         }
 
-        pub let get_field = fn box { box.field }
+        pub let get_field = |box| { box.field }
     `,
     );
 
@@ -1617,8 +1617,8 @@ describe("struct", () => {
         field: a
       }
 
-      pub let get_field_1: Fn(Box<Int>) -> Int = fn box { box.field }
-      pub let get_field_2 = fn box { box.field }
+      pub let get_field_1: Fn(Box<Int>) -> Int = |box| { box.field }
+      pub let get_field_2 = |box| { box.field }
   `,
     );
 
@@ -1753,7 +1753,7 @@ describe("struct", () => {
       `
       type Box<a> struct { a: a }
 
-      pub let set_a = fn box {
+      pub let set_a = |box| {
         Box {
           a: 0,
           ..box
@@ -1776,7 +1776,7 @@ describe("struct", () => {
         b: b
       }
 
-      pub let x = fn other {
+      pub let x = |other| {
         Str {
           a: 0,
           ..other
@@ -1828,7 +1828,7 @@ describe("pattern matching", () => {
 
   test("infers matched type when is a lit", () => {
     const [types, errs] = tc(`
-    pub let f = fn x {
+    pub let f = |x| {
         match x {
           42 => 0,
         }
@@ -1845,7 +1845,7 @@ describe("pattern matching", () => {
     const [types, errs] = tc(`
       type T { C }
 
-      pub let f = fn x {
+      pub let f = |x| {
         match x {
           C => 0,
         }
@@ -1869,7 +1869,7 @@ describe("pattern matching", () => {
       `
       import A.{T(..)}
 
-      pub let f = fn x {
+      pub let f = |x| {
         match x {
           A.T => 0,
         }
@@ -1892,7 +1892,7 @@ describe("pattern matching", () => {
       type Bool { }
       type T { C(Bool) }
 
-      pub let f = fn x {
+      pub let f = |x| {
         match x {
           C(_) => 0,
         }
@@ -1911,7 +1911,7 @@ describe("pattern matching", () => {
       `
       type T<a> { C(a, a, a) }
 
-      pub let f = fn x {
+      pub let f = |x| {
         match x {
           C(_, _) => 0,
         }
@@ -1937,7 +1937,7 @@ describe("pattern matching", () => {
         Make(a),
       }
 
-      pub let f = fn x {
+      pub let f = |x| {
         match x {
           Make(True) => 0,
         }
@@ -1960,7 +1960,7 @@ describe("pattern matching", () => {
         Some(a),
       }
 
-      pub let f = fn x {
+      pub let f = |x| {
         match x {
           None => 2,
         }
@@ -2012,7 +2012,7 @@ describe("pattern matching", () => {
 
   test("return error on unbound types", () => {
     const [, errs] = tc(`
-      pub let v = fn x {
+      pub let v = |x| {
         match x {
           NotFound => 0
         }
@@ -2028,7 +2028,7 @@ describe("pattern matching", () => {
     extern type T
     type Box { Boxed(T) }
 
-    pub let f = fn Boxed(n) { n }
+    pub let f = |Boxed(n)| { n }
   `);
 
     expect(errs).toEqual([]);
@@ -2042,7 +2042,7 @@ describe("pattern matching", () => {
     extern type T
     type Box { Boxed(T) }
 
-    pub let f = fn box {
+    pub let f = |box| {
       let Boxed(n) = box;
       n
     }
@@ -2084,7 +2084,7 @@ describe("pattern matching", () => {
     const [, errs] = tc(`
     type Union { A, B }
 
-    pub let f = fn A { 0 }
+    pub let f = |A| { 0 }
   `);
 
     expect(errs).toHaveLength(1);
@@ -2168,7 +2168,7 @@ describe("modules", () => {
 
     const [, errs] = tc(
       `
-      let x: Fn(MyType) -> MyType = fn x { x }
+      let x: Fn(MyType) -> MyType = |x| { x }
     `,
       { A },
       [
