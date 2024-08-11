@@ -139,6 +139,22 @@ describe("struct", () => {
 })
 `).toBeFormatted();
   });
+
+  test("struct with update syntax", () => {
+    expect(`let _ = Person {
+  x: 42,
+  y: 100,
+  ..1 + 2
+}
+`).toBeFormatted();
+  });
+
+  test("struct with update and no fields", () => {
+    expect(`let _ = Person {
+  ..original
+}
+`).toBeFormatted();
+  });
 });
 
 test("cons application sugar", () => {

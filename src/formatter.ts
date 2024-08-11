@@ -172,33 +172,29 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
       );
 
     case "struct-literal": {
-      const fields = sepBy(
-        break_(),
-        ast.fields.map((field) => {
-          return concat(
-            //
-            text(`${field.field.name}: `),
-            exprToDoc(field.value, false),
-            text(`,`),
-          );
-        }),
-      );
+      const fieldLines = ast.fields.map((field) => {
+        return concat(
+          //
+          text(`${field.field.name}: `),
+          exprToDoc(field.value, false),
+          text(`,`),
+        );
+      });
 
-      // return concat(
-      //   docComment,
-      //   tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
-      //   text("type "),
-      //   text(tDecl.name),
-      //   params,
-      //   text(" struct "),
-      //   tDecl.fields.length === 0 ? text("{ }") : block_(fields),
-      // );
+      if (ast.spread !== undefined) {
+        fieldLines.push(
+          //
+          concat(text(".."), exprToDoc(ast.spread, false)),
+        );
+      }
+
+      const fields = sepBy(break_(), fieldLines);
 
       return concat(
         text(ast.struct.name),
         text(" "),
         //
-        ast.fields.length === 0 ? text("{ }") : block_(fields),
+        fieldLines.length === 0 ? text("{ }") : block_(fields),
       );
     }
 
