@@ -82,6 +82,7 @@ function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
       }
 
     case "field-access":
+    case "struct-literal":
     case "syntax-err":
     case "list-literal":
     case "pipe":
@@ -169,6 +170,37 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         ),
         text("]"),
       );
+
+    case "struct-literal": {
+      const fields = sepBy(
+        break_(),
+        ast.fields.map((field) => {
+          return concat(
+            //
+            text(`${field.field.name}: `),
+            exprToDoc(field.value, false),
+            text(`,`),
+          );
+        }),
+      );
+
+      // return concat(
+      //   docComment,
+      //   tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
+      //   text("type "),
+      //   text(tDecl.name),
+      //   params,
+      //   text(" struct "),
+      //   tDecl.fields.length === 0 ? text("{ }") : block_(fields),
+      // );
+
+      return concat(
+        text(ast.struct.name),
+        text(" "),
+        //
+        ast.fields.length === 0 ? text("{ }") : block_(fields),
+      );
+    }
 
     case "pipe":
       return broken(

@@ -118,6 +118,27 @@ describe("struct", () => {
     expect(`let _ = 1 + x.field
 `).toBeFormatted();
   });
+
+  test("empty struct creation", () => {
+    expect(`let _ = Person { }
+`).toBeFormatted();
+  });
+
+  test("struct with fields", () => {
+    expect(`let _ = Person {
+  x: 42,
+  y: 100,
+}
+`).toBeFormatted();
+  });
+
+  test("struct inside fn call", () => {
+    expect(`let _ = my_fn(Person {
+  x: 42,
+  y: 100,
+})
+`).toBeFormatted();
+  });
 });
 
 test("cons application sugar", () => {
