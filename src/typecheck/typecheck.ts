@@ -164,11 +164,35 @@ class Typechecker {
         this.derive("Eq", typeDecl);
         this.derive("Show", typeDecl);
       } else if (typeDecl.type === "struct") {
+        // TODO dedup from makeVariantType
+        const generics: [string, TVar, number][] = typeDecl.params.map(
+          (param) => [param.name, ...TVar.freshWithId()],
+        );
+
+        const scheme: TypeScheme = Object.fromEntries(
+          generics.map(([param, , id]) => [id, param]),
+        );
+
+        typeDecl.scheme = scheme;
+
+        const mon: Type = {
+          type: "named",
+          moduleName: this.ns,
+          name: typeDecl.name,
+          args: generics.map(([, tvar]) => tvar.asType()),
+        };
+
+        const err = unify(typeDecl.$.asType(), mon);
+        if (err !== undefined) {
+          throw new Error("[unreachable] adt type should be fresh initially");
+        }
+
+        // TODO set scheme
         for (const field of typeDecl.fields) {
           const fieldType = this.typeAstToType(
             field.type_,
             { type: "type-hint" },
-            {}, // TODO bound
+            Object.fromEntries(generics),
             {}, // TODO traits
           );
 
@@ -209,19 +233,13 @@ class Typechecker {
     typeDecl: UntypedTypeDeclaration & { type: "adt" },
     variant: UntypedTypeVariant,
   ): PolyType {
-    const generics: [string, TVar][] = typeDecl.params.map((param) => [
+    const generics: [string, TVar, number][] = typeDecl.params.map((param) => [
       param.name,
-      TVar.fresh(),
+      ...TVar.freshWithId(),
     ]);
 
     const scheme: TypeScheme = Object.fromEntries(
-      generics.map(([param, $]) => {
-        const resolved = $.resolve();
-        if (resolved.type !== "unbound") {
-          throw new Error("[unreachable]");
-        }
-        return [resolved.id, param];
-      }),
+      generics.map(([param, , id]) => [id, param]),
     );
 
     const ret: Type = {
@@ -595,7 +613,7 @@ class Typechecker {
         }
 
         // TODO use resolution's namespace
-        this.unifyFieldAccess(ast, ast.resolution.namespace, ast.resolution);
+        this.unifyFieldAccess(ast, ast.resolution);
 
         return;
       }
@@ -638,21 +656,19 @@ class Typechecker {
 
   private unifyFieldAccess(
     ast: TypedExpr & { type: "field-access" },
-    namespace: string,
+
     resolution: FieldResolution,
   ) {
-    const leftType: Type = {
-      type: "named",
-      moduleName: namespace, // TODO use resolution's namespace
-      name: resolution.declaration.name,
-      args: [], // TODO params
-    };
+    const leftType_: Type = instantiateFromScheme(
+      resolution.declaration.$.asType(),
+      resolution.declaration.scheme,
+    );
 
-    this.unifyExpr(ast.left, ast.left.$.asType(), leftType);
+    this.unifyExpr(ast.left, ast.left.$.asType(), leftType_);
 
     const returnType = instantiateFromScheme(
       resolution.field.$.asType(),
-      {}, // TODO scheme
+      resolution.declaration.scheme,
     );
 
     this.unifyExpr(ast, ast.$.asType(), returnType);
@@ -699,11 +715,7 @@ class Typechecker {
 
         if (fieldLookup !== undefined && fieldLookup.declaration.pub === "..") {
           // Found the field. Re-run unification
-          this.unifyFieldAccess(
-            fieldAccessAst,
-            resolved.value.moduleName,
-            fieldLookup,
-          );
+          this.unifyFieldAccess(fieldAccessAst, fieldLookup);
           return;
         }
 

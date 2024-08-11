@@ -134,7 +134,13 @@ export class TVar {
   }
 
   static fresh(traits: string[] = []): TVar {
-    return new TVar({ type: "unbound", id: TVar.unboundId++, traits });
+    const [tvar] = TVar.freshWithId(traits);
+    return tvar;
+  }
+
+  static freshWithId(traits: string[] = []): [TVar, number] {
+    const id = TVar.unboundId++;
+    return [new TVar({ type: "unbound", id, traits }), id];
   }
 
   resolve(): TVarResolution {

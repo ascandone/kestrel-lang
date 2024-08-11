@@ -307,11 +307,11 @@ export type TypeDeclaration<TypeMeta> = SpanMeta & {
   docComment?: string;
 } & (
     | { type: "adt"; variants: TypeVariant<TypeMeta>[]; pub: boolean | ".." }
-    | {
+    | ({
         type: "struct";
         fields: StructDeclarationField<TypeMeta>[];
         pub: boolean | "..";
-      }
+      } & TypeMeta)
     | { type: "extern"; pub: boolean }
   );
 

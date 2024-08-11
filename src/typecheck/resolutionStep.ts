@@ -393,6 +393,9 @@ class ResolutionStep {
         const typedTypeDecl: TypedTypeDeclaration & { type: "struct" } = {
           ...typeDecl,
 
+          scheme: {},
+          $: TVar.fresh(),
+
           fields: typeDecl.fields.map((untypedField) => ({
             ...untypedField,
             $: TVar.fresh(),

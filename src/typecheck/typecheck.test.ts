@@ -1276,6 +1276,42 @@ describe("struct", () => {
     });
   });
 
+  test("typecheck params in struct types", () => {
+    const [types, errs] = tc(
+      `
+        type Person<a, b, c> struct { }
+        extern pub let p: Person
+    `,
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(InvalidTypeArity);
+    expect(types).toEqual({
+      p: "Person",
+    });
+  });
+
+  test("handling params in dot access", () => {
+    const [types, errs] = tc(
+      `
+        type Box<a> struct {
+          field: a
+        }
+
+        extern type Int
+        extern let box: Box<Int>
+
+        pub let field = box.field
+    `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      box: "Box<Int>",
+      field: "Int",
+    });
+  });
+
   test.todo("namespaced struct names");
 
   test.todo("handle structs type params");
