@@ -1111,7 +1111,7 @@ describe("struct", () => {
       pub let p_name = fn p { p.name }
     `);
 
-    expect(errs).toHaveLength(0);
+    expect(errs).toEqual([]);
     expect(types).toEqual({
       p_name: "Fn(Person) -> String",
     });
@@ -1254,6 +1254,31 @@ describe("struct", () => {
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(InvalidField);
   });
+
+  test("allow creating structs", () => {
+    const [types, errs] = tc(
+      `
+        type X { X }
+
+        pub type Struct struct {
+          x: X
+        }
+
+        pub let s = Struct {
+          x: X
+        }
+    `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      s: "Struct",
+    });
+  });
+
+  test.todo("namespaced struct names");
+
+  test.todo("handle structs type params");
 });
 
 describe("pattern matching", () => {

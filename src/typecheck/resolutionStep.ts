@@ -11,6 +11,7 @@ import {
 import {
   FieldResolution,
   IdentifierResolution,
+  StructResolution,
   TypeResolution,
   TypedBinding,
   TypedDeclaration,
@@ -657,6 +658,18 @@ class ResolutionStep {
       case "constant":
         return { ...ast, $: TVar.fresh() };
 
+      case "struct-literal": {
+        return {
+          ...ast,
+          fields: [],
+          struct: {
+            ...ast.struct,
+            resolution: this.resolveStruct(ast.struct.name),
+          },
+          $: TVar.fresh(),
+        };
+      }
+
       case "list-literal": {
         return {
           ...ast,
@@ -822,6 +835,20 @@ class ResolutionStep {
         };
       }
     }
+  }
+
+  private resolveStruct(structName: string): StructResolution | undefined {
+    // TODO handle external ns
+    for (const typeDecl of this.typeDeclarations) {
+      if (typeDecl.name === structName && typeDecl.type === "struct") {
+        return {
+          declaration: typeDecl,
+          namespace: this.ns,
+        };
+      }
+    }
+
+    return undefined;
   }
 
   private annotateImport(

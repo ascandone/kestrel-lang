@@ -52,10 +52,17 @@ export type TypeResolutionMeta = {
   resolution: TypeResolution | undefined;
 };
 
-export type FieldResolution = {
+export type StructResolution = {
   declaration: TypedTypeDeclaration & { type: "struct" };
-  field: StructDeclarationField<TypeMeta>;
   namespace: string;
+};
+
+export type FieldResolution = StructResolution & {
+  field: StructDeclarationField<TypeMeta>;
+};
+
+export type StructResolutionMeta = {
+  resolution: StructResolution | undefined;
 };
 
 export type FieldResolutionMeta = {
@@ -69,6 +76,7 @@ export type TypedMatchPattern = MatchPattern<
 export type TypedExpr = Expr<
   TypeMeta,
   IdentifierResolutionMeta,
+  StructResolutionMeta,
   FieldResolutionMeta,
   never
 >;
@@ -89,6 +97,7 @@ export type TypedDeclaration = { scheme: TypeScheme } & Declaration<
   TypeMeta,
   IdentifierResolutionMeta,
   TypeResolutionMeta,
+  StructResolutionMeta,
   FieldResolutionMeta,
   never
 >;

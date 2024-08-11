@@ -83,11 +83,12 @@ export type SyntaxSugar =
       right: UntypedExpr;
     };
 
-export type UntypedExpr = Expr<unknown, unknown, unknown, SyntaxSugar>;
+export type UntypedExpr = Expr<unknown, unknown, unknown, unknown, SyntaxSugar>;
 
 export type StructField<
   TypeMeta,
   IdentifierResolutionMeta,
+  StructResolutionMeta,
   FieldResolutionMeta,
   SyntaxSugar,
 > = SpanMeta & {
@@ -95,6 +96,7 @@ export type StructField<
   value: Expr<
     TypeMeta,
     IdentifierResolutionMeta,
+    StructResolutionMeta,
     FieldResolutionMeta,
     SyntaxSugar
   >;
@@ -103,6 +105,7 @@ export type StructField<
 export type Expr<
   TypeMeta,
   IdentifierResolutionMeta,
+  StructResolutionMeta,
   FieldResolutionMeta,
   SyntaxSugar,
 > = (
@@ -115,16 +118,18 @@ export type Expr<
       values: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >[];
     }
   | {
       type: "struct-literal";
-      struct: { name: string } & SpanMeta;
+      struct: { name: string } & SpanMeta & StructResolutionMeta;
       fields: StructField<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >[];
@@ -144,6 +149,7 @@ export type Expr<
       body: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >;
@@ -153,12 +159,14 @@ export type Expr<
       caller: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >;
       args: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >[];
@@ -169,6 +177,7 @@ export type Expr<
       left: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >;
@@ -180,12 +189,14 @@ export type Expr<
       value: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >;
       body: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >;
@@ -195,18 +206,21 @@ export type Expr<
       condition: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >;
       then: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >;
       else: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >;
@@ -216,6 +230,7 @@ export type Expr<
       expr: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
+        StructResolutionMeta,
         FieldResolutionMeta,
         SyntaxSugar
       >;
@@ -225,6 +240,7 @@ export type Expr<
           Expr<
             TypeMeta,
             IdentifierResolutionMeta,
+            StructResolutionMeta,
             FieldResolutionMeta,
             SyntaxSugar
           >,
@@ -240,12 +256,14 @@ export type UntypedDeclaration = Declaration<
   unknown,
   unknown,
   unknown,
+  unknown,
   SyntaxSugar
 >;
 export type Declaration<
   TypeMeta,
   IdentifierResolutionMeta,
   TypeResolutionMeta,
+  StructResolutionMeta,
   FieldResolutionMeta,
   SyntaxSugar,
 > = SpanMeta & {
@@ -260,6 +278,7 @@ export type Declaration<
         value: Expr<
           TypeMeta,
           IdentifierResolutionMeta,
+          StructResolutionMeta,
           FieldResolutionMeta,
           SyntaxSugar
         >;

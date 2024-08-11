@@ -534,6 +534,23 @@ class Typechecker {
         return;
       }
 
+      case "struct-literal": {
+        if (ast.struct.resolution === undefined) {
+          // TODO handle err
+          return;
+        }
+
+        const type: Type = {
+          type: "named",
+          name: ast.struct.resolution.declaration.name,
+          moduleName: ast.struct.resolution.namespace,
+          args: [], // TODO args
+        };
+
+        this.unifyExpr(ast, ast.$.asType(), type);
+        return;
+      }
+
       case "identifier": {
         if (ast.resolution === undefined) {
           // Error was already emitted
@@ -833,6 +850,8 @@ function resolutionToType(resolution: IdentifierResolution): Type {
         resolution.variant.$.asType(),
         resolution.variant.scheme,
       );
+
+    // TODO should struct go here?
   }
 }
 
