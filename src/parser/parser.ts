@@ -19,6 +19,7 @@ import Parser, {
   FloatContext,
   FloatPatternContext,
   FnContext,
+  FnNoArgsContext,
   FnTypeContext,
   GenericTypeContext,
   IdContext,
@@ -330,13 +331,20 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   visitBlock = (ctx: BlockContext): UntypedExpr =>
     this.visit(ctx.blockContent());
 
+  visitFnNoArgs = (ctx: FnNoArgsContext): UntypedExpr => ({
+    type: "fn",
+    span: [ctx.start.start, ctx.stop!.stop + 1],
+    params: [],
+    body: this.visit(ctx.expr()),
+  });
+
   visitFn = (ctx: FnContext): UntypedExpr => ({
     type: "fn",
     span: [ctx.start.start, ctx.stop!.stop + 1],
     params: ctx
       .matchPattern_list()
       .map((patternCtx) => new MatchPatternVisitor().visit(patternCtx)),
-    body: this.visit(ctx.block()),
+    body: this.visit(ctx.expr()),
   });
 
   visitIf = (ctx: IfContext): UntypedExpr => ({

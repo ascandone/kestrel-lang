@@ -301,11 +301,10 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
     }
 
     case "fn": {
-      const params = ast.params.map((p) => concat(text(" "), patternToDoc(p)));
-
       return concat(
-        text("fn"),
-        sepByString(",", params),
+        text("|"),
+        sepByString(", ", ast.params.map(patternToDoc)),
+        text("|"),
         text(" "),
         block_(exprToDoc(ast.body, true)),
       );

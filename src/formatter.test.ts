@@ -229,7 +229,7 @@ test("pipe operator in let", () => {
 });
 
 test("pipe operator inside fn", () => {
-  expect(`let x = fn {
+  expect(`let x = || {
   arg
   |> f(a, b)
   |> g(c)
@@ -255,35 +255,35 @@ test("if expr", () => {
 });
 
 test("fn with no params", () => {
-  expect(`let f = fn {
+  expect(`let f = || {
   x
 }
 `).toBeFormatted();
 });
 
 test("fn with params", () => {
-  expect(`let f = fn a, b, c {
+  expect(`let f = |a, b, c| {
   x
 }
 `).toBeFormatted();
 });
 
 test("fn inside function call", () => {
-  expect(`let x = f(0, 1, fn a {
+  expect(`let x = f(0, 1, |a| {
   x
 })
 `).toBeFormatted();
 });
 
 test("fn inside function call that wraps", () => {
-  expect(`let x = f(0, 1, fn a {
+  expect(`let x = f(0, 1, |a| {
   very_very_very_very_very_very_very_very_long_spanning_fn_value()
 })
 `).toBeFormatted();
 });
 
 test("if inside fn", () => {
-  expect(`let f = fn {
+  expect(`let f = || {
   if cond {
     x
   } else {
@@ -322,7 +322,7 @@ test("toplevel nested let# expr", () => {
 });
 
 test("let inside fn", () => {
-  expect(`let f = fn {
+  expect(`let f = || {
   let x = value;
   body
 }
@@ -675,7 +675,7 @@ pub let x = 42
 test("actual examples", () => {
   expect(
     `
-pub let range = fn from, to {
+pub let range = |from, to| {
   if from >= to {
     []
   } else {
@@ -683,8 +683,8 @@ pub let range = fn from, to {
   }
 }
 
-pub let filter_map = fn lst, f {
-  reduce_right(lst, [], fn x, xs {
+pub let filter_map = |lst, f| {
+  reduce_right(lst, [], |x, xs| {
     match f(x) {
       None => xs,
       Some(hd) => hd :: xs,
@@ -707,7 +707,7 @@ test("list that wraps", () => {
 });
 
 test("fn callback after list", () => {
-  const src = `let x = List.map([1, 2, 3], fn x {
+  const src = `let x = List.map([1, 2, 3], |x| {
   x + 1
 })
 `;
@@ -754,7 +754,7 @@ test("let inside list", () => {
 
 test("fn inside list", () => {
   const src = `let x = [
-  fn {
+  || {
     0
   },
 ]

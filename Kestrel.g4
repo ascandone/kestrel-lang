@@ -117,7 +117,8 @@ expr:
 	| '(' expr ',' expr (',' expr)* ')'										# tuple
 	| '(' expr ')'															# parens
 	| block																	# blockExpr
-	| 'fn' (matchPattern (',' matchPattern)* ','?)? block					# fn
+	| '||' expr																# fnNoArgs
+	| '|' (matchPattern (',' matchPattern)* ','?)? '|' expr					# fn
 	| 'if' condition = expr then = block 'else' else = block				# if
 	| 'match' matched = expr '{' (matchClause (',' matchClause)*)? ','? '}'	# match
 	| '[' (expr (',' expr)* ','?)? ']'										# listLit
