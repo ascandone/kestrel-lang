@@ -568,6 +568,41 @@ describe("structs", () => {
     const src = `let _ = s.my_field`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
+
+  test.todo("construct fields with no fields", () => {
+    const src = `let _ = MyStruct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("construct fields with many fields", () => {
+    const src = `
+      let _ = MyStruct {
+        a: 42,
+        b: "ok",
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("update a field", () => {
+    const src = `
+      let _ = MyStruct {
+        a: 42,
+        b: "ok",
+        ..expr
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("complex exprs in update syntax");
+
+  test.todo("qualified field access", () => {
+    const src = `let _ = s.MyStruct#my_field`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("namespaced-qualified field access");
 });
 
 describe("pattern matching", () => {
