@@ -28,7 +28,6 @@ import {
   TypeScheme,
   PolyType,
   TraitImplDependency,
-  typeToString,
   TVarResolution,
   Instantiator,
   typeToString,
@@ -203,14 +202,6 @@ class Typechecker {
         this.checkInstantiatedVars(decl.scheme, check);
       }
       this.scheduledAmbiguousVarChecks = [];
-    }
-
-    for (const fieldAccessAst of this.scheduledFieldResolutions) {
-      this.doubleCheckFieldAccess(
-        fieldAccessAst,
-        fieldAccessAst.left.$.resolve(),
-        deps,
-      );
     }
 
     for (const fieldAccessAst of this.scheduledFieldResolutions) {

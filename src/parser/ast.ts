@@ -292,7 +292,7 @@ export type Declaration<
 export type TypeVariant<TypeMeta, TypeResolutionMeta = unknown> = (TypeMeta &
   SpanMeta) & {
   name: string;
-  args: TypeAst<TypeResolutionMeta><TypeResolutionMeta>[];
+  args: TypeAst<TypeResolutionMeta>[];
 };
 
 export type StructDeclarationField<TypeMeta> = (TypeMeta & SpanMeta) & {
