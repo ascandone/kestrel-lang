@@ -28,6 +28,7 @@ import {
   PolyType,
   TraitImplDependency,
   typeToString,
+  TVarResolution,
 } from "./type";
 import {
   ArityMismatch,
@@ -41,7 +42,7 @@ import {
   TypeMismatch,
   UnboundTypeParam,
 } from "../errors";
-import { castAst } from "./resolutionStep";
+import { castAst, findFieldInModule } from "./resolutionStep";
 import { topologicalSort } from "../utils/topsort";
 
 export type TypeMeta = { $: TVar };
@@ -193,47 +194,12 @@ class Typechecker {
       this.typecheckAnnotatedDecl(decl);
     }
 
-    outerLoop: for (const fieldAccessAst of this.scheduledFieldResolutions) {
-      const resolved = fieldAccessAst.left.$.resolve();
-
-      switch (resolved.type) {
-        case "bound": {
-          if (resolved.value.type !== "named") {
-            // TODO emit err
-            throw new Error("TODO handle field access to fn");
-          }
-
-          differentNsLookup: if (resolved.value.moduleName !== this.ns) {
-            const mod = deps[resolved.value.moduleName];
-            if (mod === undefined) {
-              break differentNsLookup;
-            }
-
-            // const lookup = findFieldInModule(
-            //   mod.typeDeclarations,
-            //   fieldAccessAst.field.name,
-            // );
-
-            // try typechecking again
-            // this.unifyFieldAccess(fieldAccessAst);
-
-            break outerLoop;
-          }
-
-          // we already know this field does not exist in this module
-          // fallthrough to the next branch (unbound)
-        }
-
-        case "unbound":
-          this.errors.push({
-            span: fieldAccessAst.field.span,
-            description: new InvalidField(
-              typeToString(fieldAccessAst.left.$.asType()),
-              fieldAccessAst.field.name,
-            ),
-          });
-          break;
-      }
+    for (const fieldAccessAst of this.scheduledFieldResolutions) {
+      this.doubleCheckFieldAccess(
+        fieldAccessAst,
+        fieldAccessAst.left.$.resolve(),
+        deps,
+      );
     }
 
     return [typedAst, this.errors];
@@ -673,6 +639,66 @@ class Typechecker {
     );
 
     this.unifyExpr(ast, ast.$.asType(), returnType);
+  }
+
+  private doubleCheckFieldAccess(
+    fieldAccessAst: TypedExpr & { type: "field-access" },
+    resolved: TVarResolution,
+    deps: Deps,
+  ) {
+    const emitErr = () => {
+      this.errors.push({
+        span: fieldAccessAst.field.span,
+        description: new InvalidField(
+          typeToString(fieldAccessAst.left.$.asType()),
+          fieldAccessAst.field.name,
+        ),
+      });
+    };
+
+    switch (resolved.type) {
+      case "bound": {
+        if (resolved.value.type !== "named") {
+          // TODO emit err
+          throw new Error("TODO handle field access to fn");
+        }
+
+        if (resolved.value.moduleName === this.ns) {
+          // we already looked up the fields in this module's structs
+          emitErr();
+          return;
+        }
+
+        const mod = deps[resolved.value.moduleName];
+        if (mod === undefined) {
+          throw new Error("TODO handle invalid mod");
+        }
+
+        const fieldLookup = findFieldInModule(
+          mod.typeDeclarations,
+          fieldAccessAst.field.name,
+          resolved.value.moduleName,
+        );
+
+        if (fieldLookup !== undefined && fieldLookup.declaration.pub === "..") {
+          // Found the field. Re-run unification
+          this.unifyFieldAccess(
+            fieldAccessAst,
+            resolved.value.moduleName,
+            fieldLookup,
+          );
+          return;
+        }
+
+        // we already know this field does not exist in this module
+        emitErr();
+        return;
+      }
+
+      case "unbound":
+        emitErr();
+        return;
+    }
   }
 }
 

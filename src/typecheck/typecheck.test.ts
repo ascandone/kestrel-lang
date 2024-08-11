@@ -1172,7 +1172,7 @@ describe("struct", () => {
     );
   });
 
-  test("preventing resolution of other modules' fields when import is not (..)", () => {
+  test("prevent resolution of other modules' fields when import is not (..)", () => {
     const [Person] = tcProgram(
       "Person",
       `
@@ -1190,6 +1190,63 @@ describe("struct", () => {
       extern pub let x: Person // <- this prevents UnusedExposing err
 
       pub let name = fn p { p.name }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(InvalidField);
+  });
+
+  test.todo("emit bad import if trying to import(..) private fields");
+
+  test("allow accessing fields in other modules if public", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      extern type String
+      pub(..) type Person struct {
+        name: String
+      }
+    `,
+    );
+
+    const [types, errs] = tc(
+      `
+      import Person.{Person}
+
+      extern pub let p: Person
+
+      pub let name = p.name 
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(0);
+    expect(types).toEqual({
+      p: "Person",
+      name: "String",
+    });
+  });
+
+  test("emit InvalidField if trying to access private fields", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      extern type String
+      pub type Person struct { // note fields are  private
+        name: String
+      }
+    `,
+    );
+
+    const [, errs] = tc(
+      `
+      import Person.{Person}
+
+      extern pub let p: Person
+
+      pub let name = p.name 
     `,
       { Person },
     );
