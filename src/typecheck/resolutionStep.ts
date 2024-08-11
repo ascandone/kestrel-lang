@@ -694,14 +694,7 @@ class ResolutionStep {
               ...field,
               field: {
                 ...field.field,
-                resolution:
-                  typeDecl === undefined
-                    ? undefined
-                    : findFieldInTypeDecl(
-                        typeDecl.declaration,
-                        field.field.name,
-                        this.ns,
-                      ),
+                resolution: fieldResolution,
               },
               value: this.annotateExpr(field.value),
             };
