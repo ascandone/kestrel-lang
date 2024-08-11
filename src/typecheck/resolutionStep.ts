@@ -532,8 +532,6 @@ class ResolutionStep {
         );
 
         if (lookup !== undefined) {
-          console.log({ lookup });
-
           return lookup;
         }
       }
