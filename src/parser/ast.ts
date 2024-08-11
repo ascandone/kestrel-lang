@@ -133,6 +133,15 @@ export type Expr<
         FieldResolutionMeta,
         SyntaxSugar
       >[];
+      spread:
+        | Expr<
+            TypeMeta,
+            IdentifierResolutionMeta,
+            StructResolutionMeta,
+            FieldResolutionMeta,
+            SyntaxSugar
+          >
+        | undefined;
     }
   | {
       type: "constant";

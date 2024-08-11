@@ -5002,6 +5002,7 @@ exports[`structs > construct fields with many fields 1`] = `
           15,
           65,
         ],
+        "spread": undefined,
         "struct": {
           "name": "MyStruct",
           "span": [
@@ -5042,6 +5043,7 @@ exports[`structs > construct fields with no fields 1`] = `
           8,
           20,
         ],
+        "spread": undefined,
         "struct": {
           "name": "MyStruct",
           "span": [
@@ -5308,6 +5310,104 @@ exports[`structs > type params 1`] = `
       "type": "struct",
     },
   ],
+}
+`;
+
+exports[`structs > update a struct 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        7,
+        80,
+      ],
+      "value": {
+        "fields": [
+          {
+            "field": {
+              "name": "a",
+              "span": [
+                34,
+                35,
+              ],
+            },
+            "span": [
+              34,
+              39,
+            ],
+            "value": {
+              "span": [
+                37,
+                39,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 42,
+              },
+            },
+          },
+          {
+            "field": {
+              "name": "b",
+              "span": [
+                49,
+                50,
+              ],
+            },
+            "span": [
+              49,
+              56,
+            ],
+            "value": {
+              "span": [
+                52,
+                56,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "string",
+                "value": "ok",
+              },
+            },
+          },
+        ],
+        "span": [
+          15,
+          80,
+        ],
+        "spread": {
+          "name": "expr",
+          "namespace": undefined,
+          "span": [
+            68,
+            72,
+          ],
+          "type": "identifier",
+        },
+        "struct": {
+          "name": "MyStruct",
+          "span": [
+            15,
+            23,
+          ],
+        },
+        "type": "struct-literal",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
 }
 `;
 

@@ -584,7 +584,7 @@ describe("structs", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.todo("update a field", () => {
+  test("update a struct", () => {
     const src = `
       let _ = MyStruct {
         a: 42,

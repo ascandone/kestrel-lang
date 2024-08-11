@@ -398,6 +398,11 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   };
 
   visitStructLit = (ctx: StructLitContext): UntypedExpr => {
+    let spread: UntypedExpr | undefined = undefined;
+    if (ctx._spread) {
+      spread = this.visit(ctx._spread);
+    }
+
     return {
       type: "struct-literal",
       span: [ctx.start.start, ctx.stop!.stop + 1],
@@ -405,6 +410,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
         name: ctx.TYPE_ID().getText(),
         span: [ctx.TYPE_ID().symbol.start, ctx.TYPE_ID().symbol.stop + 1],
       },
+      spread,
       fields:
         ctx
           .structFields()

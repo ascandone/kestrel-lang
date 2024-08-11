@@ -105,7 +105,7 @@ expr:
 	| expr '.' ID															# fieldAccess
 	| qualifiedId															# id
 	| op = '!' expr															# BoolNot
-	| TYPE_ID '{' structFields? '}'											# structLit
+	| TYPE_ID '{' structFields? ('..' spread = expr)? '}'					# structLit
 	| expr '(' (expr (',' expr)* ','?)? ')'									# call
 	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr						# MulDiv
 	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr						# AddSub
