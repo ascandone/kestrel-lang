@@ -784,6 +784,10 @@ class Typechecker {
     resolution: StructResolution,
     type: Type,
   ) {
+    if (ast.spread !== undefined) {
+      return;
+    }
+
     // Check for missing fields
     const missingFields = resolution.declaration.fields
       .filter((defField) => {

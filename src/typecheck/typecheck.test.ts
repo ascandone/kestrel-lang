@@ -1639,6 +1639,27 @@ describe("struct", () => {
     });
   });
 
+  test("allow to specify a subset of the fields when update another struct", () => {
+    const [, errs] = tc(
+      `
+      type Str<a, b> struct {
+        a: a,
+        b: b
+      }
+
+      pub let x = fn other {
+        Str {
+          a: 0,
+          ..other
+        }
+      }
+      
+  `,
+    );
+
+    expect(errs).toEqual([]);
+  });
+
   test.todo("namespaced struct names");
 });
 
