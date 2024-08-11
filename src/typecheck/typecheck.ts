@@ -31,9 +31,12 @@ import {
   typeToString,
   TVarResolution,
   Instantiator,
+  typeToString,
+  findUnboundTypeVars,
 } from "./type";
 import {
   ArityMismatch,
+  AmbiguousTypeVar,
   ErrorInfo,
   InvalidCatchall,
   InvalidField,
@@ -78,15 +81,35 @@ export function typecheck(
   return new Typechecker(ns, mainType).run(module, deps, implicitImports);
 }
 
+type ScheduledAmbiguousVarCheck = {
+  bindingsStack: Type[];
+  instantiatedVarNode: { name: string } & TypeMeta & SpanMeta;
+};
+
 class Typechecker {
   private errors: ErrorInfo[] = [];
   private scheduledFieldResolutions: (TypedExpr & { type: "field-access" })[] =
     [];
 
+  /** ids of the fresh variables created due to typechecking error */
+  private errorNodesTypeVarIds = new Set<number>();
+
+  private ambiguousTypeVarErrorsEmitted = new Set<number>();
+  private bindingsTypesStack: Type[] = [];
+
+  private scheduledAmbiguousVarChecks: ScheduledAmbiguousVarCheck[] = [];
+
   constructor(
     private ns: string,
     private mainType: Type,
   ) {}
+
+  private pushErrorNode(ast: TypeMeta) {
+    const resolved = ast.$.resolve();
+    if (resolved.type === "unbound") {
+      this.errorNodesTypeVarIds.add(resolved.id);
+    }
+  }
 
   private derive(
     trait: string,
@@ -172,7 +195,22 @@ class Typechecker {
     }
 
     for (const decl of typedAst.declarations) {
+      this.bindingsTypesStack.push(decl.binding.$.asType());
       this.typecheckAnnotatedDecl(decl);
+      this.bindingsTypesStack.pop();
+
+      for (const check of this.scheduledAmbiguousVarChecks) {
+        this.checkInstantiatedVars(decl.scheme, check);
+      }
+      this.scheduledAmbiguousVarChecks = [];
+    }
+
+    for (const fieldAccessAst of this.scheduledFieldResolutions) {
+      this.doubleCheckFieldAccess(
+        fieldAccessAst,
+        fieldAccessAst.left.$.resolve(),
+        deps,
+      );
     }
 
     for (const fieldAccessAst of this.scheduledFieldResolutions) {
@@ -323,6 +361,7 @@ class Typechecker {
       return;
     }
 
+    this.pushErrorNode(ast);
     this.errors.push(unifyErr(ast, e));
   }
 
@@ -530,6 +569,58 @@ class Typechecker {
     }
   }
 
+  private checkInstantiatedVars(
+    scheme: TypeScheme,
+    { instantiatedVarNode, bindingsStack }: ScheduledAmbiguousVarCheck,
+  ) {
+    if (bindingsStack.length === 0) {
+      throw new Error("[unreachable] empty bindings stack");
+    }
+
+    const bindingUnboundTypes = new Set<number>(
+      bindingsStack
+        .flatMap((binding) => findUnboundTypeVars(binding))
+        .map((v) => v.id),
+    );
+
+    const instantiatedVarUnboundTypes = findUnboundTypeVars(
+      instantiatedVarNode.$.asType(),
+    ).filter((v) => v.traits.length !== 0);
+
+    for (const instantiatedVarType of instantiatedVarUnboundTypes) {
+      const areVarsInBindings = bindingUnboundTypes.has(instantiatedVarType.id);
+      if (areVarsInBindings) {
+        continue;
+      }
+
+      const wasErrorNode = this.errorNodesTypeVarIds.has(
+        instantiatedVarType.id,
+      );
+      if (wasErrorNode) {
+        continue;
+      }
+
+      const wasErrorAlreadyEmitted = this.ambiguousTypeVarErrorsEmitted.has(
+        instantiatedVarType.id,
+      );
+      if (wasErrorAlreadyEmitted) {
+        continue;
+      }
+
+      this.ambiguousTypeVarErrorsEmitted.add(instantiatedVarType.id);
+      this.errors.push({
+        span: instantiatedVarNode.span,
+        description: new AmbiguousTypeVar(
+          instantiatedVarType.traits[0]!,
+          typeToString(instantiatedVarNode.$.asType(), scheme),
+        ),
+      });
+
+      // TODO do I have to break the loop here? double check
+      return;
+    }
+  }
+
   private typecheckAnnotatedExpr(ast: TypedExpr) {
     switch (ast.type) {
       case "constant": {
@@ -582,10 +673,19 @@ class Typechecker {
         if (ast.resolution === undefined) {
           // Error was already emitted
           // Do not narrow the identifier's type
+          this.pushErrorNode(ast);
           return;
         }
 
         this.unifyExpr(ast, ast.$.asType(), resolutionToType(ast.resolution));
+
+        if (ast.resolution.type !== "local-variable") {
+          this.scheduledAmbiguousVarChecks.push({
+            instantiatedVarNode: ast,
+            bindingsStack: [...this.bindingsTypesStack],
+          });
+        }
+
         return;
       }
 
@@ -631,8 +731,13 @@ class Typechecker {
         this.typecheckPattern(ast.pattern, true);
         this.unifyExpr(ast, ast.pattern.$.asType(), ast.value.$.asType());
         this.unifyExpr(ast, ast.$.asType(), ast.body.$.asType());
+
+        this.bindingsTypesStack.push(ast.pattern.$.asType());
         this.typecheckAnnotatedExpr(ast.value);
+        this.bindingsTypesStack.pop();
+
         this.typecheckAnnotatedExpr(ast.body);
+
         return;
 
       case "if":

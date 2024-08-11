@@ -11,6 +11,7 @@ import {
 import {
   ArityMismatch,
   BadImport,
+  AmbiguousTypeVar,
   CyclicDefinition,
   DuplicateDeclaration,
   InvalidCatchall,
@@ -589,7 +590,7 @@ describe("traits", () => {
       `
         extern type String
         extern pub let show: Fn(a) -> String where a: Show
-        pub let x = show(42)
+        pub let x = show(42) // note that 'Int' doesn't implement 'Show' in this test
       `,
     );
     expect(errs).toHaveLength(1);
@@ -836,6 +837,155 @@ describe("traits", () => {
     );
 
     expect(errs).not.toEqual([]);
+  });
+
+  test("forbid ambiguous instantiations", () => {
+    const [, errs] = tc(`
+    extern let take_default: Fn(a) -> x where a: Default
+    extern let default: a where a: Default
+    pub let forbidden = take_default(default)
+`);
+
+    expect(errs).not.toEqual([]);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toEqual(
+      new AmbiguousTypeVar("Default", "Fn(b) -> a where b: Default"),
+    );
+  });
+
+  test("allow non-ambiguos instantiations", () => {
+    const [, errs] = tc(
+      `
+    extern type X
+
+    extern let take_x: Fn(X) -> X
+    extern let default: a where a: Default
+    pub let forbidden = take_x(default)
+`,
+      {},
+      [],
+      [{ trait: "Default", moduleName: "Main", typeName: "X" }],
+    );
+
+    expect(errs).toEqual([]);
+  });
+
+  test("allow non-ambiguous instantiations when setting let type", () => {
+    const [, errs] = tc(
+      `
+    extern type X
+    extern let default: a where a: Default
+
+    pub let legal: X = default
+`,
+      {},
+      [],
+      [{ trait: "Default", moduleName: "Main", typeName: "X" }],
+    );
+
+    expect(errs).toEqual([]);
+  });
+
+  test("repro", () => {
+    const [, errs] = tc(
+      `
+      type List<a> { Nil, Cons(a, List<a>) }
+
+      type Bool { True, False }
+      type Option<a> { None, Some(a) }
+
+      extern let find: Fn(List<a>, Fn(a) -> Bool) -> Option<a>
+      extern let (==): Fn(a, a) -> Bool where a: Eq
+
+      pub let res = None == find(Nil, fn _ {
+        False
+      })
+    `,
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(AmbiguousTypeVar);
+  });
+
+  test("allow ambiguous type vars in let exprs", () => {
+    const [, errs] = tc(
+      `
+      extern type String
+      extern let show: Fn(a) -> String where a: Show
+
+      pub let e = {
+        let _ = fn s {
+          show(s)
+        };
+        42
+      }
+    `,
+    );
+
+    expect(errs).toHaveLength(0);
+  });
+
+  test("do not leak allowed instantiated vars when preventing ambiguous vars", () => {
+    const [, errs] = tc(
+      `
+      extern type String
+      extern let show: Fn(a) -> String where a: Show
+      extern let showable: a where a: Show
+
+      pub let e = {
+        let showable1 = showable;
+        let _ = show(showable1);
+        42
+      }
+    `,
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(AmbiguousTypeVar);
+  });
+
+  test("do not emit ambiguos type error when variable is unbound", () => {
+    const [, errs] = tc(
+      `
+    extern type X
+    extern let show: Fn(a) -> X where a: Default
+
+    pub let x = show(unbound_var)
+`,
+      {},
+      [],
+      [{ trait: "Default", moduleName: "Main", typeName: "X" }],
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(UnboundVariable);
+  });
+
+  // TODO Skip until type sigs are fixed
+  test.todo("forbid ambiguous instantiations within args", () => {
+    const [, errs] = tc(
+      `
+      extern type Option<a>
+      extern let default: a where a: Default
+      pub let forbidden: Option<a> = default
+  `,
+      {},
+      [],
+      [
+        {
+          moduleName: "Main",
+          typeName: "Option",
+          trait: "Default",
+          deps: [["Default"]],
+        },
+      ],
+    );
+
+    expect(errs).not.toEqual([]);
+    expect(errs.length).toBe(1);
+    expect(errs[0]!.description).toEqual(
+      new AmbiguousTypeVar("Default", "Option<a> where a: Default"),
+    );
   });
 });
 

@@ -98,7 +98,7 @@ export type TypedExposing = ExposedValue<
 export type TypedImport = Import<TypedExposing>;
 
 export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
-export type TypedTypeVariant = TypeVariant<PolyTypeMeta>;
+export type TypedTypeVariant = TypeVariant<PolyTypeMeta, TypeResolutionMeta>;
 export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 
 export type TypedTypeAst = TypeAst<TypeResolutionMeta>;

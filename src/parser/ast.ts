@@ -289,9 +289,10 @@ export type Declaration<
       }
   );
 
-export type TypeVariant<TypeMeta> = (TypeMeta & SpanMeta) & {
+export type TypeVariant<TypeMeta, TypeResolutionMeta = unknown> = (TypeMeta &
+  SpanMeta) & {
   name: string;
-  args: TypeAst<TypeResolutionMeta>[];
+  args: TypeAst<TypeResolutionMeta><TypeResolutionMeta>[];
 };
 
 export type StructDeclarationField<TypeMeta> = (TypeMeta & SpanMeta) & {

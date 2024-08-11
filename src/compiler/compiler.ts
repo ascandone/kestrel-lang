@@ -1,7 +1,13 @@
 import { exit } from "process";
 import { Binding, ConstLiteral, MatchPattern, TypeVariant } from "../parser";
-import { TypedExpr, TypedModule } from "../typecheck";
-import { ConcreteType } from "../typecheck/type";
+import {
+  TypedExpr,
+  TypedModule,
+  TypedTypeAst,
+  TypedTypeDeclaration,
+  TypedTypeVariant,
+} from "../typecheck";
+import { ConcreteType, TVar, Type, resolveType } from "../typecheck/type";
 import { col } from "../utils/colors";
 import { optimizeModule } from "./optimize";
 
@@ -16,7 +22,12 @@ type CompileExprResult = [statements: string[], expr: string];
 type Scope = Record<string, string>;
 
 type CompilationMode =
-  | { type: "assign_var"; name: string; declare: boolean }
+  | {
+      type: "assign_var";
+      name: string;
+      declare: boolean;
+      dictParams: string;
+    }
   | { type: "return" };
 
 class Frame {
@@ -83,7 +94,15 @@ function isStructuralEq(caller: TypedExpr, args: TypedExpr[]): boolean {
 
   return true;
 }
+
 export class Compiler {
+  /**
+   * Allowlist of trait to derive. Intented for test purposes (to be mutated directly)
+   *
+   * `undefined == *`
+   */
+  public allowDeriving: string[] | undefined;
+
   private frames: Frame[] = [];
   private tailCall = false;
 
@@ -161,7 +180,12 @@ export class Compiler {
 
     const value = this.compileAsStatements(
       src.value,
-      { type: "assign_var", name: scopedBinding, declare: true },
+      {
+        type: "assign_var",
+        name: scopedBinding,
+        declare: true,
+        dictParams: "", // <- TODO check
+      },
 
       undefined,
     );
@@ -193,12 +217,6 @@ export class Compiler {
 
         return [lStatements, `!${compiledWithParens}`];
       }
-
-      case "structural-eq":
-        return this.compileJsApplicationHelper([], "Bool$_eq", [
-          jsCall.left,
-          jsCall.right,
-        ]);
 
       case "call":
         return this.compileJsApplicationHelper(
@@ -270,12 +288,23 @@ export class Compiler {
 
         switch (src.resolution.type) {
           case "global-variable": {
-            const ns = src.resolution.namespace ?? this.ns;
-            if (ns === undefined) {
-              return [[], src.name];
+            if (this.ns === undefined) {
+              throw new Error("TODO handle empty ns");
             }
 
-            return [[], `${sanitizeNamespace(ns)}$${src.name}`];
+            // TODO what about let exprs?
+            const traitArgs = resolvePassedDicts(
+              src.resolution.declaration.binding.$,
+              src.$,
+            );
+
+            const ns = src.resolution.namespace ?? this.ns;
+            if (ns === undefined) {
+              return [[], src.name + traitArgs];
+            }
+
+            const fName = src.name === "==" ? "_eq" : src.name;
+            return [[], `${sanitizeNamespace(ns)}$${fName}${traitArgs}`];
           }
 
           case "constructor": {
@@ -323,7 +352,12 @@ export class Compiler {
         const name = this.getUniqueName();
         const statements = this.compileAsStatements(
           src,
-          { type: "assign_var", name, declare: true },
+          {
+            type: "assign_var",
+            name,
+            declare: true,
+            dictParams: "", // <- TODO check
+          },
           undefined,
         );
 
@@ -454,9 +488,11 @@ export class Compiler {
           : params;
 
         this.tailCall = wasTailCall;
+        const dictParams = as.type === "assign_var" ? as.dictParams : "";
+
         return [
           //
-          `function ${name}(${tcParams.join(", ")}) {`,
+          `const ${name} = ${dictParams}(${tcParams.join(", ")}) => {`,
           ...indentBlock(wrappedFnBody),
           `}`,
           ...(as.type === "assign_var" && as.declare
@@ -499,7 +535,12 @@ export class Compiler {
         const matched = this.getUniqueName();
         const statements = this.compileAsStatements(
           src.expr,
-          { type: "assign_var", name: matched, declare: true },
+          {
+            type: "assign_var",
+            name: matched,
+            declare: true,
+            dictParams: "", // <- TODO check
+          },
 
           undefined,
         );
@@ -557,6 +598,31 @@ export class Compiler {
         const def = getVariantImpl(variant, ns);
         decls.push(def);
       }
+
+      if (
+        (this.allowDeriving === undefined ||
+          this.allowDeriving.includes("Eq")) &&
+        // Bool equality is implemented inside core
+        typeDecl.name !== "Bool"
+      ) {
+        const o = this.deriveEq(typeDecl);
+        if (o != undefined) {
+          decls.push(o);
+        }
+      }
+
+      if (
+        (this.allowDeriving === undefined ||
+          this.allowDeriving.includes("Show")) &&
+        // Bool and List show are implemented inside core
+        typeDecl.name !== "Bool" &&
+        typeDecl.name !== "List"
+      ) {
+        const o = this.deriveShow(typeDecl);
+        if (o !== undefined) {
+          decls.push(o);
+        }
+      }
     }
 
     for (const decl of src.declarations) {
@@ -576,9 +642,17 @@ export class Compiler {
         ),
       );
 
+      const dictParams = findDeclarationDictsParams(decl.binding.$.asType());
+
       const statements = this.compileAsStatements(
         decl.value,
-        { type: "assign_var", name: nameSpacedBinding, declare: true },
+        {
+          type: "assign_var",
+          name: nameSpacedBinding,
+          declare: true,
+          dictParams:
+            dictParams.length === 0 ? "" : `(${dictParams.join(", ")}) => `,
+        },
         undefined,
       );
 
@@ -587,6 +661,156 @@ export class Compiler {
     }
 
     return decls.join("\n");
+  }
+
+  // TODO can this be static?
+  private deriveEq(
+    typedDeclaration: TypedTypeDeclaration & { type: "adt" },
+  ): string | undefined {
+    if (this.ns === undefined) {
+      throw new Error("TODO handle undefined namespace");
+    }
+
+    const deps = TVar.typeImplementsTrait(
+      {
+        type: "named",
+        name: typedDeclaration.name,
+        moduleName: this.ns,
+        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
+      },
+      "Eq",
+    );
+    if (deps === undefined) {
+      return undefined;
+    }
+
+    const usedVars: string[] = [];
+
+    function variantEq(variant: TypedTypeVariant | undefined): string {
+      if (variant === undefined || variant.args.length === 0) {
+        return `true`;
+      }
+
+      return variant.args
+        .map((variant, i) => {
+          const callEXpr = deriveEqArg(usedVars, variant);
+          return `${callEXpr}(x.a${i}, y.a${i})`;
+        })
+        .join(" && ");
+    }
+
+    let body: string;
+    if (typedDeclaration.variants.length <= 1) {
+      const v = variantEq(typedDeclaration.variants[0]);
+      body = `return ${v};`;
+    } else {
+      const cases = typedDeclaration.variants
+        .map((variant) => {
+          const v = variantEq(variant);
+
+          return `    case "${variant.name}":
+      return ${v};`;
+        })
+        .join("\n");
+
+      body = `if (x.$ !== y.$) {
+    return false;
+  }
+  switch (x.$) {
+${cases}
+  }`;
+    }
+
+    let dictsArg: string;
+    if (usedVars.length === 0) {
+      dictsArg = "";
+    } else {
+      const params = usedVars.map((x) => `Eq_${x}`).join(", ");
+      dictsArg = `(${params}) => `;
+    }
+
+    return `const Eq_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x, y) => {
+  ${body}
+}`;
+  }
+
+  private deriveShow(
+    typedDeclaration: TypedTypeDeclaration & { type: "adt" },
+  ): string | undefined {
+    if (this.ns === undefined) {
+      throw new Error("TODO handle undefined namespace");
+    }
+
+    const deps = TVar.typeImplementsTrait(
+      {
+        type: "named",
+        name: typedDeclaration.name,
+        moduleName: this.ns,
+        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
+      },
+      "Show",
+    );
+    if (deps === undefined) {
+      return undefined;
+    }
+
+    const usedVars: string[] = [];
+
+    const showVariant = (variant: TypedTypeVariant): string => {
+      if (variant.args.length === 0) {
+        return `"${variant.name}"`;
+      }
+
+      const args = variant.args
+        .map((arg, i) => `\${${deriveShowArg(usedVars, arg)}(x.a${i})}`)
+        .join(", ");
+
+      const isTuple = this.ns === "Tuple" && /Tuple[0-9]+/.test(variant.name);
+      if (isTuple) {
+        return `\`(${args})\``;
+      }
+
+      return `\`${variant.name}(${args})\``;
+    };
+
+    let body: string;
+    switch (typedDeclaration.variants.length) {
+      case 0:
+        body = `  return "never";`;
+        break;
+
+      case 1: {
+        const v = showVariant(typedDeclaration.variants[0]!);
+        body = `  return ${v};`;
+        break;
+      }
+
+      default: {
+        const variants = typedDeclaration.variants
+          .map((v) => {
+            return `    case "${v.name}":
+      return ${showVariant(v)};`;
+          })
+          .join("\n");
+
+        body = `  switch (x.$) {
+${variants}
+  }`;
+        break;
+      }
+    }
+
+    let dictsArg: string;
+    if (usedVars.length === 0) {
+      dictsArg = "";
+    } else {
+      const params = usedVars.map((x) => `Show_${x}`).join(", ");
+      dictsArg = `(${params}) => `;
+    }
+
+    return `const Show_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x) => {
+${body}
+}`;
   }
 
   private compilePattern(
@@ -624,15 +848,287 @@ export class Compiler {
   }
 }
 
+function deriveShowArg(usedVars: string[], arg: TypedTypeAst) {
+  switch (arg.type) {
+    case "any":
+      throw new Error("[unreachable] any in constructor args");
+    case "fn":
+      throw new Error("[unreachable] cannot derive fns");
+
+    case "var":
+      if (!usedVars.includes(arg.ident)) {
+        usedVars.push(arg.ident);
+      }
+      return `Show_${arg.ident}`;
+
+    case "named": {
+      if (arg.resolution === undefined) {
+        throw new Error(
+          "[unreachable] undefined resolution for type: " + arg.name,
+        );
+      }
+
+      const subArgs = arg.args.map((subArg) => deriveShowArg(usedVars, subArg));
+
+      let subCall: string;
+      if (subArgs.length === 0) {
+        subCall = "";
+      } else {
+        subCall = `(${subArgs.join(", ")})`;
+      }
+
+      return `Show_${arg.resolution.namespace}$${arg.name}${subCall}`;
+    }
+  }
+}
+
+function deriveEqArg(usedVars: string[], arg: TypedTypeAst): string {
+  switch (arg.type) {
+    case "any":
+      throw new Error("[unreachable] any in constructor args");
+    case "fn":
+      throw new Error("[unreachable] cannot derive fns");
+
+    case "named": {
+      if (arg.resolution === undefined) {
+        throw new Error(
+          "[unreachable] undefined resolution for type: " + arg.name,
+        );
+      }
+
+      const subArgs = arg.args.map((subArg) => deriveEqArg(usedVars, subArg));
+
+      const ns = sanitizeNamespace(arg.resolution.namespace);
+      let subCall: string;
+      if (subArgs.length === 0) {
+        subCall = "";
+      } else {
+        subCall = `(${subArgs.join(", ")})`;
+      }
+      // We assume this type impls the trait
+      return `Eq_${ns}$${arg.name}${subCall}`;
+    }
+
+    case "var":
+      if (!usedVars.includes(arg.ident)) {
+        usedVars.push(arg.ident);
+      }
+      return `Eq_${arg.ident}`;
+  }
+}
+
+function findDeclarationDictsParams(type: Type): string[] {
+  const buf: string[] = [];
+
+  function helper(type: Type) {
+    switch (type.type) {
+      case "fn":
+        for (const arg of type.args) {
+          helper(arg);
+        }
+        helper(type.return);
+        return;
+
+      case "named": {
+        for (const arg of type.args) {
+          helper(arg);
+        }
+        return;
+      }
+
+      case "var": {
+        const resolved = type.var.resolve();
+        switch (resolved.type) {
+          case "bound":
+            helper(resolved.value);
+            return;
+          case "unbound":
+            for (const trait of resolved.traits) {
+              const name = `${trait}_${resolved.id}`;
+              if (!buf.includes(name)) {
+                buf.push(name);
+              }
+            }
+            return;
+        }
+      }
+    }
+  }
+
+  helper(type);
+
+  return buf;
+}
+
+function traitDepsForNamedType(
+  t: Type & { type: "named" },
+  trait: string,
+): Type[] {
+  const freshArgs = t.args.map((_) => TVar.fresh());
+
+  // TODO simplify this workaround
+  const genericType: Type = {
+    type: "named",
+    moduleName: t.moduleName,
+    name: t.name,
+    args: freshArgs.map((a) => a.asType()),
+  };
+
+  const deps = TVar.typeImplementsTrait(genericType, trait);
+  if (deps === undefined) {
+    throw new Error("[unreachable] type does not implement given trait");
+  }
+
+  const out: Type[] = [];
+
+  for (const dep of deps) {
+    const index = freshArgs.findIndex((v) => {
+      const r = v.resolve();
+      return r.type === "unbound" && r.id === dep.id;
+    });
+
+    const a = t.args[index]!;
+    out.push(a);
+  }
+
+  return out;
+}
+
+function applyTraitToType(type: Type, trait: string): string {
+  const resolved = resolveType(type);
+
+  switch (resolved.type) {
+    case "fn":
+      throw new Error("TODO bound fn");
+
+    case "named": {
+      let name = `${trait}_${sanitizeNamespace(resolved.moduleName)}$${resolved.name}`;
+      const deps = traitDepsForNamedType(resolved, trait).map((dep) =>
+        applyTraitToType(dep, trait),
+      );
+
+      if (deps.length !== 0) {
+        name += `(${deps.join(", ")})`;
+      }
+
+      return name;
+    }
+
+    case "unbound": {
+      if (!resolved.traits.includes(trait)) {
+        throw new Error(
+          "TODO unbound does not impl needed trait: " +
+            JSON.stringify(resolved),
+        );
+      }
+
+      return `${trait}_${resolved.id}`;
+    }
+  }
+}
+
+function resolvePassedDicts(genExpr: TVar, instantiatedExpr: TVar): string {
+  const buf: string[] = [];
+
+  // e.g. { 0 => Set("Show", "Debug") }
+  const alreadyVisitedVarsIds: Map<number, Set<string>> = new Map();
+
+  function checkedPush(genExprId: number, trait: string, name: string) {
+    let lookup = alreadyVisitedVarsIds.get(genExprId);
+    if (lookup === undefined) {
+      lookup = new Set();
+      alreadyVisitedVarsIds.set(genExprId, lookup);
+    }
+
+    if (lookup.has(trait)) {
+      // Do not add again
+      return;
+    }
+
+    lookup.add(trait);
+    buf.push(name);
+  }
+
+  function helper(genExpr: Type, instantiatedExpr: Type) {
+    switch (genExpr.type) {
+      case "fn": {
+        const resolved = resolveType(instantiatedExpr);
+
+        if (resolved.type !== "fn") {
+          throw new Error(
+            "[unreachable] unexpected value of kind: " + resolved.type,
+          );
+        }
+
+        const instantiatedFn = resolved;
+
+        for (let i = 0; i < genExpr.args.length; i++) {
+          const genArg = genExpr.args[i]!,
+            instArg = instantiatedFn.args[i]!;
+
+          helper(genArg, instArg);
+        }
+
+        helper(genExpr.return, instantiatedFn.return);
+        return;
+      }
+
+      case "named": {
+        const resolved = resolveType(instantiatedExpr);
+        if (resolved.type !== "named") {
+          throw new Error(
+            "[unreachable] unexpected value of kind: " + resolved.type,
+          );
+        }
+
+        const instantiatedConcreteType = resolved;
+
+        for (let i = 0; i < genExpr.args.length; i++) {
+          const genArg = genExpr.args[i]!,
+            instArg = instantiatedConcreteType.args[i]!;
+
+          helper(genArg, instArg);
+        }
+        return;
+      }
+
+      case "var": {
+        const resolvedGenExpr = genExpr.var.resolve();
+        switch (resolvedGenExpr.type) {
+          case "bound":
+            return helper(resolvedGenExpr.value, instantiatedExpr);
+
+          case "unbound": {
+            for (const trait of resolvedGenExpr.traits) {
+              checkedPush(
+                resolvedGenExpr.id,
+                trait,
+                applyTraitToType(instantiatedExpr, trait),
+              );
+            }
+
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  helper(genExpr.asType(), instantiatedExpr.asType());
+  if (buf.length === 0) {
+    return "";
+  }
+  return `(${buf.join(", ")})`;
+}
+
 function constToString(k: ConstLiteral): string {
   switch (k.type) {
     case "int":
     case "float":
       return k.value.toString();
     case "string":
-      return `"${k.value}"`;
     case "char":
-      return `new String("${k.value}")`;
+      return `"${k.value}"`;
   }
 }
 
@@ -688,8 +1184,7 @@ type JsPrefix = NonNullable<ReturnType<typeof getJsPrefix>>;
 type JsApplicationType =
   | { type: "infix"; operator: JsInfix; left: TypedExpr; right: TypedExpr }
   | { type: "prefix"; operator: JsPrefix; expr: TypedExpr }
-  | { type: "call"; caller: TypedExpr; args: TypedExpr[] }
-  | { type: "structural-eq"; left: TypedExpr; right: TypedExpr };
+  | { type: "call"; caller: TypedExpr; args: TypedExpr[] };
 
 // left-to-right operators
 const infixPrecTable: Record<JsInfix, number> = {
@@ -725,7 +1220,6 @@ function precTable(appType: JsApplicationType): number {
       return prefixPrecTable[appType.operator];
 
     case "call":
-    case "structural-eq":
       return 17;
   }
 }
@@ -735,9 +1229,9 @@ function toApplicationType(
 ): JsApplicationType {
   if (isStructuralEq(src.caller, src.args)) {
     return {
-      type: "structural-eq",
-      left: src.args[0]!,
-      right: src.args[1]!,
+      type: "call",
+      caller: src.caller,
+      args: src.args,
     };
   }
 
@@ -830,7 +1324,7 @@ function wrapJsExpr(expr: string, as: CompilationMode) {
   switch (as.type) {
     case "assign_var": {
       const constModifier = as.declare ? "const " : "";
-      return `${constModifier}${as.name} = ${expr};`;
+      return `${constModifier}${as.name} = ${as.dictParams}${expr};`;
     }
 
     case "return":
