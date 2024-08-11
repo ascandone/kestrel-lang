@@ -1152,21 +1152,51 @@ describe("struct", () => {
     const [types, errs] = tc(
       `
       import Person.{Person(..)}
-
-      extern let p: Person
-      pub let name = p.name
+      pub let name = fn p { p.name }
     `,
       { Person },
     );
 
     expect(errs).toHaveLength(0);
     expect(types).toEqual({
-      name: "String",
-      p: "Person",
+      name: "Fn(Person) -> String",
     });
   });
 
-  test.todo("field on unbound value");
+  test("forbid unknown field on unbound value", () => {
+    const [, errs] = tc(`pub let f = fn p { p.invalid_field }`);
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(
+      new InvalidField("a", "invalid_field"),
+    );
+  });
+
+  test("preventing resolution of other modules' fields when import is not (..)", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      extern type String
+      pub(..) type Person struct {
+        name: String
+      }
+    `,
+    );
+
+    const [, errs] = tc(
+      `
+      import Person.{Person}
+
+      extern pub let x: Person // <- this prevents UnusedExposing err
+
+      pub let name = fn p { p.name }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(InvalidField);
+  });
 });
 
 describe("pattern matching", () => {

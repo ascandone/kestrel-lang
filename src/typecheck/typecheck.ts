@@ -221,6 +221,10 @@ class Typechecker {
           }
 
           // we already know this field does not exist in this module
+          // fallthrough to the next branch (unbound)
+        }
+
+        case "unbound":
           this.errors.push({
             span: fieldAccessAst.field.span,
             description: new InvalidField(
@@ -228,10 +232,6 @@ class Typechecker {
               fieldAccessAst.field.name,
             ),
           });
-          break;
-        }
-
-        case "unbound":
           break;
       }
     }

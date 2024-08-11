@@ -519,7 +519,8 @@ class ResolutionStep {
         if (
           exposed.type !== "type" ||
           exposed.resolved === undefined ||
-          exposed.resolved.type !== "struct"
+          exposed.resolved.type !== "struct" ||
+          !exposed.exposeImpl
         ) {
           continue;
         }
