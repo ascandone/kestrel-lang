@@ -241,6 +241,9 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         //
         autoParens(DOT_ACCESS_BINDING_POWER, ast.struct),
         text("."),
+        ast.field.structName === undefined
+          ? nil
+          : text(ast.field.structName, "#"),
         text(ast.field.name),
       );
 

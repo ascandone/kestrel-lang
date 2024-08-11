@@ -155,6 +155,11 @@ describe("struct", () => {
 }
 `).toBeFormatted();
   });
+
+  test("qualified field access", () => {
+    expect(`let _ = some_struct.Struct#field
+`).toBeFormatted();
+  });
 });
 
 test("cons application sugar", () => {
