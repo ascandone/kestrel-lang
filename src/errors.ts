@@ -254,6 +254,20 @@ export class TypeMismatch implements ErrorDescription {
   }
 }
 
+export class InvalidField implements ErrorDescription {
+  severity: Severity = "error";
+  errorName: string = "Invalid field";
+
+  constructor(
+    public type: string,
+    public field: string,
+  ) {}
+
+  shortDescription(): string {
+    return `The field '${this.field}' does not exist on type '${this.type}'`;
+  }
+}
+
 export function errorInfoToString(
   src: string,
   { description, span }: ErrorInfo,

@@ -7,6 +7,7 @@ import {
   UntypedTypeVariant,
 } from "../parser";
 import {
+  FieldResolution,
   IdentifierResolution,
   TypedDeclaration,
   TypedExpr,
@@ -26,11 +27,13 @@ import {
   TypeScheme,
   PolyType,
   TraitImplDependency,
+  typeToString,
 } from "./type";
 import {
   ArityMismatch,
   ErrorInfo,
   InvalidCatchall,
+  InvalidField,
   InvalidTypeArity,
   NonExhaustiveMatch,
   OccursCheck,
@@ -73,6 +76,8 @@ export function typecheck(
 
 class Typechecker {
   private errors: ErrorInfo[] = [];
+  private scheduledFieldResolutions: (TypedExpr & { type: "field-access" })[] =
+    [];
 
   constructor(
     private ns: string,
@@ -186,6 +191,49 @@ class Typechecker {
 
     for (const decl of typedAst.declarations) {
       this.typecheckAnnotatedDecl(decl);
+    }
+
+    outerLoop: for (const fieldAccessAst of this.scheduledFieldResolutions) {
+      const resolved = fieldAccessAst.left.$.resolve();
+
+      switch (resolved.type) {
+        case "bound": {
+          if (resolved.value.type !== "named") {
+            // TODO emit err
+            throw new Error("TODO handle field access to fn");
+          }
+
+          differentNsLookup: if (resolved.value.moduleName !== this.ns) {
+            const mod = deps[resolved.value.moduleName];
+            if (mod === undefined) {
+              break differentNsLookup;
+            }
+
+            // const lookup = findFieldInModule(
+            //   mod.typeDeclarations,
+            //   fieldAccessAst.field.name,
+            // );
+
+            // try typechecking again
+            // this.unifyFieldAccess(fieldAccessAst);
+
+            break outerLoop;
+          }
+
+          // we already know this field does not exist in this module
+          this.errors.push({
+            span: fieldAccessAst.field.span,
+            description: new InvalidField(
+              typeToString(fieldAccessAst.left.$.asType()),
+              fieldAccessAst.field.name,
+            ),
+          });
+          break;
+        }
+
+        case "unbound":
+          break;
+      }
     }
 
     return [typedAst, this.errors];
@@ -559,23 +607,12 @@ class Typechecker {
       case "field-access": {
         this.typecheckAnnotatedExpr(ast.left);
         if (ast.resolution === undefined) {
+          this.scheduledFieldResolutions.push(ast);
           return;
         }
 
-        const leftType: Type = {
-          type: "named",
-          moduleName: this.ns, // TODO use resolution's namespace
-          name: ast.resolution.declaration.name,
-          args: [], // TODO params
-        };
-        this.unifyExpr(ast.left, ast.left.$.asType(), leftType);
-
-        const returnType = instantiateFromScheme(
-          ast.resolution.field.$.asType(),
-          {}, // TODO scheme
-        );
-
-        this.unifyExpr(ast, ast.$.asType(), returnType);
+        // TODO use resolution's namespace
+        this.unifyFieldAccess(ast, ast.resolution.namespace, ast.resolution);
 
         return;
       }
@@ -614,6 +651,28 @@ class Typechecker {
       return;
     }
     this.errors.push(unifyErr(ast, e));
+  }
+
+  private unifyFieldAccess(
+    ast: TypedExpr & { type: "field-access" },
+    namespace: string,
+    resolution: FieldResolution,
+  ) {
+    const leftType: Type = {
+      type: "named",
+      moduleName: namespace, // TODO use resolution's namespace
+      name: resolution.declaration.name,
+      args: [], // TODO params
+    };
+
+    this.unifyExpr(ast.left, ast.left.$.asType(), leftType);
+
+    const returnType = instantiateFromScheme(
+      resolution.field.$.asType(),
+      {}, // TODO scheme
+    );
+
+    this.unifyExpr(ast, ast.$.asType(), returnType);
   }
 }
 

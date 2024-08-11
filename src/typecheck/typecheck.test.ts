@@ -14,6 +14,7 @@ import {
   CyclicDefinition,
   DuplicateDeclaration,
   InvalidCatchall,
+  InvalidField,
   InvalidPipe,
   InvalidTypeArity,
   NonExhaustiveMatch,
@@ -1092,8 +1093,6 @@ describe("struct", () => {
       pub let p_name = p.name
     `);
 
-    console.log(errs);
-
     expect(errs).toHaveLength(0);
     expect(types).toEqual({
       p: "Person",
@@ -1112,13 +1111,62 @@ describe("struct", () => {
       pub let p_name = fn p { p.name }
     `);
 
-    console.log(errs);
-
     expect(errs).toHaveLength(0);
     expect(types).toEqual({
       p_name: "Fn(Person) -> String",
     });
   });
+
+  test("do not allow invalid field access", () => {
+    const [types, errs] = tc(`
+      extern type String
+      type Person struct {
+        name: String
+      }
+
+      extern let p: Person
+      pub let invalid = p.invalid_field
+    `);
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(
+      new InvalidField("Person", "invalid_field"),
+    );
+    expect(types).toEqual({
+      p: "Person",
+      invalid: "a",
+    });
+  });
+
+  test("handle resolution of other modules' fields", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      extern type String
+      pub(..) type Person struct {
+        name: String
+      }
+    `,
+    );
+
+    const [types, errs] = tc(
+      `
+      import Person.{Person(..)}
+
+      extern let p: Person
+      pub let name = p.name
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(0);
+    expect(types).toEqual({
+      name: "String",
+      p: "Person",
+    });
+  });
+
+  test.todo("field on unbound value");
 });
 
 describe("pattern matching", () => {

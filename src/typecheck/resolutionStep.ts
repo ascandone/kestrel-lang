@@ -506,6 +506,42 @@ class ResolutionStep {
     return;
   }
 
+  private resolveField(fieldName: string): FieldResolution | undefined {
+    // First check locally
+    const lookup = findFieldInModule(this.typeDeclarations, fieldName, this.ns);
+    if (lookup !== undefined) {
+      return lookup;
+    }
+
+    // check in import with exposed fields
+    for (const import_ of this.imports) {
+      for (const exposed of import_.exposing) {
+        if (
+          exposed.type !== "type" ||
+          exposed.resolved === undefined ||
+          exposed.resolved.type !== "struct"
+        ) {
+          continue;
+        }
+
+        const lookup = findFieldInTypeDecl(
+          exposed.resolved,
+          fieldName,
+          import_.ns,
+        );
+
+        if (lookup !== undefined) {
+          console.log({ lookup });
+
+          return lookup;
+        }
+      }
+    }
+
+    // TODO handle qualified fields
+    return undefined;
+  }
+
   private resolveIdentifier(ast: {
     name: string;
     namespace?: string;
@@ -693,7 +729,7 @@ class ResolutionStep {
         return {
           ...ast,
           left: this.annotateExpr(ast.left),
-          resolution: this.resolveField(ast),
+          resolution: this.resolveField(ast.field.name),
           $: TVar.fresh(),
         };
 
@@ -787,27 +823,6 @@ class ResolutionStep {
         };
       }
     }
-  }
-
-  private resolveField(
-    ast: UntypedExpr & { type: "field-access" },
-  ): FieldResolution | undefined {
-    // TODO access imported fields too
-    for (const td of this.typeDeclarations) {
-      if (td.type === "struct") {
-        // All fields are visible in the same module
-        for (const f of td.fields) {
-          if (f.name === ast.field.name) {
-            return {
-              field: f,
-              declaration: td,
-            };
-          }
-        }
-      }
-    }
-
-    return undefined;
   }
 
   private annotateImport(
@@ -983,4 +998,39 @@ class ResolutionStep {
 
     return undefined;
   }
+}
+
+export function findFieldInModule(
+  typeDeclarations: TypedTypeDeclaration[],
+  fieldName: string,
+  namespace: string,
+): FieldResolution | undefined {
+  for (const typeDecl of typeDeclarations) {
+    const lookup = findFieldInTypeDecl(typeDecl, fieldName, namespace);
+    if (lookup !== undefined) {
+      return lookup;
+    }
+  }
+
+  return undefined;
+}
+
+export function findFieldInTypeDecl(
+  declaration: TypedTypeDeclaration,
+  fieldName: string,
+  namespace: string,
+): FieldResolution | undefined {
+  if (declaration.type !== "struct") {
+    return undefined;
+  }
+
+  for (const field of declaration.fields) {
+    if (field.name !== fieldName) {
+      continue;
+    }
+
+    return { declaration, field, namespace };
+  }
+
+  return undefined;
 }

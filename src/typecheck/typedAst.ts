@@ -55,6 +55,7 @@ export type TypeResolutionMeta = {
 export type FieldResolution = {
   declaration: TypedTypeDeclaration & { type: "struct" };
   field: StructField<TypeMeta>;
+  namespace: string;
 };
 
 export type FieldResolutionMeta = {
