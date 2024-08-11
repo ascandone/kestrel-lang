@@ -1380,6 +1380,43 @@ describe("struct", () => {
     });
   });
 
+  test("allow accessing fields in same module with qualified field syntax", () => {
+    const [types, errs] = tc(
+      `
+        extern type String
+        type Person struct {
+          name: String
+        }
+
+        pub let name = fn p {
+          p.Person#name
+        }
+    `,
+    );
+
+    expect(errs).toHaveLength(0);
+    expect(types).toEqual({
+      name: "Fn(Person) -> String",
+    });
+  });
+
+  test("emit err when field accessed with qualified syntax is invalid", () => {
+    const [, errs] = tc(
+      `
+        type Person struct { }
+
+        pub let name = fn p {
+          p.Person#invalid_field
+        }
+    `,
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(
+      new InvalidField("Person", "invalid_field"),
+    );
+  });
+
   test("allow accessing fields in other modules with qualified field syntax", () => {
     const [Person] = tcProgram(
       "Person",

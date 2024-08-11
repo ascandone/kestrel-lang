@@ -537,6 +537,30 @@ class ResolutionStep {
     const { name: fieldName, structName: qualifiedStructName } = ast;
 
     if (qualifiedStructName !== undefined) {
+      for (const typeDecl of this.typeDeclarations) {
+        if (typeDecl.name === qualifiedStructName) {
+          const fieldLookup = findFieldInTypeDecl(typeDecl, fieldName, this.ns);
+
+          if (fieldLookup === undefined) {
+            this.errors.push({
+              description: new InvalidField(typeDecl.name, fieldName),
+              span: ast.span,
+            });
+          }
+
+          return fieldLookup;
+        }
+      }
+
+      const localFieldLookup = findFieldInModule(
+        this.typeDeclarations,
+        fieldName,
+        this.ns,
+      );
+      if (localFieldLookup !== undefined) {
+        return localFieldLookup;
+      }
+
       for (const [struct, import_, exposing] of this.exportedStructs()) {
         if (struct.name !== qualifiedStructName) {
           continue;
