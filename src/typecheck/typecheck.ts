@@ -859,7 +859,10 @@ class Typechecker {
       }
 
       case "unbound":
-        emitErr();
+        if (fieldAccessAst.field.structName === undefined) {
+          emitErr();
+        }
+
         return;
     }
   }

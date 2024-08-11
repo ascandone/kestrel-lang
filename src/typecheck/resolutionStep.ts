@@ -1,6 +1,7 @@
 import {
   MatchPattern,
   Span,
+  SpanMeta,
   TypeAst,
   UntypedDeclaration,
   UntypedExpr,
@@ -512,7 +513,59 @@ class ResolutionStep {
     return;
   }
 
-  private resolveField(fieldName: string): FieldResolution | undefined {
+  private *exportedStructs(): Generator<
+    [TypedTypeDeclaration & { type: "struct" }, TypedImport, TypedExposing]
+  > {
+    for (const import_ of this.imports) {
+      for (const exposed of import_.exposing) {
+        if (
+          exposed.type !== "type" ||
+          exposed.resolved === undefined ||
+          exposed.resolved.type !== "struct"
+        ) {
+          continue;
+        }
+
+        yield [exposed.resolved, import_, exposed];
+      }
+    }
+  }
+
+  private resolveField(
+    ast: { name: string; structName?: string } & SpanMeta,
+  ): FieldResolution | undefined {
+    const { name: fieldName, structName: qualifiedStructName } = ast;
+
+    if (qualifiedStructName !== undefined) {
+      for (const [struct, import_, exposing] of this.exportedStructs()) {
+        if (struct.name !== qualifiedStructName) {
+          continue;
+        }
+
+        const fieldLookup = findFieldInTypeDecl(struct, fieldName, import_.ns);
+
+        if (fieldLookup === undefined || fieldLookup.declaration.pub !== "..") {
+          // TODO emit err: invalid qualifier
+
+          this.errors.push({
+            description: new InvalidField(qualifiedStructName, fieldName),
+            span: ast.span,
+          });
+        }
+
+        this.unusedExposing.delete(exposing);
+
+        return fieldLookup;
+      }
+
+      this.errors.push({
+        description: new UnboundType(qualifiedStructName),
+        span: ast.span,
+      });
+
+      return undefined;
+    }
+
     // First check locally
     const lookup = findFieldInModule(this.typeDeclarations, fieldName, this.ns);
     if (lookup !== undefined) {
@@ -782,7 +835,7 @@ class ResolutionStep {
         return {
           ...ast,
           struct: this.annotateExpr(ast.struct),
-          resolution: this.resolveField(ast.field.name),
+          resolution: this.resolveField(ast.field),
           $: TVar.fresh(),
         };
 

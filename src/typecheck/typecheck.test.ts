@@ -1380,6 +1380,98 @@ describe("struct", () => {
     });
   });
 
+  test("allow accessing fields in other modules with qualified field syntax", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      extern type String
+      pub(..) type Person struct {
+        name: String
+      }
+    `,
+    );
+
+    const [types, errs] = tc(
+      `
+      import Person.{Person}
+
+      pub let name = fn p {
+        p.Person#name
+      }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(0);
+    expect(types).toEqual({
+      name: "Fn(Person) -> String",
+    });
+  });
+
+  test("emit error when struct of qualified field does not exist", () => {
+    const [, errs] = tc(
+      `
+      pub let name = fn p {
+        p.InvalidType#name
+      }
+    `,
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(new UnboundType("InvalidType"));
+  });
+
+  test("emit error when qualified field does not exist", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+        pub(..) type Person struct {}
+  `,
+    );
+
+    const [, errs] = tc(
+      `
+      import Person.{Person}
+      pub let name = fn p {
+        p.Person#invalid_field
+      }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(
+      new InvalidField("Person", "invalid_field"),
+    );
+  });
+
+  test("emit error when qualified field is private", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+        extern type Int
+        pub type Person struct {
+          private_field: Int
+        }
+  `,
+    );
+
+    const [, errs] = tc(
+      `
+      import Person.{Person}
+      pub let name = fn p {
+        p.Person#private_field
+      }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(
+      new InvalidField("Person", "private_field"),
+    );
+  });
+
   test("emit InvalidField if trying to access private fields", () => {
     const [Person] = tcProgram(
       "Person",
