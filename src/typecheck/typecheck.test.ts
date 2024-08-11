@@ -1313,6 +1313,43 @@ describe("struct", () => {
     });
   });
 
+  test("inferring params in dot access", () => {
+    const [types, errs] = tc(
+      `
+        type Box<a> struct {
+          field: a
+        }
+
+        pub let get_field = fn box { box.field }
+    `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      get_field: "Fn(Box<a>) -> a",
+    });
+  });
+
+  test("making sure field values are generalized", () => {
+    const [types, errs] = tc(
+      `
+      extern type Int
+      type Box<a> struct {
+        field: a
+      }
+
+      pub let get_field_1: Fn(Box<Int>) -> Int = fn box { box.field }
+      pub let get_field_2 = fn box { box.field }
+  `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      get_field_1: "Fn(Box<Int>) -> Int",
+      get_field_2: "Fn(Box<a>) -> a",
+    });
+  });
+
   test("handling params in struct definition (phantom types)", () => {
     const [types, errs] = tc(
       `
@@ -1412,6 +1449,23 @@ describe("struct", () => {
     expect(errs).toEqual([]);
     expect(types).toEqual({
       box: "Box<String, Int>",
+    });
+  });
+
+  test("instantiated fresh vars when creating structs", () => {
+    const [types, errs] = tc(
+      `
+      type Box<a> struct { a: a }
+
+      pub let str_box = Box { a: "abc" }
+      pub let int_box = Box { a: 42 }
+  `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      str_box: "Box<String>",
+      int_box: "Box<Int>",
     });
   });
 

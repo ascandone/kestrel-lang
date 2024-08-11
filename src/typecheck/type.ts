@@ -1,3 +1,5 @@
+import { PolyTypeMeta } from "./typedAst";
+
 export type ConcreteType =
   | {
       type: "fn";
@@ -389,15 +391,19 @@ export function generalizeAsScheme(
   return scheme;
 }
 
-export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
-  const instantiated = new Map<string, TVar>();
+export function instantiatePoly(poly: PolyTypeMeta): Type {
+  return instantiateFromScheme(poly.$.asType(), poly.scheme);
+}
 
-  function recur(mono: Type): Type {
+export class Instantiator {
+  private instantiated = new Map<string, TVar>();
+
+  instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
     switch (mono.type) {
       case "named":
         return {
           ...mono,
-          args: mono.args.map(recur),
+          args: mono.args.map((a) => this.instantiateFromScheme(a, scheme)),
         };
       case "fn":
         if (mono.type !== "fn") {
@@ -406,8 +412,8 @@ export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
 
         return {
           type: "fn",
-          args: mono.args.map(recur),
-          return: recur(mono.return),
+          args: mono.args.map((a) => this.instantiateFromScheme(a, scheme)),
+          return: this.instantiateFromScheme(mono.return, scheme),
         };
 
       case "var": {
@@ -419,23 +425,29 @@ export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
               return mono;
             }
 
-            const i = instantiated.get(boundId);
+            const i = this.instantiated.get(boundId);
             if (i !== undefined) {
               return i.asType();
             }
 
             const t = TVar.fresh([...resolved.traits]);
-            instantiated.set(boundId, t);
+            this.instantiated.set(boundId, t);
             return t.asType();
           }
           case "bound":
-            return recur(resolved.value);
+            return this.instantiateFromScheme(resolved.value, scheme);
         }
       }
     }
   }
 
-  return recur(mono);
+  instantiatePoly(poly: PolyTypeMeta) {
+    return this.instantiateFromScheme(poly.$.asType(), poly.scheme);
+  }
+}
+
+export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
+  return new Instantiator().instantiateFromScheme(mono, scheme);
 }
 
 function typeToStringHelper(

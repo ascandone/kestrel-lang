@@ -30,6 +30,7 @@ import {
   TraitImplDependency,
   typeToString,
   TVarResolution,
+  Instantiator,
 } from "./type";
 import {
   ArityMismatch,
@@ -166,45 +167,7 @@ class Typechecker {
         this.derive("Eq", typeDecl);
         this.derive("Show", typeDecl);
       } else if (typeDecl.type === "struct") {
-        // TODO dedup from makeVariantType
-        const generics: [string, TVar, number][] = typeDecl.params.map(
-          (param) => [param.name, ...TVar.freshWithId()],
-        );
-
-        const scheme: TypeScheme = Object.fromEntries(
-          generics.map(([param, , id]) => [id, param]),
-        );
-
-        typeDecl.scheme = scheme;
-
-        const mon: Type = {
-          type: "named",
-          moduleName: this.ns,
-          name: typeDecl.name,
-          args: generics.map(([, tvar]) => tvar.asType()),
-        };
-
-        const err = unify(typeDecl.$.asType(), mon);
-        if (err !== undefined) {
-          throw new Error("[unreachable] adt type should be fresh initially");
-        }
-
-        // TODO set scheme
-        for (const field of typeDecl.fields) {
-          const fieldType = this.typeAstToType(
-            field.type_,
-            { type: "type-hint" },
-            Object.fromEntries(generics),
-            {}, // TODO traits
-          );
-
-          const err = unify(field.$.asType(), fieldType);
-          if (err !== undefined) {
-            throw new Error(
-              "[unreachable] struct type should be fresh initially",
-            );
-          }
-        }
+        this.makeStructType(typeDecl);
       }
     }
 
@@ -221,6 +184,46 @@ class Typechecker {
     }
 
     return [typedAst, this.errors];
+  }
+
+  private makeStructType(typeDecl: TypedTypeDeclaration & { type: "struct" }) {
+    // TODO dedup from makeVariantType
+    const generics: [string, TVar, number][] = typeDecl.params.map((param) => [
+      param.name,
+      ...TVar.freshWithId(),
+    ]);
+
+    const scheme: TypeScheme = Object.fromEntries(
+      generics.map(([param, , id]) => [id, param]),
+    );
+
+    const mono: Type = {
+      type: "named",
+      moduleName: this.ns,
+      name: typeDecl.name,
+      args: generics.map(([, tvar]) => tvar.asType()),
+    };
+
+    unify(typeDecl.$.asType(), mono);
+
+    typeDecl.scheme = scheme;
+
+    for (const field of typeDecl.fields) {
+      const bound: Record<string, TVar> = Object.fromEntries(
+        generics.map(([p, t]) => [p, t]),
+      );
+
+      const fieldType = this.typeAstToType(
+        field.type_,
+        { type: "constructor-arg", params: typeDecl.params.map((p) => p.name) }, // TODO params
+        bound,
+        {}, // TODO traits
+      );
+
+      unify(fieldType, field.$.asType()); // Do not change args order
+
+      field.scheme = scheme;
+    }
   }
 
   private makeVariantType(
@@ -258,7 +261,6 @@ class Typechecker {
               {
                 type: "constructor-arg",
                 params,
-                returning: ret,
               },
               Object.fromEntries(generics.map(([p, t]) => [p, t])),
               {},
@@ -552,9 +554,9 @@ class Typechecker {
           return;
         }
 
-        const type_ = instantiateFromScheme(
-          ast.struct.resolution.declaration.$.asType(),
-          ast.struct.resolution.declaration.scheme,
+        const instantiator = new Instantiator();
+        const type_ = instantiator.instantiatePoly(
+          ast.struct.resolution.declaration,
         );
 
         for (const field of ast.fields) {
@@ -563,9 +565,8 @@ class Typechecker {
             continue;
           }
 
-          const fieldType = instantiateFromScheme(
-            field.field.resolution.field.$.asType(),
-            {}, // TODO handle scheme
+          const fieldType = instantiator.instantiatePoly(
+            field.field.resolution.field,
           );
 
           this.unifyExpr(field.value, field.value.$.asType(), fieldType);
@@ -664,22 +665,16 @@ class Typechecker {
 
   private unifyFieldAccess(
     ast: TypedExpr & { type: "field-access" },
-
     resolution: FieldResolution,
   ) {
-    const leftType_: Type = instantiateFromScheme(
-      resolution.declaration.$.asType(),
-      resolution.declaration.scheme,
+    const instantiator = new Instantiator();
+
+    const structType: Type = instantiator.instantiatePoly(
+      resolution.declaration,
     );
-
-    this.unifyExpr(ast.left, ast.left.$.asType(), leftType_);
-
-    const returnType = instantiateFromScheme(
-      resolution.field.$.asType(),
-      resolution.declaration.scheme,
-    );
-
-    this.unifyExpr(ast, ast.$.asType(), returnType);
+    this.unifyExpr(ast.left, ast.left.$.asType(), structType);
+    const fieldType = instantiator.instantiatePoly(resolution.field);
+    this.unifyExpr(ast, ast.$.asType(), fieldType);
   }
 
   private checkMissingStructFields(
@@ -786,7 +781,6 @@ type TypeAstConversionType =
   | {
       type: "constructor-arg";
       params: string[];
-      returning: Type & { type: "named" };
     };
 
 const CORE_PACKAGE = "kestrel_core";

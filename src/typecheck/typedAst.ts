@@ -67,7 +67,7 @@ export type TypedStructField = StructField<
 >;
 
 export type FieldResolution = StructResolution & {
-  field: StructDeclarationField<TypeMeta>;
+  field: StructDeclarationField<PolyTypeMeta>;
 };
 
 export type StructResolutionMeta = {
