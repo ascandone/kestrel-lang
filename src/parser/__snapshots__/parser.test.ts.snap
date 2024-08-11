@@ -5002,6 +5002,13 @@ exports[`structs > construct fields with many fields 1`] = `
           15,
           65,
         ],
+        "struct": {
+          "name": "MyStruct",
+          "span": [
+            15,
+            23,
+          ],
+        },
         "type": "struct-literal",
       },
     },
@@ -5035,6 +5042,13 @@ exports[`structs > construct fields with no fields 1`] = `
           8,
           20,
         ],
+        "struct": {
+          "name": "MyStruct",
+          "span": [
+            8,
+            16,
+          ],
+        },
         "type": "struct-literal",
       },
     },

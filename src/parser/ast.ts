@@ -121,6 +121,7 @@ export type Expr<
     }
   | {
       type: "struct-literal";
+      struct: { name: string } & SpanMeta;
       fields: StructField<
         TypeMeta,
         IdentifierResolutionMeta,

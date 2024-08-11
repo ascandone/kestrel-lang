@@ -401,6 +401,10 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     return {
       type: "struct-literal",
       span: [ctx.start.start, ctx.stop!.stop + 1],
+      struct: {
+        name: ctx.TYPE_ID().getText(),
+        span: [ctx.TYPE_ID().symbol.start, ctx.TYPE_ID().symbol.stop + 1],
+      },
       fields:
         ctx
           .structFields()
