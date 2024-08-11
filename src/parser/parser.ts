@@ -267,6 +267,8 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       struct: this.visit(ctx.expr()),
       field: {
         name: ctx.ID().getText(),
+        structName:
+          ctx._structName === undefined ? undefined : ctx._structName.text,
         span: [ctx.ID().symbol.start, ctx.ID().symbol.stop + 1],
       },
       span: [ctx.start.start, ctx.stop!.stop + 1],

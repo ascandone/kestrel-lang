@@ -5164,6 +5164,7 @@ exports[`structs > field access 1`] = `
             10,
             18,
           ],
+          "structName": undefined,
         },
         "span": [
           8,
@@ -5275,6 +5276,55 @@ exports[`structs > pub(..) modifier 1`] = `
       "type": "struct",
     },
   ],
+}
+`;
+
+exports[`structs > qualified field access 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        27,
+      ],
+      "value": {
+        "field": {
+          "name": "my_field",
+          "span": [
+            19,
+            27,
+          ],
+          "structName": "MyStruct",
+        },
+        "span": [
+          8,
+          27,
+        ],
+        "struct": {
+          "name": "s",
+          "namespace": undefined,
+          "span": [
+            8,
+            9,
+          ],
+          "type": "identifier",
+        },
+        "type": "field-access",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
 }
 `;
 

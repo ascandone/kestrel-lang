@@ -190,7 +190,7 @@ export type Expr<
         FieldResolutionMeta,
         SyntaxSugar
       >;
-      field: { name: string } & SpanMeta;
+      field: { name: string; structName?: string } & SpanMeta;
     } & FieldResolutionMeta)
   | {
       type: "let";

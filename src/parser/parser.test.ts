@@ -597,7 +597,7 @@ describe("structs", () => {
 
   test.todo("complex exprs in update syntax");
 
-  test.todo("qualified field access", () => {
+  test("qualified field access", () => {
     const src = `let _ = s.MyStruct#my_field`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

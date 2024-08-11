@@ -102,7 +102,7 @@ expr:
 	| FLOAT																	# float
 	| CHAR																	# char
 	| STRING																# string
-	| expr '.' ID															# fieldAccess
+	| expr '.' (structName = TYPE_ID '#')? ID								# fieldAccess
 	| qualifiedId															# id
 	| op = '!' expr															# BoolNot
 	| TYPE_ID '{' structFields? ('..' spread = expr)? '}'					# structLit
