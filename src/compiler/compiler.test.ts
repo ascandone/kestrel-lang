@@ -882,6 +882,67 @@ describe("structs", () => {
       "
     `);
   });
+
+  test("empty struct is represented as null", () => {
+    const out = compileSrc(`
+      extern type Int
+      type Nil struct { }
+
+      pub let nil = Nil { }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$nil = null;
+      "
+    `);
+  });
+
+  test("field access", () => {
+    const out = compileSrc(`
+      extern type Int
+
+      type Box struct { x: Int }
+
+      pub let b = Box { x: 42 } 
+
+      pub let x_f = b.x
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$b = { x: 42 };
+
+      const Main$x_f = Main$b.x;
+      "
+    `);
+  });
+
+  test("field access of struct lit", () => {
+    const out = compileSrc(`
+      extern type Int
+      type Box struct { x: Int }
+
+      pub let x_f = Box { x: 42 }.x
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x_f = { x: 42 }.x;
+      "
+    `);
+  });
+
+  // Note: this should never happen, as currently there aren't any
+  // builtin infix ops that yield structs
+  // still, it's better to handle it
+  test.todo("field access of infix expr", () => {
+    const out = compileSrc(`
+      pub let x_f = (1 + 2).x
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x_f = { x: 42 }.x;
+      "
+    `);
+  });
 });
 
 describe("pattern matching", () => {

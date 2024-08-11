@@ -241,9 +241,20 @@ export class Compiler {
         return [buf, ret];
       }
 
+      case "field-access": {
+        const [sts, structValue] = this.compileAsExpr(src.left);
+        // TODO prec with infix
+        return [sts, `${structValue}.${src.field.name}`];
+      }
+
       case "struct-literal": {
         const objContent: string[] = [];
         const stsBuf: string[] = [];
+
+        if (src.fields.length === 0) {
+          return [[], "null"];
+        }
+
         for (const f of src.fields) {
           const [sts, fieldValue] = this.compileAsExpr(f.value);
           stsBuf.push(...sts);
@@ -369,8 +380,10 @@ export class Compiler {
           }
           return ret;
         }
+        // Attention: fallthrough to the next branch
       }
 
+      case "field-access":
       case "struct-literal":
       case "list-literal":
       case "identifier":
