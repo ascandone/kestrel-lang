@@ -657,6 +657,12 @@ class Typechecker {
 
         this.checkMissingStructFields(ast, ast.struct.resolution, type_);
         this.unifyExpr(ast, ast.$.asType(), type_);
+
+        if (ast.spread !== undefined) {
+          this.typecheckAnnotatedExpr(ast.spread);
+          this.unifyExpr(ast.spread, ast.spread.$.asType(), ast.$.asType());
+        }
+
         return;
       }
 

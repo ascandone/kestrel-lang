@@ -1619,6 +1619,26 @@ describe("struct", () => {
     });
   });
 
+  test("updating a infers the spread arg", () => {
+    const [types, errs] = tc(
+      `
+      type Box<a> struct { a: a }
+
+      pub let set_a = fn box {
+        Box {
+          a: 0,
+          ..box
+        }
+      }
+  `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      set_a: "Fn(Box<Int>) -> Box<Int>",
+    });
+  });
+
   test.todo("namespaced struct names");
 });
 

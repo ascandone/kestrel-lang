@@ -703,6 +703,10 @@ class ResolutionStep {
             ...ast.struct,
             resolution: typeDecl,
           },
+          spread:
+            ast.spread === undefined
+              ? undefined
+              : this.annotateExpr(ast.spread),
           $: TVar.fresh(),
         };
       }
