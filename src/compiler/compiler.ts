@@ -266,6 +266,13 @@ export class Compiler {
       }
 
       case "struct-literal": {
+        const resolution = src.struct.resolution;
+        if (resolution === undefined) {
+          throw new Error(
+            "[unreachable] undefined resolution for struct declaration",
+          );
+        }
+
         const objContent: string[] = [];
         const stsBuf: string[] = [];
 
@@ -278,6 +285,25 @@ export class Compiler {
           stsBuf.push(...sts);
           objContent.push(`${f.field.name}: ${fieldValue}`);
         }
+
+        if (src.spread !== undefined) {
+          const [exprSts, exprExpr] = this.compileAsExpr(src.spread);
+          stsBuf.push(...exprSts);
+
+          for (const originalField of resolution.declaration.fields) {
+            const alreadyWritten = src.fields.some(
+              (writtenField) => writtenField.field.name === originalField.name,
+            );
+            if (alreadyWritten) {
+              continue;
+            }
+
+            objContent.push(
+              `${originalField.name}: ${exprExpr}.${originalField.name}`,
+            );
+          }
+        }
+
         return [stsBuf, `{ ${objContent.join(", ")} }`];
       }
 

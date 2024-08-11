@@ -922,6 +922,29 @@ describe("structs", () => {
     `);
   });
 
+  test("struct update", () => {
+    const out = compileSrc(`
+      extern type Int
+      type Point3D struct {
+        x: Int,
+        y: Int,
+        z: Int,
+      }
+
+      extern let original: Point3D
+      pub let update_y = Point3D {
+        y: 42,
+        ..original
+      }
+      
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$update_y = { y: 42, x: Main$original.x, z: Main$original.z };
+      "
+    `);
+  });
+
   // Note: this should never happen, as currently there aren't any
   // builtin infix ops that yield structs
   // still, it's better to handle it
