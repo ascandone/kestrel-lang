@@ -62,7 +62,7 @@ typeDeclaration_:
 
 structDeclaration_:
 	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? 'struct' '{'
-		fields? '}';
+		declarationFields? '}';
 
 externTypeDeclaration_:
 	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?;
@@ -74,7 +74,7 @@ typeVariants:
 	typeConstructorDecl (',' typeConstructorDecl)* ','?;
 
 fieldDecl: ID ':' type;
-fields: fieldDecl (',' fieldDecl)* ','?;
+declarationFields: fieldDecl (',' fieldDecl)* ','?;
 
 polyType:
 	type ('where' traitImplClause (',' traitImplClause)*)?;
@@ -94,6 +94,9 @@ typeConstructorDecl: name = TYPE_ID ('(' type (',' type)* ')')?;
 
 qualifiedId: (moduleNamespace '.')? (name = (ID | TYPE_ID));
 
+structField: ID ':' expr;
+structFields: structField (',' structField)* ','?;
+
 expr:
 	INT																		# int
 	| FLOAT																	# float
@@ -102,6 +105,7 @@ expr:
 	| expr '.' ID															# fieldAccess
 	| qualifiedId															# id
 	| op = '!' expr															# BoolNot
+	| TYPE_ID '{' structFields? '}'											# structLit
 	| expr '(' (expr (',' expr)* ','?)? ')'									# call
 	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr						# MulDiv
 	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr						# AddSub

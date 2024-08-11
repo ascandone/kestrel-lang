@@ -35,6 +35,7 @@ import Parser, {
   StringContext,
   StringPatternContext,
   StructDeclarationContext,
+  StructLitContext,
   TupleContext,
   TuplePatternContext,
   TupleTypeContext,
@@ -396,6 +397,27 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     };
   };
 
+  visitStructLit = (ctx: StructLitContext): UntypedExpr => {
+    return {
+      type: "struct-literal",
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      fields:
+        ctx
+          .structFields()
+          ?.structField_list()
+          .map((v) => ({
+            field: {
+              name: v.ID().getText(),
+              span: [v.ID().symbol.start, v.ID().symbol.stop + 1],
+            },
+            span: [v.start.start, v.stop!.stop + 1],
+            value: this.visit(v.expr()),
+            // args: v.type__list().map((t) => new TypeVisitor().visit(t)),
+            // type_: new TypeVisitor().visit(v.type_()),
+          })) ?? [],
+    };
+  };
+
   visitListLit = (ctx: ListLitContext): UntypedExpr => ({
     type: "list-literal",
     span: [ctx.start.start, ctx.stop!.stop + 1],
@@ -579,7 +601,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
         type: "struct",
         fields:
           ctx
-            .fields()
+            .declarationFields()
             ?.fieldDecl_list()
             .map((v) => ({
               name: v.ID().getText(),

@@ -6,7 +6,7 @@ import {
   Import,
   MatchPattern,
   SpanMeta,
-  StructField,
+  StructDeclarationField,
   TypeAst,
   TypeDeclaration,
   TypeVariant,
@@ -54,7 +54,7 @@ export type TypeResolutionMeta = {
 
 export type FieldResolution = {
   declaration: TypedTypeDeclaration & { type: "struct" };
-  field: StructField<TypeMeta>;
+  field: StructDeclarationField<TypeMeta>;
   namespace: string;
 };
 

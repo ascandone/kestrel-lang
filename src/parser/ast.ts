@@ -85,6 +85,21 @@ export type SyntaxSugar =
 
 export type UntypedExpr = Expr<unknown, unknown, unknown, SyntaxSugar>;
 
+export type StructField<
+  TypeMeta,
+  IdentifierResolutionMeta,
+  FieldResolutionMeta,
+  SyntaxSugar,
+> = SpanMeta & {
+  field: { name: string } & SpanMeta;
+  value: Expr<
+    TypeMeta,
+    IdentifierResolutionMeta,
+    FieldResolutionMeta,
+    SyntaxSugar
+  >;
+};
+
 export type Expr<
   TypeMeta,
   IdentifierResolutionMeta,
@@ -98,6 +113,15 @@ export type Expr<
   | {
       type: "list-literal";
       values: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >[];
+    }
+  | {
+      type: "struct-literal";
+      fields: StructField<
         TypeMeta,
         IdentifierResolutionMeta,
         FieldResolutionMeta,
@@ -250,7 +274,7 @@ export type TypeVariant<TypeMeta> = (TypeMeta & SpanMeta) & {
   args: TypeAst<TypeResolutionMeta>[];
 };
 
-export type StructField<TypeMeta> = (TypeMeta & SpanMeta) & {
+export type StructDeclarationField<TypeMeta> = (TypeMeta & SpanMeta) & {
   name: string;
   type_: TypeAst<TypeResolutionMeta>;
 };
@@ -263,7 +287,11 @@ export type TypeDeclaration<TypeMeta> = SpanMeta & {
   docComment?: string;
 } & (
     | { type: "adt"; variants: TypeVariant<TypeMeta>[]; pub: boolean | ".." }
-    | { type: "struct"; fields: StructField<TypeMeta>[]; pub: boolean | ".." }
+    | {
+        type: "struct";
+        fields: StructDeclarationField<TypeMeta>[];
+        pub: boolean | "..";
+      }
     | { type: "extern"; pub: boolean }
   );
 

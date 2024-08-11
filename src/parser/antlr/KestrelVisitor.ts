@@ -22,7 +22,7 @@ import { PubExposingContext } from "./KestrelParser";
 import { ParamsListContext } from "./KestrelParser";
 import { TypeVariantsContext } from "./KestrelParser";
 import { FieldDeclContext } from "./KestrelParser";
-import { FieldsContext } from "./KestrelParser";
+import { DeclarationFieldsContext } from "./KestrelParser";
 import { PolyTypeContext } from "./KestrelParser";
 import { TraitImplClauseContext } from "./KestrelParser";
 import { NamedTypeContext } from "./KestrelParser";
@@ -32,6 +32,8 @@ import { TupleTypeContext } from "./KestrelParser";
 import { FnTypeParamsContext } from "./KestrelParser";
 import { TypeConstructorDeclContext } from "./KestrelParser";
 import { QualifiedIdContext } from "./KestrelParser";
+import { StructFieldContext } from "./KestrelParser";
+import { StructFieldsContext } from "./KestrelParser";
 import { ListLitContext } from "./KestrelParser";
 import { ParensContext } from "./KestrelParser";
 import { StringContext } from "./KestrelParser";
@@ -53,6 +55,7 @@ import { IdContext } from "./KestrelParser";
 import { BlockExprContext } from "./KestrelParser";
 import { IfContext } from "./KestrelParser";
 import { BoolOrContext } from "./KestrelParser";
+import { StructLitContext } from "./KestrelParser";
 import { BoolAndContext } from "./KestrelParser";
 import { ConsContext } from "./KestrelParser";
 import { MatchClauseContext } from "./KestrelParser";
@@ -200,11 +203,11 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitFieldDecl?: (ctx: FieldDeclContext) => Result;
 	/**
-	 * Visit a parse tree produced by `KestrelParser.fields`.
+	 * Visit a parse tree produced by `KestrelParser.declarationFields`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitFields?: (ctx: FieldsContext) => Result;
+	visitDeclarationFields?: (ctx: DeclarationFieldsContext) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.polyType`.
 	 * @param ctx the parse tree
@@ -263,6 +266,18 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitQualifiedId?: (ctx: QualifiedIdContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.structField`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitStructField?: (ctx: StructFieldContext) => Result;
+	/**
+	 * Visit a parse tree produced by `KestrelParser.structFields`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitStructFields?: (ctx: StructFieldsContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `listLit`
 	 * labeled alternative in `KestrelParser.expr`.
@@ -410,6 +425,13 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitBoolOr?: (ctx: BoolOrContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `structLit`
+	 * labeled alternative in `KestrelParser.expr`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitStructLit?: (ctx: StructLitContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `BoolAnd`
 	 * labeled alternative in `KestrelParser.expr`.

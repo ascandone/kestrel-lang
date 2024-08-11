@@ -569,12 +569,12 @@ describe("structs", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.todo("construct fields with no fields", () => {
+  test("construct fields with no fields", () => {
     const src = `let _ = MyStruct { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.todo("construct fields with many fields", () => {
+  test("construct fields with many fields", () => {
     const src = `
       let _ = MyStruct {
         a: 42,

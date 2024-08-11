@@ -4929,6 +4929,121 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
 }
 `;
 
+exports[`structs > construct fields with many fields 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        7,
+        65,
+      ],
+      "value": {
+        "fields": [
+          {
+            "field": {
+              "name": "a",
+              "span": [
+                34,
+                35,
+              ],
+            },
+            "span": [
+              34,
+              39,
+            ],
+            "value": {
+              "span": [
+                37,
+                39,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 42,
+              },
+            },
+          },
+          {
+            "field": {
+              "name": "b",
+              "span": [
+                49,
+                50,
+              ],
+            },
+            "span": [
+              49,
+              56,
+            ],
+            "value": {
+              "span": [
+                52,
+                56,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "string",
+                "value": "ok",
+              },
+            },
+          },
+        ],
+        "span": [
+          15,
+          65,
+        ],
+        "type": "struct-literal",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`structs > construct fields with no fields 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        20,
+      ],
+      "value": {
+        "fields": [],
+        "span": [
+          8,
+          20,
+        ],
+        "type": "struct-literal",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`structs > doc comments 1`] = `
 {
   "declarations": [],
