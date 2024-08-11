@@ -81,6 +81,7 @@ function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
         return selfBindingPower > bindingPower;
       }
 
+    case "field-access":
     case "syntax-err":
     case "list-literal":
     case "pipe":
@@ -206,6 +207,14 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
 
       return concat(leftDoc, text(` ${name} `), exprToDoc(ast.right, false));
     }
+
+    case "field-access":
+      return concat(
+        //
+        autoParens(DOT_ACCESS_BINDING_POWER, ast.struct),
+        text("."),
+        text(ast.field.name),
+      );
 
     case "application": {
       infix: if (ast.caller.type === "identifier") {
@@ -632,3 +641,12 @@ export function format(ast: UntypedModule): string {
 function isTupleN(namespace: string | undefined, name: string): boolean {
   return namespace === "Tuple" && /Tuple[0-9]+/.test(name);
 }
+
+function autoParens(infixIndex: number, expr: UntypedExpr) {
+  const needsParens = hasLowerPrec(infixIndex, expr);
+  return needsParens
+    ? concat(text("("), exprToDoc(expr, false), text(")"))
+    : exprToDoc(expr, false);
+}
+
+const DOT_ACCESS_BINDING_POWER = 0;

@@ -93,6 +93,31 @@ describe("struct", () => {
   another_field: String,
 }\n`).toBeFormatted();
   });
+
+  test("field access", () => {
+    expect(`let _ = my_struct.field
+`).toBeFormatted();
+  });
+
+  test("nested field access", () => {
+    expect(`let _ = my_struct.a.b.c
+`).toBeFormatted();
+  });
+
+  test("field access (handling prec of infix)", () => {
+    expect(`let _ = (1 + 2).field
+`).toBeFormatted();
+  });
+
+  test("field access (handling prec of call)", () => {
+    expect(`let _ = f().field
+`).toBeFormatted();
+  });
+
+  test("prec over dot access", () => {
+    expect(`let _ = 1 + x.field
+`).toBeFormatted();
+  });
 });
 
 test("cons application sugar", () => {

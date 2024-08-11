@@ -945,6 +945,8 @@ describe("structs", () => {
     `);
   });
 
+  test.todo("struct update when expr is not ident");
+
   // Note: this should never happen, as currently there aren't any
   // builtin infix ops that yield structs
   // still, it's better to handle it
