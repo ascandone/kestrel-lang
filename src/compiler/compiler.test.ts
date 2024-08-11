@@ -7,6 +7,7 @@ import {
   typecheckProject,
 } from "../typecheck";
 import { UntypedModule, unsafeParse } from "../parser";
+import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
 
 test("compile int constants", () => {
   const out = compileSrc(`pub let x = 42`);
@@ -27,7 +28,7 @@ test("compile string constants", () => {
 test("compile char constants", () => {
   const out = compileSrc(`pub let x = 'a'`);
   expect(out).toMatchInlineSnapshot(`
-    "const Main$x = new String("a");
+    "const Main$x = "a";
     "
   `);
 });
@@ -104,27 +105,23 @@ test("refer to previously defined idents", () => {
 
 test("function calls with no args", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn() -> a
     let y = f()
   `);
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    const Main$y = Main$f();
+    "const Main$y = Main$f();
     "
   `);
 });
 
 test("function calls with args", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a, a) -> a
     let y = f(1, 2)
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    const Main$y = Main$f(1, 2);
+    "const Main$y = Main$f(1, 2);
     "
   `);
 });
@@ -203,7 +200,7 @@ test("shadowing fn params", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f(a, a$1) {
+    "const Main$f = (a, a$1) => {
       return a$1;
     }
     "
@@ -219,7 +216,7 @@ test("shadowing fn params with let", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f(msg) {
+    "const Main$f = (msg) => {
       const msg$1 = msg;
       return msg$1;
     }
@@ -229,7 +226,7 @@ test("shadowing fn params with let", () => {
 
 test("two let as fn args, shadowing", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a, a) -> a
     let x = f(
       { let a = 0; a },
       { let a = 1; a },
@@ -237,9 +234,7 @@ test("two let as fn args, shadowing", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    const Main$x$a = 0;
+    "const Main$x$a = 0;
     const Main$x$a$1 = 1;
     const Main$x = Main$f(Main$x$a, Main$x$a$1);
     "
@@ -252,7 +247,7 @@ test("toplevel fn without params", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f() {
+    "const Main$f = () => {
       return 42;
     }
     "
@@ -265,7 +260,7 @@ test("toplevel fn with params", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f(x, y) {
+    "const Main$f = (x, y) => {
       return y;
     }
     "
@@ -279,8 +274,8 @@ test("== performs structural equality when type is unbound", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f(x, y) {
-      return Bool$_eq(x, y);
+    "const Main$f = (x, y) => {
+      return Main$_eq(x, y);
     }
     "
   `);
@@ -288,15 +283,16 @@ test("== performs structural equality when type is unbound", () => {
 
 test("== performs structural equality when type is adt", () => {
   const out = compileSrc(`
-  type T { C(Int) }
-  let f = C(0) == C(1)
+    extern let (==): Fn(a, a) -> Bool
+    type T { C(Int) }
+    let f = C(0) == C(1)
 `);
 
   expect(out).toMatchInlineSnapshot(`
     "function Main$C(a0) {
       return { $: "C", a0 };
     }
-    const Main$f = Bool$_eq(Main$C(0), Main$C(1));
+    const Main$f = Main$_eq(Main$C(0), Main$C(1));
     "
   `);
 });
@@ -350,7 +346,7 @@ test("fn inside if return", () => {
   expect(out).toMatchInlineSnapshot(`
     "let Main$f;
     if (0) {
-      function Main$f$GEN__0() {
+      const Main$f$GEN__0 = () => {
         return 1;
       }
       Main$f = Main$f$GEN__0;
@@ -371,7 +367,7 @@ test("let inside scope", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$f() {
+    "const Main$f = () => {
       const x = 0;
       const y = 1;
       return x;
@@ -382,7 +378,7 @@ test("let inside scope", () => {
 
 test("let inside arg of a function", () => {
   const out = compileSrc(`
-  let f = 0
+  extern let f: Fn(a) -> a
   let a = f({
     let x = 0;
     x
@@ -390,9 +386,7 @@ test("let inside arg of a function", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    const Main$a$x = 0;
+    "const Main$a$x = 0;
     const Main$a = Main$f(Main$a$x);
     "
   `);
@@ -401,13 +395,15 @@ test("let inside arg of a function", () => {
 test("function with a scoped identified as caller", () => {
   const out = compileSrc(`
   let x = {
-    let f = 0;
+    let f = fn { 0 };
     f()
   }
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$x$f = 0;
+    "const Main$x$f = () => {
+      return 0;
+    }
     const Main$x = Main$x$f();
     "
   `);
@@ -447,7 +443,7 @@ test("tail position if", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$is_zero(n) {
+    "const Main$is_zero = (n) => {
       if (n == 0) {
         return "yes";
       } else {
@@ -476,7 +472,7 @@ test("nested ifs", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$is_zero(n) {
+    "const Main$is_zero = (n) => {
       if (n == 0) {
         return "zero";
       } else {
@@ -539,7 +535,7 @@ test("fn inside let", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$x$f() {
+    "const Main$x$f = () => {
       return 0;
     }
     const Main$x = Main$x$f(1);
@@ -549,16 +545,14 @@ test("fn inside let", () => {
 
 test("fn as expr", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a) -> a
     let x = f(fn {
       1
     })
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    function Main$x$GEN__0() {
+    "const Main$x$GEN__0 = () => {
       return 1;
     }
     const Main$x = Main$f(Main$x$GEN__0);
@@ -568,7 +562,7 @@ test("fn as expr", () => {
 
 test("ifs as expr", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a) -> a
     let x = f(
       if 0 == 1 {
         "a" 
@@ -578,9 +572,7 @@ test("ifs as expr", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    let Main$x$GEN__0;
+    "let Main$x$GEN__0;
     if (0 == 1) {
       Main$x$GEN__0 = "a";
     } else {
@@ -611,7 +603,7 @@ test("iifs", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$a$GEN__0() {
+    "const Main$a$GEN__0 = () => {
       return 42;
     }
     const Main$a = Main$a$GEN__0();
@@ -629,7 +621,7 @@ test("(let) closures", () => {
 
   expect(out).toMatchInlineSnapshot(`
     "const Main$a$captured = 42;
-    function Main$a() {
+    const Main$a = () => {
       return Main$a$captured;
     }
     "
@@ -646,8 +638,8 @@ test("fn closures", () => {
   `);
 
   expect(out).toMatchInlineSnapshot(`
-    "function Main$a() {
-      function GEN__0() {
+    "const Main$a = () => {
+      const GEN__0 = () => {
         return 100;
       }
       return GEN__0;
@@ -666,8 +658,8 @@ test("recursion in closures", () => {
 
   expect(out).toMatchInlineSnapshot(
     `
-    "function Main$f$x() {
-      function GEN__0() {
+    "const Main$f$x = () => {
+      const GEN__0 = () => {
         return Main$f$x();
       }
       return GEN__0;
@@ -849,6 +841,860 @@ describe("list literal", () => {
   });
 });
 
+describe("derive Eq instance", () => {
+  test("do not derive underivable types", () => {
+    const out = compileSrc(
+      `
+      extern type DoNotDerive
+      type T { X(DoNotDerive) }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }"
+    `);
+  });
+
+  test("no variants", () => {
+    const out = compileSrc(
+      `
+      type T { }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$T = (x, y) => {
+        return true;
+      }"
+    `);
+  });
+
+  test("singleton without args", () => {
+    const out = compileSrc(
+      `
+      type T { X }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = { $: "X" };
+
+      const Eq_Main$T = (x, y) => {
+        return true;
+      }"
+    `);
+  });
+
+  test("singleton with concrete arg", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T { X(Int) }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+      },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Eq_Main$T = (x, y) => {
+        return Eq_Main$Int(x.a0, y.a0);
+      }"
+    `);
+  });
+
+  test("singleton with var args", () => {
+    const out = compileSrc(
+      `
+      type T<a, b, c, d> { X(b) }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Eq_Main$T = (Eq_b) => (x, y) => {
+        return Eq_b(x.a0, y.a0);
+      }"
+    `);
+  });
+
+  test("singleton with concrete args", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Bool
+      type T { X(Int, Bool) }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [
+          { moduleName: "Main", typeName: "Int", trait: "Eq" },
+          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+        ],
+      },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0, a1) {
+        return { $: "X", a0, a1 };
+      }
+      const Eq_Main$T = (x, y) => {
+        return Eq_Main$Int(x.a0, y.a0) && Eq_Main$Bool(x.a1, y.a1);
+      }"
+    `);
+  });
+
+  test("type with many variants", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Bool
+      type T<a> {
+        A(Int),
+        B(a, Int),
+        C,
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [
+          { moduleName: "Main", typeName: "Int", trait: "Eq" },
+          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+        ],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$A(a0) {
+        return { $: "A", a0 };
+      }
+      function Main$B(a0, a1) {
+        return { $: "B", a0, a1 };
+      }
+      const Main$C = { $: "C" };
+
+      const Eq_Main$T = (Eq_a) => (x, y) => {
+        if (x.$ !== y.$) {
+          return false;
+        }
+        switch (x.$) {
+          case "A":
+            return Eq_Main$Int(x.a0, y.a0);
+          case "B":
+            return Eq_a(x.a0, y.a0) && Eq_Main$Int(x.a1, y.a1);
+          case "C":
+            return true;
+        }
+      }"
+    `);
+  });
+
+  test("parametric arg", () => {
+    const out = compileSrc(
+      `
+      type X<a> { X(a) }
+
+      type Y<b> {
+        Y(X<b>),
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Eq_Main$X = (Eq_a) => (x, y) => {
+        return Eq_a(x.a0, y.a0);
+      }
+      function Main$Y(a0) {
+        return { $: "Y", a0 };
+      }
+      const Eq_Main$Y = (Eq_b) => (x, y) => {
+        return Eq_Main$X(Eq_b)(x.a0, y.a0);
+      }"
+    `);
+  });
+
+  test("recursive data structures", () => {
+    const out = compileSrc(
+      `
+      type List<a> {
+        None,
+        Cons(a, List<a>),
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$None = { $: "None" };
+
+      function Main$Cons(a0, a1) {
+        return { $: "Cons", a0, a1 };
+      }
+      const Eq_Main$List = (Eq_a) => (x, y) => {
+        if (x.$ !== y.$) {
+          return false;
+        }
+        switch (x.$) {
+          case "None":
+            return true;
+          case "Cons":
+            return Eq_a(x.a0, y.a0) && Eq_Main$List(Eq_a)(x.a1, y.a1);
+        }
+      }"
+    `);
+  });
+});
+
+describe("Derive Show instance", () => {
+  test("do not derive underivable types", () => {
+    const out = compileSrc(
+      `
+      extern type DoNotDerive
+      type T { X(DoNotDerive) }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }"
+    `);
+  });
+
+  test("no variants", () => {
+    const out = compileSrc(
+      `
+      type T {  }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Show_Main$T = (x) => {
+        return "never";
+      }"
+    `);
+  });
+
+  test("singleton without args", () => {
+    const out = compileSrc(
+      `
+      type T { X }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = { $: "X" };
+
+      const Show_Main$T = (x) => {
+        return "X";
+      }"
+    `);
+  });
+
+  test("single variant, with concrete args", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T { X(Int) }
+    `,
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Show_Main$T = (x) => {
+        return \`X(\${Show_Main$Int(x.a0)})\`;
+      }"
+    `);
+  });
+
+  test("single variant with var arg", () => {
+    const out = compileSrc(
+      `
+      type T<a, b, c, d> { X(c) }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Show_Main$T = (Show_c) => (x) => {
+        return \`X(\${Show_c(x.a0)})\`;
+      }"
+    `);
+  });
+
+  test("many variants", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T<a, b> {
+        A,
+        B(Int, a),
+        C(b),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$A = { $: "A" };
+
+      function Main$B(a0, a1) {
+        return { $: "B", a0, a1 };
+      }
+      function Main$C(a0) {
+        return { $: "C", a0 };
+      }
+      const Show_Main$T = (Show_a, Show_b) => (x) => {
+        switch (x.$) {
+          case "A":
+            return "A";
+          case "B":
+            return \`B(\${Show_Main$Int(x.a0)}, \${Show_a(x.a1)})\`;
+          case "C":
+            return \`C(\${Show_b(x.a0)})\`;
+        }
+      }"
+    `);
+  });
+
+  test("parametric arg", () => {
+    const out = compileSrc(
+      `
+      type X<a> { X(a) }
+
+      type Y<b> {
+        Y(X<b>),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Show_Main$X = (Show_a) => (x) => {
+        return \`X(\${Show_a(x.a0)})\`;
+      }
+      function Main$Y(a0) {
+        return { $: "Y", a0 };
+      }
+      const Show_Main$Y = (Show_b) => (x) => {
+        return \`Y(\${Show_Main$X(Show_b)(x.a0)})\`;
+      }"
+    `);
+  });
+
+  test("recursive data structures", () => {
+    const out = compileSrc(
+      `
+      type Lst<a> {
+        None,
+        Cons(a, Lst<a>),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$None = { $: "None" };
+
+      function Main$Cons(a0, a1) {
+        return { $: "Cons", a0, a1 };
+      }
+      const Show_Main$Lst = (Show_a) => (x) => {
+        switch (x.$) {
+          case "None":
+            return "None";
+          case "Cons":
+            return \`Cons(\${Show_a(x.a0)}, \${Show_Main$Lst(Show_a)(x.a1)})\`;
+        }
+      }"
+    `);
+  });
+
+  test("handle special tuple syntax", () => {
+    const out = compileSrc(
+      `
+      type Tuple2<a, b> {
+        Tuple2(a, b),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+        ns: "Tuple",
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Tuple$Tuple2(a0, a1) {
+        return { $: "Tuple2", a0, a1 };
+      }
+      const Show_Tuple$Tuple2 = (Show_a, Show_b) => (x) => {
+        return \`(\${Show_a(x.a0)}, \${Show_b(x.a1)})\`;
+      }"
+    `);
+  });
+});
+
+describe("traits compilation", () => {
+  test("non-fn values", () => {
+    const out = compileSrc(`
+      extern let p: a where a: Show
+
+      type Int {}
+      extern let take_int: Fn(Int) -> a
+
+      let x = take_int(p)
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = Main$take_int(Main$p(Show_Main$Int));
+      "
+    `);
+  });
+
+  test("applying with concrete types", () => {
+    const out = compileSrc(
+      `
+      extern let show: Fn(a) -> String where a: Show
+      let x = show("abc")
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = Main$show(Show_String$String)("abc");
+      "
+    `);
+  });
+
+  test("unresolved traits", () => {
+    const out = compileSrc(`
+      extern let p: a  where a: Show
+      let x = p //: a1 where a1: Show 
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = (Show_1) => Main$p(Show_1);
+      "
+    `);
+  });
+
+  test("higher order fn", () => {
+    const out = compileSrc(
+      `
+      extern type String
+      let id = fn x { x }
+      extern let show: Fn(a) -> String where a: Show
+      let f = id(show)(42)
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$id = (x) => {
+        return x;
+      }
+
+      const Main$f = Main$id(Main$show(Show_Int$Int))(42);
+      "
+    `);
+  });
+
+  test("applying with type variables", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+      let f = fn x { show(x) }
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (Show_9) => (x) => {
+        return Main$show(Show_9)(x);
+      }
+      "
+    `);
+  });
+
+  test("do not duplicate vars", () => {
+    const out = compileSrc(`
+      extern let show2: Fn(a, a) -> String where a: Show
+      let f = show2
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (Show_5) => Main$show2(Show_5);
+      "
+    `);
+  });
+
+  test("handle multiple traits", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a, a) -> String where a: Eq + Show
+      let f = show
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (Eq_5, Show_5) => Main$show(Eq_5, Show_5);
+      "
+    `);
+  });
+
+  test("handle multiple traits when applying to concrete args", () => {
+    const out = compileSrc(
+      `
+      extern let show: Fn(a, a) -> String where a: Eq + Show
+      let f = show("a", "b")
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = Main$show(Eq_String$String, Show_String$String)("a", "b");
+      "
+    `);
+  });
+
+  test("do not pass extra args", () => {
+    const out = compileSrc(
+      `
+      extern type String
+      extern type Bool
+
+      extern let inspect: Fn(a) -> String where a: Show
+      extern let (==): Fn(a, a) -> Bool where a: Eq
+
+      let equal = fn x, y {
+        if x == y {
+          "ok"
+        } else {
+          inspect(x)
+        }
+      }
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$equal = (Eq_17, Show_17) => (x, y) => {
+        if (Main$_eq(Eq_17)(x, y)) {
+          return "ok";
+        } else {
+          return Main$inspect(Show_17)(x);
+        }
+      }
+      "
+    `);
+  });
+
+  test("do not duplicate when there's only one var to pass", () => {
+    const out = compileSrc(
+      `
+      extern let show2: Fn(a, a) -> String where a: Show
+      let f = fn arg {
+        show2(arg, "hello")
+      }
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (arg) => {
+        return Main$show2(Show_String$String)(arg, "hello");
+      }
+      "
+    `);
+  });
+
+  test("pass an arg twice if needed", () => {
+    const out = compileSrc(
+      `
+      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      let f =  show2("a", "b")
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = Main$show2(Show_String$String, Show_String$String)("a", "b");
+      "
+    `);
+  });
+
+  test("partial application", () => {
+    const out = compileSrc(
+      `
+      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      let f = fn arg {
+        show2(arg, "hello")
+      }
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (Show_11) => (arg) => {
+        return Main$show2(Show_11, Show_String$String)(arg, "hello");
+      }
+      "
+    `);
+  });
+
+  test("pass trait dicts for types with params when they do not have deps", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+
+      type AlwaysShow<a> { X }
+      
+      let x = show(X)
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = { $: "X" };
+
+      const Main$x = Main$show(Show_Main$AlwaysShow)(Main$X);
+      "
+    `);
+  });
+
+  test("pass higher order trait dicts for types with params when they do have deps", () => {
+    const out = compileSrc(
+      `
+      extern let show: Fn(a) -> String where a: Show
+
+      type Option<a, b> { Some(b) }
+      
+      let x = show(Some(42))
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    // Some(42) : Option<Int>
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$Some(a0) {
+        return { $: "Some", a0 };
+      }
+      const Main$x = Main$show(Show_Main$Option(Show_Int$Int))(Main$Some(42));
+      "
+    `);
+  });
+
+  test("deeply nested higher order traits", () => {
+    const out = compileSrc(
+      `
+      extern let show: Fn(a) -> String where a: Show
+
+      type Tuple2<a, b> { Tuple2(a, b) }
+      type Option<a> { Some(a) }
+      
+      let x = show(Tuple2(Some(42), 2))
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$Tuple2(a0, a1) {
+        return { $: "Tuple2", a0, a1 };
+      }
+      function Main$Some(a0) {
+        return { $: "Some", a0 };
+      }
+      const Main$x = Main$show(Show_Main$Tuple2(Show_Main$Option(Show_Int$Int), Show_Int$Int))(Main$Tuple2(Main$Some(42), 2));
+      "
+    `);
+  });
+
+  test("trait deps in args when param aren't traits dependencies", () => {
+    const out = compileSrc(`
+      type IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
+      extern let s: IsShow<a> where a: Show
+      let x = s
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = { $: "X" };
+
+      const Main$x = (Show_6) => Main$s(Show_6);
+      "
+    `);
+  });
+
+  test("trait deps in args when param aren traits dependencies", () => {
+    const out = compileSrc(`
+      type Option<a, b, c> { Some(b) } 
+      extern let s: Option<a, b, c> where b: Show
+      let x = s
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$Some(a0) {
+        return { $: "Some", a0 };
+      }
+      const Main$x = (Show_11) => Main$s(Show_11);
+      "
+    `);
+  });
+
+  test("pass higher order trait dicts for types when their deps is in scope", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+
+      type Option<a> {
+        Some(a),
+        None,
+      }
+      
+      let f = fn x {
+        show(Some(x))
+      }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$Some(a0) {
+        return { $: "Some", a0 };
+      }
+      const Main$None = { $: "None" };
+
+      const Main$f = (Show_16) => (x) => {
+        return Main$show(Show_Main$Option(Show_16))(Main$Some(x));
+      }
+      "
+    `);
+  });
+
+  test("== handles traits dicts", () => {
+    const out = compileSrc(`
+  extern let (==): Fn(a, a) -> Bool where a: Eq
+  let f = fn x, y { x == y }
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+    "const Main$f = (Eq_11) => (x, y) => {
+      return Main$_eq(Eq_11)(x, y);
+    }
+    "
+  `);
+  });
+
+  // TODO fix
+  test.todo("== handles traits dicts on adts", () => {
+    const out = compileSrc(
+      `
+    extern type Int
+    extern type Bool
+    extern let (==): Fn(a, a) -> Bool where a: Eq
+    type T { C(Int) }
+    let f = C(0) == C(1)
+`,
+      { allowDeriving: ["Eq"] },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$C(a0) {
+        return { $: "C", a0 };
+      }
+      const Eq_Main$T = (x, y) => {
+        return Eq_Main$Int(x.a0, y.a0);
+      }
+      const Main$f = Main$_eq(Eq_Main$T)(Main$C(0), Main$C(1));
+      "
+    `);
+  });
+
+  test("fn returning arg with traits", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Json
+      extern type Option<a>
+
+      extern let from_json: Fn(Json) -> Option<a> where a: FromJson
+      extern let take_opt_int: Fn(Option<Int>) -> Int
+      extern let json: Json
+
+
+      let example = 
+        from_json(json)
+        |> take_opt_int()
+    `,
+      {
+        traitImpl: [
+          {
+            typeName: "Int",
+            moduleName: "Main",
+            trait: "FromJson",
+          },
+          {
+            typeName: "Option",
+            moduleName: "Main",
+            trait: "FromJson",
+            deps: [["FromJson"]],
+          },
+        ],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$example = Main$take_opt_int(Main$from_json(FromJson_Main$Int)(Main$json));
+      "
+    `);
+  });
+
+  test("fn returning arg handles params", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Json
+      extern type Option<a>
+
+      extern let from_json: Fn(Json) -> Option<a> where a: FromJson
+      extern let take_opt_int: Fn(Option<Int>) -> x
+      extern let json: Json
+
+      let called = from_json(json)
+    `,
+      {
+        traitImpl: [
+          { typeName: "Int", moduleName: "Main", trait: "FromJson" },
+          {
+            typeName: "Option",
+            moduleName: "Main",
+            trait: "FromJson",
+            deps: [["FromJson"]],
+          },
+        ],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$called = (FromJson_9) => Main$from_json(FromJson_9)(Main$json);
+      "
+    `);
+  });
+});
+
 describe("pattern matching", () => {
   test("pattern matching (flat)", () => {
     const out = compileSrc(`
@@ -937,7 +1783,7 @@ describe("pattern matching", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x$GEN__0 = new String("a");
+      "const Main$x$GEN__0 = "a";
       let Main$x;
       if (Main$x$GEN__0.toString() === "x") {
         Main$x = 0;
@@ -1055,7 +1901,7 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$f() {
+      "const Main$f = () => {
         const GEN__0 = 42;
         if (true) {
           return GEN__0;
@@ -1082,7 +1928,7 @@ describe("pattern matching", () => {
       "function Main$Box(a0) {
         return { $: "Box", a0 };
       }
-      function Main$f() {
+      const Main$f = () => {
         const GEN__0 = Main$Box(42);
         if (GEN__0.$ === "Box") {
           return GEN__0.a0 + 1;
@@ -1096,16 +1942,14 @@ describe("pattern matching", () => {
 
   test("pattern matching as fn arg", () => {
     const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a) -> a
     let x = f(match 42 {
       _ => 0,
     })
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$f = 0;
-
-      const Main$x$GEN__1 = 42;
+      "const Main$x$GEN__1 = 42;
       let Main$x$GEN__0;
       if (true) {
         Main$x$GEN__0 = 0;
@@ -1163,7 +2007,7 @@ describe("pattern matching", () => {
       "function Main$Box(a0) {
         return { $: "Box", a0 };
       }
-      function Main$f(b) {
+      const Main$f = (b) => {
         const GEN__0 = b;
         return GEN__0.a0;
       }
@@ -1185,7 +2029,7 @@ describe("pattern matching", () => {
       "function Main$Pair(a0, a1) {
         return { $: "Pair", a0, a1 };
       }
-      function Main$f(b) {
+      const Main$f = (b) => {
         const GEN__0 = b;
         return GEN__0.a1.a0;
       }
@@ -1204,7 +2048,7 @@ describe("pattern matching", () => {
       "function Main$Box(a0) {
         return { $: "Box", a0 };
       }
-      function Main$f(x, GEN__0, y) {
+      const Main$f = (x, GEN__0, y) => {
         return GEN__0.a0;
       }
       "
@@ -1214,7 +2058,7 @@ describe("pattern matching", () => {
 
 test("two fns as args", () => {
   const out = compileSrc(`
-    let f = 0
+    extern let f: Fn(a) -> a
     let x = f(
       fn { 0 },
       fn { 1 },
@@ -1222,12 +2066,10 @@ test("two fns as args", () => {
 `);
 
   expect(out).toMatchInlineSnapshot(`
-    "const Main$f = 0;
-
-    function Main$x$GEN__0() {
+    "const Main$x$GEN__0 = () => {
       return 0;
     }
-    function Main$x$GEN__1() {
+    const Main$x$GEN__1 = () => {
       return 1;
     }
     const Main$x = Main$f(Main$x$GEN__0, Main$x$GEN__1);
@@ -1245,7 +2087,7 @@ describe("TCO", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$loop() {
+      "const Main$loop = () => {
         return 1 + Main$loop();
       }
       "
@@ -1254,16 +2096,14 @@ describe("TCO", () => {
 
   test("does not apply inside application", () => {
     const out = compileSrc(`
-    let a = 0
+    extern let a: Fn(a) -> a
     let loop = fn {
       a(loop())
     }
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$a = 0;
-
-      function Main$loop() {
+      "const Main$loop = () => {
         return Main$a(Main$loop());
       }
       "
@@ -1280,7 +2120,7 @@ describe("TCO", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$f(x) {
+      "const Main$f = (x) => {
         const a = Main$f(x + 1);
         return a;
       }
@@ -1296,7 +2136,7 @@ describe("TCO", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$loop() {
+      "const Main$loop = () => {
         while (true) {
         }
       }
@@ -1312,16 +2152,16 @@ describe("TCO", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-        "function Main$loop(GEN_TC__0, GEN_TC__1) {
-          while (true) {
-            const x = GEN_TC__0;
-            const y = GEN_TC__1;
-            GEN_TC__0 = x + 1;
-            GEN_TC__1 = y;
-          }
+      "const Main$loop = (GEN_TC__0, GEN_TC__1) => {
+        while (true) {
+          const x = GEN_TC__0;
+          const y = GEN_TC__1;
+          GEN_TC__0 = x + 1;
+          GEN_TC__1 = y;
         }
-        "
-      `);
+      }
+      "
+    `);
   });
 
   test("toplevel with match args", () => {
@@ -1337,7 +2177,7 @@ describe("TCO", () => {
       "function Main$Box(a0) {
         return { $: "Box", a0 };
       }
-      function Main$loop(GEN_TC__0, GEN_TC__1) {
+      const Main$loop = (GEN_TC__0, GEN_TC__1) => {
         while (true) {
           const x = GEN_TC__0;
           const GEN__0 = GEN_TC__1;
@@ -1362,7 +2202,7 @@ describe("TCO", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$to_zero(GEN_TC__0) {
+      "const Main$to_zero = (GEN_TC__0) => {
         while (true) {
           const x = GEN_TC__0;
           if (x == 0) {
@@ -1386,29 +2226,29 @@ describe("TCO", () => {
         }
       }
   `,
-      "List",
+      { ns: "List" },
     );
 
     expect(out).toMatchInlineSnapshot(`
-        "function List$reduce(GEN_TC__0, GEN_TC__1, GEN_TC__2) {
-          while (true) {
-            const lst = GEN_TC__0;
-            const acc = GEN_TC__1;
-            const f = GEN_TC__2;
-            const GEN__0 = lst;
-            if (GEN__0.$ === "Nil") {
-              return acc;
-            } else if (GEN__0.$ === "Cons") {
-              GEN_TC__0 = lst;
-              GEN_TC__1 = f(acc, GEN__0.a0);
-              GEN_TC__2 = f;
-            } else {
-              throw new Error("[non exhaustive match]")
-            }
+      "const List$reduce = (GEN_TC__0, GEN_TC__1, GEN_TC__2) => {
+        while (true) {
+          const lst = GEN_TC__0;
+          const acc = GEN_TC__1;
+          const f = GEN_TC__2;
+          const GEN__0 = lst;
+          if (GEN__0.$ === "Nil") {
+            return acc;
+          } else if (GEN__0.$ === "Cons") {
+            GEN_TC__0 = lst;
+            GEN_TC__1 = f(acc, GEN__0.a0);
+            GEN_TC__2 = f;
+          } else {
+            throw new Error("[non exhaustive match]")
           }
         }
-        "
-      `);
+      }
+      "
+    `);
   });
 
   test("a tc call should not leak into other expressions", () => {
@@ -1426,16 +2266,16 @@ describe("TCO", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$ap(f) {
+      "const Main$ap = (f) => {
         return f(10);
       }
 
-      function Main$f(GEN_TC__0) {
+      const Main$f = (GEN_TC__0) => {
         while (true) {
           const a = GEN_TC__0;
           if (a) {
           } else {
-            function id$GEN__0(x) {
+            const id$GEN__0 = (x) => {
               return x;
             }
             const id = Main$ap(id$GEN__0);
@@ -1448,10 +2288,10 @@ describe("TCO", () => {
   });
 
   test("Namespaced", () => {
-    const out = compileSrc(`let f1 = fn { f1() }`, "Mod");
+    const out = compileSrc(`let f1 = fn { f1() }`, { ns: "Mod" });
 
     expect(out).toMatchInlineSnapshot(`
-      "function Mod$f1() {
+      "const Mod$f1 = () => {
         while (true) {
         }
       }
@@ -1467,8 +2307,8 @@ describe("TCO", () => {
       }`);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$f1() {
-        function f1() {
+      "const Main$f1 = () => {
+        const f1 = () => {
           return 0;
         }
         return f1();
@@ -1480,7 +2320,7 @@ describe("TCO", () => {
 
 describe("modules", () => {
   test("variables from modules different than Main are namespaced", () => {
-    const out = compileSrc(`let a = 42`, "ExampleModule");
+    const out = compileSrc(`let a = 42`, { ns: "ExampleModule" });
     expect(out).toMatchInlineSnapshot(`
       "const ExampleModule$a = 42;
       "
@@ -1488,7 +2328,7 @@ describe("modules", () => {
   });
 
   test("declarations from modules different than Main are resolved correctly", () => {
-    const out = compileSrc(`let a = 42\nlet x = a`, "ExampleModule");
+    const out = compileSrc(`let a = 42\nlet x = a`, { ns: "ExampleModule" });
     expect(out).toMatchInlineSnapshot(
       `
       "const ExampleModule$a = 42;
@@ -1501,9 +2341,10 @@ describe("modules", () => {
 
   test("extern declarations from modules different than Main are resolved correctly", () => {
     const out = compileSrc(
-      `extern let a: Int
+      `extern type Int
+      extern let a: Int
       let x = a`,
-      "ExampleModule",
+      { ns: "ExampleModule" },
     );
     expect(out).toMatchInlineSnapshot(
       `
@@ -1514,7 +2355,7 @@ describe("modules", () => {
   });
 
   test("variables are scoped in nested modules", () => {
-    const out = compileSrc(`let a = 42`, "A/B/C");
+    const out = compileSrc(`let a = 42`, { ns: "A/B/C" });
     expect(out).toMatchInlineSnapshot(`
       "const A$B$C$a = 42;
       "
@@ -1522,7 +2363,7 @@ describe("modules", () => {
   });
 
   test("local variables from modules different than Main are namespaced", () => {
-    const out = compileSrc(`let a = { let b = 42; b}`, "ExampleModule");
+    const out = compileSrc(`let a = { let b = 42; b}`, { ns: "ExampleModule" });
     expect(out).toMatchInlineSnapshot(`
       "const ExampleModule$a$b = 42;
       const ExampleModule$a = ExampleModule$a$b;
@@ -1536,7 +2377,7 @@ describe("modules", () => {
       type MyType { C1, C2(Int) }
       let c2_example = C2(42)
     `,
-      "MyModule",
+      { ns: "MyModule" },
     );
 
     expect(out).toMatchInlineSnapshot(`
@@ -1768,12 +2609,22 @@ Main$main.exec();
   test.todo("error when extern types are not found");
 });
 
-function compileSrc(src: string, ns?: string) {
+type CompileSrcOpts = {
+  ns?: string;
+  traitImpl?: TraitImpl[];
+  allowDeriving?: string[] | undefined;
+};
+
+function compileSrc(
+  src: string,
+  { ns = "Main", traitImpl = [], allowDeriving = [] }: CompileSrcOpts = {},
+) {
   const parsed = unsafeParse(src);
-  ns = ns ?? "Main";
-  resetTraitsRegistry();
+  resetTraitsRegistry(traitImpl);
   const [program] = typecheck(ns, parsed, {}, [], testEntryPoint.type);
-  const out = new Compiler().compile(program, ns);
+  const compiler = new Compiler();
+  compiler.allowDeriving = allowDeriving;
+  const out = compiler.compile(program, ns);
   return out;
 }
 
@@ -1786,7 +2637,9 @@ function compileSrcWithDeps(rawProject: Record<string, string>): string {
     testEntryPoint.type,
   );
   const Main = res.Main!;
-  return new Compiler().compile(Main.typedModule, "Main");
+  const compiler = new Compiler();
+  compiler.allowDeriving = [];
+  return compiler.compile(Main.typedModule, "Main");
 }
 
 function parseProject(

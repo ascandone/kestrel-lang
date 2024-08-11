@@ -166,9 +166,10 @@ export type Declaration<
       }
   );
 
-export type TypeVariant<TypeMeta> = (TypeMeta & SpanMeta) & {
+export type TypeVariant<TypeMeta, TypeResolutionMeta = unknown> = (TypeMeta &
+  SpanMeta) & {
   name: string;
-  args: TypeAst[];
+  args: TypeAst<TypeResolutionMeta>[];
 };
 
 export type UntypedTypeVariant = TypeVariant<unknown>;

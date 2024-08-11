@@ -227,6 +227,19 @@ export class TraitNotSatified implements ErrorDescription {
   }
 }
 
+export class AmbiguousTypeVar implements ErrorDescription {
+  severity: Severity = "error";
+  errorName: string = "Ambiguous type variable";
+  constructor(
+    public trait: string,
+    public type: string,
+  ) {}
+
+  shortDescription(): string {
+    return `An ambiguous type variable prevents the trait '${this.trait}' to be solved in '${this.type}'`;
+  }
+}
+
 export class TypeMismatch implements ErrorDescription {
   constructor(
     public expected: Type,
