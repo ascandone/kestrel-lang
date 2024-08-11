@@ -20,6 +20,7 @@ import {
   TypedImport,
   TypedMatchPattern,
   TypedModule,
+  TypedStructField,
   TypedTypeAst,
   TypedTypeDeclaration,
   TypedTypeVariant,
@@ -662,12 +663,30 @@ class ResolutionStep {
         return { ...ast, $: TVar.fresh() };
 
       case "struct-literal": {
+        const typeDecl = this.resolveStruct(ast.struct.name);
+
         return {
           ...ast,
-          fields: [],
+          fields: ast.fields.map(
+            (field): TypedStructField => ({
+              ...field,
+              field: {
+                ...field.field,
+                resolution:
+                  typeDecl === undefined
+                    ? undefined
+                    : findFieldInTypeDecl(
+                        typeDecl.declaration,
+                        field.field.name,
+                        this.ns,
+                      ),
+              },
+              value: this.annotateExpr(field.value),
+            }),
+          ),
           struct: {
             ...ast.struct,
-            resolution: this.resolveStruct(ast.struct.name),
+            resolution: typeDecl,
           },
           $: TVar.fresh(),
         };

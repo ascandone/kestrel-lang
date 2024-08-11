@@ -9,6 +9,7 @@ import {
 import {
   FieldResolution,
   IdentifierResolution,
+  StructResolution,
   TypedDeclaration,
   TypedExpr,
   TypedMatchPattern,
@@ -36,6 +37,7 @@ import {
   InvalidCatchall,
   InvalidField,
   InvalidTypeArity,
+  MissingRequiredFields,
   NonExhaustiveMatch,
   OccursCheck,
   TraitNotSatified,
@@ -203,14 +205,6 @@ class Typechecker {
             );
           }
         }
-
-        // TODO derive Show, Eq
-
-        // variant.scheme = scheme;
-        // const err = unify(variant.$.asType(), mono);
-        // if (err !== undefined) {
-        //   throw new Error("[unreachable] struct type should be fresh initially");
-        // }
       }
     }
 
@@ -558,14 +552,29 @@ class Typechecker {
           return;
         }
 
-        const type: Type = {
-          type: "named",
-          name: ast.struct.resolution.declaration.name,
-          moduleName: ast.struct.resolution.namespace,
-          args: [], // TODO args
-        };
+        const type_ = instantiateFromScheme(
+          ast.struct.resolution.declaration.$.asType(),
+          ast.struct.resolution.declaration.scheme,
+        );
 
-        this.unifyExpr(ast, ast.$.asType(), type);
+        for (const field of ast.fields) {
+          if (field.field.resolution === undefined) {
+            // TODO should this error be emitted during resolution?
+            this.errors.push({
+              span: field.span,
+              description: new InvalidField(
+                typeToString(type_),
+                field.field.name,
+              ),
+            });
+          }
+
+          // const fieldType = instantiateFromScheme(field.$.asType(), {});
+          break;
+        }
+
+        this.checkMissingStructFields(ast, ast.struct.resolution, type_);
+        this.unifyExpr(ast, ast.$.asType(), type_);
         return;
       }
 
@@ -672,6 +681,31 @@ class Typechecker {
     );
 
     this.unifyExpr(ast, ast.$.asType(), returnType);
+  }
+
+  private checkMissingStructFields(
+    ast: TypedExpr & { type: "struct-literal" },
+    resolution: StructResolution,
+    type: Type,
+  ) {
+    // Check for missing fields
+    const missingFields = resolution.declaration.fields
+      .filter((defField) => {
+        return !ast.fields.some((structField) => {
+          return structField.field.name === defField.name;
+        });
+      })
+      .map((f) => f.name);
+
+    if (missingFields.length !== 0) {
+      this.errors.push({
+        description: new MissingRequiredFields(
+          typeToString(type),
+          missingFields,
+        ),
+        span: ast.span,
+      });
+    }
   }
 
   private doubleCheckFieldAccess(

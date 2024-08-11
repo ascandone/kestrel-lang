@@ -92,7 +92,7 @@ export type StructField<
   FieldResolutionMeta,
   SyntaxSugar,
 > = SpanMeta & {
-  field: { name: string } & SpanMeta;
+  field: { name: string } & SpanMeta & FieldResolutionMeta;
   value: Expr<
     TypeMeta,
     IdentifierResolutionMeta,

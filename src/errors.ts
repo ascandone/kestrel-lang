@@ -268,6 +268,25 @@ export class InvalidField implements ErrorDescription {
   }
 }
 
+export class MissingRequiredFields implements ErrorDescription {
+  severity: Severity = "error";
+  errorName: string = "Missing required field";
+
+  constructor(
+    public type: string,
+    public fields: string[],
+  ) {}
+
+  shortDescription(): string {
+    if (this.fields.length === 1) {
+      return `Missing field '${this.fields[0]}' (required on type '${this.type}')`;
+    }
+
+    const missingFields = this.fields.map((f) => `'${f}'`).join(", ");
+    return `Missing the following fields: ${missingFields} (required on type '${this.type}')`;
+  }
+}
+
 export function errorInfoToString(
   src: string,
   { description, span }: ErrorInfo,

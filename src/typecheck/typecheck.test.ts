@@ -17,6 +17,7 @@ import {
   InvalidField,
   InvalidPipe,
   InvalidTypeArity,
+  MissingRequiredFields,
   NonExhaustiveMatch,
   NonExistingImport,
   OccursCheck,
@@ -1312,9 +1313,112 @@ describe("struct", () => {
     });
   });
 
-  test.todo("namespaced struct names");
+  test("handling params in struct definition (phantom types)", () => {
+    const [types, errs] = tc(
+      `
+        type Box<a, b> struct { }
 
-  test.todo("handle structs type params");
+        pub let box = Box { }
+    `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      box: "Box<a, b>",
+    });
+  });
+
+  test("typecheck extra fields", () => {
+    const [types, errs] = tc(
+      `
+        type Struct struct {}
+
+        pub let s = Struct {
+          extra: 42
+        }
+    `,
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(new InvalidField("Struct", "extra"));
+
+    expect(types).toEqual({
+      s: "Struct",
+    });
+  });
+
+  test("typecheck missing fields", () => {
+    const [types, errs] = tc(
+      `
+        extern type String
+        type Person struct {
+          name: String,
+          second_name: String,
+        }
+
+        pub let p = Person { }
+    `,
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(
+      new MissingRequiredFields("Person", ["name", "second_name"]),
+    );
+
+    expect(types).toEqual({
+      p: "Person",
+    });
+  });
+
+  test.todo("prevent from creating structs with private fields");
+
+  test.todo("typecheck fields of wrong type", () => {
+    const [types, errs] = tc(
+      `
+        type X {  }
+        type Struct struct {
+          field: X,
+        }
+
+        pub let s = Struct {
+          field: "not x"
+        }
+    `,
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(TypeMismatch);
+
+    expect(types).toEqual({
+      s: "Struct",
+    });
+  });
+
+  test.todo(
+    "handling params in struct definition when fields are bound to params",
+    () => {
+      const [types, errs] = tc(
+        `
+      type Box<a, b> struct {
+        a: a,
+        b: b,
+      }
+
+      pub let box = Box {
+        a: "str",
+        b: 42,
+      }
+  `,
+      );
+
+      expect(errs).toEqual([]);
+      expect(types).toEqual({
+        box: "Box<String, Int>",
+      });
+    },
+  );
+
+  test.todo("namespaced struct names");
 });
 
 describe("pattern matching", () => {
