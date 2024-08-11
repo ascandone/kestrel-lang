@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Generated from Kestrel.g4 by ANTLR 4.13.1
 // noinspection ES6UnusedImports,JSUnusedGlobalSymbols,JSUnusedLocalSymbols
 import {

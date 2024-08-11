@@ -106,5 +106,17 @@ export function foldTree<T>(
       acc = foldTree(src.then, acc, f);
       acc = foldTree(src.else, acc, f);
       return acc;
+
+    case "field-access":
+      return foldTree(src.left, acc, f);
+
+    case "struct-literal":
+      for (const field of src.fields) {
+        acc = foldTree(field.value, acc, f);
+      }
+      if (src.spread !== undefined) {
+        acc = foldTree(src.spread, acc, f);
+      }
+      return acc;
   }
 }
