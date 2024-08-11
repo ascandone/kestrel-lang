@@ -945,7 +945,29 @@ describe("structs", () => {
     `);
   });
 
-  test.todo("struct update when expr is not ident");
+  test("struct update when expr is not ident", () => {
+    const out = compileSrc(`
+      extern type Int
+      type Point3D struct {
+        x: Int,
+        y: Int,
+        z: Int,
+      }
+
+      extern let get_original: Fn() -> Point3D
+      pub let update_y = Point3D {
+        y: 42,
+        ..get_original()
+      }
+      
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$update_y$GEN__0 = Main$get_original();
+      const Main$update_y = { y: 42, x: Main$update_y$GEN__0.x, z: Main$update_y$GEN__0.z };
+      "
+    `);
+  });
 
   // Note: this should never happen, as currently there aren't any
   // builtin infix ops that yield structs

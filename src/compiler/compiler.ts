@@ -288,6 +288,15 @@ export class Compiler {
 
         if (src.spread !== undefined) {
           const [exprSts, exprExpr] = this.compileAsExpr(src.spread);
+          let updateExpr: string;
+          if (src.spread.type === "identifier") {
+            updateExpr = exprExpr;
+          } else {
+            const ident = this.getUniqueName();
+            exprSts.push(`const ${ident} = ${exprExpr};`);
+            updateExpr = ident;
+          }
+
           stsBuf.push(...exprSts);
 
           for (const originalField of resolution.declaration.fields) {
@@ -299,7 +308,7 @@ export class Compiler {
             }
 
             objContent.push(
-              `${originalField.name}: ${exprExpr}.${originalField.name}`,
+              `${originalField.name}: ${updateExpr}.${originalField.name}`,
             );
           }
         }
