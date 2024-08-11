@@ -518,6 +518,30 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
         tDecl.variants.length === 0 ? text("{ }") : block_(variants),
       );
     }
+
+    case "struct": {
+      const fields = sepBy(
+        break_(),
+        tDecl.fields.map((field) => {
+          return concat(
+            //
+            text(`${field.name}: `),
+            typeAstToDoc(field.type_),
+            text(`,`),
+          );
+        }),
+      );
+
+      return concat(
+        docComment,
+        tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
+        text("type "),
+        text(tDecl.name),
+        params,
+        text(" struct "),
+        tDecl.fields.length === 0 ? text("{ }") : block_(fields),
+      );
+    }
   }
 }
 

@@ -82,6 +82,19 @@ describe("list lit syntax", () => {
   });
 });
 
+describe("struct", () => {
+  test("struct definition without fields", () => {
+    expect(`type X struct { }\n`).toBeFormatted();
+  });
+
+  test("struct definition with many fields", () => {
+    expect(`type X struct {
+  some_field: Int,
+  another_field: String,
+}\n`).toBeFormatted();
+  });
+});
+
 test("cons application sugar", () => {
   expect(`let x = hd :: hd2 :: tl\n`).toBeFormatted();
 });
