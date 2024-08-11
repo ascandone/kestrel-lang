@@ -30,7 +30,7 @@ describe("constant folding", () => {
 describe("fold iif", () => {
   test("with no args", () => {
     expect(`
-    let a = fn { x * y } ()
+    let a = (|| x * y) ()
 `).toOptimizeAs(`
 let a = x * y
   `);
@@ -38,7 +38,7 @@ let a = x * y
 
   test("with one arg", () => {
     expect(`
-    let a = fn x { x * x } (expr())
+    let a = (|x| x * x) (expr())
 `).toOptimizeAs(`
 let a = {
   let x = expr();
@@ -49,7 +49,7 @@ let a = {
 
   test("with many args", () => {
     expect(`
-    let a = fn x, y { x * x * y * y } (f(), g())
+    let a = { |x, y| { x * x * y * y } } (f(), g())
 `).toOptimizeAs(`
 let a = {
   let x = f();
@@ -63,7 +63,7 @@ let a = {
 describe("inline let bindings", () => {
   test("does not apply to recursive functions that are only used once", () => {
     const src = `let glb = {
-  let rec = fn x {
+  let rec = |x| {
     rec(x)
   };
   rec(10)
@@ -111,13 +111,15 @@ describe("inline globals", () => {
   test("inline globals marked with @inline", () => {
     const src = `
 @inline
-let inlinable = fn x { x + 1 }
+let inlinable = |x| {
+  x + 1
+}
 let example = inlinable(42)
 `;
 
     expect(src).toOptimizeAs(`
 @inline
-let inlinable = fn x {
+let inlinable = |x| {
   x + 1
 }
 
@@ -147,9 +149,9 @@ test("optimizations apply to nodes nested within an application", () => {
 
 test("optimizations apply to nodes nested in a fn body", () => {
   expect(`
-    let x = fn { 1 + 2 }
+    let x = || { 1 + 2 }
   `).toOptimizeAs(`
-let x = fn {
+let x = || {
   3
 }
   `);
@@ -199,27 +201,27 @@ let x = match 3 {
 test("function inlining example", () => {
   expect(`
   let glb = {
-    let add1 = fn x { x + 1 };
+    let add1 = |x| { x + 1 };
     add1(100)
   }
   `).toOptimizeAs(`let glb = 101`);
 
   expect(`
-    pub let map = fn m, f {
-      let and_then = fn m, f {
+    pub let map = |m, f| {
+      let and_then = |m, f| {
         match m {
           Some(x) => f(x),
           None => None,
         }
       };
 
-      and_then(m, fn x {
+      and_then(m, |x| {
         Some(f(x))
       })
     }
   
   `).toOptimizeAs(`
-pub let map = fn m, f {
+pub let map = |m, f| {
   match m {
     Some(x) => Some(f(x)),
     None => None,
@@ -229,13 +231,13 @@ pub let map = fn m, f {
 
   expect(`
   let glb = {
-    let opt_map = fn x, f {
+    let opt_map = |x, f| {
       match x {
         None => None,
         Some(v) => f(v),
       }
     };
-    opt_map(Some(42), fn x { x + 1 })
+    opt_map(Some(42), |x| { x + 1 })
   }
   `).toOptimizeAs(`
 let glb = match Some(42) {
@@ -248,27 +250,27 @@ let glb = match Some(42) {
 test("function inlining example (globals)", () => {
   expect(`
 @inline
-let and_then = fn m, f {
+let and_then = |m, f| {
   match m {
     Some(x) => f(x),
     None => None,
   }
 }
 
-pub let map = fn m, f {
-  and_then(m, fn x {
+pub let map = |m, f| {
+  and_then(m, |x| {
     Some(f(x))
   })
 }
 `).toOptimizeAs(`@inline
-let and_then = fn m, f {
+let and_then = |m, f| {
   match m {
     Some(x) => f(x),
     None => None,
   }
 }
 
-pub let map = fn m, f {
+pub let map = |m, f| {
   match m {
     Some(x) => Some(f(x)),
     None => None,
@@ -278,7 +280,7 @@ pub let map = fn m, f {
 
   expect(`
 @inline
-let zip = fn m1, m2 {
+let zip = |m1, m2| {
   match (m1, m2) {
     (Some(m1), Some(m2)) => (m1, m2),
     None => None,
@@ -287,7 +289,7 @@ let zip = fn m1, m2 {
 
 pub let mapped = zip(None, None)
 `).toOptimizeAs(`@inline
-let zip = fn m1, m2 {
+let zip = |m1, m2| {
   match (m1, m2) {
     (Some(m1), Some(m2)) => (m1, m2),
     None => None,
@@ -303,30 +305,30 @@ pub let mapped = match (None, None) {
 
 test.todo("bug", () => {
   expect(`@inline
-pub let and_then = fn m, f {
+pub let and_then = |m, f| {
   match m {
     Some(x) => f(x),
     None => None,
   }
 }
 
-pub let map2 = fn m1, m2, f {
-  and_then(m1, fn x1 {
-    and_then(m2, fn x2 {
+pub let map2 = |m1, m2, f| {
+  and_then(m1, |x1| {
+    and_then(m2, |x2| {
       Some(f(x1, x2))
     })
   })
 }
 
 `).not.toOptimizeAs(`@inline
-pub let and_then = fn m, f {
+pub let and_then = |m, f| {
   match m {
     Some(x) => f(x),
     None => None,
   }
 }
 
-pub let map2 = fn m1, m2, f {
+pub let map2 = |m1, m2, f| {
   match m1 {
     Some(x) => match m2 {
       Some(x) => Some(f(x, x)),

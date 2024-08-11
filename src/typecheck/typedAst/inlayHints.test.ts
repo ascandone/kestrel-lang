@@ -13,8 +13,8 @@ test("no inlay hints on empty program", () => {
 describe("pipe inlay hints", () => {
   test("inlay hints in pipe", () => {
     const src = `
-      let identity = fn x { x }
-      let to_str = fn _ { "ab" }
+      let identity = |x| { x }
+      let to_str = |_| { "ab" }
 
       let x = 42
         |> identity()
@@ -46,7 +46,7 @@ describe("pipe inlay hints", () => {
 
   test("no inlay hints are emitted on pipelines that do not span multiple lines", () => {
     const src = `
-      let identity = fn x { x }
+      let identity = |x| { x }
 
       let x = 42 |> identity() |> identity()
     `;
@@ -58,7 +58,7 @@ describe("pipe inlay hints", () => {
 
   test("no inlay hints are emitted on pipelines that do not span multiple lines (1)", () => {
     const src = `
-      let identity = fn x { x }
+      let identity = |x| { x }
 
       let x = 42 |> identity()
         |> identity()
@@ -79,7 +79,7 @@ describe("pipe inlay hints", () => {
     "no inlay hints are emitted on pipelines that do not span multiple lines (2)",
     () => {
       const src = `
-      let identity = fn x { x }
+      let identity = |x| { x }
 
       let x = 42
         |> identity() |> identity()
@@ -104,8 +104,8 @@ describe("pipe inlay hints", () => {
 
   test("pipe wrapped in fn, let, let#, and list lit", () => {
     const src = `
-      let identity = fn x { x }
-      let x = fn {
+      let identity = |x| { x }
+      let x = || {
         let _ = 0;
         let#f _ = 0;
         [
@@ -135,7 +135,7 @@ describe("pipe inlay hints", () => {
 
   test("pipe wrapped in pattern match and if", () => {
     const src = `
-      let identity = fn x { x }
+      let identity = |x| { x }
       let x = match 0 {
         _ => if a {
           42
@@ -166,7 +166,7 @@ describe("pipe inlay hints", () => {
 
   test("no inlay hints when application is not piped", () => {
     const src = `
-    let identity = fn x { x }
+    let identity = |x| { x }
     let x = identity(42)
   `;
 
@@ -176,8 +176,8 @@ describe("pipe inlay hints", () => {
 
   test("inlay hints honor the type schemes in the toplevel statement", () => {
     const src = `
-      let identity = fn x { x }
-      let x = fn _arg1, arg2 {
+      let identity = |x| { x }
+      let x = |_arg1, arg2| {
           arg2
           |> identity()
       }

@@ -38,7 +38,7 @@ test("hover a declaration's binding (2d occurrence)", () => {
 });
 
 test("hover fn param", () => {
-  const src = `let f = fn x { 0 }`;
+  const src = `let f = |x| { 0 }`;
   const [, hoverable] = parseHover(src, "x")!;
   expect(hoverable).toEqual<Hovered>({
     span: spanOf(src, "x"),
@@ -69,7 +69,7 @@ test("hover let expr binding", () => {
 });
 
 test("hovering with scheme", () => {
-  const src = `let f = fn x, y { y }`;
+  const src = `let f = |x, y| { y }`;
   const [scheme, hoverable] = parseHover(src, "y", 2)!;
   if (hoverable.hovered.type !== "local-variable") {
     throw new Error("fail");
@@ -107,7 +107,7 @@ test("hover a reference to a global binding", () => {
 test("hover a reference to a global binding inside a fn, application, if, let", () => {
   const src = `
         let x = 42
-        let y = fn {
+        let y = || {
             if true {
                 let y = 0;
                 f(0, x)
@@ -146,7 +146,7 @@ test("hover within a list", () => {
 
 test("hover within a pipe call", () => {
   const src = `
-        let id = fn x { x }
+        let id = |x| { x }
         let hovered_number = 42
         let expr =
           hovered_number
@@ -269,7 +269,7 @@ test("hover a type ast in constructor", () => {
 });
 
 test("snapshot when hovering on global fn", () => {
-  const src = `let glb = fn x, y { y }`;
+  const src = `let glb = |x, y| { y }`;
   const [scheme, hoverable] = parseHover(src, "glb")!;
   expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
 });
@@ -291,8 +291,8 @@ test("snapshot when hovering on an extern type reference", () => {
 
 test("snapshot when hovering on a local fn", () => {
   const src = `
-      let glb = fn a {
-        let closure = fn x { a };
+      let glb = |a| {
+        let closure = |x| a;
         0
       }
     `;

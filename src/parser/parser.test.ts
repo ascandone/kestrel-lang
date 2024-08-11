@@ -218,7 +218,31 @@ let _ = {
 
 test("parse fn with no args", () => {
   const src = `
-let _ = fn { 0 }
+let _ = | | { 0 }
+`;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse fn with no args (alt)", () => {
+  const src = `
+let _ = || { 0 }
+`;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("parse fn with no block", () => {
+  const src = `
+let _ = |arg| 42
+`;
+
+  expect(unsafeParse(src)).toMatchSnapshot();
+});
+
+test("fn with no block prec", () => {
+  const src = `
+let _ = |arg| 1 + 2
 `;
 
   expect(unsafeParse(src)).toMatchSnapshot();
@@ -226,7 +250,7 @@ let _ = fn { 0 }
 
 test("parse fn with 1 arg", () => {
   const src = `
-let _ = fn x { 0 }
+let _ = |x| { 0 }
 `;
 
   expect(unsafeParse(src)).toMatchSnapshot();
@@ -234,7 +258,7 @@ let _ = fn x { 0 }
 
 test("parse fn with 2 args", () => {
   const src = `
-let _ = fn x, y { 0 }
+let _ = |x, y| { 0 }
 `;
 
   expect(unsafeParse(src)).toMatchSnapshot();
@@ -242,7 +266,7 @@ let _ = fn x, y { 0 }
 
 test("parse fn with let", () => {
   const src = `
-let _ = fn {
+let _ = | | {
   let x = 0;
   1
 }
@@ -520,6 +544,91 @@ describe("type declarations", () => {
   });
 });
 
+describe("structs", () => {
+  test("empty struct", () => {
+    const src = `type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("pub modifier", () => {
+    const src = `pub type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("pub(..) modifier", () => {
+    const src = `pub(..) type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("type params", () => {
+    const src = `type Person<a, b> struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("doc comments", () => {
+    const src = `
+      /// example docs
+      type Person struct { }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("field", () => {
+    const src = `type Person struct { age: Int }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("many fields", () => {
+    const src = `
+      type Person struct {
+        name: a,
+        age: b, 
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("field access", () => {
+    const src = `let _ = s.my_field`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("construct fields with no fields", () => {
+    const src = `let _ = MyStruct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("construct fields with many fields", () => {
+    const src = `
+      let _ = MyStruct {
+        a: 42,
+        b: "ok",
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("update a struct", () => {
+    const src = `
+      let _ = MyStruct {
+        a: 42,
+        b: "ok",
+        ..expr
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("complex exprs in update syntax");
+
+  test("qualified field access", () => {
+    const src = `let _ = s.MyStruct#my_field`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("namespaced-qualified field access");
+});
+
 describe("pattern matching", () => {
   test("empty match expression", () => {
     const src = `let _ = match x {}`;
@@ -607,7 +716,7 @@ describe("pattern matching", () => {
   });
 
   test("matching pattern in fn param", () => {
-    const src = `let _ = fn X(a, b) { 42 }`;
+    const src = `let _ = |X(a, b)| { 42 }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });

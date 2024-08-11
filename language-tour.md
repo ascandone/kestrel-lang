@@ -30,10 +30,10 @@ Most of those functions are documented in the [`Basics` module documentation](ht
 
 #### Functions
 
-You can create anonymous functions with the `fn` keyword:
+You can create anonymous functions using the following syntax:
 
 ```rust
-fn x, y { x + y }
+|x, y| x + y
 ```
 
 And call them using common function call syntax: `my_function(1, 2)`
@@ -72,7 +72,7 @@ let declaration = {
 }
 ```
 
-You can locally-scoped `let` expression whenever there is a block (e.g. `if` expressions or `fn` body)
+You can locally-scoped `let` expression whenever there is a block (e.g. `if` expressions)
 
 #### If expressions
 
@@ -102,14 +102,14 @@ Functions have their own types:
 
 ```rust
 // `add1` is inferred as `Fn(Int) -> Int`
-let add1 = fn x { x + 1 }
+let add1 = |x| x + 1
 ```
 
 Lowercase types behave as type variables, for example:
 
 ```rust
 // `add1` is inferred as `Fn(a) -> a`
-let identity = fn x { x }
+let identity = |x| x
 ```
 
 In the example above, `a` is a type variable that can be instantiated to any possible type, as long as every occurrence is instantiated to the same type. This is the same as writing `<T>(x: T) => T` in typescript
@@ -258,7 +258,7 @@ arg
 `let#` is a powerful syntax sugar that allows to rewrite this:
 
 ```rust
-Mod.some_function(value, fn x {
+Mod.some_function(value, |x| {
   body
 })
 ```
@@ -284,8 +284,8 @@ For example, the following expressions:
 
 ```rust
 let program: Task<Unit> =
-  Task.await(IO.println("Enter you name"), fn _ {
-    Task.await(IO.readline, fn name {
+  Task.await(IO.println("Enter you name"), |_| {
+    Task.await(IO.readline, |name| {
       IO.println("Hello " ++ name ++ "!")
     })
   })

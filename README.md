@@ -8,7 +8,7 @@ Kestrel is a pure, strongly typed functional language that compiles to js.
 
 ```rust
 // Type is inferred as `Fn(Int) -> String`
-pub let fizz_buzz = fn n {
+pub let fizz_buzz = |n| {
   match (n % 3, n % 5) {
     (0, 0) => "FizzBuzz",
     (0, _) => "Fizz",
