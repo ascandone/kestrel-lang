@@ -5165,7 +5165,11 @@ exports[`structs > field access 1`] = `
             18,
           ],
         },
-        "left": {
+        "span": [
+          8,
+          18,
+        ],
+        "struct": {
           "name": "s",
           "namespace": undefined,
           "span": [
@@ -5174,10 +5178,6 @@ exports[`structs > field access 1`] = `
           ],
           "type": "identifier",
         },
-        "span": [
-          8,
-          18,
-        ],
         "type": "field-access",
       },
     },

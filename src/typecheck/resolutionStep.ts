@@ -781,7 +781,7 @@ class ResolutionStep {
       case "field-access":
         return {
           ...ast,
-          left: this.annotateExpr(ast.left),
+          struct: this.annotateExpr(ast.struct),
           resolution: this.resolveField(ast.field.name),
           $: TVar.fresh(),
         };

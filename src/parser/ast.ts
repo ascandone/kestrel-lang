@@ -183,7 +183,7 @@ export type Expr<
     }
   | ({
       type: "field-access";
-      left: Expr<
+      struct: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
         StructResolutionMeta,

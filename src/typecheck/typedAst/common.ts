@@ -108,7 +108,7 @@ export function foldTree<T>(
       return acc;
 
     case "field-access":
-      return foldTree(src.left, acc, f);
+      return foldTree(src.struct, acc, f);
 
     case "struct-literal":
       for (const field of src.fields) {

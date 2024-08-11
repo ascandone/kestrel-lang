@@ -174,7 +174,7 @@ class ChangeTracker {
       case "field-access":
         return {
           ...src,
-          left: this.runOnce(src.left),
+          struct: this.runOnce(src.struct),
         };
 
       case "application": {
@@ -302,7 +302,7 @@ function substituteBinding(
     case "field-access":
       return {
         ...src,
-        left: substituteBinding(binding, with_, src.left),
+        struct: substituteBinding(binding, with_, src.struct),
       };
 
     case "application": {

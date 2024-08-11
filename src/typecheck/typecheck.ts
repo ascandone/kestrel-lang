@@ -207,7 +207,7 @@ class Typechecker {
     for (const fieldAccessAst of this.scheduledFieldResolutions) {
       this.doubleCheckFieldAccess(
         fieldAccessAst,
-        fieldAccessAst.left.$.resolve(),
+        fieldAccessAst.struct.$.resolve(),
         deps,
       );
     }
@@ -712,7 +712,7 @@ class Typechecker {
         return;
 
       case "field-access": {
-        this.typecheckAnnotatedExpr(ast.left);
+        this.typecheckAnnotatedExpr(ast.struct);
         if (ast.resolution === undefined) {
           this.scheduledFieldResolutions.push(ast);
           return;
@@ -774,7 +774,7 @@ class Typechecker {
     const structType: Type = instantiator.instantiatePoly(
       resolution.declaration,
     );
-    this.unifyExpr(ast.left, ast.left.$.asType(), structType);
+    this.unifyExpr(ast.struct, ast.struct.$.asType(), structType);
     const fieldType = instantiator.instantiatePoly(resolution.field);
     this.unifyExpr(ast, ast.$.asType(), fieldType);
   }
@@ -813,7 +813,7 @@ class Typechecker {
       this.errors.push({
         span: fieldAccessAst.field.span,
         description: new InvalidField(
-          typeToString(fieldAccessAst.left.$.asType()),
+          typeToString(fieldAccessAst.struct.$.asType()),
           fieldAccessAst.field.name,
         ),
       });

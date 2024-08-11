@@ -260,7 +260,7 @@ export class Compiler {
       }
 
       case "field-access": {
-        const [sts, structValue] = this.compileAsExpr(src.left);
+        const [sts, structValue] = this.compileAsExpr(src.struct);
         // TODO prec with infix
         return [sts, `${structValue}.${src.field.name}`];
       }
