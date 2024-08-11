@@ -196,7 +196,7 @@ test("shadowed let exprs", () => {
 
 test("shadowing fn params", () => {
   const out = compileSrc(`
-    let f = fn a, a { a }
+    let f = |a, a| a
   `);
 
   expect(out).toMatchInlineSnapshot(`
@@ -209,7 +209,7 @@ test("shadowing fn params", () => {
 
 test("shadowing fn params with let", () => {
   const out = compileSrc(`
-    let f = fn msg {
+    let f = |msg| {
       let msg = msg;
       msg
     }
@@ -243,7 +243,7 @@ test("two let as fn args, shadowing", () => {
 
 test("toplevel fn without params", () => {
   const out = compileSrc(`
-  let f = fn { 42 }
+  let f = || 42
 `);
 
   expect(out).toMatchInlineSnapshot(`
@@ -256,7 +256,7 @@ test("toplevel fn without params", () => {
 
 test("toplevel fn with params", () => {
   const out = compileSrc(`
-  let f = fn x, y { y }
+  let f = |x, y| y
 `);
 
   expect(out).toMatchInlineSnapshot(`
@@ -270,7 +270,7 @@ test("toplevel fn with params", () => {
 test("== performs structural equality when type is unbound", () => {
   const out = compileSrc(`
   extern let (==): Fn(a, a) -> Bool
-  let f = fn x, y { x == y }
+  let f = |x, y| x == y
 `);
 
   expect(out).toMatchInlineSnapshot(`
@@ -337,7 +337,7 @@ test("fn inside if return", () => {
   const out = compileSrc(`
   let f =
     if 0 {
-      fn { 1 }
+      || 1
     } else {
       2
     }
@@ -359,7 +359,7 @@ test("fn inside if return", () => {
 
 test("let inside scope", () => {
   const out = compileSrc(`
-  let f = fn {
+  let f = || {
     let x = 0;
     let y = 1;
     x
@@ -395,7 +395,7 @@ test("let inside arg of a function", () => {
 test("function with a scoped identified as caller", () => {
   const out = compileSrc(`
   let x = {
-    let f = fn { 0 };
+    let f = || { 0 };
     f()
   }
 `);
@@ -433,7 +433,7 @@ test("if expression", () => {
 test("tail position if", () => {
   const out = compileSrc(`
     extern let (==): Fn(a, a) -> Bool
-    let is_zero = fn n {
+    let is_zero = |n| {
       if n == 0 {
         "yes"
       } else {
@@ -458,7 +458,7 @@ test("nested ifs", () => {
   // TODO switch this to if-else syntax
   const out = compileSrc(`
     extern let (==): Fn(a, a) -> Bool
-    let is_zero = fn n {
+    let is_zero = |n| {
       if n == 0 {
         "zero"
       } else {
@@ -511,7 +511,7 @@ test("let expr inside if condition", () => {
 test("eval if", () => {
   const out = compileSrc(`
     extern let (==): Fn(a, a) -> Bool
-    let is_zero = fn n {
+    let is_zero = |n| {
       if n == 0 {
         "yes"
       } else {
@@ -529,7 +529,7 @@ test("eval if", () => {
 test("fn inside let", () => {
   const out = compileSrc(`
     let x = {
-      let f = fn { 0 };
+      let f = || 0;
       f(1)
     }
 `);
@@ -546,7 +546,7 @@ test("fn inside let", () => {
 test("fn as expr", () => {
   const out = compileSrc(`
     extern let f: Fn(a) -> a
-    let x = f(fn {
+    let x = f(|| {
       1
     })
 `);
@@ -597,9 +597,8 @@ test("infix exprs producing statements", () => {
 });
 
 test("iifs", () => {
-  // TODO should I fix grammar?
   const out = compileSrc(`
-    let a = fn { 42 } ()
+    let a = (|| 42) ()
   `);
 
   expect(out).toMatchInlineSnapshot(`
@@ -615,7 +614,7 @@ test("(let) closures", () => {
   const out = compileSrc(`
     let a = {
       let captured = 42;
-      fn { captured }
+      || { captured }
     }
   `);
 
@@ -630,11 +629,7 @@ test("(let) closures", () => {
 
 test("fn closures", () => {
   const out = compileSrc(`
-    let a = fn {
-      fn {
-        100
-      }
-    }
+    let a = || || 100
   `);
 
   expect(out).toMatchInlineSnapshot(`
@@ -651,7 +646,7 @@ test("fn closures", () => {
 test("recursion in closures", () => {
   const out = compileSrc(`
     let f = {
-      let x = fn { fn { x() } };
+      let x = || || x();
       0
     }
 `);
@@ -1455,7 +1450,7 @@ describe("traits compilation", () => {
     const out = compileSrc(
       `
       extern type String
-      let id = fn x { x }
+      let id = |x| x
       extern let show: Fn(a) -> String where a: Show
       let f = id(show)(42)
     `,
@@ -1474,7 +1469,7 @@ describe("traits compilation", () => {
   test("applying with type variables", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
-      let f = fn x { show(x) }
+      let f = |x| { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
       "const Main$f = (Show_9) => (x) => {
@@ -1530,7 +1525,7 @@ describe("traits compilation", () => {
       extern let inspect: Fn(a) -> String where a: Show
       extern let (==): Fn(a, a) -> Bool where a: Eq
 
-      let equal = fn x, y {
+      let equal = |x, y| {
         if x == y {
           "ok"
         } else {
@@ -1557,7 +1552,7 @@ describe("traits compilation", () => {
     const out = compileSrc(
       `
       extern let show2: Fn(a, a) -> String where a: Show
-      let f = fn arg {
+      let f = |arg| {
         show2(arg, "hello")
       }
     `,
@@ -1589,7 +1584,7 @@ describe("traits compilation", () => {
     const out = compileSrc(
       `
       extern let show2: Fn(a, b) -> String where a: Show, b: Show
-      let f = fn arg {
+      let f = |arg| {
         show2(arg, "hello")
       }
     `,
@@ -1709,7 +1704,7 @@ describe("traits compilation", () => {
         None,
       }
       
-      let f = fn x {
+      let f = |x| {
         show(Some(x))
       }
     `);
@@ -1730,7 +1725,7 @@ describe("traits compilation", () => {
   test("== handles traits dicts", () => {
     const out = compileSrc(`
   extern let (==): Fn(a, a) -> Bool where a: Eq
-  let f = fn x, y { x == y }
+  let f = |x, y| { x == y }
 `);
 
     expect(out).toMatchInlineSnapshot(`
@@ -2038,7 +2033,7 @@ describe("pattern matching", () => {
 
   test("simple pattern matching in tail position", () => {
     const out = compileSrc(`
-    let f = fn {
+    let f = || {
       match 42 { x => x }
     }
   `);
@@ -2060,7 +2055,7 @@ describe("pattern matching", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
     extern let (+): Fn(Int, Int) -> Int
-    let f = fn {
+    let f = || {
       match Box(42) {
         Box(x) => x + 1
       }
@@ -2140,7 +2135,7 @@ describe("pattern matching", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
-    let f = fn b {
+    let f = |b| {
       let Box(a) = b;
       a
     }
@@ -2162,7 +2157,7 @@ describe("pattern matching", () => {
     const out = compileSrc(`
     type Pair { Pair(Int, Int) }
 
-    let f = fn b {
+    let f = |b| {
       let Pair(_, Pair(a, _)) = b;
       a
     }
@@ -2184,7 +2179,7 @@ describe("pattern matching", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
-    let f = fn x, Box(a), y { a }
+    let f = |x, Box(a), y| a
   `);
 
     expect(out).toMatchInlineSnapshot(`
@@ -2203,8 +2198,8 @@ test("two fns as args", () => {
   const out = compileSrc(`
     extern let f: Fn(a) -> a
     let x = f(
-      fn { 0 },
-      fn { 1 },
+      || { 0 },
+      || { 1 },
     )
 `);
 
@@ -2224,7 +2219,7 @@ describe("TCO", () => {
   test("does not apply inside infix application", () => {
     const out = compileSrc(`
     extern let (+): Fn(Int, Int) -> Int
-    let loop = fn {
+    let loop = || {
       1 + loop()
     }
 `);
@@ -2240,7 +2235,7 @@ describe("TCO", () => {
   test("does not apply inside application", () => {
     const out = compileSrc(`
     extern let a: Fn(a) -> a
-    let loop = fn {
+    let loop = || {
       a(loop())
     }
 `);
@@ -2255,7 +2250,7 @@ describe("TCO", () => {
 
   test("does not apply to let value", () => {
     const out = compileSrc(`
-    let f = fn x {
+    let f = |x| {
       let a = f(x + 1);
       a
     }
@@ -2273,7 +2268,7 @@ describe("TCO", () => {
 
   test("toplevel, no args", () => {
     const out = compileSrc(`
-      let loop = fn {
+      let loop = || {
         loop()
       }
   `);
@@ -2289,7 +2284,7 @@ describe("TCO", () => {
 
   test("toplevel with args", () => {
     const out = compileSrc(`
-      let loop = fn x, y {
+      let loop = |x, y| {
         loop(x + 1, y)
       }
   `);
@@ -2311,7 +2306,7 @@ describe("TCO", () => {
     const out = compileSrc(`
       type Box { Box(a) }
 
-      let loop = fn x, Box(y) {
+      let loop = |x, Box(y)| {
         loop(x + 1, Box(y))
       }
   `);
@@ -2335,7 +2330,7 @@ describe("TCO", () => {
   test("inside if", () => {
     const out = compileSrc(`
       extern let (==): Fn(a, a) -> Bool
-      let to_zero = fn x {
+      let to_zero = |x| {
         if x == 0 {
           x
         } else {
@@ -2362,7 +2357,7 @@ describe("TCO", () => {
   test("Example: List.reduce", () => {
     const out = compileSrc(
       `
-      pub let reduce = fn lst, acc, f {
+      pub let reduce = |lst, acc, f| {
         match lst {
           Nil => acc,
           hd :: tl => reduce(lst, f(acc, hd), f),
@@ -2396,13 +2391,13 @@ describe("TCO", () => {
 
   test("a tc call should not leak into other expressions", () => {
     const out = compileSrc(`
-    let ap = fn f { f(10) }
+    let ap =  |f| f(10)
 
-    pub let f = fn a {
+    pub let f = |a| {
       if a {
         f()
       } else {
-        let id = ap(fn x { x });
+        let id = ap(|x| x);
         0
       }
     }
@@ -2431,7 +2426,7 @@ describe("TCO", () => {
   });
 
   test("Namespaced", () => {
-    const out = compileSrc(`let f1 = fn { f1() }`, { ns: "Mod" });
+    const out = compileSrc(`let f1 = || { f1() }`, { ns: "Mod" });
 
     expect(out).toMatchInlineSnapshot(`
       "const Mod$f1 = () => {
@@ -2444,8 +2439,8 @@ describe("TCO", () => {
 
   test("Local vars shadow tail calls", () => {
     const out = compileSrc(`
-      let f1 = fn {
-        let f1 = fn { 0 };
+      let f1 = || {
+        let f1 = || { 0 };
         f1()
       }`);
 
