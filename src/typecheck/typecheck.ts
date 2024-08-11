@@ -560,10 +560,16 @@ class Typechecker {
         for (const field of ast.fields) {
           if (field.field.resolution === undefined) {
             // The error was already emitted during resolution
+            continue;
           }
 
-          // const fieldType = instantiateFromScheme(field.$.asType(), {});
-          break;
+          const fieldType = instantiateFromScheme(
+            field.field.resolution.field.$.asType(),
+            {}, // TODO handle scheme
+          );
+
+          this.unifyExpr(field.value, field.value.$.asType(), fieldType);
+          this.typecheckAnnotatedExpr(field.value);
         }
 
         this.checkMissingStructFields(ast, ast.struct.resolution, type_);

@@ -1372,7 +1372,7 @@ describe("struct", () => {
 
   test.todo("prevent from creating structs with private fields");
 
-  test.todo("typecheck fields of wrong type", () => {
+  test("typecheck fields of wrong type", () => {
     const [types, errs] = tc(
       `
         type X {  }
@@ -1394,11 +1394,9 @@ describe("struct", () => {
     });
   });
 
-  test.todo(
-    "handling params in struct definition when fields are bound to params",
-    () => {
-      const [types, errs] = tc(
-        `
+  test("handling params in struct definition when fields are bound to params", () => {
+    const [types, errs] = tc(
+      `
       type Box<a, b> struct {
         a: a,
         b: b,
@@ -1409,14 +1407,13 @@ describe("struct", () => {
         b: 42,
       }
   `,
-      );
+    );
 
-      expect(errs).toEqual([]);
-      expect(types).toEqual({
-        box: "Box<String, Int>",
-      });
-    },
-  );
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      box: "Box<String, Int>",
+    });
+  });
 
   test.todo("namespaced struct names");
 });

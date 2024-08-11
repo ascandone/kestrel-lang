@@ -679,6 +679,8 @@ class ResolutionStep {
                   );
 
             if (typeDecl !== undefined && fieldResolution === undefined) {
+              // TODO move the error back to typecheck step?
+              // it has access to the inferred type
               this.errors.push({
                 span: field.span,
                 description: new InvalidField(
