@@ -11,7 +11,7 @@ describe(errorInfoToString.name, () => {
 
   test("arity mismatch (too many args)", () => {
     const src = `
-      pub let f = fn x { x }
+      pub let f = |x| { x }
       pub let x = f(0, 1)
     `;
     snapshotErr(src);
@@ -19,7 +19,7 @@ describe(errorInfoToString.name, () => {
 
   test("arity mismatch (too few args)", () => {
     const src = `
-      pub let f = fn x, _y { x }
+      pub let f = |x, _y| { x }
       pub let x = f(0)
     `;
     snapshotErr(src);

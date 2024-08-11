@@ -20,13 +20,13 @@ test("let decl", () => {
 });
 
 test("fn par", () => {
-  const src = `let _ = fn x { x }`;
+  const src = `let _ = |x| { x }`;
   const location = parseGotoDef(src, "x", 2);
   expect(location?.span).toEqual(spanOf(src, "x", 1));
 });
 
 test("wrapped in an if and appl", () => {
-  const src = `let _ = fn a, loc_var {
+  const src = `let _ = |a, loc_var| {
       if True {
         0
       } else {
@@ -51,7 +51,7 @@ test("pattern ident", () => {
 
 test("valid recursive let bindings", () => {
   const src = `
-      let x = f(fn { x })
+      let x = f(|| { x })
     `;
   const location = parseGotoDef(src, "x", 2);
   expect(location?.span).toEqual(spanOf(src, "x", 1));
@@ -89,8 +89,8 @@ test("type ast", () => {
 
 test("do not leak bindings", () => {
   const src = `
-  pub let glb = fn loc_var {
-    let _ = fn loc_var { 0 };
+  pub let glb = |loc_var| {
+    let _ = |loc_var| { 0 };
     loc_var
   }
   `;
