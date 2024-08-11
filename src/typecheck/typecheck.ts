@@ -559,14 +559,7 @@ class Typechecker {
 
         for (const field of ast.fields) {
           if (field.field.resolution === undefined) {
-            // TODO should this error be emitted during resolution?
-            this.errors.push({
-              span: field.span,
-              description: new InvalidField(
-                typeToString(type_),
-                field.field.name,
-              ),
-            });
+            // The error was already emitted during resolution
           }
 
           // const fieldType = instantiateFromScheme(field.$.asType(), {});
@@ -703,7 +696,7 @@ class Typechecker {
           typeToString(type),
           missingFields,
         ),
-        span: ast.span,
+        span: ast.struct.span,
       });
     }
   }

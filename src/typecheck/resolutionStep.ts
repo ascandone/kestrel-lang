@@ -31,6 +31,7 @@ import {
   BadImport,
   DuplicateDeclaration,
   ErrorInfo,
+  InvalidField,
   InvalidPipe,
   NonExistingImport,
   TypeParamShadowing,
@@ -667,8 +668,27 @@ class ResolutionStep {
 
         return {
           ...ast,
-          fields: ast.fields.map(
-            (field): TypedStructField => ({
+          fields: ast.fields.map((field): TypedStructField => {
+            const fieldResolution =
+              typeDecl === undefined
+                ? undefined
+                : findFieldInTypeDecl(
+                    typeDecl.declaration,
+                    field.field.name,
+                    this.ns,
+                  );
+
+            if (typeDecl !== undefined && fieldResolution === undefined) {
+              this.errors.push({
+                span: field.span,
+                description: new InvalidField(
+                  makeStructName(typeDecl.declaration),
+                  field.field.name,
+                ),
+              });
+            }
+
+            return {
               ...field,
               field: {
                 ...field.field,
@@ -682,8 +702,8 @@ class ResolutionStep {
                       ),
               },
               value: this.annotateExpr(field.value),
-            }),
-          ),
+            };
+          }),
           struct: {
             ...ast.struct,
             resolution: typeDecl,
@@ -1081,4 +1101,16 @@ export function findFieldInTypeDecl(
   }
 
   return undefined;
+}
+
+function makeStructName(
+  structDeclaration: TypedTypeDeclaration & { type: "struct" },
+): string {
+  if (structDeclaration.params.length === 0) {
+    return structDeclaration.name;
+  }
+
+  const params = structDeclaration.params.map(() => "_").join(", ");
+
+  return `${structDeclaration.name}<${params}>`;
 }

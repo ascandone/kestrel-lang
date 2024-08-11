@@ -270,7 +270,7 @@ export class InvalidField implements ErrorDescription {
 
 export class MissingRequiredFields implements ErrorDescription {
   severity: Severity = "error";
-  errorName: string = "Missing required field";
+  errorName: string = "Missing required fields";
 
   constructor(
     public type: string,
