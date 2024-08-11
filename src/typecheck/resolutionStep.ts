@@ -1,6 +1,7 @@
 import {
   MatchPattern,
   Span,
+  SpanMeta,
   TypeAst,
   UntypedDeclaration,
   UntypedExpr,
@@ -9,7 +10,9 @@ import {
   UntypedTypeDeclaration,
 } from "../parser";
 import {
+  FieldResolution,
   IdentifierResolution,
+  StructResolution,
   TypeResolution,
   TypedBinding,
   TypedDeclaration,
@@ -18,6 +21,7 @@ import {
   TypedImport,
   TypedMatchPattern,
   TypedModule,
+  TypedStructField,
   TypedTypeAst,
   TypedTypeDeclaration,
   TypedTypeVariant,
@@ -28,6 +32,7 @@ import {
   BadImport,
   DuplicateDeclaration,
   ErrorInfo,
+  InvalidField,
   InvalidPipe,
   NonExistingImport,
   TypeParamShadowing,
@@ -347,6 +352,7 @@ class ResolutionStep {
 
         const typedTypeDecl: TypedTypeDeclaration & { type: "adt" } = {
           ...typeDecl,
+
           variants: typeDecl.variants.map((variant) => {
             const typedVariant: TypedTypeVariant = {
               ...variant,
@@ -380,6 +386,34 @@ class ResolutionStep {
         for (const hole of holes) {
           hole(typedTypeDecl);
         }
+
+        return typedTypeDecl;
+      }
+
+      case "struct": {
+        const holes: Array<(decl: TypedTypeDeclaration) => void> = [];
+
+        const typedTypeDecl: TypedTypeDeclaration & { type: "struct" } = {
+          ...typeDecl,
+
+          scheme: {},
+          $: TVar.fresh(),
+
+          fields: typeDecl.fields.map((untypedField) => ({
+            ...untypedField,
+            $: TVar.fresh(),
+            scheme: {},
+            type_: this.annotateTypeAst(untypedField.type_, {
+              holes,
+              name: typeDecl.name,
+            }),
+          })),
+        };
+
+        for (const hole of holes) {
+          hole(typedTypeDecl);
+        }
+
         return typedTypeDecl;
       }
     }
@@ -477,6 +511,117 @@ class ResolutionStep {
     });
 
     return;
+  }
+
+  private *exportedStructs(): Generator<
+    [TypedTypeDeclaration & { type: "struct" }, TypedImport, TypedExposing]
+  > {
+    for (const import_ of this.imports) {
+      for (const exposed of import_.exposing) {
+        if (
+          exposed.type !== "type" ||
+          exposed.resolved === undefined ||
+          exposed.resolved.type !== "struct"
+        ) {
+          continue;
+        }
+
+        yield [exposed.resolved, import_, exposed];
+      }
+    }
+  }
+
+  private resolveField(
+    ast: { name: string; structName?: string } & SpanMeta,
+  ): FieldResolution | undefined {
+    const { name: fieldName, structName: qualifiedStructName } = ast;
+
+    if (qualifiedStructName !== undefined) {
+      for (const typeDecl of this.typeDeclarations) {
+        if (typeDecl.name === qualifiedStructName) {
+          const fieldLookup = findFieldInTypeDecl(typeDecl, fieldName, this.ns);
+
+          if (fieldLookup === undefined) {
+            this.errors.push({
+              description: new InvalidField(typeDecl.name, fieldName),
+              span: ast.span,
+            });
+          }
+
+          return fieldLookup;
+        }
+      }
+
+      const localFieldLookup = findFieldInModule(
+        this.typeDeclarations,
+        fieldName,
+        this.ns,
+      );
+      if (localFieldLookup !== undefined) {
+        return localFieldLookup;
+      }
+
+      for (const [struct, import_, exposing] of this.exportedStructs()) {
+        if (struct.name !== qualifiedStructName) {
+          continue;
+        }
+
+        const fieldLookup = findFieldInTypeDecl(struct, fieldName, import_.ns);
+
+        if (fieldLookup === undefined || fieldLookup.declaration.pub !== "..") {
+          // TODO emit err: invalid qualifier
+
+          this.errors.push({
+            description: new InvalidField(qualifiedStructName, fieldName),
+            span: ast.span,
+          });
+        }
+
+        this.unusedExposing.delete(exposing);
+
+        return fieldLookup;
+      }
+
+      this.errors.push({
+        description: new UnboundType(qualifiedStructName),
+        span: ast.span,
+      });
+
+      return undefined;
+    }
+
+    // First check locally
+    const lookup = findFieldInModule(this.typeDeclarations, fieldName, this.ns);
+    if (lookup !== undefined) {
+      return lookup;
+    }
+
+    // check in import with exposed fields
+    for (const import_ of this.imports) {
+      for (const exposed of import_.exposing) {
+        if (
+          exposed.type !== "type" ||
+          exposed.resolved === undefined ||
+          exposed.resolved.type !== "struct" ||
+          !exposed.exposeImpl
+        ) {
+          continue;
+        }
+
+        const lookup = findFieldInTypeDecl(
+          exposed.resolved,
+          fieldName,
+          import_.ns,
+        );
+
+        if (lookup !== undefined) {
+          return lookup;
+        }
+      }
+    }
+
+    // TODO handle qualified fields
+    return undefined;
   }
 
   private resolveIdentifier(ast: {
@@ -595,6 +740,54 @@ class ResolutionStep {
       case "constant":
         return { ...ast, $: TVar.fresh() };
 
+      case "struct-literal": {
+        const typeDecl = this.resolveStruct(ast.struct.name);
+
+        return {
+          ...ast,
+          fields: ast.fields.map((field): TypedStructField => {
+            const fieldResolution =
+              typeDecl === undefined
+                ? undefined
+                : findFieldInTypeDecl(
+                    typeDecl.declaration,
+                    field.field.name,
+                    this.ns,
+                  );
+
+            if (typeDecl !== undefined && fieldResolution === undefined) {
+              // TODO move the error back to typecheck step?
+              // it has access to the inferred type
+              this.errors.push({
+                span: field.span,
+                description: new InvalidField(
+                  makeStructName(typeDecl.declaration),
+                  field.field.name,
+                ),
+              });
+            }
+
+            return {
+              ...field,
+              field: {
+                ...field.field,
+                resolution: fieldResolution,
+              },
+              value: this.annotateExpr(field.value),
+            };
+          }),
+          struct: {
+            ...ast.struct,
+            resolution: typeDecl,
+          },
+          spread:
+            ast.spread === undefined
+              ? undefined
+              : this.annotateExpr(ast.spread),
+          $: TVar.fresh(),
+        };
+      }
+
       case "list-literal": {
         return {
           ...ast,
@@ -660,6 +853,14 @@ class ResolutionStep {
           $: TVar.fresh(),
           caller: this.annotateExpr(ast.caller),
           args: ast.args.map((arg) => this.annotateExpr(arg)),
+        };
+
+      case "field-access":
+        return {
+          ...ast,
+          struct: this.annotateExpr(ast.struct),
+          resolution: this.resolveField(ast.field),
+          $: TVar.fresh(),
         };
 
       case "if":
@@ -752,6 +953,20 @@ class ResolutionStep {
         };
       }
     }
+  }
+
+  private resolveStruct(structName: string): StructResolution | undefined {
+    // TODO handle external ns
+    for (const typeDecl of this.typeDeclarations) {
+      if (typeDecl.name === structName && typeDecl.type === "struct") {
+        return {
+          declaration: typeDecl,
+          namespace: this.ns,
+        };
+      }
+    }
+
+    return undefined;
   }
 
   private annotateImport(
@@ -927,4 +1142,51 @@ class ResolutionStep {
 
     return undefined;
   }
+}
+
+export function findFieldInModule(
+  typeDeclarations: TypedTypeDeclaration[],
+  fieldName: string,
+  namespace: string,
+): FieldResolution | undefined {
+  for (const typeDecl of typeDeclarations) {
+    const lookup = findFieldInTypeDecl(typeDecl, fieldName, namespace);
+    if (lookup !== undefined) {
+      return lookup;
+    }
+  }
+
+  return undefined;
+}
+
+export function findFieldInTypeDecl(
+  declaration: TypedTypeDeclaration,
+  fieldName: string,
+  namespace: string,
+): FieldResolution | undefined {
+  if (declaration.type !== "struct") {
+    return undefined;
+  }
+
+  for (const field of declaration.fields) {
+    if (field.name !== fieldName) {
+      continue;
+    }
+
+    return { declaration, field, namespace };
+  }
+
+  return undefined;
+}
+
+function makeStructName(
+  structDeclaration: TypedTypeDeclaration & { type: "struct" },
+): string {
+  if (structDeclaration.params.length === 0) {
+    return structDeclaration.name;
+  }
+
+  const params = structDeclaration.params.map(() => "_").join(", ");
+
+  return `${structDeclaration.name}<${params}>`;
 }

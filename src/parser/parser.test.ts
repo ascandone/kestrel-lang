@@ -520,6 +520,91 @@ describe("type declarations", () => {
   });
 });
 
+describe("structs", () => {
+  test("empty struct", () => {
+    const src = `type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("pub modifier", () => {
+    const src = `pub type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("pub(..) modifier", () => {
+    const src = `pub(..) type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("type params", () => {
+    const src = `type Person<a, b> struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("doc comments", () => {
+    const src = `
+      /// example docs
+      type Person struct { }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("field", () => {
+    const src = `type Person struct { age: Int }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("many fields", () => {
+    const src = `
+      type Person struct {
+        name: a,
+        age: b, 
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("field access", () => {
+    const src = `let _ = s.my_field`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("construct fields with no fields", () => {
+    const src = `let _ = MyStruct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("construct fields with many fields", () => {
+    const src = `
+      let _ = MyStruct {
+        a: 42,
+        b: "ok",
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("update a struct", () => {
+    const src = `
+      let _ = MyStruct {
+        a: 42,
+        b: "ok",
+        ..expr
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("complex exprs in update syntax");
+
+  test("qualified field access", () => {
+    const src = `let _ = s.MyStruct#my_field`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("namespaced-qualified field access");
+});
+
 describe("pattern matching", () => {
   test("empty match expression", () => {
     const src = `let _ = match x {}`;

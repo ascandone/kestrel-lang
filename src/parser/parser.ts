@@ -15,6 +15,7 @@ import Parser, {
   ExprContext,
   ExternLetDeclarationContext,
   ExternTypeDeclarationContext,
+  FieldAccessContext,
   FloatContext,
   FloatPatternContext,
   FnContext,
@@ -33,6 +34,8 @@ import Parser, {
   PipeContext,
   StringContext,
   StringPatternContext,
+  StructDeclarationContext,
+  StructLitContext,
   TupleContext,
   TuplePatternContext,
   TupleTypeContext,
@@ -258,6 +261,20 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     span: [ctx.start.start, ctx.stop!.stop + 1],
   });
 
+  visitFieldAccess = (ctx: FieldAccessContext): UntypedExpr => {
+    return {
+      type: "field-access",
+      struct: this.visit(ctx.expr()),
+      field: {
+        name: ctx.ID().getText(),
+        structName:
+          ctx._structName === undefined ? undefined : ctx._structName.text,
+        span: [ctx.ID().symbol.start, ctx.ID().symbol.stop + 1],
+      },
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+    };
+  };
+
   visitBoolNot = (ctx: ParensContext): UntypedExpr => ({
     type: "application",
     caller: {
@@ -379,6 +396,37 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       },
       args,
       span,
+    };
+  };
+
+  visitStructLit = (ctx: StructLitContext): UntypedExpr => {
+    let spread: UntypedExpr | undefined = undefined;
+    if (ctx._spread) {
+      spread = this.visit(ctx._spread);
+    }
+
+    return {
+      type: "struct-literal",
+      span: [ctx.start.start, ctx.stop!.stop + 1],
+      struct: {
+        name: ctx.TYPE_ID().getText(),
+        span: [ctx.TYPE_ID().symbol.start, ctx.TYPE_ID().symbol.stop + 1],
+      },
+      spread,
+      fields:
+        ctx
+          .structFields()
+          ?.structField_list()
+          .map((v) => ({
+            field: {
+              name: v.ID().getText(),
+              span: [v.ID().symbol.start, v.ID().symbol.stop + 1],
+            },
+            span: [v.start.start, v.stop!.stop + 1],
+            value: this.visit(v.expr()),
+            // args: v.type__list().map((t) => new TypeVisitor().visit(t)),
+            // type_: new TypeVisitor().visit(v.type_()),
+          })) ?? [],
     };
   };
 
@@ -543,6 +591,52 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
               name: i.getText(),
               span: [i.symbol.start, i.symbol.stop + 1],
             })) ?? [],
+        ...(docs === "" ? {} : { docComment: docs }),
+        span: [ctx.start.start, ctx.stop!.stop + 1],
+      },
+    };
+  };
+
+  visitStructDeclaration = (
+    structDecl: StructDeclarationContext,
+  ): DeclarationType => {
+    const ctx = structDecl.structDeclaration_();
+
+    const docs = ctx
+      .DOC_COMMENT_LINE_list()
+      .map((d) => d.getText().slice(3))
+      .join("");
+
+    return {
+      type: "type",
+      decl: {
+        type: "struct",
+        fields:
+          ctx
+            .declarationFields()
+            ?.fieldDecl_list()
+            .map((v) => ({
+              name: v.ID().getText(),
+              span: [v.start.start, v.stop!.stop + 1],
+              // args: v.type__list().map((t) => new TypeVisitor().visit(t)),
+              type_: new TypeVisitor().visit(v.type_()),
+            })) ?? [],
+
+        params:
+          ctx
+            .paramsList()
+            ?.ID_list()
+            .map((i) => ({
+              name: i.getText(),
+              span: [i.symbol.start, i.symbol.stop + 1],
+            })) ?? [],
+        pub:
+          ctx._pub === undefined
+            ? false
+            : ctx._pub.EXPOSING_NESTED() == null
+              ? true
+              : "..",
+        name: ctx._name.text,
         ...(docs === "" ? {} : { docComment: docs }),
         span: [ctx.start.start, ctx.stop!.stop + 1],
       },

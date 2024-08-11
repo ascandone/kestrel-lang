@@ -4929,6 +4929,538 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
 }
 `;
 
+exports[`structs > construct fields with many fields 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        7,
+        65,
+      ],
+      "value": {
+        "fields": [
+          {
+            "field": {
+              "name": "a",
+              "span": [
+                34,
+                35,
+              ],
+            },
+            "span": [
+              34,
+              39,
+            ],
+            "value": {
+              "span": [
+                37,
+                39,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 42,
+              },
+            },
+          },
+          {
+            "field": {
+              "name": "b",
+              "span": [
+                49,
+                50,
+              ],
+            },
+            "span": [
+              49,
+              56,
+            ],
+            "value": {
+              "span": [
+                52,
+                56,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "string",
+                "value": "ok",
+              },
+            },
+          },
+        ],
+        "span": [
+          15,
+          65,
+        ],
+        "spread": undefined,
+        "struct": {
+          "name": "MyStruct",
+          "span": [
+            15,
+            23,
+          ],
+        },
+        "type": "struct-literal",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`structs > construct fields with no fields 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        20,
+      ],
+      "value": {
+        "fields": [],
+        "span": [
+          8,
+          20,
+        ],
+        "spread": undefined,
+        "struct": {
+          "name": "MyStruct",
+          "span": [
+            8,
+            16,
+          ],
+        },
+        "type": "struct-literal",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`structs > doc comments 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "docComment": " example docs
+",
+      "fields": [],
+      "name": "Person",
+      "params": [],
+      "pub": false,
+      "span": [
+        7,
+        52,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
+exports[`structs > empty struct 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [],
+      "name": "Person",
+      "params": [],
+      "pub": false,
+      "span": [
+        0,
+        22,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
+exports[`structs > field 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [
+        {
+          "name": "age",
+          "span": [
+            21,
+            29,
+          ],
+          "type_": {
+            "args": [],
+            "name": "Int",
+            "span": [
+              26,
+              29,
+            ],
+            "type": "named",
+          },
+        },
+      ],
+      "name": "Person",
+      "params": [],
+      "pub": false,
+      "span": [
+        0,
+        31,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
+exports[`structs > field access 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        18,
+      ],
+      "value": {
+        "field": {
+          "name": "my_field",
+          "span": [
+            10,
+            18,
+          ],
+          "structName": undefined,
+        },
+        "span": [
+          8,
+          18,
+        ],
+        "struct": {
+          "name": "s",
+          "namespace": undefined,
+          "span": [
+            8,
+            9,
+          ],
+          "type": "identifier",
+        },
+        "type": "field-access",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`structs > many fields 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [
+        {
+          "name": "name",
+          "span": [
+            36,
+            43,
+          ],
+          "type_": {
+            "ident": "a",
+            "span": [
+              42,
+              43,
+            ],
+            "type": "var",
+          },
+        },
+        {
+          "name": "age",
+          "span": [
+            53,
+            59,
+          ],
+          "type_": {
+            "ident": "b",
+            "span": [
+              58,
+              59,
+            ],
+            "type": "var",
+          },
+        },
+      ],
+      "name": "Person",
+      "params": [],
+      "pub": false,
+      "span": [
+        7,
+        69,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
+exports[`structs > pub modifier 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [],
+      "name": "Person",
+      "params": [],
+      "pub": true,
+      "span": [
+        0,
+        26,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
+exports[`structs > pub(..) modifier 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [],
+      "name": "Person",
+      "params": [],
+      "pub": "..",
+      "span": [
+        0,
+        30,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
+exports[`structs > qualified field access 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        27,
+      ],
+      "value": {
+        "field": {
+          "name": "my_field",
+          "span": [
+            19,
+            27,
+          ],
+          "structName": "MyStruct",
+        },
+        "span": [
+          8,
+          27,
+        ],
+        "struct": {
+          "name": "s",
+          "namespace": undefined,
+          "span": [
+            8,
+            9,
+          ],
+          "type": "identifier",
+        },
+        "type": "field-access",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
+exports[`structs > type params 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "typeDeclarations": [
+    {
+      "fields": [],
+      "name": "Person",
+      "params": [
+        {
+          "name": "a",
+          "span": [
+            12,
+            13,
+          ],
+        },
+        {
+          "name": "b",
+          "span": [
+            15,
+            16,
+          ],
+        },
+      ],
+      "pub": false,
+      "span": [
+        0,
+        28,
+      ],
+      "type": "struct",
+    },
+  ],
+}
+`;
+
+exports[`structs > update a struct 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "_",
+        "span": [
+          11,
+          12,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        7,
+        80,
+      ],
+      "value": {
+        "fields": [
+          {
+            "field": {
+              "name": "a",
+              "span": [
+                34,
+                35,
+              ],
+            },
+            "span": [
+              34,
+              39,
+            ],
+            "value": {
+              "span": [
+                37,
+                39,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 42,
+              },
+            },
+          },
+          {
+            "field": {
+              "name": "b",
+              "span": [
+                49,
+                50,
+              ],
+            },
+            "span": [
+              49,
+              56,
+            ],
+            "value": {
+              "span": [
+                52,
+                56,
+              ],
+              "type": "constant",
+              "value": {
+                "type": "string",
+                "value": "ok",
+              },
+            },
+          },
+        ],
+        "span": [
+          15,
+          80,
+        ],
+        "spread": {
+          "name": "expr",
+          "namespace": undefined,
+          "span": [
+            68,
+            72,
+          ],
+          "type": "identifier",
+        },
+        "struct": {
+          "name": "MyStruct",
+          "span": [
+            15,
+            23,
+          ],
+        },
+        "type": "struct-literal",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`traits > parses many traits in a polytype for the same tvar 1`] = `
 {
   "declarations": [

@@ -259,6 +259,63 @@ export class Compiler {
         return [buf, ret];
       }
 
+      case "field-access": {
+        const [sts, structValue] = this.compileAsExpr(src.struct);
+        // TODO prec with infix
+        return [sts, `${structValue}.${src.field.name}`];
+      }
+
+      case "struct-literal": {
+        const resolution = src.struct.resolution;
+        if (resolution === undefined) {
+          throw new Error(
+            "[unreachable] undefined resolution for struct declaration",
+          );
+        }
+
+        const objContent: string[] = [];
+        const stsBuf: string[] = [];
+
+        if (src.fields.length === 0) {
+          return [[], "null"];
+        }
+
+        for (const f of src.fields) {
+          const [sts, fieldValue] = this.compileAsExpr(f.value);
+          stsBuf.push(...sts);
+          objContent.push(`${f.field.name}: ${fieldValue}`);
+        }
+
+        if (src.spread !== undefined) {
+          const [exprSts, exprExpr] = this.compileAsExpr(src.spread);
+          let updateExpr: string;
+          if (src.spread.type === "identifier") {
+            updateExpr = exprExpr;
+          } else {
+            const ident = this.getUniqueName();
+            exprSts.push(`const ${ident} = ${exprExpr};`);
+            updateExpr = ident;
+          }
+
+          stsBuf.push(...exprSts);
+
+          for (const originalField of resolution.declaration.fields) {
+            const alreadyWritten = src.fields.some(
+              (writtenField) => writtenField.field.name === originalField.name,
+            );
+            if (alreadyWritten) {
+              continue;
+            }
+
+            objContent.push(
+              `${originalField.name}: ${updateExpr}.${originalField.name}`,
+            );
+          }
+        }
+
+        return [stsBuf, `{ ${objContent.join(", ")} }`];
+      }
+
       case "identifier": {
         if (src.resolution === undefined) {
           throw new Error("[unreachable] unresolved var: " + src.name);
@@ -392,8 +449,11 @@ export class Compiler {
           }
           return ret;
         }
+        // Attention: fallthrough to the next branch
       }
 
+      case "field-access":
+      case "struct-literal":
       case "list-literal":
       case "identifier":
       case "constant": {
@@ -562,7 +622,7 @@ export class Compiler {
     const decls: string[] = [];
 
     for (const typeDecl of src.typeDeclarations) {
-      if (typeDecl.type === "extern") {
+      if (typeDecl.type !== "adt") {
         continue;
       }
 

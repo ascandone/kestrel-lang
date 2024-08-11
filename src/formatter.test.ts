@@ -82,6 +82,86 @@ describe("list lit syntax", () => {
   });
 });
 
+describe("struct", () => {
+  test("struct definition without fields", () => {
+    expect(`type X struct { }\n`).toBeFormatted();
+  });
+
+  test("struct definition with many fields", () => {
+    expect(`type X struct {
+  some_field: Int,
+  another_field: String,
+}\n`).toBeFormatted();
+  });
+
+  test("field access", () => {
+    expect(`let _ = my_struct.field
+`).toBeFormatted();
+  });
+
+  test("nested field access", () => {
+    expect(`let _ = my_struct.a.b.c
+`).toBeFormatted();
+  });
+
+  test("field access (handling prec of infix)", () => {
+    expect(`let _ = (1 + 2).field
+`).toBeFormatted();
+  });
+
+  test("field access (handling prec of call)", () => {
+    expect(`let _ = f().field
+`).toBeFormatted();
+  });
+
+  test("prec over dot access", () => {
+    expect(`let _ = 1 + x.field
+`).toBeFormatted();
+  });
+
+  test("empty struct creation", () => {
+    expect(`let _ = Person { }
+`).toBeFormatted();
+  });
+
+  test("struct with fields", () => {
+    expect(`let _ = Person {
+  x: 42,
+  y: 100,
+}
+`).toBeFormatted();
+  });
+
+  test("struct inside fn call", () => {
+    expect(`let _ = my_fn(Person {
+  x: 42,
+  y: 100,
+})
+`).toBeFormatted();
+  });
+
+  test("struct with update syntax", () => {
+    expect(`let _ = Person {
+  x: 42,
+  y: 100,
+  ..1 + 2
+}
+`).toBeFormatted();
+  });
+
+  test("struct with update and no fields", () => {
+    expect(`let _ = Person {
+  ..original
+}
+`).toBeFormatted();
+  });
+
+  test("qualified field access", () => {
+    expect(`let _ = some_struct.Struct#field
+`).toBeFormatted();
+  });
+});
+
 test("cons application sugar", () => {
   expect(`let x = hd :: hd2 :: tl\n`).toBeFormatted();
 });

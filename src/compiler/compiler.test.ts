@@ -841,6 +841,149 @@ describe("list literal", () => {
   });
 });
 
+describe("structs", () => {
+  test("struct declaration is a noop", () => {
+    const out = compileSrc(`
+      extern type String
+      type User struct {
+          name: String
+      }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      ""
+    `);
+  });
+
+  test("struct declaration", () => {
+    const out = compileSrc(`
+      extern type Int
+      type Point struct {
+          x: Int,
+          y: Int,
+      }
+
+      pub let user = Point {
+        y: 1,
+        x: 0,
+      } 
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$user = { y: 1, x: 0 };
+      "
+    `);
+  });
+
+  test("empty struct is represented as null", () => {
+    const out = compileSrc(`
+      extern type Int
+      type Nil struct { }
+
+      pub let nil = Nil { }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$nil = null;
+      "
+    `);
+  });
+
+  test("field access", () => {
+    const out = compileSrc(`
+      extern type Int
+
+      type Box struct { x: Int }
+
+      pub let b = Box { x: 42 } 
+
+      pub let x_f = b.x
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$b = { x: 42 };
+
+      const Main$x_f = Main$b.x;
+      "
+    `);
+  });
+
+  test("field access of struct lit", () => {
+    const out = compileSrc(`
+      extern type Int
+      type Box struct { x: Int }
+
+      pub let x_f = Box { x: 42 }.x
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x_f = { x: 42 }.x;
+      "
+    `);
+  });
+
+  test("struct update", () => {
+    const out = compileSrc(`
+      extern type Int
+      type Point3D struct {
+        x: Int,
+        y: Int,
+        z: Int,
+      }
+
+      extern let original: Point3D
+      pub let update_y = Point3D {
+        y: 42,
+        ..original
+      }
+      
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$update_y = { y: 42, x: Main$original.x, z: Main$original.z };
+      "
+    `);
+  });
+
+  test("struct update when expr is not ident", () => {
+    const out = compileSrc(`
+      extern type Int
+      type Point3D struct {
+        x: Int,
+        y: Int,
+        z: Int,
+      }
+
+      extern let get_original: Fn() -> Point3D
+      pub let update_y = Point3D {
+        y: 42,
+        ..get_original()
+      }
+      
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$update_y$GEN__0 = Main$get_original();
+      const Main$update_y = { y: 42, x: Main$update_y$GEN__0.x, z: Main$update_y$GEN__0.z };
+      "
+    `);
+  });
+
+  // Note: this should never happen, as currently there aren't any
+  // builtin infix ops that yield structs
+  // still, it's better to handle it
+  test.todo("field access of infix expr", () => {
+    const out = compileSrc(`
+      pub let x_f = (1 + 2).x
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x_f = { x: 42 }.x;
+      "
+    `);
+  });
+});
+
 describe("derive Eq instance", () => {
   test("do not derive underivable types", () => {
     const out = compileSrc(

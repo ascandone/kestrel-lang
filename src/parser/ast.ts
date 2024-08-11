@@ -1,3 +1,5 @@
+import { TypeResolutionMeta } from "../typecheck";
+
 export type ConstLiteral =
   | { type: "int"; value: number }
   | { type: "float"; value: number }
@@ -81,16 +83,65 @@ export type SyntaxSugar =
       right: UntypedExpr;
     };
 
-export type UntypedExpr = Expr<unknown, unknown, SyntaxSugar>;
+export type UntypedExpr = Expr<unknown, unknown, unknown, unknown, SyntaxSugar>;
 
-export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
+export type StructField<
+  TypeMeta,
+  IdentifierResolutionMeta,
+  StructResolutionMeta,
+  FieldResolutionMeta,
+  SyntaxSugar,
+> = SpanMeta & {
+  field: { name: string } & SpanMeta & FieldResolutionMeta;
+  value: Expr<
+    TypeMeta,
+    IdentifierResolutionMeta,
+    StructResolutionMeta,
+    FieldResolutionMeta,
+    SyntaxSugar
+  >;
+};
+
+export type Expr<
+  TypeMeta,
+  IdentifierResolutionMeta,
+  StructResolutionMeta,
+  FieldResolutionMeta,
+  SyntaxSugar,
+> = (
   | SyntaxSugar
   | {
       type: "syntax-err";
     }
   | {
       type: "list-literal";
-      values: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>[];
+      values: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >[];
+    }
+  | {
+      type: "struct-literal";
+      struct: { name: string } & SpanMeta & StructResolutionMeta;
+      fields: StructField<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >[];
+      spread:
+        | Expr<
+            TypeMeta,
+            IdentifierResolutionMeta,
+            StructResolutionMeta,
+            FieldResolutionMeta,
+            SyntaxSugar
+          >
+        | undefined;
     }
   | {
       type: "constant";
@@ -104,33 +155,104 @@ export type Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar> = (
   | {
       type: "fn";
       params: MatchPattern<TypeMeta, IdentifierResolutionMeta>[];
-      body: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      body: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >;
     }
   | {
       type: "application";
-      caller: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
-      args: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>[];
+      caller: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >;
+      args: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >[];
       isPipe?: boolean;
     }
+  | ({
+      type: "field-access";
+      struct: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >;
+      field: { name: string; structName?: string } & SpanMeta;
+    } & FieldResolutionMeta)
   | {
       type: "let";
       pattern: MatchPattern<TypeMeta, IdentifierResolutionMeta>;
-      value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
-      body: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      value: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >;
+      body: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >;
     }
   | {
       type: "if";
-      condition: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
-      then: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
-      else: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      condition: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >;
+      then: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >;
+      else: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >;
     }
   | {
       type: "match";
-      expr: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+      expr: Expr<
+        TypeMeta,
+        IdentifierResolutionMeta,
+        StructResolutionMeta,
+        FieldResolutionMeta,
+        SyntaxSugar
+      >;
       clauses: Array<
         [
           MatchPattern<TypeMeta, IdentifierResolutionMeta>,
-          Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>,
+          Expr<
+            TypeMeta,
+            IdentifierResolutionMeta,
+            StructResolutionMeta,
+            FieldResolutionMeta,
+            SyntaxSugar
+          >,
         ]
       >;
     }
@@ -142,12 +264,16 @@ export type UntypedDeclaration = Declaration<
   unknown,
   unknown,
   unknown,
+  unknown,
+  unknown,
   SyntaxSugar
 >;
 export type Declaration<
   TypeMeta,
   IdentifierResolutionMeta,
   TypeResolutionMeta,
+  StructResolutionMeta,
+  FieldResolutionMeta,
   SyntaxSugar,
 > = SpanMeta & {
   pub: boolean;
@@ -158,7 +284,13 @@ export type Declaration<
         inline: boolean;
         extern: false;
         typeHint?: PolyTypeAst<TypeResolutionMeta> & SpanMeta;
-        value: Expr<TypeMeta, IdentifierResolutionMeta, SyntaxSugar>;
+        value: Expr<
+          TypeMeta,
+          IdentifierResolutionMeta,
+          StructResolutionMeta,
+          FieldResolutionMeta,
+          SyntaxSugar
+        >;
       }
     | {
         extern: true;
@@ -172,6 +304,11 @@ export type TypeVariant<TypeMeta, TypeResolutionMeta = unknown> = (TypeMeta &
   args: TypeAst<TypeResolutionMeta>[];
 };
 
+export type StructDeclarationField<TypeMeta> = (TypeMeta & SpanMeta) & {
+  name: string;
+  type_: TypeAst<TypeResolutionMeta>;
+};
+
 export type UntypedTypeVariant = TypeVariant<unknown>;
 export type UntypedTypeDeclaration = TypeDeclaration<unknown>;
 export type TypeDeclaration<TypeMeta> = SpanMeta & {
@@ -180,6 +317,11 @@ export type TypeDeclaration<TypeMeta> = SpanMeta & {
   docComment?: string;
 } & (
     | { type: "adt"; variants: TypeVariant<TypeMeta>[]; pub: boolean | ".." }
+    | ({
+        type: "struct";
+        fields: StructDeclarationField<TypeMeta>[];
+        pub: boolean | "..";
+      } & TypeMeta)
     | { type: "extern"; pub: boolean }
   );
 

@@ -43,6 +43,7 @@ declaration:
 	letDeclaration_				# letDeclaration
 	| externLetDeclaration_		# externLetDeclaration
 	| typeDeclaration_			# typeDeclaration
+	| structDeclaration_		# structDeclaration
 	| externTypeDeclaration_	# externTypeDeclaration;
 
 letDeclaration_:
@@ -59,6 +60,10 @@ typeDeclaration_:
 	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants?
 		'}';
 
+structDeclaration_:
+	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? 'struct' '{'
+		declarationFields? '}';
+
 externTypeDeclaration_:
 	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?;
 
@@ -67,6 +72,9 @@ paramsList: '<' ID (',' ID)* '>';
 
 typeVariants:
 	typeConstructorDecl (',' typeConstructorDecl)* ','?;
+
+fieldDecl: ID ':' type;
+declarationFields: fieldDecl (',' fieldDecl)* ','?;
 
 polyType:
 	type ('where' traitImplClause (',' traitImplClause)*)?;
@@ -86,13 +94,18 @@ typeConstructorDecl: name = TYPE_ID ('(' type (',' type)* ')')?;
 
 qualifiedId: (moduleNamespace '.')? (name = (ID | TYPE_ID));
 
+structField: ID ':' expr;
+structFields: structField (',' structField)* ','?;
+
 expr:
 	INT																		# int
 	| FLOAT																	# float
 	| CHAR																	# char
 	| STRING																# string
+	| expr '.' (structName = TYPE_ID '#')? ID								# fieldAccess
 	| qualifiedId															# id
 	| op = '!' expr															# BoolNot
+	| TYPE_ID '{' structFields? ('..' spread = expr)? '}'					# structLit
 	| expr '(' (expr (',' expr)* ','?)? ')'									# call
 	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr						# MulDiv
 	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr						# AddSub

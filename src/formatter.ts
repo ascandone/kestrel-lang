@@ -81,6 +81,8 @@ function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
         return selfBindingPower > bindingPower;
       }
 
+    case "field-access":
+    case "struct-literal":
     case "syntax-err":
     case "list-literal":
     case "pipe":
@@ -169,6 +171,33 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         text("]"),
       );
 
+    case "struct-literal": {
+      const fieldLines = ast.fields.map((field) => {
+        return concat(
+          //
+          text(`${field.field.name}: `),
+          exprToDoc(field.value, false),
+          text(`,`),
+        );
+      });
+
+      if (ast.spread !== undefined) {
+        fieldLines.push(
+          //
+          concat(text(".."), exprToDoc(ast.spread, false)),
+        );
+      }
+
+      const fields = sepBy(break_(), fieldLines);
+
+      return concat(
+        text(ast.struct.name),
+        text(" "),
+        //
+        fieldLines.length === 0 ? text("{ }") : block_(fields),
+      );
+    }
+
     case "pipe":
       return broken(
         asBlock(block, [
@@ -206,6 +235,17 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
 
       return concat(leftDoc, text(` ${name} `), exprToDoc(ast.right, false));
     }
+
+    case "field-access":
+      return concat(
+        //
+        autoParens(DOT_ACCESS_BINDING_POWER, ast.struct),
+        text("."),
+        ast.field.structName === undefined
+          ? nil
+          : text(ast.field.structName, "#"),
+        text(ast.field.name),
+      );
 
     case "application": {
       infix: if (ast.caller.type === "identifier") {
@@ -518,6 +558,30 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
         tDecl.variants.length === 0 ? text("{ }") : block_(variants),
       );
     }
+
+    case "struct": {
+      const fields = sepBy(
+        break_(),
+        tDecl.fields.map((field) => {
+          return concat(
+            //
+            text(`${field.name}: `),
+            typeAstToDoc(field.type_),
+            text(`,`),
+          );
+        }),
+      );
+
+      return concat(
+        docComment,
+        tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
+        text("type "),
+        text(tDecl.name),
+        params,
+        text(" struct "),
+        tDecl.fields.length === 0 ? text("{ }") : block_(fields),
+      );
+    }
   }
 }
 
@@ -608,3 +672,12 @@ export function format(ast: UntypedModule): string {
 function isTupleN(namespace: string | undefined, name: string): boolean {
   return namespace === "Tuple" && /Tuple[0-9]+/.test(name);
 }
+
+function autoParens(infixIndex: number, expr: UntypedExpr) {
+  const needsParens = hasLowerPrec(infixIndex, expr);
+  return needsParens
+    ? concat(text("("), exprToDoc(expr, false), text(")"))
+    : exprToDoc(expr, false);
+}
+
+const DOT_ACCESS_BINDING_POWER = 0;

@@ -39,7 +39,7 @@ export function goToDefinitionOf(
         : goToDefinitionOfExpr(statement.declaration.value, offset);
 
     case "type-declaration": {
-      if (statement.typeDeclaration.type === "extern") {
+      if (statement.typeDeclaration.type !== "adt") {
         return undefined;
       }
 

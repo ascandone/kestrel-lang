@@ -171,6 +171,12 @@ class ChangeTracker {
       case "identifier":
         return src;
 
+      case "field-access":
+        return {
+          ...src,
+          struct: this.runOnce(src.struct),
+        };
+
       case "application": {
         return {
           ...src,
@@ -208,6 +214,17 @@ class ChangeTracker {
         return {
           ...src,
           values: src.values.map((value) => this.runOnce(value)),
+        };
+
+      case "struct-literal":
+        return {
+          ...src,
+          fields: src.fields.map((field) => ({
+            ...field,
+            value: this.runOnce(field.value),
+          })),
+          spread:
+            src.spread === undefined ? undefined : this.runOnce(src.spread),
         };
     }
   }
@@ -282,6 +299,12 @@ function substituteBinding(
     case "constant":
       return src;
 
+    case "field-access":
+      return {
+        ...src,
+        struct: substituteBinding(binding, with_, src.struct),
+      };
+
     case "application": {
       return {
         ...src,
@@ -324,6 +347,19 @@ function substituteBinding(
         values: src.values.map((value) =>
           substituteBinding(binding, with_, value),
         ),
+      };
+
+    case "struct-literal":
+      return {
+        ...src,
+        fields: src.fields.map((field) => ({
+          ...field,
+          value: substituteBinding(binding, with_, field.value),
+        })),
+        spread:
+          src.spread === undefined
+            ? undefined
+            : substituteBinding(binding, with_, src.spread),
       };
   }
 }

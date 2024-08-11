@@ -7,7 +7,9 @@ import {
   UntypedTypeVariant,
 } from "../parser";
 import {
+  FieldResolution,
   IdentifierResolution,
+  StructResolution,
   TypedDeclaration,
   TypedExpr,
   TypedMatchPattern,
@@ -26,6 +28,8 @@ import {
   TypeScheme,
   PolyType,
   TraitImplDependency,
+  TVarResolution,
+  Instantiator,
   typeToString,
   findUnboundTypeVars,
 } from "./type";
@@ -34,14 +38,16 @@ import {
   AmbiguousTypeVar,
   ErrorInfo,
   InvalidCatchall,
+  InvalidField,
   InvalidTypeArity,
+  MissingRequiredFields,
   NonExhaustiveMatch,
   OccursCheck,
   TraitNotSatified,
   TypeMismatch,
   UnboundTypeParam,
 } from "../errors";
-import { castAst } from "./resolutionStep";
+import { castAst, findFieldInModule } from "./resolutionStep";
 import { topologicalSort } from "../utils/topsort";
 
 export type TypeMeta = { $: TVar };
@@ -81,6 +87,8 @@ type ScheduledAmbiguousVarCheck = {
 
 class Typechecker {
   private errors: ErrorInfo[] = [];
+  private scheduledFieldResolutions: (TypedExpr & { type: "field-access" })[] =
+    [];
 
   /** ids of the fresh variables created due to typechecking error */
   private errorNodesTypeVarIds = new Set<number>();
@@ -180,6 +188,8 @@ class Typechecker {
 
         this.derive("Eq", typeDecl);
         this.derive("Show", typeDecl);
+      } else if (typeDecl.type === "struct") {
+        this.makeStructType(typeDecl);
       }
     }
 
@@ -194,26 +204,68 @@ class Typechecker {
       this.scheduledAmbiguousVarChecks = [];
     }
 
+    for (const fieldAccessAst of this.scheduledFieldResolutions) {
+      this.doubleCheckFieldAccess(
+        fieldAccessAst,
+        fieldAccessAst.struct.$.resolve(),
+        deps,
+      );
+    }
+
     return [typedAst, this.errors];
+  }
+
+  private makeStructType(typeDecl: TypedTypeDeclaration & { type: "struct" }) {
+    // TODO dedup from makeVariantType
+    const generics: [string, TVar, number][] = typeDecl.params.map((param) => [
+      param.name,
+      ...TVar.freshWithId(),
+    ]);
+
+    const scheme: TypeScheme = Object.fromEntries(
+      generics.map(([param, , id]) => [id, param]),
+    );
+
+    const mono: Type = {
+      type: "named",
+      moduleName: this.ns,
+      name: typeDecl.name,
+      args: generics.map(([, tvar]) => tvar.asType()),
+    };
+
+    unify(typeDecl.$.asType(), mono);
+
+    typeDecl.scheme = scheme;
+
+    for (const field of typeDecl.fields) {
+      const bound: Record<string, TVar> = Object.fromEntries(
+        generics.map(([p, t]) => [p, t]),
+      );
+
+      const fieldType = this.typeAstToType(
+        field.type_,
+        { type: "constructor-arg", params: typeDecl.params.map((p) => p.name) }, // TODO params
+        bound,
+        {}, // TODO traits
+      );
+
+      unify(fieldType, field.$.asType()); // Do not change args order
+
+      field.scheme = scheme;
+    }
   }
 
   private makeVariantType(
     typeDecl: UntypedTypeDeclaration & { type: "adt" },
     variant: UntypedTypeVariant,
   ): PolyType {
-    const generics: [string, TVar][] = typeDecl.params.map((param) => [
+    const generics: [string, TVar, number][] = typeDecl.params.map((param) => [
       param.name,
-      TVar.fresh(),
+      ...TVar.freshWithId(),
     ]);
 
     const scheme: TypeScheme = Object.fromEntries(
-      generics.map(([param, $]) => {
-        const resolved = $.resolve();
-        if (resolved.type !== "unbound") {
-          throw new Error("[unreachable]");
-        }
-        return [resolved.id, param];
-      }),
+      generics.map(([param, , id]) => [id, param]),
     );
 
     const ret: Type = {
@@ -238,7 +290,6 @@ class Typechecker {
               {
                 type: "constructor-arg",
                 params,
-                returning: ret,
               },
               Object.fromEntries(generics.map(([p, t]) => [p, t])),
               {},
@@ -579,6 +630,42 @@ class Typechecker {
         return;
       }
 
+      case "struct-literal": {
+        if (ast.struct.resolution === undefined) {
+          // TODO handle err
+          return;
+        }
+
+        const instantiator = new Instantiator();
+        const type_ = instantiator.instantiatePoly(
+          ast.struct.resolution.declaration,
+        );
+
+        for (const field of ast.fields) {
+          if (field.field.resolution === undefined) {
+            // The error was already emitted during resolution
+            continue;
+          }
+
+          const fieldType = instantiator.instantiatePoly(
+            field.field.resolution.field,
+          );
+
+          this.unifyExpr(field.value, field.value.$.asType(), fieldType);
+          this.typecheckAnnotatedExpr(field.value);
+        }
+
+        this.checkMissingStructFields(ast, ast.struct.resolution, type_);
+        this.unifyExpr(ast, ast.$.asType(), type_);
+
+        if (ast.spread !== undefined) {
+          this.typecheckAnnotatedExpr(ast.spread);
+          this.unifyExpr(ast.spread, ast.spread.$.asType(), ast.$.asType());
+        }
+
+        return;
+      }
+
       case "identifier": {
         if (ast.resolution === undefined) {
           // Error was already emitted
@@ -624,6 +711,19 @@ class Typechecker {
         }
         return;
 
+      case "field-access": {
+        this.typecheckAnnotatedExpr(ast.struct);
+        if (ast.resolution === undefined) {
+          this.scheduledFieldResolutions.push(ast);
+          return;
+        }
+
+        // TODO use resolution's namespace
+        this.unifyFieldAccess(ast, ast.resolution);
+
+        return;
+      }
+
       case "let":
         this.typecheckPattern(ast.pattern, true);
         this.unifyExpr(ast, ast.pattern.$.asType(), ast.value.$.asType());
@@ -664,6 +764,108 @@ class Typechecker {
     }
     this.errors.push(unifyErr(ast, e));
   }
+
+  private unifyFieldAccess(
+    ast: TypedExpr & { type: "field-access" },
+    resolution: FieldResolution,
+  ) {
+    const instantiator = new Instantiator();
+
+    const structType: Type = instantiator.instantiatePoly(
+      resolution.declaration,
+    );
+    this.unifyExpr(ast.struct, ast.struct.$.asType(), structType);
+    const fieldType = instantiator.instantiatePoly(resolution.field);
+    this.unifyExpr(ast, ast.$.asType(), fieldType);
+  }
+
+  private checkMissingStructFields(
+    ast: TypedExpr & { type: "struct-literal" },
+    resolution: StructResolution,
+    type: Type,
+  ) {
+    if (ast.spread !== undefined) {
+      return;
+    }
+
+    // Check for missing fields
+    const missingFields = resolution.declaration.fields
+      .filter((defField) => {
+        return !ast.fields.some((structField) => {
+          return structField.field.name === defField.name;
+        });
+      })
+      .map((f) => f.name);
+
+    if (missingFields.length !== 0) {
+      this.errors.push({
+        description: new MissingRequiredFields(
+          typeToString(type),
+          missingFields,
+        ),
+        span: ast.struct.span,
+      });
+    }
+  }
+
+  private doubleCheckFieldAccess(
+    fieldAccessAst: TypedExpr & { type: "field-access" },
+    resolved: TVarResolution,
+    deps: Deps,
+  ) {
+    const emitErr = () => {
+      this.errors.push({
+        span: fieldAccessAst.field.span,
+        description: new InvalidField(
+          typeToString(fieldAccessAst.struct.$.asType()),
+          fieldAccessAst.field.name,
+        ),
+      });
+    };
+
+    switch (resolved.type) {
+      case "bound": {
+        if (resolved.value.type !== "named") {
+          // TODO emit err
+          throw new Error("TODO handle field access to fn");
+        }
+
+        if (resolved.value.moduleName === this.ns) {
+          // we already looked up the fields in this module's structs
+          emitErr();
+          return;
+        }
+
+        const mod = deps[resolved.value.moduleName];
+        if (mod === undefined) {
+          throw new Error("TODO handle invalid mod");
+        }
+
+        const fieldLookup = findFieldInModule(
+          mod.typeDeclarations,
+          fieldAccessAst.field.name,
+          resolved.value.moduleName,
+        );
+
+        if (fieldLookup !== undefined && fieldLookup.declaration.pub === "..") {
+          // Found the field. Re-run unification
+          this.unifyFieldAccess(fieldAccessAst, fieldLookup);
+          return;
+        }
+
+        // we already know this field does not exist in this module
+        emitErr();
+        return;
+      }
+
+      case "unbound":
+        if (fieldAccessAst.field.structName === undefined) {
+          emitErr();
+        }
+
+        return;
+    }
+  }
 }
 
 function inferConstant(x: ConstLiteral): Type {
@@ -688,7 +890,6 @@ type TypeAstConversionType =
   | {
       type: "constructor-arg";
       params: string[];
-      returning: Type & { type: "named" };
     };
 
 const CORE_PACKAGE = "kestrel_core";
@@ -797,6 +998,8 @@ function resolutionToType(resolution: IdentifierResolution): Type {
         resolution.variant.$.asType(),
         resolution.variant.scheme,
       );
+
+    // TODO should struct go here?
   }
 }
 
