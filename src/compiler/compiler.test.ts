@@ -849,6 +849,41 @@ describe("list literal", () => {
   });
 });
 
+describe("structs", () => {
+  test("struct declaration is a noop", () => {
+    const out = compileSrc(`
+      extern type String
+      type User struct {
+          name: String
+      }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      ""
+    `);
+  });
+
+  test("struct declaration", () => {
+    const out = compileSrc(`
+      extern type Int
+      type Point struct {
+          x: Int,
+          y: Int,
+      }
+
+      pub let user = Point {
+        y: 1,
+        x: 0,
+      } 
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$user = { y: 1, x: 0 };
+      "
+    `);
+  });
+});
+
 describe("pattern matching", () => {
   test("pattern matching (flat)", () => {
     const out = compileSrc(`

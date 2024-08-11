@@ -241,6 +241,17 @@ export class Compiler {
         return [buf, ret];
       }
 
+      case "struct-literal": {
+        const objContent: string[] = [];
+        const stsBuf: string[] = [];
+        for (const f of src.fields) {
+          const [sts, fieldValue] = this.compileAsExpr(f.value);
+          stsBuf.push(...sts);
+          objContent.push(`${f.field.name}: ${fieldValue}`);
+        }
+        return [stsBuf, `{ ${objContent.join(", ")} }`];
+      }
+
       case "identifier": {
         if (src.resolution === undefined) {
           throw new Error("[unreachable] unresolved var: " + src.name);
@@ -360,6 +371,7 @@ export class Compiler {
         }
       }
 
+      case "struct-literal":
       case "list-literal":
       case "identifier":
       case "constant": {
@@ -521,7 +533,7 @@ export class Compiler {
     const decls: string[] = [];
 
     for (const typeDecl of src.typeDeclarations) {
-      if (typeDecl.type === "extern") {
+      if (typeDecl.type !== "adt") {
         continue;
       }
 
