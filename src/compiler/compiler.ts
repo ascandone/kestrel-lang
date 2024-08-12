@@ -622,41 +622,15 @@ export class Compiler {
     const decls: string[] = [];
 
     for (const typeDecl of src.typeDeclarations) {
-      if (typeDecl.type !== "adt") {
-        continue;
-      }
-
-      for (const variant of typeDecl.variants) {
-        if (variant.name in builtinValues) {
+      switch (typeDecl.type) {
+        case "extern":
           break;
-        }
-        const def = getVariantImpl(variant, ns);
-        decls.push(def);
-      }
-
-      if (
-        (this.allowDeriving === undefined ||
-          this.allowDeriving.includes("Eq")) &&
-        // Bool equality is implemented inside core
-        typeDecl.name !== "Bool"
-      ) {
-        const o = this.deriveEq(typeDecl);
-        if (o != undefined) {
-          decls.push(o);
-        }
-      }
-
-      if (
-        (this.allowDeriving === undefined ||
-          this.allowDeriving.includes("Show")) &&
-        // Bool and List show are implemented inside core
-        typeDecl.name !== "Bool" &&
-        typeDecl.name !== "List"
-      ) {
-        const o = this.deriveShow(typeDecl);
-        if (o !== undefined) {
-          decls.push(o);
-        }
+        case "adt":
+          this.compileAdtDecl(decls, typeDecl);
+          break;
+        case "struct":
+          this.compileStructDecl(decls, typeDecl);
+          break;
       }
     }
 
@@ -698,8 +672,57 @@ export class Compiler {
     return decls.join("\n");
   }
 
+  private compileAdtDecl(
+    decls: string[],
+    typeDecl: TypedTypeDeclaration & { type: "adt" },
+  ) {
+    for (const variant of typeDecl.variants) {
+      if (variant.name in builtinValues) {
+        break;
+      }
+      const def = getVariantImpl(variant, this.ns!);
+      decls.push(def);
+    }
+
+    if (
+      (this.allowDeriving === undefined || this.allowDeriving.includes("Eq")) &&
+      // Bool equality is implemented inside core
+      typeDecl.name !== "Bool"
+    ) {
+      const o = this.deriveEqAdt(typeDecl);
+      if (o != undefined) {
+        decls.push(o);
+      }
+    }
+
+    if (
+      (this.allowDeriving === undefined ||
+        this.allowDeriving.includes("Show")) &&
+      // Bool and List show are implemented inside core
+      typeDecl.name !== "Bool" &&
+      typeDecl.name !== "List"
+    ) {
+      const o = this.deriveShow(typeDecl);
+      if (o !== undefined) {
+        decls.push(o);
+      }
+    }
+  }
+
+  private compileStructDecl(
+    decls: string[],
+    typeDecl: TypedTypeDeclaration & { type: "struct" },
+  ) {
+    if (this.allowDeriving === undefined || this.allowDeriving.includes("Eq")) {
+      const o = this.deriveEqStruct(typeDecl);
+      if (o != undefined) {
+        decls.push(o);
+      }
+    }
+  }
+
   // TODO can this be static?
-  private deriveEq(
+  private deriveEqAdt(
     typedDeclaration: TypedTypeDeclaration & { type: "adt" },
   ): string | undefined {
     if (this.ns === undefined) {
@@ -766,6 +789,53 @@ ${cases}
 
     return `const Eq_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x, y) => {
   ${body}
+}`;
+  }
+
+  private deriveEqStruct(
+    typedDeclaration: TypedTypeDeclaration & { type: "struct" },
+  ): string | undefined {
+    if (this.ns === undefined) {
+      throw new Error("TODO handle undefined namespace");
+    }
+
+    const deps = TVar.typeImplementsTrait(
+      {
+        type: "named",
+        name: typedDeclaration.name,
+        moduleName: this.ns,
+        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
+      },
+      "Eq",
+    );
+    if (deps === undefined) {
+      return undefined;
+    }
+
+    const usedVars: string[] = [];
+
+    let eqCondition: string;
+    if (typedDeclaration.fields.length === 0) {
+      eqCondition = `true`;
+    } else {
+      eqCondition = typedDeclaration.fields
+        .map((field) => {
+          const callEXpr = deriveEqArg(usedVars, field.type_);
+          return `${callEXpr}(x.${field.name}, y.${field.name})`;
+        })
+        .join(" && ");
+    }
+
+    let dictsArg: string;
+    if (usedVars.length === 0) {
+      dictsArg = "";
+    } else {
+      const params = usedVars.map((x) => `Eq_${x}`).join(", ");
+      dictsArg = `(${params}) => `;
+    }
+
+    return `const Eq_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x, y) => {
+  return ${eqCondition};
 }`;
   }
 
