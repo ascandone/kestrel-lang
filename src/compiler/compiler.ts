@@ -685,27 +685,20 @@ export class Compiler {
     }
 
     if (
-      (this.allowDeriving === undefined || this.allowDeriving.includes("Eq")) &&
       // Bool equality is implemented inside core
-      typeDecl.name !== "Bool"
+      typeDecl.name !== "Bool" &&
+      this.shouldDeriveTrait("Eq", typeDecl)
     ) {
-      const o = this.deriveEqAdt(typeDecl);
-      if (o != undefined) {
-        decls.push(o);
-      }
+      decls.push(this.deriveEqAdt(typeDecl));
     }
 
     if (
-      (this.allowDeriving === undefined ||
-        this.allowDeriving.includes("Show")) &&
       // Bool and List show are implemented inside core
       typeDecl.name !== "Bool" &&
-      typeDecl.name !== "List"
+      typeDecl.name !== "List" &&
+      this.shouldDeriveTrait("Show", typeDecl)
     ) {
-      const o = this.deriveShowAdt(typeDecl);
-      if (o !== undefined) {
-        decls.push(o);
-      }
+      decls.push(this.deriveShowAdt(typeDecl));
     }
   }
 
@@ -713,43 +706,20 @@ export class Compiler {
     decls: string[],
     typeDecl: TypedTypeDeclaration & { type: "struct" },
   ) {
-    if (this.allowDeriving === undefined || this.allowDeriving.includes("Eq")) {
-      const o = this.deriveEqStruct(typeDecl);
-      if (o != undefined) {
-        decls.push(o);
-      }
+    if (this.shouldDeriveTrait("Eq", typeDecl)) {
+      decls.push(this.deriveEqStruct(typeDecl));
     }
-
-    if (
-      this.allowDeriving === undefined ||
-      this.allowDeriving.includes("Show")
-    ) {
-      const o = this.deriveShowStruct(typeDecl);
-      if (o !== undefined) {
-        decls.push(o);
-      }
+    if (this.shouldDeriveTrait("Show", typeDecl)) {
+      decls.push(this.deriveShowStruct(typeDecl));
     }
   }
 
   // TODO can this be static?
   private deriveEqAdt(
     typedDeclaration: TypedTypeDeclaration & { type: "adt" },
-  ): string | undefined {
+  ): string {
     if (this.ns === undefined) {
       throw new Error("TODO handle undefined namespace");
-    }
-
-    const deps = TVar.typeImplementsTrait(
-      {
-        type: "named",
-        name: typedDeclaration.name,
-        moduleName: this.ns,
-        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
-      },
-      "Eq",
-    );
-    if (deps === undefined) {
-      return undefined;
     }
 
     const usedVars: string[] = [];
@@ -804,22 +774,9 @@ ${cases}
 
   private deriveEqStruct(
     typedDeclaration: TypedTypeDeclaration & { type: "struct" },
-  ): string | undefined {
+  ): string {
     if (this.ns === undefined) {
       throw new Error("TODO handle undefined namespace");
-    }
-
-    const deps = TVar.typeImplementsTrait(
-      {
-        type: "named",
-        name: typedDeclaration.name,
-        moduleName: this.ns,
-        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
-      },
-      "Eq",
-    );
-    if (deps === undefined) {
-      return undefined;
     }
 
     const usedVars: string[] = [];
@@ -851,22 +808,9 @@ ${cases}
 
   private deriveShowAdt(
     typedDeclaration: TypedTypeDeclaration & { type: "adt" },
-  ): string | undefined {
+  ): string {
     if (this.ns === undefined) {
       throw new Error("TODO handle undefined namespace");
-    }
-
-    const deps = TVar.typeImplementsTrait(
-      {
-        type: "named",
-        name: typedDeclaration.name,
-        moduleName: this.ns,
-        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
-      },
-      "Show",
-    );
-    if (deps === undefined) {
-      return undefined;
     }
 
     const usedVars: string[] = [];
@@ -928,25 +872,38 @@ ${body}
 }`;
   }
 
-  private deriveShowStruct(
-    typedDeclaration: TypedTypeDeclaration & { type: "struct" },
-  ): string | undefined {
-    if (this.ns === undefined) {
-      throw new Error("TODO handle undefined namespace");
+  private shouldDeriveTrait(
+    trait: string,
+    typedDeclaration: TypedTypeDeclaration,
+  ): boolean {
+    if (
+      this.allowDeriving === undefined ||
+      !this.allowDeriving.includes(trait)
+    ) {
+      return false;
     }
 
-    // TODO dedup
+    // TODO handle undefined
+    const ns = this.ns!;
+
     const deps = TVar.typeImplementsTrait(
       {
         type: "named",
         name: typedDeclaration.name,
-        moduleName: this.ns,
+        moduleName: ns,
         args: typedDeclaration.params.map(() => TVar.fresh().asType()),
       },
-      "Show",
+      trait,
     );
-    if (deps === undefined) {
-      return undefined;
+
+    return deps !== undefined;
+  }
+
+  private deriveShowStruct(
+    typedDeclaration: TypedTypeDeclaration & { type: "struct" },
+  ): string {
+    if (this.ns === undefined) {
+      throw new Error("TODO handle undefined namespace");
     }
 
     const usedVars: string[] = [];
