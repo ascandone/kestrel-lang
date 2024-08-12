@@ -110,7 +110,7 @@ class Typechecker {
     }
   }
 
-  private derive(
+  private adtDerive(
     trait: string,
     typeDecl: TypedTypeDeclaration & { type: "adt" },
   ) {
@@ -164,6 +164,51 @@ class Typechecker {
     TVar.registerTraitImpl(this.ns, typeDecl.name, trait, deps);
   }
 
+  private structDerive(
+    trait: string,
+    typeDecl: TypedTypeDeclaration & { type: "struct" },
+  ) {
+    const deps: TraitImplDependency[] = [];
+
+    const depParams = new Set<string>();
+
+    // Register recursive type
+    TVar.registerTraitImpl(
+      this.ns,
+      typeDecl.name,
+      trait,
+      typeDecl.params.map((_) => undefined),
+    );
+
+    for (const field of typeDecl.fields) {
+      const impl = TVar.typeImplementsTrait(field.$.asType(), trait);
+      if (impl === undefined) {
+        TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
+        return;
+      }
+
+      for (const { id } of impl) {
+        const name = field.scheme[id];
+        if (name !== undefined) {
+          depParams.add(name);
+        }
+      }
+
+      // Singleton always derive any trait
+    }
+
+    for (const param of typeDecl.params) {
+      if (depParams.has(param.name)) {
+        deps.push([trait]);
+      } else {
+        deps.push(undefined);
+      }
+    }
+
+    TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
+    TVar.registerTraitImpl(this.ns, typeDecl.name, trait, deps);
+  }
+
   run(
     module: UntypedModule,
     deps: Deps,
@@ -186,10 +231,12 @@ class Typechecker {
           }
         }
 
-        this.derive("Eq", typeDecl);
-        this.derive("Show", typeDecl);
+        this.adtDerive("Eq", typeDecl);
+        this.adtDerive("Show", typeDecl);
       } else if (typeDecl.type === "struct") {
         this.makeStructType(typeDecl);
+        this.structDerive("Eq", typeDecl);
+        this.structDerive("Show", typeDecl);
       }
     }
 
