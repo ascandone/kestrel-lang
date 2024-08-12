@@ -702,7 +702,7 @@ export class Compiler {
       typeDecl.name !== "Bool" &&
       typeDecl.name !== "List"
     ) {
-      const o = this.deriveShow(typeDecl);
+      const o = this.deriveShowAdt(typeDecl);
       if (o !== undefined) {
         decls.push(o);
       }
@@ -716,6 +716,16 @@ export class Compiler {
     if (this.allowDeriving === undefined || this.allowDeriving.includes("Eq")) {
       const o = this.deriveEqStruct(typeDecl);
       if (o != undefined) {
+        decls.push(o);
+      }
+    }
+
+    if (
+      this.allowDeriving === undefined ||
+      this.allowDeriving.includes("Show")
+    ) {
+      const o = this.deriveShowStruct(typeDecl);
+      if (o !== undefined) {
         decls.push(o);
       }
     }
@@ -839,7 +849,7 @@ ${cases}
 }`;
   }
 
-  private deriveShow(
+  private deriveShowAdt(
     typedDeclaration: TypedTypeDeclaration & { type: "adt" },
   ): string | undefined {
     if (this.ns === undefined) {
@@ -915,6 +925,55 @@ ${variants}
 
     return `const Show_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x) => {
 ${body}
+}`;
+  }
+
+  private deriveShowStruct(
+    typedDeclaration: TypedTypeDeclaration & { type: "struct" },
+  ): string | undefined {
+    if (this.ns === undefined) {
+      throw new Error("TODO handle undefined namespace");
+    }
+
+    // TODO dedup
+    const deps = TVar.typeImplementsTrait(
+      {
+        type: "named",
+        name: typedDeclaration.name,
+        moduleName: this.ns,
+        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
+      },
+      "Show",
+    );
+    if (deps === undefined) {
+      return undefined;
+    }
+
+    const usedVars: string[] = [];
+
+    let showedFields = "";
+    if (typedDeclaration.fields.length !== 0) {
+      showedFields = typedDeclaration.fields
+        .map((field) => {
+          const arg = `\${${deriveShowArg(usedVars, field.type_)}(x.${field.name})}`;
+
+          return `${field.name}: ${arg}`;
+        })
+        .join(", ");
+
+      showedFields += " ";
+    }
+
+    let dictsArg: string;
+    if (usedVars.length === 0) {
+      dictsArg = "";
+    } else {
+      const params = usedVars.map((x) => `Show_${x}`).join(", ");
+      dictsArg = `(${params}) => `;
+    }
+
+    return `const Show_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x) => {
+  return \`${typedDeclaration.name} { ${showedFields}}\`;
 }`;
   }
 
