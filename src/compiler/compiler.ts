@@ -622,41 +622,15 @@ export class Compiler {
     const decls: string[] = [];
 
     for (const typeDecl of src.typeDeclarations) {
-      if (typeDecl.type !== "adt") {
-        continue;
-      }
-
-      for (const variant of typeDecl.variants) {
-        if (variant.name in builtinValues) {
+      switch (typeDecl.type) {
+        case "extern":
           break;
-        }
-        const def = getVariantImpl(variant, ns);
-        decls.push(def);
-      }
-
-      if (
-        (this.allowDeriving === undefined ||
-          this.allowDeriving.includes("Eq")) &&
-        // Bool equality is implemented inside core
-        typeDecl.name !== "Bool"
-      ) {
-        const o = this.deriveEq(typeDecl);
-        if (o != undefined) {
-          decls.push(o);
-        }
-      }
-
-      if (
-        (this.allowDeriving === undefined ||
-          this.allowDeriving.includes("Show")) &&
-        // Bool and List show are implemented inside core
-        typeDecl.name !== "Bool" &&
-        typeDecl.name !== "List"
-      ) {
-        const o = this.deriveShow(typeDecl);
-        if (o !== undefined) {
-          decls.push(o);
-        }
+        case "adt":
+          this.compileAdtDecl(decls, typeDecl);
+          break;
+        case "struct":
+          this.compileStructDecl(decls, typeDecl);
+          break;
       }
     }
 
@@ -698,25 +672,54 @@ export class Compiler {
     return decls.join("\n");
   }
 
-  // TODO can this be static?
-  private deriveEq(
-    typedDeclaration: TypedTypeDeclaration & { type: "adt" },
-  ): string | undefined {
-    if (this.ns === undefined) {
-      throw new Error("TODO handle undefined namespace");
+  private compileAdtDecl(
+    decls: string[],
+    typeDecl: TypedTypeDeclaration & { type: "adt" },
+  ) {
+    for (const variant of typeDecl.variants) {
+      if (variant.name in builtinValues) {
+        break;
+      }
+      const def = getVariantImpl(variant, this.ns!);
+      decls.push(def);
     }
 
-    const deps = TVar.typeImplementsTrait(
-      {
-        type: "named",
-        name: typedDeclaration.name,
-        moduleName: this.ns,
-        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
-      },
-      "Eq",
-    );
-    if (deps === undefined) {
-      return undefined;
+    if (
+      // Bool equality is implemented inside core
+      typeDecl.name !== "Bool" &&
+      this.shouldDeriveTrait("Eq", typeDecl)
+    ) {
+      decls.push(this.deriveEqAdt(typeDecl));
+    }
+
+    if (
+      // Bool and List show are implemented inside core
+      typeDecl.name !== "Bool" &&
+      typeDecl.name !== "List" &&
+      this.shouldDeriveTrait("Show", typeDecl)
+    ) {
+      decls.push(this.deriveShowAdt(typeDecl));
+    }
+  }
+
+  private compileStructDecl(
+    decls: string[],
+    typeDecl: TypedTypeDeclaration & { type: "struct" },
+  ) {
+    if (this.shouldDeriveTrait("Eq", typeDecl)) {
+      decls.push(this.deriveEqStruct(typeDecl));
+    }
+    if (this.shouldDeriveTrait("Show", typeDecl)) {
+      decls.push(this.deriveShowStruct(typeDecl));
+    }
+  }
+
+  // TODO can this be static?
+  private deriveEqAdt(
+    typedDeclaration: TypedTypeDeclaration & { type: "adt" },
+  ): string {
+    if (this.ns === undefined) {
+      throw new Error("TODO handle undefined namespace");
     }
 
     const usedVars: string[] = [];
@@ -769,24 +772,45 @@ ${cases}
 }`;
   }
 
-  private deriveShow(
-    typedDeclaration: TypedTypeDeclaration & { type: "adt" },
-  ): string | undefined {
+  private deriveEqStruct(
+    typedDeclaration: TypedTypeDeclaration & { type: "struct" },
+  ): string {
     if (this.ns === undefined) {
       throw new Error("TODO handle undefined namespace");
     }
 
-    const deps = TVar.typeImplementsTrait(
-      {
-        type: "named",
-        name: typedDeclaration.name,
-        moduleName: this.ns,
-        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
-      },
-      "Show",
-    );
-    if (deps === undefined) {
-      return undefined;
+    const usedVars: string[] = [];
+
+    let eqCondition: string;
+    if (typedDeclaration.fields.length === 0) {
+      eqCondition = `true`;
+    } else {
+      eqCondition = typedDeclaration.fields
+        .map((field) => {
+          const callEXpr = deriveEqArg(usedVars, field.type_);
+          return `${callEXpr}(x.${field.name}, y.${field.name})`;
+        })
+        .join(" && ");
+    }
+
+    let dictsArg: string;
+    if (usedVars.length === 0) {
+      dictsArg = "";
+    } else {
+      const params = usedVars.map((x) => `Eq_${x}`).join(", ");
+      dictsArg = `(${params}) => `;
+    }
+
+    return `const Eq_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x, y) => {
+  return ${eqCondition};
+}`;
+  }
+
+  private deriveShowAdt(
+    typedDeclaration: TypedTypeDeclaration & { type: "adt" },
+  ): string {
+    if (this.ns === undefined) {
+      throw new Error("TODO handle undefined namespace");
     }
 
     const usedVars: string[] = [];
@@ -845,6 +869,68 @@ ${variants}
 
     return `const Show_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x) => {
 ${body}
+}`;
+  }
+
+  private shouldDeriveTrait(
+    trait: string,
+    typedDeclaration: TypedTypeDeclaration,
+  ): boolean {
+    if (
+      this.allowDeriving !== undefined &&
+      !this.allowDeriving.includes(trait)
+    ) {
+      return false;
+    }
+
+    // TODO handle undefined
+    const ns = this.ns!;
+
+    const deps = TVar.typeImplementsTrait(
+      {
+        type: "named",
+        name: typedDeclaration.name,
+        moduleName: ns,
+        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
+      },
+      trait,
+    );
+
+    return deps !== undefined;
+  }
+
+  private deriveShowStruct(
+    typedDeclaration: TypedTypeDeclaration & { type: "struct" },
+  ): string {
+    if (this.ns === undefined) {
+      throw new Error("TODO handle undefined namespace");
+    }
+
+    const usedVars: string[] = [];
+
+    let showedFields = "";
+    if (typedDeclaration.fields.length !== 0) {
+      showedFields = typedDeclaration.fields
+        .map((field) => {
+          const arg = `\${${deriveShowArg(usedVars, field.type_)}(x.${field.name})}`;
+
+          return `${field.name}: ${arg}`;
+        })
+        .join(", ");
+
+      showedFields += " ";
+    }
+
+    let dictsArg: string;
+    if (usedVars.length === 0) {
+      dictsArg = "";
+    } else {
+      const params = usedVars.map((x) => `Show_${x}`).join(", ");
+      dictsArg = `(${params}) => `;
+    }
+
+    return `const Show_${sanitizeNamespace(this.ns!)}$${typedDeclaration.name} = ${dictsArg}(x) => {
+  return \`${typedDeclaration.name} { ${showedFields}}\`;
 }`;
   }
 

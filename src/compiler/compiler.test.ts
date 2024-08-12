@@ -984,7 +984,7 @@ describe("structs", () => {
   });
 });
 
-describe("derive Eq instance", () => {
+describe("derive Eq instance for Adt", () => {
   test("do not derive underivable types", () => {
     const out = compileSrc(
       `
@@ -1202,7 +1202,139 @@ describe("derive Eq instance", () => {
   });
 });
 
-describe("Derive Show instance", () => {
+describe("derive Eq instance for structs", () => {
+  test("do not derive underivable types", () => {
+    const out = compileSrc(
+      `
+      extern type DoNotDerive
+      type Struct struct { x: DoNotDerive }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`""`);
+  });
+
+  test("no fields", () => {
+    const out = compileSrc(
+      `
+      type T struct { }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$T = (x, y) => {
+        return true;
+      }"
+    `);
+  });
+
+  test("single field", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T struct { x: Int }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$T = (x, y) => {
+        return Eq_Main$Int(x.x, y.x);
+      }"
+    `);
+  });
+
+  test("single field with var args", () => {
+    const out = compileSrc(
+      `
+      type T<a, b, c, d> struct { field: b }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$T = (Eq_b) => (x, y) => {
+        return Eq_b(x.field, y.field);
+      }"
+    `);
+  });
+
+  test("many fields with concrete args", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Bool
+      type T struct {
+        int_field: Int,
+        bool_field: Bool,
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [
+          { moduleName: "Main", typeName: "Int", trait: "Eq" },
+          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+        ],
+      },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$T = (x, y) => {
+        return Eq_Main$Int(x.int_field, y.int_field) && Eq_Main$Bool(x.bool_field, y.bool_field);
+      }"
+    `);
+  });
+
+  test("field with parametric arg", () => {
+    const out = compileSrc(
+      `
+      type X<a> { X(a) }
+
+      type Y<param> struct {
+        field: X<param>,
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Eq_Main$X = (Eq_a) => (x, y) => {
+        return Eq_a(x.a0, y.a0);
+      }
+      const Eq_Main$Y = (Eq_param) => (x, y) => {
+        return Eq_Main$X(Eq_param)(x.field, y.field);
+      }"
+    `);
+  });
+
+  test("recursive data structures", () => {
+    const out = compileSrc(
+      `
+      type Struct<a> struct {
+        x: a,
+        y: Struct<a>,
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$Struct = (Eq_a) => (x, y) => {
+        return Eq_a(x.x, y.x) && Eq_Main$Struct(Eq_a)(x.y, y.y);
+      }"
+    `);
+  });
+});
+
+describe("Derive Show instance for Adts", () => {
   test("do not derive underivable types", () => {
     const out = compileSrc(
       `
@@ -1405,6 +1537,138 @@ describe("Derive Show instance", () => {
       }
       const Show_Tuple$Tuple2 = (Show_a, Show_b) => (x) => {
         return \`(\${Show_a(x.a0)}, \${Show_b(x.a1)})\`;
+      }"
+    `);
+  });
+});
+
+describe("Derive Show instance for structs", () => {
+  test("do not derive underivable types", () => {
+    const out = compileSrc(
+      `
+      extern type DoNotDerive
+      type T struct { x: DoNotDerive }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      ""
+    `);
+  });
+
+  test("no fields", () => {
+    const out = compileSrc(
+      `
+      type T struct {  }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Show_Main$T = (x) => {
+        return \`T { }\`;
+      }"
+    `);
+  });
+
+  test("single field with concrete args", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T struct { field: Int }
+    `,
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Show_Main$T = (x) => {
+        return \`T { field: \${Show_Main$Int(x.field)} }\`;
+      }"
+    `);
+  });
+
+  test("single field with var arg", () => {
+    const out = compileSrc(
+      `
+      type T<a, b, c, d> struct { field: c }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Show_Main$T = (Show_c) => (x) => {
+        return \`T { field: \${Show_c(x.field)} }\`;
+      }"
+    `);
+  });
+
+  test("many fields", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T<a, b> struct {
+        field_int: Int,
+        field_a: a,
+        field_b: b,
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Show_Main$T = (Show_a, Show_b) => (x) => {
+        return \`T { field_int: \${Show_Main$Int(x.field_int)}, field_a: \${Show_a(x.field_a)}, field_b: \${Show_b(x.field_b)} }\`;
+      }"
+    `);
+  });
+
+  test("parametric arg", () => {
+    const out = compileSrc(
+      `
+      type X<a> { X(a) }
+
+      type Y<b> struct {
+        field: X<b>,
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Main$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Show_Main$X = (Show_a) => (x) => {
+        return \`X(\${Show_a(x.a0)})\`;
+      }
+      const Show_Main$Y = (Show_b) => (x) => {
+        return \`Y { field: \${Show_Main$X(Show_b)(x.field)} }\`;
+      }"
+    `);
+  });
+
+  test("recursive data structures", () => {
+    const out = compileSrc(
+      `
+      type Str<a> struct {
+        field: Str<a>,
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Show_Main$Str = (Show_a) => (x) => {
+        return \`Str { field: \${Show_Main$Str(Show_a)(x.field)} }\`;
       }"
     `);
   });

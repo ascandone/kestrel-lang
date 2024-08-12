@@ -32,6 +32,7 @@ import {
   UnusedExposing,
   UnusedImport,
   UnusedVariable,
+  TraitNotSatified,
 } from "../errors";
 import { TraitImpl } from "./defaultImports";
 
@@ -818,6 +819,120 @@ describe("traits", () => {
     );
 
     expect(errs).toEqual([]);
+  });
+
+  describe("auto deriving for struct", () => {
+    test("is able to derive Eq in empty structs", () => {
+      const [, errs] = tc(
+        `
+          extern let take_eq: Fn(a) -> a where a: Eq
+  
+          type MyType struct { }
+  
+          pub let example = take_eq(MyType { })
+        `,
+      );
+
+      expect(errs).toEqual([]);
+    });
+
+    test("is able to derive Show in empty structs", () => {
+      const [, errs] = tc(
+        `
+          extern let take_shoq: Fn(a) -> a where a: Show
+  
+          type MyType struct { }
+  
+          pub let example = take_shoq(MyType { })
+        `,
+      );
+
+      expect(errs).toEqual([]);
+    });
+
+    test("is able to derive Eq in structs where all the fields are Eq", () => {
+      const [, errs] = tc(
+        `
+          extern let take_eq: Fn(a) -> a where a: Eq
+          type EqT { EqT }
+  
+          type MyType struct {
+            x: EqT
+          }
+  
+          pub let example = take_eq(MyType { x: EqT })
+        `,
+      );
+
+      expect(errs).toEqual([]);
+    });
+
+    test("is not able to derive Eq in structs where at least a fields is not Eq", () => {
+      const [, errs] = tc(
+        `
+          extern let take_eq: Fn(a) -> a where a: Eq
+  
+          extern type NotEq
+          extern let x: NotEq
+  
+          type MyType struct {
+            x: NotEq
+          }
+  
+          pub let example = take_eq(MyType { x: x })
+        `,
+      );
+
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toBeInstanceOf(TraitNotSatified);
+    });
+
+    test("requires struct params to be Eq when they appear in struct, for it to be derived", () => {
+      const [types, errs] = tc(
+        `
+          extern let take_eq: Fn(a) -> a where a: Eq
+  
+          type MyType<a, b> struct {
+            x: b,
+          }
+  
+          pub let example = fn x {
+            take_eq(MyType { x: x })
+          }
+        `,
+      );
+
+      expect(errs).toEqual([]);
+      expect(types).toEqual({
+        example: "Fn(a) -> MyType<b, a> where a: Eq",
+        take_eq: "Fn(a) -> a where a: Eq",
+      });
+    });
+
+    test("derives deps in recursive types", () => {
+      // TODO assertion
+      const [, errs] = tc(
+        `
+          type Option<a> { None, Some(a) }
+
+          extern let take_eq: Fn(a) -> a where a: Eq
+  
+          type Rec<a> struct {
+            field: Option<Rec<a>>,
+          }
+
+          pub let example = {
+            take_eq(MyType {
+              field: Some(MyType {
+                field: None
+              })
+            })
+          }
+        `,
+      );
+
+      expect(errs).toEqual([]);
+    });
   });
 
   test("fails to derives in self-recursive types when not derivable (nested)", () => {
