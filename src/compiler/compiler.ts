@@ -280,35 +280,34 @@ export class Compiler {
           return [[], "null"];
         }
 
-        for (const f of src.fields) {
-          const [sts, fieldValue] = this.compileAsExpr(f.value);
-          stsBuf.push(...sts);
-          objContent.push(`${f.field.name}: ${fieldValue}`);
-        }
-
+        let spreadIdentifier: string | undefined = undefined;
         if (src.spread !== undefined) {
           const [exprSts, exprExpr] = this.compileAsExpr(src.spread);
-          let updateExpr: string;
+
           if (src.spread.type === "identifier") {
-            updateExpr = exprExpr;
+            spreadIdentifier = exprExpr;
           } else {
             const ident = this.getUniqueName();
             exprSts.push(`const ${ident} = ${exprExpr};`);
-            updateExpr = ident;
+            spreadIdentifier = ident;
           }
-
           stsBuf.push(...exprSts);
+        }
 
-          for (const originalField of resolution.declaration.fields) {
-            const alreadyWritten = src.fields.some(
-              (writtenField) => writtenField.field.name === originalField.name,
-            );
-            if (alreadyWritten) {
-              continue;
-            }
+        for (const declarationField of resolution.declaration.fields) {
+          const structLitField = src.fields.find(
+            (f) => f.field.name === declarationField.name,
+          );
 
+          if (structLitField !== undefined) {
+            const [sts, fieldValue] = this.compileAsExpr(structLitField.value);
+            stsBuf.push(...sts);
+            objContent.push(`${structLitField.field.name}: ${fieldValue}`);
+          } else if (src.spread === undefined) {
+            throw new Error("[unreachable] missing fields");
+          } else {
             objContent.push(
-              `${originalField.name}: ${updateExpr}.${originalField.name}`,
+              `${declarationField.name}: ${spreadIdentifier!}.${declarationField.name}`,
             );
           }
         }

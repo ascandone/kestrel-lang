@@ -870,7 +870,7 @@ describe("structs", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$user = { y: 1, x: 0 };
+      "const Main$user = { x: 0, y: 1 };
       "
     `);
   });
@@ -940,7 +940,7 @@ describe("structs", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$update_y = { y: 42, x: Main$original.x, z: Main$original.z };
+      "const Main$update_y = { x: Main$original.x, y: 42, z: Main$original.z };
       "
     `);
   });
@@ -964,7 +964,7 @@ describe("structs", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$update_y$GEN__0 = Main$get_original();
-      const Main$update_y = { y: 42, x: Main$update_y$GEN__0.x, z: Main$update_y$GEN__0.z };
+      const Main$update_y = { x: Main$update_y$GEN__0.x, y: 42, z: Main$update_y$GEN__0.z };
       "
     `);
   });
