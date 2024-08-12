@@ -129,4 +129,6 @@ export const defaultTraitImpls: TraitImpl[] = [
   { moduleName: "Float", typeName: "Float", trait: Eq },
   { moduleName: "Float", typeName: "Float", trait: Ord },
   { moduleName: "Float", typeName: "Float", trait: Show },
+
+  { moduleName: "Json", typeName: "Json", trait: Eq },
 ];

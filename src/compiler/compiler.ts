@@ -998,7 +998,7 @@ function deriveShowArg(usedVars: string[], arg: TypedTypeAst) {
         subCall = `(${subArgs.join(", ")})`;
       }
 
-      return `Show_${arg.resolution.namespace}$${arg.name}${subCall}`;
+      return `Show_${sanitizeNamespace(arg.resolution.namespace)}$${arg.name}${subCall}`;
     }
   }
 }

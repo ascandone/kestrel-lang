@@ -1402,6 +1402,31 @@ describe("Derive Show instance for Adts", () => {
     `);
   });
 
+  test("single variant (namespaced)", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T { X(Int) }
+    `,
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [
+          { moduleName: "Example/Namespace", typeName: "Int", trait: "Show" },
+        ],
+        ns: "Example/Namespace",
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "function Example$Namespace$X(a0) {
+        return { $: "X", a0 };
+      }
+      const Show_Example$Namespace$T = (x) => {
+        return \`X(\${Show_Example$Namespace$Int(x.a0)})\`;
+      }"
+    `);
+  });
+
   test("single variant with var arg", () => {
     const out = compileSrc(
       `
