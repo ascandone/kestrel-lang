@@ -84,9 +84,29 @@ function functionSignatureHintExpr(
       }
     }
 
+    case "syntax-err":
     case "identifier":
     case "constant":
       return undefined;
+
+    case "list-literal":
+      return firstBy(expr.values, (arg) =>
+        functionSignatureHintExpr(arg, offset),
+      );
+
+    case "field-access":
+      return functionSignatureHintExpr(expr.struct, offset);
+
+    case "struct-literal":
+      return (
+        firstBy(
+          expr.fields.map((f) => f.value),
+          (arg) => functionSignatureHintExpr(arg, offset),
+        ) ??
+        (expr.spread === undefined
+          ? undefined
+          : functionSignatureHintExpr(expr.spread, offset))
+      );
 
     case "fn":
       return functionSignatureHintExpr(expr.body, offset);

@@ -159,6 +159,23 @@ function goToDefinitionOfExpr(
         firstBy(ast.args, (arg) => goToDefinitionOfExpr(arg, offset))
       );
 
+    case "list-literal":
+      return firstBy(ast.values, (arg) => goToDefinitionOfExpr(arg, offset));
+
+    case "field-access":
+      return goToDefinitionOfExpr(ast.struct, offset);
+
+    case "struct-literal":
+      return (
+        firstBy(
+          ast.fields.map((f) => f.value),
+          (arg) => goToDefinitionOfExpr(arg, offset),
+        ) ??
+        (ast.spread === undefined
+          ? undefined
+          : goToDefinitionOfExpr(ast.spread, offset))
+      );
+
     case "if":
       return (
         goToDefinitionOfExpr(ast.condition, offset) ??
@@ -182,6 +199,9 @@ function goToDefinitionOfExpr(
             goToDefinitionOfExpr(expr, offset),
         )
       );
+
+    case "syntax-err":
+      return;
   }
 }
 

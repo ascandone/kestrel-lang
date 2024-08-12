@@ -208,6 +208,7 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
   }
 
   switch (expr.type) {
+    case "syntax-err":
     case "constant":
       return undefined;
 
@@ -235,10 +236,24 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
         })
       );
 
+    case "field-access":
+      return hoverOnExpr(expr.struct, offset);
+
+    case "struct-literal":
+      return (
+        firstBy(
+          expr.fields.map((f) => f.value),
+          (arg) => hoverOnExpr(arg, offset),
+        ) ??
+        (expr.spread === undefined
+          ? undefined
+          : hoverOnExpr(expr.spread, offset))
+      );
+
     case "application":
       return (
-        hoverOnExpr(expr.caller, offset) ??
-        firstBy(expr.args, (arg) => hoverOnExpr(arg, offset))
+        firstBy(expr.args, (arg) => hoverOnExpr(arg, offset)) ??
+        hoverOnExpr(expr.caller, offset)
       );
 
     case "if":

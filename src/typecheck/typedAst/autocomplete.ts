@@ -29,6 +29,10 @@ function autocompleteExpr(
   }
 
   switch (expr.type) {
+    case "syntax-err":
+    case "constant":
+      return undefined;
+
     case "identifier": {
       if (expr.namespace !== undefined && expr.name === "") {
         return { type: "namespace", namespace: expr.namespace };
@@ -37,11 +41,25 @@ function autocompleteExpr(
       return undefined;
     }
 
-    case "constant":
-      return undefined;
-
     case "fn":
       return autocompleteExpr(expr.body, offset);
+
+    case "list-literal":
+      return firstBy(expr.values, (arg) => autocompleteExpr(arg, offset));
+
+    case "field-access":
+      return autocompleteExpr(expr.struct, offset);
+
+    case "struct-literal":
+      return (
+        firstBy(
+          expr.fields.map((f) => f.value),
+          (arg) => autocompleteExpr(arg, offset),
+        ) ??
+        (expr.spread === undefined
+          ? undefined
+          : autocompleteExpr(expr.spread, offset))
+      );
 
     case "application":
       return (

@@ -71,6 +71,9 @@ const constantFolding: Optimization = (src) => {
         default:
           return undefined;
       }
+
+    default:
+      return undefined;
   }
 };
 
