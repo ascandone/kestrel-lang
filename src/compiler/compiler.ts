@@ -877,7 +877,7 @@ ${body}
     typedDeclaration: TypedTypeDeclaration,
   ): boolean {
     if (
-      this.allowDeriving === undefined ||
+      this.allowDeriving !== undefined &&
       !this.allowDeriving.includes(trait)
     ) {
       return false;
