@@ -435,21 +435,21 @@ exports[`Fault tolerance > missing expr 1`] = `
       "binding": {
         "name": "x",
         "span": [
-          11,
-          12,
+          4,
+          5,
         ],
       },
       "extern": false,
       "inline": false,
       "pub": false,
       "span": [
+        0,
         7,
-        14,
       ],
       "value": {
         "span": [
-          20,
-          14,
+          7,
+          10,
         ],
         "type": "syntax-err",
       },
@@ -467,21 +467,21 @@ exports[`Fault tolerance > missing string lit termination 1`] = `
       "binding": {
         "name": "x",
         "span": [
-          11,
-          12,
+          4,
+          5,
         ],
       },
       "extern": false,
       "inline": false,
       "pub": false,
       "span": [
+        0,
         7,
-        14,
       ],
       "value": {
         "span": [
-          21,
-          14,
+          7,
+          9,
         ],
         "type": "syntax-err",
       },

@@ -209,9 +209,11 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
   visit(expr: ExprContext): UntypedExpr {
     if (expr.exception !== null) {
+      const start = expr.stop!.start + 1;
+      const stop = expr.start.stop + 1;
       return {
         type: "syntax-err",
-        span: [expr.start.start, expr.stop!.stop + 1],
+        span: [start, stop],
       };
     }
 

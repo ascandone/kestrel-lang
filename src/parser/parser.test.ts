@@ -879,16 +879,12 @@ describe("Fault tolerance", () => {
   });
 
   test("missing expr", () => {
-    const src = `
-      let x = 
-    `;
+    const src = `let x =   `;
     expect(parse(src).parsed).toMatchSnapshot();
   });
 
   test("missing string lit termination", () => {
-    const src = `
-      let x = "
-    `;
+    const src = `let x = "`;
 
     expect(parse(src).parsed).toMatchSnapshot();
   });
