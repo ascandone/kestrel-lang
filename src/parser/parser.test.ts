@@ -888,6 +888,13 @@ describe("Fault tolerance", () => {
 
     expect(parse(src).parsed).toMatchSnapshot();
   });
+
+  test("dot notation in struct", () => {
+    const src = `let x = str. `;
+    // "str:" 8 - 12
+
+    expect(parse(src).parsed).toMatchSnapshot();
+  });
 });
 
 function spanOf(src: string, substr: string = src): Span {

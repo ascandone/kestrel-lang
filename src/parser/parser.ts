@@ -203,14 +203,23 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
 }
 
 class ExpressionVisitor extends Visitor<UntypedExpr> {
-  visitErrorNode(_node_: antlr4.ErrorNode): UntypedExpr {
-    throw new Error("ERROR NODE");
-  }
-
   visit(expr: ExprContext): UntypedExpr {
     if (expr.exception !== null) {
+      if (expr instanceof FieldAccessContext) {
+        const start = expr.start.start;
+        const stop = expr.stop!.stop + 1;
+
+        return {
+          type: "field-access",
+          struct: this.visit(expr.expr()),
+          field: { name: "", span: [start, stop], structName: undefined },
+          span: [start, stop],
+        };
+      }
+
       const start = expr.stop!.start + 1;
       const stop = expr.start.stop + 1;
+
       return {
         type: "syntax-err",
         span: [start, stop],
@@ -473,6 +482,8 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
     const binding = ctx.ID();
 
     const e = ctx.expr();
+    console.log(ctx._inline);
+
     if (e === null) {
       return { type: "syntax-err" };
     }

@@ -14,7 +14,6 @@ import {
 } from "../parser";
 import { TypeMeta } from "./typecheck";
 import { TypeScheme } from "./type";
-export * from "./typedAst/autocomplete";
 export * from "./typedAst/findReferences";
 export * from "./typedAst/gotoDefinition";
 export * from "./typedAst/inlayHint";

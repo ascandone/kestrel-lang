@@ -32,7 +32,6 @@ import {
   hoverToMarkdown,
   UntypedProject,
   findReferences,
-  autocompletable,
   functionSignatureHint,
   getInlayHints,
 } from "../../typecheck";
@@ -41,6 +40,7 @@ import { ErrorInfo, Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../formatter";
 import { Config, readConfig } from "../config";
+import { getCompletionItems } from "../../typecheck/typedAst/completion";
 
 type Connection = _Connection;
 
@@ -373,38 +373,44 @@ export async function lspCmd() {
 
     const offset = module.document.offsetAt(position);
 
-    const autocompletable_ = autocompletable(module.typed, offset);
-
-    if (autocompletable_ === undefined) {
+    const kind = getCompletionItems(module.typed, offset);
+    if (kind === undefined) {
       return undefined;
     }
 
-    const import_ = module.typed.imports.some(
-      (import_) => import_.ns === autocompletable_.namespace,
-    );
+    const resolved = kind.structType.resolve();
+    switch (resolved.type) {
+      case "unbound":
+        // TODO we could return all the available fields
+        return [];
 
-    if (!import_) {
-      return;
+      case "bound": {
+        if (resolved.value.type !== "named") {
+          return [];
+        }
+
+        const mod = state.moduleByNs(resolved.value.moduleName);
+        if (mod === undefined || mod.typed === undefined) {
+          return undefined;
+        }
+
+        for (const d of mod.typed.typeDeclarations) {
+          if (d.type !== "struct" || d.name !== resolved.value.name) {
+            continue;
+          }
+
+          return d.fields.map<CompletionItem>((f) => ({
+            label: f.name,
+            kind: CompletionItemKind.Field,
+            detail: typeToString(f.$.asType(), f.scheme),
+          }));
+        }
+
+        return [];
+      }
     }
 
-    const importedModule = state.moduleByNs(autocompletable_.namespace);
-    if (importedModule?.typed === undefined) {
-      return;
-    }
-
-    return importedModule.typed.declarations
-      .filter((d) => d.pub)
-      .map<CompletionItem>((d) => ({
-        label: d.binding.name,
-        kind: CompletionItemKind.Function,
-        documentation:
-          d.docComment === undefined
-            ? undefined
-            : {
-                kind: MarkupKind.Markdown,
-                value: d.docComment,
-              },
-      }));
+    // return getCompletionItems(module.typed, offset);
   });
 
   connection.onReferences(({ textDocument, position }) => {

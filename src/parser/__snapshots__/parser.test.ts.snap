@@ -341,6 +341,55 @@ exports[`Decorators > inline decorator 1`] = `
 }
 `;
 
+exports[`Fault tolerance > dot notation in struct 1`] = `
+{
+  "declarations": [
+    {
+      "binding": {
+        "name": "x",
+        "span": [
+          4,
+          5,
+        ],
+      },
+      "extern": false,
+      "inline": false,
+      "pub": false,
+      "span": [
+        0,
+        12,
+      ],
+      "value": {
+        "field": {
+          "name": "",
+          "span": [
+            8,
+            12,
+          ],
+          "structName": undefined,
+        },
+        "span": [
+          8,
+          12,
+        ],
+        "struct": {
+          "name": "str",
+          "namespace": undefined,
+          "span": [
+            8,
+            11,
+          ],
+          "type": "identifier",
+        },
+        "type": "field-access",
+      },
+    },
+  ],
+  "imports": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`Fault tolerance > faulty decl 1`] = `
 {
   "declarations": [
