@@ -41,6 +41,7 @@ import { withDisabled } from "../../utils/colors";
 import { format } from "../../formatter";
 import { Config, readConfig } from "../config";
 import { getCompletionItems } from "../../typecheck/typedAst/completion";
+import { Instantiator, unify } from "../../typecheck/type";
 
 type Connection = _Connection;
 
@@ -399,11 +400,18 @@ export async function lspCmd() {
             continue;
           }
 
-          return d.fields.map<CompletionItem>((f) => ({
-            label: f.name,
-            kind: CompletionItemKind.Field,
-            detail: typeToString(f.$.asType(), f.scheme),
-          }));
+          return d.fields.map<CompletionItem>((f) => {
+            const intantiator = new Instantiator();
+            const instantiatedDeclaration = intantiator.instantiatePoly(d);
+            const instantiatedField = intantiator.instantiatePoly(f);
+            unify(instantiatedDeclaration, kind.structType.asType());
+
+            return {
+              label: f.name,
+              kind: CompletionItemKind.Field,
+              detail: typeToString(instantiatedField),
+            };
+          });
         }
 
         return [];
