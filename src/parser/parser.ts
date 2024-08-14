@@ -482,7 +482,6 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
     const binding = ctx.ID();
 
     const e = ctx.expr();
-    console.log(ctx._inline);
 
     if (e === null) {
       return { type: "syntax-err" };

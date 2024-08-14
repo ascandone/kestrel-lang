@@ -21,8 +21,6 @@ let expr = p.
 
   const parsed = parse(src);
 
-  console.log(parsed.parsed.declarations.map((d) => [d.binding.name, d.span]));
-
   const [typed, _] = typecheck("Main", parsed.parsed);
 
   const ret = getCompletionItems(typed, cursorIndex);
