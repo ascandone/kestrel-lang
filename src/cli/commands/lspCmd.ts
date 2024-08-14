@@ -1,6 +1,4 @@
 import {
-  CompletionItem,
-  CompletionItemKind,
   DiagnosticSeverity,
   InlayHint,
   InlayHintKind,
@@ -41,7 +39,6 @@ import { withDisabled } from "../../utils/colors";
 import { format } from "../../formatter";
 import { Config, readConfig } from "../config";
 import { getCompletionItems } from "../../typecheck/typedAst/completion";
-import { Instantiator, unify } from "../../typecheck/type";
 
 type Connection = _Connection;
 
@@ -374,51 +371,13 @@ export async function lspCmd() {
 
     const offset = module.document.offsetAt(position);
 
-    const kind = getCompletionItems(module.typed, offset);
-    if (kind === undefined) {
-      return undefined;
-    }
+    const kind = getCompletionItems(module.typed, offset, {
+      getModuleByNs(ns) {
+        return state.moduleByNs(ns)?.typed;
+      },
+    });
 
-    const resolved = kind.structType.resolve();
-    switch (resolved.type) {
-      case "unbound":
-        // TODO we could return all the available fields
-        return [];
-
-      case "bound": {
-        if (resolved.value.type !== "named") {
-          return [];
-        }
-
-        const mod = state.moduleByNs(resolved.value.moduleName);
-        if (mod === undefined || mod.typed === undefined) {
-          return undefined;
-        }
-
-        for (const d of mod.typed.typeDeclarations) {
-          if (d.type !== "struct" || d.name !== resolved.value.name) {
-            continue;
-          }
-
-          return d.fields.map<CompletionItem>((f) => {
-            const intantiator = new Instantiator();
-            const instantiatedDeclaration = intantiator.instantiatePoly(d);
-            const instantiatedField = intantiator.instantiatePoly(f);
-            unify(instantiatedDeclaration, kind.structType.asType());
-
-            return {
-              label: f.name,
-              kind: CompletionItemKind.Field,
-              detail: typeToString(instantiatedField),
-            };
-          });
-        }
-
-        return [];
-      }
-    }
-
-    // return getCompletionItems(module.typed, offset);
+    return kind;
   });
 
   connection.onReferences(({ textDocument, position }) => {
