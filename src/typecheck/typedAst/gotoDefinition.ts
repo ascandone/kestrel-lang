@@ -155,8 +155,8 @@ function goToDefinitionOfExpr(
 
     case "application":
       return (
-        goToDefinitionOfExpr(ast.caller, offset) ??
-        firstBy(ast.args, (arg) => goToDefinitionOfExpr(arg, offset))
+        firstBy(ast.args, (arg) => goToDefinitionOfExpr(arg, offset)) ??
+        goToDefinitionOfExpr(ast.caller, offset)
       );
 
     case "list-literal":
