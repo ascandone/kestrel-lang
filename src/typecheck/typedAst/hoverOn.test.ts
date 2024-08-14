@@ -268,6 +268,34 @@ test("hover a type ast in constructor", () => {
   });
 });
 
+test("hover on a field (instantiated)", () => {
+  const src = `
+      type X<gen> struct { some_field: gen }
+      let x = X { some_field: 42 }
+
+      pub let hov = x.some_field
+    `;
+  const [, hoverable] = parseHover(src, "some_field", 3)!;
+
+  expect(hoverable.hovered).toEqual({
+    type: "field",
+    type_: "Int",
+  });
+});
+
+test("hover on a field (tvar)", () => {
+  const src = `
+      type X<gen> struct { some_field: gen }
+      pub let hov = fn x { x.some_field }
+    `;
+  const [, hoverable] = parseHover(src, "some_field", 2)!;
+
+  expect(hoverable.hovered).toEqual({
+    type: "field",
+    type_: "a",
+  });
+});
+
 test("snapshot when hovering on global fn", () => {
   const src = `let glb = fn x, y { y }`;
   const [scheme, hoverable] = parseHover(src, "glb")!;

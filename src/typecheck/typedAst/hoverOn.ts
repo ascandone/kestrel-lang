@@ -13,7 +13,9 @@ import { contains, firstBy, statementByOffset } from "./common";
 
 export type HoveredInfo =
   | IdentifierResolution
-  | { type: "type"; typeDecl: TypedTypeDeclaration; namespace: string };
+  | { type: "type"; typeDecl: TypedTypeDeclaration; namespace: string }
+  | { type: "field"; type_: string };
+
 export type Hovered = SpanMeta & { hovered: HoveredInfo };
 
 export function hoverOn(
@@ -137,6 +139,14 @@ export function hoverToMarkdown(
   { hovered }: Hovered,
 ): string {
   switch (hovered.type) {
+    case "field": {
+      return `\`\`\`
+${hovered.type_}
+\`\`\`
+field
+`;
+    }
+
     case "type":
       return `\`\`\`
 type ${hovered.typeDecl.name}
@@ -237,6 +247,20 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
       );
 
     case "field-access":
+      if (contains(expr.field, offset)) {
+        if (expr.resolution === undefined) {
+          return;
+        }
+
+        return {
+          hovered: {
+            type: "field",
+            type_: typeToString(expr.$.asType()),
+          },
+          span: expr.field.span,
+        };
+      }
+
       return hoverOnExpr(expr.struct, offset);
 
     case "struct-literal":
