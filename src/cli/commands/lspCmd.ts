@@ -1,6 +1,4 @@
 import {
-  CompletionItem,
-  CompletionItemKind,
   DiagnosticSeverity,
   InlayHint,
   InlayHintKind,
@@ -32,7 +30,6 @@ import {
   hoverToMarkdown,
   UntypedProject,
   findReferences,
-  autocompletable,
   functionSignatureHint,
   getInlayHints,
 } from "../../typecheck";
@@ -41,6 +38,7 @@ import { ErrorInfo, Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../formatter";
 import { Config, readConfig } from "../config";
+import { getCompletionItems } from "../../typecheck/typedAst/completion";
 
 type Connection = _Connection;
 
@@ -373,38 +371,13 @@ export async function lspCmd() {
 
     const offset = module.document.offsetAt(position);
 
-    const autocompletable_ = autocompletable(module.typed, offset);
+    const kind = getCompletionItems(module.typed, offset, {
+      getModuleByNs(ns) {
+        return state.moduleByNs(ns)?.typed;
+      },
+    });
 
-    if (autocompletable_ === undefined) {
-      return undefined;
-    }
-
-    const import_ = module.typed.imports.some(
-      (import_) => import_.ns === autocompletable_.namespace,
-    );
-
-    if (!import_) {
-      return;
-    }
-
-    const importedModule = state.moduleByNs(autocompletable_.namespace);
-    if (importedModule?.typed === undefined) {
-      return;
-    }
-
-    return importedModule.typed.declarations
-      .filter((d) => d.pub)
-      .map<CompletionItem>((d) => ({
-        label: d.binding.name,
-        kind: CompletionItemKind.Function,
-        documentation:
-          d.docComment === undefined
-            ? undefined
-            : {
-                kind: MarkupKind.Markdown,
-                value: d.docComment,
-              },
-      }));
+    return kind;
   });
 
   connection.onReferences(({ textDocument, position }) => {

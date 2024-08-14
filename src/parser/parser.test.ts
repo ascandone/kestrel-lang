@@ -879,16 +879,19 @@ describe("Fault tolerance", () => {
   });
 
   test("missing expr", () => {
-    const src = `
-      let x = 
-    `;
+    const src = `let x =   `;
     expect(parse(src).parsed).toMatchSnapshot();
   });
 
   test("missing string lit termination", () => {
-    const src = `
-      let x = "
-    `;
+    const src = `let x = "`;
+
+    expect(parse(src).parsed).toMatchSnapshot();
+  });
+
+  test("dot notation in struct", () => {
+    const src = `let x = str. `;
+    // "str:" 8 - 12
 
     expect(parse(src).parsed).toMatchSnapshot();
   });
