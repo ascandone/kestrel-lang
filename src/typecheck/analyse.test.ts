@@ -1,7 +1,7 @@
 import { test, expect } from "vitest";
 import { Analysis } from "./analyse";
 import { typeToString } from "./type";
-import { ErrorInfo, UnboundVariable } from "../errors";
+import { DuplicateDeclaration, ErrorInfo, UnboundVariable } from "../errors";
 import { spanOf } from "./typedAst/__test__/utils";
 
 test("infer int", () => {
@@ -86,6 +86,43 @@ test("infer a variable not present in the context", () => {
   ]);
   expect(getTypes(a)).toEqual({
     x: "a",
+  });
+});
+
+test.todo("forbid duplicate identifiers", () => {
+  const a = new Analysis(
+    "Main",
+    `
+      let x = 42
+      let x = "override"
+  
+      pub let y = x
+    `,
+  );
+
+  expect(a.errors).toEqual<ErrorInfo[]>([
+    {
+      description: new DuplicateDeclaration("x"),
+      span: spanOf(a.source, "x", 1),
+    },
+  ]);
+
+  expect(getTypes(a)).toEqual({
+    y: "Int",
+  });
+});
+
+test("fn returning a constant", () => {
+  const a = new Analysis(
+    "Main",
+    `
+      pub let f = fn { 42 }
+    `,
+  );
+
+  expect(a.errors).toEqual<ErrorInfo[]>([]);
+  expect(getTypes(a)).toEqual({
+    f: "Fn() -> Int",
   });
 });
 
