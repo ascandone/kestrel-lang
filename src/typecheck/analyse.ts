@@ -1,8 +1,15 @@
 /* eslint-disable require-yield */
-import { ErrorInfo, UnboundVariable } from "../errors";
+import {
+  ErrorInfo,
+  OccursCheck,
+  TraitNotSatified,
+  TypeMismatch,
+  UnboundVariable,
+} from "../errors";
 import {
   Binding,
   ConstLiteral,
+  SpanMeta,
   TypeAst,
   UntypedDeclaration,
   UntypedExpr,
@@ -14,7 +21,7 @@ import {
 } from "../parser";
 import { char, float, int, string, task, unit } from "./core";
 import { Deps } from "./resolutionStep";
-import { TVar, Type, unify } from "./type";
+import { TVar, Type, UnifyError, unify } from "./type";
 
 export type AnalyseOptions = {
   dependencies?: Deps;
@@ -83,8 +90,11 @@ export class Analysis {
   }
 
   private unifyNode(node: TypedNode, type: Type) {
-    unify(this.getType(node), type);
-    // TODO push err when not undef
+    const err = unify(this.getType(node), type);
+    if (err !== undefined) {
+      this.errors.push(unifyErrToErrorInfo(node, err));
+      return;
+    }
   }
 
   private unifyNodes(left: TypedNode, right: TypedNode) {
@@ -243,6 +253,25 @@ export class Analysis {
         yield decl;
       }
     }
+  }
+}
+
+function unifyErrToErrorInfo(node: SpanMeta, e: UnifyError): ErrorInfo {
+  switch (e.type) {
+    case "missing-trait":
+      return {
+        span: node.span,
+        description: new TraitNotSatified(e.type_, e.trait),
+      };
+
+    case "type-mismatch":
+      return {
+        span: node.span,
+        description: new TypeMismatch(e.left, e.right),
+      };
+
+    case "occurs-check":
+      return { span: node.span, description: new OccursCheck() };
   }
 }
 

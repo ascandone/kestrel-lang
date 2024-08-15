@@ -1,7 +1,12 @@
 import { test, expect } from "vitest";
 import { Analysis } from "./analyse";
 import { typeToString } from "./type";
-import { DuplicateDeclaration, ErrorInfo, UnboundVariable } from "../errors";
+import {
+  DuplicateDeclaration,
+  ErrorInfo,
+  TypeMismatch,
+  UnboundVariable,
+} from "../errors";
 import { spanOf } from "./typedAst/__test__/utils";
 
 test("infer int", () => {
@@ -155,6 +160,41 @@ test("application return type", () => {
   expect(getTypes(a)).toEqual({
     x: "Bool",
   });
+});
+
+test("application args should be typechecked", () => {
+  const a = new Analysis(
+    "Main",
+    `
+        extern type Ret
+        extern type T
+        extern let c: T
+
+        extern let f: Fn(T, T) -> Ret
+
+        pub let x = f(42, c)
+    `,
+  );
+
+  expect(a.errors).toEqual<ErrorInfo[]>([
+    {
+      description: new TypeMismatch(
+        {
+          type: "named",
+          args: [],
+          moduleName: "Main",
+          name: "T",
+        },
+        {
+          type: "named",
+          moduleName: "Int",
+          name: "Int",
+          args: [],
+        },
+      ),
+      span: spanOf(a.source, "42"),
+    },
+  ]);
 });
 
 function getTypes(a: Analysis): Record<string, string> {
