@@ -53,6 +53,20 @@ test("infer char", () => {
   });
 });
 
+test("infer a variable present in the context", () => {
+  const a = new Analysis(
+    "Main",
+    `
+      let x = 42
+      pub let y = x
+    `,
+  );
+
+  expect(a.errors).toEqual([]);
+  expect(getTypes(a)).toEqual({
+    y: "Int",
+  });
+});
 function getTypes(a: Analysis): Record<string, string> {
   const kvs = [...a.getPublicDeclarations()].map((decl) => {
     return [decl.binding.name, typeToString(a.getType(decl.binding))];
