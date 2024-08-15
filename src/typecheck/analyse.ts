@@ -11,6 +11,7 @@ import {
   UntypedTypeVariant,
   parse,
 } from "../parser";
+import { char, float, int, string, task, unit } from "./core";
 import { Deps } from "./resolutionStep";
 import { TVar, Type, unify } from "./type";
 
@@ -51,7 +52,7 @@ export class Analysis {
   constructor(
     public readonly ns: string,
     public readonly source: string,
-    private options: AnalyseOptions = {},
+    // private options: AnalyseOptions = {},
   ) {
     const parseResult = parse(source);
     // TODO push parsing/lexer errs in errs
@@ -63,17 +64,17 @@ export class Analysis {
 
   private initAnalysis() {
     for (const letDecl of this.module.declarations) {
-      this.analyzeLetDeclaration(letDecl);
+      this.typecheckLetDeclaration(letDecl);
     }
   }
 
-  private analyzeLetDeclaration(decl: UntypedDeclaration) {
+  private typecheckLetDeclaration(decl: UntypedDeclaration) {
     if (decl.extern) {
       // TODO
       return;
     }
 
-    this.analyzeExpr(decl.value);
+    this.typecheckExpr(decl.value);
     this.unifyNodes(decl.binding, decl.value);
   }
 
@@ -86,7 +87,7 @@ export class Analysis {
     this.unifyNode(left, this.getType(right));
   }
 
-  private analyzeExpr(expr: UntypedExpr): undefined {
+  private typecheckExpr(expr: UntypedExpr): undefined {
     switch (expr.type) {
       case "syntax-err":
         return;
@@ -118,12 +119,25 @@ export class Analysis {
         }
       }
 
+      case "fn":
+        this.unifyNode(expr, {
+          type: "fn",
+          args: expr.params.map((_pattern) => {
+            // this.typecheckPattern(p, true);
+            // return p.$.asType();
+
+            throw new Error("TODO pattern type");
+          }),
+          return: this.getType(expr.body),
+        });
+        this.typecheckExpr(expr.body);
+        return;
+
       case "pipe":
       case "let#":
       case "infix":
       case "list-literal":
       case "struct-literal":
-      case "fn":
       case "application":
       case "field-access":
       case "let":
@@ -191,75 +205,17 @@ function getConstantType(x: ConstLiteral): Type {
   // Keep this in sync with core
   switch (x.type) {
     case "int":
-      return Int;
+      return int;
 
     case "float":
-      return Float;
+      return float;
 
     case "string":
-      return String;
+      return string;
 
     case "char":
-      return Char;
+      return char;
   }
 }
 
-const Bool: Type = {
-  type: "named",
-  moduleName: "Bool",
-  name: "Bool",
-  args: [],
-};
-
-const Int: Type = {
-  moduleName: "Int",
-  type: "named",
-  name: "Int",
-  args: [],
-};
-
-const Float: Type = {
-  moduleName: "Float",
-  type: "named",
-  name: "Float",
-  args: [],
-};
-
-const String: Type = {
-  moduleName: "String",
-  type: "named",
-  name: "String",
-  args: [],
-};
-
-const Char: Type = {
-  moduleName: "Char",
-  type: "named",
-  name: "Char",
-  args: [],
-};
-
-const Unit: Type = {
-  type: "named",
-  moduleName: "Tuple",
-  name: "Unit",
-  args: [],
-};
-
-const List = (a: Type): Type => ({
-  type: "named",
-  moduleName: "List",
-  name: "List",
-  args: [a],
-});
-
-function Task(arg: Type): Type {
-  return {
-    type: "named",
-    moduleName: "Task",
-    name: "Task",
-    args: [arg],
-  };
-}
-
-export const DEFAULT_MAIN_TYPE = Task(Unit);
+export const DEFAULT_MAIN_TYPE = task(unit);
