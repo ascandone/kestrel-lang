@@ -1,5 +1,5 @@
 /* eslint-disable require-yield */
-import { ErrorInfo } from "../errors";
+import { ErrorInfo, UnboundVariable } from "../errors";
 import {
   Binding,
   ConstLiteral,
@@ -49,8 +49,8 @@ export class Analysis {
   private module: UntypedModule;
 
   constructor(
-    private ns: string,
-    private source: string,
+    public readonly ns: string,
+    public readonly source: string,
     private options: AnalyseOptions = {},
   ) {
     const parseResult = parse(source);
@@ -98,7 +98,11 @@ export class Analysis {
       case "identifier": {
         const resolution = this.resolveIdentifier(expr);
         if (resolution === undefined) {
-          return undefined;
+          this.errors.push({
+            description: new UnboundVariable(expr.name),
+            span: expr.span,
+          });
+          return;
         }
 
         switch (resolution.type) {
