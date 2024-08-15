@@ -7,6 +7,8 @@ import {
   UntypedExpr,
   UntypedImport,
   UntypedModule,
+  UntypedTypeDeclaration,
+  UntypedTypeVariant,
   parse,
 } from "../parser";
 import { Deps } from "./resolutionStep";
@@ -19,10 +21,30 @@ export type AnalyseOptions = {
 };
 
 export type TypedNode = Binding | UntypedExpr;
+export type IdentifierResolution =
+  | {
+      type: "local-variable";
+      binding: Binding;
+    }
+  | {
+      type: "global-variable";
+      declaration: UntypedDeclaration;
+      namespace: string;
+    }
+  | {
+      type: "constructor";
+      variant: UntypedTypeVariant;
+      declaration: UntypedTypeDeclaration & { type: "adt" };
+      namespace: string;
+    };
 
 export class Analysis {
   errors: ErrorInfo[] = [];
 
+  private identifiersResolutions = new WeakMap<
+    UntypedExpr & { type: "identifier" },
+    IdentifierResolution
+  >();
   private typeAnnotations = new WeakMap<TypedNode, TVar>();
   private module: UntypedModule;
 
@@ -64,14 +86,34 @@ export class Analysis {
     this.unifyNode(left, this.getType(right));
   }
 
-  private analyzeExpr(decl: UntypedExpr): undefined {
-    switch (decl.type) {
-      case "constant":
-        this.unifyNode(decl, getConstantType(decl.value));
+  private analyzeExpr(expr: UntypedExpr): undefined {
+    switch (expr.type) {
+      case "syntax-err":
         return;
 
-      case "syntax-err":
-      case "identifier":
+      case "constant":
+        this.unifyNode(expr, getConstantType(expr.value));
+        return;
+
+      case "identifier": {
+        const resolution = this.resolveIdentifier(expr);
+        if (resolution === undefined) {
+          return undefined;
+        }
+
+        switch (resolution.type) {
+          case "global-variable":
+            // TODO instantiate
+            // TODO check order
+            this.unifyNodes(expr, resolution.declaration.binding);
+            return;
+
+          case "constructor":
+          case "local-variable":
+            throw new Error("TODO handle");
+        }
+      }
+
       case "pipe":
       case "let#":
       case "infix":
@@ -103,8 +145,36 @@ export class Analysis {
     return this.getTVar(node).asType();
   }
 
-  *getPublicDeclarations(): Generator<UntypedDeclaration> {
+  resolveIdentifier(
+    expr: UntypedExpr & { type: "identifier" },
+  ): IdentifierResolution | undefined {
+    if (this.identifiersResolutions.has(expr)) {
+      return this.identifiersResolutions.get(expr);
+    }
+
+    // resolve ident
+
+    for (const declaration of this.getDeclarations()) {
+      if (declaration.binding.name === expr.name) {
+        return {
+          type: "global-variable",
+          declaration,
+          namespace: this.ns,
+        };
+      }
+    }
+
+    return undefined;
+  }
+
+  *getDeclarations(): Generator<UntypedDeclaration> {
     for (const decl of this.module.declarations) {
+      yield decl;
+    }
+  }
+
+  *getPublicDeclarations(): Generator<UntypedDeclaration> {
+    for (const decl of this.getDeclarations()) {
       if (decl.pub) {
         yield decl;
       }
