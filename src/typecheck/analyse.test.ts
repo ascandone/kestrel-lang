@@ -126,6 +126,37 @@ test("fn returning a constant", () => {
   });
 });
 
+test("types of externs", () => {
+  const a = new Analysis(
+    "Main",
+    `
+    extern type Int
+    extern pub let x: Int
+    `,
+  );
+
+  expect(a.errors).toEqual<ErrorInfo[]>([]);
+  expect(getTypes(a)).toEqual({
+    x: "Int",
+  });
+});
+
+test("application return type", () => {
+  const a = new Analysis(
+    "Main",
+    `
+      extern type Bool
+      extern let cmp: Fn(a, a) -> Bool
+      pub let x = cmp(1, 2)
+    `,
+  );
+
+  expect(a.errors).toEqual([]);
+  expect(getTypes(a)).toEqual({
+    x: "Bool",
+  });
+});
+
 function getTypes(a: Analysis): Record<string, string> {
   const kvs = [...a.getPublicDeclarations()].map((decl) => {
     return [decl.binding.name, typeToString(a.getType(decl.binding))];
