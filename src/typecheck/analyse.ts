@@ -3,6 +3,7 @@ import { ErrorInfo, UnboundVariable } from "../errors";
 import {
   Binding,
   ConstLiteral,
+  TypeAst,
   UntypedDeclaration,
   UntypedExpr,
   UntypedImport,
@@ -69,8 +70,11 @@ export class Analysis {
   }
 
   private typecheckLetDeclaration(decl: UntypedDeclaration) {
+    if (decl.typeHint !== undefined) {
+      const typeHintType = this.typeAstToType(decl.typeHint.mono);
+      this.unifyNode(decl.binding, typeHintType);
+    }
     if (decl.extern) {
-      // TODO
       return;
     }
 
@@ -133,12 +137,23 @@ export class Analysis {
         this.typecheckExpr(expr.body);
         return;
 
+      case "application":
+        this.typecheckExpr(expr.caller);
+        this.unifyNode(expr.caller, {
+          type: "fn",
+          args: expr.args.map((arg) => this.getType(arg)),
+          return: this.getType(expr),
+        });
+        for (const arg of expr.args) {
+          this.typecheckExpr(arg);
+        }
+        return;
+
       case "pipe":
       case "let#":
       case "infix":
       case "list-literal":
       case "struct-literal":
-      case "application":
       case "field-access":
       case "let":
       case "if":
@@ -156,6 +171,37 @@ export class Analysis {
       return tvar;
     }
     return lookup;
+  }
+
+  private typeAstToType(t: TypeAst): Type {
+    const helper = (t: TypeAst): Type => {
+      switch (t.type) {
+        case "named":
+          // TODO actually resolve type
+          return {
+            type: "named",
+            args: [],
+            moduleName: this.ns,
+            name: t.name,
+          };
+
+        case "fn":
+          return {
+            type: "fn",
+            args: t.args.map((arg) => helper(arg)),
+            return: helper(t.return),
+          };
+
+        case "var":
+          // TODO
+          return TVar.fresh().asType();
+
+        case "any":
+          throw new Error("TODO typeAstToType handle type: " + t.type);
+      }
+    };
+
+    return helper(t);
   }
 
   // --- Public interface
