@@ -159,6 +159,58 @@ test("shadowed let exprs", () => {
       `);
 });
 
+test("two let as fn args, shadowing", () => {
+  const out = compileSrc(`
+    extern let f: Fn(a, a) -> a
+    let x = f(
+      { let a = 0; a },
+      { let a = 1; a },
+    )
+`);
+
+  expect(out).toMatchInlineSnapshot(`
+    "const Main$x$a = 0;
+    const Main$x$a$1 = 1;
+    const Main$x = Main$f(Main$x$a, Main$x$a$1);"
+  `);
+});
+
+test("toplevel fn without params", () => {
+  const out = compileSrc(`
+  let f = fn { 42 }
+`);
+
+  expect(out).toMatchInlineSnapshot(`
+    "const Main$f = () => {
+      return 42;
+    };"
+  `);
+});
+
+test("toplevel fn with params", () => {
+  const out = compileSrc(`
+  let f = fn x, y { y }
+`);
+
+  expect(out).toMatchInlineSnapshot(`
+    "const Main$f = (x, y) => {
+      return y;
+    };"
+  `);
+});
+
+test("shadowing fn params", () => {
+  const out = compileSrc(`
+    let f = fn a, a { a }
+  `);
+
+  expect(out).toMatchInlineSnapshot(`
+    "const Main$f = (a, a$1) => {
+      return a$1;
+    };"
+  `);
+});
+
 const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   module: "Main",
   type: {

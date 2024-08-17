@@ -1,4 +1,9 @@
-import { TypedDeclaration, TypedExpr, TypedModule } from "../typecheck";
+import {
+  TypedDeclaration,
+  TypedExpr,
+  TypedMatchPattern,
+  TypedModule,
+} from "../typecheck";
 import { ConcreteType } from "../typecheck/type";
 import * as t from "@babel/types";
 import generate from "@babel/generator";
@@ -108,9 +113,32 @@ export class Compiler {
         // we could call this.bindingsJsName.delete(src.pattern) here
       }
 
+      case "fn": {
+        const frame = new Frame({ type: "fn" });
+        this.frames.push(frame);
+        return this.withBlock((): t.Expression => {
+          const params = src.params.map(
+            (param): t.Identifier => this.compilePattern(frame, param),
+          );
+          const body = this.compileExpr(src.body);
+          // TODO return value with no block if no statements
+
+          return {
+            type: "ArrowFunctionExpression",
+            async: false,
+            expression: true,
+            params,
+            body: {
+              type: "BlockStatement",
+              directives: [],
+              body: [{ type: "ReturnStatement", argument: body }],
+            },
+          };
+        });
+      }
+
       case "list-literal":
       case "struct-literal":
-      case "fn":
       case "field-access":
       case "if":
       case "match":
@@ -118,16 +146,40 @@ export class Compiler {
     }
   }
 
+  private compilePattern(
+    frame: Frame,
+    pattern: TypedMatchPattern,
+  ): t.Identifier {
+    switch (pattern.type) {
+      case "identifier": {
+        const name = frame.registerLocal(pattern.name);
+        const identifier: t.Identifier = { type: "Identifier", name };
+        this.bindingsJsName.set(pattern, identifier);
+        return identifier;
+      }
+
+      case "lit":
+      case "constructor":
+        throw new Error("TODO ");
+    }
+  }
+
+  private withBlock<T>(f: () => T): T {
+    const buf = this.statementsBuf;
+    this.statementsBuf = [];
+    const e = f();
+    this.statementsBuf = buf;
+    return e;
+  }
+
   private makeJsLetPathName(): string {
     const buf: string[] = [];
-    let lastFrame: Frame | undefined;
     for (const frame of reversed(this.frames)) {
       if (frame.data.type === "fn") {
         break;
       }
 
       buf.push(frame.data.jsPatternName);
-      lastFrame = frame;
     }
     if (buf.length === 0) {
       throw new Error("empty buf");
