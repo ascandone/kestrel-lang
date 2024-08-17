@@ -92,7 +92,7 @@ export class Compiler {
 
         const ident: t.Identifier = {
           type: "Identifier",
-          name: `${sanitizeNamespace(this.ns)}$${this.makeJsLetPathName()}`,
+          name: this.makeJsLetPathName(),
         };
         this.bindingsJsName.set(src.pattern, ident);
         this.statementsBuf.push({
@@ -131,7 +131,10 @@ export class Compiler {
             body: {
               type: "BlockStatement",
               directives: [],
-              body: [{ type: "ReturnStatement", argument: body }],
+              body: [
+                ...this.statementsBuf,
+                { type: "ReturnStatement", argument: body },
+              ],
             },
           };
         });
@@ -174,13 +177,20 @@ export class Compiler {
 
   private makeJsLetPathName(): string {
     const buf: string[] = [];
+    let isFn = false;
     for (const frame of reversed(this.frames)) {
       if (frame.data.type === "fn") {
+        isFn = true;
         break;
       }
 
       buf.push(frame.data.jsPatternName);
     }
+
+    if (!isFn) {
+      buf.push(sanitizeNamespace(this.ns));
+    }
+
     if (buf.length === 0) {
       throw new Error("empty buf");
     }

@@ -211,6 +211,69 @@ test("shadowing fn params", () => {
   `);
 });
 
+test("higher order fn", () => {
+  const out = compileSrc(`
+  let f = fn x { fn x { x } }
+`);
+
+  expect(out).toMatchInlineSnapshot(`
+    "const Main$f = x => {
+      return x => {
+        return x;
+      };
+    };"
+  `);
+});
+
+test("let inside scope", () => {
+  const out = compileSrc(`
+  let f = fn {
+    let x = 0;
+    let y = 1;
+    x
+  }
+`);
+
+  expect(out).toMatchInlineSnapshot(`
+    "const Main$f = () => {
+      const x = 0;
+      const y = 1;
+      return x;
+    };"
+  `);
+});
+
+test("let inside arg of a function", () => {
+  const out = compileSrc(`
+  extern let f: Fn(a) -> a
+  let a = f({
+    let x = 0;
+    x
+  })
+`);
+
+  expect(out).toMatchInlineSnapshot(`
+    "const Main$a$x = 0;
+    const Main$a = Main$f(Main$a$x);"
+  `);
+});
+
+test("function with a scoped identified as caller", () => {
+  const out = compileSrc(`
+  let x = {
+    let f = fn { 0 };
+    f()
+  }
+`);
+
+  expect(out).toMatchInlineSnapshot(`
+    "const Main$x$f = () => {
+      return 0;
+    };
+    const Main$x = Main$x$f();"
+  `);
+});
+
 const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   module: "Main",
   type: {
