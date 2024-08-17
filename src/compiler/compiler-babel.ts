@@ -19,6 +19,7 @@ export class Compiler {
 
   private statementsBuf: t.Statement[] = [];
   private frames: Frame[] = [];
+  private bindingsJsName = new WeakMap<Binding, t.Identifier>();
   private currentDeclaration: Binding | undefined = undefined;
 
   private compileExpr(src: TypedExpr): t.Expression {
@@ -59,18 +60,7 @@ export class Compiler {
             throw new Error("TODO handle constructor");
 
           case "local-variable":
-            for (const frame of this.frames) {
-              if (
-                frame.data.type === "let" &&
-                frame.data.binding === src.resolution.binding
-              ) {
-                return {
-                  type: "Identifier",
-                  name: frame.data.jsName,
-                };
-              }
-            }
-            throw new Error("[unrechable] binding not found");
+            return this.bindingsJsName.get(src.resolution.binding)!;
 
           case "global-variable":
             return makeGlobalIdentifier(
@@ -85,27 +75,32 @@ export class Compiler {
           throw new Error("p match in ident");
         }
 
-        const name = `${sanitizeNamespace(this.ns)}$${this.currentDeclaration!.name}$${src.pattern.name}`;
         this.frames.push(
           new Frame({
             type: "let",
-            jsName: name,
+            jsPatternName: src.pattern.name,
             binding: src.pattern,
           }),
         );
+        const ident: t.Identifier = {
+          type: "Identifier",
+          name: `${sanitizeNamespace(this.ns)}$${this.currentDeclaration!.name}$${this.makeJsLetPathName()}`,
+        };
+        this.bindingsJsName.set(src.pattern, ident);
         this.statementsBuf.push({
           type: "VariableDeclaration",
           kind: "const",
           declarations: [
             {
               type: "VariableDeclarator",
-              id: { type: "Identifier", name },
+              id: ident,
               init: this.compileExpr(src.value),
             },
           ],
         });
-
+        this.frames.pop();
         return this.compileExpr(src.body);
+        // we could call this.bindingsJsName.delete(src.pattern) here
       }
 
       case "list-literal":
@@ -116,6 +111,23 @@ export class Compiler {
       case "match":
         throw new Error("TODO handle expr: " + src.type);
     }
+  }
+
+  private makeJsLetPathName(): string {
+    const buf: string[] = [];
+    for (const frame of reversed(this.frames)) {
+      if (frame.data.type === "fn") {
+        break;
+      }
+
+      buf.push(frame.data.jsPatternName);
+    }
+    if (buf.length === 0) {
+      throw new Error("empty buf");
+    }
+
+    buf.reverse();
+    return buf.join("$");
   }
 
   private compileDeclaration(decl: TypedDeclaration): t.Statement[] {
@@ -202,7 +214,7 @@ function makeGlobalIdentifier(ns: string, bindingName: string): t.Identifier {
 class Frame {
   constructor(
     public readonly data:
-      | { type: "let"; jsName: string; binding: Binding<unknown> }
+      | { type: "let"; jsPatternName: string; binding: Binding<unknown> }
       | { type: "fn" },
     // private compiler: Compiler,
   ) {}
@@ -223,4 +235,10 @@ class Frame {
   //     const namespace = ns === undefined ? "" : `${ns}$`;
   //     return `${namespace}GEN__${this.compiler.getNextId()}`;
   //   }
+}
+
+function* reversed<T>(xs: T[]): Generator<T> {
+  for (let i = xs.length - 1; i >= 0; i--) {
+    yield xs[i]!;
+  }
 }

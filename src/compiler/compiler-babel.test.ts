@@ -125,6 +125,24 @@ test("let expressions with multiple vars", () => {
     `);
 });
 
+test("nested let exprs", () => {
+  const out = compileSrc(`
+      let x = {
+        let local = {
+          let nested = 0;
+          nested + 1
+        };
+        local + 2
+      }
+    `);
+
+  expect(out).toMatchInlineSnapshot(`
+      "const Main$x$local$nested = 0;
+      const Main$x$local = Main$x$local$nested + 1;
+      const Main$x = Main$x$local + 2;"
+    `);
+});
+
 const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   module: "Main",
   type: {
