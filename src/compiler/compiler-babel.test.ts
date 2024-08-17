@@ -67,6 +67,17 @@ test("math expr should have same semantics as js", () => {
   expect(evaluated()).toEqual(2 * 3 + 4);
 });
 
+test("refer to previously defined idents", () => {
+  const out = compileSrc(`
+      let x = 0
+      let y = x
+    `);
+  expect(out).toMatchInlineSnapshot(`
+      "const Main$x = 0;
+      const Main$y = Main$x;"
+    `);
+});
+
 const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   module: "Main",
   type: {

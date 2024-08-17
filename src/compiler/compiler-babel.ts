@@ -29,7 +29,11 @@ export class Compiler {
         throw new Error("[unreachable]");
 
       case "constant":
-        return { type: "expr", expr: compileConst(src.value), statements: [] };
+        return {
+          type: "expr",
+          expr: compileConst(src.value),
+          statements: [],
+        };
 
       case "application": {
         if (src.caller.type === "identifier") {
@@ -49,11 +53,29 @@ export class Compiler {
             };
           }
         }
+
+        throw new Error("TODO appl");
+      }
+
+      case "identifier": {
+        switch (src.resolution?.type) {
+          case "constructor":
+          case "local-variable":
+            throw new Error("TODO handle ident");
+          case "global-variable":
+            return {
+              type: "expr",
+              expr: makeGlobalIdentifier(
+                src.resolution.namespace,
+                src.resolution.declaration.binding.name,
+              ),
+              statements: [],
+            };
+        }
       }
 
       case "list-literal":
       case "struct-literal":
-      case "identifier":
       case "fn":
       case "field-access":
       case "let":
@@ -71,7 +93,6 @@ export class Compiler {
     const out = this.compileExpr(decl.value);
     switch (out.type) {
       case "expr": {
-        const ident = `${sanitizeNamespace(this.ns)}$${decl.binding.name}`;
         return [
           ...out.statements,
           {
@@ -79,7 +100,7 @@ export class Compiler {
             declarations: [
               {
                 type: "VariableDeclarator",
-                id: { type: "Identifier", name: ident },
+                id: makeGlobalIdentifier(this.ns, decl.binding.name),
                 init: out.expr,
               },
             ],
@@ -109,10 +130,6 @@ export class Compiler {
   }
 }
 
-function sanitizeNamespace(ns: string): string {
-  return ns?.replace(/\//g, "$");
-}
-
 function compileConst(ast: ConstLiteral): t.Expression {
   switch (ast.type) {
     case "int":
@@ -139,4 +156,15 @@ function toJsInfix(
     default:
       return undefined;
   }
+}
+
+function sanitizeNamespace(ns: string): string {
+  return ns?.replace(/\//g, "$");
+}
+
+function makeGlobalIdentifier(ns: string, bindingName: string): t.Identifier {
+  return {
+    type: "Identifier",
+    name: `${sanitizeNamespace(ns)}$${bindingName}`,
+  };
 }
