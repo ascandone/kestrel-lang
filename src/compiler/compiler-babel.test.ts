@@ -109,6 +109,22 @@ test("let expressions", () => {
     `);
 });
 
+test("let expressions with multiple vars", () => {
+  const out = compileSrc(`
+      let x = {
+        let local1 = 0;
+        let local2 = 1;
+        local1 + local2
+      }
+    `);
+
+  expect(out).toMatchInlineSnapshot(`
+      "const Main$x$local1 = 0;
+      const Main$x$local2 = 1;
+      const Main$x = Main$x$local1 + Main$x$local2;"
+    `);
+});
+
 const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   module: "Main",
   type: {
