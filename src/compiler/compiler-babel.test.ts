@@ -95,6 +95,20 @@ test("function calls with args", () => {
   expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f(1, 2);"`);
 });
 
+test("let expressions", () => {
+  const out = compileSrc(`
+    let x = {
+        let local = 0;
+        local + 1
+    }
+    `);
+
+  expect(out).toMatchInlineSnapshot(`
+        "const Main$x$local = 0;
+        const Main$x = Main$x$local + 1;"
+    `);
+});
+
 const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   module: "Main",
   type: {
