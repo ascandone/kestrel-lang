@@ -14,64 +14,36 @@ export type CompileOptions = {
   };
 };
 
-type CompilationMode = {
-  type: "expr";
-  expr: t.Expression;
-  statements: t.Statement[];
-};
-
 export class Compiler {
   private ns = "";
 
-  private compileExpr(src: TypedExpr): CompilationMode {
+  private statementsBuf: t.Statement[] = [];
+
+  private compileExpr(src: TypedExpr): t.Expression {
     switch (src.type) {
       case "syntax-err":
         throw new Error("[unreachable]");
 
       case "constant":
-        return {
-          type: "expr",
-          expr: compileConst(src.value),
-          statements: [],
-        };
+        return compileConst(src.value);
 
       case "application": {
         if (src.caller.type === "identifier") {
           const infixName = toJsInfix(src.caller.name);
           if (infixName !== undefined) {
-            const l = this.compileExpr(src.args[0]!);
-            const r = this.compileExpr(src.args[1]!);
             return {
-              type: "expr",
-              statements: [...l.statements, ...r.statements],
-              expr: {
-                type: "BinaryExpression",
-                operator: infixName,
-                left: l.expr,
-                right: r.expr,
-              },
+              type: "BinaryExpression",
+              operator: infixName,
+              left: this.compileExpr(src.args[0]!),
+              right: this.compileExpr(src.args[1]!),
             };
           }
         }
 
-        const caller = this.compileExpr(src.caller);
-
-        const argsExprs: t.Expression[] = [];
-        const argsStm: t.Statement[] = [];
-        for (const arg of src.args) {
-          const carg = this.compileExpr(arg);
-          argsExprs.push(carg.expr);
-          argsStm.push(...carg.statements);
-        }
-
         return {
-          type: "expr",
-          statements: [...caller.statements, ...argsStm],
-          expr: {
-            type: "CallExpression",
-            callee: caller.expr,
-            arguments: argsExprs,
-          },
+          type: "CallExpression",
+          callee: this.compileExpr(src.caller),
+          arguments: src.args.map((arg) => this.compileExpr(arg)),
         };
       }
 
@@ -81,14 +53,10 @@ export class Compiler {
           case "local-variable":
             throw new Error("TODO handle ident");
           case "global-variable":
-            return {
-              type: "expr",
-              expr: makeGlobalIdentifier(
-                src.resolution.namespace,
-                src.resolution.declaration.binding.name,
-              ),
-              statements: [],
-            };
+            return makeGlobalIdentifier(
+              src.resolution.namespace,
+              src.resolution.declaration.binding.name,
+            );
         }
       }
 
@@ -109,24 +77,20 @@ export class Compiler {
     }
 
     const out = this.compileExpr(decl.value);
-    switch (out.type) {
-      case "expr": {
-        return [
-          ...out.statements,
+    return [
+      ...this.statementsBuf,
+      {
+        type: "VariableDeclaration",
+        declarations: [
           {
-            type: "VariableDeclaration",
-            declarations: [
-              {
-                type: "VariableDeclarator",
-                id: makeGlobalIdentifier(this.ns, decl.binding.name),
-                init: out.expr,
-              },
-            ],
-            kind: "const",
+            type: "VariableDeclarator",
+            id: makeGlobalIdentifier(this.ns, decl.binding.name),
+            init: out,
           },
-        ];
-      }
-    }
+        ],
+        kind: "const",
+      },
+    ];
   }
 
   compile(src: TypedModule, ns: string): string {
