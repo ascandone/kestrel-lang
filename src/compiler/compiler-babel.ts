@@ -54,7 +54,25 @@ export class Compiler {
           }
         }
 
-        throw new Error("TODO appl");
+        const caller = this.compileExpr(src.caller);
+
+        const argsExprs: t.Expression[] = [];
+        const argsStm: t.Statement[] = [];
+        for (const arg of src.args) {
+          const carg = this.compileExpr(arg);
+          argsExprs.push(carg.expr);
+          argsStm.push(...carg.statements);
+        }
+
+        return {
+          type: "expr",
+          statements: [...caller.statements, ...argsStm],
+          expr: {
+            type: "CallExpression",
+            callee: caller.expr,
+            arguments: argsExprs,
+          },
+        };
       }
 
       case "identifier": {

@@ -78,6 +78,23 @@ test("refer to previously defined idents", () => {
     `);
 });
 
+test("function calls with no args", () => {
+  const out = compileSrc(`
+      extern let f: Fn() -> a
+      let y = f()
+    `);
+  expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f();"`);
+});
+
+test("function calls with args", () => {
+  const out = compileSrc(`
+      extern let f: Fn(a, a) -> a
+      let y = f(1, 2)
+    `);
+
+  expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f(1, 2);"`);
+});
+
 const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   module: "Main",
   type: {
