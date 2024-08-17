@@ -143,6 +143,22 @@ test("nested let exprs", () => {
     `);
 });
 
+test("shadowed let exprs", () => {
+  const out = compileSrc(`
+      let x = {
+        let a = 0;
+        let a = a;
+        a
+      }
+    `);
+
+  expect(out).toMatchInlineSnapshot(`
+        "const Main$x$a = 0;
+        const Main$x$a$1 = Main$x$a;
+        const Main$x = Main$x$a$1;"
+      `);
+});
+
 const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   module: "Main",
   type: {

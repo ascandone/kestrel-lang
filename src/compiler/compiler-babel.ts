@@ -20,7 +20,6 @@ export class Compiler {
   private statementsBuf: t.Statement[] = [];
   private frames: Frame[] = [];
   private bindingsJsName = new WeakMap<Binding, t.Identifier>();
-  private currentDeclaration: Binding | undefined = undefined;
 
   private compileExpr(src: TypedExpr): t.Expression {
     switch (src.type) {
@@ -74,17 +73,21 @@ export class Compiler {
         if (src.pattern.type !== "identifier") {
           throw new Error("p match in ident");
         }
+        const curFrame = this.frames.at(-1);
+        if (curFrame === undefined) {
+          throw new Error("[unrechable] empty frames stack");
+        }
 
         this.frames.push(
           new Frame({
             type: "let",
-            jsPatternName: src.pattern.name,
-            binding: src.pattern,
+            jsPatternName: curFrame.registerLocal(src.pattern.name),
           }),
         );
+
         const ident: t.Identifier = {
           type: "Identifier",
-          name: `${sanitizeNamespace(this.ns)}$${this.currentDeclaration!.name}$${this.makeJsLetPathName()}`,
+          name: `${sanitizeNamespace(this.ns)}$${this.makeJsLetPathName()}`,
         };
         this.bindingsJsName.set(src.pattern, ident);
         this.statementsBuf.push({
@@ -99,7 +102,9 @@ export class Compiler {
           ],
         });
         this.frames.pop();
+
         return this.compileExpr(src.body);
+
         // we could call this.bindingsJsName.delete(src.pattern) here
       }
 
@@ -115,12 +120,14 @@ export class Compiler {
 
   private makeJsLetPathName(): string {
     const buf: string[] = [];
+    let lastFrame: Frame | undefined;
     for (const frame of reversed(this.frames)) {
       if (frame.data.type === "fn") {
         break;
       }
 
       buf.push(frame.data.jsPatternName);
+      lastFrame = frame;
     }
     if (buf.length === 0) {
       throw new Error("empty buf");
@@ -135,7 +142,16 @@ export class Compiler {
       return [];
     }
 
+    this.frames.push(
+      new Frame({
+        type: "let",
+        jsPatternName: decl.binding.name,
+      }),
+    );
+
     const out = this.compileExpr(decl.value);
+    this.frames.pop();
+
     return [
       ...this.statementsBuf,
       {
@@ -158,7 +174,6 @@ export class Compiler {
     const body: t.Statement[] = [];
 
     for (const decl of src.declarations) {
-      this.currentDeclaration = decl.binding;
       const outNode = this.compileDeclaration(decl);
       body.push(...outNode);
     }
@@ -214,22 +229,18 @@ function makeGlobalIdentifier(ns: string, bindingName: string): t.Identifier {
 class Frame {
   constructor(
     public readonly data:
-      | { type: "let"; jsPatternName: string; binding: Binding<unknown> }
+      | { type: "let"; jsPatternName: string }
       | { type: "fn" },
-    // private compiler: Compiler,
   ) {}
 
-  //   private usedVars = new Map<string, number>();
+  private usedVars = new Map<string, number>();
 
-  //   preventShadow(name: string): string {
-  //     const timesUsed = this.usedVars.get(name);
-  //     if (timesUsed === undefined) {
-  //       this.usedVars.set(name, 1);
-  //       return name;
-  //     }
-  //     this.usedVars.set(name, timesUsed + 1);
-  //     return `${name}$${timesUsed}`;
-  //   }
+  registerLocal(name: string): string {
+    const timesUsed = this.usedVars.get(name) ?? 0;
+    this.usedVars.set(name, timesUsed + 1);
+
+    return timesUsed === 0 ? name : `${name}$${timesUsed}`;
+  }
 
   //   getUniqueName(ns?: string) {
   //     const namespace = ns === undefined ? "" : `${ns}$`;
