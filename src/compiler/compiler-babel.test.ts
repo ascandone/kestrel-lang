@@ -44,6 +44,29 @@ test("compile * of ints", () => {
   expect(out).toMatchInlineSnapshot(`"const Main$x = 1 * 2;"`);
 });
 
+test("compile == of ints", () => {
+  const out = compileSrc(`pub let x = 1 == 2`);
+  expect(out).toMatchInlineSnapshot(`"const Main$x = 1 === 2;"`);
+});
+
+test("precedence between * and +", () => {
+  const out = compileSrc(`pub let x = (1 + 2) * 3`);
+  expect(out).toMatchInlineSnapshot(`"const Main$x = (1 + 2) * 3;"`);
+});
+
+test("precedence between * and + (2)", () => {
+  const out = compileSrc(`pub let x = 1 + 2 * 3`);
+  expect(out).toMatchInlineSnapshot(`"const Main$x = 1 + 2 * 3;"`);
+});
+
+test("math expr should have same semantics as js", () => {
+  const expr = "2 * 3 + 4";
+  const compiled = compileSrc(`pub let x = ${expr}`);
+
+  const evaluated = new Function(`${compiled}; return Main$x`);
+  expect(evaluated()).toEqual(2 * 3 + 4);
+});
+
 const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   module: "Main",
   type: {

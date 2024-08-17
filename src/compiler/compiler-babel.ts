@@ -3,6 +3,7 @@ import { ConcreteType } from "../typecheck/type";
 import * as t from "@babel/types";
 import generate from "@babel/generator";
 import { ConstLiteral } from "../parser";
+import { BinaryExpression } from "@babel/types";
 
 export type CompileOptions = {
   externs?: Record<string, string>;
@@ -19,18 +20,6 @@ type CompilationMode = {
   statements: t.Statement[];
 };
 
-function compileConst(ast: ConstLiteral): t.Expression {
-  switch (ast.type) {
-    case "int":
-    case "float":
-      return { type: "NumericLiteral", value: ast.value };
-
-    case "string":
-    case "char":
-      return { type: "StringLiteral", value: ast.value };
-  }
-}
-
 export class Compiler {
   private ns = "";
 
@@ -44,22 +33,20 @@ export class Compiler {
 
       case "application": {
         if (src.caller.type === "identifier") {
-          switch (src.caller.name) {
-            case "+":
-            case "*": {
-              const l = this.compileExpr(src.args[0]!);
-              const r = this.compileExpr(src.args[1]!);
-              return {
-                type: "expr",
-                statements: [...l.statements, ...r.statements],
-                expr: {
-                  type: "BinaryExpression",
-                  operator: src.caller.name,
-                  left: l.expr,
-                  right: r.expr,
-                },
-              };
-            }
+          const infixName = toJsInfix(src.caller.name);
+          if (infixName !== undefined) {
+            const l = this.compileExpr(src.args[0]!);
+            const r = this.compileExpr(src.args[1]!);
+            return {
+              type: "expr",
+              statements: [...l.statements, ...r.statements],
+              expr: {
+                type: "BinaryExpression",
+                operator: infixName,
+                left: l.expr,
+                right: r.expr,
+              },
+            };
           }
         }
       }
@@ -124,4 +111,32 @@ export class Compiler {
 
 function sanitizeNamespace(ns: string): string {
   return ns?.replace(/\//g, "$");
+}
+
+function compileConst(ast: ConstLiteral): t.Expression {
+  switch (ast.type) {
+    case "int":
+    case "float":
+      return { type: "NumericLiteral", value: ast.value };
+
+    case "string":
+    case "char":
+      return { type: "StringLiteral", value: ast.value };
+  }
+}
+
+function toJsInfix(
+  kestrelCaller: string,
+): BinaryExpression["operator"] | undefined {
+  switch (kestrelCaller) {
+    case "+":
+    case "*":
+      return kestrelCaller;
+
+    case "==":
+      return "===";
+
+    default:
+      return undefined;
+  }
 }
