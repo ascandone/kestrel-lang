@@ -124,17 +124,21 @@ export class Compiler {
           return { params, body };
         });
 
-        // TODO return value with no block if no statements
+        const bodyStm: t.BlockStatement | t.Expression =
+          stms.length === 0
+            ? body
+            : {
+                type: "BlockStatement",
+                directives: [],
+                body: [...stms, { type: "ReturnStatement", argument: body }],
+              };
+
         return {
           type: "ArrowFunctionExpression",
           async: false,
           expression: true,
           params,
-          body: {
-            type: "BlockStatement",
-            directives: [],
-            body: [...stms, { type: "ReturnStatement", argument: body }],
-          },
+          body: bodyStm,
         };
       }
 

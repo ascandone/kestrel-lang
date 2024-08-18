@@ -219,11 +219,9 @@ describe("let expressions", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-    "const Main$x$f = () => {
-      return 0;
-    };
-    const Main$x = Main$x$f();"
-  `);
+      "const Main$x$f = () => 0;
+      const Main$x = Main$x$f();"
+    `);
   });
 
   test("infix exprs producing statements", () => {
@@ -245,11 +243,7 @@ describe("lambda expressions", () => {
     let f = fn { 42 }
   `);
 
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$f = () => {
-        return 42;
-      };"
-    `);
+    expect(out).toMatchInlineSnapshot(`"const Main$f = () => 42;"`);
   });
 
   test("toplevel fn with params", () => {
@@ -257,11 +251,7 @@ describe("lambda expressions", () => {
     let f = fn x, y { y }
   `);
 
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$f = (x, y) => {
-        return y;
-      };"
-    `);
+    expect(out).toMatchInlineSnapshot(`"const Main$f = (x, y) => y;"`);
   });
 
   test("shadowing fn params", () => {
@@ -269,11 +259,7 @@ describe("lambda expressions", () => {
       let f = fn a, a { a }
     `);
 
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$f = (a, a$1) => {
-        return a$1;
-      };"
-    `);
+    expect(out).toMatchInlineSnapshot(`"const Main$f = (a, a$1) => a$1;"`);
   });
 
   test("higher order fn", () => {
@@ -281,13 +267,7 @@ describe("lambda expressions", () => {
     let f = fn x { fn x { x } }
   `);
 
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$f = x => {
-        return x => {
-          return x;
-        };
-      };"
-    `);
+    expect(out).toMatchInlineSnapshot(`"const Main$f = x => x => x;"`);
   });
 
   test("fn as expr", () => {
@@ -298,11 +278,7 @@ describe("lambda expressions", () => {
     })
 `);
 
-    expect(out).toMatchInlineSnapshot(`
-    "const Main$x = Main$f(() => {
-      return 1;
-    });"
-  `);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = Main$f(() => 1);"`);
   });
 
   test("iifs", () => {
@@ -311,11 +287,7 @@ describe("lambda expressions", () => {
       let a = fn { 42 } ()
     `);
 
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$a = (() => {
-        return 42;
-      })();"
-    `);
+    expect(out).toMatchInlineSnapshot(`"const Main$a = (() => 42)();"`);
   });
 
   test("(let) closures", () => {
@@ -327,11 +299,9 @@ describe("lambda expressions", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-    "const Main$a$captured = 42;
-    const Main$a = () => {
-      return Main$a$captured;
-    };"
-  `);
+      "const Main$a$captured = 42;
+      const Main$a = () => Main$a$captured;"
+    `);
   });
 
   test("fn closures", () => {
@@ -343,13 +313,7 @@ describe("lambda expressions", () => {
     }
   `);
 
-    expect(out).toMatchInlineSnapshot(`
-    "const Main$a = () => {
-      return () => {
-        return 100;
-      };
-    };"
-  `);
+    expect(out).toMatchInlineSnapshot(`"const Main$a = () => () => 100;"`);
   });
 
   test("recursion in closures", () => {
@@ -362,13 +326,9 @@ describe("lambda expressions", () => {
 
     expect(out).toMatchInlineSnapshot(
       `
-    "const Main$f$x = () => {
-      return () => {
-        return Main$f$x();
-      };
-    };
-    const Main$f = 0;"
-  `,
+      "const Main$f$x = () => () => Main$f$x();
+      const Main$f = 0;"
+    `,
     );
   });
 });
@@ -406,16 +366,14 @@ describe("if expressions", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-    "let Main$f$GEN__0;
-    if (0) {
-      Main$f$GEN__0 = () => {
-        return 1;
-      };
-    } else {
-      Main$f$GEN__0 = 2;
-    }
-    const Main$f = Main$f$GEN__0;"
-  `);
+      "let Main$f$GEN__0;
+      if (0) {
+        Main$f$GEN__0 = () => 1;
+      } else {
+        Main$f$GEN__0 = 2;
+      }
+      const Main$f = Main$f$GEN__0;"
+    `);
   });
 
   test.todo("tail position if");
