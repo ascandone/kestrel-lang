@@ -674,6 +674,177 @@ describe("Eq trait", () => {
   test.todo("== doesn't perform structural equality when type is float");
 });
 
+describe("modules", () => {
+  test("variables from modules different than Main are namespaced", () => {
+    const out = compileSrc(`let a = 42`, { ns: "ExampleModule" });
+    expect(out).toMatchInlineSnapshot(`
+      "const ExampleModule$a = 42;"
+    `);
+  });
+
+  test("declarations from modules different than Main are resolved correctly", () => {
+    const out = compileSrc(`let a = 42\nlet x = a`, { ns: "ExampleModule" });
+    expect(out).toMatchInlineSnapshot(
+      `
+      "const ExampleModule$a = 42;
+      const ExampleModule$x = ExampleModule$a;"
+    `,
+    );
+  });
+
+  test("extern declarations from modules different than Main are resolved correctly", () => {
+    const out = compileSrc(
+      `extern type Int
+      extern let a: Int
+      let x = a`,
+      { ns: "ExampleModule" },
+    );
+    expect(out).toMatchInlineSnapshot(
+      `
+      "const ExampleModule$x = ExampleModule$a;"
+    `,
+    );
+  });
+
+  test("variables are scoped in nested modules", () => {
+    const out = compileSrc(`let a = 42`, { ns: "A/B/C" });
+    expect(out).toMatchInlineSnapshot(`
+      "const A$B$C$a = 42;"
+    `);
+  });
+
+  test("local variables from modules different than Main are namespaced", () => {
+    const out = compileSrc(`let a = { let b = 42; b}`, {
+      ns: "ExampleModule",
+    });
+    expect(out).toMatchInlineSnapshot(`
+      "const ExampleModule$a$b = 42;
+      const ExampleModule$a = ExampleModule$a$b;"
+    `);
+  });
+
+  test("variants from modules different than Main are namespaced", () => {
+    const out = compileSrc(
+      `
+      type MyType { C1, C2(Int) }
+      let c2_example = C2(42)
+    `,
+      { ns: "MyModule" },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const MyModule$C1 = {
+        $: 0
+      };
+      const MyModule$C2 = a0 => ({
+        $: 1,
+        a0
+      });
+      const MyModule$c2_example = MyModule$C2(42);"
+    `);
+  });
+
+  test("values imported with unqualfied imports are resolved with the right namespace", () => {
+    const mod = typecheckSource("ExampleModule", `pub let value_name = 42`);
+
+    const out = compileSrc(
+      `
+        import ExampleModule.{value_name}
+        let a = value_name
+      `,
+      { deps: { ExampleModule: mod } },
+    );
+
+    expect(out).toMatchInlineSnapshot(
+      `
+      "const Main$a = ExampleModule$value_name;"
+    `,
+    );
+  });
+
+  test("values imported with unqualfied imports in nested modules are resolved with the right namespace", () => {
+    const mod = typecheckSource("Nested/Mod", `pub let value_name = 42`);
+
+    const out = compileSrc(
+      `
+          import Nested/Mod.{value_name}
+          let a = value_name
+        `,
+      { deps: { "Nested/Mod": mod } },
+    );
+
+    expect(out).toMatchInlineSnapshot(
+      `
+      "const Main$a = Nested$Mod$value_name;"
+    `,
+    );
+  });
+
+  test("values imported with ualfied imports in nested modules are resolved with the right namespace", () => {
+    const mod = typecheckSource("Nested/Mod", `pub let value_name = 42`);
+    const out = compileSrc(
+      `
+        import Nested/Mod
+        let a = Nested/Mod.value_name
+      `,
+      { deps: { "Nested/Mod": mod } },
+    );
+
+    expect(out).toMatchInlineSnapshot(
+      `
+      "const Main$a = Nested$Mod$value_name;"
+    `,
+    );
+  });
+
+  test("values imported from another module are resolved with the right namespace", () => {
+    const mod = typecheckSource("ExampleModule", `pub let value_name = 42`);
+    const out = compileSrc(
+      `
+      import ExampleModule
+      let a = ExampleModule.value_name
+    `,
+      { deps: { ExampleModule: mod } },
+    );
+
+    expect(out).toMatchInlineSnapshot(
+      `
+      "const Main$a = ExampleModule$value_name;"
+    `,
+    );
+  });
+
+  test("constructors imported with unqualfied imports are resolved with the right namespace", () => {
+    const mod = typecheckSource("ExampleModule", `pub(..) type T { Constr }`);
+    const out = compileSrc(
+      `
+      import ExampleModule.{T(..)}
+      let a = Constr
+      `,
+      { deps: { ExampleModule: mod } },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$a = ExampleModule$Constr;"
+    `);
+  });
+
+  test("constructors imported with qualified imports are resolved with the right namespace", () => {
+    const mod = typecheckSource("ExampleModule", `pub(..) type T { Constr }`);
+    const out = compileSrc(
+      `
+        import ExampleModule
+        let a = ExampleModule.Constr
+      `,
+      { deps: { ExampleModule: mod } },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$a = ExampleModule$Constr;"
+    `);
+  });
+});
+
 type CompileSrcOpts = {
   ns?: string;
   traitImpl?: TraitImpl[];
