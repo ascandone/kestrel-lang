@@ -49,6 +49,26 @@ class Compiler {
               right: this.compileExpr(src.args[1]!),
             };
           }
+
+          const infixLogicalName = toJsInfixLogical(src.caller.name);
+          if (infixLogicalName !== undefined) {
+            return {
+              type: "LogicalExpression",
+              operator: infixLogicalName,
+              left: this.compileExpr(src.args[0]!),
+              right: this.compileExpr(src.args[1]!),
+            };
+          }
+
+          const prefixName = toJsPrefix(src.caller.name);
+          if (prefixName !== undefined) {
+            return {
+              type: "UnaryExpression",
+              operator: prefixName,
+              argument: this.compileExpr(src.args[0]!),
+              prefix: true,
+            };
+          }
         }
 
         return {
@@ -334,6 +354,18 @@ function compileConst(ast: ConstLiteral): t.Expression {
   }
 }
 
+function toJsPrefix(
+  kestrelCaller: string,
+): t.UnaryExpression["operator"] | undefined {
+  switch (kestrelCaller) {
+    case "!":
+      return kestrelCaller;
+
+    default:
+      return undefined;
+  }
+}
+
 function toJsInfix(
   kestrelCaller: string,
 ): BinaryExpression["operator"] | undefined {
@@ -342,8 +374,24 @@ function toJsInfix(
     case "*":
       return kestrelCaller;
 
+    case "++":
+      return "+";
+
     case "==":
       return "===";
+
+    default:
+      return undefined;
+  }
+}
+
+function toJsInfixLogical(
+  kestrelCaller: string,
+): t.LogicalExpression["operator"] | undefined {
+  switch (kestrelCaller) {
+    case "&&":
+    case "||":
+      return kestrelCaller;
 
     default:
       return undefined;

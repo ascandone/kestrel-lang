@@ -43,6 +43,39 @@ describe("intrinsics", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$x = 1 * 2;"`);
   });
 
+  test("strings concat", () => {
+    const out = compileSrc(`let x = "a" ++ "b"`);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = "a" + "b";"
+    `);
+  });
+
+  test("boolean negation", () => {
+    const out = compileSrc(`let x = fn b { !b }`);
+
+    expect(out).toMatchInlineSnapshot(`"const Main$x = b => !b;"`);
+  });
+
+  test("infix &&", () => {
+    const out = compileSrc(`let x = fn a, b { a && b }`);
+
+    expect(out).toMatchInlineSnapshot(`"const Main$x = (a, b) => a && b;"`);
+  });
+
+  test("infix ||", () => {
+    const out = compileSrc(`let x = fn a, b { a || b }`);
+
+    expect(out).toMatchInlineSnapshot(`"const Main$x = (a, b) => a || b;"`);
+  });
+
+  test("boolean negation and && prec", () => {
+    const out = compileSrc(`let x = fn t, f { !(t && f)}`);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = (t, f) => !(t && f);"
+    `);
+  });
+
   test("compile == of ints", () => {
     const out = compileSrc(`pub let x = 1 == 2`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = 1 === 2;"`);
