@@ -221,7 +221,6 @@ class Compiler {
               directives: [],
               body: [
                 ...thenBranchStmts,
-
                 {
                   type: "ExpressionStatement",
                   expression: {
@@ -256,6 +255,18 @@ class Compiler {
       }
 
       case "list-literal":
+        return src.values.reduceRight<t.Expression>(
+          (prev, src): t.Expression => {
+            const compiledExpr = this.compileExpr(src);
+            return {
+              type: "CallExpression",
+              callee: { type: "Identifier", name: "List$Cons" },
+              arguments: [compiledExpr, prev],
+            };
+          },
+          { type: "Identifier", name: "List$Nil" },
+        );
+
       case "struct-literal":
       case "field-access":
       case "match":
