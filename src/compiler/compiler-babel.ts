@@ -19,12 +19,16 @@ export type CompileOptions = {
   };
 };
 
-export class Compiler {
-  private ns = "";
+export function compile(ns: string, ast: TypedModule): string {
+  return new Compiler(ns).compile(ast);
+}
 
+class Compiler {
   private statementsBuf: t.Statement[] = [];
   private frames: Frame[] = [];
   private bindingsJsName = new WeakMap<Binding, t.Identifier>();
+
+  constructor(private ns: string) {}
 
   private compileExpr(src: TypedExpr): t.Expression {
     switch (src.type) {
@@ -301,9 +305,7 @@ export class Compiler {
     ];
   }
 
-  compile(src: TypedModule, ns: string): string {
-    this.ns = ns;
-
+  compile(src: TypedModule): string {
     const body: t.Statement[] = [];
 
     for (const decl of src.declarations) {

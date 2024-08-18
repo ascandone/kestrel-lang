@@ -1,7 +1,7 @@
 import { test, expect } from "vitest";
 import { unsafeParse } from "../parser";
 import { resetTraitsRegistry, typecheck } from "../typecheck";
-import { CompileOptions, Compiler } from "./compiler-babel";
+import { CompileOptions, compile } from "./compiler-babel";
 import { TraitImpl } from "../typecheck/defaultImports";
 import { describe } from "node:test";
 
@@ -529,8 +529,6 @@ function compileSrc(
   const parsed = unsafeParse(src);
   resetTraitsRegistry(traitImpl);
   const [program] = typecheck(ns, parsed, {}, [], testEntryPoint.type);
-  const compiler = new Compiler();
-  //   compiler.allowDeriving = allowDeriving;
-  const out = compiler.compile(program, ns);
+  const out = compile(ns, program);
   return out;
 }
