@@ -368,6 +368,20 @@ describe("lambda expressions", () => {
     `,
     );
   });
+
+  test("two fns as args", () => {
+    const out = compileSrc(`
+      extern let f: Fn(a) -> a
+      let x = f(
+        fn { 0 },
+        fn { 1 },
+      )
+  `);
+
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$x = Main$f(() => 0, () => 1);"`,
+    );
+  });
 });
 
 describe("if expressions", () => {
