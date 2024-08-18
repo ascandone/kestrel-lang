@@ -225,6 +225,18 @@ describe("let expressions", () => {
     const Main$x = Main$x$f();"
   `);
   });
+
+  test("infix exprs producing statements", () => {
+    const out = compileSrc(`
+    let a = { let x = 0; x } + { let x = 1; x }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+    "const Main$a$x = 0;
+    const Main$a$x$1 = 1;
+    const Main$a = Main$a$x + Main$a$x$1;"
+  `);
+  });
 });
 
 describe("lambda expressions", () => {
@@ -276,6 +288,88 @@ describe("lambda expressions", () => {
         };
       };"
     `);
+  });
+
+  test("fn as expr", () => {
+    const out = compileSrc(`
+    extern let f: Fn(a) -> a
+    let x = f(fn {
+      1
+    })
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+    "const Main$x = Main$f(() => {
+      return 1;
+    });"
+  `);
+  });
+
+  test("iifs", () => {
+    // TODO should I fix grammar?
+    const out = compileSrc(`
+      let a = fn { 42 } ()
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$a = (() => {
+        return 42;
+      })();"
+    `);
+  });
+
+  test("(let) closures", () => {
+    const out = compileSrc(`
+    let a = {
+      let captured = 42;
+      fn { captured }
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+    "const Main$a$captured = 42;
+    const Main$a = () => {
+      return Main$a$captured;
+    };"
+  `);
+  });
+
+  test("fn closures", () => {
+    const out = compileSrc(`
+    let a = fn {
+      fn {
+        100
+      }
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+    "const Main$a = () => {
+      return () => {
+        return 100;
+      };
+    };"
+  `);
+  });
+
+  test("recursion in closures", () => {
+    const out = compileSrc(`
+    let f = {
+      let x = fn { fn { x() } };
+      0
+    }
+`);
+
+    expect(out).toMatchInlineSnapshot(
+      `
+    "const Main$f$x = () => {
+      return () => {
+        return Main$f$x();
+      };
+    };
+    const Main$f = 0;"
+  `,
+    );
   });
 });
 
@@ -421,6 +515,28 @@ describe("if expressions", () => {
 
     expect(isZero(0)).toEqual("yes");
     expect(isZero(42)).toEqual("nope");
+  });
+
+  test("ifs as expr", () => {
+    const out = compileSrc(`
+    extern let f: Fn(a) -> a
+    let x = f(
+      if 0 == 1 {
+        "a" 
+      } else {
+        "b"
+      })
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+    "let Main$x$GEN__0;
+    if (0 === 1) {
+      Main$x$GEN__0 = "a";
+    } else {
+      Main$x$GEN__0 = "b";
+    }
+    const Main$x = Main$f(Main$x$GEN__0);"
+  `);
   });
 });
 
