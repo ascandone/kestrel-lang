@@ -5,67 +5,71 @@ import { CompileOptions, compile } from "./compiler-babel";
 import { TraitImpl } from "../typecheck/defaultImports";
 import { describe } from "node:test";
 
-test("compile int constants", () => {
-  const out = compileSrc(`pub let x = 42`);
-  expect(out).toMatchInlineSnapshot(`"const Main$x = 42;"`);
+describe("datatype representation", () => {
+  test("int", () => {
+    const out = compileSrc(`pub let x = 42`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = 42;"`);
+  });
+
+  test("float", () => {
+    const out = compileSrc(`pub let x = 42.42`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = 42.42;"`);
+  });
+
+  test("string", () => {
+    const out = compileSrc(`pub let x = "abc"`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = "abc";"`);
+  });
+
+  test("string constants with newlines", () => {
+    const out = compileSrc(`pub let x = "ab\nc"`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = "ab\\nc";"`);
+  });
+
+  test("char", () => {
+    const out = compileSrc(`pub let x = 'a'`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = "a";"`);
+  });
 });
 
-test("compile float constants", () => {
-  const out = compileSrc(`pub let x = 42.42`);
-  expect(out).toMatchInlineSnapshot(`"const Main$x = 42.42;"`);
-});
+describe("intrinsics", () => {
+  test("compile + of ints", () => {
+    const out = compileSrc(`pub let x = 1 + 2`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = 1 + 2;"`);
+  });
 
-test("compile string constants", () => {
-  const out = compileSrc(`pub let x = "abc"`);
-  expect(out).toMatchInlineSnapshot(`"const Main$x = "abc";"`);
-});
+  test("compile * of ints", () => {
+    const out = compileSrc(`pub let x = 1 * 2`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = 1 * 2;"`);
+  });
 
-test("compile char constants", () => {
-  const out = compileSrc(`pub let x = 'a'`);
-  expect(out).toMatchInlineSnapshot(`"const Main$x = "a";"`);
+  test("compile == of ints", () => {
+    const out = compileSrc(`pub let x = 1 == 2`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = 1 === 2;"`);
+  });
+
+  test("precedence between * and +", () => {
+    const out = compileSrc(`pub let x = (1 + 2) * 3`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = (1 + 2) * 3;"`);
+  });
+
+  test("precedence between * and + (2)", () => {
+    const out = compileSrc(`pub let x = 1 + 2 * 3`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = 1 + 2 * 3;"`);
+  });
+
+  test("math expr should have same semantics as js", () => {
+    const expr = "2 * 3 + 4";
+    const compiled = compileSrc(`pub let x = ${expr}`);
+
+    const evaluated = new Function(`${compiled}; return Main$x`);
+    expect(evaluated()).toEqual(2 * 3 + 4);
+  });
 });
 
 test("nested namespaces", () => {
   const out = compileSrc(`pub let x = 42`, { ns: "Json/Encode" });
   expect(out).toMatchInlineSnapshot(`"const Json$Encode$x = 42;"`);
-});
-
-test("compile string constants with newlines", () => {
-  const out = compileSrc(`pub let x = "ab\nc"`);
-  expect(out).toMatchInlineSnapshot(`"const Main$x = "ab\\nc";"`);
-});
-
-test("compile + of ints", () => {
-  const out = compileSrc(`pub let x = 1 + 2`);
-  expect(out).toMatchInlineSnapshot(`"const Main$x = 1 + 2;"`);
-});
-
-test("compile * of ints", () => {
-  const out = compileSrc(`pub let x = 1 * 2`);
-  expect(out).toMatchInlineSnapshot(`"const Main$x = 1 * 2;"`);
-});
-
-test("compile == of ints", () => {
-  const out = compileSrc(`pub let x = 1 == 2`);
-  expect(out).toMatchInlineSnapshot(`"const Main$x = 1 === 2;"`);
-});
-
-test("precedence between * and +", () => {
-  const out = compileSrc(`pub let x = (1 + 2) * 3`);
-  expect(out).toMatchInlineSnapshot(`"const Main$x = (1 + 2) * 3;"`);
-});
-
-test("precedence between * and + (2)", () => {
-  const out = compileSrc(`pub let x = 1 + 2 * 3`);
-  expect(out).toMatchInlineSnapshot(`"const Main$x = 1 + 2 * 3;"`);
-});
-
-test("math expr should have same semantics as js", () => {
-  const expr = "2 * 3 + 4";
-  const compiled = compileSrc(`pub let x = ${expr}`);
-
-  const evaluated = new Function(`${compiled}; return Main$x`);
-  expect(evaluated()).toEqual(2 * 3 + 4);
 });
 
 test("refer to previously defined idents", () => {
