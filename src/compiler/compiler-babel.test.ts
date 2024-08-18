@@ -574,6 +574,67 @@ describe("if expressions", () => {
   });
 });
 
+describe("ADTs", () => {
+  test("create ADTs with zero args", () => {
+    const out = compileSrc(`type T { X, Y }`);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = {
+        $: 0
+      };
+      const Main$Y = {
+        $: 1
+      };"
+    `);
+  });
+
+  test.todo("unbox newtype repr");
+
+  test("allow custom types with one arg", () => {
+    const out = compileSrc(`type T { X(Int), Y(Bool) }`);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = a0 => ({
+        $: 0,
+        a0
+      });
+      const Main$Y = a0 => ({
+        $: 1,
+        a0
+      });"
+    `);
+  });
+
+  test("allow custom types with two args", () => {
+    const out = compileSrc(`type T { X(Int, Int) }`);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = (a0, a1) => ({
+        $: 0,
+        a0,
+        a1
+      });"
+    `);
+  });
+
+  // TODO inline constructor call?
+  test("allow custom types with zero args", () => {
+    const mod = typecheckSource("Mod", "pub(..) type MyType { Variant(Int) }");
+    const out = compileSrc(
+      `
+      import Mod.{MyType(..)}
+  
+      let x = Variant(42)
+    `,
+      { deps: { Mod: mod } },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = Mod$Variant(42);"
+    `);
+  });
+});
+
 describe("Eq trait", () => {
   test.todo("== performs structural equality when type is unbound");
   test.todo("== performs structural equality when type is adt");

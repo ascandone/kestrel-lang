@@ -3,6 +3,8 @@ import {
   TypedExpr,
   TypedMatchPattern,
   TypedModule,
+  TypedTypeDeclaration,
+  TypedTypeVariant,
 } from "../typecheck";
 import { ConcreteType } from "../typecheck/type";
 import * as t from "@babel/types";
@@ -99,8 +101,10 @@ class Compiler {
                   throw new Error("[unreachable] invalid boolean constructor");
               }
             }
-
-            throw new Error("TODO handle constructor");
+            return makeGlobalIdentifier(
+              src.resolution.namespace,
+              src.resolution.variant.name,
+            );
 
           case "local-variable":
             return this.bindingsJsName.get(src.resolution.binding)!;
@@ -340,8 +344,37 @@ class Compiler {
     ];
   }
 
+  private compileVariant(
+    variant: TypedTypeVariant,
+    index: number,
+  ): t.Statement {
+    return {
+      type: "VariableDeclaration",
+      kind: "const",
+      declarations: [
+        {
+          type: "VariableDeclarator",
+          id: makeGlobalIdentifier(this.ns, variant.name),
+          init: makeVariantBody(index, variant.args.length),
+        },
+      ],
+    };
+  }
+
+  private compileAdt(
+    decl: TypedTypeDeclaration & { type: "adt" },
+  ): t.Statement[] {
+    return decl.variants.map((d, index) => this.compileVariant(d, index));
+  }
+
   compile(src: TypedModule): string {
     const body: t.Statement[] = [];
+
+    for (const decl of src.typeDeclarations) {
+      if (decl.type === "adt") {
+        body.push(...this.compileAdt(decl));
+      }
+    }
 
     for (const decl of src.declarations) {
       const outNode = this.compileDeclaration(decl);
@@ -421,6 +454,50 @@ function makeGlobalIdentifier(ns: string, bindingName: string): t.Identifier {
   return {
     type: "Identifier",
     name: `${sanitizeNamespace(ns)}$${bindingName}`,
+  };
+}
+
+function makeVariantBody(index: number, argsNumber: number): t.Expression {
+  const params = Array.from(
+    { length: argsNumber },
+    (_, i): t.Identifier => ({
+      type: "Identifier",
+      name: `a${i}`,
+    }),
+  );
+
+  const ret: t.Expression = {
+    type: "ObjectExpression",
+    properties: [
+      {
+        type: "ObjectProperty",
+        key: { type: "Identifier", name: "$" },
+        value: { type: "NumericLiteral", value: index },
+        computed: false,
+        shorthand: false,
+      },
+      ...params.map(
+        (p): t.ObjectProperty => ({
+          type: "ObjectProperty",
+          key: p,
+          value: p,
+          computed: false,
+          shorthand: true,
+        }),
+      ),
+    ],
+  };
+
+  if (argsNumber === 0) {
+    return ret;
+  }
+
+  return {
+    type: "ArrowFunctionExpression",
+    params,
+    async: false,
+    expression: true,
+    body: ret,
   };
 }
 
