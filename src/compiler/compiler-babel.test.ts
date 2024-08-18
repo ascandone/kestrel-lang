@@ -280,7 +280,148 @@ describe("lambda expressions", () => {
 });
 
 describe("if expressions", () => {
-  test.todo("fn inside if return");
+  test("if expression", () => {
+    const out = compileSrc(`
+  let x =
+    if 0 {
+      1
+    } else {
+      2
+    }
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+    "let Main$x$GEN__0;
+    if (0) {
+      Main$x$GEN__0 = 1;
+    } else {
+      Main$x$GEN__0 = 2;
+    }
+    const Main$x = Main$x$GEN__0;"
+  `);
+  });
+
+  test("fn inside if return", () => {
+    const out = compileSrc(`
+  let f =
+    if 0 {
+      fn { 1 }
+    } else {
+      2
+    }
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+    "let Main$f$GEN__0;
+    if (0) {
+      Main$f$GEN__0 = () => {
+        return 1;
+      };
+    } else {
+      Main$f$GEN__0 = 2;
+    }
+    const Main$f = Main$f$GEN__0;"
+  `);
+  });
+
+  test.todo("tail position if");
+
+  test("nested ifs", () => {
+    // TODO switch this to if-else syntax
+    const out = compileSrc(`
+    extern let (==): Fn(a, a) -> Bool
+    let is_zero = fn n {
+      if n == 0 {
+        "zero"
+      } else {
+        if n == 1 {
+          "one"
+        } else {
+          "other"
+        }
+      }
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+    "const Main$is_zero = n => {
+      let GEN__0;
+      if (n === 0) {
+        GEN__0 = "zero";
+      } else {
+        let GEN__1;
+        if (n === 1) {
+          GEN__1 = "one";
+        } else {
+          GEN__1 = "other";
+        }
+        GEN__0 = GEN__1;
+      }
+      return GEN__0;
+    };"
+  `);
+  });
+
+  test("let expr inside if condition", () => {
+    const out = compileSrc(`
+    let x = if { let a = 0; a == 1 } {
+        "a"
+      } else {
+        "b"
+      }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+    "const Main$x$a = 0;
+    let Main$x$GEN__0;
+    if (Main$x$a === 1) {
+      Main$x$GEN__0 = "a";
+    } else {
+      Main$x$GEN__0 = "b";
+    }
+    const Main$x = Main$x$GEN__0;"
+  `);
+  });
+
+  test("let expr inside if branch", () => {
+    const out = compileSrc(`
+    let x = if 0 {
+      let y = 100;  
+      y + 1
+    } else {
+      "else"
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "let Main$x$GEN__0;
+      if (0) {
+        const Main$x$y = 100;
+        Main$x$GEN__0 = Main$x$y + 1;
+      } else {
+        Main$x$GEN__0 = "else";
+      }
+      const Main$x = Main$x$GEN__0;"
+    `);
+  });
+
+  test("eval if", () => {
+    const out = compileSrc(`
+      extern let (==): Fn(a, a) -> Bool
+      let is_zero = fn n {
+        if n == 0 {
+          "yes"
+        } else {
+          "nope"
+        }
+      }
+    `);
+
+    const isZero = new Function(`${out}; return Main$is_zero`)();
+
+    expect(isZero(0)).toEqual("yes");
+    expect(isZero(42)).toEqual("nope");
+  });
 });
 
 describe("Eq trait", () => {

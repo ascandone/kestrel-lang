@@ -116,34 +116,101 @@ export class Compiler {
       case "fn": {
         const frame = new Frame({ type: "fn" });
         this.frames.push(frame);
-        return this.withBlock((): t.Expression => {
+        const [{ params, body }, stms] = this.wrapStatements(() => {
           const params = src.params.map(
             (param): t.Identifier => this.compilePattern(frame, param),
           );
           const body = this.compileExpr(src.body);
-          // TODO return value with no block if no statements
+          return { params, body };
+        });
 
-          return {
-            type: "ArrowFunctionExpression",
-            async: false,
-            expression: true,
-            params,
-            body: {
+        // TODO return value with no block if no statements
+        return {
+          type: "ArrowFunctionExpression",
+          async: false,
+          expression: true,
+          params,
+          body: {
+            type: "BlockStatement",
+            directives: [],
+            body: [...stms, { type: "ReturnStatement", argument: body }],
+          },
+        };
+      }
+
+      case "if": {
+        const curFrame = this.frames.at(-1);
+        if (curFrame === undefined) {
+          throw new Error("empty frames stack");
+        }
+
+        const identName = this.makeJsLetPathName(curFrame.genFreshId());
+
+        const ident: t.Identifier = {
+          type: "Identifier",
+          name: identName,
+        };
+
+        const test = this.compileExpr(src.condition);
+        const [thenBranchExpr, thenBranchStmts] = this.wrapStatements(() =>
+          this.compileExpr(src.then),
+        );
+
+        const [elseBranchExpr, elseBranchStmts] = this.wrapStatements(() =>
+          this.compileExpr(src.else),
+        );
+
+        this.statementsBuf.push(
+          {
+            type: "VariableDeclaration",
+            kind: "let",
+            declarations: [{ type: "VariableDeclarator", id: ident }],
+          },
+          {
+            type: "IfStatement",
+            test: test,
+            consequent: {
               type: "BlockStatement",
               directives: [],
               body: [
-                ...this.statementsBuf,
-                { type: "ReturnStatement", argument: body },
+                ...thenBranchStmts,
+
+                {
+                  type: "ExpressionStatement",
+                  expression: {
+                    type: "AssignmentExpression",
+                    operator: "=",
+                    left: ident,
+                    right: thenBranchExpr,
+                  },
+                },
               ],
             },
-          };
-        });
+            alternate: {
+              type: "BlockStatement",
+              directives: [],
+              body: [
+                ...elseBranchStmts,
+                {
+                  type: "ExpressionStatement",
+                  expression: {
+                    type: "AssignmentExpression",
+                    operator: "=",
+                    left: ident,
+                    right: elseBranchExpr,
+                  },
+                },
+              ],
+            },
+          },
+        );
+
+        return ident;
       }
 
       case "list-literal":
       case "struct-literal":
       case "field-access":
-      case "if":
       case "match":
         throw new Error("TODO handle expr: " + src.type);
     }
@@ -167,15 +234,16 @@ export class Compiler {
     }
   }
 
-  private withBlock<T>(f: () => T): T {
+  private wrapStatements<T>(f: () => T): [T, t.Statement[]] {
     const buf = this.statementsBuf;
     this.statementsBuf = [];
     const e = f();
+    const stms = this.statementsBuf;
     this.statementsBuf = buf;
-    return e;
+    return [e, stms];
   }
 
-  private makeJsLetPathName(): string {
+  private makeJsLetPathName(trailing?: string): string {
     const buf: string[] = [];
     let isFn = false;
     for (const frame of reversed(this.frames)) {
@@ -191,11 +259,10 @@ export class Compiler {
       buf.push(sanitizeNamespace(this.ns));
     }
 
-    if (buf.length === 0) {
-      throw new Error("empty buf");
-    }
-
     buf.reverse();
+    if (trailing !== undefined) {
+      buf.push(trailing);
+    }
     return buf.join("$");
   }
 
@@ -296,6 +363,7 @@ class Frame {
   ) {}
 
   private usedVars = new Map<string, number>();
+  private nextId = 0;
 
   registerLocal(name: string): string {
     const timesUsed = this.usedVars.get(name) ?? 0;
@@ -304,10 +372,9 @@ class Frame {
     return timesUsed === 0 ? name : `${name}$${timesUsed}`;
   }
 
-  //   getUniqueName(ns?: string) {
-  //     const namespace = ns === undefined ? "" : `${ns}$`;
-  //     return `${namespace}GEN__${this.compiler.getNextId()}`;
-  //   }
+  genFreshId(): string {
+    return `GEN__${this.nextId++}`;
+  }
 }
 
 function* reversed<T>(xs: T[]): Generator<T> {
