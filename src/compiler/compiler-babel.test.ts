@@ -3,6 +3,7 @@ import { unsafeParse } from "../parser";
 import { resetTraitsRegistry, typecheck } from "../typecheck";
 import { CompileOptions, Compiler } from "./compiler-babel";
 import { TraitImpl } from "../typecheck/defaultImports";
+import { describe } from "node:test";
 
 test("compile int constants", () => {
   const out = compileSrc(`pub let x = 42`);
@@ -95,138 +96,89 @@ test("function calls with args", () => {
   expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f(1, 2);"`);
 });
 
-test("let expressions", () => {
-  const out = compileSrc(`
-    let x = {
-        let local = 0;
-        local + 1
-    }
-    `);
-
-  expect(out).toMatchInlineSnapshot(`
-        "const Main$x$local = 0;
-        const Main$x = Main$x$local + 1;"
-    `);
-});
-
-test("let expressions with multiple vars", () => {
-  const out = compileSrc(`
+describe("let expressions", () => {
+  test("let expressions", () => {
+    const out = compileSrc(`
       let x = {
-        let local1 = 0;
-        let local2 = 1;
-        local1 + local2
+          let local = 0;
+          local + 1
       }
-    `);
-
-  expect(out).toMatchInlineSnapshot(`
-      "const Main$x$local1 = 0;
-      const Main$x$local2 = 1;
-      const Main$x = Main$x$local1 + Main$x$local2;"
-    `);
-});
-
-test("nested let exprs", () => {
-  const out = compileSrc(`
-      let x = {
-        let local = {
-          let nested = 0;
-          nested + 1
-        };
-        local + 2
-      }
-    `);
-
-  expect(out).toMatchInlineSnapshot(`
-      "const Main$x$local$nested = 0;
-      const Main$x$local = Main$x$local$nested + 1;
-      const Main$x = Main$x$local + 2;"
-    `);
-});
-
-test("shadowed let exprs", () => {
-  const out = compileSrc(`
-      let x = {
-        let a = 0;
-        let a = a;
-        a
-      }
-    `);
-
-  expect(out).toMatchInlineSnapshot(`
-        "const Main$x$a = 0;
-        const Main$x$a$1 = Main$x$a;
-        const Main$x = Main$x$a$1;"
       `);
-});
 
-test("two let as fn args, shadowing", () => {
-  const out = compileSrc(`
-    extern let f: Fn(a, a) -> a
-    let x = f(
-      { let a = 0; a },
-      { let a = 1; a },
-    )
-`);
+    expect(out).toMatchInlineSnapshot(`
+          "const Main$x$local = 0;
+          const Main$x = Main$x$local + 1;"
+      `);
+  });
 
-  expect(out).toMatchInlineSnapshot(`
-    "const Main$x$a = 0;
-    const Main$x$a$1 = 1;
-    const Main$x = Main$f(Main$x$a, Main$x$a$1);"
+  test("let expressions with multiple vars", () => {
+    const out = compileSrc(`
+        let x = {
+          let local1 = 0;
+          let local2 = 1;
+          local1 + local2
+        }
+      `);
+
+    expect(out).toMatchInlineSnapshot(`
+        "const Main$x$local1 = 0;
+        const Main$x$local2 = 1;
+        const Main$x = Main$x$local1 + Main$x$local2;"
+      `);
+  });
+
+  test("nested let exprs", () => {
+    const out = compileSrc(`
+        let x = {
+          let local = {
+            let nested = 0;
+            nested + 1
+          };
+          local + 2
+        }
+      `);
+
+    expect(out).toMatchInlineSnapshot(`
+        "const Main$x$local$nested = 0;
+        const Main$x$local = Main$x$local$nested + 1;
+        const Main$x = Main$x$local + 2;"
+      `);
+  });
+
+  test("shadowed let exprs", () => {
+    const out = compileSrc(`
+        let x = {
+          let a = 0;
+          let a = a;
+          a
+        }
+      `);
+
+    expect(out).toMatchInlineSnapshot(`
+          "const Main$x$a = 0;
+          const Main$x$a$1 = Main$x$a;
+          const Main$x = Main$x$a$1;"
+        `);
+  });
+
+  test("two let as fn args, shadowing", () => {
+    const out = compileSrc(`
+      extern let f: Fn(a, a) -> a
+      let x = f(
+        { let a = 0; a },
+        { let a = 1; a },
+      )
   `);
-});
 
-test("toplevel fn without params", () => {
-  const out = compileSrc(`
-  let f = fn { 42 }
-`);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x$a = 0;
+      const Main$x$a$1 = 1;
+      const Main$x = Main$f(Main$x$a, Main$x$a$1);"
+    `);
+  });
 
-  expect(out).toMatchInlineSnapshot(`
-    "const Main$f = () => {
-      return 42;
-    };"
-  `);
-});
-
-test("toplevel fn with params", () => {
-  const out = compileSrc(`
-  let f = fn x, y { y }
-`);
-
-  expect(out).toMatchInlineSnapshot(`
-    "const Main$f = (x, y) => {
-      return y;
-    };"
-  `);
-});
-
-test("shadowing fn params", () => {
-  const out = compileSrc(`
-    let f = fn a, a { a }
-  `);
-
-  expect(out).toMatchInlineSnapshot(`
-    "const Main$f = (a, a$1) => {
-      return a$1;
-    };"
-  `);
-});
-
-test("higher order fn", () => {
-  const out = compileSrc(`
-  let f = fn x { fn x { x } }
-`);
-
-  expect(out).toMatchInlineSnapshot(`
-    "const Main$f = x => {
-      return x => {
-        return x;
-      };
-    };"
-  `);
-});
-
-test("let inside scope", () => {
-  const out = compileSrc(`
+  test("let inside scope", () => {
+    const out = compileSrc(`
   let f = fn {
     let x = 0;
     let y = 1;
@@ -234,17 +186,17 @@ test("let inside scope", () => {
   }
 `);
 
-  expect(out).toMatchInlineSnapshot(`
+    expect(out).toMatchInlineSnapshot(`
     "const Main$f = () => {
       const x = 0;
       const y = 1;
       return x;
     };"
   `);
-});
+  });
 
-test("let inside arg of a function", () => {
-  const out = compileSrc(`
+  test("let inside arg of a function", () => {
+    const out = compileSrc(`
   extern let f: Fn(a) -> a
   let a = f({
     let x = 0;
@@ -252,26 +204,91 @@ test("let inside arg of a function", () => {
   })
 `);
 
-  expect(out).toMatchInlineSnapshot(`
+    expect(out).toMatchInlineSnapshot(`
     "const Main$a$x = 0;
     const Main$a = Main$f(Main$a$x);"
   `);
-});
+  });
 
-test("function with a scoped identified as caller", () => {
-  const out = compileSrc(`
+  test("function with a scoped identified as caller", () => {
+    const out = compileSrc(`
   let x = {
     let f = fn { 0 };
     f()
   }
 `);
 
-  expect(out).toMatchInlineSnapshot(`
+    expect(out).toMatchInlineSnapshot(`
     "const Main$x$f = () => {
       return 0;
     };
     const Main$x = Main$x$f();"
   `);
+  });
+});
+
+describe("lambda expressions", () => {
+  test("toplevel fn without params", () => {
+    const out = compileSrc(`
+    let f = fn { 42 }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = () => {
+        return 42;
+      };"
+    `);
+  });
+
+  test("toplevel fn with params", () => {
+    const out = compileSrc(`
+    let f = fn x, y { y }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (x, y) => {
+        return y;
+      };"
+    `);
+  });
+
+  test("shadowing fn params", () => {
+    const out = compileSrc(`
+      let f = fn a, a { a }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (a, a$1) => {
+        return a$1;
+      };"
+    `);
+  });
+
+  test("higher order fn", () => {
+    const out = compileSrc(`
+    let f = fn x { fn x { x } }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = x => {
+        return x => {
+          return x;
+        };
+      };"
+    `);
+  });
+});
+
+describe("if expressions", () => {
+  test.todo("fn inside if return");
+});
+
+describe("Eq trait", () => {
+  test.todo("== performs structural equality when type is unbound");
+  test.todo("== performs structural equality when type is adt");
+  test.todo("== doesn't perform structural equality when type is int");
+  test.todo("== doesn't perform structural equality when type is string");
+  test.todo("== doesn't perform structural equality when type is float");
 });
 
 const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
