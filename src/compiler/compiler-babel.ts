@@ -85,6 +85,21 @@ class Compiler {
 
         switch (src.resolution.type) {
           case "constructor":
+            if (
+              src.resolution.declaration.name === "Bool" &&
+              src.resolution.namespace === "Bool"
+            ) {
+              switch (src.resolution.variant.name) {
+                case "True":
+                  return { type: "BooleanLiteral", value: true };
+                case "False":
+                  return { type: "BooleanLiteral", value: false };
+
+                default:
+                  throw new Error("[unreachable] invalid boolean constructor");
+              }
+            }
+
             throw new Error("TODO handle constructor");
 
           case "local-variable":

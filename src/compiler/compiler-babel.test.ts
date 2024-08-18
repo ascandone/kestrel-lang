@@ -1,7 +1,7 @@
 import { test, expect } from "vitest";
 import { unsafeParse } from "../parser";
-import { resetTraitsRegistry, typecheck } from "../typecheck";
-import { CompileOptions, compile } from "./compiler-babel";
+import { Deps, resetTraitsRegistry, typecheck } from "../typecheck";
+import { compile } from "./compiler-babel";
 import { TraitImpl } from "../typecheck/defaultImports";
 import { describe } from "node:test";
 
@@ -30,6 +30,31 @@ describe("datatype representation", () => {
     const out = compileSrc(`pub let x = 'a'`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = "a";"`);
   });
+
+  test("represent Bool with booleans", () => {
+    const boolModule = typecheckSource(
+      "Bool",
+      `pub(..) type Bool { True, False }`,
+    );
+
+    const out = compileSrc(
+      `
+      import Bool.{Bool(..)}
+      let t = True
+      let f = False
+    `,
+      {
+        deps: { Bool: boolModule },
+      },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$t = true;
+      const Main$f = false;"
+    `);
+  });
+
+  // TODO probably not necessary
+  test.todo("represent Unit as null");
 });
 
 describe("intrinsics", () => {
@@ -557,29 +582,25 @@ describe("Eq trait", () => {
   test.todo("== doesn't perform structural equality when type is float");
 });
 
-const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
-  module: "Main",
-  type: {
-    type: "named",
-    name: "String",
-    moduleName: "String",
-    args: [],
-  },
-};
-
 type CompileSrcOpts = {
   ns?: string;
   traitImpl?: TraitImpl[];
   allowDeriving?: string[] | undefined;
+  deps?: Deps;
 };
 
 function compileSrc(
   src: string,
-  { ns = "Main", traitImpl = [] }: CompileSrcOpts = {},
+  { ns = "Main", traitImpl = [], deps = {} }: CompileSrcOpts = {},
 ) {
-  const parsed = unsafeParse(src);
   resetTraitsRegistry(traitImpl);
-  const [program] = typecheck(ns, parsed, {}, [], testEntryPoint.type);
+  const program = typecheckSource(ns, src, deps);
   const out = compile(ns, program);
   return out;
+}
+
+function typecheckSource(ns: string, src: string, deps: Deps = {}) {
+  const parsed = unsafeParse(src);
+  const [program] = typecheck(ns, parsed, deps, []);
+  return program;
 }
