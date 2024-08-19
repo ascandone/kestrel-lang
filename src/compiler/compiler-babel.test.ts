@@ -27,17 +27,27 @@ describe("datatype representation", () => {
 
   test("string", () => {
     const out = compileSrc(`pub let x = "abc"`);
-    expect(out).toMatchInlineSnapshot(`"const Main$x = "abc";"`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = \`abc\`;"`);
+  });
+
+  test("string (escape)", () => {
+    const out = compileSrc(`let color_reset_code = "\x1b[39m"`);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$color_reset_code = \`\x1B[39m\`;"`,
+    );
   });
 
   test("string constants with newlines", () => {
     const out = compileSrc(`pub let x = "ab\nc"`);
-    expect(out).toMatchInlineSnapshot(`"const Main$x = "ab\\nc";"`);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = \`ab
+      c\`;"
+    `);
   });
 
   test("char", () => {
     const out = compileSrc(`pub let x = 'a'`);
-    expect(out).toMatchInlineSnapshot(`"const Main$x = "a";"`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = \`a\`;"`);
   });
 
   test("represent Bool with booleans", () => {
@@ -79,9 +89,7 @@ describe("intrinsics", () => {
 
   test("strings concat", () => {
     const out = compileSrc(`let x = "a" ++ "b"`);
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$x = "a" + "b";"
-    `);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = \`a\` + \`b\`;"`);
   });
 
   test("boolean negation", () => {
@@ -499,22 +507,22 @@ describe("if expressions", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-    "const Main$is_zero = n => {
-      let GEN__0;
-      if (n === 0) {
-        GEN__0 = "zero";
-      } else {
-        let GEN__1;
-        if (n === 1) {
-          GEN__1 = "one";
+      "const Main$is_zero = n => {
+        let GEN__0;
+        if (n === 0) {
+          GEN__0 = \`zero\`;
         } else {
-          GEN__1 = "other";
+          let GEN__1;
+          if (n === 1) {
+            GEN__1 = \`one\`;
+          } else {
+            GEN__1 = \`other\`;
+          }
+          GEN__0 = GEN__1;
         }
-        GEN__0 = GEN__1;
-      }
-      return GEN__0;
-    };"
-  `);
+        return GEN__0;
+      };"
+    `);
   });
 
   test("let expr inside if condition", () => {
@@ -527,15 +535,15 @@ describe("if expressions", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-    "const Main$x$a = 0;
-    let Main$x$GEN__0;
-    if (Main$x$a === 1) {
-      Main$x$GEN__0 = "a";
-    } else {
-      Main$x$GEN__0 = "b";
-    }
-    const Main$x = Main$x$GEN__0;"
-  `);
+      "const Main$x$a = 0;
+      let Main$x$GEN__0;
+      if (Main$x$a === 1) {
+        Main$x$GEN__0 = \`a\`;
+      } else {
+        Main$x$GEN__0 = \`b\`;
+      }
+      const Main$x = Main$x$GEN__0;"
+    `);
   });
 
   test("let expr inside if branch", () => {
@@ -554,7 +562,7 @@ describe("if expressions", () => {
         const Main$x$y = 100;
         Main$x$GEN__0 = Main$x$y + 1;
       } else {
-        Main$x$GEN__0 = "else";
+        Main$x$GEN__0 = \`else\`;
       }
       const Main$x = Main$x$GEN__0;"
     `);
@@ -590,14 +598,14 @@ describe("if expressions", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-    "let Main$x$GEN__0;
-    if (0 === 1) {
-      Main$x$GEN__0 = "a";
-    } else {
-      Main$x$GEN__0 = "b";
-    }
-    const Main$x = Main$f(Main$x$GEN__0);"
-  `);
+      "let Main$x$GEN__0;
+      if (0 === 1) {
+        Main$x$GEN__0 = \`a\`;
+      } else {
+        Main$x$GEN__0 = \`b\`;
+      }
+      const Main$x = Main$f(Main$x$GEN__0);"
+    `);
   });
 });
 
@@ -955,9 +963,9 @@ describe("pattern matching", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x$GEN__0 = "subject";
+      "const Main$x$GEN__0 = \`subject\`;
       let Main$x$GEN__1;
-      if (Main$x$GEN__0 === "constraint") {
+      if (Main$x$GEN__0 === \`constraint\`) {
         Main$x$GEN__1 = 0;
       } else {
         throw new Error("[non exhaustive match]");
@@ -974,9 +982,9 @@ describe("pattern matching", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x$GEN__0 = "a";
+      "const Main$x$GEN__0 = \`a\`;
       let Main$x$GEN__1;
-      if (Main$x$GEN__0 === "x") {
+      if (Main$x$GEN__0 === \`x\`) {
         Main$x$GEN__1 = 0;
       } else {
         throw new Error("[non exhaustive match]");
@@ -1331,7 +1339,7 @@ describe("project compilation", () => {
       Main: `pub let main = "main"`,
     });
 
-    expect(out).toBe(`const Main$main = "main";
+    expect(out).toBe(`const Main$main = \`main\`;
 
 Main$main.exec();
 `);
@@ -1350,7 +1358,7 @@ Main$main.exec();
       },
     );
 
-    expect(out).toBe(`const Nested$Entrypoint$Mod$main = "main";
+    expect(out).toBe(`const Nested$Entrypoint$Mod$main = \`main\`;
 
 Nested$Entrypoint$Mod$main.exec();
 `);
@@ -1365,7 +1373,7 @@ Nested$Entrypoint$Mod$main.exec();
         `,
     });
 
-    expect(out).toBe(`const ModA$x = "main";
+    expect(out).toBe(`const ModA$x = \`main\`;
 
 const Main$main = ModA$x;
 
@@ -1384,11 +1392,11 @@ Main$main.exec();
         `,
     });
 
-    expect(out).toBe(`const ModA$a = "a";
+    expect(out).toBe(`const ModA$a = \`a\`;
 
-const ModB$b = "b";
+const ModB$b = \`b\`;
 
-const Main$main = "main";
+const Main$main = \`main\`;
 
 Main$main.exec();
 `);
@@ -1407,7 +1415,7 @@ Main$main.exec();
 
     expect(out).toBe(`<extern>
 
-const Main$main = "main";
+const Main$main = \`main\`;
 
 Main$main.exec();
 `);
@@ -1466,9 +1474,9 @@ describe("traits compilation", () => {
     `,
       { traitImpl: defaultTraitImpls },
     );
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$x = Main$show(Show_String$String)("abc");"
-    `);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$x = Main$show(Show_String$String)(\`abc\`);"`,
+    );
   });
 
   test("unresolved traits", () => {
@@ -1536,9 +1544,9 @@ describe("traits compilation", () => {
       { traitImpl: defaultTraitImpls },
     );
 
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$f = Main$show(Eq_String$String, Show_String$String)("a", "b");"
-    `);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$f = Main$show(Eq_String$String, Show_String$String)(\`a\`, \`b\`);"`,
+    );
   });
 
   test("do not pass extra args", () => {
@@ -1565,7 +1573,7 @@ describe("traits compilation", () => {
       "const Main$equal = (Eq_17, Show_17) => (x, y) => {
         let GEN__0;
         if (Main$eq(Eq_17)(x, y)) {
-          GEN__0 = "ok";
+          GEN__0 = \`ok\`;
         } else {
           GEN__0 = Main$inspect(Show_17)(x);
         }
@@ -1584,9 +1592,9 @@ describe("traits compilation", () => {
     `,
       { traitImpl: defaultTraitImpls },
     );
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$f = arg => Main$show2(Show_String$String)(arg, "hello");"
-    `);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$f = arg => Main$show2(Show_String$String)(arg, \`hello\`);"`,
+    );
   });
 
   test("pass an arg twice if needed", () => {
@@ -1597,9 +1605,9 @@ describe("traits compilation", () => {
     `,
       { traitImpl: defaultTraitImpls },
     );
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$f = Main$show2(Show_String$String, Show_String$String)("a", "b");"
-    `);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$f = Main$show2(Show_String$String, Show_String$String)(\`a\`, \`b\`);"`,
+    );
   });
 
   test("partial application", () => {
@@ -1613,9 +1621,9 @@ describe("traits compilation", () => {
       { traitImpl: defaultTraitImpls },
     );
 
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$f = Show_11 => arg => Main$show2(Show_11, Show_String$String)(arg, "hello");"
-    `);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$f = Show_11 => arg => Main$show2(Show_11, Show_String$String)(arg, \`hello\`);"`,
+    );
   });
 
   test("pass trait dicts for types with params when they do not have deps", () => {
@@ -1770,8 +1778,8 @@ describe("traits compilation", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$a = 1 === 2;
       const Main$b = 1 === 2;
-      const Main$c = "a" === "ab";
-      const Main$d = "x" === "y";"
+      const Main$c = \`a\` === \`ab\`;
+      const Main$d = \`x\` === \`y\`;"
     `);
   });
 

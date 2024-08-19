@@ -769,7 +769,17 @@ function compileConst(ast: ConstLiteral): t.Expression {
 
     case "string":
     case "char":
-      return { type: "StringLiteral", value: ast.value };
+      return {
+        type: "TemplateLiteral",
+        expressions: [],
+        quasis: [
+          {
+            type: "TemplateElement",
+            value: { raw: ast.value, cooked: ast.value },
+            tail: true,
+          },
+        ],
+      };
   }
 }
 
