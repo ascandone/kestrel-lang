@@ -516,7 +516,12 @@ class Compiler {
       }
 
       case "field-access":
-        throw new Error("TODO handle expr: " + src.type);
+        return {
+          type: "MemberExpression",
+          object: this.compileExpr(src.struct),
+          property: { type: "Identifier", name: src.field.name },
+          computed: false,
+        };
     }
   }
 
