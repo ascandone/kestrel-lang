@@ -1249,7 +1249,7 @@ describe("pattern matching", () => {
     `);
   });
 
-  test.todo("compiling fn match", () => {
+  test("compiling fn match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1257,13 +1257,11 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$Box(a0) {
-        return { $: "Box", a0 };
-      }
-      const Main$f = (x, GEN__0, y) => {
-        return GEN__0.a0;
-      }
-      "
+      "const Main$Box = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$f = (x, GEN__0, y) => GEN__0._0;"
     `);
   });
 });

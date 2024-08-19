@@ -215,9 +215,27 @@ class Compiler {
         const frame = new Frame({ type: "fn" });
         this.frames.push(frame);
         const [{ params, body }, stms] = this.wrapStatements(() => {
-          const params = src.params.map(
-            (param): t.Identifier => this.compilePattern(param),
-          );
+          const params = src.params.map((param): t.Identifier => {
+            if (param.type === "identifier") {
+              const name = this.getCurrentFrame().registerLocal(param.name);
+              const ident: t.Identifier = {
+                type: "Identifier",
+                name,
+              };
+              this.bindingsJsName.set(param, ident);
+              return ident;
+            }
+
+            const freshId = this.getCurrentFrame().genFreshId();
+            const ident: t.Identifier = {
+              type: "Identifier",
+              name: freshId,
+            };
+
+            this.compileCheckPatternConditions(param, ident);
+
+            return ident;
+          });
           const body = this.compileExpr(src.body);
           return { params, body };
         });
@@ -495,23 +513,6 @@ class Compiler {
               },
             ];
         }
-    }
-  }
-
-  private compilePattern(pattern: TypedMatchPattern): t.Identifier {
-    const frame = this.getCurrentFrame();
-
-    switch (pattern.type) {
-      case "identifier": {
-        const name = frame.registerLocal(pattern.name);
-        const identifier: t.Identifier = { type: "Identifier", name };
-        this.bindingsJsName.set(pattern, identifier);
-        return identifier;
-      }
-
-      case "constructor":
-      case "lit":
-        throw new Error("TODO match lit");
     }
   }
 
