@@ -25,12 +25,28 @@ export function compile(ns: string, ast: TypedModule): string {
   return new Compiler(ns).compile(ast);
 }
 
+const TAG_FIELD: t.Identifier = { type: "Identifier", name: "$" };
+
 class Compiler {
   private statementsBuf: t.Statement[] = [];
   private frames: Frame[] = [];
-  private bindingsJsName = new WeakMap<Binding, t.Identifier>();
+  private bindingsJsName = new WeakMap<Binding, t.Expression>();
 
   constructor(private ns: string) {}
+
+  private getCurrentFrame(): Frame {
+    const frame = this.frames.at(-1);
+    if (frame === undefined) {
+      throw new Error("empty frames stack");
+    }
+    return frame;
+  }
+
+  private makeFreshIdent(): t.Identifier {
+    const curFrame = this.getCurrentFrame();
+    const name = this.makeJsLetPathName(curFrame.genFreshId());
+    return { type: "Identifier", name };
+  }
 
   private compileExpr(src: TypedExpr): t.Expression {
     switch (src.type) {
@@ -121,11 +137,7 @@ class Compiler {
         if (src.pattern.type !== "identifier") {
           throw new Error("p match in ident");
         }
-        const curFrame = this.frames.at(-1);
-        if (curFrame === undefined) {
-          throw new Error("[unrechable] empty frames stack");
-        }
-
+        const curFrame = this.getCurrentFrame();
         this.frames.push(
           new Frame({
             type: "let",
@@ -161,7 +173,7 @@ class Compiler {
         this.frames.push(frame);
         const [{ params, body }, stms] = this.wrapStatements(() => {
           const params = src.params.map(
-            (param): t.Identifier => this.compilePattern(frame, param),
+            (param): t.Identifier => this.compilePattern(param),
           );
           const body = this.compileExpr(src.body);
           return { params, body };
@@ -186,17 +198,7 @@ class Compiler {
       }
 
       case "if": {
-        const curFrame = this.frames.at(-1);
-        if (curFrame === undefined) {
-          throw new Error("empty frames stack");
-        }
-
-        const identName = this.makeJsLetPathName(curFrame.genFreshId());
-
-        const ident: t.Identifier = {
-          type: "Identifier",
-          name: identName,
-        };
+        const ident = this.makeFreshIdent();
 
         const test = this.compileExpr(src.condition);
         const [thenBranchExpr, thenBranchStmts] = this.wrapStatements(() =>
@@ -267,17 +269,208 @@ class Compiler {
           { type: "Identifier", name: "List$Nil" },
         );
 
+      case "match": {
+        // TODO no need for gen when matched is ident
+        // TODO same for if expr
+        const matchedExpr = this.makeFreshIdent();
+
+        const e = this.compileExpr(src.expr);
+
+        const checks: [condition: t.Expression, ret: t.Expression][] = [];
+        for (const [pattern, retExpr] of src.clauses) {
+          const exprs = this.compilePattern_(pattern, matchedExpr);
+          const ifCondition: t.Expression =
+            // TODO if if(true) is encountered, we could just return retExpr
+            exprs.length === 0
+              ? { type: "BooleanLiteral", value: true }
+              : exprs.reduce((left, right) => ({
+                  type: "LogicalExpression",
+                  operator: "&&",
+                  left,
+                  right,
+                }));
+
+          // TODO wrap statements
+          checks.push([ifCondition, this.compileExpr(retExpr)]);
+        }
+
+        const retValueIdentifier = this.makeFreshIdent();
+        this.statementsBuf.push(
+          {
+            type: "VariableDeclaration",
+            kind: "const",
+            declarations: [
+              {
+                type: "VariableDeclarator",
+                id: matchedExpr,
+                init: e,
+              },
+            ],
+          },
+          {
+            type: "VariableDeclaration",
+            kind: "let",
+            declarations: [
+              {
+                type: "VariableDeclarator",
+                id: retValueIdentifier,
+              },
+            ],
+          },
+        );
+        const helper = (index: number): t.Statement => {
+          if (index >= checks.length) {
+            return {
+              type: "BlockStatement",
+              directives: [],
+              body: [
+                {
+                  type: "ThrowStatement",
+                  argument: {
+                    type: "NewExpression",
+                    callee: { type: "Identifier", name: "Error" },
+                    arguments: [
+                      {
+                        type: "StringLiteral",
+                        value: "[non exhaustive match]",
+                      },
+                    ],
+                  },
+                },
+              ],
+            };
+          }
+
+          const [condition, ret] = checks[index]!;
+          return {
+            type: "IfStatement",
+            test: condition,
+            consequent: {
+              type: "BlockStatement",
+              directives: [],
+              body: [
+                {
+                  type: "ExpressionStatement",
+                  expression: {
+                    type: "AssignmentExpression",
+                    operator: "=",
+                    left: retValueIdentifier,
+                    right: ret,
+                  },
+                },
+              ],
+            },
+            alternate: helper(index + 1),
+          };
+        };
+
+        this.statementsBuf.push(helper(0));
+
+        return retValueIdentifier;
+      }
+
       case "struct-literal":
       case "field-access":
-      case "match":
         throw new Error("TODO handle expr: " + src.type);
     }
   }
 
-  private compilePattern(
-    frame: Frame,
+  /**
+   * compile a pattern to a list of conditions used to test if `matchedExpr` matches the pattern
+   * */
+  private compilePattern_(
     pattern: TypedMatchPattern,
-  ): t.Identifier {
+    matchedExpr: t.Expression,
+  ): t.Expression[] {
+    switch (pattern.type) {
+      case "identifier": {
+        if (pattern.name === "_") {
+          return [];
+        }
+        // const name = frame.registerLocal(pattern.name);
+        // const identifier: t.Identifier = { type: "Identifier", name };
+        this.bindingsJsName.set(pattern, matchedExpr);
+        return [];
+      }
+
+      case "constructor": {
+        if (
+          pattern.resolution === undefined ||
+          pattern.resolution.type !== "constructor"
+        ) {
+          throw new Error("[unreachable] invalid pattern resolution");
+        }
+
+        if (
+          pattern.resolution.namespace === "Bool" &&
+          pattern.resolution.declaration.name === "Bool"
+        ) {
+          return [
+            pattern.resolution.variant.name === "True"
+              ? matchedExpr
+              : {
+                  type: "UnaryExpression",
+                  prefix: false,
+                  operator: "!",
+                  argument: matchedExpr,
+                },
+          ];
+        }
+
+        const variantName = pattern.resolution.variant.name;
+        const index = pattern.resolution.declaration.variants.findIndex(
+          (variant) => variant.name === variantName,
+        );
+        if (index === -1) {
+          throw new Error("[unreachable] variant not found in declaration");
+        }
+
+        return [
+          {
+            type: "BinaryExpression",
+            operator: "===",
+            left: {
+              type: "MemberExpression",
+              object: matchedExpr,
+              property: TAG_FIELD,
+              computed: false,
+            },
+            right: { type: "NumericLiteral", value: index },
+          },
+          ...pattern.args.flatMap((arg, index) =>
+            this.compilePattern_(arg, {
+              type: "MemberExpression",
+              object: matchedExpr,
+              property: { type: "Identifier", name: `_${index}` },
+              computed: false,
+            }),
+          ),
+        ];
+      }
+
+      case "lit":
+        switch (pattern.literal.type) {
+          // As of now, literals are always checked via the === operator
+          // keep the switch to enforce match on future variants
+          case "string":
+          case "int":
+          case "float":
+          case "char":
+            return [
+              {
+                type: "BinaryExpression",
+                operator: "===",
+                left: matchedExpr,
+                right: compileConst(pattern.literal),
+              },
+            ];
+        }
+    }
+  }
+
+  private compilePattern(pattern: TypedMatchPattern): t.Identifier {
+    const frame = this.getCurrentFrame();
+
     switch (pattern.type) {
       case "identifier": {
         const name = frame.registerLocal(pattern.name);
@@ -286,9 +479,9 @@ class Compiler {
         return identifier;
       }
 
-      case "lit":
       case "constructor":
-        throw new Error("TODO ");
+      case "lit":
+        throw new Error("TODO match lit");
     }
   }
 
@@ -473,7 +666,7 @@ function makeVariantBody(index: number, argsNumber: number): t.Expression {
     { length: argsNumber },
     (_, i): t.Identifier => ({
       type: "Identifier",
-      name: `a${i}`,
+      name: `_${i}`,
     }),
   );
 
@@ -482,7 +675,7 @@ function makeVariantBody(index: number, argsNumber: number): t.Expression {
     properties: [
       {
         type: "ObjectProperty",
-        key: { type: "Identifier", name: "$" },
+        key: TAG_FIELD,
         value: { type: "NumericLiteral", value: index },
         computed: false,
         shorthand: false,
