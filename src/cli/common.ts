@@ -7,7 +7,7 @@ import {
   UntypedProject,
 } from "../typecheck";
 import { exit } from "node:process";
-import { compileProject, defaultEntryPoint } from "../compiler";
+import { compileProject, defaultEntryPoint } from "../compiler/compiler-babel";
 import { col } from "../utils/colors";
 import { Config, readConfig } from "./config";
 import { join } from "node:path";
