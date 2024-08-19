@@ -879,6 +879,26 @@ describe("pattern matching", () => {
     `);
   });
 
+  test("pattern matching an identifier", () => {
+    const out = compileSrc(`
+    let v = 42
+    let x = match v {
+      1 => 0,
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$v = 42;
+      let Main$x$GEN__0;
+      if (Main$v === 1) {
+        Main$x$GEN__0 = 0;
+      } else {
+        throw new Error("[non exhaustive match]");
+      }
+      const Main$x = Main$x$GEN__0;"
+    `);
+  });
+
   test("pattern matching (ident)", () => {
     const out = compileSrc(`
 
@@ -1128,6 +1148,34 @@ describe("pattern matching", () => {
 
     const r = new Function(`${out}; return Main$m`)();
     expect(r).toEqual("abcdef");
+  });
+
+  test.todo("matching ident", () => {
+    const out = compileSrc(`
+    type Box { Box(Int) }
+
+    let f = fn b {
+      match b {
+        Box(a) => a
+      }
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Box = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$f = b => {
+        let GEN__1;
+        if (b.$ === 0) {
+          GEN__1 = b._0;
+        } else {
+          throw new Error("[non exhaustive match]");
+        }
+        return GEN__1;
+      };"
+    `);
   });
 
   test.todo("compiling let match", () => {

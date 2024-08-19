@@ -42,6 +42,27 @@ class Compiler {
     return frame;
   }
 
+  private precomputeValue(expr: TypedExpr): t.Expression {
+    const jsExpr = this.compileExpr(expr);
+    if (jsExpr.type === "Identifier") {
+      return jsExpr;
+    }
+
+    const freshIdent = this.makeFreshIdent();
+    this.statementsBuf.push({
+      type: "VariableDeclaration",
+      kind: "const",
+      declarations: [
+        {
+          type: "VariableDeclarator",
+          id: freshIdent,
+          init: jsExpr,
+        },
+      ],
+    });
+    return freshIdent;
+  }
+
   private makeFreshIdent(): t.Identifier {
     const curFrame = this.getCurrentFrame();
     const name = this.makeJsLetPathName(curFrame.genFreshId());
@@ -270,11 +291,7 @@ class Compiler {
         );
 
       case "match": {
-        // TODO no need for gen when matched is ident
-        // TODO same for if expr
-        const matchedExpr = this.makeFreshIdent();
-
-        const e = this.compileExpr(src.expr);
+        const matchedExpr = this.precomputeValue(src.expr);
 
         const checks: [condition: t.Expression, ret: t.Expression][] = [];
         for (const [pattern, retExpr] of src.clauses) {
@@ -295,29 +312,16 @@ class Compiler {
         }
 
         const retValueIdentifier = this.makeFreshIdent();
-        this.statementsBuf.push(
-          {
-            type: "VariableDeclaration",
-            kind: "const",
-            declarations: [
-              {
-                type: "VariableDeclarator",
-                id: matchedExpr,
-                init: e,
-              },
-            ],
-          },
-          {
-            type: "VariableDeclaration",
-            kind: "let",
-            declarations: [
-              {
-                type: "VariableDeclarator",
-                id: retValueIdentifier,
-              },
-            ],
-          },
-        );
+        this.statementsBuf.push({
+          type: "VariableDeclaration",
+          kind: "let",
+          declarations: [
+            {
+              type: "VariableDeclarator",
+              id: retValueIdentifier,
+            },
+          ],
+        });
         const helper = (index: number): t.Statement => {
           if (index >= checks.length) {
             return {
