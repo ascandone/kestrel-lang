@@ -210,14 +210,14 @@ describe("let expressions", () => {
     const out = compileSrc(`
         let x = {
           let a = 0;
-          let a = a;
+          let a = a + 1;
           a
         }
       `);
 
     expect(out).toMatchInlineSnapshot(`
           "const Main$x$a = 0;
-          const Main$x$a$1 = Main$x$a;
+          const Main$x$a$1 = Main$x$a + 1;
           const Main$x = Main$x$a$1;"
         `);
   });
@@ -713,7 +713,7 @@ describe("modules", () => {
   });
 
   test("local variables from modules different than Main are namespaced", () => {
-    const out = compileSrc(`let a = { let b = 42; b}`, {
+    const out = compileSrc(`let a = { let b = 42; b }`, {
       ns: "ExampleModule",
     });
     expect(out).toMatchInlineSnapshot(`
@@ -1150,7 +1150,7 @@ describe("pattern matching", () => {
     expect(r).toEqual("abcdef");
   });
 
-  test.todo("matching ident", () => {
+  test("matching ident", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1167,18 +1167,18 @@ describe("pattern matching", () => {
         _0
       });
       const Main$f = b => {
-        let GEN__1;
+        let GEN__0;
         if (b.$ === 0) {
-          GEN__1 = b._0;
+          GEN__0 = b._0;
         } else {
           throw new Error("[non exhaustive match]");
         }
-        return GEN__1;
+        return GEN__0;
       };"
     `);
   });
 
-  test.todo("compiling let match", () => {
+  test("compiling let match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1189,18 +1189,44 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$Box(a0) {
-        return { $: "Box", a0 };
-      }
-      const Main$f = (b) => {
+      "const Main$Box = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$f = b => {
         const GEN__0 = b;
-        return GEN__0.a0;
-      }
-      "
+        return GEN__0._0;
+      };"
     `);
   });
 
-  test.todo("compiling nested let match", () => {
+  test("compiling let within let match", () => {
+    const out = compileSrc(`
+    type Box { Box(Int) }
+
+    let f = fn b {
+      let Box(a) = {
+        let c = 42;
+        c
+      };
+      a
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Box = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$f = b => {
+        const GEN__0$c = 42;
+        const GEN__0 = GEN__0$c;
+        return GEN__0._0;
+      };"
+    `);
+  });
+
+  test("compiling nested let match", () => {
     const out = compileSrc(`
     type Pair { Pair(Int, Int) }
 
@@ -1211,14 +1237,15 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "function Main$Pair(a0, a1) {
-        return { $: "Pair", a0, a1 };
-      }
-      const Main$f = (b) => {
+      "const Main$Pair = (_0, _1) => ({
+        $: 0,
+        _0,
+        _1
+      });
+      const Main$f = b => {
         const GEN__0 = b;
-        return GEN__0.a1.a0;
-      }
-      "
+        return GEN__0._1._0;
+      };"
     `);
   });
 

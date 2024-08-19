@@ -42,13 +42,18 @@ class Compiler {
     return frame;
   }
 
-  private precomputeValue(expr: TypedExpr): t.Expression {
+  private precomputeValue(
+    expr: TypedExpr,
+    makeIdent = () => this.makeFreshIdent(),
+  ): t.Expression {
     const jsExpr = this.compileExpr(expr);
     if (jsExpr.type === "Identifier") {
       return jsExpr;
     }
 
-    const freshIdent = this.makeFreshIdent();
+    // this.bindingsJsName.set()
+
+    const freshIdent = makeIdent();
     this.statementsBuf.push({
       type: "VariableDeclaration",
       kind: "const",
@@ -143,8 +148,16 @@ class Compiler {
               src.resolution.variant.name,
             );
 
-          case "local-variable":
-            return this.bindingsJsName.get(src.resolution.binding)!;
+          case "local-variable": {
+            const res = this.bindingsJsName.get(src.resolution.binding);
+            if (res === undefined) {
+              throw new Error(
+                "[unreachable] undefined resolution for: " +
+                  src.resolution.binding.name,
+              );
+            }
+            return res;
+          }
 
           case "global-variable":
             return makeGlobalIdentifier(
@@ -155,33 +168,42 @@ class Compiler {
       }
 
       case "let": {
-        if (src.pattern.type !== "identifier") {
-          throw new Error("p match in ident");
+        let jsPatternName: string;
+        if (src.pattern.type === "identifier") {
+          jsPatternName = this.getCurrentFrame().registerLocal(
+            src.pattern.name,
+          );
+        } else {
+          jsPatternName = this.getCurrentFrame().genFreshId();
         }
-        const curFrame = this.getCurrentFrame();
         this.frames.push(
           new Frame({
             type: "let",
-            jsPatternName: curFrame.registerLocal(src.pattern.name),
+            jsPatternName,
           }),
         );
 
-        const ident: t.Identifier = {
+        const freshIdent: t.Identifier = {
           type: "Identifier",
           name: this.makeJsLetPathName(),
         };
-        this.bindingsJsName.set(src.pattern, ident);
+        if (src.pattern.type === "identifier") {
+          this.bindingsJsName.set(src.pattern, freshIdent);
+        }
+        const value = this.compileExpr(src.value);
         this.statementsBuf.push({
           type: "VariableDeclaration",
           kind: "const",
           declarations: [
             {
               type: "VariableDeclarator",
-              id: ident,
-              init: this.compileExpr(src.value),
+              id: freshIdent,
+              init: value,
             },
           ],
         });
+        this.compileCheckPatternConditions(src.pattern, freshIdent);
+
         this.frames.pop();
 
         return this.compileExpr(src.body);
@@ -199,6 +221,7 @@ class Compiler {
           const body = this.compileExpr(src.body);
           return { params, body };
         });
+        this.frames.pop();
 
         const bodyStm: t.BlockStatement | t.Expression =
           stms.length === 0
@@ -295,7 +318,10 @@ class Compiler {
 
         const checks: [condition: t.Expression, ret: t.Expression][] = [];
         for (const [pattern, retExpr] of src.clauses) {
-          const exprs = this.compilePattern_(pattern, matchedExpr);
+          const exprs = this.compileCheckPatternConditions(
+            pattern,
+            matchedExpr,
+          );
           const ifCondition: t.Expression =
             // TODO if if(true) is encountered, we could just return retExpr
             exprs.length === 0
@@ -382,7 +408,7 @@ class Compiler {
   /**
    * compile a pattern to a list of conditions used to test if `matchedExpr` matches the pattern
    * */
-  private compilePattern_(
+  private compileCheckPatternConditions(
     pattern: TypedMatchPattern,
     matchedExpr: t.Expression,
   ): t.Expression[] {
@@ -442,7 +468,7 @@ class Compiler {
             right: { type: "NumericLiteral", value: index },
           },
           ...pattern.args.flatMap((arg, index) =>
-            this.compilePattern_(arg, {
+            this.compileCheckPatternConditions(arg, {
               type: "MemberExpression",
               object: matchedExpr,
               property: { type: "Identifier", name: `_${index}` },
@@ -517,6 +543,9 @@ class Compiler {
     buf.reverse();
     if (trailing !== undefined) {
       buf.push(trailing);
+    }
+    if (buf.length === 0) {
+      throw new Error("[unreachable] empty stack");
     }
     return buf.join("$");
   }
