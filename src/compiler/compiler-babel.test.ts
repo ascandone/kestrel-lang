@@ -689,14 +689,6 @@ describe("ADTs", () => {
   });
 });
 
-describe("Eq trait", () => {
-  test.todo("== performs structural equality when type is unbound");
-  test.todo("== performs structural equality when type is adt");
-  test.todo("== doesn't perform structural equality when type is int");
-  test.todo("== doesn't perform structural equality when type is string");
-  test.todo("== doesn't perform structural equality when type is float");
-});
-
 describe("modules", () => {
   test("variables from modules different than Main are namespaced", () => {
     const out = compileSrc(`let a = 42`, { ns: "ExampleModule" });
@@ -1745,15 +1737,38 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.todo("== handles traits dicts", () => {
-    const out = compileSrc(`
+  test("== handles traits dicts", () => {
+    const out = compileSrc(
+      `
   extern let (==): Fn(a, a) -> Bool where a: Eq
   let f = fn x, y { x == y }
-`);
+`,
+    );
 
     expect(out).toMatchInlineSnapshot(`
-    "const Main$f = (Eq_11) => (x, y) => Main$_eq(Eq_11)(x, y);"
+    "const Main$f = Eq_11 => (x, y) => _eq(Eq_11)(x, y);"
   `);
+  });
+
+  test("== compares primitives directly", () => {
+    const out = compileSrc(
+      `
+  extern type Bool
+  extern let (==): Fn(a, a) -> Bool where a: Eq
+  let a = 1 == 2
+  let b = 1.0 == 2.0
+  let c = "a" == "ab"
+  let d = 'x' == 'y'
+`,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$a = 1 === 2;
+      const Main$b = 1 === 2;
+      const Main$c = "a" === "ab";
+      const Main$d = "x" === "y";"
+    `);
   });
 
   // TODO fix
@@ -1849,6 +1864,14 @@ describe("traits compilation", () => {
       "const Main$called = FromJson_9 => Main$from_json(FromJson_9)(Main$json);"
     `);
   });
+});
+
+describe("Eq trait", () => {
+  test.todo("== performs structural equality when type is unbound");
+  test.todo("== performs structural equality when type is adt");
+  test.todo("== doesn't perform structural equality when type is int");
+  test.todo("== doesn't perform structural equality when type is string");
+  test.todo("== doesn't perform structural equality when type is float");
 });
 
 type CompileSrcOpts = {

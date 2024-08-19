@@ -28,6 +28,7 @@ export function compile(ns: string, ast: TypedModule): string {
   return new Compiler(ns).compile(ast);
 }
 
+const EQ_IDENTIFIER: t.Identifier = { type: "Identifier", name: "_eq" };
 const TAG_FIELD: t.Identifier = { type: "Identifier", name: "$" };
 
 class Compiler {
@@ -91,6 +92,15 @@ class Compiler {
 
       case "application": {
         if (src.caller.type === "identifier") {
+          if (src.caller.name === "==" && isPrimitiveEq(src.args)) {
+            return {
+              type: "BinaryExpression",
+              operator: "===",
+              left: this.compileExpr(src.args[0]!),
+              right: this.compileExpr(src.args[1]!),
+            };
+          }
+
           const infixName = toJsInfix(src.caller.name);
           if (infixName !== undefined) {
             return {
@@ -167,11 +177,15 @@ class Compiler {
           }
 
           case "global-variable": {
-            // `${sanitizeNamespace(ns)}$${fName}${traitArgs}`
-            const ident = makeGlobalIdentifier(
-              src.resolution.namespace,
-              src.resolution.declaration.binding.name,
-            );
+            let ident: t.Identifier;
+            if (src.resolution.declaration.binding.name === "==") {
+              ident = EQ_IDENTIFIER;
+            } else {
+              ident = makeGlobalIdentifier(
+                src.resolution.namespace,
+                src.resolution.declaration.binding.name,
+              );
+            }
 
             // TODO what about let exprs?
             const traitArgs = resolvePassedDicts(
@@ -707,9 +721,6 @@ function toJsInfix(
     case "++":
       return "+";
 
-    case "==":
-      return "===";
-
     default:
       return undefined;
   }
@@ -1078,4 +1089,42 @@ export function compileProject(
   buf.push(`${entryPointMod}$main.exec();\n`);
 
   return buf.join("\n\n");
+}
+
+function isPrimitiveEq(args: TypedExpr[]): boolean {
+  const resolvedType = args[0]!.$.resolve();
+
+  if (resolvedType.type === "unbound" || resolvedType.value.type === "fn") {
+    return false;
+  }
+
+  if (
+    resolvedType.value.name === "Int" &&
+    resolvedType.value.moduleName === "Int"
+  ) {
+    return true;
+  }
+
+  if (
+    resolvedType.value.name === "Float" &&
+    resolvedType.value.moduleName === "Float"
+  ) {
+    return true;
+  }
+
+  if (
+    resolvedType.value.name === "String" &&
+    resolvedType.value.moduleName === "String"
+  ) {
+    return true;
+  }
+
+  if (
+    resolvedType.value.name === "Char" &&
+    resolvedType.value.moduleName === "Char"
+  ) {
+    return true;
+  }
+
+  return false;
 }
