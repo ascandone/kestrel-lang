@@ -334,7 +334,11 @@ class Compiler {
       case "match": {
         const matchedExpr = this.precomputeValue(src.expr);
 
-        const checks: [condition: t.Expression, ret: t.Expression][] = [];
+        const checks: [
+          condition: t.Expression,
+          ret: t.Expression,
+          statements: t.Statement[],
+        ][] = [];
         for (const [pattern, retExpr] of src.clauses) {
           const exprs = this.compileCheckPatternConditions(
             pattern,
@@ -352,7 +356,10 @@ class Compiler {
                 }));
 
           // TODO wrap statements
-          checks.push([ifCondition, this.compileExpr(retExpr)]);
+          checks.push([
+            ifCondition,
+            ...this.wrapStatements(() => this.compileExpr(retExpr)),
+          ]);
         }
 
         const retValueIdentifier = this.makeFreshIdent();
@@ -389,7 +396,7 @@ class Compiler {
             };
           }
 
-          const [condition, ret] = checks[index]!;
+          const [condition, ret, stms] = checks[index]!;
           return {
             type: "IfStatement",
             test: condition,
@@ -397,6 +404,7 @@ class Compiler {
               type: "BlockStatement",
               directives: [],
               body: [
+                ...stms,
                 {
                   type: "ExpressionStatement",
                   expression: {

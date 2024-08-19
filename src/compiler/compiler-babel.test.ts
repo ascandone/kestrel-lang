@@ -1264,6 +1264,45 @@ describe("pattern matching", () => {
       const Main$f = (x, GEN__0, y) => GEN__0._0;"
     `);
   });
+
+  test("statements inside p match", () => {
+    const out = compileSrc(`
+    type Pair<a, b> { Pair(a, b), None }
+
+    let f = fn x {
+      match x {
+        Pair(l, r) => {
+          let a = l + r;
+          a + 1
+        },
+        None => 100
+      }
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Pair = (_0, _1) => ({
+        $: 0,
+        _0,
+        _1
+      });
+      const Main$None = {
+        $: 1
+      };
+      const Main$f = x => {
+        let GEN__0;
+        if (x.$ === 0) {
+          const a = x._0 + x._1;
+          GEN__0 = a + 1;
+        } else if (x.$ === 1) {
+          GEN__0 = 100;
+        } else {
+          throw new Error("[non exhaustive match]");
+        }
+        return GEN__0;
+      };"
+    `);
+  });
 });
 
 type CompileSrcOpts = {
