@@ -187,6 +187,8 @@ export function deriveShowAdt(
       return { type: "StringLiteral", value: variant.name };
     }
 
+    const name = /Tuple[0-9]+/.test(variant.name) ? "" : variant.name;
+
     return {
       type: "TemplateLiteral",
       expressions: variant.args.map((arg, i) => ({
@@ -205,7 +207,7 @@ export function deriveShowAdt(
         {
           type: "TemplateElement",
           tail: true,
-          value: { raw: variant.name + "(" },
+          value: { raw: name + "(" },
         },
         ...variant.args.slice(1).map(
           (): t.TemplateElement => ({

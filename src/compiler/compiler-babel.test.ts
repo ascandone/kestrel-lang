@@ -2329,7 +2329,7 @@ describe("Derive Show instance for Adts", () => {
         _0,
         _1
       });
-      const Show_Tuple$Tuple2 = (Show_a, Show_b) => x => \`Tuple2(\${Show_a(x._0)}, \${Show_b(x._1)})\`;"
+      const Show_Tuple$Tuple2 = (Show_a, Show_b) => x => \`(\${Show_a(x._0)}, \${Show_b(x._1)})\`;"
     `);
   });
 });
