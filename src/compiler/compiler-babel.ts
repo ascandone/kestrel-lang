@@ -58,13 +58,11 @@ class Compiler {
   private precomputeValue(
     expr: TypedExpr,
     makeIdent = () => this.makeFreshIdent(),
-  ): t.Expression {
+  ): t.Identifier {
     const jsExpr = this.compileExpr(expr);
     if (jsExpr.type === "Identifier") {
       return jsExpr;
     }
-
-    // this.bindingsJsName.set()
 
     const freshIdent = makeIdent();
     this.statementsBuf.push({
@@ -468,7 +466,55 @@ class Compiler {
         return retValueIdentifier;
       }
 
-      case "struct-literal":
+      case "struct-literal": {
+        const resolution = src.struct.resolution;
+        if (resolution === undefined) {
+          throw new Error(
+            "[unreachable] undefined resolution for struct declaration",
+          );
+        }
+
+        const properties: t.ObjectProperty[] = [];
+
+        let spreadIdentifier: t.Identifier | undefined;
+        for (const declarationField of resolution.declaration.fields) {
+          const structLitField = src.fields.find(
+            (f) => f.field.name === declarationField.name,
+          );
+
+          if (structLitField !== undefined) {
+            properties.push({
+              type: "ObjectProperty",
+              key: { type: "Identifier", name: structLitField.field.name },
+              value: this.compileExpr(structLitField.value),
+              shorthand: true,
+              computed: false,
+            });
+          } else if (src.spread === undefined) {
+            throw new Error("[unreachable] missing fields");
+          } else {
+            if (spreadIdentifier === undefined) {
+              spreadIdentifier = this.precomputeValue(src.spread);
+            }
+
+            properties.push({
+              type: "ObjectProperty",
+              key: { type: "Identifier", name: declarationField.name },
+              value: {
+                type: "MemberExpression",
+                object: spreadIdentifier,
+                property: { type: "Identifier", name: declarationField.name },
+                computed: false,
+              },
+              shorthand: true,
+              computed: false,
+            });
+          }
+        }
+
+        return { type: "ObjectExpression", properties };
+      }
+
       case "field-access":
         throw new Error("TODO handle expr: " + src.type);
     }
