@@ -14,18 +14,19 @@ import { BinaryExpression } from "@babel/types";
 import { optimizeModule } from "./optimize";
 import { exit } from "node:process";
 import { col } from "../utils/colors";
+import { sanitizeNamespace } from "./utils";
+import { deriveEqAdt } from "./derive";
 
 export type CompileOptions = {
-  externs?: Record<string, string>;
-  optimize?: boolean;
-  entrypoint?: {
-    module: string;
-    type: ConcreteType;
-  };
+  allowDeriving?: string[] | undefined;
 };
 
-export function compile(ns: string, ast: TypedModule): string {
-  return new Compiler(ns).compile(ast);
+export function compile(
+  ns: string,
+  ast: TypedModule,
+  options: CompileOptions = {},
+): string {
+  return new Compiler(ns, options).compile(ast);
 }
 
 const EQ_IDENTIFIER: t.Identifier = { type: "Identifier", name: "_eq" };
@@ -41,7 +42,10 @@ class Compiler {
     return `GEN__${this.nextId++}`;
   }
 
-  constructor(private ns: string) {}
+  constructor(
+    private ns: string,
+    private options: CompileOptions,
+  ) {}
 
   private getCurrentFrame(): Frame {
     const frame = this.frames.at(-1);
@@ -660,7 +664,32 @@ class Compiler {
   private compileAdt(
     decl: TypedTypeDeclaration & { type: "adt" },
   ): t.Statement[] {
-    return decl.variants.map((d, index) => this.compileVariant(d, index));
+    const buf = decl.variants.map(
+      (d, index): t.Statement => this.compileVariant(d, index),
+    );
+
+    if (
+      // Bool equality is implemented inside core
+      decl.name !== "Bool" &&
+      this.shouldDeriveTrait("Eq", decl)
+    ) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Eq_${sanitizeNamespace(this.ns)}$${decl.name}`,
+            },
+            init: deriveEqAdt(decl),
+          },
+        ],
+      });
+    }
+
+    return buf;
   }
 
   compile(src: TypedModule): string {
@@ -683,6 +712,30 @@ class Compiler {
       directives: [],
       sourceType: "script",
     }).code;
+  }
+
+  private shouldDeriveTrait(
+    trait: string,
+    typedDeclaration: TypedTypeDeclaration,
+  ): boolean {
+    if (
+      this.options.allowDeriving !== undefined &&
+      !this.options.allowDeriving.includes(trait)
+    ) {
+      return false;
+    }
+
+    const deps = TVar.typeImplementsTrait(
+      {
+        type: "named",
+        name: typedDeclaration.name,
+        moduleName: this.ns,
+        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
+      },
+      trait,
+    );
+
+    return deps !== undefined;
   }
 }
 
@@ -737,10 +790,6 @@ function toJsInfixLogical(
     default:
       return undefined;
   }
-}
-
-function sanitizeNamespace(ns: string): string {
-  return ns?.replace(/\//g, "$");
 }
 
 function makeGlobalIdentifier(ns: string, bindingName: string): t.Identifier {
@@ -1023,7 +1072,9 @@ function* reversed<T>(xs: T[]): Generator<T> {
 
 // Project compilation
 
-export const defaultEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
+export const defaultEntryPoint: NonNullable<
+  CompileProjectOptions["entrypoint"]
+> = {
   module: "Main",
   type: {
     type: "named",
@@ -1033,13 +1084,22 @@ export const defaultEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   },
 };
 
+export type CompileProjectOptions = {
+  externs?: Record<string, string>;
+  optimize?: boolean;
+  entrypoint?: {
+    module: string;
+    type: ConcreteType;
+  };
+};
+
 export function compileProject(
   typedProject: Record<string, TypedModule>,
   {
     entrypoint = defaultEntryPoint,
     externs = {},
     optimize = false,
-  }: CompileOptions = {},
+  }: CompileProjectOptions = {},
 ): string {
   const entry = typedProject[entrypoint.module];
   if (entry === undefined) {

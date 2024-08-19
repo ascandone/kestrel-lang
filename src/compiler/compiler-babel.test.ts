@@ -7,7 +7,11 @@ import {
   typecheck,
   typecheckProject,
 } from "../typecheck";
-import { CompileOptions, compile, compileProject } from "./compiler-babel";
+import {
+  CompileProjectOptions,
+  compile,
+  compileProject,
+} from "./compiler-babel";
 import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
 
 describe("datatype representation", () => {
@@ -1874,6 +1878,223 @@ describe("Eq trait", () => {
   test.todo("== doesn't perform structural equality when type is float");
 });
 
+describe("derive Eq instance for Adt", () => {
+  test("do not derive underivable types", () => {
+    const out = compileSrc(
+      `
+      extern type DoNotDerive
+      type T { X(DoNotDerive) }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = _0 => ({
+        $: 0,
+        _0
+      });"
+    `);
+  });
+
+  test("no variants", () => {
+    const out = compileSrc(
+      `
+      type T { }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`"const Eq_Main$T = (x, y) => true;"`);
+  });
+
+  test("singleton without args", () => {
+    const out = compileSrc(
+      `
+      type T { X }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = {
+        $: 0
+      };
+      const Eq_Main$T = (x, y) => true;"
+    `);
+  });
+
+  test("singleton with concrete arg", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T { X(Int) }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+      },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = _0 => ({
+        $: 0,
+        _0
+      });
+      const Eq_Main$T = (x, y) => Eq_Main$Int(x._0, y._0);"
+    `);
+  });
+
+  test("singleton with var args", () => {
+    const out = compileSrc(
+      `
+      type T<a, b, c, d> { X(b) }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = _0 => ({
+        $: 0,
+        _0
+      });
+      const Eq_Main$T = Eq_b => (x, y) => Eq_b(x._0, y._0);"
+    `);
+  });
+
+  test("singleton with concrete args", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Bool
+      type T { X(Int, Bool) }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [
+          { moduleName: "Main", typeName: "Int", trait: "Eq" },
+          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+        ],
+      },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = (_0, _1) => ({
+        $: 0,
+        _0,
+        _1
+      });
+      const Eq_Main$T = (x, y) => Eq_Main$Int(x._0, y._0) && Eq_Main$Bool(x._1, y._1);"
+    `);
+  });
+
+  test("type with many variants", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Bool
+      type T<a> {
+        A(Int),
+        B(a, Int),
+        C,
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [
+          { moduleName: "Main", typeName: "Int", trait: "Eq" },
+          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+        ],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$A = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$B = (_0, _1) => ({
+        $: 1,
+        _0,
+        _1
+      });
+      const Main$C = {
+        $: 2
+      };
+      const Eq_Main$T = Eq_a => (x, y) => {
+        if (x.$ !== y.$) {
+          return false;
+        }
+        switch (x.$) {
+          case 0:
+            return Eq_Main$Int(x._0, y._0);
+          case 1:
+            return Eq_a(x._0, y._0) && Eq_Main$Int(x._1, y._1);
+          case 2:
+            return true;
+        }
+      };"
+    `);
+  });
+
+  test("parametric arg", () => {
+    const out = compileSrc(
+      `
+      type X<a> { X(a) }
+
+      type Y<b> {
+        Y(X<b>),
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = _0 => ({
+        $: 0,
+        _0
+      });
+      const Eq_Main$X = Eq_a => (x, y) => Eq_a(x._0, y._0);
+      const Main$Y = _0 => ({
+        $: 0,
+        _0
+      });
+      const Eq_Main$Y = Eq_b => (x, y) => Eq_Main$X(Eq_b)(x._0, y._0);"
+    `);
+  });
+
+  test("recursive data structures", () => {
+    const out = compileSrc(
+      `
+      type List<a> {
+        None,
+        Cons(a, List<a>),
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$None = {
+        $: 0
+      };
+      const Main$Cons = (_0, _1) => ({
+        $: 1,
+        _0,
+        _1
+      });
+      const Eq_Main$List = Eq_a => (x, y) => {
+        if (x.$ !== y.$) {
+          return false;
+        }
+        switch (x.$) {
+          case 0:
+            return true;
+          case 1:
+            return Eq_a(x._0, y._0) && Eq_Main$List(Eq_a)(x._1, y._1);
+        }
+      };"
+    `);
+  });
+});
+
 type CompileSrcOpts = {
   ns?: string;
   traitImpl?: TraitImpl[];
@@ -1883,11 +2104,16 @@ type CompileSrcOpts = {
 
 function compileSrc(
   src: string,
-  { ns = "Main", traitImpl = [], deps = {} }: CompileSrcOpts = {},
+  {
+    ns = "Main",
+    traitImpl = [],
+    deps = {},
+    allowDeriving = [],
+  }: CompileSrcOpts = {},
 ) {
   resetTraitsRegistry(traitImpl);
   const program = typecheckSource(ns, src, deps);
-  const out = compile(ns, program);
+  const out = compile(ns, program, { allowDeriving });
   return out;
 }
 
@@ -1897,7 +2123,7 @@ function typecheckSource(ns: string, src: string, deps: Deps = {}) {
   return program;
 }
 
-const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
+const testEntryPoint: NonNullable<CompileProjectOptions["entrypoint"]> = {
   module: "Main",
   type: {
     type: "named",
@@ -1922,7 +2148,7 @@ function parseProject(
 }
 function compileRawProject(
   rawProject: Record<string, string>,
-  options: CompileOptions = { entrypoint: testEntryPoint },
+  options: CompileProjectOptions = { entrypoint: testEntryPoint },
 ): string {
   resetTraitsRegistry();
   const untypedProject = parseProject(rawProject);
