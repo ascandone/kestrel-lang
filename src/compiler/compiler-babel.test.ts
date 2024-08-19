@@ -8,7 +8,7 @@ import {
   typecheckProject,
 } from "../typecheck";
 import { CompileOptions, compile, compileProject } from "./compiler-babel";
-import { TraitImpl } from "../typecheck/defaultImports";
+import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
 
 describe("datatype representation", () => {
   test("int", () => {
@@ -1443,6 +1443,412 @@ Main$main.exec();
   });
 
   test.todo("error when extern types are not found");
+});
+
+describe("traits compilation", () => {
+  test("non-fn values", () => {
+    const out = compileSrc(`
+      extern let p: a where a: Show
+
+      type Int {}
+      extern let take_int: Fn(Int) -> a
+
+      let x = take_int(p)
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = Main$take_int(Main$p(Show_Main$Int));"
+    `);
+  });
+
+  test.todo("apply dict arg to locals");
+
+  test("applying with concrete types", () => {
+    const out = compileSrc(
+      `
+      extern let show: Fn(a) -> String where a: Show
+      let x = show("abc")
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = Main$show(Show_String$String)("abc");"
+    `);
+  });
+
+  test("unresolved traits", () => {
+    const out = compileSrc(`
+      extern let p: a  where a: Show
+      let x = p //: a1 where a1: Show 
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = Show_1 => Main$p(Show_1);"
+    `);
+  });
+
+  test("higher order fn", () => {
+    const out = compileSrc(
+      `
+      extern type String
+      let id = fn x { x }
+      extern let show: Fn(a) -> String where a: Show
+      let f = id(show)(42)
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$id = x => x;
+      const Main$f = Main$id(Main$show(Show_Int$Int))(42);"
+    `);
+  });
+
+  test("applying with type variables", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+      let f = fn x { show(x) }
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = Show_9 => x => Main$show(Show_9)(x);"
+    `);
+  });
+
+  test("do not duplicate vars", () => {
+    const out = compileSrc(`
+      extern let show2: Fn(a, a) -> String where a: Show
+      let f = show2
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = Show_5 => Main$show2(Show_5);"
+    `);
+  });
+
+  test("handle multiple traits", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a, a) -> String where a: Eq + Show
+      let f = show
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = (Eq_5, Show_5) => Main$show(Eq_5, Show_5);"
+    `);
+  });
+
+  test("handle multiple traits when applying to concrete args", () => {
+    const out = compileSrc(
+      `
+      extern let show: Fn(a, a) -> String where a: Eq + Show
+      let f = show("a", "b")
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = Main$show(Eq_String$String, Show_String$String)("a", "b");"
+    `);
+  });
+
+  test("do not pass extra args", () => {
+    const out = compileSrc(
+      `
+      extern type String
+      extern type Bool
+
+      extern let inspect: Fn(a) -> String where a: Show
+      extern let eq: Fn(a, a) -> Bool where a: Eq
+
+      let equal = fn x, y {
+        if eq(x, y) {
+          "ok"
+        } else {
+          inspect(x)
+        }
+      }
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$equal = (Eq_17, Show_17) => (x, y) => {
+        let GEN__0;
+        if (Main$eq(Eq_17)(x, y)) {
+          GEN__0 = "ok";
+        } else {
+          GEN__0 = Main$inspect(Show_17)(x);
+        }
+        return GEN__0;
+      };"
+    `);
+  });
+
+  test("do not duplicate when there's only one var to pass", () => {
+    const out = compileSrc(
+      `
+      extern let show2: Fn(a, a) -> String where a: Show
+      let f = fn arg {
+        show2(arg, "hello")
+      }
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = arg => Main$show2(Show_String$String)(arg, "hello");"
+    `);
+  });
+
+  test("pass an arg twice if needed", () => {
+    const out = compileSrc(
+      `
+      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      let f = show2("a", "b")
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = Main$show2(Show_String$String, Show_String$String)("a", "b");"
+    `);
+  });
+
+  test("partial application", () => {
+    const out = compileSrc(
+      `
+      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      let f = fn arg {
+        show2(arg, "hello")
+      }
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = Show_11 => arg => Main$show2(Show_11, Show_String$String)(arg, "hello");"
+    `);
+  });
+
+  test("pass trait dicts for types with params when they do not have deps", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+
+      type AlwaysShow<a> { X }
+      
+      let x = show(X)
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = {
+        $: 0
+      };
+      const Main$x = Main$show(Show_Main$AlwaysShow)(Main$X);"
+    `);
+  });
+
+  test("pass higher order trait dicts for types with params when they do have deps", () => {
+    const out = compileSrc(
+      `
+      extern let show: Fn(a) -> String where a: Show
+
+      type Option<a, b> { Some(b) }
+      
+      let x = show(Some(42))
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    // Some(42) : Option<Int>
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Some = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$x = Main$show(Show_Main$Option(Show_Int$Int))(Main$Some(42));"
+    `);
+  });
+
+  test("deeply nested higher order traits", () => {
+    const out = compileSrc(
+      `
+      extern let show: Fn(a) -> String where a: Show
+
+      type Tuple2<a, b> { Tuple2(a, b) }
+      type Option<a> { Some(a) }
+      
+      let x = show(Tuple2(Some(42), 2))
+    `,
+      { traitImpl: defaultTraitImpls },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Tuple2 = (_0, _1) => ({
+        $: 0,
+        _0,
+        _1
+      });
+      const Main$Some = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$x = Main$show(Show_Main$Tuple2(Show_Main$Option(Show_Int$Int), Show_Int$Int))(Main$Tuple2(Main$Some(42), 2));"
+    `);
+  });
+
+  test("trait deps in args when param aren't traits dependencies", () => {
+    const out = compileSrc(`
+      type IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
+      extern let s: IsShow<a> where a: Show
+      let x = s
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = {
+        $: 0
+      };
+      const Main$x = Show_6 => Main$s(Show_6);"
+    `);
+  });
+
+  test("trait deps in args when param aren traits dependencies", () => {
+    const out = compileSrc(`
+      type Option<a, b, c> { Some(b) } 
+      extern let s: Option<a, b, c> where b: Show
+      let x = s
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Some = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$x = Show_11 => Main$s(Show_11);"
+    `);
+  });
+
+  test("pass higher order trait dicts for types when their deps is in scope", () => {
+    const out = compileSrc(`
+      extern let show: Fn(a) -> String where a: Show
+
+      type Option<a> {
+        Some(a),
+        None,
+      }
+      
+      let f = fn x {
+        show(Some(x))
+      }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Some = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$None = {
+        $: 1
+      };
+      const Main$f = Show_16 => x => Main$show(Show_Main$Option(Show_16))(Main$Some(x));"
+    `);
+  });
+
+  test.todo("== handles traits dicts", () => {
+    const out = compileSrc(`
+  extern let (==): Fn(a, a) -> Bool where a: Eq
+  let f = fn x, y { x == y }
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+    "const Main$f = (Eq_11) => (x, y) => Main$_eq(Eq_11)(x, y);"
+  `);
+  });
+
+  // TODO fix
+  test.todo("== handles traits dicts on adts", () => {
+    const out = compileSrc(
+      `
+    extern type Int
+    extern type Bool
+    extern let eq: Fn(a, a) -> Bool where a: Eq
+    type T { C(Int) }
+    let f = eq(C(0), C(1))
+`,
+      { allowDeriving: ["Eq"] },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$C = _0 => ({
+        $: 0,
+        _0
+      });
+      const Eq_Main$T = (x, y) => {
+        return Eq_Main$Int(x.a0, y.a0);
+      }
+      const Main$f = Main$_eq(Eq_Main$T)(Main$C(0), Main$C(1));"
+    `);
+  });
+
+  test("fn returning arg with traits", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Json
+      extern type Option<a>
+
+      extern let from_json: Fn(Json) -> Option<a> where a: FromJson
+      extern let take_opt_int: Fn(Option<Int>) -> Int
+      extern let json: Json
+
+
+      let example = 
+        from_json(json)
+        |> take_opt_int()
+    `,
+      {
+        traitImpl: [
+          {
+            typeName: "Int",
+            moduleName: "Main",
+            trait: "FromJson",
+          },
+          {
+            typeName: "Option",
+            moduleName: "Main",
+            trait: "FromJson",
+            deps: [["FromJson"]],
+          },
+        ],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$example = Main$take_opt_int(Main$from_json(FromJson_Main$Int)(Main$json));"
+    `);
+  });
+
+  test("fn returning arg handles params", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Json
+      extern type Option<a>
+
+      extern let from_json: Fn(Json) -> Option<a> where a: FromJson
+      extern let take_opt_int: Fn(Option<Int>) -> x
+      extern let json: Json
+
+      let called = from_json(json)
+    `,
+      {
+        traitImpl: [
+          { typeName: "Int", moduleName: "Main", trait: "FromJson" },
+          {
+            typeName: "Option",
+            moduleName: "Main",
+            trait: "FromJson",
+            deps: [["FromJson"]],
+          },
+        ],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$called = FromJson_9 => Main$from_json(FromJson_9)(Main$json);"
+    `);
+  });
 });
 
 type CompileSrcOpts = {

@@ -6,7 +6,7 @@ import {
   TypedTypeDeclaration,
   TypedTypeVariant,
 } from "../typecheck";
-import { ConcreteType } from "../typecheck/type";
+import { ConcreteType, TVar, Type, resolveType } from "../typecheck/type";
 import * as t from "@babel/types";
 import generate from "@babel/generator";
 import { Binding, ConstLiteral } from "../parser";
@@ -166,11 +166,29 @@ class Compiler {
             return res;
           }
 
-          case "global-variable":
-            return makeGlobalIdentifier(
+          case "global-variable": {
+            // `${sanitizeNamespace(ns)}$${fName}${traitArgs}`
+            const ident = makeGlobalIdentifier(
               src.resolution.namespace,
               src.resolution.declaration.binding.name,
             );
+
+            // TODO what about let exprs?
+            const traitArgs = resolvePassedDicts(
+              src.resolution.declaration.binding.$,
+              src.$,
+            );
+
+            if (traitArgs.length === 0) {
+              return ident;
+            }
+
+            return {
+              type: "CallExpression",
+              callee: ident,
+              arguments: traitArgs,
+            };
+          }
         }
       }
 
@@ -578,8 +596,19 @@ class Compiler {
       }),
     );
 
-    const out = this.compileExpr(decl.value);
+    let out = this.compileExpr(decl.value);
     this.frames.pop();
+
+    const dictParams = findDeclarationDictsParams(decl.binding.$.asType());
+    if (dictParams.length !== 0) {
+      out = {
+        type: "ArrowFunctionExpression",
+        async: false,
+        params: dictParams,
+        body: out,
+        expression: true,
+      };
+    }
 
     return [
       ...this.statementsBuf,
@@ -769,6 +798,210 @@ class Frame {
 
     return timesUsed === 0 ? name : `${name}$${timesUsed}`;
   }
+}
+
+function findDeclarationDictsParams(type: Type): t.Identifier[] {
+  const buf: string[] = [];
+
+  function helper(type: Type) {
+    switch (type.type) {
+      case "fn":
+        for (const arg of type.args) {
+          helper(arg);
+        }
+        helper(type.return);
+        return;
+
+      case "named": {
+        for (const arg of type.args) {
+          helper(arg);
+        }
+        return;
+      }
+
+      case "var": {
+        const resolved = type.var.resolve();
+        switch (resolved.type) {
+          case "bound":
+            helper(resolved.value);
+            return;
+          case "unbound":
+            for (const trait of resolved.traits) {
+              const name = `${trait}_${resolved.id}`;
+              if (!buf.includes(name)) {
+                buf.push(name);
+              }
+            }
+            return;
+        }
+      }
+    }
+  }
+
+  helper(type);
+
+  return buf.map((name) => ({ type: "Identifier", name }));
+}
+
+function traitDepsForNamedType(
+  t: Type & { type: "named" },
+  trait: string,
+): Type[] {
+  const freshArgs = t.args.map((_) => TVar.fresh());
+
+  // TODO simplify this workaround
+  const genericType: Type = {
+    type: "named",
+    moduleName: t.moduleName,
+    name: t.name,
+    args: freshArgs.map((a) => a.asType()),
+  };
+
+  const deps = TVar.typeImplementsTrait(genericType, trait);
+  if (deps === undefined) {
+    throw new Error("[unreachable] type does not implement given trait");
+  }
+
+  const out: Type[] = [];
+
+  for (const dep of deps) {
+    const index = freshArgs.findIndex((v) => {
+      const r = v.resolve();
+      return r.type === "unbound" && r.id === dep.id;
+    });
+
+    const a = t.args[index]!;
+    out.push(a);
+  }
+
+  return out;
+}
+
+function applyTraitToType(type: Type, trait: string): string {
+  const resolved = resolveType(type);
+
+  switch (resolved.type) {
+    case "fn":
+      throw new Error("TODO bound fn");
+
+    case "named": {
+      let name = `${trait}_${sanitizeNamespace(resolved.moduleName)}$${resolved.name}`;
+      const deps = traitDepsForNamedType(resolved, trait).map((dep) =>
+        applyTraitToType(dep, trait),
+      );
+
+      if (deps.length !== 0) {
+        name += `(${deps.join(", ")})`;
+      }
+
+      return name;
+    }
+
+    case "unbound": {
+      if (!resolved.traits.includes(trait)) {
+        throw new Error(
+          "TODO unbound does not impl needed trait: " +
+            JSON.stringify(resolved),
+        );
+      }
+
+      return `${trait}_${resolved.id}`;
+    }
+  }
+}
+
+function resolvePassedDicts(
+  genExpr: TVar,
+  instantiatedExpr: TVar,
+): t.Identifier[] {
+  const buf: t.Identifier[] = [];
+
+  // e.g. { 0 => Set("Show", "Debug") }
+  const alreadyVisitedVarsIds: Map<number, Set<string>> = new Map();
+
+  function checkedPush(genExprId: number, trait: string, name: string) {
+    let lookup = alreadyVisitedVarsIds.get(genExprId);
+    if (lookup === undefined) {
+      lookup = new Set();
+      alreadyVisitedVarsIds.set(genExprId, lookup);
+    }
+
+    if (lookup.has(trait)) {
+      // Do not add again
+      return;
+    }
+
+    lookup.add(trait);
+    buf.push({ type: "Identifier", name });
+  }
+
+  function helper(genExpr: Type, instantiatedExpr: Type) {
+    switch (genExpr.type) {
+      case "fn": {
+        const resolved = resolveType(instantiatedExpr);
+
+        if (resolved.type !== "fn") {
+          throw new Error(
+            "[unreachable] unexpected value of kind: " + resolved.type,
+          );
+        }
+
+        const instantiatedFn = resolved;
+
+        for (let i = 0; i < genExpr.args.length; i++) {
+          const genArg = genExpr.args[i]!,
+            instArg = instantiatedFn.args[i]!;
+
+          helper(genArg, instArg);
+        }
+
+        helper(genExpr.return, instantiatedFn.return);
+        return;
+      }
+
+      case "named": {
+        const resolved = resolveType(instantiatedExpr);
+        if (resolved.type !== "named") {
+          throw new Error(
+            "[unreachable] unexpected value of kind: " + resolved.type,
+          );
+        }
+
+        const instantiatedConcreteType = resolved;
+
+        for (let i = 0; i < genExpr.args.length; i++) {
+          const genArg = genExpr.args[i]!,
+            instArg = instantiatedConcreteType.args[i]!;
+
+          helper(genArg, instArg);
+        }
+        return;
+      }
+
+      case "var": {
+        const resolvedGenExpr = genExpr.var.resolve();
+        switch (resolvedGenExpr.type) {
+          case "bound":
+            return helper(resolvedGenExpr.value, instantiatedExpr);
+
+          case "unbound": {
+            for (const trait of resolvedGenExpr.traits) {
+              checkedPush(
+                resolvedGenExpr.id,
+                trait,
+                applyTraitToType(instantiatedExpr, trait),
+              );
+            }
+
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  helper(genExpr.asType(), instantiatedExpr.asType());
+  return buf;
 }
 
 function* reversed<T>(xs: T[]): Generator<T> {
