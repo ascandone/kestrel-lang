@@ -11,6 +11,9 @@ import * as t from "@babel/types";
 import generate from "@babel/generator";
 import { Binding, ConstLiteral } from "../parser";
 import { BinaryExpression } from "@babel/types";
+import { optimizeModule } from "./optimize";
+import { exit } from "node:process";
+import { col } from "../utils/colors";
 
 export type CompileOptions = {
   externs?: Record<string, string>;
@@ -773,4 +776,74 @@ function* reversed<T>(xs: T[]): Generator<T> {
   for (let i = xs.length - 1; i >= 0; i--) {
     yield xs[i]!;
   }
+}
+
+// Project compilation
+
+export const defaultEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
+  module: "Main",
+  type: {
+    type: "named",
+    moduleName: "Task",
+    name: "Task",
+    args: [{ type: "named", name: "Unit", moduleName: "Tuple", args: [] }],
+  },
+};
+
+export function compileProject(
+  typedProject: Record<string, TypedModule>,
+  {
+    entrypoint = defaultEntryPoint,
+    externs = {},
+    optimize = false,
+  }: CompileOptions = {},
+): string {
+  const entry = typedProject[entrypoint.module];
+  if (entry === undefined) {
+    throw new Error(`Entrypoint not found: '${entrypoint.module}'`);
+  }
+
+  const mainDecl = entry.declarations.find(
+    (d) => d.binding.name === "main" && d.pub,
+  );
+  if (mainDecl === undefined) {
+    throw new Error("Entrypoint needs a value called `main`.");
+  }
+
+  const visited = new Set<string>();
+
+  const buf: string[] = [];
+
+  function visit(ns: string) {
+    if (visited.has(ns)) {
+      return;
+    }
+
+    visited.add(ns);
+    const module = typedProject[ns];
+    if (module === undefined) {
+      console.error(col.red.tag`Error:`, `Could not find module '${ns}'`);
+      exit(1);
+    }
+
+    for (const import_ of module.imports) {
+      visit(import_.ns);
+    }
+
+    const extern = externs[ns];
+    if (extern !== undefined) {
+      buf.push(extern);
+    }
+
+    const out = compile(ns, optimize ? optimizeModule(module) : module);
+
+    buf.push(out);
+  }
+
+  visit(entrypoint.module);
+
+  const entryPointMod = sanitizeNamespace(entrypoint.module);
+  buf.push(`${entryPointMod}$main.exec();\n`);
+
+  return buf.join("\n\n");
 }

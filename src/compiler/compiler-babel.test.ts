@@ -1,7 +1,13 @@
 import { test, expect, describe } from "vitest";
-import { unsafeParse } from "../parser";
-import { Deps, resetTraitsRegistry, typecheck } from "../typecheck";
-import { compile } from "./compiler-babel";
+import { UntypedModule, unsafeParse } from "../parser";
+import {
+  Deps,
+  TypedModule,
+  resetTraitsRegistry,
+  typecheck,
+  typecheckProject,
+} from "../typecheck";
+import { CompileOptions, compile, compileProject } from "./compiler-babel";
 import { TraitImpl } from "../typecheck/defaultImports";
 
 describe("datatype representation", () => {
@@ -1305,6 +1311,122 @@ describe("pattern matching", () => {
   });
 });
 
+describe("project compilation", () => {
+  test("compile single module with main value", () => {
+    const out = compileRawProject({
+      Main: `pub let main = "main"`,
+    });
+
+    expect(out).toBe(`const Main$main = "main";
+
+Main$main.exec();
+`);
+  });
+
+  test("handles nested modules as entrypoint", () => {
+    const out = compileRawProject(
+      {
+        "Nested/Entrypoint/Mod": `pub let main = "main"`,
+      },
+      {
+        entrypoint: {
+          ...testEntryPoint,
+          module: "Nested/Entrypoint/Mod",
+        },
+      },
+    );
+
+    expect(out).toBe(`const Nested$Entrypoint$Mod$main = "main";
+
+Nested$Entrypoint$Mod$main.exec();
+`);
+  });
+
+  test("compile a module importing another module", () => {
+    const out = compileRawProject({
+      ModA: `pub let x = "main"`,
+      Main: `
+          import ModA
+          pub let main = ModA.x
+        `,
+    });
+
+    expect(out).toBe(`const ModA$x = "main";
+
+const Main$main = ModA$x;
+
+Main$main.exec();
+`);
+  });
+
+  test("if two modules import a module, it has to be compiled only once", () => {
+    const out = compileRawProject({
+      ModA: `pub let a = "a"`,
+      ModB: `import ModA\npub let b = "b"`,
+      Main: `
+          import ModA
+          import ModB
+          pub let main = "main"
+        `,
+    });
+
+    expect(out).toBe(`const ModA$a = "a";
+
+const ModB$b = "b";
+
+const Main$main = "main";
+
+Main$main.exec();
+`);
+  });
+
+  test("compiling externs", () => {
+    const out = compileRawProject(
+      {
+        Main: `pub let main = "main"`,
+      },
+      {
+        entrypoint: testEntryPoint,
+        externs: { Main: "<extern>" },
+      },
+    );
+
+    expect(out).toBe(`<extern>
+
+const Main$main = "main";
+
+Main$main.exec();
+`);
+  });
+
+  test("throws when main is missing", () => {
+    expect(() =>
+      compileRawProject(
+        {
+          Main: ``,
+        },
+        { entrypoint: testEntryPoint },
+      ),
+    ).toThrow();
+  });
+
+  test("throws when main is not public", () => {
+    expect(() =>
+      compileRawProject(
+        {
+          Main: `
+            let main = "main"
+            pub let f = main
+          `,
+        },
+        { entrypoint: testEntryPoint },
+      ),
+    ).toThrow();
+  });
+
+  test.todo("error when extern types are not found");
+});
+
 type CompileSrcOpts = {
   ns?: string;
   traitImpl?: TraitImpl[];
@@ -1326,4 +1448,53 @@ function typecheckSource(ns: string, src: string, deps: Deps = {}) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(ns, parsed, deps, []);
   return program;
+}
+
+const testEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
+  module: "Main",
+  type: {
+    type: "named",
+    name: "String",
+    moduleName: "String",
+    args: [],
+  },
+};
+
+function parseProject(
+  rawProject: Record<string, string>,
+): Record<string, { package: string; module: UntypedModule }> {
+  return Object.fromEntries(
+    Object.entries(rawProject).map(([ns, src]) => [
+      ns,
+      {
+        package: "example_package",
+        module: unsafeParse(src),
+      },
+    ]),
+  );
+}
+function compileRawProject(
+  rawProject: Record<string, string>,
+  options: CompileOptions = { entrypoint: testEntryPoint },
+): string {
+  resetTraitsRegistry();
+  const untypedProject = parseProject(rawProject);
+  const typecheckResult = typecheckProject(
+    untypedProject,
+    [],
+    testEntryPoint.type,
+  );
+
+  const typedProject: Record<string, TypedModule> = {};
+  for (const [ns, { typedModule, errors }] of Object.entries(typecheckResult)) {
+    if (errors.filter((e) => e.description.severity === "error").length !== 0) {
+      throw new Error(
+        "Got errors while type checking: \n" + JSON.stringify(errors, null, 2),
+      );
+    }
+
+    typedProject[ns] = typedModule;
+  }
+
+  return compileProject(typedProject, options);
 }
