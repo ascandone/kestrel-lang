@@ -412,6 +412,24 @@ describe("lambda expressions", () => {
       `"const Main$x = Main$f(() => 0, () => 1);"`,
     );
   });
+
+  test("do not let GEN values be shadowed", () => {
+    const out = compileSrc(`
+      type Box<a> { Box(a) }
+      let x = fn Box(a) {
+        fn Box(_) {
+          a
+        }
+      }
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Box = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$x = GEN__0 => GEN__1 => GEN__0._0;"
+    `);
+  });
 });
 
 describe("if expressions", () => {

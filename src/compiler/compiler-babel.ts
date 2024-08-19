@@ -35,6 +35,11 @@ class Compiler {
   private frames: Frame[] = [];
   private bindingsJsName = new WeakMap<Binding, t.Expression>();
 
+  private nextId = 0;
+  genFreshId(): string {
+    return `GEN__${this.nextId++}`;
+  }
+
   constructor(private ns: string) {}
 
   private getCurrentFrame(): Frame {
@@ -72,8 +77,7 @@ class Compiler {
   }
 
   private makeFreshIdent(): t.Identifier {
-    const curFrame = this.getCurrentFrame();
-    const name = this.makeJsLetPathName(curFrame.genFreshId());
+    const name = this.makeJsLetPathName(this.genFreshId());
     return { type: "Identifier", name };
   }
 
@@ -177,7 +181,7 @@ class Compiler {
             src.pattern.name,
           );
         } else {
-          jsPatternName = this.getCurrentFrame().genFreshId();
+          jsPatternName = this.genFreshId();
         }
         this.frames.push(
           new Frame({
@@ -229,7 +233,7 @@ class Compiler {
               return ident;
             }
 
-            const freshId = this.getCurrentFrame().genFreshId();
+            const freshId = this.genFreshId();
             const ident: t.Identifier = {
               type: "Identifier",
               name: freshId,
@@ -758,17 +762,12 @@ class Frame {
   ) {}
 
   private usedVars = new Map<string, number>();
-  private nextId = 0;
 
   registerLocal(name: string): string {
     const timesUsed = this.usedVars.get(name) ?? 0;
     this.usedVars.set(name, timesUsed + 1);
 
     return timesUsed === 0 ? name : `${name}$${timesUsed}`;
-  }
-
-  genFreshId(): string {
-    return `GEN__${this.nextId++}`;
   }
 }
 
