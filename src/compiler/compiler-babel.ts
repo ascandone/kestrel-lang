@@ -790,11 +790,27 @@ function toJsInfix(
 ): BinaryExpression["operator"] | undefined {
   switch (kestrelCaller) {
     case "+":
-    case "*":
-      return kestrelCaller;
-
+    case "+.":
     case "++":
       return "+";
+
+    case "*":
+    case "*.":
+      return "*";
+
+    case "-":
+    case "-.":
+      return "-";
+
+    case "/":
+    case "/.":
+      return "/";
+
+    case "<=":
+    case "<":
+    case ">=":
+    case ">":
+      return kestrelCaller;
 
     default:
       return undefined;
