@@ -15,7 +15,7 @@ import { optimizeModule } from "./optimize";
 import { exit } from "node:process";
 import { col } from "../utils/colors";
 import { sanitizeNamespace } from "./utils";
-import { deriveEqAdt } from "./derive";
+import { deriveEqAdt, deriveShowAdt } from "./derive";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -684,6 +684,28 @@ class Compiler {
               name: `Eq_${sanitizeNamespace(this.ns)}$${decl.name}`,
             },
             init: deriveEqAdt(decl),
+          },
+        ],
+      });
+    }
+
+    if (
+      // Bool and List show are implemented inside core
+      decl.name !== "Bool" &&
+      decl.name !== "List" &&
+      this.shouldDeriveTrait("Show", decl)
+    ) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Show_${sanitizeNamespace(this.ns)}$${decl.name}`,
+            },
+            init: deriveShowAdt(decl),
           },
         ],
       });

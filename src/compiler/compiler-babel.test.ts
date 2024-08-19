@@ -2095,6 +2095,237 @@ describe("derive Eq instance for Adt", () => {
   });
 });
 
+describe("Derive Show instance for Adts", () => {
+  test("do not derive underivable types", () => {
+    const out = compileSrc(
+      `
+      extern type DoNotDerive
+      type T { X(DoNotDerive) }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = _0 => ({
+        $: 0,
+        _0
+      });"
+    `);
+  });
+
+  test("no variants", () => {
+    const out = compileSrc(
+      `
+      type T {  }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`"const Show_Main$T = x => "never";"`);
+  });
+
+  test("singleton without args", () => {
+    const out = compileSrc(
+      `
+      type T { X }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = {
+        $: 0
+      };
+      const Show_Main$T = x => "X";"
+    `);
+  });
+
+  test("single variant, with concrete args", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T { X(Int) }
+    `,
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = _0 => ({
+        $: 0,
+        _0
+      });
+      const Show_Main$T = x => \`X(\${Show_Main$Int(x._0)})\`;"
+    `);
+  });
+
+  test("single variant (namespaced)", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T { X(Int) }
+    `,
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [
+          { moduleName: "Example/Namespace", typeName: "Int", trait: "Show" },
+        ],
+        ns: "Example/Namespace",
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Example$Namespace$X = _0 => ({
+        $: 0,
+        _0
+      });
+      const Show_Example$Namespace$T = x => \`X(\${Show_Example$Namespace$Int(x._0)})\`;"
+    `);
+  });
+
+  test("single variant with var arg", () => {
+    const out = compileSrc(
+      `
+      type T<a, b, c, d> { X(c) }
+    `,
+      { allowDeriving: ["Show"] },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = _0 => ({
+        $: 0,
+        _0
+      });
+      const Show_Main$T = Show_c => x => \`X(\${Show_c(x._0)})\`;"
+    `);
+  });
+
+  test("many variants", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T<a, b> {
+        A,
+        B(Int, a),
+        C(b),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$A = {
+        $: 0
+      };
+      const Main$B = (_0, _1) => ({
+        $: 1,
+        _0,
+        _1
+      });
+      const Main$C = _0 => ({
+        $: 2,
+        _0
+      });
+      const Show_Main$T = (Show_a, Show_b) => x => {
+        switch (x.$) {
+          case 0:
+            return "A";
+          case 1:
+            return \`B(\${Show_Main$Int(x._0)}, \${Show_a(x._1)})\`;
+          case 2:
+            return \`C(\${Show_b(x._0)})\`;
+        }
+      };"
+    `);
+  });
+
+  test("parametric arg", () => {
+    const out = compileSrc(
+      `
+      type X<a> { X(a) }
+
+      type Y<b> {
+        Y(X<b>),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = _0 => ({
+        $: 0,
+        _0
+      });
+      const Show_Main$X = Show_a => x => \`X(\${Show_a(x._0)})\`;
+      const Main$Y = _0 => ({
+        $: 0,
+        _0
+      });
+      const Show_Main$Y = Show_b => x => \`Y(\${Show_Main$X(Show_b)(x._0)})\`;"
+    `);
+  });
+
+  test("recursive data structures", () => {
+    const out = compileSrc(
+      `
+      type Lst<a> {
+        None,
+        Cons(a, Lst<a>),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$None = {
+        $: 0
+      };
+      const Main$Cons = (_0, _1) => ({
+        $: 1,
+        _0,
+        _1
+      });
+      const Show_Main$Lst = Show_a => x => {
+        switch (x.$) {
+          case 0:
+            return "None";
+          case 1:
+            return \`Cons(\${Show_a(x._0)}, \${Show_Main$Lst(Show_a)(x._1)})\`;
+        }
+      };"
+    `);
+  });
+
+  test("handle special tuple syntax", () => {
+    const out = compileSrc(
+      `
+      type Tuple2<a, b> {
+        Tuple2(a, b),
+      }
+    `,
+      {
+        allowDeriving: ["Show"],
+        ns: "Tuple",
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Tuple$Tuple2 = (_0, _1) => ({
+        $: 0,
+        _0,
+        _1
+      });
+      const Show_Tuple$Tuple2 = (Show_a, Show_b) => x => \`Tuple2(\${Show_a(x._0)}, \${Show_b(x._1)})\`;"
+    `);
+  });
+});
+
 type CompileSrcOpts = {
   ns?: string;
   traitImpl?: TraitImpl[];
