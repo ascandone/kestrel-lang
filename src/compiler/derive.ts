@@ -9,7 +9,7 @@ import { sanitizeNamespace } from "./utils";
 export function deriveEqAdt(
   typedDeclaration: TypedTypeDeclaration & { type: "adt" },
 ): t.Expression {
-  const deriveEqArgs = new DeriveEqArgs();
+  const deriveEqArgs = new DeriveTraitArgs("Eq");
 
   function variantEq(variant: TypedTypeVariant | undefined): t.Expression {
     if (variant === undefined || variant.args.length === 0) {
@@ -123,8 +123,9 @@ export function deriveEqAdt(
   });
 }
 
-class DeriveEqArgs {
+class DeriveTraitArgs {
   private usedVars: string[] = [];
+  constructor(private trait: string) {}
 
   wrap(expr: t.Expression): t.Expression {
     if (this.usedVars.length === 0) {
@@ -136,7 +137,10 @@ class DeriveEqArgs {
       async: false,
       expression: true,
       params: this.usedVars.map(
-        (x): t.Identifier => ({ type: "Identifier", name: `Eq_${x}` }),
+        (x): t.Identifier => ({
+          type: "Identifier",
+          name: `${this.trait}_${x}`,
+        }),
       ),
       body: expr,
     };
@@ -159,10 +163,9 @@ class DeriveEqArgs {
         const ns = sanitizeNamespace(arg.resolution.namespace);
 
         // We assume this type impls the trait
-
         const ident: t.Identifier = {
           type: "Identifier",
-          name: `Eq_${ns}$${arg.name}`,
+          name: `${this.trait}_${ns}$${arg.name}`,
         };
 
         if (arg.args.length === 0) {
@@ -171,7 +174,7 @@ class DeriveEqArgs {
 
         return {
           type: "CallExpression",
-          callee: { type: "Identifier", name: `Eq_${ns}$${arg.name}` },
+          callee: ident,
           arguments: arg.args.map((subArg) => this.run(subArg)),
         };
       }
@@ -180,7 +183,7 @@ class DeriveEqArgs {
         if (!this.usedVars.includes(arg.ident)) {
           this.usedVars.push(arg.ident);
         }
-        return { type: "Identifier", name: `Eq_${arg.ident}` };
+        return { type: "Identifier", name: `${this.trait}_${arg.ident}` };
     }
   }
 }
@@ -188,7 +191,7 @@ class DeriveEqArgs {
 export function deriveShowAdt(
   typedDeclaration: TypedTypeDeclaration & { type: "adt" },
 ): t.Expression {
-  const usedVars: string[] = [];
+  const deriveArg = new DeriveTraitArgs("Show");
 
   const showVariant = (variant: TypedTypeVariant): t.Expression => {
     if (variant.args.length === 0) {
@@ -201,7 +204,7 @@ export function deriveShowAdt(
       type: "TemplateLiteral",
       expressions: variant.args.map((arg, i) => ({
         type: "CallExpression",
-        callee: deriveShowArg(usedVars, arg),
+        callee: deriveArg.run(arg),
         arguments: [
           {
             type: "MemberExpression",
@@ -270,71 +273,13 @@ export function deriveShowAdt(
       break;
   }
 
-  const value: t.Expression = {
+  return deriveArg.wrap({
     type: "ArrowFunctionExpression",
     params: [{ type: "Identifier", name: "x" }],
     async: false,
     expression: true,
     body,
-  };
-
-  if (usedVars.length === 0) {
-    return value;
-  }
-
-  return {
-    type: "ArrowFunctionExpression",
-    async: false,
-    expression: true,
-    params: usedVars.map(
-      (x): t.Identifier => ({
-        type: "Identifier",
-        name: `Show_${x}`,
-      }),
-    ),
-    body: value,
-  };
-}
-
-function deriveShowArg(usedVars: string[], arg: TypedTypeAst): t.Expression {
-  switch (arg.type) {
-    case "any":
-      throw new Error("[unreachable] any in constructor args");
-    case "fn":
-      throw new Error("[unreachable] cannot derive fns");
-
-    case "var":
-      if (!usedVars.includes(arg.ident)) {
-        usedVars.push(arg.ident);
-      }
-      return { type: "Identifier", name: `Show_${arg.ident}` };
-
-    case "named": {
-      if (arg.resolution === undefined) {
-        throw new Error(
-          "[unreachable] undefined resolution for type: " + arg.name,
-        );
-      }
-
-      const ident: t.Identifier = {
-        type: "Identifier",
-        name: `Show_${sanitizeNamespace(arg.resolution.namespace)}$${arg.name}`,
-      };
-
-      if (arg.args.length === 0) {
-        return ident;
-      }
-
-      return {
-        type: "CallExpression",
-        callee: {
-          type: "Identifier",
-          name: `Show_${sanitizeNamespace(arg.resolution.namespace)}$${arg.name}`,
-        },
-        arguments: arg.args.map((subArg) => deriveShowArg(usedVars, subArg)),
-      };
-    }
-  }
+  });
 }
 
 export function deriveEqStruct(
@@ -345,7 +290,7 @@ export function deriveEqStruct(
     { type: "Identifier", name: "y" },
   ];
 
-  const deriveEqArs = new DeriveEqArgs();
+  const deriveEqArs = new DeriveTraitArgs("Eq");
 
   const body: t.Expression =
     typedDeclaration.fields.length === 0
@@ -387,16 +332,9 @@ export function deriveShowStruct(
   typedDeclaration: TypedTypeDeclaration & { type: "struct" },
 ): t.Expression {
   const param: t.Identifier = { type: "Identifier", name: "x" };
+  const deriveArg = new DeriveTraitArgs("Show");
 
-  const usedVars: string[] = [];
-
-  const showedFields = typedDeclaration.fields.map((field) => {
-    // TODO convert to AST
-    const arg = `\${${deriveShowArg(usedVars, field.type_)}(x.${field.name})}`;
-    return `${field.name}: ${arg}`;
-  });
-
-  const ret: t.Expression = {
+  return deriveArg.wrap({
     type: "ArrowFunctionExpression",
     params: [param],
     async: false,
@@ -404,7 +342,7 @@ export function deriveShowStruct(
     body: {
       type: "TemplateLiteral",
       quasis:
-        showedFields.length === 0
+        typedDeclaration.fields.length === 0
           ? [
               {
                 type: "TemplateElement",
@@ -434,7 +372,7 @@ export function deriveShowStruct(
       expressions: typedDeclaration.fields.map(
         (field): t.Expression => ({
           type: "CallExpression",
-          callee: deriveShowArg(usedVars, field.type_),
+          callee: deriveArg.run(field.type_),
           arguments: [
             {
               type: "MemberExpression",
@@ -446,21 +384,5 @@ export function deriveShowStruct(
         }),
       ),
     },
-  };
-
-  if (usedVars.length === 0) {
-    return ret;
-  }
-
-  const dictsArg = usedVars.map(
-    (x): t.Identifier => ({ type: "Identifier", name: `Show_${x}` }),
-  );
-
-  return {
-    type: "ArrowFunctionExpression",
-    async: false,
-    expression: true,
-    params: dictsArg,
-    body: ret,
-  };
+  });
 }
