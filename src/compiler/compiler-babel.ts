@@ -15,7 +15,12 @@ import { optimizeModule } from "./optimize";
 import { exit } from "node:process";
 import { col } from "../utils/colors";
 import { sanitizeNamespace } from "./utils";
-import { deriveEqAdt, deriveEqStruct, deriveShowAdt } from "./derive";
+import {
+  deriveEqAdt,
+  deriveEqStruct,
+  deriveShowAdt,
+  deriveShowStruct,
+} from "./derive";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -785,6 +790,24 @@ class Compiler {
         ],
       });
     }
+
+    if (this.shouldDeriveTrait("Show", decl)) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Show_${sanitizeNamespace(this.ns)}$${decl.name}`,
+            },
+            init: deriveShowStruct(decl),
+          },
+        ],
+      });
+    }
+
     return buf;
   }
 

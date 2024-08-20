@@ -382,3 +382,85 @@ export function deriveEqStruct(
     body,
   });
 }
+
+export function deriveShowStruct(
+  typedDeclaration: TypedTypeDeclaration & { type: "struct" },
+): t.Expression {
+  const param: t.Identifier = { type: "Identifier", name: "x" };
+
+  const usedVars: string[] = [];
+
+  const showedFields = typedDeclaration.fields.map((field) => {
+    // TODO convert to AST
+    const arg = `\${${deriveShowArg(usedVars, field.type_)}(x.${field.name})}`;
+    return `${field.name}: ${arg}`;
+  });
+
+  const ret: t.Expression = {
+    type: "ArrowFunctionExpression",
+    params: [param],
+    async: false,
+    expression: true,
+    body: {
+      type: "TemplateLiteral",
+      quasis:
+        showedFields.length === 0
+          ? [
+              {
+                type: "TemplateElement",
+                tail: false,
+                value: { raw: `${typedDeclaration.name} { }` },
+              },
+            ]
+          : [
+              ...typedDeclaration.fields.map(
+                (field, index): t.TemplateElement => {
+                  const structName =
+                    index === 0 ? `${typedDeclaration.name} { ` : ", ";
+
+                  return {
+                    type: "TemplateElement",
+                    tail: false,
+                    value: { raw: `${structName}${field.name}: ` },
+                  };
+                },
+              ),
+              {
+                type: "TemplateElement",
+                tail: false,
+                value: { raw: ` }` },
+              },
+            ],
+      expressions: typedDeclaration.fields.map(
+        (field): t.Expression => ({
+          type: "CallExpression",
+          callee: deriveShowArg(usedVars, field.type_),
+          arguments: [
+            {
+              type: "MemberExpression",
+              computed: false,
+              object: param,
+              property: { type: "Identifier", name: field.name },
+            },
+          ],
+        }),
+      ),
+    },
+  };
+
+  if (usedVars.length === 0) {
+    return ret;
+  }
+
+  const dictsArg = usedVars.map(
+    (x): t.Identifier => ({ type: "Identifier", name: `Show_${x}` }),
+  );
+
+  return {
+    type: "ArrowFunctionExpression",
+    async: false,
+    expression: true,
+    params: dictsArg,
+    body: ret,
+  };
+}
