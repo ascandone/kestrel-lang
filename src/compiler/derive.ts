@@ -4,7 +4,7 @@ import {
   TypedTypeVariant,
 } from "../typecheck";
 import * as t from "@babel/types";
-import { sanitizeNamespace } from "./utils";
+import { joinAndExprs, sanitizeNamespace } from "./utils";
 
 export function deriveEqAdt(
   typedDeclaration: TypedTypeDeclaration & { type: "adt" },
@@ -16,12 +16,8 @@ export function deriveEqAdt(
   const deriveEqArgs = new DeriveTraitArgs("Eq");
 
   function variantEq(variant: TypedTypeVariant | undefined): t.Expression {
-    if (variant === undefined || variant.args.length === 0) {
-      return { type: "BooleanLiteral", value: true };
-    }
-
-    return variant.args
-      .map(
+    return joinAndExprs(
+      variant?.args.map(
         (variant, i): t.Expression => ({
           type: "CallExpression",
           callee: deriveEqArgs.run(variant),
@@ -34,15 +30,8 @@ export function deriveEqAdt(
             }),
           ),
         }),
-      )
-      .reduce(
-        (left, right): t.Expression => ({
-          type: "LogicalExpression",
-          operator: "&&",
-          left,
-          right,
-        }),
-      );
+      ) ?? [],
+    );
   }
 
   let body: t.BlockStatement | t.Expression;
@@ -291,39 +280,27 @@ export function deriveEqStruct(
 
   const deriveEqArs = new DeriveTraitArgs("Eq");
 
-  const body: t.Expression =
-    typedDeclaration.fields.length === 0
-      ? { type: "BooleanLiteral", value: true }
-      : typedDeclaration.fields
-          .map(
-            (field): t.Expression => ({
-              type: "CallExpression",
-              callee: deriveEqArs.run(field.type_),
-              arguments: params.map(
-                (param): t.Expression => ({
-                  type: "MemberExpression",
-                  computed: false,
-                  object: param,
-                  property: { type: "Identifier", name: field.name },
-                }),
-              ),
-            }),
-          )
-          .reduce(
-            (left, right): t.Expression => ({
-              type: "LogicalExpression",
-              operator: "&&",
-              left,
-              right,
-            }),
-          );
-
   return deriveEqArs.wrap({
     type: "ArrowFunctionExpression",
     async: false,
     expression: true,
     params,
-    body,
+    body: joinAndExprs(
+      typedDeclaration.fields.map(
+        (field): t.Expression => ({
+          type: "CallExpression",
+          callee: deriveEqArs.run(field.type_),
+          arguments: params.map(
+            (param): t.Expression => ({
+              type: "MemberExpression",
+              computed: false,
+              object: param,
+              property: { type: "Identifier", name: field.name },
+            }),
+          ),
+        }),
+      ),
+    ),
   });
 }
 
