@@ -17,13 +17,10 @@ export function deriveEqAdt(
     }
 
     return variant.args
-      .map((variant, i): t.Expression => {
-        const callExpr = deriveEqArgs.run(variant);
-        // return `${callEXpr}(x.a${i}, y.a${i})`;
-
-        return {
+      .map(
+        (variant, i): t.Expression => ({
           type: "CallExpression",
-          callee: { type: "Identifier", name: callExpr },
+          callee: deriveEqArgs.run(variant),
           arguments: [
             {
               type: "MemberExpression",
@@ -38,8 +35,8 @@ export function deriveEqAdt(
               computed: false,
             },
           ],
-        };
-      })
+        }),
+      )
       .reduce(
         (left, right): t.Expression => ({
           type: "LogicalExpression",
@@ -145,7 +142,7 @@ class DeriveEqArgs {
     };
   }
 
-  run(arg: TypedTypeAst) {
+  run(arg: TypedTypeAst): t.Expression {
     switch (arg.type) {
       case "any":
         throw new Error("[unreachable] any in constructor args");
@@ -159,25 +156,31 @@ class DeriveEqArgs {
           );
         }
 
-        const subArgs = arg.args.map((subArg) => this.run(subArg));
-
         const ns = sanitizeNamespace(arg.resolution.namespace);
-        // TODO convert to ASt
-        let subCall: string;
-        if (subArgs.length === 0) {
-          subCall = "";
-        } else {
-          subCall = `(${subArgs.join(", ")})`;
-        }
+
         // We assume this type impls the trait
-        return `Eq_${ns}$${arg.name}${subCall}`;
+
+        const ident: t.Identifier = {
+          type: "Identifier",
+          name: `Eq_${ns}$${arg.name}`,
+        };
+
+        if (arg.args.length === 0) {
+          return ident;
+        }
+
+        return {
+          type: "CallExpression",
+          callee: { type: "Identifier", name: `Eq_${ns}$${arg.name}` },
+          arguments: arg.args.map((subArg) => this.run(subArg)),
+        };
       }
 
       case "var":
         if (!this.usedVars.includes(arg.ident)) {
           this.usedVars.push(arg.ident);
         }
-        return `Eq_${arg.ident}`;
+        return { type: "Identifier", name: `Eq_${arg.ident}` };
     }
   }
 }
@@ -351,10 +354,7 @@ export function deriveEqStruct(
           .map(
             (field): t.Expression => ({
               type: "CallExpression",
-              callee: {
-                type: "Identifier",
-                name: deriveEqArs.run(field.type_),
-              },
+              callee: deriveEqArs.run(field.type_),
               arguments: params.map(
                 (param): t.Expression => ({
                   type: "MemberExpression",
