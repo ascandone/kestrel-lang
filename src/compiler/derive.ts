@@ -9,6 +9,10 @@ import { sanitizeNamespace } from "./utils";
 export function deriveEqAdt(
   typedDeclaration: TypedTypeDeclaration & { type: "adt" },
 ): t.Expression {
+  const params: t.Identifier[] = [
+    { type: "Identifier", name: "x" },
+    { type: "Identifier", name: "y" },
+  ];
   const deriveEqArgs = new DeriveTraitArgs("Eq");
 
   function variantEq(variant: TypedTypeVariant | undefined): t.Expression {
@@ -21,20 +25,14 @@ export function deriveEqAdt(
         (variant, i): t.Expression => ({
           type: "CallExpression",
           callee: deriveEqArgs.run(variant),
-          arguments: [
-            {
+          arguments: params.map(
+            (param): t.Expression => ({
               type: "MemberExpression",
-              object: { type: "Identifier", name: "x" },
+              object: param,
               property: { type: "Identifier", name: `_${i}` },
               computed: false,
-            },
-            {
-              type: "MemberExpression",
-              object: { type: "Identifier", name: "y" },
-              property: { type: "Identifier", name: `_${i}` },
-              computed: false,
-            },
-          ],
+            }),
+          ),
         }),
       )
       .reduce(
@@ -191,6 +189,7 @@ class DeriveTraitArgs {
 export function deriveShowAdt(
   typedDeclaration: TypedTypeDeclaration & { type: "adt" },
 ): t.Expression {
+  const param: t.Identifier = { type: "Identifier", name: "x" };
   const deriveArg = new DeriveTraitArgs("Show");
 
   const showVariant = (variant: TypedTypeVariant): t.Expression => {
@@ -208,7 +207,7 @@ export function deriveShowAdt(
         arguments: [
           {
             type: "MemberExpression",
-            object: { type: "Identifier", name: "x" },
+            object: param,
             property: { type: "Identifier", name: `_${i}` },
             computed: false,
           },
@@ -257,7 +256,7 @@ export function deriveShowAdt(
             discriminant: {
               type: "MemberExpression",
               computed: false,
-              object: { type: "Identifier", name: "x" },
+              object: param,
               property: { type: "Identifier", name: "$" },
             },
             cases: typedDeclaration.variants.map((v, index) => ({
@@ -275,7 +274,7 @@ export function deriveShowAdt(
 
   return deriveArg.wrap({
     type: "ArrowFunctionExpression",
-    params: [{ type: "Identifier", name: "x" }],
+    params: [param],
     async: false,
     expression: true,
     body,
