@@ -2251,6 +2251,125 @@ describe("derive Eq instance for Adt", () => {
   });
 });
 
+describe("derive Eq instance for structs", () => {
+  test("do not derive underivable types", () => {
+    const out = compileSrc(
+      `
+      extern type DoNotDerive
+      type Struct struct { x: DoNotDerive }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`""`);
+  });
+
+  test("no fields", () => {
+    const out = compileSrc(
+      `
+      type T struct { }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$T = (x, y) => true;"
+    `);
+  });
+
+  test("single field", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T struct { x: Int }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$T = (x, y) => Eq_Main$Int(x.x, y.x);"
+    `);
+  });
+
+  test("single field with var args", () => {
+    const out = compileSrc(
+      `
+      type T<a, b, c, d> struct { field: b }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$T = Eq_b => (x, y) => Eq_b(x.field, y.field);"
+    `);
+  });
+
+  test("many fields with concrete args", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      extern type Bool
+      type T struct {
+        int_field: Int,
+        bool_field: Bool,
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [
+          { moduleName: "Main", typeName: "Int", trait: "Eq" },
+          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+        ],
+      },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$T = (x, y) => Eq_Main$Int(x.int_field, y.int_field) && Eq_Main$Bool(x.bool_field, y.bool_field);"
+    `);
+  });
+
+  test("field with parametric arg", () => {
+    const out = compileSrc(
+      `
+      type X<a> { X(a) }
+
+      type Y<param> struct {
+        field: X<param>,
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = _0 => ({
+        $: 0,
+        _0
+      });
+      const Eq_Main$X = Eq_a => (x, y) => Eq_a(x._0, y._0);
+      const Eq_Main$Y = Eq_param => (x, y) => Eq_Main$X(Eq_param)(x.field, y.field);"
+    `);
+  });
+
+  test("recursive data structures", () => {
+    const out = compileSrc(
+      `
+      type Struct<a> struct {
+        x: a,
+        y: Struct<a>,
+      }
+    `,
+      {
+        allowDeriving: ["Eq"],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Eq_Main$Struct = Eq_a => (x, y) => Eq_a(x.x, y.x) && Eq_Main$Struct(Eq_a)(x.y, y.y);"
+    `);
+  });
+});
+
 describe("Derive Show instance for Adts", () => {
   test("do not derive underivable types", () => {
     const out = compileSrc(

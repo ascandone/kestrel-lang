@@ -15,7 +15,7 @@ import { optimizeModule } from "./optimize";
 import { exit } from "node:process";
 import { col } from "../utils/colors";
 import { sanitizeNamespace } from "./utils";
-import { deriveEqAdt, deriveShowAdt } from "./derive";
+import { deriveEqAdt, deriveEqStruct, deriveShowAdt } from "./derive";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -765,12 +765,42 @@ class Compiler {
     return buf;
   }
 
+  private compileStruct(
+    decl: TypedTypeDeclaration & { type: "struct" },
+  ): t.Statement[] {
+    const buf: t.Statement[] = [];
+    if (this.shouldDeriveTrait("Eq", decl)) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Eq_${sanitizeNamespace(this.ns)}$${decl.name}`,
+            },
+            init: deriveEqStruct(decl),
+          },
+        ],
+      });
+    }
+    return buf;
+  }
+
   compile(src: TypedModule): string {
     const body: t.Statement[] = [];
 
     for (const decl of src.typeDeclarations) {
-      if (decl.type === "adt") {
-        body.push(...this.compileAdt(decl));
+      switch (decl.type) {
+        case "extern":
+          break;
+        case "adt":
+          body.push(...this.compileAdt(decl));
+          break;
+        case "struct":
+          body.push(...this.compileStruct(decl));
+          break;
       }
     }
 

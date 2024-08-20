@@ -142,6 +142,7 @@ export function deriveEqAdt(
   return value;
 }
 
+// TODO use class method instead of passing mut arr
 function deriveEqArg(usedVars: string[], arg: TypedTypeAst): string {
   switch (arg.type) {
     case "any":
@@ -327,4 +328,67 @@ function deriveShowArg(usedVars: string[], arg: TypedTypeAst): t.Expression {
       };
     }
   }
+}
+
+export function deriveEqStruct(
+  typedDeclaration: TypedTypeDeclaration & { type: "struct" },
+): t.Expression {
+  const params: t.Identifier[] = [
+    { type: "Identifier", name: "x" },
+    { type: "Identifier", name: "y" },
+  ];
+
+  const usedVars: string[] = [];
+
+  const body: t.Expression =
+    typedDeclaration.fields.length === 0
+      ? { type: "BooleanLiteral", value: true }
+      : typedDeclaration.fields
+          .map(
+            (field): t.Expression => ({
+              type: "CallExpression",
+              callee: {
+                type: "Identifier",
+                name: deriveEqArg(usedVars, field.type_),
+              },
+              arguments: params.map(
+                (param): t.Expression => ({
+                  type: "MemberExpression",
+                  computed: false,
+                  object: param,
+                  property: { type: "Identifier", name: field.name },
+                }),
+              ),
+            }),
+          )
+          .reduce(
+            (left, right): t.Expression => ({
+              type: "LogicalExpression",
+              operator: "&&",
+              left,
+              right,
+            }),
+          );
+
+  const ret: t.Expression = {
+    type: "ArrowFunctionExpression",
+    async: false,
+    expression: true,
+    params,
+    body,
+  };
+
+  if (usedVars.length === 0) {
+    return ret;
+  }
+
+  return {
+    type: "ArrowFunctionExpression",
+    params: usedVars.map(
+      (x): t.Identifier => ({ type: "Identifier", name: `Eq_${x}` }),
+    ),
+    async: false,
+    expression: true,
+    body: ret,
+  };
 }
