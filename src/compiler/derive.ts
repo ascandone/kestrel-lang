@@ -9,7 +9,7 @@ import { sanitizeNamespace } from "./utils";
 export function deriveEqAdt(
   typedDeclaration: TypedTypeDeclaration & { type: "adt" },
 ): t.Expression {
-  const usedVars: string[] = [];
+  const deriveEqArgs = new DeriveEqArgs();
 
   function variantEq(variant: TypedTypeVariant | undefined): t.Expression {
     if (variant === undefined || variant.args.length === 0) {
@@ -18,7 +18,7 @@ export function deriveEqAdt(
 
     return variant.args
       .map((variant, i): t.Expression => {
-        const callExpr = deriveEqArg(usedVars, variant);
+        const callExpr = deriveEqArgs.run(variant);
         // return `${callEXpr}(x.a${i}, y.a${i})`;
 
         return {
@@ -114,7 +114,7 @@ export function deriveEqAdt(
     };
   }
 
-  let value: t.Expression = {
+  return deriveEqArgs.wrap({
     type: "ArrowFunctionExpression",
     async: false,
     expression: true,
@@ -123,58 +123,62 @@ export function deriveEqAdt(
       { type: "Identifier", name: "y" },
     ],
     body,
-  };
+  });
+}
 
-  const dictsArg = usedVars.map(
-    (x): t.Identifier => ({ type: "Identifier", name: `Eq_${x}` }),
-  );
+class DeriveEqArgs {
+  private usedVars: string[] = [];
 
-  if (dictsArg.length !== 0) {
-    value = {
+  wrap(expr: t.Expression): t.Expression {
+    if (this.usedVars.length === 0) {
+      return expr;
+    }
+
+    return {
       type: "ArrowFunctionExpression",
       async: false,
       expression: true,
-      params: dictsArg,
-      body: value,
+      params: this.usedVars.map(
+        (x): t.Identifier => ({ type: "Identifier", name: `Eq_${x}` }),
+      ),
+      body: expr,
     };
   }
 
-  return value;
-}
+  run(arg: TypedTypeAst) {
+    switch (arg.type) {
+      case "any":
+        throw new Error("[unreachable] any in constructor args");
+      case "fn":
+        throw new Error("[unreachable] cannot derive fns");
 
-// TODO use class method instead of passing mut arr
-function deriveEqArg(usedVars: string[], arg: TypedTypeAst): string {
-  switch (arg.type) {
-    case "any":
-      throw new Error("[unreachable] any in constructor args");
-    case "fn":
-      throw new Error("[unreachable] cannot derive fns");
+      case "named": {
+        if (arg.resolution === undefined) {
+          throw new Error(
+            "[unreachable] undefined resolution for type: " + arg.name,
+          );
+        }
 
-    case "named": {
-      if (arg.resolution === undefined) {
-        throw new Error(
-          "[unreachable] undefined resolution for type: " + arg.name,
-        );
+        const subArgs = arg.args.map((subArg) => this.run(subArg));
+
+        const ns = sanitizeNamespace(arg.resolution.namespace);
+        // TODO convert to ASt
+        let subCall: string;
+        if (subArgs.length === 0) {
+          subCall = "";
+        } else {
+          subCall = `(${subArgs.join(", ")})`;
+        }
+        // We assume this type impls the trait
+        return `Eq_${ns}$${arg.name}${subCall}`;
       }
 
-      const subArgs = arg.args.map((subArg) => deriveEqArg(usedVars, subArg));
-
-      const ns = sanitizeNamespace(arg.resolution.namespace);
-      let subCall: string;
-      if (subArgs.length === 0) {
-        subCall = "";
-      } else {
-        subCall = `(${subArgs.join(", ")})`;
-      }
-      // We assume this type impls the trait
-      return `Eq_${ns}$${arg.name}${subCall}`;
+      case "var":
+        if (!this.usedVars.includes(arg.ident)) {
+          this.usedVars.push(arg.ident);
+        }
+        return `Eq_${arg.ident}`;
     }
-
-    case "var":
-      if (!usedVars.includes(arg.ident)) {
-        usedVars.push(arg.ident);
-      }
-      return `Eq_${arg.ident}`;
   }
 }
 
@@ -338,7 +342,7 @@ export function deriveEqStruct(
     { type: "Identifier", name: "y" },
   ];
 
-  const usedVars: string[] = [];
+  const deriveEqArs = new DeriveEqArgs();
 
   const body: t.Expression =
     typedDeclaration.fields.length === 0
@@ -349,7 +353,7 @@ export function deriveEqStruct(
               type: "CallExpression",
               callee: {
                 type: "Identifier",
-                name: deriveEqArg(usedVars, field.type_),
+                name: deriveEqArs.run(field.type_),
               },
               arguments: params.map(
                 (param): t.Expression => ({
@@ -370,25 +374,11 @@ export function deriveEqStruct(
             }),
           );
 
-  const ret: t.Expression = {
+  return deriveEqArs.wrap({
     type: "ArrowFunctionExpression",
     async: false,
     expression: true,
     params,
     body,
-  };
-
-  if (usedVars.length === 0) {
-    return ret;
-  }
-
-  return {
-    type: "ArrowFunctionExpression",
-    params: usedVars.map(
-      (x): t.Identifier => ({ type: "Identifier", name: `Eq_${x}` }),
-    ),
-    async: false,
-    expression: true,
-    body: ret,
-  };
+  });
 }
