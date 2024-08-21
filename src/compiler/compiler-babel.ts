@@ -1,4 +1,5 @@
 import {
+  TypedBinding,
   TypedDeclaration,
   TypedExpr,
   TypedMatchPattern,
@@ -14,7 +15,7 @@ import { BinaryExpression } from "@babel/types";
 import { optimizeModule } from "./optimize";
 import { exit } from "node:process";
 import { col } from "../utils/colors";
-import { sanitizeNamespace } from "./utils";
+import { joinAndExprs, sanitizeNamespace } from "./utils";
 import {
   deriveEqAdt,
   deriveEqStruct,
@@ -42,6 +43,35 @@ class Compiler {
   private frames: Frame[] = [];
   private bindingsJsName = new WeakMap<Binding, t.Expression>();
 
+  private tailCallIdent: t.Identifier | undefined;
+
+  private isTailCall(
+    src: TypedExpr & { type: "application" },
+    tailPosBinding: Binding<unknown> | undefined,
+  ): boolean {
+    if (tailPosBinding === undefined) {
+      return false;
+    }
+
+    if (src.caller.type !== "identifier") {
+      return false;
+    }
+
+    if (src.caller.resolution === undefined) {
+      // This should be unreachable
+      return false;
+    }
+
+    switch (src.caller.resolution.type) {
+      case "local-variable":
+        return src.caller.resolution.binding === tailPosBinding;
+      case "global-variable":
+        return src.caller.resolution.declaration.binding === tailPosBinding;
+      case "constructor":
+        return false;
+    }
+  }
+
   private nextId = 0;
   genFreshId(): string {
     return `GEN__${this.nextId++}`;
@@ -64,7 +94,7 @@ class Compiler {
     expr: TypedExpr,
     makeIdent = () => this.makeFreshIdent(),
   ): t.Identifier {
-    const jsExpr = this.compileExpr(expr);
+    const jsExpr = this.compileExpr(expr, undefined);
     if (jsExpr.type === "Identifier") {
       return jsExpr;
     }
@@ -89,7 +119,10 @@ class Compiler {
     return { type: "Identifier", name };
   }
 
-  private compileExpr(src: TypedExpr): t.Expression {
+  private compileExpr(
+    src: TypedExpr,
+    tailPosCaller: Binding<unknown> | undefined,
+  ): t.Expression {
     switch (src.type) {
       case "syntax-err":
         throw new Error("[unreachable]");
@@ -98,13 +131,33 @@ class Compiler {
         return compileConst(src.value);
 
       case "application": {
+        if (this.isTailCall(src, tailPosCaller)) {
+          const tailCallIdent = this.makeFreshIdent();
+          this.tailCallIdent = tailCallIdent;
+
+          for (let i = 0; i < src.args.length; i++) {
+            const expr = this.compileExpr(src.args[i]!, tailPosCaller);
+            this.statementsBuf.push({
+              type: "ExpressionStatement",
+              expression: {
+                type: "AssignmentExpression",
+                operator: "=",
+                left: { type: "Identifier", name: `GEN_TC__${i}` },
+                right: expr,
+              },
+            });
+          }
+
+          return tailCallIdent;
+        }
+
         if (src.caller.type === "identifier") {
           if (src.caller.name === "==" && isPrimitiveEq(src.args)) {
             return {
               type: "BinaryExpression",
               operator: "===",
-              left: this.compileExpr(src.args[0]!),
-              right: this.compileExpr(src.args[1]!),
+              left: this.compileExpr(src.args[0]!, undefined),
+              right: this.compileExpr(src.args[1]!, undefined),
             };
           }
 
@@ -113,8 +166,8 @@ class Compiler {
             return {
               type: "BinaryExpression",
               operator: infixName,
-              left: this.compileExpr(src.args[0]!),
-              right: this.compileExpr(src.args[1]!),
+              left: this.compileExpr(src.args[0]!, undefined),
+              right: this.compileExpr(src.args[1]!, undefined),
             };
           }
 
@@ -123,8 +176,8 @@ class Compiler {
             return {
               type: "LogicalExpression",
               operator: infixLogicalName,
-              left: this.compileExpr(src.args[0]!),
-              right: this.compileExpr(src.args[1]!),
+              left: this.compileExpr(src.args[0]!, undefined),
+              right: this.compileExpr(src.args[1]!, undefined),
             };
           }
 
@@ -133,7 +186,7 @@ class Compiler {
             return {
               type: "UnaryExpression",
               operator: prefixName,
-              argument: this.compileExpr(src.args[0]!),
+              argument: this.compileExpr(src.args[0]!, undefined),
               prefix: true,
             };
           }
@@ -141,8 +194,8 @@ class Compiler {
 
         return {
           type: "CallExpression",
-          callee: this.compileExpr(src.caller),
-          arguments: src.args.map((arg) => this.compileExpr(arg)),
+          callee: this.compileExpr(src.caller, undefined),
+          arguments: src.args.map((arg) => this.compileExpr(arg, undefined)),
         };
       }
 
@@ -226,6 +279,8 @@ class Compiler {
           new Frame({
             type: "let",
             jsPatternName,
+            binding:
+              src.pattern.type === "identifier" ? src.pattern : undefined,
           }),
         );
 
@@ -236,7 +291,7 @@ class Compiler {
         if (src.pattern.type === "identifier") {
           this.bindingsJsName.set(src.pattern, freshIdent);
         }
-        const value = this.compileExpr(src.value);
+        const value = this.compileExpr(src.value, undefined);
         this.statementsBuf.push({
           type: "VariableDeclaration",
           kind: "const",
@@ -252,14 +307,29 @@ class Compiler {
 
         this.frames.pop();
 
-        return this.compileExpr(src.body);
+        return this.compileExpr(src.body, tailPosCaller);
 
         // we could call this.bindingsJsName.delete(src.pattern) here
       }
 
       case "fn": {
-        const frame = new Frame({ type: "fn" });
-        this.frames.push(frame);
+        const callerBinding = (() => {
+          const curFrame = this.getCurrentFrame();
+          if (curFrame.data.type !== "let") {
+            return undefined;
+          }
+          return curFrame.data.binding;
+        })();
+
+        const wasTailCall = this.tailCallIdent;
+        this.tailCallIdent = undefined;
+
+        this.frames.push(new Frame({ type: "fn" }));
+        const cleanup = () => {
+          this.frames.pop();
+          this.tailCallIdent = wasTailCall;
+        };
+
         const [{ params, body }, stms] = this.wrapStatements(() => {
           const params = src.params.map((param): t.Identifier => {
             if (param.type === "identifier") {
@@ -282,39 +352,97 @@ class Compiler {
 
             return ident;
           });
-          const body = this.compileExpr(src.body);
+          const body = this.compileExpr(src.body, callerBinding);
           return { params, body };
         });
-        this.frames.pop();
 
-        const bodyStm: t.BlockStatement | t.Expression =
-          stms.length === 0
+        const bodyStms: t.Expression | t.BlockStatement = (() => {
+          if (this.tailCallIdent !== undefined) {
+            return {
+              type: "BlockStatement",
+              directives: [],
+              body: [
+                {
+                  type: "VariableDeclaration",
+                  kind: "let",
+                  declarations: [
+                    { type: "VariableDeclarator", id: this.tailCallIdent },
+                  ],
+                },
+                {
+                  type: "WhileStatement",
+                  test: { type: "BooleanLiteral", value: true },
+                  body: {
+                    type: "BlockStatement",
+                    directives: [],
+                    body: [
+                      ...params.map(
+                        (id, index): t.Statement => ({
+                          type: "VariableDeclaration",
+                          kind: "const",
+                          declarations: [
+                            {
+                              type: "VariableDeclarator",
+                              id,
+                              init: {
+                                type: "Identifier",
+                                name: `GEN_TC__${index}`,
+                              },
+                            },
+                          ],
+                        }),
+                      ),
+                      ...stms,
+                    ],
+                  },
+                },
+                {
+                  type: "ReturnStatement",
+                  argument: this.tailCallIdent,
+                },
+              ],
+            };
+          }
+
+          return stms.length === 0
             ? body
             : {
                 type: "BlockStatement",
                 directives: [],
                 body: [...stms, { type: "ReturnStatement", argument: body }],
               };
+        })();
 
+        const params_ =
+          this.tailCallIdent === undefined
+            ? params
+            : params.map(
+                (_, i): t.Identifier => ({
+                  type: "Identifier",
+                  name: `GEN_TC__${i}`,
+                }),
+              );
+
+        cleanup();
         return {
           type: "ArrowFunctionExpression",
           async: false,
           expression: true,
-          params,
-          body: bodyStm,
+          params: params_,
+          body: bodyStms,
         };
       }
 
       case "if": {
         const ident = this.makeFreshIdent();
 
-        const test = this.compileExpr(src.condition);
+        const test = this.compileExpr(src.condition, undefined);
         const [thenBranchExpr, thenBranchStmts] = this.wrapStatements(() =>
-          this.compileExpr(src.then),
+          this.compileExpr(src.then, tailPosCaller),
         );
 
         const [elseBranchExpr, elseBranchStmts] = this.wrapStatements(() =>
-          this.compileExpr(src.else),
+          this.compileExpr(src.else, tailPosCaller),
         );
 
         this.statementsBuf.push(
@@ -367,7 +495,7 @@ class Compiler {
       case "list-literal":
         return src.values.reduceRight<t.Expression>(
           (prev, src): t.Expression => {
-            const compiledExpr = this.compileExpr(src);
+            const compiledExpr = this.compileExpr(src, undefined);
             return {
               type: "CallExpression",
               callee: { type: "Identifier", name: "List$Cons" },
@@ -390,21 +518,14 @@ class Compiler {
             pattern,
             matchedExpr,
           );
-          const ifCondition: t.Expression =
-            // TODO if if(true) is encountered, we could just return retExpr
-            exprs.length === 0
-              ? { type: "BooleanLiteral", value: true }
-              : exprs.reduce((left, right) => ({
-                  type: "LogicalExpression",
-                  operator: "&&",
-                  left,
-                  right,
-                }));
 
           // TODO wrap statements
           checks.push([
-            ifCondition,
-            ...this.wrapStatements(() => this.compileExpr(retExpr)),
+            // TODO if if(true) is encountered, we could just return retExpr
+            joinAndExprs(exprs),
+            ...this.wrapStatements(() =>
+              this.compileExpr(retExpr, tailPosCaller),
+            ),
           ]);
         }
 
@@ -491,7 +612,7 @@ class Compiler {
             properties.push({
               type: "ObjectProperty",
               key: { type: "Identifier", name: structLitField.field.name },
-              value: this.compileExpr(structLitField.value),
+              value: this.compileExpr(structLitField.value, undefined),
               shorthand: true,
               computed: false,
             });
@@ -523,7 +644,7 @@ class Compiler {
       case "field-access":
         return {
           type: "MemberExpression",
-          object: this.compileExpr(src.struct),
+          object: this.compileExpr(src.struct, undefined),
           property: { type: "Identifier", name: src.field.name },
           computed: false,
         };
@@ -667,10 +788,11 @@ class Compiler {
       new Frame({
         type: "let",
         jsPatternName: decl.binding.name,
+        binding: decl.binding,
       }),
     );
 
-    let out = this.compileExpr(decl.value);
+    let out = this.compileExpr(decl.value, undefined);
     this.frames.pop();
 
     const dictParams = findDeclarationDictsParams(decl.binding.$.asType());
@@ -998,7 +1120,11 @@ function makeVariantBody(index: number, argsNumber: number): t.Expression {
 class Frame {
   constructor(
     public readonly data:
-      | { type: "let"; jsPatternName: string }
+      | {
+          type: "let";
+          jsPatternName: string;
+          binding: TypedBinding | undefined;
+        }
       | { type: "fn" },
   ) {}
 

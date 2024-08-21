@@ -640,6 +640,246 @@ describe("list literal", () => {
   });
 });
 
+describe("TCO", () => {
+  test("does not apply inside infix application", () => {
+    const out = compileSrc(`
+    extern let (+): Fn(Int, Int) -> Int
+    let loop = fn {
+      1 + loop()
+    }
+`);
+
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$loop = () => 1 + Main$loop();"`,
+    );
+  });
+
+  test("does not apply inside application", () => {
+    const out = compileSrc(`
+    extern let a: Fn(a) -> a
+    let loop = fn {
+      a(loop())
+    }
+`);
+
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$loop = () => Main$a(Main$loop());"`,
+    );
+  });
+
+  test("does not apply to let value", () => {
+    const out = compileSrc(`
+    let f = fn x {
+      let a = f(x + 1);
+      a
+    }
+    
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f = x => {
+        const a = Main$f(x + 1);
+        return a;
+      };"
+    `);
+  });
+
+  test("toplevel, no args", () => {
+    const out = compileSrc(`
+      let loop = fn {
+        loop()
+      }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$loop = () => {
+        let GEN__0;
+        while (true) {}
+        return GEN__0;
+      };"
+    `);
+  });
+
+  test("toplevel with args", () => {
+    const out = compileSrc(`
+      let loop = fn x, y {
+        loop(x + 1, y)
+      }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$loop = (GEN_TC__0, GEN_TC__1) => {
+        let GEN__0;
+        while (true) {
+          const x = GEN_TC__0;
+          const y = GEN_TC__1;
+          GEN_TC__0 = x + 1;
+          GEN_TC__1 = y;
+        }
+        return GEN__0;
+      };"
+    `);
+  });
+
+  test("toplevel with match args", () => {
+    const out = compileSrc(`
+      type Box { Box(a) }
+
+      let loop = fn x, Box(y) {
+        loop(x + 1, Box(y))
+      }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Box = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$loop = (GEN_TC__0, GEN_TC__1) => {
+        let GEN__1;
+        while (true) {
+          const x = GEN_TC__0;
+          const GEN__0 = GEN_TC__1;
+          GEN_TC__0 = x + 1;
+          GEN_TC__1 = Main$Box(GEN__0._0);
+        }
+        return GEN__1;
+      };"
+    `);
+  });
+
+  test("inside if", () => {
+    const out = compileSrc(`
+      extern let (==): Fn(a, a) -> Bool
+      let to_zero = fn x {
+        if x == 0 {
+          x
+        } else {
+          to_zero(x - 1)
+        }
+      }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$to_zero = GEN_TC__0 => {
+        let GEN__1;
+        while (true) {
+          const x = GEN_TC__0;
+          let GEN__0;
+          if (x === 0) {
+            GEN__0 = x;
+          } else {
+            GEN_TC__0 = x - 1;
+            GEN__0 = GEN__1;
+          }
+        }
+        return GEN__1;
+      };"
+    `);
+  });
+
+  test.todo("Example: List.reduce", () => {
+    const out = compileSrc(
+      `
+      pub let reduce = fn lst, acc, f {
+        match lst {
+          Nil => acc,
+          hd :: tl => reduce(lst, f(acc, hd), f),
+        }
+      }
+  `,
+      { ns: "List" },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const List$reduce = (GEN_TC__0, GEN_TC__1, GEN_TC__2) => {
+        while (true) {
+          const lst = GEN_TC__0;
+          const acc = GEN_TC__1;
+          const f = GEN_TC__2;
+          const GEN__0 = lst;
+          if (GEN__0.$ === "Nil") {
+            return acc;
+          } else if (GEN__0.$ === "Cons") {
+            GEN_TC__0 = lst;
+            GEN_TC__1 = f(acc, GEN__0.a0);
+            GEN_TC__2 = f;
+          } else {
+            throw new Error("[non exhaustive match]")
+          }
+        }
+      }
+      "
+    `);
+  });
+
+  test.todo("a tc call should not leak into other expressions", () => {
+    const out = compileSrc(`
+    let ap = fn f { f(10) }
+
+    pub let f = fn a {
+      if a {
+        f()
+      } else {
+        let id = ap(fn x { x });
+        0
+      }
+    }
+`);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$ap = (f) => {
+        return f(10);
+      }
+
+      const Main$f = (GEN_TC__0) => {
+        while (true) {
+          const a = GEN_TC__0;
+          if (a) {
+          } else {
+            const id$GEN__0 = (x) => {
+              return x;
+            }
+            const id = Main$ap(id$GEN__0);
+            return 0;
+          }
+        }
+      }
+      "
+    `);
+  });
+
+  test.todo("Namespaced", () => {
+    const out = compileSrc(`let f1 = fn { f1() }`, { ns: "Mod" });
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Mod$f1 = () => {
+        while (true) {
+        }
+      }
+      "
+    `);
+  });
+
+  test.todo("Local vars shadow tail calls", () => {
+    const out = compileSrc(`
+      let f1 = fn {
+        let f1 = fn { 0 };
+        f1()
+      }`);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$f1 = () => {
+        const f1 = () => {
+          return 0;
+        }
+        return f1();
+      }
+      "
+    `);
+  });
+});
+
 describe("ADTs", () => {
   test("create ADTs with zero args", () => {
     const out = compileSrc(`type T { X, Y }`);
