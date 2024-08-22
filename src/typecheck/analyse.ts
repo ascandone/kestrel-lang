@@ -6,6 +6,7 @@ import {
   TraitNotSatified,
   TypeMismatch,
   UnboundVariable,
+  UnusedVariable,
 } from "../errors";
 import {
   Binding,
@@ -58,6 +59,8 @@ export class Analysis {
     UntypedExpr & { type: "identifier" },
     IdentifierResolution
   >();
+  private unusedVariables = new WeakSet<Binding>();
+
   private typeAnnotations = new WeakMap<TypedNode, TVar>();
   private module: UntypedModule;
 
@@ -140,6 +143,15 @@ export class Analysis {
     }
   }
 
+  private checkUnusedVars(expr: Binding) {
+    if (this.unusedVariables.has(expr)) {
+      this.errors.push({
+        span: expr.span,
+        description: new UnusedVariable(expr.name, "local"),
+      });
+    }
+  }
+
   private runResolution(expr: UntypedExpr, localScope: LocalScope): undefined {
     switch (expr.type) {
       case "syntax-err":
@@ -155,6 +167,16 @@ export class Analysis {
           });
         } else {
           this.identifiersResolutions.set(expr, res);
+
+          switch (res.type) {
+            case "local-variable":
+              this.unusedVariables.delete(res.binding);
+              break;
+
+            case "global-variable":
+            case "constructor":
+              break;
+          }
         }
         return;
       }
@@ -199,12 +221,19 @@ export class Analysis {
 
         const bindingsEntries = this.extractPatternIdentifiers(
           expr.pattern,
-        ).map((p) => [p.name, p]);
+        ).map((p) => [p.name, p] as const);
+        for (const [_, binding] of bindingsEntries) {
+          this.unusedVariables.add(binding);
+        }
 
         this.runResolution(expr.body, {
           ...localScope,
           ...Object.fromEntries(bindingsEntries),
         });
+
+        for (const [_, binding] of bindingsEntries) {
+          this.checkUnusedVars(binding);
+        }
         return;
       }
 
