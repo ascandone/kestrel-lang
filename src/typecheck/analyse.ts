@@ -1,6 +1,7 @@
 /* eslint-disable require-yield */
 import {
   ErrorInfo,
+  InvalidPipe,
   OccursCheck,
   TraitNotSatified,
   TypeMismatch,
@@ -159,7 +160,29 @@ export class Analysis {
         }
         return;
 
-      case "pipe":
+      case "pipe": {
+        if (expr.right.type !== "application") {
+          this.errors.push({
+            span: expr.right.span,
+            description: new InvalidPipe(),
+          });
+          return;
+        }
+
+        // Do not typecheck 'expr.right' recursively: function has wrong number of args
+        this.typecheckExpr(expr.right.caller);
+        this.typecheckExpr(expr.left);
+        this.unifyNode(expr.right.caller, {
+          type: "fn",
+          args: [
+            this.getType(expr.left),
+            ...expr.right.args.map((arg) => this.getType(arg)),
+          ],
+          return: this.getType(expr),
+        });
+
+        return;
+      }
       case "let#":
       case "infix":
       case "list-literal":

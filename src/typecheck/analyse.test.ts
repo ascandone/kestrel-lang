@@ -4,6 +4,7 @@ import { typeToString } from "./type";
 import {
   DuplicateDeclaration,
   ErrorInfo,
+  InvalidPipe,
   TypeMismatch,
   UnboundVariable,
 } from "../errors";
@@ -195,6 +196,44 @@ test("application args should be typechecked", () => {
       span: spanOf(a.source, "42"),
     },
   ]);
+});
+
+test.todo("infer pipe operator left side and right side");
+
+test("pipe operator", () => {
+  const a = new Analysis(
+    "Main",
+    `
+    extern type T
+    extern let t: T
+
+    extern type T1
+    extern let t1: T1
+    
+    extern type Ret
+
+    extern let f: Fn(T, T1) -> Ret
+    pub let x = t |> f(t1)
+    // let x = f(t, t1)
+  `,
+  );
+
+  expect(a.errors).toEqual([]);
+  expect(getTypes(a)).toEqual({
+    x: "Ret",
+  });
+});
+
+test("invalid pipe operator", () => {
+  const a = new Analysis(
+    "Main",
+    `
+    pub let x = 0 |> 1
+  `,
+  );
+
+  expect(a.errors).toHaveLength(1);
+  expect(a.errors[0]?.description).toBeInstanceOf(InvalidPipe);
 });
 
 function getTypes(a: Analysis): Record<string, string> {
