@@ -418,6 +418,45 @@ describe("let expressions", () => {
   });
 });
 
+describe("list literal", () => {
+  test("typecheck empty list", () => {
+    const a = new Analysis("Main", `pub let lst = []`);
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      lst: "List<a>",
+    });
+  });
+
+  test("typecheck singleton list as the value's type", () => {
+    const a = new Analysis("Main", `pub let lst = [42]`);
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      lst: "List<Int>",
+    });
+  });
+
+  test("typecheck many values", () => {
+    const a = new Analysis("Main", `pub let lst = [0, 1, 2]`);
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      lst: "List<Int>",
+    });
+  });
+
+  test("fail typechecking when values have different type", () => {
+    const a = new Analysis("Main", `pub let lst = [0, 1, "not an int"]`);
+
+    expect(a.errors).not.toEqual([]);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(getTypes(a)).toEqual({
+      lst: "List<Int>",
+    });
+  });
+});
+
 describe("pipe operator", () => {
   test.todo("infer pipe operator left side and right side");
 
