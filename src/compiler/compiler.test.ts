@@ -2242,8 +2242,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  // TODO fix
-  test.todo("== handles traits dicts on adts", () => {
+  test("== handles traits dicts on adts", () => {
     const out = compileSrc(
       `
     extern type Int
@@ -2252,15 +2251,16 @@ describe("traits compilation", () => {
     type T { C(Int) }
     let f = eq(C(0), C(1))
 `,
-      { allowDeriving: ["Eq"] },
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [{ typeName: "Int", moduleName: "Main", trait: "Eq" }],
+      },
     );
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$C = _0 => _0;
-      const Eq_Main$T = (x, y) => {
-        return Eq_Main$Int(x.a0, y.a0);
-      }
-      const Main$f = Main$_eq(Eq_Main$T)(Main$C(0), Main$C(1));"
+      const Eq_Main$T = (x, y) => Eq_Main$Int(x, y);
+      const Main$f = Main$eq(Eq_Main$T)(Main$C(0), Main$C(1));"
     `);
   });
 
