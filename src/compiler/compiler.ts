@@ -189,8 +189,11 @@ class Compiler {
 
         const matchedExpr = this.precomputeValue(src.expr);
 
-        const checks: [condition: t.Expression, statements: t.Statement[]][] =
-          [];
+        const checks: [
+          condition: t.Expression | undefined,
+          statements: t.Statement[],
+        ][] = [];
+
         for (const [pattern, retExpr] of src.clauses) {
           const exprs = this.compileCheckPatternConditions(
             pattern,
@@ -201,50 +204,61 @@ class Compiler {
             this.compileExprAsJsStms(retExpr, tailPosCaller, doNotDeclare(as));
           });
 
-          checks.push([
-            // TODO if if(true) is encountered, we could just return retExpr
-            joinAndExprs(exprs),
-            stms,
-          ]);
+          if (exprs.length === 0) {
+            checks.push([undefined, stms]);
+            break;
+          }
+
+          checks.push([joinAndExprs(exprs), stms]);
         }
 
-        const helper = (index: number): t.Statement => {
+        const helper = (index: number): t.Statement[] => {
           if (index >= checks.length) {
-            return {
-              type: "BlockStatement",
-              directives: [],
-              body: [
-                {
-                  type: "ThrowStatement",
-                  argument: {
-                    type: "NewExpression",
-                    callee: { type: "Identifier", name: "Error" },
-                    arguments: [
-                      {
-                        type: "StringLiteral",
-                        value: "[non exhaustive match]",
-                      },
-                    ],
-                  },
+            return [
+              {
+                type: "ThrowStatement",
+                argument: {
+                  type: "NewExpression",
+                  callee: { type: "Identifier", name: "Error" },
+                  arguments: [
+                    {
+                      type: "StringLiteral",
+                      value: "[non exhaustive match]",
+                    },
+                  ],
                 },
-              ],
-            };
+              },
+            ];
           }
 
           const [condition, stms] = checks[index]!;
-          return {
-            type: "IfStatement",
-            test: condition,
-            consequent: {
-              type: "BlockStatement",
-              directives: [],
-              body: stms,
+          if (condition === undefined) {
+            return stms;
+          }
+
+          const next = helper(index + 1);
+          const isIfElse = next.length === 1 && next[0]!.type === "IfStatement";
+          return [
+            {
+              type: "IfStatement",
+              test: condition,
+              consequent: {
+                type: "BlockStatement",
+                directives: [],
+                body: stms,
+              },
+              alternate: isIfElse
+                ? next[0]!
+                : {
+                    type: "BlockStatement",
+                    directives: [],
+                    body: next,
+                  },
             },
-            alternate: helper(index + 1),
-          };
+          ];
         };
 
-        this.statementsBuf.push(helper(0));
+        this.statementsBuf.push(...helper(0));
         return;
       }
 
