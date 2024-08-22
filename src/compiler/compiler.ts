@@ -870,9 +870,15 @@ class Compiler {
   private compileAdt(
     decl: TypedTypeDeclaration & { type: "adt" },
   ): t.Statement[] {
-    const buf = decl.variants.map(
-      (d, index): t.Statement => this.compileVariant(d, index),
-    );
+    const buf: t.Statement[] = [];
+
+    if (this.ns !== "Bool" && decl.name !== "Bool") {
+      buf.push(
+        ...decl.variants.map(
+          (d, index): t.Statement => this.compileVariant(d, index),
+        ),
+      );
+    }
 
     if (
       // Bool equality is implemented inside core

@@ -1,4 +1,4 @@
-import { test, expect, describe } from "vitest";
+import { test, expect, describe, beforeEach } from "vitest";
 import { UntypedModule, unsafeParse } from "../parser";
 import {
   Deps,
@@ -9,6 +9,7 @@ import {
 } from "../typecheck";
 import { CompileProjectOptions, compile, compileProject } from "./compiler";
 import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
+import { TVar } from "../typecheck/type";
 
 describe("datatype representation", () => {
   test("int", () => {
@@ -44,6 +45,16 @@ describe("datatype representation", () => {
   test("char", () => {
     const out = compileSrc(`pub let x = 'a'`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = \`a\`;"`);
+  });
+
+  test("do not emit Bool repr", () => {
+    const out = compileSrc(
+      `
+      type Bool { True, False }
+    `,
+      { ns: "Bool" },
+    );
+    expect(out).toMatchInlineSnapshot(`""`);
   });
 
   test("represent Bool with booleans", () => {
@@ -2951,6 +2962,10 @@ describe("Derive Show instance for structs", () => {
       "const Show_Main$Str = Show_a => x => \`Str { field: \${Show_Main$Str(Show_a)(x.field)} }\`;"
     `);
   });
+});
+
+beforeEach(() => {
+  TVar.resetTraitImpls();
 });
 
 type CompileSrcOpts = {
