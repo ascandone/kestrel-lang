@@ -7,6 +7,7 @@ import {
   InvalidPipe,
   TypeMismatch,
   UnboundVariable,
+  UnusedVariable,
 } from "../errors";
 import { spanOf } from "./typedAst/__test__/utils";
 
@@ -454,6 +455,65 @@ describe("pipe operator", () => {
 
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(InvalidPipe);
+  });
+});
+
+describe("unused locals checks", () => {
+  test("detect unused let locals", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      pub let f = {
+        let unused_var = 42;
+        0
+      }
+    `,
+    );
+
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        span: spanOf(a.source, "unused_var"),
+        description: new UnusedVariable("unused_var", "local"),
+      },
+    ]);
+  });
+
+  test.todo("detect unused pattern match locals", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    pub let a = match "something" {
+      x => 42,
+    }
+  `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(UnusedVariable);
+  });
+
+  test.todo("detect unused private globals", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    let x = 42
+  `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(UnusedVariable);
+  });
+
+  test("do not detect unused globals when private vars are used", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    let x = 42
+    pub let y = x
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
   });
 });
 
