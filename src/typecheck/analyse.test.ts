@@ -204,6 +204,23 @@ describe("functions and application", () => {
       },
     ]);
   });
+
+  test("typecheck fn args", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    extern type Int
+    extern type Bool
+    extern let cmp: Fn(Int, Int) -> Bool
+    pub let f = fn x, y { cmp(x, y) }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Int, Int) -> Bool",
+    });
+  });
 });
 
 describe("pipe operator", () => {
