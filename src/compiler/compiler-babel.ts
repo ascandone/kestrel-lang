@@ -103,7 +103,7 @@ class Compiler {
     expr: TypedExpr,
     makeIdent = () => this.makeFreshIdent(),
   ): t.Identifier {
-    const jsExpr = this.compileExprAsJsExpr(expr, undefined);
+    const jsExpr = this.compileExpr(expr, undefined);
     if (jsExpr.type === "Identifier") {
       return jsExpr;
     }
@@ -128,7 +128,7 @@ class Compiler {
     return { type: "Identifier", name };
   }
 
-  private compileExprAsJsStms(
+  private compileExprTailCall(
     src: TypedExpr,
     tailPosCaller: Binding<unknown> | undefined,
     as: CompilationMode,
@@ -146,13 +146,13 @@ class Compiler {
           });
         }
 
-        const test = this.compileExprAsJsExpr(src.condition, undefined);
+        const test = this.compileExpr(src.condition, undefined);
         const [, thenBranchStmts] = this.wrapStatements(() =>
-          this.compileExprAsJsStms(src.then, tailPosCaller, doNotDeclare(as)),
+          this.compileExprTailCall(src.then, tailPosCaller, doNotDeclare(as)),
         );
 
         const [, elseBranchStmts] = this.wrapStatements(() =>
-          this.compileExprAsJsStms(src.else, tailPosCaller, doNotDeclare(as)),
+          this.compileExprTailCall(src.else, tailPosCaller, doNotDeclare(as)),
         );
 
         this.statementsBuf.push({
@@ -183,7 +183,7 @@ class Compiler {
       case "let":
       case "match":
       default: {
-        const expr = this.compileExprAsJsExpr(src, tailPosCaller);
+        const expr = this.compileExpr(src, tailPosCaller);
         switch (as.type) {
           case "assign_var":
             if (as.declare) {
@@ -233,7 +233,7 @@ class Compiler {
     }
   }
 
-  private compileExprAsJsExpr(
+  private compileExpr(
     src: TypedExpr,
     tailPosCaller: Binding<unknown> | undefined,
   ): t.Expression {
@@ -250,7 +250,7 @@ class Compiler {
           this.tailCallIdent = tailCallIdent;
 
           for (let i = 0; i < src.args.length; i++) {
-            const expr = this.compileExprAsJsExpr(src.args[i]!, tailPosCaller);
+            const expr = this.compileExpr(src.args[i]!, tailPosCaller);
             this.statementsBuf.push({
               type: "ExpressionStatement",
               expression: {
@@ -270,8 +270,8 @@ class Compiler {
             return {
               type: "BinaryExpression",
               operator: "===",
-              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
-              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
+              left: this.compileExpr(src.args[0]!, undefined),
+              right: this.compileExpr(src.args[1]!, undefined),
             };
           }
 
@@ -280,8 +280,8 @@ class Compiler {
             return {
               type: "BinaryExpression",
               operator: infixName,
-              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
-              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
+              left: this.compileExpr(src.args[0]!, undefined),
+              right: this.compileExpr(src.args[1]!, undefined),
             };
           }
 
@@ -290,8 +290,8 @@ class Compiler {
             return {
               type: "LogicalExpression",
               operator: infixLogicalName,
-              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
-              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
+              left: this.compileExpr(src.args[0]!, undefined),
+              right: this.compileExpr(src.args[1]!, undefined),
             };
           }
 
@@ -300,7 +300,7 @@ class Compiler {
             return {
               type: "UnaryExpression",
               operator: prefixName,
-              argument: this.compileExprAsJsExpr(src.args[0]!, undefined),
+              argument: this.compileExpr(src.args[0]!, undefined),
               prefix: true,
             };
           }
@@ -308,10 +308,8 @@ class Compiler {
 
         return {
           type: "CallExpression",
-          callee: this.compileExprAsJsExpr(src.caller, undefined),
-          arguments: src.args.map((arg) =>
-            this.compileExprAsJsExpr(arg, undefined),
-          ),
+          callee: this.compileExpr(src.caller, undefined),
+          arguments: src.args.map((arg) => this.compileExpr(arg, undefined)),
         };
       }
 
@@ -407,7 +405,7 @@ class Compiler {
         if (src.pattern.type === "identifier") {
           this.bindingsJsName.set(src.pattern, freshIdent);
         }
-        const value = this.compileExprAsJsExpr(src.value, undefined);
+        const value = this.compileExpr(src.value, undefined);
         this.statementsBuf.push({
           type: "VariableDeclaration",
           kind: "const",
@@ -423,7 +421,7 @@ class Compiler {
 
         this.frames.pop();
 
-        return this.compileExprAsJsExpr(src.body, tailPosCaller);
+        return this.compileExpr(src.body, tailPosCaller);
 
         // we could call this.bindingsJsName.delete(src.pattern) here
       }
@@ -468,7 +466,7 @@ class Compiler {
 
             return ident;
           });
-          this.compileExprAsJsStms(src.body, callerBinding, {
+          this.compileExprTailCall(src.body, callerBinding, {
             type: "return",
           });
           return { params };
@@ -555,7 +553,7 @@ class Compiler {
 
       case "if": {
         const ident = this.makeFreshIdent();
-        this.compileExprAsJsStms(src, undefined, {
+        this.compileExprTailCall(src, undefined, {
           type: "assign_var",
           ident,
           declare: true,
@@ -567,7 +565,7 @@ class Compiler {
       case "list-literal":
         return src.values.reduceRight<t.Expression>(
           (prev, src): t.Expression => {
-            const compiledExpr = this.compileExprAsJsExpr(src, undefined);
+            const compiledExpr = this.compileExpr(src, undefined);
             return {
               type: "CallExpression",
               callee: { type: "Identifier", name: "List$Cons" },
@@ -596,7 +594,7 @@ class Compiler {
             // TODO if if(true) is encountered, we could just return retExpr
             joinAndExprs(exprs),
             ...this.wrapStatements(() =>
-              this.compileExprAsJsExpr(retExpr, tailPosCaller),
+              this.compileExpr(retExpr, tailPosCaller),
             ),
           ]);
         }
@@ -684,7 +682,7 @@ class Compiler {
             properties.push({
               type: "ObjectProperty",
               key: { type: "Identifier", name: structLitField.field.name },
-              value: this.compileExprAsJsExpr(structLitField.value, undefined),
+              value: this.compileExpr(structLitField.value, undefined),
               shorthand: true,
               computed: false,
             });
@@ -716,7 +714,7 @@ class Compiler {
       case "field-access":
         return {
           type: "MemberExpression",
-          object: this.compileExprAsJsExpr(src.struct, undefined),
+          object: this.compileExpr(src.struct, undefined),
           property: { type: "Identifier", name: src.field.name },
           computed: false,
         };
@@ -864,7 +862,7 @@ class Compiler {
       }),
     );
 
-    this.compileExprAsJsStms(decl.value, undefined, {
+    this.compileExprTailCall(decl.value, undefined, {
       type: "assign_var",
       declare: true,
       ident: makeGlobalIdentifier(this.ns, decl.binding.name),
