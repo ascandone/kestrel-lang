@@ -221,6 +221,20 @@ describe("functions and application", () => {
       f: "Fn(Int, Int) -> Bool",
     });
   });
+
+  test("typechecks generic values", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    pub let id = fn x { x }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      id: "Fn(a) -> a",
+    });
+  });
 });
 
 describe("if expression", () => {
