@@ -15,7 +15,13 @@ import { BinaryExpression } from "@babel/types";
 import { optimizeModule } from "./optimize";
 import { exit } from "node:process";
 import { col } from "../utils/colors";
-import { joinAndExprs, sanitizeNamespace } from "./utils";
+import {
+  AdtReprType,
+  TAG_FIELD,
+  getAdtReprType,
+  joinAndExprs,
+  sanitizeNamespace,
+} from "./utils";
 import {
   deriveEqAdt,
   deriveEqStruct,
@@ -36,7 +42,6 @@ export function compile(
 }
 
 const EQ_IDENTIFIER: t.Identifier = { type: "Identifier", name: "_eq" };
-const TAG_FIELD: t.Identifier = { type: "Identifier", name: "$" };
 
 type CompilationMode =
   | {
@@ -746,16 +751,22 @@ class Compiler {
           throw new Error("[unreachable] variant not found in declaration");
         }
 
+        const repr = getAdtReprType(pattern.resolution.declaration);
+        const eqLeftSide: t.Expression =
+          repr === "enum"
+            ? matchedExpr
+            : {
+                type: "MemberExpression",
+                object: matchedExpr,
+                property: TAG_FIELD,
+                computed: false,
+              };
+
         return [
           {
             type: "BinaryExpression",
             operator: "===",
-            left: {
-              type: "MemberExpression",
-              object: matchedExpr,
-              property: TAG_FIELD,
-              computed: false,
-            },
+            left: eqLeftSide,
             right: { type: "NumericLiteral", value: index },
           },
           ...pattern.args.flatMap((arg, index) =>
@@ -853,6 +864,7 @@ class Compiler {
   private compileVariant(
     variant: TypedTypeVariant,
     index: number,
+    repr: AdtReprType,
   ): t.Statement {
     return {
       type: "VariableDeclaration",
@@ -861,7 +873,7 @@ class Compiler {
         {
           type: "VariableDeclarator",
           id: makeGlobalIdentifier(this.ns, variant.name),
-          init: makeVariantBody(index, variant.args.length),
+          init: makeVariantBody(index, variant.args.length, repr),
         },
       ],
     };
@@ -875,7 +887,8 @@ class Compiler {
     if (this.ns !== "Bool" && decl.name !== "Bool") {
       buf.push(
         ...decl.variants.map(
-          (d, index): t.Statement => this.compileVariant(d, index),
+          (d, index): t.Statement =>
+            this.compileVariant(d, index, getAdtReprType(decl)),
         ),
       );
     }
@@ -1107,7 +1120,15 @@ function makeGlobalIdentifier(ns: string, bindingName: string): t.Identifier {
   };
 }
 
-function makeVariantBody(index: number, argsNumber: number): t.Expression {
+function makeVariantBody(
+  index: number,
+  argsNumber: number,
+  repr: AdtReprType,
+): t.Expression {
+  if (repr === "enum") {
+    return { type: "NumericLiteral", value: index };
+  }
+
   const params = Array.from(
     { length: argsNumber },
     (_, i): t.Identifier => ({

@@ -902,16 +902,31 @@ describe("ADTs", () => {
     expect(out).toMatchInlineSnapshot(`""`);
   });
 
+  // whenever no variant has any argumuments, you can represent it with numbers
   test("create ADTs with zero args", () => {
-    const out = compileSrc(`type T { X, Y }`);
+    const out = compileSrc(`type T { X, Y, Z }`);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = 0;
+      const Main$Y = 1;
+      const Main$Z = 2;"
+    `);
+  });
+
+  test("create ADTs when at least a variant has one arg", () => {
+    const out = compileSrc(`
+        extern type Int
+        type T { X, Y(Int) }
+    `);
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$X = {
         $: 0
       };
-      const Main$Y = {
-        $: 1
-      };"
+      const Main$Y = _0 => ({
+        $: 1,
+        _0
+      });"
     `);
   });
 
@@ -1282,6 +1297,33 @@ describe("modules", () => {
 });
 
 describe("pattern matching", () => {
+  test("pattern matching an enum repr", () => {
+    const out = compileSrc(`
+    type T {
+      A,
+      B,
+    }
+  
+    let x = match B {
+      A => "a",
+      B => "b",
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$A = 0;
+      const Main$B = 1;
+      let Main$x;
+      if (Main$B === 0) {
+        Main$x = \`a\`;
+      } else if (Main$B === 1) {
+        Main$x = \`b\`;
+      } else {
+        throw new Error("[non exhaustive match]");
+      }"
+    `);
+  });
+
   test("pattern matching (flat)", () => {
     const out = compileSrc(`
     type T {
@@ -2028,9 +2070,7 @@ describe("traits compilation", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = {
-        $: 0
-      };
+      "const Main$X = 0;
       const Main$x = Main$show(Show_Main$AlwaysShow)(Main$X);"
     `);
   });
@@ -2092,9 +2132,7 @@ describe("traits compilation", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = {
-        $: 0
-      };
+      "const Main$X = 0;
       const Main$x = Show_6 => Main$s(Show_6);"
     `);
   });
@@ -2313,9 +2351,7 @@ describe("derive Eq instance for Adt", () => {
       { allowDeriving: ["Eq"] },
     );
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = {
-        $: 0
-      };
+      "const Main$X = 0;
       const Eq_Main$T = (x, y) => true;"
     `);
   });
@@ -2378,6 +2414,21 @@ describe("derive Eq instance for Adt", () => {
         _1
       });
       const Eq_Main$T = (x, y) => Eq_Main$Int(x._0, y._0) && Eq_Main$Bool(x._1, y._1);"
+    `);
+  });
+
+  test("compare unboxed when repr is enum", () => {
+    const out = compileSrc(
+      `
+      type T { X, Y, Z }
+    `,
+      { allowDeriving: ["Eq"] },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = 0;
+      const Main$Y = 1;
+      const Main$Z = 2;
+      const Eq_Main$T = (x, y) => x === y;"
     `);
   });
 
@@ -2649,9 +2700,7 @@ describe("Derive Show instance for Adts", () => {
       { allowDeriving: ["Show"] },
     );
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = {
-        $: 0
-      };
+      "const Main$X = 0;
       const Show_Main$T = x => "X";"
     `);
   });

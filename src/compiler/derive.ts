@@ -4,12 +4,17 @@ import {
   TypedTypeVariant,
 } from "../typecheck";
 import * as t from "@babel/types";
-import { joinAndExprs, sanitizeNamespace } from "./utils";
+import {
+  TAG_FIELD,
+  getAdtReprType,
+  joinAndExprs,
+  sanitizeNamespace,
+} from "./utils";
 
 export function deriveEqAdt(
   typedDeclaration: TypedTypeDeclaration & { type: "adt" },
 ): t.Expression {
-  const params: t.Identifier[] = [
+  const params: [t.Identifier, t.Identifier] = [
     { type: "Identifier", name: "x" },
     { type: "Identifier", name: "y" },
   ];
@@ -33,10 +38,17 @@ export function deriveEqAdt(
       ) ?? [],
     );
   }
-
+  const repr = getAdtReprType(typedDeclaration);
   let body: t.BlockStatement | t.Expression;
   if (typedDeclaration.variants.length <= 1) {
     body = variantEq(typedDeclaration.variants[0]);
+  } else if (repr === "enum") {
+    body = {
+      type: "BinaryExpression",
+      operator: "===",
+      left: params[0],
+      right: params[1],
+    };
   } else {
     const cases = typedDeclaration.variants.map(
       (variant, index): t.SwitchCase => ({
@@ -62,14 +74,14 @@ export function deriveEqAdt(
             operator: "!==",
             left: {
               type: "MemberExpression",
-              object: { type: "Identifier", name: "x" },
-              property: { type: "Identifier", name: `$` },
+              object: params[0],
+              property: TAG_FIELD,
               computed: false,
             },
             right: {
               type: "MemberExpression",
-              object: { type: "Identifier", name: "y" },
-              property: { type: "Identifier", name: `$` },
+              object: params[1],
+              property: TAG_FIELD,
               computed: false,
             },
           },
@@ -88,8 +100,8 @@ export function deriveEqAdt(
           type: "SwitchStatement",
           discriminant: {
             type: "MemberExpression",
-            object: { type: "Identifier", name: "x" },
-            property: { type: "Identifier", name: `$` },
+            object: params[0],
+            property: TAG_FIELD,
             computed: false,
           },
           cases,
@@ -102,10 +114,7 @@ export function deriveEqAdt(
     type: "ArrowFunctionExpression",
     async: false,
     expression: true,
-    params: [
-      { type: "Identifier", name: "x" },
-      { type: "Identifier", name: "y" },
-    ],
+    params,
     body,
   });
 }
