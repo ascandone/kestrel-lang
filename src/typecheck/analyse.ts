@@ -20,7 +20,7 @@ import {
   UntypedTypeVariant,
   parse,
 } from "../parser";
-import { char, float, int, string } from "./core";
+import { bool, char, float, int, string } from "./core";
 import { Deps } from "./resolutionStep";
 import { TVar, Type, UnifyError, unify } from "./type";
 
@@ -176,13 +176,19 @@ export class Analysis {
         return;
       }
 
+      case "if": {
+        this.runResolution(expr.condition, localScope);
+        this.runResolution(expr.then, localScope);
+        this.runResolution(expr.else, localScope);
+        return;
+      }
+
       case "let#":
       case "infix":
       case "list-literal":
       case "struct-literal":
       case "field-access":
       case "let":
-      case "if":
       case "match":
         throw new Error("TODO resolution on: " + expr.type);
     }
@@ -246,6 +252,16 @@ export class Analysis {
         }
         return;
 
+      case "if":
+        this.unifyNode(expr.condition, bool);
+        this.unifyNodes(expr, expr.then);
+        this.unifyNodes(expr, expr.else);
+
+        this.typecheckExpr(expr.condition);
+        this.typecheckExpr(expr.then);
+        this.typecheckExpr(expr.else);
+        return;
+
       case "pipe": {
         if (expr.right.type !== "application") {
           this.errors.push({
@@ -266,30 +282,18 @@ export class Analysis {
           ],
           return: this.getType(expr),
         });
-
         return;
       }
+
       case "let#":
       case "infix":
       case "list-literal":
       case "struct-literal":
       case "field-access":
       case "let":
-      case "if":
       case "match":
-        return undefined;
+        throw new Error("TODO handle typecheck of: " + expr.type);
     }
-  }
-
-  private getTVar(node: TypedNode): TVar {
-    const lookup = this.typeAnnotations.get(node);
-    if (lookup === undefined) {
-      // initialize node
-      const tvar = TVar.fresh();
-      this.typeAnnotations.set(node, tvar);
-      return tvar;
-    }
-    return lookup;
   }
 
   private typeAstToType(t: TypeAst): Type {
@@ -325,7 +329,14 @@ export class Analysis {
 
   // --- Public interface
   getType(node: TypedNode): Type {
-    return this.getTVar(node).asType();
+    const lookup = this.typeAnnotations.get(node);
+    if (lookup === undefined) {
+      // initialize node
+      const tvar = TVar.fresh();
+      this.typeAnnotations.set(node, tvar);
+      return tvar.asType();
+    }
+    return lookup.asType();
   }
 
   resolveIdentifier(
