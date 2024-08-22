@@ -120,6 +120,74 @@ describe("globals resolution", () => {
       y: "Int",
     });
   });
+
+  test("self-recursive declarations", () => {
+    const a = new Analysis("Main", `pub let f = fn _ { f(42) }`);
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Int) -> a",
+    });
+  });
+
+  test("let declarations in reverse order", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    pub let a = b
+    pub let b = 42
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      a: "Int",
+      b: "Int",
+    });
+  });
+
+  test("allow dependency cycle between declarations inside thunks", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    pub let a = b()
+    pub let b = fn { a }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test.todo("forbid self-recusive definitions outside of fns", () => {
+    const a = new Analysis(
+      "Main",
+      `
+  pub let a = a
+`,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(getTypes(a)).toEqual({
+      a: "a",
+      b: "a",
+    });
+  });
+
+  test.todo("forbid dependency cycles outside of fns", () => {
+    const a = new Analysis(
+      "Main",
+      `
+  pub let a = b
+  pub let b = a
+`,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(getTypes(a)).toEqual({
+      a: "a",
+      b: "a",
+    });
+  });
 });
 
 describe("named types", () => {
@@ -330,7 +398,25 @@ describe("let expressions", () => {
       x: "Int",
     });
   });
+
+  test.todo("allow self-recursive let expressions", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      pub let f = {
+        let g = fn _ { g(1) };
+        g
+    }
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Int) -> a",
+    });
+  });
 });
+
 describe("pipe operator", () => {
   test.todo("infer pipe operator left side and right side");
 
