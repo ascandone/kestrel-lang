@@ -283,6 +283,24 @@ describe("if expression", () => {
   });
 });
 
+describe("let expressions", () => {
+  test("infers return value", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    pub let x = {
+      let y = 42;
+      y
+    }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Int",
+    });
+  });
+});
 describe("pipe operator", () => {
   test.todo("infer pipe operator left side and right side");
 

@@ -15,6 +15,7 @@ import {
   UntypedDeclaration,
   UntypedExpr,
   UntypedImport,
+  UntypedMatchPattern,
   UntypedModule,
   UntypedTypeDeclaration,
   UntypedTypeVariant,
@@ -128,6 +129,17 @@ export class Analysis {
     return undefined;
   }
 
+  private extractPatternIdentifiers(pattern: UntypedMatchPattern): Binding[] {
+    switch (pattern.type) {
+      case "identifier":
+        return [pattern];
+
+      case "lit":
+      case "constructor":
+        throw new Error("TODO handle pattern of type: " + pattern.type);
+    }
+  }
+
   private runResolution(expr: UntypedExpr, localScope: LocalScope): undefined {
     switch (expr.type) {
       case "syntax-err":
@@ -148,16 +160,14 @@ export class Analysis {
       }
 
       case "fn": {
-        const scopeClone: LocalScope = { ...localScope };
-        for (const param of expr.params) {
-          if (param.type !== "identifier") {
-            throw new Error("TODO resolve param != ident");
-          }
-          scopeClone[param.name] = param;
-        }
+        const paramsBindings = expr.params
+          .flatMap((p) => this.extractPatternIdentifiers(p))
+          .map((p) => [p.name, p]);
 
-        // TODO handle locals scope
-        this.runResolution(expr.body, scopeClone);
+        this.runResolution(expr.body, {
+          ...localScope,
+          ...Object.fromEntries(paramsBindings),
+        });
         return;
       }
 
@@ -183,12 +193,26 @@ export class Analysis {
         return;
       }
 
+      case "let": {
+        // TODO handle recursive bindings
+        this.runResolution(expr.value, localScope);
+
+        const bindingsEntries = this.extractPatternIdentifiers(
+          expr.pattern,
+        ).map((p) => [p.name, p]);
+
+        this.runResolution(expr.body, {
+          ...localScope,
+          ...Object.fromEntries(bindingsEntries),
+        });
+        return;
+      }
+
       case "let#":
       case "infix":
       case "list-literal":
       case "struct-literal":
       case "field-access":
-      case "let":
       case "match":
         throw new Error("TODO resolution on: " + expr.type);
     }
@@ -262,6 +286,13 @@ export class Analysis {
         this.typecheckExpr(expr.else);
         return;
 
+      case "let":
+        this.unifyNodes(expr, expr.value);
+
+        this.typecheckExpr(expr.body);
+        this.typecheckExpr(expr.value);
+        return;
+
       case "pipe": {
         if (expr.right.type !== "application") {
           this.errors.push({
@@ -290,7 +321,6 @@ export class Analysis {
       case "list-literal":
       case "struct-literal":
       case "field-access":
-      case "let":
       case "match":
         throw new Error("TODO handle typecheck of: " + expr.type);
     }
