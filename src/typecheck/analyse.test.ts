@@ -6,6 +6,7 @@ import {
   ErrorInfo,
   InvalidPipe,
   TypeMismatch,
+  UnboundType,
   UnboundVariable,
   UnusedVariable,
 } from "../errors";
@@ -202,6 +203,123 @@ describe("named types", () => {
     );
 
     expect(a.errors).toEqual<ErrorInfo[]>([]);
+    expect(getTypes(a)).toEqual({
+      x: "Int",
+    });
+  });
+});
+
+describe("type hints", () => {
+  test("type hints are used by typechecker", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern type Int
+        pub let x: Int = 1.1
+      `,
+    );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(getTypes(a)).toEqual({
+      x: "Int",
+    });
+  });
+
+  test("type hints of fns are used by typechecker", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type T { C }
+        pub let x: Fn() -> T = fn { 42 }
+        `,
+    );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(getTypes(a)).toEqual(
+      expect.objectContaining({
+        x: "Fn() -> T",
+      }),
+    );
+  });
+
+  test("type hints of fns are used by typechecker (args)", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      extern type Bool
+      extern type Int
+      extern pub let (!): Fn(Bool) -> Bool
+      pub let x: Fn(Bool) -> Int = fn x { !x }
+      `,
+    );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(getTypes(a)).toEqual(
+      expect.objectContaining({
+        x: "Fn(Bool) -> Int",
+      }),
+    );
+  });
+
+  test("_ type hints are ignored by typechecker", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      extern type Int
+      pub let x: _ = 1`,
+    );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Int",
+    });
+  });
+
+  test.todo("vars type hints should be generalized", () => {
+    const a = new Analysis("Main", "let x: a = 0");
+    expect(a.errors).toHaveLength(1);
+    expect(getTypes(a)).toEqual({
+      x: "a",
+    });
+  });
+
+  test.todo("unify generalized values", () => {
+    const a = new Analysis("Main", "let f: Fn(ta) -> tb = fn x { x }");
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(ta) -> tb",
+    });
+  });
+
+  test.todo("vars type hints are used by typechecker", () => {
+    const a = new Analysis(
+      "Main",
+      "pub let eq: Fn(a, a, b) -> a = fn x, y, z { x }",
+    );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      eq: "Fn(a, a, b) -> a",
+    });
+  });
+
+  test("type hints instantiate polytypes", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      extern type Int
+      pub let f: Fn(Int) -> Int = fn x { x }
+    `,
+    );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Int) -> Int",
+    });
+  });
+
+  // TODO resolve this
+  test.todo("unknown types are ignored", () => {
+    const a = new Analysis("Main", "pub let x: NotFound = 1");
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(UnboundType);
     expect(getTypes(a)).toEqual({
       x: "Int",
     });
