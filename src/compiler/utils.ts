@@ -27,6 +27,10 @@ export type AdtReprType = "default" | "enum" | "unboxed";
 export function getAdtReprType(
   decl: TypedTypeDeclaration & { type: "adt" },
 ): AdtReprType {
+  if (decl.variants.length === 1 && decl.variants[0]!.args.length === 1) {
+    return "unboxed";
+  }
+
   const isEnum = decl.variants.every((v) => v.args.length === 0);
   if (isEnum) {
     return "enum";

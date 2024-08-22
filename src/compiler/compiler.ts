@@ -752,30 +752,48 @@ class Compiler {
         }
 
         const repr = getAdtReprType(pattern.resolution.declaration);
-        const eqLeftSide: t.Expression =
-          repr === "enum"
-            ? matchedExpr
-            : {
+        const eqLeftSide: t.Expression = (() => {
+          switch (repr) {
+            case "enum":
+              return matchedExpr;
+
+            case "unboxed":
+            case "default":
+              return {
                 type: "MemberExpression",
                 object: matchedExpr,
                 property: TAG_FIELD,
                 computed: false,
               };
+          }
+        })();
+
+        const singleVariantDeclaration =
+          pattern.resolution.declaration.variants.length === 1;
 
         return [
-          {
-            type: "BinaryExpression",
-            operator: "===",
-            left: eqLeftSide,
-            right: { type: "NumericLiteral", value: index },
-          },
+          ...(singleVariantDeclaration
+            ? []
+            : [
+                {
+                  type: "BinaryExpression",
+                  operator: "===",
+                  left: eqLeftSide,
+                  right: { type: "NumericLiteral", value: index },
+                } as t.Expression,
+              ]),
           ...pattern.args.flatMap((arg, index) =>
-            this.compileCheckPatternConditions(arg, {
-              type: "MemberExpression",
-              object: matchedExpr,
-              property: { type: "Identifier", name: `_${index}` },
-              computed: false,
-            }),
+            this.compileCheckPatternConditions(
+              arg,
+              repr === "unboxed"
+                ? matchedExpr
+                : {
+                    type: "MemberExpression",
+                    object: matchedExpr,
+                    property: { type: "Identifier", name: `_${index}` },
+                    computed: false,
+                  },
+            ),
           ),
         ];
       }
@@ -1137,27 +1155,30 @@ function makeVariantBody(
     }),
   );
 
-  const ret: t.Expression = {
-    type: "ObjectExpression",
-    properties: [
-      {
-        type: "ObjectProperty",
-        key: TAG_FIELD,
-        value: { type: "NumericLiteral", value: index },
-        computed: false,
-        shorthand: false,
-      },
-      ...params.map(
-        (p): t.ObjectProperty => ({
-          type: "ObjectProperty",
-          key: p,
-          value: p,
-          computed: false,
-          shorthand: true,
-        }),
-      ),
-    ],
-  };
+  const ret: t.Expression =
+    repr === "unboxed"
+      ? params[0]!
+      : {
+          type: "ObjectExpression",
+          properties: [
+            {
+              type: "ObjectProperty",
+              key: TAG_FIELD,
+              value: { type: "NumericLiteral", value: index },
+              computed: false,
+              shorthand: false,
+            },
+            ...params.map(
+              (p): t.ObjectProperty => ({
+                type: "ObjectProperty",
+                key: p,
+                value: p,
+                computed: false,
+                shorthand: true,
+              }),
+            ),
+          ],
+        };
 
   if (argsNumber === 0) {
     return ret;

@@ -27,12 +27,15 @@ export function deriveEqAdt(
           type: "CallExpression",
           callee: deriveEqArgs.run(variant),
           arguments: params.map(
-            (param): t.Expression => ({
-              type: "MemberExpression",
-              object: param,
-              property: { type: "Identifier", name: `_${i}` },
-              computed: false,
-            }),
+            (param): t.Expression =>
+              repr === "unboxed"
+                ? param
+                : {
+                    type: "MemberExpression",
+                    object: param,
+                    property: { type: "Identifier", name: `_${i}` },
+                    computed: false,
+                  },
           ),
         }),
       ) ?? [],
@@ -190,6 +193,8 @@ export function deriveShowAdt(
   const param: t.Identifier = { type: "Identifier", name: "x" };
   const deriveArg = new DeriveTraitArgs("Show");
 
+  const repr = getAdtReprType(typedDeclaration);
+
   const showVariant = (variant: TypedTypeVariant): t.Expression => {
     if (variant.args.length === 0) {
       return { type: "StringLiteral", value: variant.name };
@@ -203,12 +208,14 @@ export function deriveShowAdt(
         type: "CallExpression",
         callee: deriveArg.run(arg),
         arguments: [
-          {
-            type: "MemberExpression",
-            object: param,
-            property: { type: "Identifier", name: `_${i}` },
-            computed: false,
-          },
+          repr === "unboxed"
+            ? param
+            : {
+                type: "MemberExpression",
+                object: param,
+                property: { type: "Identifier", name: `_${i}` },
+                computed: false,
+              },
         ],
       })),
       quasis: [

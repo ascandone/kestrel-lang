@@ -432,11 +432,8 @@ describe("lambda expressions", () => {
       }
     `);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$Box = _0 => ({
-        $: 0,
-        _0
-      });
-      const Main$x = GEN__0 => GEN__1 => GEN__0._0;"
+      "const Main$Box = _0 => _0;
+      const Main$x = GEN__0 => GEN__1 => GEN__0;"
     `);
   });
 });
@@ -716,16 +713,13 @@ describe("TCO", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$Box = _0 => ({
-        $: 0,
-        _0
-      });
+      "const Main$Box = _0 => _0;
       const Main$loop = (GEN_TC__0, GEN_TC__1) => {
         while (true) {
           const x = GEN_TC__0;
           const GEN__0 = GEN_TC__1;
           GEN_TC__0 = x + 1;
-          GEN_TC__1 = Main$Box(GEN__0._0);
+          GEN_TC__1 = Main$Box(GEN__0);
         }
       };"
     `);
@@ -910,6 +904,17 @@ describe("ADTs", () => {
       "const Main$X = 0;
       const Main$Y = 1;
       const Main$Z = 2;"
+    `);
+  });
+
+  test("create unboxed ADTs when there is exactly one variant with exactly one arg", () => {
+    const out = compileSrc(`
+      extern type Int
+      type T { X(Int) }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = _0 => _0;"
     `);
   });
 
@@ -1357,6 +1362,52 @@ describe("pattern matching", () => {
     `);
   });
 
+  test("pattern single variant arg does not check for variant", () => {
+    const out = compileSrc(`
+    type T {
+      A(Int),
+    }
+  
+    let x = match A(42) {
+      A(arg) => arg,
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$A = _0 => _0;
+      let Main$x;
+      const Main$x$GEN__0 = Main$A(42);
+      if (true) {
+        Main$x = Main$x$GEN__0;
+      } else {
+        throw new Error("[non exhaustive match]");
+      }"
+    `);
+  });
+
+  test("pattern matching an unboxed repr", () => {
+    const out = compileSrc(`
+    type T {
+      A(Int),
+    }
+  
+    let x = match A(42) {
+      A(arg) => arg,
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$A = _0 => _0;
+      let Main$x;
+      const Main$x$GEN__0 = Main$A(42);
+      if (true) {
+        Main$x = Main$x$GEN__0;
+      } else {
+        throw new Error("[non exhaustive match]");
+      }"
+    `);
+  });
+
   test("pattern matching an identifier", () => {
     const out = compileSrc(`
     let v = 42
@@ -1389,14 +1440,11 @@ describe("pattern matching", () => {
 `);
     // TODO whitepace
     expect(out).toMatchInlineSnapshot(`
-      "const Main$C = _0 => ({
-        $: 0,
-        _0
-      });
+      "const Main$C = _0 => _0;
       let Main$x;
       const Main$x$GEN__0 = Main$C(42);
-      if (Main$x$GEN__0.$ === 0) {
-        Main$x = Main$x$GEN__0._0;
+      if (true) {
+        Main$x = Main$x$GEN__0;
       } else {
         throw new Error("[non exhaustive match]");
       }"
@@ -1505,13 +1553,10 @@ describe("pattern matching", () => {
 
     // TODO whitepace
     expect(out).toMatchInlineSnapshot(`
-      "const Main$C = _0 => ({
-        $: 0,
-        _0
-      });
+      "const Main$C = _0 => _0;
       let Main$x;
       const Main$x$GEN__0 = Main$C(true);
-      if (Main$x$GEN__0.$ === 0 && Main$x$GEN__0._0) {
+      if (Main$x$GEN__0) {
         Main$x = 0;
       } else {
         throw new Error("[non exhaustive match]");
@@ -1550,14 +1595,11 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$Box = _0 => ({
-        $: 0,
-        _0
-      });
+      "const Main$Box = _0 => _0;
       const Main$f = () => {
         const GEN__0 = Main$Box(42);
-        if (GEN__0.$ === 0) {
-          return GEN__0._0 + 1;
+        if (true) {
+          return GEN__0 + 1;
         } else {
           throw new Error("[non exhaustive match]");
         }
@@ -1630,13 +1672,10 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$Box = _0 => ({
-        $: 0,
-        _0
-      });
+      "const Main$Box = _0 => _0;
       const Main$f = b => {
-        if (b.$ === 0) {
-          return b._0;
+        if (true) {
+          return b;
         } else {
           throw new Error("[non exhaustive match]");
         }
@@ -1655,13 +1694,10 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$Box = _0 => ({
-        $: 0,
-        _0
-      });
+      "const Main$Box = _0 => _0;
       const Main$f = b => {
         const GEN__0 = b;
-        return GEN__0._0;
+        return GEN__0;
       };"
     `);
   });
@@ -1680,14 +1716,11 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$Box = _0 => ({
-        $: 0,
-        _0
-      });
+      "const Main$Box = _0 => _0;
       const Main$f = b => {
         const GEN__0$c = 42;
         const GEN__0 = GEN__0$c;
-        return GEN__0._0;
+        return GEN__0;
       };"
     `);
   });
@@ -1723,11 +1756,8 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$Box = _0 => ({
-        $: 0,
-        _0
-      });
-      const Main$f = (x, GEN__0, y) => GEN__0._0;"
+      "const Main$Box = _0 => _0;
+      const Main$f = (x, GEN__0, y) => GEN__0;"
     `);
   });
 
@@ -2089,10 +2119,7 @@ describe("traits compilation", () => {
 
     // Some(42) : Option<Int>
     expect(out).toMatchInlineSnapshot(`
-      "const Main$Some = _0 => ({
-        $: 0,
-        _0
-      });
+      "const Main$Some = _0 => _0;
       const Main$x = Main$show(Show_Main$Option(Show_Int$Int))(Main$Some(42));"
     `);
   });
@@ -2116,10 +2143,7 @@ describe("traits compilation", () => {
         _0,
         _1
       });
-      const Main$Some = _0 => ({
-        $: 0,
-        _0
-      });
+      const Main$Some = _0 => _0;
       const Main$x = Main$show(Show_Main$Tuple2(Show_Main$Option(Show_Int$Int), Show_Int$Int))(Main$Tuple2(Main$Some(42), 2));"
     `);
   });
@@ -2145,10 +2169,7 @@ describe("traits compilation", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$Some = _0 => ({
-        $: 0,
-        _0
-      });
+      "const Main$Some = _0 => _0;
       const Main$x = Show_11 => Main$s(Show_11);"
     `);
   });
@@ -2227,10 +2248,7 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$C = _0 => ({
-        $: 0,
-        _0
-      });
+      "const Main$C = _0 => _0;
       const Eq_Main$T = (x, y) => {
         return Eq_Main$Int(x.a0, y.a0);
       }
@@ -2326,10 +2344,7 @@ describe("derive Eq instance for Adt", () => {
       { allowDeriving: ["Eq"] },
     );
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = _0 => ({
-        $: 0,
-        _0
-      });"
+      "const Main$X = _0 => _0;"
     `);
   });
 
@@ -2356,7 +2371,28 @@ describe("derive Eq instance for Adt", () => {
     `);
   });
 
-  test("singleton with concrete arg", () => {
+  test("singleton with concrete args", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T { X(Int, Int) }
+    `,
+      {
+        allowDeriving: ["Eq"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+      },
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = (_0, _1) => ({
+        $: 0,
+        _0,
+        _1
+      });
+      const Eq_Main$T = (x, y) => Eq_Main$Int(x._0, y._0) && Eq_Main$Int(x._1, y._1);"
+    `);
+  });
+
+  test("singleton with newtype repr", () => {
     const out = compileSrc(
       `
       extern type Int
@@ -2368,11 +2404,8 @@ describe("derive Eq instance for Adt", () => {
       },
     );
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = _0 => ({
-        $: 0,
-        _0
-      });
-      const Eq_Main$T = (x, y) => Eq_Main$Int(x._0, y._0);"
+      "const Main$X = _0 => _0;
+      const Eq_Main$T = (x, y) => Eq_Main$Int(x, y);"
     `);
   });
 
@@ -2384,11 +2417,8 @@ describe("derive Eq instance for Adt", () => {
       { allowDeriving: ["Eq"] },
     );
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = _0 => ({
-        $: 0,
-        _0
-      });
-      const Eq_Main$T = Eq_b => (x, y) => Eq_b(x._0, y._0);"
+      "const Main$X = _0 => _0;
+      const Eq_Main$T = Eq_b => (x, y) => Eq_b(x, y);"
     `);
   });
 
@@ -2496,16 +2526,10 @@ describe("derive Eq instance for Adt", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = _0 => ({
-        $: 0,
-        _0
-      });
-      const Eq_Main$X = Eq_a => (x, y) => Eq_a(x._0, y._0);
-      const Main$Y = _0 => ({
-        $: 0,
-        _0
-      });
-      const Eq_Main$Y = Eq_b => (x, y) => Eq_Main$X(Eq_b)(x._0, y._0);"
+      "const Main$X = _0 => _0;
+      const Eq_Main$X = Eq_a => (x, y) => Eq_a(x, y);
+      const Main$Y = _0 => _0;
+      const Eq_Main$Y = Eq_b => (x, y) => Eq_Main$X(Eq_b)(x, y);"
     `);
   });
 
@@ -2637,11 +2661,8 @@ describe("derive Eq instance for structs", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = _0 => ({
-        $: 0,
-        _0
-      });
-      const Eq_Main$X = Eq_a => (x, y) => Eq_a(x._0, y._0);
+      "const Main$X = _0 => _0;
+      const Eq_Main$X = Eq_a => (x, y) => Eq_a(x, y);
       const Eq_Main$Y = Eq_param => (x, y) => Eq_Main$X(Eq_param)(x.field, y.field);"
     `);
   });
@@ -2675,10 +2696,7 @@ describe("Derive Show instance for Adts", () => {
       { allowDeriving: ["Show"] },
     );
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = _0 => ({
-        $: 0,
-        _0
-      });"
+      "const Main$X = _0 => _0;"
     `);
   });
 
@@ -2705,7 +2723,29 @@ describe("Derive Show instance for Adts", () => {
     `);
   });
 
-  test("single variant, with concrete args", () => {
+  test("single variant, with concrete argss", () => {
+    const out = compileSrc(
+      `
+      extern type Int
+      type T { X(Int, Int) }
+    `,
+      {
+        allowDeriving: ["Show"],
+        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+      },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$X = (_0, _1) => ({
+        $: 0,
+        _0,
+        _1
+      });
+      const Show_Main$T = x => \`X(\${Show_Main$Int(x._0)}, \${Show_Main$Int(x._1)})\`;"
+    `);
+  });
+
+  test("single variant (unboxed repr)", () => {
     const out = compileSrc(
       `
       extern type Int
@@ -2718,11 +2758,8 @@ describe("Derive Show instance for Adts", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = _0 => ({
-        $: 0,
-        _0
-      });
-      const Show_Main$T = x => \`X(\${Show_Main$Int(x._0)})\`;"
+      "const Main$X = _0 => _0;
+      const Show_Main$T = x => \`X(\${Show_Main$Int(x)})\`;"
     `);
   });
 
@@ -2742,11 +2779,8 @@ describe("Derive Show instance for Adts", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Example$Namespace$X = _0 => ({
-        $: 0,
-        _0
-      });
-      const Show_Example$Namespace$T = x => \`X(\${Show_Example$Namespace$Int(x._0)})\`;"
+      "const Example$Namespace$X = _0 => _0;
+      const Show_Example$Namespace$T = x => \`X(\${Show_Example$Namespace$Int(x)})\`;"
     `);
   });
 
@@ -2759,11 +2793,8 @@ describe("Derive Show instance for Adts", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = _0 => ({
-        $: 0,
-        _0
-      });
-      const Show_Main$T = Show_c => x => \`X(\${Show_c(x._0)})\`;"
+      "const Main$X = _0 => _0;
+      const Show_Main$T = Show_c => x => \`X(\${Show_c(x)})\`;"
     `);
   });
 
@@ -2824,16 +2855,10 @@ describe("Derive Show instance for Adts", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = _0 => ({
-        $: 0,
-        _0
-      });
-      const Show_Main$X = Show_a => x => \`X(\${Show_a(x._0)})\`;
-      const Main$Y = _0 => ({
-        $: 0,
-        _0
-      });
-      const Show_Main$Y = Show_b => x => \`Y(\${Show_Main$X(Show_b)(x._0)})\`;"
+      "const Main$X = _0 => _0;
+      const Show_Main$X = Show_a => x => \`X(\${Show_a(x)})\`;
+      const Main$Y = _0 => _0;
+      const Show_Main$Y = Show_b => x => \`Y(\${Show_Main$X(Show_b)(x)})\`;"
     `);
   });
 
@@ -2986,11 +3011,8 @@ describe("Derive Show instance for structs", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$X = _0 => ({
-        $: 0,
-        _0
-      });
-      const Show_Main$X = Show_a => x => \`X(\${Show_a(x._0)})\`;
+      "const Main$X = _0 => _0;
+      const Show_Main$X = Show_a => x => \`X(\${Show_a(x)})\`;
       const Show_Main$Y = Show_b => x => \`Y { field: \${Show_Main$X(Show_b)(x.field)} }\`;"
     `);
   });
