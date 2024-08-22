@@ -760,9 +760,48 @@ describe("TCO", () => {
     `);
   });
 
-  test.todo("Example: List.reduce", () => {
+  test("in a pattern matching expr", () => {
     const out = compileSrc(
       `
+      type List<a> { Nil, Cons(a, List<a>) }
+      pub let to_zero = fn lst {
+        match lst {
+          Nil => 0,
+          _ :: tl => to_zero(tl),
+        }
+      }
+  `,
+      { ns: "List" },
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const List$Nil = {
+        $: 0
+      };
+      const List$Cons = (_0, _1) => ({
+        $: 1,
+        _0,
+        _1
+      });
+      const List$to_zero = GEN_TC__0 => {
+        while (true) {
+          const lst = GEN_TC__0;
+          if (lst.$ === 0) {
+            return 0;
+          } else if (lst.$ === 1) {
+            GEN_TC__0 = lst._1;
+          } else {
+            throw new Error("[non exhaustive match]");
+          }
+        }
+      };"
+    `);
+  });
+
+  test("Example: List.reduce", () => {
+    const out = compileSrc(
+      `
+      type List<a> { Nil, Cons(a, List<a>) }
       pub let reduce = fn lst, acc, f {
         match lst {
           Nil => acc,
@@ -774,24 +813,30 @@ describe("TCO", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const List$reduce = (GEN_TC__0, GEN_TC__1, GEN_TC__2) => {
+      "const List$Nil = {
+        $: 0
+      };
+      const List$Cons = (_0, _1) => ({
+        $: 1,
+        _0,
+        _1
+      });
+      const List$reduce = (GEN_TC__0, GEN_TC__1, GEN_TC__2) => {
         while (true) {
           const lst = GEN_TC__0;
           const acc = GEN_TC__1;
           const f = GEN_TC__2;
-          const GEN__0 = lst;
-          if (GEN__0.$ === "Nil") {
+          if (lst.$ === 0) {
             return acc;
-          } else if (GEN__0.$ === "Cons") {
+          } else if (lst.$ === 1) {
             GEN_TC__0 = lst;
-            GEN_TC__1 = f(acc, GEN__0.a0);
+            GEN_TC__1 = f(acc, lst._0);
             GEN_TC__2 = f;
           } else {
-            throw new Error("[non exhaustive match]")
+            throw new Error("[non exhaustive match]");
           }
         }
-      }
-      "
+      };"
     `);
   });
 
@@ -1251,16 +1296,15 @@ describe("pattern matching", () => {
         $: 1,
         _0
       });
+      let Main$x;
       const Main$x$GEN__0 = Main$B(42);
-      let Main$x$GEN__1;
       if (Main$x$GEN__0.$ === 0) {
-        Main$x$GEN__1 = 0;
+        Main$x = 0;
       } else if (Main$x$GEN__0.$ === 1) {
-        Main$x$GEN__1 = 1;
+        Main$x = 1;
       } else {
         throw new Error("[non exhaustive match]");
-      }
-      const Main$x = Main$x$GEN__1;"
+      }"
     `);
   });
 
@@ -1274,13 +1318,12 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$v = 42;
-      let Main$x$GEN__0;
+      let Main$x;
       if (Main$v === 1) {
-        Main$x$GEN__0 = 0;
+        Main$x = 0;
       } else {
         throw new Error("[non exhaustive match]");
-      }
-      const Main$x = Main$x$GEN__0;"
+      }"
     `);
   });
 
@@ -1301,14 +1344,13 @@ describe("pattern matching", () => {
         $: 0,
         _0
       });
+      let Main$x;
       const Main$x$GEN__0 = Main$C(42);
-      let Main$x$GEN__1;
       if (Main$x$GEN__0.$ === 0) {
-        Main$x$GEN__1 = Main$x$GEN__0._0;
+        Main$x = Main$x$GEN__0._0;
       } else {
         throw new Error("[non exhaustive match]");
-      }
-      const Main$x = Main$x$GEN__1;"
+      }"
     `);
   });
 
@@ -1320,14 +1362,13 @@ describe("pattern matching", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x$GEN__0 = \`subject\`;
-      let Main$x$GEN__1;
+      "let Main$x;
+      const Main$x$GEN__0 = \`subject\`;
       if (Main$x$GEN__0 === \`constraint\`) {
-        Main$x$GEN__1 = 0;
+        Main$x = 0;
       } else {
         throw new Error("[non exhaustive match]");
-      }
-      const Main$x = Main$x$GEN__1;"
+      }"
     `);
   });
 
@@ -1339,14 +1380,13 @@ describe("pattern matching", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x$GEN__0 = \`a\`;
-      let Main$x$GEN__1;
+      "let Main$x;
+      const Main$x$GEN__0 = \`a\`;
       if (Main$x$GEN__0 === \`x\`) {
-        Main$x$GEN__1 = 0;
+        Main$x = 0;
       } else {
         throw new Error("[non exhaustive match]");
-      }
-      const Main$x = Main$x$GEN__1;"
+      }"
     `);
   });
 
@@ -1364,16 +1404,15 @@ describe("pattern matching", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x$GEN__0 = true;
-      let Main$x$GEN__1;
+      "let Main$x;
+      const Main$x$GEN__0 = true;
       if (Main$x$GEN__0) {
-        Main$x$GEN__1 = 0;
+        Main$x = 0;
       } else if (!Main$x$GEN__0) {
-        Main$x$GEN__1 = 1;
+        Main$x = 1;
       } else {
         throw new Error("[non exhaustive match]");
-      }
-      const Main$x = Main$x$GEN__1;"
+      }"
     `);
   });
 
@@ -1388,14 +1427,13 @@ describe("pattern matching", () => {
 `);
     // TODO whitepace
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x$GEN__0 = 42;
-      let Main$x$GEN__1;
+      "let Main$x;
+      const Main$x$GEN__0 = 42;
       if (true) {
-        Main$x$GEN__1 = Main$x$GEN__0;
+        Main$x = Main$x$GEN__0;
       } else {
         throw new Error("[non exhaustive match]");
-      }
-      const Main$x = Main$x$GEN__1;"
+      }"
     `);
   });
 
@@ -1422,14 +1460,13 @@ describe("pattern matching", () => {
         $: 0,
         _0
       });
+      let Main$x;
       const Main$x$GEN__0 = Main$C(true);
-      let Main$x$GEN__1;
       if (Main$x$GEN__0.$ === 0 && Main$x$GEN__0._0) {
-        Main$x$GEN__1 = 0;
+        Main$x = 0;
       } else {
         throw new Error("[non exhaustive match]");
-      }
-      const Main$x = Main$x$GEN__1;"
+      }"
     `);
   });
 
@@ -1443,13 +1480,11 @@ describe("pattern matching", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$f = () => {
         const GEN__0 = 42;
-        let GEN__1;
         if (true) {
-          GEN__1 = GEN__0;
+          return GEN__0;
         } else {
           throw new Error("[non exhaustive match]");
         }
-        return GEN__1;
       };"
     `);
   });
@@ -1472,13 +1507,11 @@ describe("pattern matching", () => {
       });
       const Main$f = () => {
         const GEN__0 = Main$Box(42);
-        let GEN__1;
         if (GEN__0.$ === 0) {
-          GEN__1 = GEN__0._0 + 1;
+          return GEN__0._0 + 1;
         } else {
           throw new Error("[non exhaustive match]");
         }
-        return GEN__1;
       };"
     `);
   });
@@ -1491,15 +1524,16 @@ describe("pattern matching", () => {
     })
   `);
 
+    // TODO simplify if when if(true)
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x$GEN__0 = 42;
-      let Main$x$GEN__1;
+      "let Main$x$GEN__0;
+      const Main$x$GEN__1 = 42;
       if (true) {
-        Main$x$GEN__1 = 0;
+        Main$x$GEN__0 = 0;
       } else {
         throw new Error("[non exhaustive match]");
       }
-      const Main$x = Main$f(Main$x$GEN__1);"
+      const Main$x = Main$f(Main$x$GEN__0);"
     `);
   });
 
@@ -1552,13 +1586,11 @@ describe("pattern matching", () => {
         _0
       });
       const Main$f = b => {
-        let GEN__0;
         if (b.$ === 0) {
-          GEN__0 = b._0;
+          return b._0;
         } else {
           throw new Error("[non exhaustive match]");
         }
-        return GEN__0;
       };"
     `);
   });
@@ -1675,16 +1707,14 @@ describe("pattern matching", () => {
         $: 1
       };
       const Main$f = x => {
-        let GEN__0;
         if (x.$ === 0) {
           const a = x._0 + x._1;
-          GEN__0 = a + 1;
+          return a + 1;
         } else if (x.$ === 1) {
-          GEN__0 = 100;
+          return 100;
         } else {
           throw new Error("[non exhaustive match]");
         }
-        return GEN__0;
       };"
     `);
   });

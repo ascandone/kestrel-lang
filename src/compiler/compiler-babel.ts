@@ -173,13 +173,82 @@ class Compiler {
         return;
       }
 
+      case "match": {
+        if (as.type === "assign_var" && as.declare) {
+          this.statementsBuf.push({
+            type: "VariableDeclaration",
+            kind: "let",
+            declarations: [{ type: "VariableDeclarator", id: as.ident }],
+          });
+        }
+
+        const matchedExpr = this.precomputeValue(src.expr);
+
+        const checks: [condition: t.Expression, statements: t.Statement[]][] =
+          [];
+        for (const [pattern, retExpr] of src.clauses) {
+          const exprs = this.compileCheckPatternConditions(
+            pattern,
+            matchedExpr,
+          );
+
+          const [, stms] = this.wrapStatements(() => {
+            this.compileExprAsJsStms(retExpr, tailPosCaller, doNotDeclare(as));
+          });
+
+          checks.push([
+            // TODO if if(true) is encountered, we could just return retExpr
+            joinAndExprs(exprs),
+            stms,
+          ]);
+        }
+
+        const helper = (index: number): t.Statement => {
+          if (index >= checks.length) {
+            return {
+              type: "BlockStatement",
+              directives: [],
+              body: [
+                {
+                  type: "ThrowStatement",
+                  argument: {
+                    type: "NewExpression",
+                    callee: { type: "Identifier", name: "Error" },
+                    arguments: [
+                      {
+                        type: "StringLiteral",
+                        value: "[non exhaustive match]",
+                      },
+                    ],
+                  },
+                },
+              ],
+            };
+          }
+
+          const [condition, stms] = checks[index]!;
+          return {
+            type: "IfStatement",
+            test: condition,
+            consequent: {
+              type: "BlockStatement",
+              directives: [],
+              body: stms,
+            },
+            alternate: helper(index + 1),
+          };
+        };
+
+        this.statementsBuf.push(helper(0));
+        return;
+      }
+
       case "application":
         if (this.isTailCall(src, tailPosCaller)) {
           const tailCallIdent = this.makeFreshIdent();
           this.tailCallIdent = tailCallIdent;
 
           for (let i = 0; i < src.args.length; i++) {
-            console.log(i, src.args[i], tailPosCaller);
             const expr = this.compileExprAsJsExpr(src.args[i]!, tailPosCaller);
             this.statementsBuf.push({
               type: "ExpressionStatement",
@@ -202,7 +271,6 @@ class Compiler {
       case "fn":
       case "field-access":
       case "let":
-      case "match":
       default: {
         const expr = this.compileExprAsJsExpr(src, tailPosCaller);
         switch (as.type) {
@@ -264,6 +332,19 @@ class Compiler {
 
       case "constant":
         return compileConst(src.value);
+
+      // The following branches rely on statement mode compilation
+      case "match":
+      case "if": {
+        const ident = this.makeFreshIdent();
+        this.compileExprAsJsStms(src, undefined, {
+          type: "assign_var",
+          ident,
+          declare: true,
+          dictParams: [],
+        });
+        return ident;
+      }
 
       case "application": {
         if (src.caller.type === "identifier") {
@@ -543,17 +624,6 @@ class Compiler {
         };
       }
 
-      case "if": {
-        const ident = this.makeFreshIdent();
-        this.compileExprAsJsStms(src, undefined, {
-          type: "assign_var",
-          ident,
-          declare: true,
-          dictParams: [],
-        });
-        return ident;
-      }
-
       case "list-literal":
         return src.values.reduceRight<t.Expression>(
           (prev, src): t.Expression => {
@@ -566,93 +636,6 @@ class Compiler {
           },
           { type: "Identifier", name: "List$Nil" },
         );
-
-      case "match": {
-        const matchedExpr = this.precomputeValue(src.expr);
-
-        const checks: [
-          condition: t.Expression,
-          ret: t.Expression,
-          statements: t.Statement[],
-        ][] = [];
-        for (const [pattern, retExpr] of src.clauses) {
-          const exprs = this.compileCheckPatternConditions(
-            pattern,
-            matchedExpr,
-          );
-
-          // TODO wrap statements
-          checks.push([
-            // TODO if if(true) is encountered, we could just return retExpr
-            joinAndExprs(exprs),
-            ...this.wrapStatements(() =>
-              this.compileExprAsJsExpr(retExpr, tailPosCaller),
-            ),
-          ]);
-        }
-
-        const retValueIdentifier = this.makeFreshIdent();
-        this.statementsBuf.push({
-          type: "VariableDeclaration",
-          kind: "let",
-          declarations: [
-            {
-              type: "VariableDeclarator",
-              id: retValueIdentifier,
-            },
-          ],
-        });
-        const helper = (index: number): t.Statement => {
-          if (index >= checks.length) {
-            return {
-              type: "BlockStatement",
-              directives: [],
-              body: [
-                {
-                  type: "ThrowStatement",
-                  argument: {
-                    type: "NewExpression",
-                    callee: { type: "Identifier", name: "Error" },
-                    arguments: [
-                      {
-                        type: "StringLiteral",
-                        value: "[non exhaustive match]",
-                      },
-                    ],
-                  },
-                },
-              ],
-            };
-          }
-
-          const [condition, ret, stms] = checks[index]!;
-          return {
-            type: "IfStatement",
-            test: condition,
-            consequent: {
-              type: "BlockStatement",
-              directives: [],
-              body: [
-                ...stms,
-                {
-                  type: "ExpressionStatement",
-                  expression: {
-                    type: "AssignmentExpression",
-                    operator: "=",
-                    left: retValueIdentifier,
-                    right: ret,
-                  },
-                },
-              ],
-            },
-            alternate: helper(index + 1),
-          };
-        };
-
-        this.statementsBuf.push(helper(0));
-
-        return retValueIdentifier;
-      }
 
       case "struct-literal": {
         const resolution = src.struct.resolution;
