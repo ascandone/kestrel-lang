@@ -20,7 +20,7 @@ import {
   UntypedTypeVariant,
   parse,
 } from "../parser";
-import { char, float, int, string, task, unit } from "./core";
+import { char, float, int, string } from "./core";
 import { Deps } from "./resolutionStep";
 import { TVar, Type, UnifyError, unify } from "./type";
 
@@ -47,6 +47,8 @@ export type IdentifierResolution =
       declaration: UntypedTypeDeclaration & { type: "adt" };
       namespace: string;
     };
+
+type LocalScope = Record<string, Binding>;
 
 export class Analysis {
   errors: ErrorInfo[] = [];
@@ -86,6 +88,7 @@ export class Analysis {
       return;
     }
 
+    this.runResolution(decl.value, {});
     this.typecheckExpr(decl.value);
     this.unifyNodes(decl.binding, decl.value);
   }
@@ -102,6 +105,89 @@ export class Analysis {
     this.unifyNode(left, this.getType(right));
   }
 
+  private evaluateResolution(
+    identifier: UntypedExpr & { type: "identifier" },
+    localScope: LocalScope = {},
+  ): IdentifierResolution | undefined {
+    // Search locals first
+
+    const localLookup = localScope[identifier.name];
+    if (localLookup !== undefined) {
+      return { type: "local-variable", binding: localLookup };
+    }
+
+    for (const declaration of this.getDeclarations()) {
+      if (declaration.binding.name === identifier.name) {
+        return {
+          type: "global-variable",
+          declaration,
+          namespace: this.ns,
+        };
+      }
+    }
+    return undefined;
+  }
+
+  private runResolution(expr: UntypedExpr, localScope: LocalScope): undefined {
+    switch (expr.type) {
+      case "syntax-err":
+      case "constant":
+        return;
+
+      case "identifier": {
+        const res = this.evaluateResolution(expr, localScope);
+        if (res === undefined) {
+          this.errors.push({
+            span: expr.span,
+            description: new UnboundVariable(expr.name),
+          });
+        } else {
+          this.identifiersResolutions.set(expr, res);
+        }
+        return;
+      }
+
+      case "fn": {
+        const scopeClone: LocalScope = { ...localScope };
+        for (const param of expr.params) {
+          if (param.type !== "identifier") {
+            throw new Error("TODO resolve param != ident");
+          }
+          scopeClone[param.name] = param;
+        }
+
+        // TODO handle locals scope
+        this.runResolution(expr.body, scopeClone);
+        return;
+      }
+
+      case "application": {
+        this.runResolution(expr.caller, localScope);
+        for (const arg of expr.args) {
+          this.runResolution(arg, localScope);
+        }
+
+        return;
+      }
+
+      case "pipe": {
+        this.runResolution(expr.right, localScope);
+        this.runResolution(expr.left, localScope);
+        return;
+      }
+
+      case "let#":
+      case "infix":
+      case "list-literal":
+      case "struct-literal":
+      case "field-access":
+      case "let":
+      case "if":
+      case "match":
+        throw new Error("TODO resolution on: " + expr.type);
+    }
+  }
+
   private typecheckExpr(expr: UntypedExpr): undefined {
     switch (expr.type) {
       case "syntax-err":
@@ -112,12 +198,9 @@ export class Analysis {
         return;
 
       case "identifier": {
-        const resolution = this.resolveIdentifier(expr);
+        const resolution = this.identifiersResolutions.get(expr);
         if (resolution === undefined) {
-          this.errors.push({
-            description: new UnboundVariable(expr.name),
-            span: expr.span,
-          });
+          // error was already emitted during resolution
           return;
         }
 
@@ -128,20 +211,23 @@ export class Analysis {
             this.unifyNodes(expr, resolution.declaration.binding);
             return;
 
-          case "constructor":
           case "local-variable":
-            throw new Error("TODO handle");
+            this.unifyNodes(expr, resolution.binding);
+            return;
+
+          case "constructor":
+            throw new Error("TODO handle constructor");
         }
       }
 
       case "fn":
         this.unifyNode(expr, {
           type: "fn",
-          args: expr.params.map((_pattern) => {
-            // this.typecheckPattern(p, true);
-            // return p.$.asType();
-
-            throw new Error("TODO pattern type");
+          args: expr.params.map((pattern) => {
+            if (pattern.type !== "identifier") {
+              throw new Error("handle pattern != ident");
+            }
+            return this.getType(pattern);
           }),
           return: this.getType(expr.body),
         });
@@ -315,5 +401,3 @@ function getConstantType(x: ConstLiteral): Type {
       return char;
   }
 }
-
-export const DEFAULT_MAIN_TYPE = task(unit);
