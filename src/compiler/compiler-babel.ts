@@ -38,6 +38,15 @@ export function compile(
 const EQ_IDENTIFIER: t.Identifier = { type: "Identifier", name: "_eq" };
 const TAG_FIELD: t.Identifier = { type: "Identifier", name: "$" };
 
+type CompilationMode =
+  | {
+      type: "assign_var";
+      ident: t.Identifier;
+      declare: boolean;
+      // dictParams: t.Identifier[];
+    }
+  | { type: "return" };
+
 class Compiler {
   private statementsBuf: t.Statement[] = [];
   private frames: Frame[] = [];
@@ -94,7 +103,7 @@ class Compiler {
     expr: TypedExpr,
     makeIdent = () => this.makeFreshIdent(),
   ): t.Identifier {
-    const jsExpr = this.compileExpr(expr, undefined);
+    const jsExpr = this.compileExprAsJsExpr(expr, undefined);
     if (jsExpr.type === "Identifier") {
       return jsExpr;
     }
@@ -119,7 +128,87 @@ class Compiler {
     return { type: "Identifier", name };
   }
 
-  private compileExpr(
+  private compileExprAsJsStms(
+    src: TypedExpr,
+    tailPosCaller: Binding<unknown> | undefined,
+    as: CompilationMode,
+  ): void {
+    switch (src.type) {
+      case "syntax-err":
+        throw new Error("[unreachable]");
+
+      case "if": {
+        if (as.type === "assign_var" && as.declare) {
+          this.statementsBuf.push({
+            type: "VariableDeclaration",
+            kind: "let",
+            declarations: [{ type: "VariableDeclarator", id: as.ident }],
+          });
+        }
+
+        const test = this.compileExprAsJsExpr(src.condition, undefined);
+        const [, thenBranchStmts] = this.wrapStatements(() =>
+          this.compileExprAsJsStms(src.then, tailPosCaller, doNotDeclare(as)),
+        );
+
+        const [, elseBranchStmts] = this.wrapStatements(() =>
+          this.compileExprAsJsStms(src.else, tailPosCaller, doNotDeclare(as)),
+        );
+
+        this.statementsBuf.push({
+          type: "IfStatement",
+          test: test,
+          consequent: {
+            type: "BlockStatement",
+            directives: [],
+            body: thenBranchStmts,
+          },
+          alternate: {
+            type: "BlockStatement",
+            directives: [],
+            body: elseBranchStmts,
+          },
+        });
+
+        return;
+      }
+
+      case "constant":
+      case "list-literal":
+      case "struct-literal":
+      case "identifier":
+      case "fn":
+      case "application":
+      case "field-access":
+      case "let":
+      case "match":
+      default: {
+        const expr = this.compileExprAsJsExpr(src, tailPosCaller);
+        switch (as.type) {
+          case "assign_var":
+            this.statementsBuf.push({
+              type: "ExpressionStatement",
+              expression: {
+                type: "AssignmentExpression",
+                operator: "=",
+                left: as.ident,
+                right: expr,
+              },
+            });
+            break;
+
+          case "return":
+            this.statementsBuf.push({
+              type: "ReturnStatement",
+              argument: expr,
+            });
+            break;
+        }
+      }
+    }
+  }
+
+  private compileExprAsJsExpr(
     src: TypedExpr,
     tailPosCaller: Binding<unknown> | undefined,
   ): t.Expression {
@@ -136,7 +225,7 @@ class Compiler {
           this.tailCallIdent = tailCallIdent;
 
           for (let i = 0; i < src.args.length; i++) {
-            const expr = this.compileExpr(src.args[i]!, tailPosCaller);
+            const expr = this.compileExprAsJsExpr(src.args[i]!, tailPosCaller);
             this.statementsBuf.push({
               type: "ExpressionStatement",
               expression: {
@@ -156,8 +245,8 @@ class Compiler {
             return {
               type: "BinaryExpression",
               operator: "===",
-              left: this.compileExpr(src.args[0]!, undefined),
-              right: this.compileExpr(src.args[1]!, undefined),
+              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
+              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
             };
           }
 
@@ -166,8 +255,8 @@ class Compiler {
             return {
               type: "BinaryExpression",
               operator: infixName,
-              left: this.compileExpr(src.args[0]!, undefined),
-              right: this.compileExpr(src.args[1]!, undefined),
+              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
+              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
             };
           }
 
@@ -176,8 +265,8 @@ class Compiler {
             return {
               type: "LogicalExpression",
               operator: infixLogicalName,
-              left: this.compileExpr(src.args[0]!, undefined),
-              right: this.compileExpr(src.args[1]!, undefined),
+              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
+              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
             };
           }
 
@@ -186,7 +275,7 @@ class Compiler {
             return {
               type: "UnaryExpression",
               operator: prefixName,
-              argument: this.compileExpr(src.args[0]!, undefined),
+              argument: this.compileExprAsJsExpr(src.args[0]!, undefined),
               prefix: true,
             };
           }
@@ -194,8 +283,10 @@ class Compiler {
 
         return {
           type: "CallExpression",
-          callee: this.compileExpr(src.caller, undefined),
-          arguments: src.args.map((arg) => this.compileExpr(arg, undefined)),
+          callee: this.compileExprAsJsExpr(src.caller, undefined),
+          arguments: src.args.map((arg) =>
+            this.compileExprAsJsExpr(arg, undefined),
+          ),
         };
       }
 
@@ -291,7 +382,7 @@ class Compiler {
         if (src.pattern.type === "identifier") {
           this.bindingsJsName.set(src.pattern, freshIdent);
         }
-        const value = this.compileExpr(src.value, undefined);
+        const value = this.compileExprAsJsExpr(src.value, undefined);
         this.statementsBuf.push({
           type: "VariableDeclaration",
           kind: "const",
@@ -307,7 +398,7 @@ class Compiler {
 
         this.frames.pop();
 
-        return this.compileExpr(src.body, tailPosCaller);
+        return this.compileExprAsJsExpr(src.body, tailPosCaller);
 
         // we could call this.bindingsJsName.delete(src.pattern) here
       }
@@ -330,7 +421,7 @@ class Compiler {
           this.tailCallIdent = wasTailCall;
         };
 
-        const [{ params, body }, stms] = this.wrapStatements(() => {
+        const [{ params }, stms] = this.wrapStatements(() => {
           const params = src.params.map((param): t.Identifier => {
             if (param.type === "identifier") {
               const name = this.getCurrentFrame().registerLocal(param.name);
@@ -352,8 +443,10 @@ class Compiler {
 
             return ident;
           });
-          const body = this.compileExpr(src.body, callerBinding);
-          return { params, body };
+          this.compileExprAsJsStms(src.body, callerBinding, {
+            type: "return",
+          });
+          return { params };
         });
 
         const bodyStms: t.Expression | t.BlockStatement = (() => {
@@ -404,13 +497,15 @@ class Compiler {
             };
           }
 
-          return stms.length === 0
-            ? body
-            : {
-                type: "BlockStatement",
-                directives: [],
-                body: [...stms, { type: "ReturnStatement", argument: body }],
-              };
+          if (stms.length === 1 && stms[0]!.type === "ReturnStatement") {
+            return stms[0].argument!;
+          }
+
+          return {
+            type: "BlockStatement",
+            directives: [],
+            body: stms,
+          };
         })();
 
         const params_ =
@@ -435,67 +530,18 @@ class Compiler {
 
       case "if": {
         const ident = this.makeFreshIdent();
-
-        const test = this.compileExpr(src.condition, undefined);
-        const [thenBranchExpr, thenBranchStmts] = this.wrapStatements(() =>
-          this.compileExpr(src.then, tailPosCaller),
-        );
-
-        const [elseBranchExpr, elseBranchStmts] = this.wrapStatements(() =>
-          this.compileExpr(src.else, tailPosCaller),
-        );
-
-        this.statementsBuf.push(
-          {
-            type: "VariableDeclaration",
-            kind: "let",
-            declarations: [{ type: "VariableDeclarator", id: ident }],
-          },
-          {
-            type: "IfStatement",
-            test: test,
-            consequent: {
-              type: "BlockStatement",
-              directives: [],
-              body: [
-                ...thenBranchStmts,
-                {
-                  type: "ExpressionStatement",
-                  expression: {
-                    type: "AssignmentExpression",
-                    operator: "=",
-                    left: ident,
-                    right: thenBranchExpr,
-                  },
-                },
-              ],
-            },
-            alternate: {
-              type: "BlockStatement",
-              directives: [],
-              body: [
-                ...elseBranchStmts,
-                {
-                  type: "ExpressionStatement",
-                  expression: {
-                    type: "AssignmentExpression",
-                    operator: "=",
-                    left: ident,
-                    right: elseBranchExpr,
-                  },
-                },
-              ],
-            },
-          },
-        );
-
+        this.compileExprAsJsStms(src, undefined, {
+          type: "assign_var",
+          ident,
+          declare: true,
+        });
         return ident;
       }
 
       case "list-literal":
         return src.values.reduceRight<t.Expression>(
           (prev, src): t.Expression => {
-            const compiledExpr = this.compileExpr(src, undefined);
+            const compiledExpr = this.compileExprAsJsExpr(src, undefined);
             return {
               type: "CallExpression",
               callee: { type: "Identifier", name: "List$Cons" },
@@ -524,7 +570,7 @@ class Compiler {
             // TODO if if(true) is encountered, we could just return retExpr
             joinAndExprs(exprs),
             ...this.wrapStatements(() =>
-              this.compileExpr(retExpr, tailPosCaller),
+              this.compileExprAsJsExpr(retExpr, tailPosCaller),
             ),
           ]);
         }
@@ -612,7 +658,7 @@ class Compiler {
             properties.push({
               type: "ObjectProperty",
               key: { type: "Identifier", name: structLitField.field.name },
-              value: this.compileExpr(structLitField.value, undefined),
+              value: this.compileExprAsJsExpr(structLitField.value, undefined),
               shorthand: true,
               computed: false,
             });
@@ -644,7 +690,7 @@ class Compiler {
       case "field-access":
         return {
           type: "MemberExpression",
-          object: this.compileExpr(src.struct, undefined),
+          object: this.compileExprAsJsExpr(src.struct, undefined),
           property: { type: "Identifier", name: src.field.name },
           computed: false,
         };
@@ -792,7 +838,8 @@ class Compiler {
       }),
     );
 
-    let out = this.compileExpr(decl.value, undefined);
+    // TODO compile as stms
+    let out = this.compileExprAsJsExpr(decl.value, undefined);
     this.frames.pop();
 
     const dictParams = findDeclarationDictsParams(decl.binding.$.asType());
@@ -1427,6 +1474,10 @@ export function compileProject(
   buf.push(`${entryPointMod}$main.exec();\n`);
 
   return buf.join("\n\n");
+}
+
+function doNotDeclare(as: CompilationMode): CompilationMode {
+  return as.type === "assign_var" ? { ...as, declare: false } : as;
 }
 
 function isPrimitiveEq(args: TypedExpr[]): boolean {
