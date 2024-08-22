@@ -24,7 +24,7 @@ import {
 } from "../parser";
 import { bool, char, float, int, list, string } from "./core";
 import { Deps } from "./resolutionStep";
-import { TVar, Type, UnifyError, unify } from "./type";
+import { PolyType, TVar, Type, UnifyError, instantiate, unify } from "./type";
 
 export type AnalyseOptions = {
   dependencies?: Deps;
@@ -55,11 +55,20 @@ type LocalScope = Record<string, Binding>;
 export class Analysis {
   errors: ErrorInfo[] = [];
 
+  /** record of types declared in this module */
+  private locallyDefinedTypes = new Map<string, UntypedTypeDeclaration>();
+
+  /** record of variants declared in this module */
+  private locallyDefinedVariants = new Map<
+    string,
+    [UntypedTypeDeclaration & { type: "adt" }, UntypedTypeVariant]
+  >();
+
   private identifiersResolutions = new WeakMap<
     UntypedExpr & { type: "identifier" },
     IdentifierResolution
   >();
-  private unusedVariables = new WeakSet<Binding>();
+  private unusedBindings = new WeakSet<Binding>();
 
   private typeAnnotations = new WeakMap<TypedNode, TVar>();
   private module: UntypedModule;
@@ -74,10 +83,45 @@ export class Analysis {
 
     this.module = parseResult.parsed;
 
-    this.initAnalysis();
+    this.initTypesResolution();
+    this.initDeclarationsResolution();
+
+    this.initDeclarationsTypecheck();
   }
 
-  private initAnalysis() {
+  private initTypesResolution() {
+    // 1. register all the types
+    for (const typeDecl of this.module.typeDeclarations) {
+      this.locallyDefinedTypes.set(typeDecl.name, typeDecl);
+    }
+
+    // 2. register constructors and fields
+    for (const typeDecl of this.module.typeDeclarations) {
+      switch (typeDecl.type) {
+        case "adt":
+          for (const variant of typeDecl.variants) {
+            this.locallyDefinedVariants.set(variant.name, [typeDecl, variant]);
+          }
+          break;
+        case "struct":
+          throw new Error("TODO handle struct");
+        case "extern":
+          break;
+      }
+    }
+  }
+
+  private initDeclarationsResolution() {
+    for (const letDecl of this.module.declarations) {
+      if (letDecl.extern) {
+        continue;
+      }
+
+      this.runValuesResolution(letDecl.value, {});
+    }
+  }
+
+  private initDeclarationsTypecheck() {
     for (const letDecl of this.module.declarations) {
       this.typecheckLetDeclaration(letDecl);
     }
@@ -92,7 +136,6 @@ export class Analysis {
       return;
     }
 
-    this.runResolution(decl.value, {});
     this.typecheckExpr(decl.value);
     this.unifyNodes(decl.binding, decl.value);
   }
@@ -114,12 +157,25 @@ export class Analysis {
     localScope: LocalScope = {},
   ): IdentifierResolution | undefined {
     // Search locals first
-
     const localLookup = localScope[identifier.name];
     if (localLookup !== undefined) {
       return { type: "local-variable", binding: localLookup };
     }
 
+    // search variants
+    const variantLookup = this.locallyDefinedVariants.get(identifier.name);
+    if (variantLookup !== undefined) {
+      const [declaration, variant] = variantLookup;
+
+      return {
+        type: "constructor",
+        namespace: this.ns,
+        declaration,
+        variant,
+      };
+    }
+
+    // TODO search locallyDefinedDeclarations instead
     for (const declaration of this.getDeclarations()) {
       if (declaration.binding.name === identifier.name) {
         return {
@@ -144,7 +200,7 @@ export class Analysis {
   }
 
   private checkUnusedVars(expr: Binding) {
-    if (this.unusedVariables.has(expr)) {
+    if (this.unusedBindings.has(expr)) {
       this.errors.push({
         span: expr.span,
         description: new UnusedVariable(expr.name, "local"),
@@ -152,7 +208,10 @@ export class Analysis {
     }
   }
 
-  private runResolution(expr: UntypedExpr, localScope: LocalScope): undefined {
+  private runValuesResolution(
+    expr: UntypedExpr,
+    localScope: LocalScope,
+  ): undefined {
     switch (expr.type) {
       case "syntax-err":
       case "constant":
@@ -165,19 +224,20 @@ export class Analysis {
             span: expr.span,
             description: new UnboundVariable(expr.name),
           });
-        } else {
-          this.identifiersResolutions.set(expr, res);
-
-          switch (res.type) {
-            case "local-variable":
-              this.unusedVariables.delete(res.binding);
-              break;
-
-            case "global-variable":
-            case "constructor":
-              break;
-          }
+          return;
         }
+
+        this.identifiersResolutions.set(expr, res);
+        switch (res.type) {
+          case "local-variable":
+            this.unusedBindings.delete(res.binding);
+            break;
+
+          case "global-variable":
+          case "constructor":
+            break;
+        }
+
         return;
       }
 
@@ -186,7 +246,7 @@ export class Analysis {
           .flatMap((p) => this.extractPatternIdentifiers(p))
           .map((p) => [p.name, p]);
 
-        this.runResolution(expr.body, {
+        this.runValuesResolution(expr.body, {
           ...localScope,
           ...Object.fromEntries(paramsBindings),
         });
@@ -194,39 +254,39 @@ export class Analysis {
       }
 
       case "application": {
-        this.runResolution(expr.caller, localScope);
+        this.runValuesResolution(expr.caller, localScope);
         for (const arg of expr.args) {
-          this.runResolution(arg, localScope);
+          this.runValuesResolution(arg, localScope);
         }
 
         return;
       }
 
       case "pipe": {
-        this.runResolution(expr.right, localScope);
-        this.runResolution(expr.left, localScope);
+        this.runValuesResolution(expr.right, localScope);
+        this.runValuesResolution(expr.left, localScope);
         return;
       }
 
       case "if": {
-        this.runResolution(expr.condition, localScope);
-        this.runResolution(expr.then, localScope);
-        this.runResolution(expr.else, localScope);
+        this.runValuesResolution(expr.condition, localScope);
+        this.runValuesResolution(expr.then, localScope);
+        this.runValuesResolution(expr.else, localScope);
         return;
       }
 
       case "let": {
         // TODO handle recursive bindings
-        this.runResolution(expr.value, localScope);
+        this.runValuesResolution(expr.value, localScope);
 
         const bindingsEntries = this.extractPatternIdentifiers(
           expr.pattern,
         ).map((p) => [p.name, p] as const);
         for (const [_, binding] of bindingsEntries) {
-          this.unusedVariables.add(binding);
+          this.unusedBindings.add(binding);
         }
 
-        this.runResolution(expr.body, {
+        this.runValuesResolution(expr.body, {
           ...localScope,
           ...Object.fromEntries(bindingsEntries),
         });
@@ -239,7 +299,7 @@ export class Analysis {
 
       case "list-literal": {
         for (const value of expr.values) {
-          this.runResolution(value, localScope);
+          this.runValuesResolution(value, localScope);
         }
         return;
       }
@@ -280,8 +340,13 @@ export class Analysis {
             this.unifyNodes(expr, resolution.binding);
             return;
 
-          case "constructor":
-            throw new Error("TODO handle constructor");
+          case "constructor": {
+            const mono = instantiate(
+              this.getVariantType(resolution.variant, resolution.declaration),
+            );
+            this.unifyNode(expr, mono);
+            return;
+          }
         }
       }
 
@@ -377,7 +442,7 @@ export class Analysis {
           // TODO actually resolve type
           return {
             type: "named",
-            args: [],
+            args: t.args.map((arg) => helper(arg)),
             moduleName: this.ns,
             name: t.name,
           };
@@ -401,6 +466,33 @@ export class Analysis {
     return helper(t);
   }
 
+  private getVariantType(
+    variant: UntypedTypeVariant,
+    declaration: UntypedTypeDeclaration & { type: "adt" },
+  ): PolyType {
+    // TODO cache and generalize
+
+    const ret: Type = {
+      type: "named",
+      args: [],
+      moduleName: this.ns,
+      name: declaration.name,
+    };
+
+    if (variant.args.length === 0) {
+      return [{}, ret];
+    }
+
+    return [
+      {},
+      {
+        type: "fn",
+        args: variant.args.map((arg) => this.typeAstToType(arg)),
+        return: ret,
+      },
+    ];
+  }
+
   // --- Public interface
   getType(node: TypedNode): Type {
     const lookup = this.typeAnnotations.get(node);
@@ -411,28 +503,6 @@ export class Analysis {
       return tvar.asType();
     }
     return lookup.asType();
-  }
-
-  resolveIdentifier(
-    expr: UntypedExpr & { type: "identifier" },
-  ): IdentifierResolution | undefined {
-    if (this.identifiersResolutions.has(expr)) {
-      return this.identifiersResolutions.get(expr);
-    }
-
-    // resolve ident
-
-    for (const declaration of this.getDeclarations()) {
-      if (declaration.binding.name === expr.name) {
-        return {
-          type: "global-variable",
-          declaration,
-          namespace: this.ns,
-        };
-      }
-    }
-
-    return undefined;
   }
 
   *getDeclarations(): Generator<UntypedDeclaration> {
