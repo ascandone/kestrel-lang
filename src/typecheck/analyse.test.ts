@@ -235,6 +235,22 @@ describe("functions and application", () => {
       id: "Fn(a) -> a",
     });
   });
+
+  test.todo("generalize values", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      pub let id = fn x { x }
+      pub let v = id(42)
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      id: "Fn(a) -> a",
+      v: "Int",
+    });
+  });
 });
 
 describe("if expression", () => {
