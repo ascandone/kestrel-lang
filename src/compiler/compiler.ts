@@ -15,7 +15,13 @@ import { BinaryExpression } from "@babel/types";
 import { optimizeModule } from "./optimize";
 import { exit } from "node:process";
 import { col } from "../utils/colors";
-import { joinAndExprs, sanitizeNamespace } from "./utils";
+import {
+  AdtReprType,
+  TAG_FIELD,
+  getAdtReprType,
+  joinAndExprs,
+  sanitizeNamespace,
+} from "./utils";
 import {
   deriveEqAdt,
   deriveEqStruct,
@@ -36,7 +42,6 @@ export function compile(
 }
 
 const EQ_IDENTIFIER: t.Identifier = { type: "Identifier", name: "_eq" };
-const TAG_FIELD: t.Identifier = { type: "Identifier", name: "$" };
 
 type CompilationMode =
   | {
@@ -184,8 +189,11 @@ class Compiler {
 
         const matchedExpr = this.precomputeValue(src.expr);
 
-        const checks: [condition: t.Expression, statements: t.Statement[]][] =
-          [];
+        const checks: [
+          condition: t.Expression | undefined,
+          statements: t.Statement[],
+        ][] = [];
+
         for (const [pattern, retExpr] of src.clauses) {
           const exprs = this.compileCheckPatternConditions(
             pattern,
@@ -196,50 +204,61 @@ class Compiler {
             this.compileExprAsJsStms(retExpr, tailPosCaller, doNotDeclare(as));
           });
 
-          checks.push([
-            // TODO if if(true) is encountered, we could just return retExpr
-            joinAndExprs(exprs),
-            stms,
-          ]);
+          if (exprs.length === 0) {
+            checks.push([undefined, stms]);
+            break;
+          }
+
+          checks.push([joinAndExprs(exprs), stms]);
         }
 
-        const helper = (index: number): t.Statement => {
+        const helper = (index: number): t.Statement[] => {
           if (index >= checks.length) {
-            return {
-              type: "BlockStatement",
-              directives: [],
-              body: [
-                {
-                  type: "ThrowStatement",
-                  argument: {
-                    type: "NewExpression",
-                    callee: { type: "Identifier", name: "Error" },
-                    arguments: [
-                      {
-                        type: "StringLiteral",
-                        value: "[non exhaustive match]",
-                      },
-                    ],
-                  },
+            return [
+              {
+                type: "ThrowStatement",
+                argument: {
+                  type: "NewExpression",
+                  callee: { type: "Identifier", name: "Error" },
+                  arguments: [
+                    {
+                      type: "StringLiteral",
+                      value: "[non exhaustive match]",
+                    },
+                  ],
                 },
-              ],
-            };
+              },
+            ];
           }
 
           const [condition, stms] = checks[index]!;
-          return {
-            type: "IfStatement",
-            test: condition,
-            consequent: {
-              type: "BlockStatement",
-              directives: [],
-              body: stms,
+          if (condition === undefined) {
+            return stms;
+          }
+
+          const next = helper(index + 1);
+          const isIfElse = next.length === 1 && next[0]!.type === "IfStatement";
+          return [
+            {
+              type: "IfStatement",
+              test: condition,
+              consequent: {
+                type: "BlockStatement",
+                directives: [],
+                body: stms,
+              },
+              alternate: isIfElse
+                ? next[0]!
+                : {
+                    type: "BlockStatement",
+                    directives: [],
+                    body: next,
+                  },
             },
-            alternate: helper(index + 1),
-          };
+          ];
         };
 
-        this.statementsBuf.push(helper(0));
+        this.statementsBuf.push(...helper(0));
         return;
       }
 
@@ -746,25 +765,49 @@ class Compiler {
           throw new Error("[unreachable] variant not found in declaration");
         }
 
+        const repr = getAdtReprType(pattern.resolution.declaration);
+        const eqLeftSide: t.Expression = (() => {
+          switch (repr) {
+            case "enum":
+              return matchedExpr;
+
+            case "unboxed":
+            case "default":
+              return {
+                type: "MemberExpression",
+                object: matchedExpr,
+                property: TAG_FIELD,
+                computed: false,
+              };
+          }
+        })();
+
+        const singleVariantDeclaration =
+          pattern.resolution.declaration.variants.length === 1;
+
         return [
-          {
-            type: "BinaryExpression",
-            operator: "===",
-            left: {
-              type: "MemberExpression",
-              object: matchedExpr,
-              property: TAG_FIELD,
-              computed: false,
-            },
-            right: { type: "NumericLiteral", value: index },
-          },
+          ...(singleVariantDeclaration
+            ? []
+            : [
+                {
+                  type: "BinaryExpression",
+                  operator: "===",
+                  left: eqLeftSide,
+                  right: { type: "NumericLiteral", value: index },
+                } as t.Expression,
+              ]),
           ...pattern.args.flatMap((arg, index) =>
-            this.compileCheckPatternConditions(arg, {
-              type: "MemberExpression",
-              object: matchedExpr,
-              property: { type: "Identifier", name: `_${index}` },
-              computed: false,
-            }),
+            this.compileCheckPatternConditions(
+              arg,
+              repr === "unboxed"
+                ? matchedExpr
+                : {
+                    type: "MemberExpression",
+                    object: matchedExpr,
+                    property: { type: "Identifier", name: `_${index}` },
+                    computed: false,
+                  },
+            ),
           ),
         ];
       }
@@ -853,6 +896,7 @@ class Compiler {
   private compileVariant(
     variant: TypedTypeVariant,
     index: number,
+    repr: AdtReprType,
   ): t.Statement {
     return {
       type: "VariableDeclaration",
@@ -861,7 +905,7 @@ class Compiler {
         {
           type: "VariableDeclarator",
           id: makeGlobalIdentifier(this.ns, variant.name),
-          init: makeVariantBody(index, variant.args.length),
+          init: makeVariantBody(index, variant.args.length, repr),
         },
       ],
     };
@@ -875,7 +919,8 @@ class Compiler {
     if (this.ns !== "Bool" && decl.name !== "Bool") {
       buf.push(
         ...decl.variants.map(
-          (d, index): t.Statement => this.compileVariant(d, index),
+          (d, index): t.Statement =>
+            this.compileVariant(d, index, getAdtReprType(decl)),
         ),
       );
     }
@@ -1107,7 +1152,15 @@ function makeGlobalIdentifier(ns: string, bindingName: string): t.Identifier {
   };
 }
 
-function makeVariantBody(index: number, argsNumber: number): t.Expression {
+function makeVariantBody(
+  index: number,
+  argsNumber: number,
+  repr: AdtReprType,
+): t.Expression {
+  if (repr === "enum") {
+    return { type: "NumericLiteral", value: index };
+  }
+
   const params = Array.from(
     { length: argsNumber },
     (_, i): t.Identifier => ({
@@ -1116,27 +1169,30 @@ function makeVariantBody(index: number, argsNumber: number): t.Expression {
     }),
   );
 
-  const ret: t.Expression = {
-    type: "ObjectExpression",
-    properties: [
-      {
-        type: "ObjectProperty",
-        key: TAG_FIELD,
-        value: { type: "NumericLiteral", value: index },
-        computed: false,
-        shorthand: false,
-      },
-      ...params.map(
-        (p): t.ObjectProperty => ({
-          type: "ObjectProperty",
-          key: p,
-          value: p,
-          computed: false,
-          shorthand: true,
-        }),
-      ),
-    ],
-  };
+  const ret: t.Expression =
+    repr === "unboxed"
+      ? params[0]!
+      : {
+          type: "ObjectExpression",
+          properties: [
+            {
+              type: "ObjectProperty",
+              key: TAG_FIELD,
+              value: { type: "NumericLiteral", value: index },
+              computed: false,
+              shorthand: false,
+            },
+            ...params.map(
+              (p): t.ObjectProperty => ({
+                type: "ObjectProperty",
+                key: p,
+                value: p,
+                computed: false,
+                shorthand: true,
+              }),
+            ),
+          ],
+        };
 
   if (argsNumber === 0) {
     return ret;
