@@ -4,9 +4,13 @@ import { typeToString } from "./type";
 import {
   DuplicateDeclaration,
   ErrorInfo,
+  InvalidCatchall,
   InvalidPipe,
+  InvalidTypeArity,
   TypeMismatch,
+  TypeParamShadowing,
   UnboundType,
+  UnboundTypeParam,
   UnboundVariable,
   UnusedVariable,
 } from "../errors";
@@ -206,6 +210,246 @@ describe("named types", () => {
     expect(getTypes(a)).toEqual({
       x: "Int",
     });
+  });
+});
+
+describe("ADTs", () => {
+  test.todo("cannot be declared twice");
+  test.todo("cannot declare variants twice");
+
+  test("can be used as type hint", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    extern type X
+    extern pub let x: X
+
+    type T { }
+    pub let f: Fn(T) -> X = fn _ { x }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(T) -> X",
+      x: "X",
+    });
+  });
+
+  test("handles constructor without args nor params", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    type T { C }
+    pub let c = C
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      c: "T",
+    });
+  });
+
+  test("handles constructor with one (non-parametric) arg", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    extern type Int
+    type T { C(Int) }
+    pub let c = C
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      c: "Fn(Int) -> T",
+    });
+  });
+
+  test("handles constructor with complex arg", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    extern type Int
+    type Option<a> { }
+    type T {
+      C(Option<Int>, Int)
+    }
+    pub let c = C
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      c: "Fn(Option<Int>, Int) -> T",
+    });
+  });
+
+  test.todo("generalize type constructors", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type Box<a> {
+        Box(a),
+        Nested(Box<a>)
+      }
+      
+      pub let x = Nested(Box(42))
+      pub let y = Nested(Box("abc"))
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Box<Int>",
+      y: "Box<String>",
+    });
+  });
+
+  test("handles constructor wrapping a function", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    type A {}
+    type B {}
+    type C {}
+    type T {
+      C(Fn(A, B) -> C)
+    }
+    pub let c = C
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      c: "Fn(Fn(A, B) -> C) -> T",
+    });
+  });
+
+  test.todo("handles types that do not exist", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    type T {
+      C(NotFound)
+    }
+  `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(UnboundType);
+  });
+
+  test.todo("checks arity in constructors", () => {
+    const a = new Analysis(
+      "Main",
+      `  
+      type T<a> { }
+
+      type T1<a, b> {
+        C(T<a, b>)
+      }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(InvalidTypeArity);
+
+    const desc = a.errors[0]?.description as InvalidTypeArity;
+    expect(desc.expected).toEqual(1);
+    expect(desc.got).toEqual(2);
+  });
+
+  test("add types to the type pool", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type A {}
+      type B { C(A) }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test.todo("handles parametric types", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type Box<a, b> { C }
+        pub let a = C
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      a: "Box<a, b>",
+    });
+  });
+
+  test.todo("allows using parametric types in constructors", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type T<a, b> { C(b) }
+        pub let a = C
+        pub let b = C(1)
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      a: "Fn(a) -> T<b, a>",
+      b: "T<a, Int>",
+    });
+  });
+
+  test.todo("forbids unbound type params", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type T { C(a) }
+  `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(UnboundTypeParam);
+  });
+
+  test.todo("doesn't allow shadowing type params", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type Box<a, a> { }
+  `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeParamShadowing);
+  });
+
+  test.todo("prevents catchall to be used in type args", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type T { C(_) }
+  `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(InvalidCatchall);
+  });
+
+  test.todo("allows self-recursive type", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type T { C(T) }
+      `,
+    );
+
+    expect(a.errors).toEqual([]);
   });
 });
 
