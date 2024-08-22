@@ -63,7 +63,7 @@ describe("infer constants", () => {
   });
 });
 
-describe("variables resolution", () => {
+describe("globals resolution", () => {
   test("resolve a global variable already declared", () => {
     const a = new Analysis(
       "Main",
@@ -219,6 +219,66 @@ describe("functions and application", () => {
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
       f: "Fn(Int, Int) -> Bool",
+    });
+  });
+});
+
+describe("if expression", () => {
+  test("typecheck if ret value", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    type Bool { True }
+    pub let f =
+      if True {
+        0
+      } else {
+        1
+      }
+  `,
+    );
+
+    expect(getTypes(a)).toEqual({
+      f: "Int",
+    });
+  });
+
+  test("unify if clauses", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    type Bool { True }
+    pub let f = fn x {
+      if True {
+        0
+      } else {
+        x
+      }
+    }
+  `,
+    );
+
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Int) -> Int",
+    });
+  });
+
+  test("typecheck if condition", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    pub let f = fn x {
+      if x {
+        0
+      } else {
+        0
+      }
+    }
+  `,
+    );
+
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Bool) -> Int",
     });
   });
 });
