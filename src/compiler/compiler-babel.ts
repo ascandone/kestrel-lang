@@ -43,7 +43,7 @@ type CompilationMode =
       type: "assign_var";
       ident: t.Identifier;
       declare: boolean;
-      // dictParams: t.Identifier[];
+      dictParams: t.Identifier[];
     }
   | { type: "return" };
 
@@ -186,15 +186,40 @@ class Compiler {
         const expr = this.compileExprAsJsExpr(src, tailPosCaller);
         switch (as.type) {
           case "assign_var":
-            this.statementsBuf.push({
-              type: "ExpressionStatement",
-              expression: {
-                type: "AssignmentExpression",
-                operator: "=",
-                left: as.ident,
-                right: expr,
-              },
-            });
+            if (as.declare) {
+              const exprsWithDictParams: t.Expression =
+                as.dictParams.length === 0
+                  ? expr
+                  : {
+                      type: "ArrowFunctionExpression",
+                      async: false,
+                      params: as.dictParams,
+                      body: expr,
+                      expression: true,
+                    };
+
+              this.statementsBuf.push({
+                type: "VariableDeclaration",
+                kind: "const",
+                declarations: [
+                  {
+                    type: "VariableDeclarator",
+                    id: as.ident,
+                    init: exprsWithDictParams,
+                  },
+                ],
+              });
+            } else {
+              this.statementsBuf.push({
+                type: "ExpressionStatement",
+                expression: {
+                  type: "AssignmentExpression",
+                  operator: "=",
+                  left: as.ident,
+                  right: expr,
+                },
+              });
+            }
             break;
 
           case "return":
@@ -534,6 +559,7 @@ class Compiler {
           type: "assign_var",
           ident,
           declare: true,
+          dictParams: [],
         });
         return ident;
       }
@@ -838,35 +864,17 @@ class Compiler {
       }),
     );
 
-    // TODO compile as stms
-    let out = this.compileExprAsJsExpr(decl.value, undefined);
+    this.compileExprAsJsStms(decl.value, undefined, {
+      type: "assign_var",
+      declare: true,
+      ident: makeGlobalIdentifier(this.ns, decl.binding.name),
+      dictParams: findDeclarationDictsParams(decl.binding.$.asType()),
+    });
     this.frames.pop();
 
-    const dictParams = findDeclarationDictsParams(decl.binding.$.asType());
-    if (dictParams.length !== 0) {
-      out = {
-        type: "ArrowFunctionExpression",
-        async: false,
-        params: dictParams,
-        body: out,
-        expression: true,
-      };
-    }
-
-    return [
-      ...this.statementsBuf,
-      {
-        type: "VariableDeclaration",
-        declarations: [
-          {
-            type: "VariableDeclarator",
-            id: makeGlobalIdentifier(this.ns, decl.binding.name),
-            init: out,
-          },
-        ],
-        kind: "const",
-      },
-    ];
+    const stms = this.statementsBuf;
+    this.statementsBuf = [];
+    return stms;
   }
 
   private compileVariant(

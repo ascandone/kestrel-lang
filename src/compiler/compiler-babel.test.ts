@@ -456,13 +456,12 @@ describe("if expressions", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-    "let Main$x$GEN__0;
+    "let Main$x;
     if (0) {
-      Main$x$GEN__0 = 1;
+      Main$x = 1;
     } else {
-      Main$x$GEN__0 = 2;
-    }
-    const Main$x = Main$x$GEN__0;"
+      Main$x = 2;
+    }"
   `);
   });
 
@@ -477,13 +476,12 @@ describe("if expressions", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "let Main$f$GEN__0;
+      "let Main$f;
       if (0) {
-        Main$f$GEN__0 = () => 1;
+        Main$f = () => 1;
       } else {
-        Main$f$GEN__0 = 2;
-      }
-      const Main$f = Main$f$GEN__0;"
+        Main$f = 2;
+      }"
     `);
   });
 
@@ -531,14 +529,13 @@ describe("if expressions", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "let Main$x$GEN__0;
+      "let Main$x;
       const Main$x$a = 0;
       if (Main$x$a === 1) {
-        Main$x$GEN__0 = \`a\`;
+        Main$x = \`a\`;
       } else {
-        Main$x$GEN__0 = \`b\`;
-      }
-      const Main$x = Main$x$GEN__0;"
+        Main$x = \`b\`;
+      }"
     `);
   });
 
@@ -553,14 +550,13 @@ describe("if expressions", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "let Main$x$GEN__0;
+      "let Main$x;
       if (0) {
         const Main$x$y = 100;
-        Main$x$GEN__0 = Main$x$y + 1;
+        Main$x = Main$x$y + 1;
       } else {
-        Main$x$GEN__0 = \`else\`;
-      }
-      const Main$x = Main$x$GEN__0;"
+        Main$x = \`else\`;
+      }"
     `);
   });
 
