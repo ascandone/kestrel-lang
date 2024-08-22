@@ -22,7 +22,7 @@ import {
   UntypedTypeVariant,
   parse,
 } from "../parser";
-import { bool, char, float, int, string } from "./core";
+import { bool, char, float, int, list, string } from "./core";
 import { Deps } from "./resolutionStep";
 import { TVar, Type, UnifyError, unify } from "./type";
 
@@ -237,9 +237,15 @@ export class Analysis {
         return;
       }
 
+      case "list-literal": {
+        for (const value of expr.values) {
+          this.runResolution(value, localScope);
+        }
+        return;
+      }
+
       case "let#":
       case "infix":
-      case "list-literal":
       case "struct-literal":
       case "field-access":
       case "match":
@@ -322,6 +328,16 @@ export class Analysis {
         this.typecheckExpr(expr.value);
         return;
 
+      case "list-literal": {
+        const listType = TVar.fresh().asType();
+        this.unifyNode(expr, list(listType));
+        for (const value of expr.values) {
+          this.unifyNode(value, listType);
+          this.typecheckExpr(value);
+        }
+        return;
+      }
+
       case "pipe": {
         if (expr.right.type !== "application") {
           this.errors.push({
@@ -347,7 +363,6 @@ export class Analysis {
 
       case "let#":
       case "infix":
-      case "list-literal":
       case "struct-literal":
       case "field-access":
       case "match":
