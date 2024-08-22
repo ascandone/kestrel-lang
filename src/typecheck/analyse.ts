@@ -394,7 +394,7 @@ export class Analysis {
           return TVar.fresh().asType();
 
         case "any":
-          throw new Error("TODO typeAstToType handle type: " + t.type);
+          return TVar.fresh().asType();
       }
     };
 
