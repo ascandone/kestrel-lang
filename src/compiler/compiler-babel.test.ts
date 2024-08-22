@@ -632,7 +632,7 @@ describe("list literal", () => {
   });
 });
 
-describe.todo("TCO", () => {
+describe("TCO", () => {
   test("does not apply inside infix application", () => {
     const out = compileSrc(`
     extern let (+): Fn(Int, Int) -> Int
@@ -685,9 +685,7 @@ describe.todo("TCO", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$loop = () => {
-        let GEN__0;
         while (true) {}
-        return GEN__0;
       };"
     `);
   });
@@ -701,14 +699,12 @@ describe.todo("TCO", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$loop = (GEN_TC__0, GEN_TC__1) => {
-        let GEN__0;
         while (true) {
           const x = GEN_TC__0;
           const y = GEN_TC__1;
           GEN_TC__0 = x + 1;
           GEN_TC__1 = y;
         }
-        return GEN__0;
       };"
     `);
   });
@@ -728,14 +724,12 @@ describe.todo("TCO", () => {
         _0
       });
       const Main$loop = (GEN_TC__0, GEN_TC__1) => {
-        let GEN__1;
         while (true) {
           const x = GEN_TC__0;
           const GEN__0 = GEN_TC__1;
           GEN_TC__0 = x + 1;
           GEN_TC__1 = Main$Box(GEN__0._0);
         }
-        return GEN__1;
       };"
     `);
   });
@@ -754,18 +748,14 @@ describe.todo("TCO", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$to_zero = GEN_TC__0 => {
-        let GEN__1;
         while (true) {
           const x = GEN_TC__0;
-          let GEN__0;
           if (x === 0) {
-            GEN__0 = x;
+            return x;
           } else {
             GEN_TC__0 = x - 1;
-            GEN__0 = GEN__1;
           }
         }
-        return GEN__1;
       };"
     `);
   });
@@ -805,7 +795,7 @@ describe.todo("TCO", () => {
     `);
   });
 
-  test.todo("a tc call should not leak into other expressions", () => {
+  test("a tc call should not leak into other expressions", () => {
     const out = compileSrc(`
     let ap = fn f { f(10) }
 
@@ -820,40 +810,30 @@ describe.todo("TCO", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$ap = (f) => {
-        return f(10);
-      }
-
-      const Main$f = (GEN_TC__0) => {
+      "const Main$ap = f => f(10);
+      const Main$f = GEN_TC__0 => {
         while (true) {
           const a = GEN_TC__0;
-          if (a) {
-          } else {
-            const id$GEN__0 = (x) => {
-              return x;
-            }
-            const id = Main$ap(id$GEN__0);
+          if (a) {} else {
+            const id = Main$ap(x => x);
             return 0;
           }
         }
-      }
-      "
+      };"
     `);
   });
 
-  test.todo("Namespaced", () => {
+  test("Namespaced", () => {
     const out = compileSrc(`let f1 = fn { f1() }`, { ns: "Mod" });
 
     expect(out).toMatchInlineSnapshot(`
       "const Mod$f1 = () => {
-        while (true) {
-        }
-      }
-      "
+        while (true) {}
+      };"
     `);
   });
 
-  test.todo("Local vars shadow tail calls", () => {
+  test("Local vars shadow tail calls", () => {
     const out = compileSrc(`
       let f1 = fn {
         let f1 = fn { 0 };
@@ -862,12 +842,9 @@ describe.todo("TCO", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$f1 = () => {
-        const f1 = () => {
-          return 0;
-        }
+        const f1 = () => 0;
         return f1();
-      }
-      "
+      };"
     `);
   });
 });

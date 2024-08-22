@@ -173,12 +173,33 @@ class Compiler {
         return;
       }
 
+      case "application":
+        if (this.isTailCall(src, tailPosCaller)) {
+          const tailCallIdent = this.makeFreshIdent();
+          this.tailCallIdent = tailCallIdent;
+
+          for (let i = 0; i < src.args.length; i++) {
+            console.log(i, src.args[i], tailPosCaller);
+            const expr = this.compileExprAsJsExpr(src.args[i]!, tailPosCaller);
+            this.statementsBuf.push({
+              type: "ExpressionStatement",
+              expression: {
+                type: "AssignmentExpression",
+                operator: "=",
+                left: { type: "Identifier", name: `GEN_TC__${i}` },
+                right: expr,
+              },
+            });
+          }
+          return;
+        }
+      // Attention: fallthrough to the next branch for application
+
       case "constant":
       case "list-literal":
       case "struct-literal":
       case "identifier":
       case "fn":
-      case "application":
       case "field-access":
       case "let":
       case "match":
@@ -245,26 +266,6 @@ class Compiler {
         return compileConst(src.value);
 
       case "application": {
-        if (this.isTailCall(src, tailPosCaller)) {
-          const tailCallIdent = this.makeFreshIdent();
-          this.tailCallIdent = tailCallIdent;
-
-          for (let i = 0; i < src.args.length; i++) {
-            const expr = this.compileExprAsJsExpr(src.args[i]!, tailPosCaller);
-            this.statementsBuf.push({
-              type: "ExpressionStatement",
-              expression: {
-                type: "AssignmentExpression",
-                operator: "=",
-                left: { type: "Identifier", name: `GEN_TC__${i}` },
-                right: expr,
-              },
-            });
-          }
-
-          return tailCallIdent;
-        }
-
         if (src.caller.type === "identifier") {
           if (src.caller.name === "==" && isPrimitiveEq(src.args)) {
             return {
@@ -481,13 +482,6 @@ class Compiler {
               directives: [],
               body: [
                 {
-                  type: "VariableDeclaration",
-                  kind: "let",
-                  declarations: [
-                    { type: "VariableDeclarator", id: this.tailCallIdent },
-                  ],
-                },
-                {
                   type: "WhileStatement",
                   test: { type: "BooleanLiteral", value: true },
                   body: {
@@ -513,10 +507,6 @@ class Compiler {
                       ...stms,
                     ],
                   },
-                },
-                {
-                  type: "ReturnStatement",
-                  argument: this.tailCallIdent,
                 },
               ],
             };
