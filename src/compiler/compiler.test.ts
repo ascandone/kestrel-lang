@@ -47,16 +47,6 @@ describe("datatype representation", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$x = \`a\`;"`);
   });
 
-  test("do not emit Bool repr", () => {
-    const out = compileSrc(
-      `
-      type Bool { True, False }
-    `,
-      { ns: "Bool" },
-    );
-    expect(out).toMatchInlineSnapshot(`""`);
-  });
-
   test("represent Bool with booleans", () => {
     const boolModule = typecheckSource(
       "Bool",
@@ -902,6 +892,16 @@ describe("TCO", () => {
 });
 
 describe("ADTs", () => {
+  test("do not emit Bool repr", () => {
+    const out = compileSrc(
+      `
+      type Bool { True, False }
+    `,
+      { ns: "Bool" },
+    );
+    expect(out).toMatchInlineSnapshot(`""`);
+  });
+
   test("create ADTs with zero args", () => {
     const out = compileSrc(`type T { X, Y }`);
 
