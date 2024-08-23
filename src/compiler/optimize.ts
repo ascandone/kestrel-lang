@@ -21,7 +21,7 @@ function foldInfix(
   return {
     type: "constant",
     value: fold(left.value, right.value),
-    span: src.span,
+    range: src.range,
     $: src.$,
   };
 }
@@ -93,7 +93,7 @@ const iifFolding: Optimization = (src) => {
   return zipped.reduceRight(
     (acc, [pattern, arg]): TypedExpr => ({
       type: "let",
-      span: src.span,
+      range: src.range,
       $: src.$,
       pattern,
       body: acc,

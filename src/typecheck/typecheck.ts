@@ -1,6 +1,6 @@
 import {
   ConstLiteral,
-  SpanMeta,
+  RangeMeta,
   UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
@@ -82,7 +82,7 @@ export function typecheck(
 
 type ScheduledAmbiguousVarCheck = {
   bindingsStack: Type[];
-  instantiatedVarNode: { name: string } & TypeMeta & SpanMeta;
+  instantiatedVarNode: { name: string } & TypeMeta & RangeMeta;
 };
 
 class Typechecker {
@@ -363,11 +363,11 @@ class Typechecker {
       e.left.args.length !== e.right.args.length
     ) {
       if (ast.type === "application" && e.left.args.length < ast.args.length) {
-        const [start] = ast.args[e.left.args.length]!.span;
-        const [, end] = ast.args.at(-1)!.span;
+        const { start } = ast.args[e.left.args.length]!.range;
+        const { end } = ast.args.at(-1)!.range;
 
         this.errors.push({
-          span: [start, end],
+          range: { start, end },
           description: new ArityMismatch(
             e.left.args.length,
             e.right.args.length,
@@ -377,11 +377,11 @@ class Typechecker {
       }
 
       if (ast.type === "fn" && e.left.args.length < ast.params.length) {
-        const [start] = ast.params[e.left.args.length]!.span;
-        const [, end] = ast.params.at(-1)!.span;
+        const { start } = ast.params[e.left.args.length]!.range;
+        const { end } = ast.params.at(-1)!.range;
 
         this.errors.push({
-          span: [start, end],
+          range: { start, end },
           description: new ArityMismatch(
             e.left.args.length,
             e.right.args.length,
@@ -392,7 +392,7 @@ class Typechecker {
       }
 
       this.errors.push({
-        span: ast.span,
+        range: ast.range,
         description: new ArityMismatch(e.left.args.length, e.right.args.length),
       });
 
@@ -423,7 +423,7 @@ class Typechecker {
 
         if (expectedArity !== actualArity) {
           this.errors.push({
-            span: ast.span,
+            range: ast.range,
             description: new InvalidTypeArity(
               ast.name,
               expectedArity,
@@ -458,7 +458,7 @@ class Typechecker {
           !opts.params.includes(ast.ident)
         ) {
           this.errors.push({
-            span: ast.span,
+            range: ast.range,
             description: new UnboundTypeParam(ast.ident),
           });
         }
@@ -477,7 +477,7 @@ class Typechecker {
       case "any":
         if (opts.type === "constructor-arg") {
           this.errors.push({
-            span: ast.span,
+            range: ast.range,
             description: new InvalidCatchall(),
           });
         }
@@ -536,7 +536,7 @@ class Typechecker {
         if (forceExhaustive) {
           this.errors.push({
             description: new NonExhaustiveMatch(),
-            span: pattern.span,
+            range: pattern.range,
           });
         }
         const t = inferConstant(pattern.literal);
@@ -560,7 +560,7 @@ class Typechecker {
           pattern.resolution.declaration.variants.length > 1
         ) {
           this.errors.push({
-            span: pattern.span,
+            range: pattern.range,
             description: new NonExhaustiveMatch(),
           });
         }
@@ -592,7 +592,7 @@ class Typechecker {
 
           if (t.args.length !== pattern.args.length) {
             this.errors.push({
-              span: pattern.span,
+              range: pattern.range,
               description: new ArityMismatch(
                 t.args.length,
                 pattern.args.length,
@@ -647,7 +647,7 @@ class Typechecker {
 
       this.ambiguousTypeVarErrorsEmitted.add(instantiatedVarType.id);
       this.errors.push({
-        span: instantiatedVarNode.span,
+        range: instantiatedVarNode.range,
         description: new AmbiguousTypeVar(
           instantiatedVarType.traits[0]!,
           typeToString(instantiatedVarNode.$.asType(), scheme),
@@ -804,7 +804,7 @@ class Typechecker {
     }
   }
 
-  private unifyNode(ast: SpanMeta, t1: Type, t2: Type) {
+  private unifyNode(ast: RangeMeta, t1: Type, t2: Type) {
     const e = unify(t1, t2);
     if (e === undefined) {
       return;
@@ -850,7 +850,7 @@ class Typechecker {
           typeToString(type),
           missingFields,
         ),
-        span: ast.struct.span,
+        range: ast.struct.range,
       });
     }
   }
@@ -862,7 +862,7 @@ class Typechecker {
   ) {
     const emitErr = () => {
       this.errors.push({
-        span: fieldAccessAst.field.span,
+        range: fieldAccessAst.field.range,
         description: new InvalidField(
           typeToString(fieldAccessAst.struct.$.asType()),
           fieldAccessAst.field.name,
@@ -1011,21 +1011,21 @@ export type TypecheckedModule = {
 
 export type ProjectTypeCheckResult = Record<string, TypecheckedModule>;
 
-function unifyErr(node: SpanMeta, e: UnifyError): ErrorInfo {
+function unifyErr(node: RangeMeta, e: UnifyError): ErrorInfo {
   switch (e.type) {
     case "missing-trait":
       return {
-        span: node.span,
+        range: node.range,
         description: new TraitNotSatified(e.type_, e.trait),
       };
 
     case "type-mismatch":
       return {
-        span: node.span,
+        range: node.range,
         description: new TypeMismatch(e.left, e.right),
       };
     case "occurs-check":
-      return { span: node.span, description: new OccursCheck() };
+      return { range: node.range, description: new OccursCheck() };
   }
 }
 

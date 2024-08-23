@@ -1,102 +1,103 @@
-import { Span, UntypedImport } from "../parser";
+import { Position, Range, UntypedImport } from "../parser";
 import { TraitImplDependency } from "./type";
 
-const dummySpan: Span = [0, 0];
+const dummyPosition: Position = { character: 0, line: 0 };
+const dummyRange: Range = { start: dummyPosition, end: dummyPosition };
 
 export const defaultImports: UntypedImport[] = [
   {
-    span: dummySpan,
+    range: dummyRange,
     ns: "Int",
     exposing: [
-      { type: "type", name: "Int", exposeImpl: false, span: dummySpan },
-      { type: "value", name: "+", span: dummySpan },
-      { type: "value", name: "-", span: dummySpan },
-      { type: "value", name: "*", span: dummySpan },
-      { type: "value", name: "/", span: dummySpan },
-      { type: "value", name: "^", span: dummySpan },
-      { type: "value", name: "%", span: dummySpan },
+      { type: "type", name: "Int", exposeImpl: false, range: dummyRange },
+      { type: "value", name: "+", range: dummyRange },
+      { type: "value", name: "-", range: dummyRange },
+      { type: "value", name: "*", range: dummyRange },
+      { type: "value", name: "/", range: dummyRange },
+      { type: "value", name: "^", range: dummyRange },
+      { type: "value", name: "%", range: dummyRange },
     ],
   },
   {
-    span: dummySpan,
+    range: dummyRange,
     ns: "Float",
     exposing: [
-      { type: "type", name: "Float", exposeImpl: false, span: dummySpan },
-      { type: "value", name: "+.", span: dummySpan },
-      { type: "value", name: "-.", span: dummySpan },
-      { type: "value", name: "*.", span: dummySpan },
-      { type: "value", name: "/.", span: dummySpan },
+      { type: "type", name: "Float", exposeImpl: false, range: dummyRange },
+      { type: "value", name: "+.", range: dummyRange },
+      { type: "value", name: "-.", range: dummyRange },
+      { type: "value", name: "*.", range: dummyRange },
+      { type: "value", name: "/.", range: dummyRange },
     ],
   },
   {
-    span: dummySpan,
+    range: dummyRange,
     ns: "Bool",
     exposing: [
-      { type: "type", name: "Bool", exposeImpl: true, span: dummySpan },
-      { type: "value", name: "&&", span: dummySpan },
-      { type: "value", name: "||", span: dummySpan },
-      { type: "value", name: "!", span: dummySpan },
+      { type: "type", name: "Bool", exposeImpl: true, range: dummyRange },
+      { type: "value", name: "&&", range: dummyRange },
+      { type: "value", name: "||", range: dummyRange },
+      { type: "value", name: "!", range: dummyRange },
 
       // Comparasion operators
-      { type: "value", name: "==", span: dummySpan },
-      { type: "value", name: "!=", span: dummySpan },
-      { type: "value", name: ">", span: dummySpan },
-      { type: "value", name: "<", span: dummySpan },
-      { type: "value", name: ">=", span: dummySpan },
-      { type: "value", name: "<=", span: dummySpan },
+      { type: "value", name: "==", range: dummyRange },
+      { type: "value", name: "!=", range: dummyRange },
+      { type: "value", name: ">", range: dummyRange },
+      { type: "value", name: "<", range: dummyRange },
+      { type: "value", name: ">=", range: dummyRange },
+      { type: "value", name: "<=", range: dummyRange },
     ],
   },
   {
-    span: dummySpan,
+    range: dummyRange,
     ns: "Char",
     exposing: [
-      { type: "type", name: "Char", exposeImpl: false, span: dummySpan },
+      { type: "type", name: "Char", exposeImpl: false, range: dummyRange },
     ],
   },
   {
-    span: dummySpan,
+    range: dummyRange,
     ns: "String",
     exposing: [
-      { type: "type", name: "String", exposeImpl: false, span: dummySpan },
-      { type: "value", name: "++", span: dummySpan },
+      { type: "type", name: "String", exposeImpl: false, range: dummyRange },
+      { type: "value", name: "++", range: dummyRange },
     ],
   },
   {
-    span: dummySpan,
+    range: dummyRange,
     ns: "Option",
     exposing: [
-      { type: "type", name: "Option", exposeImpl: true, span: dummySpan },
+      { type: "type", name: "Option", exposeImpl: true, range: dummyRange },
     ],
   },
   {
-    span: dummySpan,
+    range: dummyRange,
     ns: "Result",
     exposing: [
-      { type: "type", name: "Result", exposeImpl: true, span: dummySpan },
+      { type: "type", name: "Result", exposeImpl: true, range: dummyRange },
     ],
   },
   {
-    span: dummySpan,
+    range: dummyRange,
     ns: "Tuple",
     exposing: [
-      { type: "type", name: "Unit", exposeImpl: true, span: dummySpan },
-      { type: "type", name: "Tuple2", exposeImpl: true, span: dummySpan },
-      { type: "type", name: "Tuple3", exposeImpl: true, span: dummySpan },
-      { type: "type", name: "Tuple4", exposeImpl: true, span: dummySpan },
+      { type: "type", name: "Unit", exposeImpl: true, range: dummyRange },
+      { type: "type", name: "Tuple2", exposeImpl: true, range: dummyRange },
+      { type: "type", name: "Tuple3", exposeImpl: true, range: dummyRange },
+      { type: "type", name: "Tuple4", exposeImpl: true, range: dummyRange },
     ],
   },
   {
-    span: dummySpan,
+    range: dummyRange,
     ns: "List",
     exposing: [
-      { type: "type", name: "List", exposeImpl: true, span: dummySpan },
+      { type: "type", name: "List", exposeImpl: true, range: dummyRange },
     ],
   },
   {
-    span: dummySpan,
+    range: dummyRange,
     ns: "Task",
     exposing: [
-      { type: "type", name: "Task", exposeImpl: false, span: dummySpan },
+      { type: "type", name: "Task", exposeImpl: false, range: dummyRange },
     ],
   },
 ];

@@ -2,7 +2,7 @@ import { test, expect, beforeEach } from "vitest";
 import { goToDefinitionOf, Location } from "../typedAst";
 import { unsafeParse } from "../../parser";
 import { resetTraitsRegistry, typecheck } from "../typecheck";
-import { indexOf, spanOf } from "./__test__/utils";
+import { positionOf, rangeOf } from "./__test__/utils";
 
 test("glb decl", () => {
   const src = `
@@ -10,19 +10,19 @@ test("glb decl", () => {
       let _ = glb
     `;
   const location = parseGotoDef(src, "glb", 2);
-  expect(location?.span).toEqual(spanOf(src, "glb"));
+  expect(location?.range).toEqual(rangeOf(src, "glb"));
 });
 
 test("let decl", () => {
   const src = `let _ = { let x = 42; 1 + x }`;
   const location = parseGotoDef(src, "x", 2);
-  expect(location?.span).toEqual(spanOf(src, "x", 1));
+  expect(location?.range).toEqual(rangeOf(src, "x", 1));
 });
 
 test("fn par", () => {
   const src = `let _ = fn x { x }`;
   const location = parseGotoDef(src, "x", 2);
-  expect(location?.span).toEqual(spanOf(src, "x", 1));
+  expect(location?.range).toEqual(rangeOf(src, "x", 1));
 });
 
 test("wrapped in an if and appl", () => {
@@ -34,7 +34,7 @@ test("wrapped in an if and appl", () => {
       }
     }`;
   const location = parseGotoDef(src, "loc_var", 2);
-  expect(location?.span).toEqual(spanOf(src, "loc_var", 1));
+  expect(location?.range).toEqual(rangeOf(src, "loc_var", 1));
 });
 
 test("pattern ident", () => {
@@ -46,7 +46,7 @@ test("pattern ident", () => {
       }
     `;
   const location = parseGotoDef(src, "local_var", 2);
-  expect(location?.span).toEqual(spanOf(src, "local_var", 1));
+  expect(location?.range).toEqual(rangeOf(src, "local_var", 1));
 });
 
 test("valid recursive let bindings", () => {
@@ -54,7 +54,7 @@ test("valid recursive let bindings", () => {
       let x = f(fn { x })
     `;
   const location = parseGotoDef(src, "x", 2);
-  expect(location?.span).toEqual(spanOf(src, "x", 1));
+  expect(location?.range).toEqual(rangeOf(src, "x", 1));
 });
 
 test("invalid recursive let bindings", () => {
@@ -62,7 +62,7 @@ test("invalid recursive let bindings", () => {
       let x = x
     `;
   const location = parseGotoDef(src, "x", 2);
-  expect(location?.span).toEqual(undefined);
+  expect(location?.range).toEqual(undefined);
 });
 
 test("shadowed let", () => {
@@ -74,7 +74,7 @@ test("shadowed let", () => {
       }
     `;
   const location = parseGotoDef(src, "a", 3);
-  expect(location?.span).toEqual(spanOf(src, "a", 1));
+  expect(location?.range).toEqual(rangeOf(src, "a", 1));
 });
 
 test("type ast", () => {
@@ -84,7 +84,7 @@ test("type ast", () => {
       extern let x: Box<Fn() -> X>
     `;
   const location = parseGotoDef(src, "X", 2);
-  expect(location?.span).toEqual(spanOf(src, "type X {}", 1));
+  expect(location?.range).toEqual(rangeOf(src, "type X {}", 1));
 });
 
 test("do not leak bindings", () => {
@@ -96,7 +96,7 @@ test("do not leak bindings", () => {
   `;
 
   const location = parseGotoDef(src, "loc_var", 3);
-  expect(location?.span).toEqual(spanOf(src, "loc_var", 1));
+  expect(location?.range).toEqual(rangeOf(src, "loc_var", 1));
 });
 
 test("type ast in constructors", () => {
@@ -109,7 +109,7 @@ test("type ast in constructors", () => {
       }
     `;
   const location = parseGotoDef(src, "X", 2);
-  expect(location?.span).toEqual(spanOf(src, "type X {}", 1));
+  expect(location?.range).toEqual(rangeOf(src, "type X {}", 1));
 });
 
 function parseGotoDef(
@@ -117,14 +117,14 @@ function parseGotoDef(
   hovering: string,
   occurrenceNumber = 1,
 ): Location | undefined {
-  const offset = indexOf(src, hovering, occurrenceNumber);
+  const position = positionOf(src, hovering, occurrenceNumber);
 
-  if (offset === undefined) {
-    throw new Error("Invalid offset");
+  if (position === undefined) {
+    throw new Error("Invalid position");
   }
   const parsed = unsafeParse(src);
   const [typed, _] = typecheck("Main", parsed);
-  return goToDefinitionOf(typed, offset);
+  return goToDefinitionOf(typed, position);
 }
 
 beforeEach(() => {

@@ -10,7 +10,10 @@ const xb = 1;
 const xc = 2;
   `;
 
-    const out = showErrorLine(code, [14 + 6, 14 + 8]);
+    const out = showErrorLine(code, {
+      start: { line: 1, character: 6 },
+      end: { line: 1, character: 8 },
+    });
 
     expect(out).toMatchInlineSnapshot(
       `
@@ -37,11 +40,15 @@ const xc = 2;
 const xa = 0;
 `;
 
-    const lineC = "const xa = 0;";
-    const startIndex = code.indexOf(lineC);
-
     expect(
-      showErrorLine(code, [startIndex + 6, startIndex + 6 + 2]),
+      showErrorLine(
+        code,
+
+        {
+          start: { line: 11, character: 6 },
+          end: { line: 11, character: 8 },
+        },
+      ),
     ).toMatchInlineSnapshot(
       `
       "12| const xa = 0;
@@ -59,7 +66,12 @@ const xb = 1;
 const xc = 2;
   `;
 
-    expect(showErrorLine(code, [14 + 11, 14 + 14 + 3])).toMatchInlineSnapshot(
+    expect(
+      showErrorLine(code, {
+        start: { line: 1, character: 11 },
+        end: { line: 2, character: 3 },
+      }),
+    ).toMatchInlineSnapshot(
       `
       "2| const xb = 1;
        | [31m           ~~[0m
@@ -77,7 +89,13 @@ const xc = 2;
 in 0
   `;
 
-    expect(showErrorLine(src, [19, 20])).toMatchInlineSnapshot(
+    expect(
+      showErrorLine(src, {
+        // [19, 20]
+        start: { line: 1, character: 5 },
+        end: { line: 1, character: 6 },
+      }),
+    ).toMatchInlineSnapshot(
       `
       "2|   if a
        | [31m     ~[0m"

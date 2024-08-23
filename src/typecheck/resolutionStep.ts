@@ -1,7 +1,7 @@
 import {
   MatchPattern,
-  Span,
-  SpanMeta,
+  Range,
+  RangeMeta,
   TypeAst,
   UntypedDeclaration,
   UntypedExpr,
@@ -121,7 +121,7 @@ class ResolutionStep {
     for (const decl of annotatedDeclrs) {
       if (this.unusedVariables.has(decl.binding)) {
         this.errors.push({
-          span: decl.binding.span,
+          range: decl.binding.range,
           description: new UnusedVariable(decl.binding.name, "global"),
         });
       }
@@ -131,7 +131,7 @@ class ResolutionStep {
       if (this.unusedImports.has(import_)) {
         this.errors.push({
           description: new UnusedImport(import_.ns),
-          span: import_.span,
+          range: import_.range,
         });
       }
 
@@ -139,7 +139,7 @@ class ResolutionStep {
         if (this.unusedExposing.has(exposing)) {
           this.errors.push({
             description: new UnusedExposing(exposing.name),
-            span: exposing.span,
+            range: exposing.range,
           });
         }
       }
@@ -196,7 +196,7 @@ class ResolutionStep {
       if (decl.typeHint !== undefined) {
         tDecl.typeHint = {
           mono: this.annotateTypeAst(decl.typeHint.mono),
-          span: decl.typeHint.span,
+          range: decl.typeHint.range,
           where: decl.typeHint.where,
         };
       }
@@ -208,7 +208,7 @@ class ResolutionStep {
       const ok = this.framesStack.defineGlobal(tDecl, this.ns);
       if (!ok) {
         this.errors.push({
-          span: decl.binding.span,
+          range: decl.binding.range,
           description: new DuplicateDeclaration(decl.binding.name),
         });
       }
@@ -315,7 +315,7 @@ class ResolutionStep {
           const resolution = this.resolveType(ast.namespace, ast.name);
           if (resolution === undefined) {
             this.errors.push({
-              span: ast.span,
+              range: ast.range,
               description: new UnboundType(ast.name),
             });
           }
@@ -335,7 +335,7 @@ class ResolutionStep {
     for (const param of typeDecl.params) {
       if (usedParams.has(param.name)) {
         this.errors.push({
-          span: param.span,
+          range: param.range,
           description: new TypeParamShadowing(param.name),
         });
       }
@@ -424,7 +424,7 @@ class ResolutionStep {
       const importedModule = this.deps[import_.ns];
       if (importedModule === undefined) {
         this.errors.push({
-          span: import_.span,
+          range: import_.range,
           description: new UnboundModule(import_.ns),
         });
         return [];
@@ -437,14 +437,14 @@ class ResolutionStep {
   private resolveExternalIdentifier(ast: {
     name: string;
     namespace: string;
-    span: Span;
+    range: Range;
   }): IdentifierResolution | undefined {
     const import_ = this.imports.find(
       (import_) => import_.ns === ast.namespace,
     );
     if (import_ === undefined) {
       this.errors.push({
-        span: ast.span,
+        range: ast.range,
         description: new UnimportedModule(ast.namespace),
       });
       return undefined;
@@ -506,7 +506,7 @@ class ResolutionStep {
     }
 
     this.errors.push({
-      span: ast.span,
+      range: ast.range,
       description: new NonExistingImport(ast.name),
     });
 
@@ -532,7 +532,7 @@ class ResolutionStep {
   }
 
   private resolveField(
-    ast: { name: string; structName?: string } & SpanMeta,
+    ast: { name: string; structName?: string } & RangeMeta,
   ): FieldResolution | undefined {
     const { name: fieldName, structName: qualifiedStructName } = ast;
 
@@ -544,7 +544,7 @@ class ResolutionStep {
           if (fieldLookup === undefined) {
             this.errors.push({
               description: new InvalidField(typeDecl.name, fieldName),
-              span: ast.span,
+              range: ast.range,
             });
           }
 
@@ -573,7 +573,7 @@ class ResolutionStep {
 
           this.errors.push({
             description: new InvalidField(qualifiedStructName, fieldName),
-            span: ast.span,
+            range: ast.range,
           });
         }
 
@@ -584,7 +584,7 @@ class ResolutionStep {
 
       this.errors.push({
         description: new UnboundType(qualifiedStructName),
-        span: ast.span,
+        range: ast.range,
       });
 
       return undefined;
@@ -627,13 +627,13 @@ class ResolutionStep {
   private resolveIdentifier(ast: {
     name: string;
     namespace?: string;
-    span: Span;
+    range: Range;
   }): IdentifierResolution | undefined {
     if (ast.namespace !== undefined && ast.namespace !== this.ns) {
       return this.resolveExternalIdentifier({
         name: ast.name,
         namespace: ast.namespace,
-        span: ast.span,
+        range: ast.range,
       });
     }
 
@@ -673,7 +673,7 @@ class ResolutionStep {
     }
 
     this.errors.push({
-      span: ast.span,
+      range: ast.range,
       description: new UnboundVariable(ast.name),
     });
 
@@ -699,7 +699,7 @@ class ResolutionStep {
       case "pipe":
         if (ast.right.type !== "application") {
           this.errors.push({
-            span: ast.right.span,
+            range: ast.right.range,
             description: new InvalidPipe(),
           });
           return this.annotateExpr(ast.left);
@@ -708,7 +708,7 @@ class ResolutionStep {
         return this.annotateExpr({
           type: "application",
           isPipe: true,
-          span: ast.span,
+          range: ast.range,
           caller: ast.right.caller,
           args: [ast.left, ...ast.right.args],
         });
@@ -720,7 +720,7 @@ class ResolutionStep {
             type: "identifier",
             namespace: ast.mapper.namespace,
             name: ast.mapper.name,
-            span: ast.mapper.span,
+            range: ast.mapper.range,
           },
           args: [
             ast.value,
@@ -728,10 +728,10 @@ class ResolutionStep {
               type: "fn",
               params: [ast.pattern],
               body: ast.body,
-              span: ast.span,
+              range: ast.range,
             },
           ],
-          span: ast.span,
+          range: ast.range,
         });
 
       // Actual ast
@@ -759,7 +759,7 @@ class ResolutionStep {
               // TODO move the error back to typecheck step?
               // it has access to the inferred type
               this.errors.push({
-                span: field.span,
+                range: field.range,
                 description: new InvalidField(
                   makeStructName(typeDecl.declaration),
                   field.field.name,
@@ -823,7 +823,7 @@ class ResolutionStep {
         for (const param of idents) {
           if (this.unusedVariables.has(param)) {
             this.errors.push({
-              span: param.span,
+              range: param.range,
               description: new UnusedVariable(param.name, "local"),
             });
           }
@@ -842,9 +842,9 @@ class ResolutionStep {
       case "infix":
         return this.annotateExpr({
           type: "application",
-          caller: { type: "identifier", name: ast.operator, span: ast.span },
+          caller: { type: "identifier", name: ast.operator, range: ast.range },
           args: [ast.left, ast.right],
-          span: ast.span,
+          range: ast.range,
         });
 
       case "application":
@@ -919,7 +919,7 @@ class ResolutionStep {
         for (const binding of bindings) {
           if (this.unusedVariables.has(binding)) {
             this.errors.push({
-              span: binding.span,
+              range: binding.range,
               description: new UnusedVariable(binding.name, "local"),
             });
           }
@@ -943,7 +943,7 @@ class ResolutionStep {
               if (this.unusedVariables.has(binding)) {
                 this.errors.push({
                   description: new UnusedVariable(binding.name, "local"),
-                  span: binding.span,
+                  range: binding.range,
                 });
               }
             }
@@ -984,7 +984,7 @@ class ResolutionStep {
 
             if (resolved === undefined || !resolved.pub) {
               this.errors.push({
-                span: exposing.span,
+                range: exposing.range,
                 description: new NonExistingImport(exposing.name),
               });
               return exposing;
@@ -994,14 +994,14 @@ class ResolutionStep {
               switch (resolved.type) {
                 case "extern":
                   this.errors.push({
-                    span: exposing.span,
+                    range: exposing.range,
                     description: new BadImport(),
                   });
                   break;
                 case "adt":
                   if (resolved.pub !== "..") {
                     this.errors.push({
-                      span: exposing.span,
+                      range: exposing.range,
                       description: new BadImport(),
                     });
                     break;
@@ -1031,7 +1031,7 @@ class ResolutionStep {
 
             if (declaration === undefined || !declaration.pub) {
               this.errors.push({
-                span: exposing.span,
+                range: exposing.range,
                 description: new NonExistingImport(exposing.name),
               });
             } else {
@@ -1079,7 +1079,7 @@ class ResolutionStep {
         const resolution = this.resolveConstructor(
           ast.namespace,
           ast.name,
-          ast.span,
+          ast.range,
         );
         return {
           ...ast,
@@ -1096,7 +1096,7 @@ class ResolutionStep {
   private resolveConstructor(
     namespace: string | undefined,
     name: string,
-    span: Span,
+    range: Range,
   ): IdentifierResolution | undefined {
     namespace = namespace ?? this.ns;
     if (namespace === this.ns) {
@@ -1104,7 +1104,7 @@ class ResolutionStep {
       if (constructor === undefined) {
         this.errors.push({
           description: new UnboundVariable(name),
-          span,
+          range,
         });
         return undefined;
       }
@@ -1115,7 +1115,7 @@ class ResolutionStep {
     if (module === undefined) {
       this.errors.push({
         description: new UnimportedModule(namespace),
-        span,
+        range,
       });
       return undefined;
     }
@@ -1137,7 +1137,7 @@ class ResolutionStep {
 
     this.errors.push({
       description: new UnboundVariable(name),
-      span,
+      range,
     });
 
     return undefined;

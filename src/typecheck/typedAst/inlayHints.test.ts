@@ -1,8 +1,8 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { getInlayHints, InlayHint, PositionedDocument } from "./inlayHint";
+import { getInlayHints, InlayHint } from "./inlayHint";
 import { unsafeParse } from "../../parser";
 import { resetTraitsRegistry, typecheck } from "../typecheck";
-import { spanOf } from "./__test__/utils";
+import { rangeOf } from "./__test__/utils";
 
 test("no inlay hints on empty program", () => {
   const src = ``;
@@ -27,17 +27,17 @@ describe("pipe inlay hints", () => {
       expect.arrayContaining([
         {
           label: "Int",
-          offset: spanOf(src, "let x = 42")[1],
+          positition: rangeOf(src, "let x = 42").end,
           paddingLeft: true,
         },
         {
           label: "Int",
-          offset: spanOf(src, "|> identity()")[1],
+          positition: rangeOf(src, "|> identity()").end,
           paddingLeft: true,
         },
         {
           label: "String",
-          offset: spanOf(src, "|> to_str()")[1],
+          positition: rangeOf(src, "|> to_str()").end,
           paddingLeft: true,
         },
       ]),
@@ -69,7 +69,7 @@ describe("pipe inlay hints", () => {
     expect(hints).toEqual<InlayHint[]>([
       {
         label: "Int",
-        offset: spanOf(src, "|> identity()", 2)[1],
+        positition: rangeOf(src, "|> identity()", 2).end,
         paddingLeft: true,
       },
     ]);
@@ -91,12 +91,12 @@ describe("pipe inlay hints", () => {
         {
           label: "Int",
           paddingLeft: true,
-          offset: spanOf(src, "42")[1],
+          positition: rangeOf(src, "42").end,
         },
         {
           label: "Int",
           paddingLeft: true,
-          offset: spanOf(src, "|> identity()", 2)[1],
+          positition: rangeOf(src, "|> identity()", 2).end,
         },
       ]);
     },
@@ -121,12 +121,12 @@ describe("pipe inlay hints", () => {
       expect.arrayContaining([
         {
           label: "Int",
-          offset: spanOf(src, "42")[1],
+          positition: rangeOf(src, "42").end,
           paddingLeft: true,
         },
         {
           label: "Int",
-          offset: spanOf(src, "|> identity()")[1],
+          positition: rangeOf(src, "|> identity()").end,
           paddingLeft: true,
         },
       ]),
@@ -152,12 +152,12 @@ describe("pipe inlay hints", () => {
       expect.arrayContaining([
         {
           label: "Int",
-          offset: spanOf(src, "42")[1],
+          positition: rangeOf(src, "42").end,
           paddingLeft: true,
         },
         {
           label: "Int",
-          offset: spanOf(src, "|> identity()")[1],
+          positition: rangeOf(src, "|> identity()").end,
           paddingLeft: true,
         },
       ]),
@@ -188,12 +188,12 @@ describe("pipe inlay hints", () => {
     expect(hints).toEqual<InlayHint[]>([
       {
         label: "b",
-        offset: spanOf(src, "arg2", 2)[1],
+        positition: rangeOf(src, "arg2", 2).end,
         paddingLeft: true,
       },
       {
         label: "b",
-        offset: spanOf(src, "|> identity()")[1],
+        positition: rangeOf(src, "|> identity()").end,
         paddingLeft: true,
       },
     ]);
@@ -204,47 +204,9 @@ function getInlayHintsOf(src: string): InlayHint[] {
   const parsed = unsafeParse(src);
   const [typed, _] = typecheck("Main", parsed);
 
-  return getInlayHints(typed, srcToPositionedDoc(src));
+  return getInlayHints(typed);
 }
 
 beforeEach(() => {
   resetTraitsRegistry();
-});
-
-function srcToPositionedDoc(src: string): PositionedDocument {
-  const lines = src.split("\n").map((s) => s.length + 1);
-
-  return {
-    positionAt(offset) {
-      let line = 0;
-
-      for (; line <= lines.length; line++) {
-        const charsNumber = lines[line]!;
-
-        if (offset < charsNumber) {
-          return { line };
-        }
-
-        offset -= charsNumber;
-      }
-
-      return { line };
-    },
-  };
-}
-
-test("mocked positionedDocument", () => {
-  const doc = srcToPositionedDoc(`012
-45
-789`);
-
-  expect(doc.positionAt(0)).toEqual({ line: 0 });
-  expect(doc.positionAt(1)).toEqual({ line: 0 });
-  expect(doc.positionAt(2)).toEqual({ line: 0 });
-  expect(doc.positionAt(3)).toEqual({ line: 0 });
-  expect(doc.positionAt(4)).toEqual({ line: 1 });
-  expect(doc.positionAt(5)).toEqual({ line: 1 });
-  expect(doc.positionAt(7)).toEqual({ line: 2 });
-  expect(doc.positionAt(8)).toEqual({ line: 2 });
-  expect(doc.positionAt(9)).toEqual({ line: 2 });
 });

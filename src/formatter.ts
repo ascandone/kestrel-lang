@@ -26,6 +26,7 @@ import {
   nextBreakFits,
   nestOnBreak,
 } from "./pretty";
+import { gtEqPos } from "./typecheck/typedAst/common";
 
 const ORDERED_PREFIX_SYMBOLS = [["!"]];
 
@@ -638,7 +639,12 @@ export function format(ast: UntypedModule): string {
   const statements = [
     ...ast.typeDeclarations.map<Statement>((decl) => ({ type: "type", decl })),
     ...ast.declarations.map<Statement>((decl) => ({ type: "decl", decl })),
-  ].sort((s1, s2) => s1.decl.span[0] - s2.decl.span[0]);
+  ].sort((s1, s2) => {
+    if (gtEqPos(s1.decl.range.start, s2.decl.range.start)) {
+      return 1;
+    }
+    return -1;
+  });
 
   if (importsDocs.length !== 0 && statements.length !== 0) {
     importsDocs.push(lines());

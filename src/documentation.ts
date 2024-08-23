@@ -1,5 +1,7 @@
 import { TypedProject } from "./cli/common";
+import { Position } from "./parser";
 import { TypedModule, TypedTypeAst, typeToString } from "./typecheck";
+import { gtEqPos } from "./typecheck/typedAst/common";
 
 export type Variant = {
   name: string;
@@ -52,7 +54,7 @@ export function makeModuleDoc(
 ): ModuleDoc {
   const items: Item[] = [];
 
-  const indexes = new WeakMap<Item, number>();
+  const positions = new WeakMap<Item, Position>();
 
   for (const decl of typedModule.declarations) {
     if (!decl.pub) {
@@ -69,7 +71,7 @@ export function makeModuleDoc(
       item.docComment = decl.docComment;
     }
 
-    indexes.set(item, decl.span[0]);
+    positions.set(item, decl.range.start);
     items.push(item);
   }
 
@@ -99,11 +101,16 @@ export function makeModuleDoc(
       }));
     }
 
-    indexes.set(item, typeDecl.span[0]);
+    positions.set(item, typeDecl.range.start);
     items.push(item);
   }
 
-  items.sort((a, b) => indexes.get(a)! - indexes.get(b)!);
+  items.sort((a, b) => {
+    if (gtEqPos(positions.get(a)!, positions.get(b)!)) {
+      return 1;
+    }
+    return -1;
+  });
 
   const moduleDoc: ModuleDoc = {
     moduleName,
