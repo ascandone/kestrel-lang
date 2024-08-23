@@ -1,4 +1,9 @@
-import antlr4, { ErrorListener } from "antlr4";
+import antlr4, {
+  ErrorListener,
+  ParserRuleContext,
+  TerminalNode,
+  Token,
+} from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
   BlockContentExprContext,
@@ -6,6 +11,7 @@ import Parser, {
   BlockContentLetHashExprContext,
   BlockContext,
   BlockExprContext,
+  BoolNotContext,
   CallContext,
   CharContext,
   CharPatternContext,
@@ -69,7 +75,7 @@ const makeInfixOp = <Ctx extends InfixExprContext>(ctx: Ctx): UntypedExpr => {
     left: new ExpressionVisitor().visit(ctx.expr(0)),
     right: new ExpressionVisitor().visit(r),
     operator: ctx._op.text,
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
   };
 };
 
@@ -80,7 +86,7 @@ class TypeVisitor extends Visitor<TypeAst> {
       type: "named",
       args: ctx.type__list().map((t) => this.visit(t)),
       name: ctx._name.text,
-      span: [ctx.start.start, ctx.stop!.stop + 1],
+      span: spanOfCtx(ctx),
       ...(namespace === undefined ? {} : { namespace }),
     };
   };
@@ -91,20 +97,20 @@ class TypeVisitor extends Visitor<TypeAst> {
     if (id === "_") {
       return {
         type: "any",
-        span: [ctx.start.start, ctx.stop!.stop + 1],
+        span: spanOfCtx(ctx),
       };
     }
 
     return {
       type: "var",
       ident: id,
-      span: [ctx.start.start, ctx.stop!.stop + 1],
+      span: spanOfCtx(ctx),
     };
   };
 
   visitFnType = (ctx: FnTypeContext): TypeAst => ({
     type: "fn",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     args:
       ctx
         .fnTypeParams()
@@ -112,19 +118,17 @@ class TypeVisitor extends Visitor<TypeAst> {
         .map((p) => this.visit(p)) ?? [],
     return: this.visit(ctx._ret),
   });
+
   visitTupleType = (ctx: TupleTypeContext): TypeAst => {
     // TODO this should be in the AST
     const args = ctx.type__list().map((e) => this.visit(e));
-    const count = args.length;
-
-    const span: Span = [ctx.start.start, ctx.stop!.start + 1];
 
     return {
       type: "named",
-      name: `Tuple${count}`,
+      name: `Tuple${args.length}`,
       namespace: "Tuple",
       args,
-      span,
+      span: spanOfCtx(ctx),
     };
   };
 }
@@ -132,13 +136,13 @@ class TypeVisitor extends Visitor<TypeAst> {
 class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
   visitMatchIdent = (ctx: MatchIdentContext): UntypedMatchPattern => ({
     type: "identifier",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     name: ctx.ID().getText(),
   });
 
   visitConstructor = (ctx: ConstructorContext): UntypedMatchPattern => ({
     type: "constructor",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     name: ctx._name.text,
     namespace: ctx.moduleNamespace()?.getText(),
     args: ctx.matchPattern_list().map((p) => this.visit(p)),
@@ -146,7 +150,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
 
   visitIntPattern = (ctx: IntPatternContext): UntypedMatchPattern => ({
     type: "lit",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     literal: {
       type: "int",
       value: Number(ctx.getText()),
@@ -155,7 +159,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
 
   visitFloatPattern = (ctx: FloatPatternContext): UntypedMatchPattern => ({
     type: "lit",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     literal: {
       type: "float",
       value: Number(ctx.getText()),
@@ -164,7 +168,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
 
   visitStringPattern = (ctx: StringPatternContext): UntypedMatchPattern => ({
     type: "lit",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     literal: {
       type: "string",
       value: ctx.getText().slice(1, -1),
@@ -173,7 +177,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
 
   visitCharPattern = (ctx: CharPatternContext): UntypedMatchPattern => ({
     type: "lit",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     literal: {
       type: "char",
       value: ctx.getText().slice(1, -1),
@@ -184,7 +188,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
     const args = ctx.matchPattern_list();
     return {
       type: "constructor",
-      span: [ctx.start.start, ctx.stop!.stop + 1],
+      span: spanOfCtx(ctx),
       name: `Tuple${args.length}`,
       namespace: "Tuple",
       args: args.map((a) => this.visit(a)),
@@ -194,7 +198,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
   visitConsPattern = (ctx: ConsPatternContext): UntypedMatchPattern => {
     return {
       type: "constructor",
-      span: [ctx.start.start, ctx.stop!.stop + 1],
+      span: spanOfCtx(ctx),
       namespace: "List",
       name: "Cons",
       args: [this.visit(ctx.matchPattern(0)), this.visit(ctx.matchPattern(1))],
@@ -206,14 +210,11 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
   visit(expr: ExprContext): UntypedExpr {
     if (expr.exception !== null) {
       if (expr instanceof FieldAccessContext) {
-        const start = expr.start.start;
-        const stop = expr.stop!.stop + 1;
-
         return {
           type: "field-access",
           struct: this.visit(expr.expr()),
-          field: { name: "", span: [start, stop], structName: undefined },
-          span: [start, stop],
+          field: { name: "", span: spanOfCtx(expr), structName: undefined },
+          span: spanOfCtx(expr),
         };
       }
 
@@ -231,7 +232,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
   visitInt = (ctx: IntContext): UntypedExpr => ({
     type: "constant",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     value: {
       type: "int",
       value: Number(ctx.getText()),
@@ -240,7 +241,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
   visitFloat = (ctx: FloatContext): UntypedExpr => ({
     type: "constant",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     value: {
       type: "float",
       value: Number(ctx.getText()),
@@ -249,7 +250,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
   visitString = (ctx: StringContext): UntypedExpr => ({
     type: "constant",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     value: {
       type: "string",
       value: ctx.getText().slice(1, -1),
@@ -258,7 +259,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
   visitChar = (ctx: CharContext): UntypedExpr => ({
     type: "constant",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     value: {
       type: "char",
       value: ctx.getText().slice(1, -1),
@@ -269,7 +270,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     type: "identifier",
     namespace: ctx.qualifiedId().moduleNamespace()?.getText(),
     name: ctx.qualifiedId()._name.text,
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
   });
 
   visitFieldAccess = (ctx: FieldAccessContext): UntypedExpr => {
@@ -280,21 +281,21 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
         name: ctx.ID().getText(),
         structName:
           ctx._structName === undefined ? undefined : ctx._structName.text,
-        span: [ctx.ID().symbol.start, ctx.ID().symbol.stop + 1],
+        span: spanOfTerminalNode(ctx.ID()),
       },
-      span: [ctx.start.start, ctx.stop!.stop + 1],
+      span: spanOfCtx(ctx),
     };
   };
 
-  visitBoolNot = (ctx: ParensContext): UntypedExpr => ({
+  visitBoolNot = (ctx: BoolNotContext): UntypedExpr => ({
     type: "application",
     caller: {
       type: "identifier",
       name: "!",
-      span: [ctx.start.start, ctx.start.start + 1],
+      span: spanOfTk(ctx._op),
     },
     args: [this.visit(ctx.expr())],
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
   });
 
   visitCall = (ctx: CallContext): UntypedExpr => ({
@@ -304,7 +305,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
       .expr_list()
       .slice(1)
       .map((e) => this.visit(e)),
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
   });
 
   visitBlockExpr = (ctx: BlockExprContext): UntypedExpr =>
@@ -317,7 +318,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     ctx: BlockContentLetExprContext,
   ): UntypedExpr => ({
     type: "let",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     pattern: new MatchPatternVisitor().visit(ctx._pattern),
     value: this.visit(ctx._value),
     body: this.visit(ctx._body),
@@ -327,11 +328,11 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     ctx: BlockContentLetHashExprContext,
   ): UntypedExpr => ({
     type: "let#",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     pattern: new MatchPatternVisitor().visit(ctx._pattern),
     mapper: {
       name: ctx._mapper._name.text,
-      span: [ctx.qualifiedId().start.start, ctx.qualifiedId().stop!.stop + 1],
+      span: spanOfCtx(ctx.qualifiedId()),
       namespace: ctx.qualifiedId().moduleNamespace()?.getText(),
     },
     value: this.visit(ctx._value),
@@ -343,7 +344,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
   visitFn = (ctx: FnContext): UntypedExpr => ({
     type: "fn",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     params: ctx
       .matchPattern_list()
       .map((patternCtx) => new MatchPatternVisitor().visit(patternCtx)),
@@ -352,7 +353,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
   visitIf = (ctx: IfContext): UntypedExpr => ({
     type: "if",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     condition: this.visit(ctx._condition),
     then: this.visit(ctx._then),
     else: this.visit(ctx._else_),
@@ -360,7 +361,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
   visitMatch = (ctx: MatchContext): UntypedExpr => ({
     type: "match",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     expr: this.visit(ctx._matched),
     clauses: ctx
       .matchClause_list()
@@ -380,12 +381,12 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
   visitCons = (ctx: ConsContext): UntypedExpr => ({
     type: "application",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     caller: {
       type: "identifier",
       name: "Cons",
       namespace: "List",
-      span: [ctx._op.start, ctx._op.stop + 1],
+      span: spanOfTk(ctx._op),
     },
     args: [this.visit(ctx.expr(0)), this.visit(ctx.expr(1))],
   });
@@ -395,18 +396,16 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     const args = ctx.expr_list().map((e) => this.visit(e));
     const count = args.length;
 
-    const span: Span = [ctx.start.start, ctx.stop!.start + 1];
-
     return {
       type: "application",
       caller: {
         type: "identifier",
         name: `Tuple${count}`,
         namespace: "Tuple",
-        span,
+        span: spanOfCtx(ctx),
       },
       args,
-      span,
+      span: spanOfCtx(ctx),
     };
   };
 
@@ -418,10 +417,10 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 
     return {
       type: "struct-literal",
-      span: [ctx.start.start, ctx.stop!.stop + 1],
+      span: spanOfCtx(ctx),
       struct: {
         name: ctx.TYPE_ID().getText(),
-        span: [ctx.TYPE_ID().symbol.start, ctx.TYPE_ID().symbol.stop + 1],
+        span: spanOfTerminalNode(ctx.TYPE_ID()),
       },
       spread,
       fields:
@@ -431,25 +430,23 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
           .map((v) => ({
             field: {
               name: v.ID().getText(),
-              span: [v.ID().symbol.start, v.ID().symbol.stop + 1],
+              span: spanOfTerminalNode(v.ID()),
             },
-            span: [v.start.start, v.stop!.stop + 1],
+            span: spanOfCtx(v),
             value: this.visit(v.expr()),
-            // args: v.type__list().map((t) => new TypeVisitor().visit(t)),
-            // type_: new TypeVisitor().visit(v.type_()),
           })) ?? [],
     };
   };
 
   visitListLit = (ctx: ListLitContext): UntypedExpr => ({
     type: "list-literal",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     values: ctx.expr_list().map((e) => this.visit(e)),
   });
 
   visitPipe = (ctx: PipeContext): UntypedExpr => ({
     type: "pipe",
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
     left: this.visit(ctx.expr(0)),
     right: this.visit(ctx.expr(1)),
   });
@@ -464,14 +461,14 @@ class ExposingVisitor extends Visitor<UntypedExposedValue> {
   visitValueExposing = (ctx: ValueExposingContext): UntypedExposedValue => ({
     type: "value",
     name: normalizeInfix(ctx._name.text),
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
   });
 
   visitTypeExposing = (ctx: TypeExposingContext): UntypedExposedValue => ({
     type: "type",
     exposeImpl: ctx.EXPOSING_NESTED() != null,
     name: ctx._name.text,
-    span: [ctx.start.start, ctx.stop!.stop + 1],
+    span: spanOfCtx(ctx),
   });
 }
 
@@ -520,9 +517,9 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
             }),
         binding: {
           name: binding.getText(),
-          span: [binding.symbol.start, binding.symbol.stop + 1],
+          span: spanOfTerminalNode(binding),
         },
-        span: [ctx.start.start, ctx.stop!.stop + 1],
+        span: spanOfCtx(ctx),
         value,
       },
     };
@@ -557,10 +554,10 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
         },
         binding: {
           name: normalizeInfix(ctx._binding.text),
-          span: [ctx._binding.start, ctx._binding.stop + 1],
+          span: spanOfTk(ctx._binding),
         },
         ...(docs === "" ? {} : { docComment: docs }),
-        span: [ctx.start.start, ctx.stop!.stop + 1],
+        span: spanOfCtx(ctx),
       },
     };
   };
@@ -592,7 +589,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
             ?.typeConstructorDecl_list()
             .map((v) => ({
               name: v._name.text,
-              span: [v.start.start, v.stop!.stop + 1],
+              span: spanOfCtx(v),
               args: v.type__list().map((t) => new TypeVisitor().visit(t)),
             })) ?? [],
         params:
@@ -601,10 +598,10 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
             ?.ID_list()
             .map((i) => ({
               name: i.getText(),
-              span: [i.symbol.start, i.symbol.stop + 1],
+              span: spanOfTerminalNode(i),
             })) ?? [],
         ...(docs === "" ? {} : { docComment: docs }),
-        span: [ctx.start.start, ctx.stop!.stop + 1],
+        span: spanOfCtx(ctx),
       },
     };
   };
@@ -629,7 +626,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
             ?.fieldDecl_list()
             .map((v) => ({
               name: v.ID().getText(),
-              span: [v.start.start, v.stop!.stop + 1],
+              span: spanOfCtx(v),
               // args: v.type__list().map((t) => new TypeVisitor().visit(t)),
               type_: new TypeVisitor().visit(v.type_()),
             })) ?? [],
@@ -640,7 +637,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
             ?.ID_list()
             .map((i) => ({
               name: i.getText(),
-              span: [i.symbol.start, i.symbol.stop + 1],
+              span: spanOfTerminalNode(i),
             })) ?? [],
         pub:
           ctx._pub === undefined
@@ -650,7 +647,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
               : "..",
         name: ctx._name.text,
         ...(docs === "" ? {} : { docComment: docs }),
-        span: [ctx.start.start, ctx.stop!.stop + 1],
+        span: spanOfCtx(ctx),
       },
     };
   };
@@ -678,10 +675,10 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
             ?.ID_list()
             .map((i) => ({
               name: i.getText(),
-              span: [i.symbol.start, i.symbol.stop + 1],
+              span: spanOfTerminalNode(i),
             })) ?? [],
         ...(docs === "" ? {} : { docComment: docs }),
-        span: [ctx.start.start, ctx.stop!.stop + 1],
+        span: spanOfCtx(ctx),
       },
     };
   };
@@ -774,7 +771,7 @@ export function parse(input: string): ParseResult {
         exposing: i
           .importExposing_list()
           .map((e): UntypedExposedValue => new ExposingVisitor().visit(e)),
-        span: [i.start.start, i.stop!.stop + 1],
+        span: spanOfCtx(i),
       };
     }),
 
@@ -815,4 +812,16 @@ export function unsafeParse(input: string): UntypedModule {
 
 function normalizeInfix(name: string) {
   return name.startsWith("(") ? name.slice(1, -1) : name;
+}
+
+function spanOfCtx(ctx: ParserRuleContext): Span {
+  return [ctx.start.start, ctx.stop!.stop + 1];
+}
+
+function spanOfTerminalNode(node: TerminalNode): Span {
+  return [node.symbol.start, node.symbol.stop + 1];
+}
+
+function spanOfTk(tk: Token): Span {
+  return [tk.start, tk.stop + 1];
 }
