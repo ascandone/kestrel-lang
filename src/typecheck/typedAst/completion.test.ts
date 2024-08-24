@@ -4,6 +4,7 @@ import { parse } from "../../parser";
 import { typecheck } from "../typecheck";
 import { makeObjectDepedenciesProvider } from "./index";
 import { CompletionItem, CompletionItemKind } from "vscode-languageserver";
+import { positionOf } from "./__test__/utils";
 
 test("completion of field access of a struct whose type is resolved", () => {
   const src = `
@@ -20,7 +21,8 @@ extern let p: Person
 let expr = p.  
 `;
 
-  const cursorIndex = src.indexOf("p.") + 2;
+  const cursorPosition = positionOf(src, "p.");
+  cursorPosition.character += 2;
 
   const parsed = parse(src);
 
@@ -28,7 +30,7 @@ let expr = p.
 
   const ret = getCompletionItems(
     typed,
-    cursorIndex,
+    cursorPosition,
     makeObjectDepedenciesProvider({ Main: typed }),
   );
 
@@ -59,7 +61,8 @@ type Person struct {
 let expr = fn p { p. }
 `;
 
-  const cursorIndex = src.indexOf("p.") + 2;
+  const cursorPosition = positionOf(src, "p.");
+  cursorPosition.character += 2;
 
   const parsed = parse(src);
 
@@ -67,7 +70,7 @@ let expr = fn p { p. }
 
   const ret = getCompletionItems(
     typed,
-    cursorIndex,
+    cursorPosition,
     makeObjectDepedenciesProvider({ Main: typed }),
   );
 

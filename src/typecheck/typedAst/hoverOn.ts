@@ -1,4 +1,4 @@
-import { SpanMeta } from "../../parser";
+import { Position, RangeMeta } from "../../parser";
 import { TypeScheme, typeToString } from "../type";
 import {
   IdentifierResolution,
@@ -16,14 +16,14 @@ export type HoveredInfo =
   | { type: "type"; typeDecl: TypedTypeDeclaration; namespace: string }
   | { type: "field"; type_: string };
 
-export type Hovered = SpanMeta & { hovered: HoveredInfo };
+export type Hovered = RangeMeta & { hovered: HoveredInfo };
 
 export function hoverOn(
   namespace: string,
   module: TypedModule,
-  offset: number,
+  position: Position,
 ): [TypeScheme, Hovered] | undefined {
-  const statement = statementByOffset(module, offset);
+  const statement = statementByOffset(module, position);
   if (statement === undefined) {
     return undefined;
   }
@@ -31,13 +31,16 @@ export function hoverOn(
   switch (statement.type) {
     case "declaration": {
       if (statement.declaration.typeHint !== undefined) {
-        const res = hoverOnTypeAst(statement.declaration.typeHint.mono, offset);
+        const res = hoverOnTypeAst(
+          statement.declaration.typeHint.mono,
+          position,
+        );
         if (res !== undefined) {
           return res;
         }
       }
 
-      const d = hoverOnDecl(namespace, statement.declaration, offset);
+      const d = hoverOnDecl(namespace, statement.declaration, position);
       if (d !== undefined) {
         return [statement.declaration.scheme, d];
       }
@@ -47,12 +50,12 @@ export function hoverOn(
     case "type-declaration":
       if (statement.typeDeclaration.type === "adt") {
         for (const variant of statement.typeDeclaration.variants) {
-          if (!contains(variant, offset)) {
+          if (!contains(variant, position)) {
             continue;
           }
 
           const res = firstBy(variant.args, (arg) =>
-            hoverOnTypeAst(arg, offset),
+            hoverOnTypeAst(arg, position),
           );
           if (res !== undefined) {
             return res;
@@ -61,7 +64,7 @@ export function hoverOn(
           return [
             variant.scheme,
             {
-              span: variant.span,
+              range: variant.range,
               hovered: {
                 type: "constructor",
                 variant,
@@ -76,7 +79,7 @@ export function hoverOn(
       return [
         {},
         {
-          span: statement.typeDeclaration.span,
+          range: statement.typeDeclaration.range,
           hovered: {
             type: "type",
             namespace,
@@ -92,9 +95,9 @@ export function hoverOn(
 
 export function hoverOnTypeAst(
   typeAst: TypedTypeAst,
-  offset: number,
+  position: Position,
 ): [TypeScheme, Hovered] | undefined {
-  if (!contains(typeAst, offset)) {
+  if (!contains(typeAst, position)) {
     return;
   }
 
@@ -107,7 +110,7 @@ export function hoverOnTypeAst(
         return undefined;
       }
 
-      const res = firstBy(typeAst.args, (arg) => hoverOnTypeAst(arg, offset));
+      const res = firstBy(typeAst.args, (arg) => hoverOnTypeAst(arg, position));
       if (res !== undefined) {
         return res;
       }
@@ -115,7 +118,7 @@ export function hoverOnTypeAst(
       return [
         {},
         {
-          span: typeAst.span,
+          range: typeAst.range,
           hovered: {
             type: "type",
             typeDecl: typeAst.resolution.declaration,
@@ -127,8 +130,8 @@ export function hoverOnTypeAst(
 
     case "fn": {
       return (
-        firstBy(typeAst.args, (arg) => hoverOnTypeAst(arg, offset)) ??
-        hoverOnTypeAst(typeAst.return, offset)
+        firstBy(typeAst.args, (arg) => hoverOnTypeAst(arg, position)) ??
+        hoverOnTypeAst(typeAst.return, position)
       );
     }
   }
@@ -192,11 +195,11 @@ type constructor
 function hoverOnDecl(
   namespace: string,
   declaration: TypedDeclaration,
-  offset: number,
+  position: Position,
 ): Hovered | undefined {
-  if (contains(declaration.binding, offset)) {
+  if (contains(declaration.binding, position)) {
     return {
-      span: declaration.binding.span,
+      range: declaration.binding.range,
       hovered: {
         type: "global-variable",
         declaration,
@@ -205,15 +208,15 @@ function hoverOnDecl(
     };
   }
 
-  if (!declaration.extern && contains(declaration.value, offset)) {
-    return hoverOnExpr(declaration.value, offset);
+  if (!declaration.extern && contains(declaration.value, position)) {
+    return hoverOnExpr(declaration.value, position);
   }
 
   return undefined;
 }
 
-function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
-  if (!contains(expr, offset)) {
+function hoverOnExpr(expr: TypedExpr, position: Position): Hovered | undefined {
+  if (!contains(expr, position)) {
     return undefined;
   }
 
@@ -223,31 +226,31 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
       return undefined;
 
     case "list-literal":
-      return firstBy(expr.values, (v) => hoverOnExpr(v, offset));
+      return firstBy(expr.values, (v) => hoverOnExpr(v, position));
 
     case "identifier":
       if (expr.resolution === undefined) {
         return undefined;
       }
       return {
-        span: expr.span,
+        range: expr.range,
         hovered: expr.resolution,
       };
 
     case "fn":
       return (
-        hoverOnExpr(expr.body, offset) ??
+        hoverOnExpr(expr.body, position) ??
         firstBy(expr.params, (param): Hovered | undefined => {
-          if (!contains(param, offset)) {
+          if (!contains(param, position)) {
             return undefined;
           }
 
-          return hoverOnPattern(param, offset);
+          return hoverOnPattern(param, position);
         })
       );
 
     case "field-access":
-      if (contains(expr.field, offset)) {
+      if (contains(expr.field, position)) {
         if (expr.resolution === undefined) {
           return;
         }
@@ -257,51 +260,53 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
             type: "field",
             type_: typeToString(expr.$.asType()),
           },
-          span: expr.field.span,
+          range: expr.field.range,
         };
       }
 
-      return hoverOnExpr(expr.struct, offset);
+      return hoverOnExpr(expr.struct, position);
 
     case "struct-literal":
       return (
         firstBy(
           expr.fields.map((f) => f.value),
-          (arg) => hoverOnExpr(arg, offset),
+          (arg) => hoverOnExpr(arg, position),
         ) ??
         (expr.spread === undefined
           ? undefined
-          : hoverOnExpr(expr.spread, offset))
+          : hoverOnExpr(expr.spread, position))
       );
 
     case "application":
       return (
-        firstBy(expr.args, (arg) => hoverOnExpr(arg, offset)) ??
-        hoverOnExpr(expr.caller, offset)
+        firstBy(expr.args, (arg) => hoverOnExpr(arg, position)) ??
+        hoverOnExpr(expr.caller, position)
       );
 
     case "if":
       return (
-        hoverOnExpr(expr.condition, offset) ??
-        hoverOnExpr(expr.then, offset) ??
-        hoverOnExpr(expr.else, offset)
+        hoverOnExpr(expr.condition, position) ??
+        hoverOnExpr(expr.then, position) ??
+        hoverOnExpr(expr.else, position)
       );
 
     case "let": {
-      if (contains(expr.pattern, offset)) {
-        return hoverOnPattern(expr.pattern, offset);
+      if (contains(expr.pattern, position)) {
+        return hoverOnPattern(expr.pattern, position);
       }
 
-      return hoverOnExpr(expr.value, offset) ?? hoverOnExpr(expr.body, offset);
+      return (
+        hoverOnExpr(expr.value, position) ?? hoverOnExpr(expr.body, position)
+      );
     }
 
     case "match":
       return (
-        hoverOnExpr(expr.expr, offset) ??
+        hoverOnExpr(expr.expr, position) ??
         firstBy(
           expr.clauses,
           ([pattern, expr]) =>
-            hoverOnPattern(pattern, offset) ?? hoverOnExpr(expr, offset),
+            hoverOnPattern(pattern, position) ?? hoverOnExpr(expr, position),
         )
       );
   }
@@ -309,22 +314,22 @@ function hoverOnExpr(expr: TypedExpr, offset: number): Hovered | undefined {
 
 function hoverOnPattern(
   pattern: TypedMatchPattern,
-  offset: number,
+  position: Position,
 ): Hovered | undefined {
-  if (!contains(pattern, offset)) {
+  if (!contains(pattern, position)) {
     return undefined;
   }
 
   switch (pattern.type) {
     case "identifier":
       return {
-        span: pattern.span,
+        range: pattern.range,
         hovered: { type: "local-variable", binding: pattern },
       };
 
     case "constructor":
       return firstBy(pattern.args, (argPattern) =>
-        hoverOnPattern(argPattern, offset),
+        hoverOnPattern(argPattern, position),
       );
 
     case "lit":

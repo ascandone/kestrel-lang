@@ -1,4 +1,4 @@
-import { Span } from "../../parser";
+import { Position, Range } from "../../parser";
 import {
   IdentifierResolution,
   TypedExpr,
@@ -10,14 +10,14 @@ import { contains, firstBy, statementByOffset } from "./common";
 
 export type Location = {
   namespace?: string;
-  span: Span;
+  range: Range;
 };
 
 export function goToDefinitionOf(
   module: TypedModule,
-  offset: number,
+  position: Position,
 ): Location | undefined {
-  const statement = statementByOffset(module, offset);
+  const statement = statementByOffset(module, position);
   if (statement === undefined) {
     return undefined;
   }
@@ -27,7 +27,7 @@ export function goToDefinitionOf(
       if (statement.declaration.typeHint !== undefined) {
         const ret = goToDefinitionOfTypeAst(
           statement.declaration.typeHint.mono,
-          offset,
+          position,
         );
         if (ret !== undefined) {
           return ret;
@@ -36,7 +36,7 @@ export function goToDefinitionOf(
 
       return statement.declaration.extern
         ? undefined
-        : goToDefinitionOfExpr(statement.declaration.value, offset);
+        : goToDefinitionOfExpr(statement.declaration.value, position);
 
     case "type-declaration": {
       if (statement.typeDeclaration.type !== "adt") {
@@ -44,12 +44,12 @@ export function goToDefinitionOf(
       }
 
       const ret = firstBy(statement.typeDeclaration.variants, (variant) => {
-        if (!contains(variant, offset)) {
+        if (!contains(variant, position)) {
           return undefined;
         }
 
         return firstBy(variant.args, (arg) =>
-          goToDefinitionOfTypeAst(arg, offset),
+          goToDefinitionOfTypeAst(arg, position),
         );
       });
 
@@ -62,7 +62,7 @@ export function goToDefinitionOf(
 
     case "import":
       for (const exposing of statement.import.exposing) {
-        if (!contains(exposing, offset)) {
+        if (!contains(exposing, position)) {
           continue;
         }
 
@@ -74,7 +74,7 @@ export function goToDefinitionOf(
 
             return {
               namespace: statement.import.ns,
-              span: exposing.resolved.span,
+              range: exposing.resolved.range,
             };
 
           case "value":
@@ -84,7 +84,7 @@ export function goToDefinitionOf(
 
             return {
               namespace: statement.import.ns,
-              span: exposing.declaration.span,
+              range: exposing.declaration.range,
             };
         }
       }
@@ -94,9 +94,9 @@ export function goToDefinitionOf(
 
 function goToDefinitionOfTypeAst(
   t: TypedTypeAst,
-  offset: number,
+  position: Position,
 ): Location | undefined {
-  if (!contains(t, offset)) {
+  if (!contains(t, position)) {
     return undefined;
   }
 
@@ -106,7 +106,7 @@ function goToDefinitionOfTypeAst(
       return undefined;
     case "named": {
       const ret = firstBy(t.args, (arg) =>
-        goToDefinitionOfTypeAst(arg, offset),
+        goToDefinitionOfTypeAst(arg, position),
       );
 
       if (ret !== undefined) {
@@ -118,15 +118,15 @@ function goToDefinitionOfTypeAst(
       }
 
       return {
-        span: t.resolution.declaration.span,
+        range: t.resolution.declaration.range,
         namespace: t.resolution.namespace,
       };
     }
 
     case "fn": {
       return (
-        firstBy(t.args, (arg) => goToDefinitionOfTypeAst(arg, offset)) ??
-        goToDefinitionOfTypeAst(t.return, offset)
+        firstBy(t.args, (arg) => goToDefinitionOfTypeAst(arg, position)) ??
+        goToDefinitionOfTypeAst(t.return, position)
       );
     }
   }
@@ -134,9 +134,9 @@ function goToDefinitionOfTypeAst(
 
 function goToDefinitionOfExpr(
   ast: TypedExpr,
-  offset: number,
+  position: Position,
 ): Location | undefined {
-  if (!contains(ast, offset)) {
+  if (!contains(ast, position)) {
     return undefined;
   }
 
@@ -151,52 +151,52 @@ function goToDefinitionOfExpr(
       return resolutionToLocation(ast.resolution);
 
     case "fn":
-      return goToDefinitionOfExpr(ast.body, offset);
+      return goToDefinitionOfExpr(ast.body, position);
 
     case "application":
       return (
-        firstBy(ast.args, (arg) => goToDefinitionOfExpr(arg, offset)) ??
-        goToDefinitionOfExpr(ast.caller, offset)
+        firstBy(ast.args, (arg) => goToDefinitionOfExpr(arg, position)) ??
+        goToDefinitionOfExpr(ast.caller, position)
       );
 
     case "list-literal":
-      return firstBy(ast.values, (arg) => goToDefinitionOfExpr(arg, offset));
+      return firstBy(ast.values, (arg) => goToDefinitionOfExpr(arg, position));
 
     case "field-access":
-      return goToDefinitionOfExpr(ast.struct, offset);
+      return goToDefinitionOfExpr(ast.struct, position);
 
     case "struct-literal":
       return (
         firstBy(
           ast.fields.map((f) => f.value),
-          (arg) => goToDefinitionOfExpr(arg, offset),
+          (arg) => goToDefinitionOfExpr(arg, position),
         ) ??
         (ast.spread === undefined
           ? undefined
-          : goToDefinitionOfExpr(ast.spread, offset))
+          : goToDefinitionOfExpr(ast.spread, position))
       );
 
     case "if":
       return (
-        goToDefinitionOfExpr(ast.condition, offset) ??
-        goToDefinitionOfExpr(ast.then, offset) ??
-        goToDefinitionOfExpr(ast.else, offset)
+        goToDefinitionOfExpr(ast.condition, position) ??
+        goToDefinitionOfExpr(ast.then, position) ??
+        goToDefinitionOfExpr(ast.else, position)
       );
 
     case "let":
       return (
-        goToDefinitionOfExpr(ast.value, offset) ??
-        goToDefinitionOfExpr(ast.body, offset)
+        goToDefinitionOfExpr(ast.value, position) ??
+        goToDefinitionOfExpr(ast.body, position)
       );
 
     case "match":
       return (
-        goToDefinitionOfExpr(ast.expr, offset) ??
+        goToDefinitionOfExpr(ast.expr, position) ??
         firstBy(
           ast.clauses,
           ([pattern, expr]) =>
-            goToDefinitionOfPattern(pattern, offset) ??
-            goToDefinitionOfExpr(expr, offset),
+            goToDefinitionOfPattern(pattern, position) ??
+            goToDefinitionOfExpr(expr, position),
         )
       );
 
@@ -207,9 +207,9 @@ function goToDefinitionOfExpr(
 
 function goToDefinitionOfPattern(
   pattern: TypedMatchPattern,
-  offset: number,
+  position: Position,
 ): Location | undefined {
-  if (!contains(pattern, offset)) {
+  if (!contains(pattern, position)) {
     return;
   }
 
@@ -220,7 +220,7 @@ function goToDefinitionOfPattern(
 
     case "constructor":
       for (const arg of pattern.args) {
-        const res = goToDefinitionOfPattern(arg, offset);
+        const res = goToDefinitionOfPattern(arg, position);
         if (res !== undefined) {
           return res;
         }
@@ -237,16 +237,16 @@ function goToDefinitionOfPattern(
 function resolutionToLocation(resolution: IdentifierResolution): Location {
   switch (resolution.type) {
     case "local-variable":
-      return { namespace: undefined, span: resolution.binding.span };
+      return { namespace: undefined, range: resolution.binding.range };
     case "global-variable":
       return {
         namespace: resolution.namespace,
-        span: resolution.declaration.binding.span,
+        range: resolution.declaration.binding.range,
       };
     case "constructor":
       return {
         namespace: resolution.namespace,
-        span: resolution.variant.span,
+        range: resolution.variant.range,
       };
   }
 }

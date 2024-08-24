@@ -1,8 +1,8 @@
 import { test, expect } from "vitest";
 import { findReferences, Identifier, TypedModule } from "../typedAst";
-import { unsafeParse } from "../../parser";
+import { Position, unsafeParse } from "../../parser";
 import { UntypedProject, typecheckProject } from "../typecheck";
-import { indexOf, spanOf } from "./__test__/utils";
+import { positionOf, rangeOf } from "./__test__/utils";
 
 test("glb decl in the same module", () => {
   const Main = `
@@ -12,7 +12,7 @@ test("glb decl in the same module", () => {
 
   const refs = findReferences(
     "Main",
-    indexOf(Main, "glb", 1)!,
+    positionOf(Main, "glb", 1),
     typecheckRaw({ Main }),
   );
 
@@ -21,7 +21,7 @@ test("glb decl in the same module", () => {
       "Main",
       expect.objectContaining({
         name: "glb",
-        span: spanOf(Main, "glb", 2),
+        range: rangeOf(Main, "glb", 2),
       }),
     ],
   ]);
@@ -39,7 +39,7 @@ test("glb decl in different modules", () => {
 
   const bindings = parseFindReferences(
     "ImportedModule",
-    indexOf(ImportedModule, "glb")!,
+    rangeOf(ImportedModule, "glb")!.start,
     typecheckRaw({ Main, ImportedModule }),
   );
 
@@ -48,7 +48,7 @@ test("glb decl in different modules", () => {
       "Main",
       expect.objectContaining({
         name: "glb",
-        span: spanOf(Main, "ImportedModule.glb"),
+        range: rangeOf(Main, "ImportedModule.glb"),
       }),
     ],
   ]);
@@ -69,8 +69,9 @@ function typecheckRaw(
 
 function parseFindReferences(
   hoveringOnNamespace: string,
-  offset: number,
+  position: Position,
   typedProject: Record<string, TypedModule> = {},
 ): [string, Identifier][] {
-  return findReferences(hoveringOnNamespace, offset, typedProject)!.references;
+  return findReferences(hoveringOnNamespace, position, typedProject)!
+    .references;
 }
