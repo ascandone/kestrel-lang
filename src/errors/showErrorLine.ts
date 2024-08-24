@@ -1,15 +1,14 @@
-import { Span } from "../parser";
+import { Range } from "../parser";
 import { col } from "../utils/colors";
-
-type Position = { line: number; character: number };
 
 function repeatN(ch: string, times: number) {
   return Array.from({ length: times }, () => ch).join("");
 }
 
-export function showErrorLine(src: string, [start, end]: Span): string {
-  const startPos = offsetToPosition(src, start);
-  const endPos = offsetToPosition(src, end);
+export function showErrorLine(
+  src: string,
+  { start: startPos, end: endPos }: Range,
+): string {
   const lines = src.split("\n");
 
   function showLine(line: number) {
@@ -46,25 +45,4 @@ export function showErrorLine(src: string, [start, end]: Span): string {
   }
 
   return ret.join("\n");
-}
-
-function offsetToPosition(src: string, offset: number): Position {
-  let line = 0,
-    character = 0;
-
-  for (const ch of src) {
-    if (offset === 0) {
-      break;
-    }
-
-    offset--;
-    if (ch === "\n") {
-      line++;
-      character = 0;
-    } else {
-      character++;
-    }
-  }
-
-  return { line, character };
 }

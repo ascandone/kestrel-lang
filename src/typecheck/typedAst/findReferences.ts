@@ -1,3 +1,4 @@
+import { Position } from "vscode-languageserver";
 import {
   Identifier,
   IdentifierResolution,
@@ -14,7 +15,7 @@ export type References = {
 // TODO also rename exposed imports
 export function findReferences(
   namespace: string,
-  offset: number,
+  position: Position,
   typedProject: Record<string, TypedModule>,
 ): References | undefined {
   const srcModule = typedProject[namespace];
@@ -22,14 +23,14 @@ export function findReferences(
     throw new Error("[unreachable] module not found");
   }
 
-  const statement = statementByOffset(srcModule, offset);
+  const statement = statementByOffset(srcModule, position);
   if (statement === undefined) {
     return undefined;
   }
 
   switch (statement.type) {
     case "declaration":
-      if (!contains(statement.declaration.binding, offset)) {
+      if (!contains(statement.declaration.binding, position)) {
         return undefined;
       }
 

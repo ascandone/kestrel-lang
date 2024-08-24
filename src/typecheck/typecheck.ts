@@ -1,13 +1,15 @@
 import {
   ConstLiteral,
-  SpanMeta,
+  RangeMeta,
   UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
   UntypedTypeVariant,
 } from "../parser";
 import {
+  FieldResolution,
   IdentifierResolution,
+  StructResolution,
   TypedDeclaration,
   TypedExpr,
   TypedMatchPattern,
@@ -26,19 +28,26 @@ import {
   TypeScheme,
   PolyType,
   TraitImplDependency,
+  TVarResolution,
+  Instantiator,
+  typeToString,
+  findUnboundTypeVars,
 } from "./type";
 import {
   ArityMismatch,
+  AmbiguousTypeVar,
   ErrorInfo,
   InvalidCatchall,
+  InvalidField,
   InvalidTypeArity,
+  MissingRequiredFields,
   NonExhaustiveMatch,
   OccursCheck,
   TraitNotSatified,
   TypeMismatch,
   UnboundTypeParam,
 } from "../errors";
-import { castAst } from "./resolutionStep";
+import { castAst, findFieldInModule } from "./resolutionStep";
 import { topologicalSort } from "../utils/topsort";
 
 export type TypeMeta = { $: TVar };
@@ -71,15 +80,37 @@ export function typecheck(
   return new Typechecker(ns, mainType).run(module, deps, implicitImports);
 }
 
+type ScheduledAmbiguousVarCheck = {
+  bindingsStack: Type[];
+  instantiatedVarNode: { name: string } & TypeMeta & RangeMeta;
+};
+
 class Typechecker {
   private errors: ErrorInfo[] = [];
+  private scheduledFieldResolutions: (TypedExpr & { type: "field-access" })[] =
+    [];
+
+  /** ids of the fresh variables created due to typechecking error */
+  private errorNodesTypeVarIds = new Set<number>();
+
+  private ambiguousTypeVarErrorsEmitted = new Set<number>();
+  private bindingsTypesStack: Type[] = [];
+
+  private scheduledAmbiguousVarChecks: ScheduledAmbiguousVarCheck[] = [];
 
   constructor(
     private ns: string,
     private mainType: Type,
   ) {}
 
-  private derive(
+  private pushErrorNode(ast: TypeMeta) {
+    const resolved = ast.$.resolve();
+    if (resolved.type === "unbound") {
+      this.errorNodesTypeVarIds.add(resolved.id);
+    }
+  }
+
+  private adtDerive(
     trait: string,
     typeDecl: TypedTypeDeclaration & { type: "adt" },
   ) {
@@ -133,6 +164,51 @@ class Typechecker {
     TVar.registerTraitImpl(this.ns, typeDecl.name, trait, deps);
   }
 
+  private structDerive(
+    trait: string,
+    typeDecl: TypedTypeDeclaration & { type: "struct" },
+  ) {
+    const deps: TraitImplDependency[] = [];
+
+    const depParams = new Set<string>();
+
+    // Register recursive type
+    TVar.registerTraitImpl(
+      this.ns,
+      typeDecl.name,
+      trait,
+      typeDecl.params.map((_) => undefined),
+    );
+
+    for (const field of typeDecl.fields) {
+      const impl = TVar.typeImplementsTrait(field.$.asType(), trait);
+      if (impl === undefined) {
+        TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
+        return;
+      }
+
+      for (const { id } of impl) {
+        const name = field.scheme[id];
+        if (name !== undefined) {
+          depParams.add(name);
+        }
+      }
+
+      // Singleton always derive any trait
+    }
+
+    for (const param of typeDecl.params) {
+      if (depParams.has(param.name)) {
+        deps.push([trait]);
+      } else {
+        deps.push(undefined);
+      }
+    }
+
+    TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
+    TVar.registerTraitImpl(this.ns, typeDecl.name, trait, deps);
+  }
+
   run(
     module: UntypedModule,
     deps: Deps,
@@ -155,35 +231,88 @@ class Typechecker {
           }
         }
 
-        this.derive("Eq", typeDecl);
-        this.derive("Show", typeDecl);
+        this.adtDerive("Eq", typeDecl);
+        this.adtDerive("Show", typeDecl);
+      } else if (typeDecl.type === "struct") {
+        this.makeStructType(typeDecl);
+        this.structDerive("Eq", typeDecl);
+        this.structDerive("Show", typeDecl);
       }
     }
 
     for (const decl of typedAst.declarations) {
+      this.bindingsTypesStack.push(decl.binding.$.asType());
       this.typecheckAnnotatedDecl(decl);
+      this.bindingsTypesStack.pop();
+
+      for (const check of this.scheduledAmbiguousVarChecks) {
+        this.checkInstantiatedVars(decl.scheme, check);
+      }
+      this.scheduledAmbiguousVarChecks = [];
+    }
+
+    for (const fieldAccessAst of this.scheduledFieldResolutions) {
+      this.doubleCheckFieldAccess(
+        fieldAccessAst,
+        fieldAccessAst.struct.$.resolve(),
+        deps,
+      );
     }
 
     return [typedAst, this.errors];
+  }
+
+  private makeStructType(typeDecl: TypedTypeDeclaration & { type: "struct" }) {
+    // TODO dedup from makeVariantType
+    const generics: [string, TVar, number][] = typeDecl.params.map((param) => [
+      param.name,
+      ...TVar.freshWithId(),
+    ]);
+
+    const scheme: TypeScheme = Object.fromEntries(
+      generics.map(([param, , id]) => [id, param]),
+    );
+
+    const mono: Type = {
+      type: "named",
+      moduleName: this.ns,
+      name: typeDecl.name,
+      args: generics.map(([, tvar]) => tvar.asType()),
+    };
+
+    unify(typeDecl.$.asType(), mono);
+
+    typeDecl.scheme = scheme;
+
+    for (const field of typeDecl.fields) {
+      const bound: Record<string, TVar> = Object.fromEntries(
+        generics.map(([p, t]) => [p, t]),
+      );
+
+      const fieldType = this.typeAstToType(
+        field.type_,
+        { type: "constructor-arg", params: typeDecl.params.map((p) => p.name) }, // TODO params
+        bound,
+        {}, // TODO traits
+      );
+
+      unify(fieldType, field.$.asType()); // Do not change args order
+
+      field.scheme = scheme;
+    }
   }
 
   private makeVariantType(
     typeDecl: UntypedTypeDeclaration & { type: "adt" },
     variant: UntypedTypeVariant,
   ): PolyType {
-    const generics: [string, TVar][] = typeDecl.params.map((param) => [
+    const generics: [string, TVar, number][] = typeDecl.params.map((param) => [
       param.name,
-      TVar.fresh(),
+      ...TVar.freshWithId(),
     ]);
 
     const scheme: TypeScheme = Object.fromEntries(
-      generics.map(([param, $]) => {
-        const resolved = $.resolve();
-        if (resolved.type !== "unbound") {
-          throw new Error("[unreachable]");
-        }
-        return [resolved.id, param];
-      }),
+      generics.map(([param, , id]) => [id, param]),
     );
 
     const ret: Type = {
@@ -208,7 +337,6 @@ class Typechecker {
               {
                 type: "constructor-arg",
                 params,
-                returning: ret,
               },
               Object.fromEntries(generics.map(([p, t]) => [p, t])),
               {},
@@ -235,11 +363,11 @@ class Typechecker {
       e.left.args.length !== e.right.args.length
     ) {
       if (ast.type === "application" && e.left.args.length < ast.args.length) {
-        const [start] = ast.args[e.left.args.length]!.span;
-        const [, end] = ast.args.at(-1)!.span;
+        const { start } = ast.args[e.left.args.length]!.range;
+        const { end } = ast.args.at(-1)!.range;
 
         this.errors.push({
-          span: [start, end],
+          range: { start, end },
           description: new ArityMismatch(
             e.left.args.length,
             e.right.args.length,
@@ -249,11 +377,11 @@ class Typechecker {
       }
 
       if (ast.type === "fn" && e.left.args.length < ast.params.length) {
-        const [start] = ast.params[e.left.args.length]!.span;
-        const [, end] = ast.params.at(-1)!.span;
+        const { start } = ast.params[e.left.args.length]!.range;
+        const { end } = ast.params.at(-1)!.range;
 
         this.errors.push({
-          span: [start, end],
+          range: { start, end },
           description: new ArityMismatch(
             e.left.args.length,
             e.right.args.length,
@@ -264,13 +392,14 @@ class Typechecker {
       }
 
       this.errors.push({
-        span: ast.span,
+        range: ast.range,
         description: new ArityMismatch(e.left.args.length, e.right.args.length),
       });
 
       return;
     }
 
+    this.pushErrorNode(ast);
     this.errors.push(unifyErr(ast, e));
   }
 
@@ -294,7 +423,7 @@ class Typechecker {
 
         if (expectedArity !== actualArity) {
           this.errors.push({
-            span: ast.span,
+            range: ast.range,
             description: new InvalidTypeArity(
               ast.name,
               expectedArity,
@@ -329,7 +458,7 @@ class Typechecker {
           !opts.params.includes(ast.ident)
         ) {
           this.errors.push({
-            span: ast.span,
+            range: ast.range,
             description: new UnboundTypeParam(ast.ident),
           });
         }
@@ -348,7 +477,7 @@ class Typechecker {
       case "any":
         if (opts.type === "constructor-arg") {
           this.errors.push({
-            span: ast.span,
+            range: ast.range,
             description: new InvalidCatchall(),
           });
         }
@@ -407,7 +536,7 @@ class Typechecker {
         if (forceExhaustive) {
           this.errors.push({
             description: new NonExhaustiveMatch(),
-            span: pattern.span,
+            range: pattern.range,
           });
         }
         const t = inferConstant(pattern.literal);
@@ -431,7 +560,7 @@ class Typechecker {
           pattern.resolution.declaration.variants.length > 1
         ) {
           this.errors.push({
-            span: pattern.span,
+            range: pattern.range,
             description: new NonExhaustiveMatch(),
           });
         }
@@ -463,7 +592,7 @@ class Typechecker {
 
           if (t.args.length !== pattern.args.length) {
             this.errors.push({
-              span: pattern.span,
+              range: pattern.range,
               description: new ArityMismatch(
                 t.args.length,
                 pattern.args.length,
@@ -475,6 +604,58 @@ class Typechecker {
 
         return;
       }
+    }
+  }
+
+  private checkInstantiatedVars(
+    scheme: TypeScheme,
+    { instantiatedVarNode, bindingsStack }: ScheduledAmbiguousVarCheck,
+  ) {
+    if (bindingsStack.length === 0) {
+      throw new Error("[unreachable] empty bindings stack");
+    }
+
+    const bindingUnboundTypes = new Set<number>(
+      bindingsStack
+        .flatMap((binding) => findUnboundTypeVars(binding))
+        .map((v) => v.id),
+    );
+
+    const instantiatedVarUnboundTypes = findUnboundTypeVars(
+      instantiatedVarNode.$.asType(),
+    ).filter((v) => v.traits.length !== 0);
+
+    for (const instantiatedVarType of instantiatedVarUnboundTypes) {
+      const areVarsInBindings = bindingUnboundTypes.has(instantiatedVarType.id);
+      if (areVarsInBindings) {
+        continue;
+      }
+
+      const wasErrorNode = this.errorNodesTypeVarIds.has(
+        instantiatedVarType.id,
+      );
+      if (wasErrorNode) {
+        continue;
+      }
+
+      const wasErrorAlreadyEmitted = this.ambiguousTypeVarErrorsEmitted.has(
+        instantiatedVarType.id,
+      );
+      if (wasErrorAlreadyEmitted) {
+        continue;
+      }
+
+      this.ambiguousTypeVarErrorsEmitted.add(instantiatedVarType.id);
+      this.errors.push({
+        range: instantiatedVarNode.range,
+        description: new AmbiguousTypeVar(
+          instantiatedVarType.traits[0]!,
+          typeToString(instantiatedVarNode.$.asType(), scheme),
+        ),
+      });
+
+      // TODO do I have to break the loop here? double check
+      return;
     }
   }
 
@@ -496,14 +677,59 @@ class Typechecker {
         return;
       }
 
+      case "struct-literal": {
+        if (ast.struct.resolution === undefined) {
+          // TODO handle err
+          return;
+        }
+
+        const instantiator = new Instantiator();
+        const type_ = instantiator.instantiatePoly(
+          ast.struct.resolution.declaration,
+        );
+
+        for (const field of ast.fields) {
+          if (field.field.resolution === undefined) {
+            // The error was already emitted during resolution
+            continue;
+          }
+
+          const fieldType = instantiator.instantiatePoly(
+            field.field.resolution.field,
+          );
+
+          this.unifyExpr(field.value, field.value.$.asType(), fieldType);
+          this.typecheckAnnotatedExpr(field.value);
+        }
+
+        this.checkMissingStructFields(ast, ast.struct.resolution, type_);
+        this.unifyExpr(ast, ast.$.asType(), type_);
+
+        if (ast.spread !== undefined) {
+          this.typecheckAnnotatedExpr(ast.spread);
+          this.unifyExpr(ast.spread, ast.spread.$.asType(), ast.$.asType());
+        }
+
+        return;
+      }
+
       case "identifier": {
         if (ast.resolution === undefined) {
           // Error was already emitted
           // Do not narrow the identifier's type
+          this.pushErrorNode(ast);
           return;
         }
 
         this.unifyExpr(ast, ast.$.asType(), resolutionToType(ast.resolution));
+
+        if (ast.resolution.type !== "local-variable") {
+          this.scheduledAmbiguousVarChecks.push({
+            instantiatedVarNode: ast,
+            bindingsStack: [...this.bindingsTypesStack],
+          });
+        }
+
         return;
       }
 
@@ -532,12 +758,30 @@ class Typechecker {
         }
         return;
 
+      case "field-access": {
+        this.typecheckAnnotatedExpr(ast.struct);
+        if (ast.resolution === undefined) {
+          this.scheduledFieldResolutions.push(ast);
+          return;
+        }
+
+        // TODO use resolution's namespace
+        this.unifyFieldAccess(ast, ast.resolution);
+
+        return;
+      }
+
       case "let":
         this.typecheckPattern(ast.pattern, true);
         this.unifyExpr(ast, ast.pattern.$.asType(), ast.value.$.asType());
         this.unifyExpr(ast, ast.$.asType(), ast.body.$.asType());
+
+        this.bindingsTypesStack.push(ast.pattern.$.asType());
         this.typecheckAnnotatedExpr(ast.value);
+        this.bindingsTypesStack.pop();
+
         this.typecheckAnnotatedExpr(ast.body);
+
         return;
 
       case "if":
@@ -560,12 +804,114 @@ class Typechecker {
     }
   }
 
-  private unifyNode(ast: SpanMeta, t1: Type, t2: Type) {
+  private unifyNode(ast: RangeMeta, t1: Type, t2: Type) {
     const e = unify(t1, t2);
     if (e === undefined) {
       return;
     }
     this.errors.push(unifyErr(ast, e));
+  }
+
+  private unifyFieldAccess(
+    ast: TypedExpr & { type: "field-access" },
+    resolution: FieldResolution,
+  ) {
+    const instantiator = new Instantiator();
+
+    const structType: Type = instantiator.instantiatePoly(
+      resolution.declaration,
+    );
+    this.unifyExpr(ast.struct, ast.struct.$.asType(), structType);
+    const fieldType = instantiator.instantiatePoly(resolution.field);
+    this.unifyExpr(ast, ast.$.asType(), fieldType);
+  }
+
+  private checkMissingStructFields(
+    ast: TypedExpr & { type: "struct-literal" },
+    resolution: StructResolution,
+    type: Type,
+  ) {
+    if (ast.spread !== undefined) {
+      return;
+    }
+
+    // Check for missing fields
+    const missingFields = resolution.declaration.fields
+      .filter((defField) => {
+        return !ast.fields.some((structField) => {
+          return structField.field.name === defField.name;
+        });
+      })
+      .map((f) => f.name);
+
+    if (missingFields.length !== 0) {
+      this.errors.push({
+        description: new MissingRequiredFields(
+          typeToString(type),
+          missingFields,
+        ),
+        range: ast.struct.range,
+      });
+    }
+  }
+
+  private doubleCheckFieldAccess(
+    fieldAccessAst: TypedExpr & { type: "field-access" },
+    resolved: TVarResolution,
+    deps: Deps,
+  ) {
+    const emitErr = () => {
+      this.errors.push({
+        range: fieldAccessAst.field.range,
+        description: new InvalidField(
+          typeToString(fieldAccessAst.struct.$.asType()),
+          fieldAccessAst.field.name,
+        ),
+      });
+    };
+
+    switch (resolved.type) {
+      case "bound": {
+        if (resolved.value.type !== "named") {
+          // TODO emit err
+          throw new Error("TODO handle field access to fn");
+        }
+
+        if (resolved.value.moduleName === this.ns) {
+          // we already looked up the fields in this module's structs
+          emitErr();
+          return;
+        }
+
+        const mod = deps[resolved.value.moduleName];
+        if (mod === undefined) {
+          throw new Error("TODO handle invalid mod");
+        }
+
+        const fieldLookup = findFieldInModule(
+          mod.typeDeclarations,
+          fieldAccessAst.field.name,
+          resolved.value.moduleName,
+        );
+
+        if (fieldLookup !== undefined && fieldLookup.declaration.pub === "..") {
+          // Found the field. Re-run unification
+          this.unifyFieldAccess(fieldAccessAst, fieldLookup);
+          return;
+        }
+
+        // we already know this field does not exist in this module
+        emitErr();
+        return;
+      }
+
+      case "unbound":
+        if (fieldAccessAst.field.structName === undefined) {
+          emitErr();
+        }
+
+        return;
+    }
   }
 }
 
@@ -591,7 +937,6 @@ type TypeAstConversionType =
   | {
       type: "constructor-arg";
       params: string[];
-      returning: Type & { type: "named" };
     };
 
 const CORE_PACKAGE = "kestrel_core";
@@ -666,21 +1011,21 @@ export type TypecheckedModule = {
 
 export type ProjectTypeCheckResult = Record<string, TypecheckedModule>;
 
-function unifyErr(node: SpanMeta, e: UnifyError): ErrorInfo {
+function unifyErr(node: RangeMeta, e: UnifyError): ErrorInfo {
   switch (e.type) {
     case "missing-trait":
       return {
-        span: node.span,
+        range: node.range,
         description: new TraitNotSatified(e.type_, e.trait),
       };
 
     case "type-mismatch":
       return {
-        span: node.span,
+        range: node.range,
         description: new TypeMismatch(e.left, e.right),
       };
     case "occurs-check":
-      return { span: node.span, description: new OccursCheck() };
+      return { range: node.range, description: new OccursCheck() };
   }
 }
 
@@ -700,6 +1045,8 @@ function resolutionToType(resolution: IdentifierResolution): Type {
         resolution.variant.$.asType(),
         resolution.variant.scheme,
       );
+
+    // TODO should struct go here?
   }
 }
 

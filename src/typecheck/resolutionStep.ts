@@ -1,6 +1,7 @@
 import {
   MatchPattern,
-  Span,
+  Range,
+  RangeMeta,
   TypeAst,
   UntypedDeclaration,
   UntypedExpr,
@@ -9,7 +10,9 @@ import {
   UntypedTypeDeclaration,
 } from "../parser";
 import {
+  FieldResolution,
   IdentifierResolution,
+  StructResolution,
   TypeResolution,
   TypedBinding,
   TypedDeclaration,
@@ -18,6 +21,7 @@ import {
   TypedImport,
   TypedMatchPattern,
   TypedModule,
+  TypedStructField,
   TypedTypeAst,
   TypedTypeDeclaration,
   TypedTypeVariant,
@@ -28,6 +32,7 @@ import {
   BadImport,
   DuplicateDeclaration,
   ErrorInfo,
+  InvalidField,
   InvalidPipe,
   NonExistingImport,
   TypeParamShadowing,
@@ -116,7 +121,7 @@ class ResolutionStep {
     for (const decl of annotatedDeclrs) {
       if (this.unusedVariables.has(decl.binding)) {
         this.errors.push({
-          span: decl.binding.span,
+          range: decl.binding.range,
           description: new UnusedVariable(decl.binding.name, "global"),
         });
       }
@@ -126,7 +131,7 @@ class ResolutionStep {
       if (this.unusedImports.has(import_)) {
         this.errors.push({
           description: new UnusedImport(import_.ns),
-          span: import_.span,
+          range: import_.range,
         });
       }
 
@@ -134,7 +139,7 @@ class ResolutionStep {
         if (this.unusedExposing.has(exposing)) {
           this.errors.push({
             description: new UnusedExposing(exposing.name),
-            span: exposing.span,
+            range: exposing.range,
           });
         }
       }
@@ -191,7 +196,7 @@ class ResolutionStep {
       if (decl.typeHint !== undefined) {
         tDecl.typeHint = {
           mono: this.annotateTypeAst(decl.typeHint.mono),
-          span: decl.typeHint.span,
+          range: decl.typeHint.range,
           where: decl.typeHint.where,
         };
       }
@@ -203,7 +208,7 @@ class ResolutionStep {
       const ok = this.framesStack.defineGlobal(tDecl, this.ns);
       if (!ok) {
         this.errors.push({
-          span: decl.binding.span,
+          range: decl.binding.range,
           description: new DuplicateDeclaration(decl.binding.name),
         });
       }
@@ -310,7 +315,7 @@ class ResolutionStep {
           const resolution = this.resolveType(ast.namespace, ast.name);
           if (resolution === undefined) {
             this.errors.push({
-              span: ast.span,
+              range: ast.range,
               description: new UnboundType(ast.name),
             });
           }
@@ -330,7 +335,7 @@ class ResolutionStep {
     for (const param of typeDecl.params) {
       if (usedParams.has(param.name)) {
         this.errors.push({
-          span: param.span,
+          range: param.range,
           description: new TypeParamShadowing(param.name),
         });
       }
@@ -347,6 +352,7 @@ class ResolutionStep {
 
         const typedTypeDecl: TypedTypeDeclaration & { type: "adt" } = {
           ...typeDecl,
+
           variants: typeDecl.variants.map((variant) => {
             const typedVariant: TypedTypeVariant = {
               ...variant,
@@ -380,6 +386,34 @@ class ResolutionStep {
         for (const hole of holes) {
           hole(typedTypeDecl);
         }
+
+        return typedTypeDecl;
+      }
+
+      case "struct": {
+        const holes: Array<(decl: TypedTypeDeclaration) => void> = [];
+
+        const typedTypeDecl: TypedTypeDeclaration & { type: "struct" } = {
+          ...typeDecl,
+
+          scheme: {},
+          $: TVar.fresh(),
+
+          fields: typeDecl.fields.map((untypedField) => ({
+            ...untypedField,
+            $: TVar.fresh(),
+            scheme: {},
+            type_: this.annotateTypeAst(untypedField.type_, {
+              holes,
+              name: typeDecl.name,
+            }),
+          })),
+        };
+
+        for (const hole of holes) {
+          hole(typedTypeDecl);
+        }
+
         return typedTypeDecl;
       }
     }
@@ -390,7 +424,7 @@ class ResolutionStep {
       const importedModule = this.deps[import_.ns];
       if (importedModule === undefined) {
         this.errors.push({
-          span: import_.span,
+          range: import_.range,
           description: new UnboundModule(import_.ns),
         });
         return [];
@@ -403,14 +437,14 @@ class ResolutionStep {
   private resolveExternalIdentifier(ast: {
     name: string;
     namespace: string;
-    span: Span;
+    range: Range;
   }): IdentifierResolution | undefined {
     const import_ = this.imports.find(
       (import_) => import_.ns === ast.namespace,
     );
     if (import_ === undefined) {
       this.errors.push({
-        span: ast.span,
+        range: ast.range,
         description: new UnimportedModule(ast.namespace),
       });
       return undefined;
@@ -472,23 +506,134 @@ class ResolutionStep {
     }
 
     this.errors.push({
-      span: ast.span,
+      range: ast.range,
       description: new NonExistingImport(ast.name),
     });
 
     return;
   }
 
+  private *exportedStructs(): Generator<
+    [TypedTypeDeclaration & { type: "struct" }, TypedImport, TypedExposing]
+  > {
+    for (const import_ of this.imports) {
+      for (const exposed of import_.exposing) {
+        if (
+          exposed.type !== "type" ||
+          exposed.resolved === undefined ||
+          exposed.resolved.type !== "struct"
+        ) {
+          continue;
+        }
+
+        yield [exposed.resolved, import_, exposed];
+      }
+    }
+  }
+
+  private resolveField(
+    ast: { name: string; structName?: string } & RangeMeta,
+  ): FieldResolution | undefined {
+    const { name: fieldName, structName: qualifiedStructName } = ast;
+
+    if (qualifiedStructName !== undefined) {
+      for (const typeDecl of this.typeDeclarations) {
+        if (typeDecl.name === qualifiedStructName) {
+          const fieldLookup = findFieldInTypeDecl(typeDecl, fieldName, this.ns);
+
+          if (fieldLookup === undefined) {
+            this.errors.push({
+              description: new InvalidField(typeDecl.name, fieldName),
+              range: ast.range,
+            });
+          }
+
+          return fieldLookup;
+        }
+      }
+
+      const localFieldLookup = findFieldInModule(
+        this.typeDeclarations,
+        fieldName,
+        this.ns,
+      );
+      if (localFieldLookup !== undefined) {
+        return localFieldLookup;
+      }
+
+      for (const [struct, import_, exposing] of this.exportedStructs()) {
+        if (struct.name !== qualifiedStructName) {
+          continue;
+        }
+
+        const fieldLookup = findFieldInTypeDecl(struct, fieldName, import_.ns);
+
+        if (fieldLookup === undefined || fieldLookup.declaration.pub !== "..") {
+          // TODO emit err: invalid qualifier
+
+          this.errors.push({
+            description: new InvalidField(qualifiedStructName, fieldName),
+            range: ast.range,
+          });
+        }
+
+        this.unusedExposing.delete(exposing);
+
+        return fieldLookup;
+      }
+
+      this.errors.push({
+        description: new UnboundType(qualifiedStructName),
+        range: ast.range,
+      });
+
+      return undefined;
+    }
+
+    // First check locally
+    const lookup = findFieldInModule(this.typeDeclarations, fieldName, this.ns);
+    if (lookup !== undefined) {
+      return lookup;
+    }
+
+    // check in import with exposed fields
+    for (const import_ of this.imports) {
+      for (const exposed of import_.exposing) {
+        if (
+          exposed.type !== "type" ||
+          exposed.resolved === undefined ||
+          exposed.resolved.type !== "struct" ||
+          !exposed.exposeImpl
+        ) {
+          continue;
+        }
+
+        const lookup = findFieldInTypeDecl(
+          exposed.resolved,
+          fieldName,
+          import_.ns,
+        );
+
+        if (lookup !== undefined) {
+          return lookup;
+        }
+      }
+    }
+
+    // TODO handle qualified fields
+    return undefined;
+  }
+
   private resolveIdentifier(ast: {
     name: string;
     namespace?: string;
-    span: Span;
+    range: Range;
   }): IdentifierResolution | undefined {
     if (ast.namespace !== undefined && ast.namespace !== this.ns) {
       return this.resolveExternalIdentifier({
         name: ast.name,
         namespace: ast.namespace,
-        span: ast.span,
+        range: ast.range,
       });
     }
 
@@ -528,7 +673,7 @@ class ResolutionStep {
     }
 
     this.errors.push({
-      span: ast.span,
+      range: ast.range,
       description: new UnboundVariable(ast.name),
     });
 
@@ -554,7 +699,7 @@ class ResolutionStep {
       case "pipe":
         if (ast.right.type !== "application") {
           this.errors.push({
-            span: ast.right.span,
+            range: ast.right.range,
             description: new InvalidPipe(),
           });
           return this.annotateExpr(ast.left);
@@ -563,7 +708,7 @@ class ResolutionStep {
         return this.annotateExpr({
           type: "application",
           isPipe: true,
-          span: ast.span,
+          range: ast.range,
           caller: ast.right.caller,
           args: [ast.left, ...ast.right.args],
         });
@@ -575,7 +720,7 @@ class ResolutionStep {
             type: "identifier",
             namespace: ast.mapper.namespace,
             name: ast.mapper.name,
-            span: ast.mapper.span,
+            range: ast.mapper.range,
           },
           args: [
             ast.value,
@@ -583,10 +728,10 @@ class ResolutionStep {
               type: "fn",
               params: [ast.pattern],
               body: ast.body,
-              span: ast.span,
+              range: ast.range,
             },
           ],
-          span: ast.span,
+          range: ast.range,
         });
 
       // Actual ast
@@ -594,6 +739,54 @@ class ResolutionStep {
       case "syntax-err":
       case "constant":
         return { ...ast, $: TVar.fresh() };
+
+      case "struct-literal": {
+        const typeDecl = this.resolveStruct(ast.struct.name);
+
+        return {
+          ...ast,
+          fields: ast.fields.map((field): TypedStructField => {
+            const fieldResolution =
+              typeDecl === undefined
+                ? undefined
+                : findFieldInTypeDecl(
+                    typeDecl.declaration,
+                    field.field.name,
+                    this.ns,
+                  );
+
+            if (typeDecl !== undefined && fieldResolution === undefined) {
+              // TODO move the error back to typecheck step?
+              // it has access to the inferred type
+              this.errors.push({
+                range: field.range,
+                description: new InvalidField(
+                  makeStructName(typeDecl.declaration),
+                  field.field.name,
+                ),
+              });
+            }
+
+            return {
+              ...field,
+              field: {
+                ...field.field,
+                resolution: fieldResolution,
+              },
+              value: this.annotateExpr(field.value),
+            };
+          }),
+          struct: {
+            ...ast.struct,
+            resolution: typeDecl,
+          },
+          spread:
+            ast.spread === undefined
+              ? undefined
+              : this.annotateExpr(ast.spread),
+          $: TVar.fresh(),
+        };
+      }
 
       case "list-literal": {
         return {
@@ -630,7 +823,7 @@ class ResolutionStep {
         for (const param of idents) {
           if (this.unusedVariables.has(param)) {
             this.errors.push({
-              span: param.span,
+              range: param.range,
               description: new UnusedVariable(param.name, "local"),
             });
           }
@@ -649,9 +842,9 @@ class ResolutionStep {
       case "infix":
         return this.annotateExpr({
           type: "application",
-          caller: { type: "identifier", name: ast.operator, span: ast.span },
+          caller: { type: "identifier", name: ast.operator, range: ast.range },
           args: [ast.left, ast.right],
-          span: ast.span,
+          range: ast.range,
         });
 
       case "application":
@@ -660,6 +853,14 @@ class ResolutionStep {
           $: TVar.fresh(),
           caller: this.annotateExpr(ast.caller),
           args: ast.args.map((arg) => this.annotateExpr(arg)),
+        };
+
+      case "field-access":
+        return {
+          ...ast,
+          struct: this.annotateExpr(ast.struct),
+          resolution: this.resolveField(ast.field),
+          $: TVar.fresh(),
         };
 
       case "if":
@@ -718,7 +919,7 @@ class ResolutionStep {
         for (const binding of bindings) {
           if (this.unusedVariables.has(binding)) {
             this.errors.push({
-              span: binding.span,
+              range: binding.range,
               description: new UnusedVariable(binding.name, "local"),
             });
           }
@@ -742,7 +943,7 @@ class ResolutionStep {
               if (this.unusedVariables.has(binding)) {
                 this.errors.push({
                   description: new UnusedVariable(binding.name, "local"),
-                  span: binding.span,
+                  range: binding.range,
                 });
               }
             }
@@ -752,6 +953,20 @@ class ResolutionStep {
         };
       }
     }
+  }
+
+  private resolveStruct(structName: string): StructResolution | undefined {
+    // TODO handle external ns
+    for (const typeDecl of this.typeDeclarations) {
+      if (typeDecl.name === structName && typeDecl.type === "struct") {
+        return {
+          declaration: typeDecl,
+          namespace: this.ns,
+        };
+      }
+    }
+
+    return undefined;
   }
 
   private annotateImport(
@@ -769,7 +984,7 @@ class ResolutionStep {
 
             if (resolved === undefined || !resolved.pub) {
               this.errors.push({
-                span: exposing.span,
+                range: exposing.range,
                 description: new NonExistingImport(exposing.name),
               });
               return exposing;
@@ -779,14 +994,14 @@ class ResolutionStep {
               switch (resolved.type) {
                 case "extern":
                   this.errors.push({
-                    span: exposing.span,
+                    range: exposing.range,
                     description: new BadImport(),
                   });
                   break;
                 case "adt":
                   if (resolved.pub !== "..") {
                     this.errors.push({
-                      span: exposing.span,
+                      range: exposing.range,
                       description: new BadImport(),
                     });
                     break;
@@ -816,7 +1031,7 @@ class ResolutionStep {
 
             if (declaration === undefined || !declaration.pub) {
               this.errors.push({
-                span: exposing.span,
+                range: exposing.range,
                 description: new NonExistingImport(exposing.name),
               });
             } else {
@@ -864,7 +1079,7 @@ class ResolutionStep {
         const resolution = this.resolveConstructor(
           ast.namespace,
           ast.name,
-          ast.span,
+          ast.range,
         );
         return {
           ...ast,
@@ -881,7 +1096,7 @@ class ResolutionStep {
   private resolveConstructor(
     namespace: string | undefined,
     name: string,
-    span: Span,
+    range: Range,
   ): IdentifierResolution | undefined {
     namespace = namespace ?? this.ns;
     if (namespace === this.ns) {
@@ -889,7 +1104,7 @@ class ResolutionStep {
       if (constructor === undefined) {
         this.errors.push({
           description: new UnboundVariable(name),
-          span,
+          range,
         });
         return undefined;
       }
@@ -900,7 +1115,7 @@ class ResolutionStep {
     if (module === undefined) {
       this.errors.push({
         description: new UnimportedModule(namespace),
-        span,
+        range,
       });
       return undefined;
     }
@@ -922,9 +1137,56 @@ class ResolutionStep {
 
     this.errors.push({
       description: new UnboundVariable(name),
-      span,
+      range,
     });
 
     return undefined;
   }
+}
+
+export function findFieldInModule(
+  typeDeclarations: TypedTypeDeclaration[],
+  fieldName: string,
+  namespace: string,
+): FieldResolution | undefined {
+  for (const typeDecl of typeDeclarations) {
+    const lookup = findFieldInTypeDecl(typeDecl, fieldName, namespace);
+    if (lookup !== undefined) {
+      return lookup;
+    }
+  }
+
+  return undefined;
+}
+
+export function findFieldInTypeDecl(
+  declaration: TypedTypeDeclaration,
+  fieldName: string,
+  namespace: string,
+): FieldResolution | undefined {
+  if (declaration.type !== "struct") {
+    return undefined;
+  }
+
+  for (const field of declaration.fields) {
+    if (field.name !== fieldName) {
+      continue;
+    }
+
+    return { declaration, field, namespace };
+  }
+
+  return undefined;
+}
+
+function makeStructName(
+  structDeclaration: TypedTypeDeclaration & { type: "struct" },
+): string {
+  if (structDeclaration.params.length === 0) {
+    return structDeclaration.name;
+  }
+
+  const params = structDeclaration.params.map(() => "_").join(", ");
+
+  return `${structDeclaration.name}<${params}>`;
 }

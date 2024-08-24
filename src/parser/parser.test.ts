@@ -1,6 +1,7 @@
 import { expect, test, describe } from "vitest";
 import { parse, unsafeParse } from "./parser";
-import { Span, UntypedModule } from "./ast";
+import { UntypedModule } from "./ast";
+import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 
 test("parsing a declaration", () => {
   const src = "let x = 0";
@@ -12,16 +13,16 @@ test("parsing a declaration", () => {
         pub: false,
         extern: false,
         inline: false,
-        binding: { name: "x", span: spanOf(src, "x") },
+        binding: { name: "x", range: rangeOf(src, "x") },
         value: {
           type: "constant",
           value: {
             type: "int",
             value: 0,
           },
-          span: spanOf(src, "0"),
+          range: rangeOf(src, "0"),
         },
-        span: spanOf(src, src),
+        range: rangeOf(src, src),
       },
     ],
   });
@@ -37,31 +38,31 @@ test("parsing two declarations", () => {
         pub: false,
         extern: false,
         inline: false,
-        binding: { name: "x", span: spanOf(src, "x") },
+        binding: { name: "x", range: rangeOf(src, "x") },
         value: {
           type: "constant",
           value: {
             type: "int",
             value: 0,
           },
-          span: spanOf(src, "0"),
+          range: rangeOf(src, "0"),
         },
-        span: spanOf(src, "let x = 0"),
+        range: rangeOf(src, "let x = 0"),
       },
       {
         pub: false,
         extern: false,
         inline: false,
-        binding: { name: "y", span: spanOf(src, "y") },
+        binding: { name: "y", range: rangeOf(src, "y") },
         value: {
           type: "constant",
           value: {
             type: "int",
             value: 1,
           },
-          span: spanOf(src, "1"),
+          range: rangeOf(src, "1"),
         },
-        span: spanOf(src, "let y = 1"),
+        range: rangeOf(src, "let y = 1"),
       },
     ],
   });
@@ -520,6 +521,91 @@ describe("type declarations", () => {
   });
 });
 
+describe("structs", () => {
+  test("empty struct", () => {
+    const src = `type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("pub modifier", () => {
+    const src = `pub type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("pub(..) modifier", () => {
+    const src = `pub(..) type Person struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("type params", () => {
+    const src = `type Person<a, b> struct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("doc comments", () => {
+    const src = `
+      /// example docs
+      type Person struct { }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("field", () => {
+    const src = `type Person struct { age: Int }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("many fields", () => {
+    const src = `
+      type Person struct {
+        name: a,
+        age: b, 
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("field access", () => {
+    const src = `let _ = s.my_field`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("construct fields with no fields", () => {
+    const src = `let _ = MyStruct { }`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("construct fields with many fields", () => {
+    const src = `
+      let _ = MyStruct {
+        a: 42,
+        b: "ok",
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test("update a struct", () => {
+    const src = `
+      let _ = MyStruct {
+        a: 42,
+        b: "ok",
+        ..expr
+      }
+    `;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("complex exprs in update syntax");
+
+  test("qualified field access", () => {
+    const src = `let _ = s.MyStruct#my_field`;
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
+  test.todo("namespaced-qualified field access");
+});
+
 describe("pattern matching", () => {
   test("empty match expression", () => {
     const src = `let _ = match x {}`;
@@ -794,22 +880,20 @@ describe("Fault tolerance", () => {
   });
 
   test("missing expr", () => {
-    const src = `
-      let x = 
-    `;
+    const src = `let x =   `;
     expect(parse(src).parsed).toMatchSnapshot();
   });
 
   test("missing string lit termination", () => {
-    const src = `
-      let x = "
-    `;
+    const src = `let x = "`;
+
+    expect(parse(src).parsed).toMatchSnapshot();
+  });
+
+  test("dot notation in struct", () => {
+    const src = `let x = str. `;
+    // "str:" 8 - 12
 
     expect(parse(src).parsed).toMatchSnapshot();
   });
 });
-
-function spanOf(src: string, substr: string = src): Span {
-  const index = src.indexOf(substr);
-  return [index, index + substr.length];
-}

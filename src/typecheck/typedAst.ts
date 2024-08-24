@@ -5,14 +5,15 @@ import {
   Expr,
   Import,
   MatchPattern,
-  SpanMeta,
+  RangeMeta,
+  StructDeclarationField,
+  StructField,
   TypeAst,
   TypeDeclaration,
   TypeVariant,
 } from "../parser";
 import { TypeMeta } from "./typecheck";
 import { TypeScheme } from "./type";
-export * from "./typedAst/autocomplete";
 export * from "./typedAst/findReferences";
 export * from "./typedAst/gotoDefinition";
 export * from "./typedAst/inlayHint";
@@ -51,11 +52,42 @@ export type TypeResolutionMeta = {
   resolution: TypeResolution | undefined;
 };
 
+export type StructResolution = {
+  declaration: TypedTypeDeclaration & { type: "struct" };
+  namespace: string;
+};
+
+export type TypedStructField = StructField<
+  TypeMeta,
+  IdentifierResolutionMeta,
+  StructResolutionMeta,
+  FieldResolutionMeta,
+  never
+>;
+
+export type FieldResolution = StructResolution & {
+  field: StructDeclarationField<PolyTypeMeta>;
+};
+
+export type StructResolutionMeta = {
+  resolution: StructResolution | undefined;
+};
+
+export type FieldResolutionMeta = {
+  resolution: FieldResolution | undefined;
+};
+
 export type TypedMatchPattern = MatchPattern<
   TypeMeta,
   IdentifierResolutionMeta
 >;
-export type TypedExpr = Expr<TypeMeta, IdentifierResolutionMeta, never>;
+export type TypedExpr = Expr<
+  TypeMeta,
+  IdentifierResolutionMeta,
+  StructResolutionMeta,
+  FieldResolutionMeta,
+  never
+>;
 
 export type TypedExposing = ExposedValue<
   { resolved?: TypedTypeDeclaration },
@@ -65,7 +97,7 @@ export type TypedExposing = ExposedValue<
 export type TypedImport = Import<TypedExposing>;
 
 export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
-export type TypedTypeVariant = TypeVariant<PolyTypeMeta>;
+export type TypedTypeVariant = TypeVariant<PolyTypeMeta, TypeResolutionMeta>;
 export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 
 export type TypedTypeAst = TypeAst<TypeResolutionMeta>;
@@ -73,6 +105,8 @@ export type TypedDeclaration = { scheme: TypeScheme } & Declaration<
   TypeMeta,
   IdentifierResolutionMeta,
   TypeResolutionMeta,
+  StructResolutionMeta,
+  FieldResolutionMeta,
   never
 >;
 
@@ -83,6 +117,6 @@ export type TypedModule = {
   declarations: TypedDeclaration[];
 };
 
-export type Node = TypeMeta & SpanMeta;
+export type Node = TypeMeta & RangeMeta;
 
 export type Identifier = TypedExpr & { type: "identifier" };

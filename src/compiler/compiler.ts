@@ -1,314 +1,63 @@
-import { exit } from "process";
-import { Binding, ConstLiteral, MatchPattern, TypeVariant } from "../parser";
-import { TypedExpr, TypedModule } from "../typecheck";
-import { ConcreteType } from "../typecheck/type";
-import { col } from "../utils/colors";
+import {
+  TypedBinding,
+  TypedDeclaration,
+  TypedExpr,
+  TypedMatchPattern,
+  TypedModule,
+  TypedTypeDeclaration,
+  TypedTypeVariant,
+} from "../typecheck";
+import { ConcreteType, TVar, Type, resolveType } from "../typecheck/type";
+import * as t from "@babel/types";
+import generate from "@babel/generator";
+import { Binding, ConstLiteral } from "../parser";
+import { BinaryExpression } from "@babel/types";
 import { optimizeModule } from "./optimize";
+import { exit } from "node:process";
+import { col } from "../utils/colors";
+import {
+  AdtReprType,
+  TAG_FIELD,
+  getAdtReprType,
+  joinAndExprs,
+  sanitizeNamespace,
+} from "./utils";
+import {
+  deriveEqAdt,
+  deriveEqStruct,
+  deriveShowAdt,
+  deriveShowStruct,
+} from "./derive";
 
-const builtinValues: Scope = {
-  True: "true",
-  False: "false",
-  Unit: "null",
+export type CompileOptions = {
+  allowDeriving?: string[] | undefined;
 };
 
-type CompileExprResult = [statements: string[], expr: string];
+export function compile(
+  ns: string,
+  ast: TypedModule,
+  options: CompileOptions = {},
+): string {
+  return new Compiler(ns, options).compile(ast);
+}
 
-type Scope = Record<string, string>;
+const EQ_IDENTIFIER: t.Identifier = { type: "Identifier", name: "_eq" };
 
 type CompilationMode =
-  | { type: "assign_var"; name: string; declare: boolean }
+  | {
+      type: "assign_var";
+      ident: t.Identifier;
+      declare: boolean;
+      dictParams: t.Identifier[];
+    }
   | { type: "return" };
 
-class Frame {
-  constructor(
-    public readonly data:
-      | { type: "let"; name: string; binding?: Binding<unknown> }
-      | { type: "fn" },
-    private compiler: Compiler,
-  ) {}
-
-  private usedVars = new Map<string, number>();
-
-  preventShadow(name: string): string {
-    const timesUsed = this.usedVars.get(name);
-    if (timesUsed === undefined) {
-      this.usedVars.set(name, 1);
-      return name;
-    }
-    this.usedVars.set(name, timesUsed + 1);
-    return `${name}$${timesUsed}`;
-  }
-
-  getUniqueName(ns?: string) {
-    const namespace = ns === undefined ? "" : `${ns}$`;
-    return `${namespace}GEN__${this.compiler.getNextId()}`;
-  }
-}
-
-function isStructuralEq(caller: TypedExpr, args: TypedExpr[]): boolean {
-  if (caller.type !== "identifier" || caller.name !== "==") {
-    return false;
-  }
-
-  const resolvedType = args[0]!.$.resolve();
-
-  if (resolvedType.type === "unbound") {
-    return true;
-  }
-
-  if (resolvedType.value.type === "fn") {
-    return false;
-  }
-
-  if (
-    resolvedType.value.name === "Int" &&
-    resolvedType.value.moduleName === "Int"
-  ) {
-    return false;
-  }
-
-  if (
-    resolvedType.value.name === "Float" &&
-    resolvedType.value.moduleName === "Float"
-  ) {
-    return false;
-  }
-
-  if (
-    resolvedType.value.name === "String" &&
-    resolvedType.value.moduleName === "String"
-  ) {
-    return false;
-  }
-
-  return true;
-}
-export class Compiler {
+class Compiler {
+  private statementsBuf: t.Statement[] = [];
   private frames: Frame[] = [];
-  private tailCall = false;
+  private bindingsJsName = new WeakMap<Binding, t.Expression>();
 
-  private ns: string | undefined;
-
-  private nextId = 0;
-  getNextId() {
-    return this.nextId++;
-  }
-
-  private getUniqueName() {
-    return this.getCurrentFrame().getUniqueName(this.getBlockNs());
-  }
-
-  private getBlockNs(): string | undefined {
-    const ns: string[] = [];
-    for (let i = this.frames.length - 1; i >= 0; i--) {
-      const frame = this.frames[i]!;
-
-      if (frame.data.type === "fn") {
-        break;
-      }
-
-      ns.push(frame.data.name);
-    }
-
-    if (ns.length === 0) {
-      return undefined;
-    }
-
-    ns.reverse();
-    return ns.join("$");
-  }
-
-  private getCurrentFrame(): Frame {
-    const currentFrame = this.frames.at(-1);
-    if (currentFrame === undefined) {
-      throw new Error("[unreachable] empty frames stack");
-    }
-    return currentFrame;
-  }
-
-  // <Binding> => ns map
-  private localBindings = new WeakMap<Binding<unknown>, string>();
-
-  private compileLetValue(src: TypedExpr & { type: "let" }): string[] {
-    const name =
-      src.pattern.type === "identifier"
-        ? this.getCurrentFrame().preventShadow(src.pattern.name)
-        : this.getUniqueName();
-
-    this.frames.push(
-      new Frame(
-        {
-          type: "let",
-          name,
-          binding: src.pattern.type === "identifier" ? src.pattern : undefined,
-        },
-        this,
-      ),
-    );
-
-    // Ignore compiled output
-    const scopedBinding = this.getBlockNs();
-
-    if (scopedBinding === undefined) {
-      throw new Error("[unreachable] empty ns stack");
-    }
-
-    if (src.pattern.type === "identifier") {
-      this.localBindings.set(src.pattern, scopedBinding);
-    } else {
-      this.compilePattern(name, src.pattern);
-    }
-
-    const value = this.compileAsStatements(
-      src.value,
-      { type: "assign_var", name: scopedBinding, declare: true },
-
-      undefined,
-    );
-
-    this.frames.pop();
-    return value;
-  }
-
-  private compileJsApplication(jsCall: JsApplicationType): [string[], string] {
-    switch (jsCall.type) {
-      case "infix": {
-        const [lStatements, lExpr] = this.compileAsExpr(jsCall.left);
-        const [rStatements, rExpr] = this.compileAsExpr(jsCall.right);
-        const needsParens_ = needsParens(jsCall, jsCall.left);
-        const lCWithParens = needsParens_ ? `(${lExpr})` : lExpr;
-
-        return [
-          [...lStatements, ...rStatements],
-          `${lCWithParens} ${jsCall.operator} ${rExpr}`,
-        ];
-      }
-
-      case "prefix": {
-        const [lStatements, compiledExpr] = this.compileAsExpr(jsCall.expr);
-        const needsParens_ = needsParens(jsCall, jsCall.expr);
-        const compiledWithParens = needsParens_
-          ? `(${compiledExpr})`
-          : compiledExpr;
-
-        return [lStatements, `!${compiledWithParens}`];
-      }
-
-      case "structural-eq":
-        return this.compileJsApplicationHelper([], "Bool$_eq", [
-          jsCall.left,
-          jsCall.right,
-        ]);
-
-      case "call":
-        return this.compileJsApplicationHelper(
-          ...this.compileAsExpr(jsCall.caller),
-          jsCall.args,
-        );
-    }
-  }
-
-  private compileJsApplicationHelper(
-    callerStatemens: string[],
-    callerExpr: string,
-    srcArgs: TypedExpr[],
-  ): [string[], string] {
-    const statements: string[] = [...callerStatemens];
-    const args: string[] = [];
-    for (const arg of srcArgs) {
-      const [argStatements, argExpr] = this.compileAsExpr(arg);
-      args.push(argExpr);
-      statements.push(...argStatements);
-    }
-    return [statements, `${callerExpr}(${args.join(", ")})`];
-  }
-
-  private compileAsExpr(src: TypedExpr): CompileExprResult {
-    switch (src.type) {
-      case "syntax-err":
-        throw new Error("[unreachable]");
-
-      case "constant":
-        return [[], constToString(src.value)];
-
-      case "list-literal": {
-        const buf: string[] = [];
-        const ret = src.values.reduceRight((acc, x) => {
-          const [sts, expr] = this.compileAsExpr(x);
-          buf.push(...sts);
-          return `List$Cons(${expr}, ${acc})`;
-        }, "List$Nil");
-        return [buf, ret];
-      }
-
-      case "identifier": {
-        if (src.resolution === undefined) {
-          throw new Error("[unreachable] unresolved var: " + src.name);
-        }
-
-        switch (src.resolution.type) {
-          case "global-variable": {
-            const ns = src.resolution.namespace ?? this.ns;
-            if (ns === undefined) {
-              return [[], src.name];
-            }
-
-            return [[], `${sanitizeNamespace(ns)}$${src.name}`];
-          }
-
-          case "constructor": {
-            if (src.resolution.namespace) {
-              const builtinLookup = builtinValues[src.name];
-              if (builtinLookup !== undefined) {
-                return [[], builtinLookup];
-              }
-            }
-
-            const ns = src.resolution.namespace ?? this.ns;
-            if (ns === undefined) {
-              return [[], src.name];
-            }
-
-            return [[], `${sanitizeNamespace(ns)}$${src.name}`];
-          }
-
-          case "local-variable": {
-            const lookup = this.localBindings.get(src.resolution.binding);
-            if (lookup === undefined) {
-              throw new Error(
-                `[unreachable] undefined identifier (${src.name})`,
-              );
-            }
-            return [[], lookup];
-          }
-        }
-      }
-
-      case "application": {
-        const appType = toApplicationType(src);
-        return this.compileJsApplication(appType);
-      }
-
-      case "let": {
-        const value = this.compileLetValue(src);
-        const [bodyStatements, bodyExpr] = this.compileAsExpr(src.body);
-        return [[...value, ...bodyStatements], bodyExpr];
-      }
-
-      case "fn":
-      case "if":
-      case "match": {
-        const name = this.getUniqueName();
-        const statements = this.compileAsStatements(
-          src,
-          { type: "assign_var", name, declare: true },
-          undefined,
-        );
-
-        return [statements, name];
-      }
-    }
-  }
+  private tailCallIdent: t.Identifier | undefined;
 
   private isTailCall(
     src: TypedExpr & { type: "application" },
@@ -323,7 +72,8 @@ export class Compiler {
     }
 
     if (src.caller.resolution === undefined) {
-      throw new Error("[unreachable] undefined resolution");
+      // This should be unreachable
+      return false;
     }
 
     switch (src.caller.resolution.type) {
@@ -336,498 +86,1363 @@ export class Compiler {
     }
   }
 
-  private compileAsStatements(
+  private nextId = 0;
+  genFreshId(): string {
+    return `GEN__${this.nextId++}`;
+  }
+
+  constructor(
+    private ns: string,
+    private options: CompileOptions,
+  ) {}
+
+  private getCurrentFrame(): Frame {
+    const frame = this.frames.at(-1);
+    if (frame === undefined) {
+      throw new Error("empty frames stack");
+    }
+    return frame;
+  }
+
+  private precomputeValue(
+    expr: TypedExpr,
+    makeIdent = () => this.makeFreshIdent(),
+  ): t.Identifier {
+    const jsExpr = this.compileExprAsJsExpr(expr, undefined);
+    if (jsExpr.type === "Identifier") {
+      return jsExpr;
+    }
+
+    const freshIdent = makeIdent();
+    this.statementsBuf.push({
+      type: "VariableDeclaration",
+      kind: "const",
+      declarations: [
+        {
+          type: "VariableDeclarator",
+          id: freshIdent,
+          init: jsExpr,
+        },
+      ],
+    });
+    return freshIdent;
+  }
+
+  private makeFreshIdent(): t.Identifier {
+    const name = this.makeJsLetPathName(this.genFreshId());
+    return { type: "Identifier", name };
+  }
+
+  private compileExprAsJsStms(
     src: TypedExpr,
-    as: CompilationMode,
     tailPosCaller: Binding<unknown> | undefined,
-  ): string[] {
+    as: CompilationMode,
+  ): void {
     switch (src.type) {
       case "syntax-err":
         throw new Error("[unreachable]");
 
-      case "application": {
-        if (this.isTailCall(src, tailPosCaller)) {
-          this.tailCall = true;
-          const ret: string[] = [];
-          let i = 0;
-          for (const arg of src.args) {
-            const [statements, expr] = this.compileAsExpr(arg);
-            ret.push(...statements);
-            ret.push(`GEN_TC__${i} = ${expr};`);
-            i++;
-          }
-          return ret;
+      case "if": {
+        if (as.type === "assign_var" && as.declare) {
+          this.statementsBuf.push({
+            type: "VariableDeclaration",
+            kind: "let",
+            declarations: [{ type: "VariableDeclarator", id: as.ident }],
+          });
         }
-      }
 
-      case "list-literal":
-      case "identifier":
-      case "constant": {
-        const [statements, expr] = this.compileAsExpr(src);
-        return [...statements, wrapJsExpr(expr, as)];
-      }
-
-      case "let": {
-        const value = this.compileLetValue(src);
-        const bodyStatements = this.compileAsStatements(
-          src.body,
-          as,
-          tailPosCaller,
+        const test = this.compileExprAsJsExpr(src.condition, undefined);
+        const [, thenBranchStmts] = this.wrapStatements(() =>
+          this.compileExprAsJsStms(src.then, tailPosCaller, doNotDeclare(as)),
         );
-        return [...value, ...bodyStatements];
-      }
 
-      case "fn": {
-        const wasTailCall = this.tailCall;
-        this.tailCall = false;
+        const [, elseBranchStmts] = this.wrapStatements(() =>
+          this.compileExprAsJsStms(src.else, tailPosCaller, doNotDeclare(as)),
+        );
 
-        const name =
-          as.type === "assign_var" && as.declare
-            ? as.name
-            : this.getUniqueName();
-
-        const frame = this.frames.at(-1);
-        const callerBinding =
-          frame?.data.type === "let" ? frame.data.binding : undefined;
-
-        const newFrame = new Frame({ type: "fn" }, this);
-        this.frames.push(newFrame);
-
-        const params = src.params.map((param) => {
-          if (param.type !== "identifier") {
-            const name = this.getUniqueName();
-            this.compilePattern(name, param);
-            return name;
-          } else {
-            const paramName = newFrame.preventShadow(param.name);
-            this.localBindings.set(param, paramName);
-            return paramName;
-          }
+        this.statementsBuf.push({
+          type: "IfStatement",
+          test: test,
+          consequent: {
+            type: "BlockStatement",
+            directives: [],
+            body: thenBranchStmts,
+          },
+          alternate: {
+            type: "BlockStatement",
+            directives: [],
+            body: elseBranchStmts,
+          },
         });
 
-        const fnBody = this.compileAsStatements(
-          src.body,
-          { type: "return" },
-          callerBinding,
-        );
-
-        this.frames.pop();
-
-        const wrappedFnBody = this.tailCall
-          ? [
-              "while (true) {",
-              ...indentBlock([
-                ...params.map((p, i) => `const ${p} = GEN_TC__${i};`),
-                ...fnBody,
-              ]),
-              "}",
-            ]
-          : fnBody;
-
-        const tcParams = this.tailCall
-          ? src.params.map((_, index) => `GEN_TC__${index}`)
-          : params;
-
-        this.tailCall = wasTailCall;
-        return [
-          //
-          `function ${name}(${tcParams.join(", ")}) {`,
-          ...indentBlock(wrappedFnBody),
-          `}`,
-          ...(as.type === "assign_var" && as.declare
-            ? []
-            : [wrapJsExpr(name, as)]),
-        ];
-      }
-
-      case "if": {
-        const [conditionStatements, conditionExpr] = this.compileAsExpr(
-          src.condition,
-        );
-
-        const thenBlock = this.compileAsStatements(
-          src.then,
-          doNotDeclare(as),
-
-          tailPosCaller,
-        );
-
-        const elseBlock = this.compileAsStatements(
-          src.else,
-          doNotDeclare(as),
-
-          tailPosCaller,
-        );
-
-        return [
-          ...conditionStatements,
-          ...declarationStatements(as),
-          `if (${conditionExpr}) {`,
-          ...indentBlock(thenBlock),
-          `} else {`,
-          ...indentBlock(elseBlock),
-          `}`,
-        ];
+        return;
       }
 
       case "match": {
-        const matched = this.getUniqueName();
-        const statements = this.compileAsStatements(
-          src.expr,
-          { type: "assign_var", name: matched, declare: true },
-
-          undefined,
-        );
-
-        const compiledMatchExpr: string[] = [
-          ...statements,
-          ...declarationStatements(as),
-        ];
-
-        let first = true;
-        for (const [pattern, ret] of src.clauses) {
-          const compiled = this.compilePattern(matched, pattern);
-
-          const retStatements = this.compileAsStatements(
-            ret,
-            doNotDeclare(as),
-
-            tailPosCaller,
-          );
-
-          const condition =
-            compiled.length === 0 ? "true" : compiled.join(" && ");
-
-          compiledMatchExpr.push(
-            first ? `if (${condition}) {` : `} else if (${condition}) {`,
-            ...indentBlock(retStatements),
-          );
-          first = false;
+        if (as.type === "assign_var" && as.declare) {
+          this.statementsBuf.push({
+            type: "VariableDeclaration",
+            kind: "let",
+            declarations: [{ type: "VariableDeclarator", id: as.ident }],
+          });
         }
 
-        compiledMatchExpr.push(
-          `} else {`,
-          ...indentBlock([`throw new Error("[non exhaustive match]")`]),
-          `}`,
-        );
+        const matchedExpr = this.precomputeValue(src.expr);
 
-        return compiledMatchExpr;
+        const checks: [
+          condition: t.Expression | undefined,
+          statements: t.Statement[],
+        ][] = [];
+
+        for (const [pattern, retExpr] of src.clauses) {
+          const exprs = this.compileCheckPatternConditions(
+            pattern,
+            matchedExpr,
+          );
+
+          const [, stms] = this.wrapStatements(() => {
+            this.compileExprAsJsStms(retExpr, tailPosCaller, doNotDeclare(as));
+          });
+
+          if (exprs.length === 0) {
+            checks.push([undefined, stms]);
+            break;
+          }
+
+          checks.push([joinAndExprs(exprs), stms]);
+        }
+
+        const helper = (index: number): t.Statement[] => {
+          if (index >= checks.length) {
+            return [
+              {
+                type: "ThrowStatement",
+                argument: {
+                  type: "NewExpression",
+                  callee: { type: "Identifier", name: "Error" },
+                  arguments: [
+                    {
+                      type: "StringLiteral",
+                      value: "[non exhaustive match]",
+                    },
+                  ],
+                },
+              },
+            ];
+          }
+
+          const [condition, stms] = checks[index]!;
+          if (condition === undefined) {
+            return stms;
+          }
+
+          const next = helper(index + 1);
+          const isIfElse = next.length === 1 && next[0]!.type === "IfStatement";
+          return [
+            {
+              type: "IfStatement",
+              test: condition,
+              consequent: {
+                type: "BlockStatement",
+                directives: [],
+                body: stms,
+              },
+              alternate: isIfElse
+                ? next[0]!
+                : {
+                    type: "BlockStatement",
+                    directives: [],
+                    body: next,
+                  },
+            },
+          ];
+        };
+
+        this.statementsBuf.push(...helper(0));
+        return;
+      }
+
+      case "application":
+        if (this.isTailCall(src, tailPosCaller)) {
+          const tailCallIdent = this.makeFreshIdent();
+          this.tailCallIdent = tailCallIdent;
+
+          for (let i = 0; i < src.args.length; i++) {
+            const expr = this.compileExprAsJsExpr(src.args[i]!, tailPosCaller);
+            this.statementsBuf.push({
+              type: "ExpressionStatement",
+              expression: {
+                type: "AssignmentExpression",
+                operator: "=",
+                left: { type: "Identifier", name: `GEN_TC__${i}` },
+                right: expr,
+              },
+            });
+          }
+          return;
+        }
+      // Attention: fallthrough to the next branch for application
+
+      case "constant":
+      case "list-literal":
+      case "struct-literal":
+      case "identifier":
+      case "fn":
+      case "field-access":
+      case "let":
+      default: {
+        const expr = this.compileExprAsJsExpr(src, tailPosCaller);
+        switch (as.type) {
+          case "assign_var":
+            if (as.declare) {
+              const exprsWithDictParams: t.Expression =
+                as.dictParams.length === 0
+                  ? expr
+                  : {
+                      type: "ArrowFunctionExpression",
+                      async: false,
+                      params: as.dictParams,
+                      body: expr,
+                      expression: true,
+                    };
+
+              this.statementsBuf.push({
+                type: "VariableDeclaration",
+                kind: "const",
+                declarations: [
+                  {
+                    type: "VariableDeclarator",
+                    id: as.ident,
+                    init: exprsWithDictParams,
+                  },
+                ],
+              });
+            } else {
+              this.statementsBuf.push({
+                type: "ExpressionStatement",
+                expression: {
+                  type: "AssignmentExpression",
+                  operator: "=",
+                  left: as.ident,
+                  right: expr,
+                },
+              });
+            }
+            break;
+
+          case "return":
+            this.statementsBuf.push({
+              type: "ReturnStatement",
+              argument: expr,
+            });
+            break;
+        }
       }
     }
   }
 
-  compile(src: TypedModule, ns: string): string {
-    this.ns = ns;
-    const decls: string[] = [];
+  private compileExprAsJsExpr(
+    src: TypedExpr,
+    tailPosCaller: Binding<unknown> | undefined,
+  ): t.Expression {
+    switch (src.type) {
+      case "syntax-err":
+        throw new Error("[unreachable]");
 
-    for (const typeDecl of src.typeDeclarations) {
-      if (typeDecl.type === "extern") {
-        continue;
+      case "constant":
+        return compileConst(src.value);
+
+      // The following branches rely on statement mode compilation
+      case "match":
+      case "if": {
+        const ident = this.makeFreshIdent();
+        this.compileExprAsJsStms(src, undefined, {
+          type: "assign_var",
+          ident,
+          declare: true,
+          dictParams: [],
+        });
+        return ident;
       }
 
-      for (const variant of typeDecl.variants) {
-        if (variant.name in builtinValues) {
-          break;
+      case "application": {
+        if (src.caller.type === "identifier") {
+          if (src.caller.name === "==" && isPrimitiveEq(src.args)) {
+            return {
+              type: "BinaryExpression",
+              operator: "===",
+              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
+              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
+            };
+          }
+
+          const infixName = toJsInfix(src.caller.name);
+          if (infixName !== undefined) {
+            return {
+              type: "BinaryExpression",
+              operator: infixName,
+              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
+              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
+            };
+          }
+
+          const infixLogicalName = toJsInfixLogical(src.caller.name);
+          if (infixLogicalName !== undefined) {
+            return {
+              type: "LogicalExpression",
+              operator: infixLogicalName,
+              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
+              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
+            };
+          }
+
+          const prefixName = toJsPrefix(src.caller.name);
+          if (prefixName !== undefined) {
+            return {
+              type: "UnaryExpression",
+              operator: prefixName,
+              argument: this.compileExprAsJsExpr(src.args[0]!, undefined),
+              prefix: true,
+            };
+          }
         }
-        const def = getVariantImpl(variant, ns);
-        decls.push(def);
+
+        return {
+          type: "CallExpression",
+          callee: this.compileExprAsJsExpr(src.caller, undefined),
+          arguments: src.args.map((arg) =>
+            this.compileExprAsJsExpr(arg, undefined),
+          ),
+        };
+      }
+
+      case "identifier": {
+        if (src.resolution === undefined) {
+          throw new Error("[unreachable] undefined resolution");
+        }
+
+        switch (src.resolution.type) {
+          case "constructor":
+            if (
+              src.resolution.declaration.name === "Bool" &&
+              src.resolution.namespace === "Bool"
+            ) {
+              switch (src.resolution.variant.name) {
+                case "True":
+                  return { type: "BooleanLiteral", value: true };
+                case "False":
+                  return { type: "BooleanLiteral", value: false };
+
+                default:
+                  throw new Error("[unreachable] invalid boolean constructor");
+              }
+            }
+            return makeGlobalIdentifier(
+              src.resolution.namespace,
+              src.resolution.variant.name,
+            );
+
+          case "local-variable": {
+            const res = this.bindingsJsName.get(src.resolution.binding);
+            if (res === undefined) {
+              throw new Error(
+                "[unreachable] undefined resolution for: " +
+                  src.resolution.binding.name,
+              );
+            }
+            return res;
+          }
+
+          case "global-variable": {
+            let ident: t.Identifier;
+            if (src.resolution.declaration.binding.name === "==") {
+              ident = EQ_IDENTIFIER;
+            } else {
+              ident = makeGlobalIdentifier(
+                src.resolution.namespace,
+                src.resolution.declaration.binding.name,
+              );
+            }
+
+            // TODO what about let exprs?
+            const traitArgs = resolvePassedDicts(
+              src.resolution.declaration.binding.$,
+              src.$,
+            );
+
+            if (traitArgs.length === 0) {
+              return ident;
+            }
+
+            return {
+              type: "CallExpression",
+              callee: ident,
+              arguments: traitArgs,
+            };
+          }
+        }
+      }
+
+      case "let": {
+        let jsPatternName: string;
+        if (src.pattern.type === "identifier") {
+          jsPatternName = this.getCurrentFrame().registerLocal(
+            src.pattern.name,
+          );
+        } else {
+          jsPatternName = this.genFreshId();
+        }
+        this.frames.push(
+          new Frame({
+            type: "let",
+            jsPatternName,
+            binding:
+              src.pattern.type === "identifier" ? src.pattern : undefined,
+          }),
+        );
+
+        const freshIdent: t.Identifier = {
+          type: "Identifier",
+          name: this.makeJsLetPathName(),
+        };
+        if (src.pattern.type === "identifier") {
+          this.bindingsJsName.set(src.pattern, freshIdent);
+        }
+        const value = this.compileExprAsJsExpr(src.value, undefined);
+        this.statementsBuf.push({
+          type: "VariableDeclaration",
+          kind: "const",
+          declarations: [
+            {
+              type: "VariableDeclarator",
+              id: freshIdent,
+              init: value,
+            },
+          ],
+        });
+        this.compileCheckPatternConditions(src.pattern, freshIdent);
+
+        this.frames.pop();
+
+        return this.compileExprAsJsExpr(src.body, tailPosCaller);
+
+        // we could call this.bindingsJsName.delete(src.pattern) here
+      }
+
+      case "fn": {
+        const callerBinding = (() => {
+          const curFrame = this.getCurrentFrame();
+          if (curFrame.data.type !== "let") {
+            return undefined;
+          }
+          return curFrame.data.binding;
+        })();
+
+        const wasTailCall = this.tailCallIdent;
+        this.tailCallIdent = undefined;
+
+        this.frames.push(new Frame({ type: "fn" }));
+        const cleanup = () => {
+          this.frames.pop();
+          this.tailCallIdent = wasTailCall;
+        };
+
+        const [{ params }, stms] = this.wrapStatements(() => {
+          const params = src.params.map((param): t.Identifier => {
+            if (param.type === "identifier") {
+              const name = this.getCurrentFrame().registerLocal(param.name);
+              const ident: t.Identifier = {
+                type: "Identifier",
+                name,
+              };
+              this.bindingsJsName.set(param, ident);
+              return ident;
+            }
+
+            const freshId = this.genFreshId();
+            const ident: t.Identifier = {
+              type: "Identifier",
+              name: freshId,
+            };
+
+            this.compileCheckPatternConditions(param, ident);
+
+            return ident;
+          });
+          this.compileExprAsJsStms(src.body, callerBinding, {
+            type: "return",
+          });
+          return { params };
+        });
+
+        const bodyStms: t.Expression | t.BlockStatement = (() => {
+          if (this.tailCallIdent !== undefined) {
+            return {
+              type: "BlockStatement",
+              directives: [],
+              body: [
+                {
+                  type: "WhileStatement",
+                  test: { type: "BooleanLiteral", value: true },
+                  body: {
+                    type: "BlockStatement",
+                    directives: [],
+                    body: [
+                      ...params.map(
+                        (id, index): t.Statement => ({
+                          type: "VariableDeclaration",
+                          kind: "const",
+                          declarations: [
+                            {
+                              type: "VariableDeclarator",
+                              id,
+                              init: {
+                                type: "Identifier",
+                                name: `GEN_TC__${index}`,
+                              },
+                            },
+                          ],
+                        }),
+                      ),
+                      ...stms,
+                    ],
+                  },
+                },
+              ],
+            };
+          }
+
+          if (stms.length === 1 && stms[0]!.type === "ReturnStatement") {
+            return stms[0].argument!;
+          }
+
+          return {
+            type: "BlockStatement",
+            directives: [],
+            body: stms,
+          };
+        })();
+
+        const params_ =
+          this.tailCallIdent === undefined
+            ? params
+            : params.map(
+                (_, i): t.Identifier => ({
+                  type: "Identifier",
+                  name: `GEN_TC__${i}`,
+                }),
+              );
+
+        cleanup();
+        return {
+          type: "ArrowFunctionExpression",
+          async: false,
+          expression: true,
+          params: params_,
+          body: bodyStms,
+        };
+      }
+
+      case "list-literal":
+        return src.values.reduceRight<t.Expression>(
+          (prev, src): t.Expression => {
+            const compiledExpr = this.compileExprAsJsExpr(src, undefined);
+            return {
+              type: "CallExpression",
+              callee: { type: "Identifier", name: "List$Cons" },
+              arguments: [compiledExpr, prev],
+            };
+          },
+          { type: "Identifier", name: "List$Nil" },
+        );
+
+      case "struct-literal": {
+        const resolution = src.struct.resolution;
+        if (resolution === undefined) {
+          throw new Error(
+            "[unreachable] undefined resolution for struct declaration",
+          );
+        }
+
+        const properties: t.ObjectProperty[] = [];
+
+        let spreadIdentifier: t.Identifier | undefined;
+        for (const declarationField of resolution.declaration.fields) {
+          const structLitField = src.fields.find(
+            (f) => f.field.name === declarationField.name,
+          );
+
+          if (structLitField !== undefined) {
+            properties.push({
+              type: "ObjectProperty",
+              key: { type: "Identifier", name: structLitField.field.name },
+              value: this.compileExprAsJsExpr(structLitField.value, undefined),
+              shorthand: true,
+              computed: false,
+            });
+          } else if (src.spread === undefined) {
+            throw new Error("[unreachable] missing fields");
+          } else {
+            if (spreadIdentifier === undefined) {
+              spreadIdentifier = this.precomputeValue(src.spread);
+            }
+
+            properties.push({
+              type: "ObjectProperty",
+              key: { type: "Identifier", name: declarationField.name },
+              value: {
+                type: "MemberExpression",
+                object: spreadIdentifier,
+                property: { type: "Identifier", name: declarationField.name },
+                computed: false,
+              },
+              shorthand: true,
+              computed: false,
+            });
+          }
+        }
+
+        return { type: "ObjectExpression", properties };
+      }
+
+      case "field-access":
+        return {
+          type: "MemberExpression",
+          object: this.compileExprAsJsExpr(src.struct, undefined),
+          property: { type: "Identifier", name: src.field.name },
+          computed: false,
+        };
+    }
+  }
+
+  /**
+   * compile a pattern to a list of conditions used to test if `matchedExpr` matches the pattern
+   * */
+  private compileCheckPatternConditions(
+    pattern: TypedMatchPattern,
+    matchedExpr: t.Expression,
+  ): t.Expression[] {
+    switch (pattern.type) {
+      case "identifier": {
+        if (pattern.name === "_") {
+          return [];
+        }
+        // const name = frame.registerLocal(pattern.name);
+        // const identifier: t.Identifier = { type: "Identifier", name };
+        this.bindingsJsName.set(pattern, matchedExpr);
+        return [];
+      }
+
+      case "constructor": {
+        if (
+          pattern.resolution === undefined ||
+          pattern.resolution.type !== "constructor"
+        ) {
+          throw new Error("[unreachable] invalid pattern resolution");
+        }
+
+        if (
+          pattern.resolution.namespace === "Bool" &&
+          pattern.resolution.declaration.name === "Bool"
+        ) {
+          return [
+            pattern.resolution.variant.name === "True"
+              ? matchedExpr
+              : {
+                  type: "UnaryExpression",
+                  prefix: false,
+                  operator: "!",
+                  argument: matchedExpr,
+                },
+          ];
+        }
+
+        const variantName = pattern.resolution.variant.name;
+        const index = pattern.resolution.declaration.variants.findIndex(
+          (variant) => variant.name === variantName,
+        );
+        if (index === -1) {
+          throw new Error("[unreachable] variant not found in declaration");
+        }
+
+        const repr = getAdtReprType(pattern.resolution.declaration);
+        const eqLeftSide: t.Expression = (() => {
+          switch (repr) {
+            case "enum":
+              return matchedExpr;
+
+            case "unboxed":
+            case "default":
+              return {
+                type: "MemberExpression",
+                object: matchedExpr,
+                property: TAG_FIELD,
+                computed: false,
+              };
+          }
+        })();
+
+        const singleVariantDeclaration =
+          pattern.resolution.declaration.variants.length === 1;
+
+        return [
+          ...(singleVariantDeclaration
+            ? []
+            : [
+                {
+                  type: "BinaryExpression",
+                  operator: "===",
+                  left: eqLeftSide,
+                  right: { type: "NumericLiteral", value: index },
+                } as t.Expression,
+              ]),
+          ...pattern.args.flatMap((arg, index) =>
+            this.compileCheckPatternConditions(
+              arg,
+              repr === "unboxed"
+                ? matchedExpr
+                : {
+                    type: "MemberExpression",
+                    object: matchedExpr,
+                    property: { type: "Identifier", name: `_${index}` },
+                    computed: false,
+                  },
+            ),
+          ),
+        ];
+      }
+
+      case "lit":
+        switch (pattern.literal.type) {
+          // As of now, literals are always checked via the === operator
+          // keep the switch to enforce match on future variants
+          case "string":
+          case "int":
+          case "float":
+          case "char":
+            return [
+              {
+                type: "BinaryExpression",
+                operator: "===",
+                left: matchedExpr,
+                right: compileConst(pattern.literal),
+              },
+            ];
+        }
+    }
+  }
+
+  private wrapStatements<T>(f: () => T): [T, t.Statement[]] {
+    const buf = this.statementsBuf;
+    this.statementsBuf = [];
+    const e = f();
+    const stms = this.statementsBuf;
+    this.statementsBuf = buf;
+    return [e, stms];
+  }
+
+  private makeJsLetPathName(trailing?: string): string {
+    const buf: string[] = [];
+    let isFn = false;
+    for (const frame of reversed(this.frames)) {
+      if (frame.data.type === "fn") {
+        isFn = true;
+        break;
+      }
+
+      buf.push(frame.data.jsPatternName);
+    }
+
+    if (!isFn) {
+      buf.push(sanitizeNamespace(this.ns));
+    }
+
+    buf.reverse();
+    if (trailing !== undefined) {
+      buf.push(trailing);
+    }
+    if (buf.length === 0) {
+      throw new Error("[unreachable] empty stack");
+    }
+    return buf.join("$");
+  }
+
+  private compileDeclaration(decl: TypedDeclaration): t.Statement[] {
+    if (decl.extern) {
+      return [];
+    }
+
+    this.frames.push(
+      new Frame({
+        type: "let",
+        jsPatternName: decl.binding.name,
+        binding: decl.binding,
+      }),
+    );
+
+    this.compileExprAsJsStms(decl.value, undefined, {
+      type: "assign_var",
+      declare: true,
+      ident: makeGlobalIdentifier(this.ns, decl.binding.name),
+      dictParams: findDeclarationDictsParams(decl.binding.$.asType()),
+    });
+    this.frames.pop();
+
+    const stms = this.statementsBuf;
+    this.statementsBuf = [];
+    return stms;
+  }
+
+  private compileVariant(
+    variant: TypedTypeVariant,
+    index: number,
+    repr: AdtReprType,
+  ): t.Statement {
+    return {
+      type: "VariableDeclaration",
+      kind: "const",
+      declarations: [
+        {
+          type: "VariableDeclarator",
+          id: makeGlobalIdentifier(this.ns, variant.name),
+          init: makeVariantBody(index, variant.args.length, repr),
+        },
+      ],
+    };
+  }
+
+  private compileAdt(
+    decl: TypedTypeDeclaration & { type: "adt" },
+  ): t.Statement[] {
+    const buf: t.Statement[] = [];
+
+    if (this.ns !== "Bool" && decl.name !== "Bool") {
+      buf.push(
+        ...decl.variants.map(
+          (d, index): t.Statement =>
+            this.compileVariant(d, index, getAdtReprType(decl)),
+        ),
+      );
+    }
+
+    if (
+      // Bool equality is implemented inside core
+      decl.name !== "Bool" &&
+      this.shouldDeriveTrait("Eq", decl)
+    ) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Eq_${sanitizeNamespace(this.ns)}$${decl.name}`,
+            },
+            init: deriveEqAdt(decl),
+          },
+        ],
+      });
+    }
+
+    if (
+      // Bool and List show are implemented inside core
+      decl.name !== "Bool" &&
+      decl.name !== "List" &&
+      this.shouldDeriveTrait("Show", decl)
+    ) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Show_${sanitizeNamespace(this.ns)}$${decl.name}`,
+            },
+            init: deriveShowAdt(decl),
+          },
+        ],
+      });
+    }
+
+    return buf;
+  }
+
+  private compileStruct(
+    decl: TypedTypeDeclaration & { type: "struct" },
+  ): t.Statement[] {
+    const buf: t.Statement[] = [];
+    if (this.shouldDeriveTrait("Eq", decl)) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Eq_${sanitizeNamespace(this.ns)}$${decl.name}`,
+            },
+            init: deriveEqStruct(decl),
+          },
+        ],
+      });
+    }
+
+    if (this.shouldDeriveTrait("Show", decl)) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Show_${sanitizeNamespace(this.ns)}$${decl.name}`,
+            },
+            init: deriveShowStruct(decl),
+          },
+        ],
+      });
+    }
+
+    return buf;
+  }
+
+  compile(src: TypedModule): string {
+    const body: t.Statement[] = [];
+
+    for (const decl of src.typeDeclarations) {
+      switch (decl.type) {
+        case "extern":
+          break;
+        case "adt":
+          body.push(...this.compileAdt(decl));
+          break;
+        case "struct":
+          body.push(...this.compileStruct(decl));
+          break;
       }
     }
 
     for (const decl of src.declarations) {
-      const nameSpacedBinding = moduleNamespacedBinding(decl.binding.name, ns);
-      if (decl.extern) {
-        continue;
-      }
-
-      this.frames.push(
-        new Frame(
-          {
-            type: "let",
-            name: moduleNamespacedBinding(decl.binding.name, ns),
-            binding: decl.binding,
-          },
-          this,
-        ),
-      );
-
-      const statements = this.compileAsStatements(
-        decl.value,
-        { type: "assign_var", name: nameSpacedBinding, declare: true },
-        undefined,
-      );
-
-      decls.push(...statements, "");
-      this.frames.pop();
+      const outNode = this.compileDeclaration(decl);
+      body.push(...outNode);
     }
 
-    return decls.join("\n");
+    return generate({
+      type: "Program",
+      body,
+      directives: [],
+      sourceType: "script",
+    }).code;
   }
 
-  private compilePattern(
-    matchSubject: string,
-    pattern: MatchPattern,
-  ): string[] {
-    switch (pattern.type) {
-      case "lit":
-        if (pattern.literal.type === "char") {
-          return [`${matchSubject}.toString() === "${pattern.literal.value}"`];
-        }
-
-        return [`${matchSubject} === ${constToString(pattern.literal)}`];
-      case "identifier":
-        this.localBindings.set(pattern, matchSubject);
-        return [];
-      case "constructor": {
-        const conditions: string[] = [
-          matchCondition(matchSubject, pattern.name),
-        ];
-
-        let i = 0;
-        for (const nested of pattern.args) {
-          const index = i++;
-          const compiled = this.compilePattern(
-            `${matchSubject}.a${index}`,
-            nested,
-          );
-          conditions.push(...compiled);
-        }
-
-        return conditions;
-      }
+  private shouldDeriveTrait(
+    trait: string,
+    typedDeclaration: TypedTypeDeclaration,
+  ): boolean {
+    if (
+      this.options.allowDeriving !== undefined &&
+      !this.options.allowDeriving.includes(trait)
+    ) {
+      return false;
     }
+
+    const deps = TVar.typeImplementsTrait(
+      {
+        type: "named",
+        name: typedDeclaration.name,
+        moduleName: this.ns,
+        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
+      },
+      trait,
+    );
+
+    return deps !== undefined;
   }
 }
 
-function constToString(k: ConstLiteral): string {
-  switch (k.type) {
+function compileConst(ast: ConstLiteral): t.Expression {
+  switch (ast.type) {
     case "int":
     case "float":
-      return k.value.toString();
+      return { type: "NumericLiteral", value: ast.value };
+
     case "string":
-      return `"${k.value}"`;
     case "char":
-      return `new String("${k.value}")`;
+      return {
+        type: "TemplateLiteral",
+        expressions: [],
+        quasis: [
+          {
+            type: "TemplateElement",
+            value: { raw: ast.value, cooked: ast.value },
+            tail: true,
+          },
+        ],
+      };
   }
 }
 
-function getJsInfix(srcName: string) {
-  switch (srcName) {
+function toJsPrefix(
+  kestrelCaller: string,
+): t.UnaryExpression["operator"] | undefined {
+  switch (kestrelCaller) {
+    case "!":
+      return kestrelCaller;
+
+    default:
+      return undefined;
+  }
+}
+
+function toJsInfix(
+  kestrelCaller: string,
+): BinaryExpression["operator"] | undefined {
+  switch (kestrelCaller) {
+    case "+":
+    case "+.":
     case "++":
       return "+";
-    case "+.":
-      return "+";
-    case "-.":
-      return "-";
+
+    case "*":
     case "*.":
       return "*";
+
+    case "-":
+    case "-.":
+      return "-";
+
+    case "/":
     case "/.":
       return "/";
-    case "^":
-      return "**";
 
-    case "||":
-    case "&&":
-    case "==":
-    case "!=":
-    case "<":
     case "<=":
-    case ">":
+    case "<":
     case ">=":
-    case "+":
-    case "-":
-    case "*":
-    case "/":
-    case "%":
-    case "**":
-      return srcName;
+    case ">":
+      return kestrelCaller;
 
     default:
       return undefined;
   }
 }
 
-type JsInfix = NonNullable<ReturnType<typeof getJsInfix>>;
-
-function getJsPrefix(srcName: string) {
-  switch (srcName) {
-    case "!":
-      return srcName;
+function toJsInfixLogical(
+  kestrelCaller: string,
+): t.LogicalExpression["operator"] | undefined {
+  switch (kestrelCaller) {
+    case "&&":
+    case "||":
+      return kestrelCaller;
 
     default:
       return undefined;
   }
 }
-type JsPrefix = NonNullable<ReturnType<typeof getJsPrefix>>;
 
-type JsApplicationType =
-  | { type: "infix"; operator: JsInfix; left: TypedExpr; right: TypedExpr }
-  | { type: "prefix"; operator: JsPrefix; expr: TypedExpr }
-  | { type: "call"; caller: TypedExpr; args: TypedExpr[] }
-  | { type: "structural-eq"; left: TypedExpr; right: TypedExpr };
-
-// left-to-right operators
-const infixPrecTable: Record<JsInfix, number> = {
-  "||": 3,
-  "&&": 4,
-  "==": 8,
-  "!=": 8,
-  "<": 10,
-  "<=": 10,
-  ">": 10,
-  ">=": 10,
-  "+": 11,
-  "-": 11,
-  "*": 12,
-  "/": 12,
-  "%": 12,
-  // TODO this is right associative
-  // compilation might be wrong
-  "**": 13,
-};
-
-const prefixPrecTable: Record<JsPrefix, number> = {
-  "!": 14,
-};
-
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_precedence#table
-function precTable(appType: JsApplicationType): number {
-  switch (appType.type) {
-    case "infix":
-      return infixPrecTable[appType.operator];
-
-    case "prefix":
-      return prefixPrecTable[appType.operator];
-
-    case "call":
-    case "structural-eq":
-      return 17;
-  }
+function makeGlobalIdentifier(ns: string, bindingName: string): t.Identifier {
+  return {
+    type: "Identifier",
+    name: `${sanitizeNamespace(ns)}$${bindingName}`,
+  };
 }
 
-function toApplicationType(
-  src: TypedExpr & { type: "application" },
-): JsApplicationType {
-  if (isStructuralEq(src.caller, src.args)) {
-    return {
-      type: "structural-eq",
-      left: src.args[0]!,
-      right: src.args[1]!,
-    };
+function makeVariantBody(
+  index: number,
+  argsNumber: number,
+  repr: AdtReprType,
+): t.Expression {
+  if (repr === "enum") {
+    return { type: "NumericLiteral", value: index };
   }
 
-  if (src.caller.type === "identifier") {
-    const mappedToInfix = getJsInfix(src.caller.name);
-    if (mappedToInfix !== undefined) {
-      return {
-        type: "infix",
-        operator: mappedToInfix,
-        left: src.args[0]!,
-        right: src.args[1]!,
-      };
-    }
+  const params = Array.from(
+    { length: argsNumber },
+    (_, i): t.Identifier => ({
+      type: "Identifier",
+      name: `_${i}`,
+    }),
+  );
 
-    const mappedToPrefix = getJsPrefix(src.caller.name);
-    if (mappedToPrefix !== undefined) {
-      return {
-        type: "prefix",
-        operator: mappedToPrefix,
-        expr: src.args[0]!,
-      };
-    }
+  const ret: t.Expression =
+    repr === "unboxed"
+      ? params[0]!
+      : {
+          type: "ObjectExpression",
+          properties: [
+            {
+              type: "ObjectProperty",
+              key: TAG_FIELD,
+              value: { type: "NumericLiteral", value: index },
+              computed: false,
+              shorthand: false,
+            },
+            ...params.map(
+              (p): t.ObjectProperty => ({
+                type: "ObjectProperty",
+                key: p,
+                value: p,
+                computed: false,
+                shorthand: true,
+              }),
+            ),
+          ],
+        };
+
+  if (argsNumber === 0) {
+    return ret;
   }
 
   return {
-    type: "call",
-    caller: src.caller,
-    args: src.args,
+    type: "ArrowFunctionExpression",
+    params,
+    async: false,
+    expression: true,
+    body: ret,
   };
 }
 
-function needsParens(self: JsApplicationType, innerLeft: TypedExpr): boolean {
-  if (innerLeft.type !== "application") {
-    return false;
-  }
+class Frame {
+  constructor(
+    public readonly data:
+      | {
+          type: "let";
+          jsPatternName: string;
+          binding: TypedBinding | undefined;
+        }
+      | { type: "fn" },
+  ) {}
 
-  const inner = toApplicationType(innerLeft);
+  private usedVars = new Map<string, number>();
 
-  const precSelf = precTable(self);
-  const precInner = precTable(inner);
-  return precInner < precSelf;
-}
+  registerLocal(name: string): string {
+    const timesUsed = this.usedVars.get(name) ?? 0;
+    this.usedVars.set(name, timesUsed + 1);
 
-function indentBlock(lines: string[]): string[] {
-  return lines.map((line) => `  ${line}`);
-}
-
-function getVariantImpl(
-  { name, args }: TypeVariant<unknown>,
-  ns: string | undefined,
-): string {
-  const nsName = moduleNamespacedBinding(name, ns);
-
-  if (args.length === 0) {
-    return `const ${nsName} = { $: "${name}" };
-`;
-  } else {
-    const argsList = args.map((_t, i) => `a${i}`).join(", ");
-    return `function ${nsName}(${argsList}) {
-  return { $: "${name}", ${argsList} };
-}`;
+    return timesUsed === 0 ? name : `${name}$${timesUsed}`;
   }
 }
 
-function matchCondition(matchingIdent: string, patternName: string): string {
-  switch (patternName) {
-    case "True":
-      return `${matchingIdent}`;
+function findDeclarationDictsParams(type: Type): t.Identifier[] {
+  const buf: string[] = [];
 
-    case "False":
-      return `!${matchingIdent}`;
+  function helper(type: Type) {
+    switch (type.type) {
+      case "fn":
+        for (const arg of type.args) {
+          helper(arg);
+        }
+        helper(type.return);
+        return;
 
-    case "Unit":
-      return "true";
+      case "named": {
+        for (const arg of type.args) {
+          helper(arg);
+        }
+        return;
+      }
 
-    default:
-      return `${matchingIdent}.$ === "${patternName}"`;
+      case "var": {
+        const resolved = type.var.resolve();
+        switch (resolved.type) {
+          case "bound":
+            helper(resolved.value);
+            return;
+          case "unbound":
+            for (const trait of resolved.traits) {
+              const name = `${trait}_${resolved.id}`;
+              if (!buf.includes(name)) {
+                buf.push(name);
+              }
+            }
+            return;
+        }
+      }
+    }
   }
+
+  helper(type);
+
+  return buf.map((name) => ({ type: "Identifier", name }));
 }
 
-function doNotDeclare(as: CompilationMode): CompilationMode {
-  return as.type === "assign_var" ? { ...as, declare: false } : as;
+function traitDepsForNamedType(
+  t: Type & { type: "named" },
+  trait: string,
+): Type[] {
+  const freshArgs = t.args.map((_) => TVar.fresh());
+
+  // TODO simplify this workaround
+  const genericType: Type = {
+    type: "named",
+    moduleName: t.moduleName,
+    name: t.name,
+    args: freshArgs.map((a) => a.asType()),
+  };
+
+  const deps = TVar.typeImplementsTrait(genericType, trait);
+  if (deps === undefined) {
+    throw new Error("[unreachable] type does not implement given trait");
+  }
+
+  const out: Type[] = [];
+
+  for (const dep of deps) {
+    const index = freshArgs.findIndex((v) => {
+      const r = v.resolve();
+      return r.type === "unbound" && r.id === dep.id;
+    });
+
+    const a = t.args[index]!;
+    out.push(a);
+  }
+
+  return out;
 }
 
-function declarationStatements(as: CompilationMode): string[] {
-  return as.type === "assign_var" && as.declare ? [`let ${as.name};`] : [];
-}
+function applyTraitToType(type: Type, trait: string): string {
+  const resolved = resolveType(type);
 
-function wrapJsExpr(expr: string, as: CompilationMode) {
-  switch (as.type) {
-    case "assign_var": {
-      const constModifier = as.declare ? "const " : "";
-      return `${constModifier}${as.name} = ${expr};`;
+  switch (resolved.type) {
+    case "fn":
+      throw new Error("TODO bound fn");
+
+    case "named": {
+      let name = `${trait}_${sanitizeNamespace(resolved.moduleName)}$${resolved.name}`;
+      const deps = traitDepsForNamedType(resolved, trait).map((dep) =>
+        applyTraitToType(dep, trait),
+      );
+
+      if (deps.length !== 0) {
+        name += `(${deps.join(", ")})`;
+      }
+
+      return name;
     }
 
-    case "return":
-      return `return ${expr};`;
+    case "unbound": {
+      if (!resolved.traits.includes(trait)) {
+        throw new Error(
+          "TODO unbound does not impl needed trait: " +
+            JSON.stringify(resolved),
+        );
+      }
+
+      return `${trait}_${resolved.id}`;
+    }
   }
 }
 
-function moduleNamespacedBinding(name: string, ns: string | undefined): string {
-  const ns_ = ns === undefined ? ns : sanitizeNamespace(ns);
-  return ns_ === undefined ? name : `${ns_}$${name}`;
+function resolvePassedDicts(
+  genExpr: TVar,
+  instantiatedExpr: TVar,
+): t.Identifier[] {
+  const buf: t.Identifier[] = [];
+
+  // e.g. { 0 => Set("Show", "Debug") }
+  const alreadyVisitedVarsIds: Map<number, Set<string>> = new Map();
+
+  function checkedPush(genExprId: number, trait: string, name: string) {
+    let lookup = alreadyVisitedVarsIds.get(genExprId);
+    if (lookup === undefined) {
+      lookup = new Set();
+      alreadyVisitedVarsIds.set(genExprId, lookup);
+    }
+
+    if (lookup.has(trait)) {
+      // Do not add again
+      return;
+    }
+
+    lookup.add(trait);
+    buf.push({ type: "Identifier", name });
+  }
+
+  function helper(genExpr: Type, instantiatedExpr: Type) {
+    switch (genExpr.type) {
+      case "fn": {
+        const resolved = resolveType(instantiatedExpr);
+
+        if (resolved.type !== "fn") {
+          throw new Error(
+            "[unreachable] unexpected value of kind: " + resolved.type,
+          );
+        }
+
+        const instantiatedFn = resolved;
+
+        for (let i = 0; i < genExpr.args.length; i++) {
+          const genArg = genExpr.args[i]!,
+            instArg = instantiatedFn.args[i]!;
+
+          helper(genArg, instArg);
+        }
+
+        helper(genExpr.return, instantiatedFn.return);
+        return;
+      }
+
+      case "named": {
+        const resolved = resolveType(instantiatedExpr);
+        if (resolved.type !== "named") {
+          throw new Error(
+            "[unreachable] unexpected value of kind: " + resolved.type,
+          );
+        }
+
+        const instantiatedConcreteType = resolved;
+
+        for (let i = 0; i < genExpr.args.length; i++) {
+          const genArg = genExpr.args[i]!,
+            instArg = instantiatedConcreteType.args[i]!;
+
+          helper(genArg, instArg);
+        }
+        return;
+      }
+
+      case "var": {
+        const resolvedGenExpr = genExpr.var.resolve();
+        switch (resolvedGenExpr.type) {
+          case "bound":
+            return helper(resolvedGenExpr.value, instantiatedExpr);
+
+          case "unbound": {
+            for (const trait of resolvedGenExpr.traits) {
+              checkedPush(
+                resolvedGenExpr.id,
+                trait,
+                applyTraitToType(instantiatedExpr, trait),
+              );
+            }
+
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  helper(genExpr.asType(), instantiatedExpr.asType());
+  return buf;
 }
 
-export type CompileOptions = {
-  externs?: Record<string, string>;
-  optimize?: boolean;
-  entrypoint?: {
-    module: string;
-    type: ConcreteType;
-  };
-};
+function* reversed<T>(xs: T[]): Generator<T> {
+  for (let i = xs.length - 1; i >= 0; i--) {
+    yield xs[i]!;
+  }
+}
 
-export const defaultEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
+// Project compilation
+
+export const defaultEntryPoint: NonNullable<
+  CompileProjectOptions["entrypoint"]
+> = {
   module: "Main",
   type: {
     type: "named",
@@ -837,13 +1452,22 @@ export const defaultEntryPoint: NonNullable<CompileOptions["entrypoint"]> = {
   },
 };
 
+export type CompileProjectOptions = {
+  externs?: Record<string, string>;
+  optimize?: boolean;
+  entrypoint?: {
+    module: string;
+    type: ConcreteType;
+  };
+};
+
 export function compileProject(
   typedProject: Record<string, TypedModule>,
   {
     entrypoint = defaultEntryPoint,
     externs = {},
     optimize = false,
-  }: CompileOptions = {},
+  }: CompileProjectOptions = {},
 ): string {
   const entry = typedProject[entrypoint.module];
   if (entry === undefined) {
@@ -857,7 +1481,6 @@ export function compileProject(
     throw new Error("Entrypoint needs a value called `main`.");
   }
 
-  const compiler = new Compiler();
   const visited = new Set<string>();
 
   const buf: string[] = [];
@@ -883,10 +1506,7 @@ export function compileProject(
       buf.push(extern);
     }
 
-    const out = compiler.compile(
-      optimize ? optimizeModule(module) : module,
-      ns,
-    );
+    const out = compile(ns, optimize ? optimizeModule(module) : module);
 
     buf.push(out);
   }
@@ -899,6 +1519,44 @@ export function compileProject(
   return buf.join("\n\n");
 }
 
-function sanitizeNamespace(ns: string): string {
-  return ns?.replace(/\//g, "$");
+function doNotDeclare(as: CompilationMode): CompilationMode {
+  return as.type === "assign_var" ? { ...as, declare: false } : as;
+}
+
+function isPrimitiveEq(args: TypedExpr[]): boolean {
+  const resolvedType = args[0]!.$.resolve();
+
+  if (resolvedType.type === "unbound" || resolvedType.value.type === "fn") {
+    return false;
+  }
+
+  if (
+    resolvedType.value.name === "Int" &&
+    resolvedType.value.moduleName === "Int"
+  ) {
+    return true;
+  }
+
+  if (
+    resolvedType.value.name === "Float" &&
+    resolvedType.value.moduleName === "Float"
+  ) {
+    return true;
+  }
+
+  if (
+    resolvedType.value.name === "String" &&
+    resolvedType.value.moduleName === "String"
+  ) {
+    return true;
+  }
+
+  if (
+    resolvedType.value.name === "Char" &&
+    resolvedType.value.moduleName === "Char"
+  ) {
+    return true;
+  }
+
+  return false;
 }

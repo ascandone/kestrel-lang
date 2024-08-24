@@ -1,19 +1,17 @@
+import { Position } from "../../parser";
 import { TypeScheme, typeToString } from "../type";
 import { TypedExpr, TypedModule } from "../typedAst";
 
 export type InlayHint = {
   label: string;
-  offset: number;
+  positition: Position;
   paddingLeft: boolean;
 };
 
 // TODO implement via visitor
 class InlayHintBuf {
   public inlayHints: InlayHint[] = [];
-  constructor(
-    private readonly scheme: TypeScheme,
-    private readonly document: PositionedDocument,
-  ) {}
+  constructor(private readonly scheme: TypeScheme) {}
 
   inlayHintsOfExpr(ast: TypedExpr): void {
     switch (ast.type) {
@@ -37,22 +35,20 @@ class InlayHintBuf {
 
           const argWasPipe = arg.type === "application" && arg.isPipe;
 
-          const isArgOnNewline =
-            this.document.positionAt(ast.span[1]).line !==
-            this.document.positionAt(arg.span[1]).line;
+          const isArgOnNewline = ast.range.end.line !== arg.range.end.line;
 
           if (isArgOnNewline) {
             if (!argWasPipe) {
               this.inlayHints.push({
                 label: typeToString(arg.$.asType(), this.scheme),
-                offset: arg.span[1],
+                positition: arg.range.end,
                 paddingLeft: true,
               });
             }
 
             this.inlayHints.push({
               label: typeToString(resolved.value.return, this.scheme),
-              offset: ast.span[1],
+              positition: ast.range.end,
               paddingLeft: true,
             });
           }
@@ -95,21 +91,12 @@ class InlayHintBuf {
   }
 }
 
-export type PositionedDocument = {
-  positionAt: (offset: number) => {
-    line: number;
-  };
-};
-
-export function getInlayHints(
-  module: TypedModule,
-  positionedDocument: PositionedDocument,
-): InlayHint[] {
+export function getInlayHints(module: TypedModule): InlayHint[] {
   return module.declarations.flatMap<InlayHint>((d) => {
     if (d.extern) {
       return [];
     }
-    const buf = new InlayHintBuf(d.scheme, positionedDocument);
+    const buf = new InlayHintBuf(d.scheme);
 
     buf.inlayHintsOfExpr(d.value);
     return buf.inlayHints;

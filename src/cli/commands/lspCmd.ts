@@ -1,6 +1,4 @@
 import {
-  CompletionItem,
-  CompletionItemKind,
   DiagnosticSeverity,
   InlayHint,
   InlayHintKind,
@@ -15,11 +13,10 @@ import {
   _Connection,
   createConnection,
 } from "vscode-languageserver";
-import { TextDocument, Range } from "vscode-languageserver-textdocument";
+import { TextDocument } from "vscode-languageserver-textdocument";
 import {
   AntlrLexerError,
   AntlrParsingError,
-  Span,
   UntypedModule,
   parse,
 } from "../../parser";
@@ -32,7 +29,6 @@ import {
   hoverToMarkdown,
   UntypedProject,
   findReferences,
-  autocompletable,
   functionSignatureHint,
   getInlayHints,
 } from "../../typecheck";
@@ -41,6 +37,7 @@ import { ErrorInfo, Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../formatter";
 import { Config, readConfig } from "../config";
+import { getCompletionItems } from "../../typecheck/typedAst/completion";
 
 type Connection = _Connection;
 
@@ -65,7 +62,7 @@ function parseErrToDiagnostic(
         message: err.description,
         source: "Parsing",
         severity: DiagnosticSeverity.Error,
-        range: spannedToRange(document, err.span),
+        range: err.range,
       },
     ],
   };
@@ -91,11 +88,6 @@ function lexerErrToDiagnostic(
   document: TextDocument,
   err: AntlrLexerError,
 ): PublishDiagnosticsParams {
-  const position: Position = {
-    character: err.column,
-    line: err.line,
-  };
-
   return {
     uri: document.uri,
     diagnostics: [
@@ -103,7 +95,7 @@ function lexerErrToDiagnostic(
         message: err.description,
         source: "Parsing",
         severity: DiagnosticSeverity.Error,
-        range: { start: position, end: position },
+        range: { start: err.position, end: err.position },
       },
     ],
   };
@@ -122,7 +114,7 @@ function errorInfoToDiagnostic(
           `${e.description.errorName}\n\n${e.description.shortDescription()}`,
       ),
       severity: toDiagnosticSeverity(e.description.severity),
-      range: spannedToRange(document, e.span),
+      range: e.range,
     })),
   };
 }
@@ -307,12 +299,12 @@ export async function lspCmd() {
     if (module?.typed === undefined) {
       return;
     }
-    return getInlayHints(module.typed, module.document).map(
+    return getInlayHints(module.typed).map(
       (hint): InlayHint => ({
         label: hint.label,
         paddingLeft: hint.paddingLeft,
         kind: InlayHintKind.Type,
-        position: module.document.positionAt(hint.offset),
+        position: hint.positition,
       }),
     );
   });
@@ -338,9 +330,7 @@ export async function lspCmd() {
       return;
     }
 
-    const offset = module.document.offsetAt(position);
-
-    const hint = functionSignatureHint(module.typed, offset);
+    const hint = functionSignatureHint(module.typed, position);
 
     if (hint === undefined) {
       return;
@@ -371,40 +361,13 @@ export async function lspCmd() {
       return;
     }
 
-    const offset = module.document.offsetAt(position);
+    const kind = getCompletionItems(module.typed, position, {
+      getModuleByNs(ns) {
+        return state.moduleByNs(ns)?.typed;
+      },
+    });
 
-    const autocompletable_ = autocompletable(module.typed, offset);
-
-    if (autocompletable_ === undefined) {
-      return undefined;
-    }
-
-    const import_ = module.typed.imports.some(
-      (import_) => import_.ns === autocompletable_.namespace,
-    );
-
-    if (!import_) {
-      return;
-    }
-
-    const importedModule = state.moduleByNs(autocompletable_.namespace);
-    if (importedModule?.typed === undefined) {
-      return;
-    }
-
-    return importedModule.typed.declarations
-      .filter((d) => d.pub)
-      .map<CompletionItem>((d) => ({
-        label: d.binding.name,
-        kind: CompletionItemKind.Function,
-        documentation:
-          d.docComment === undefined
-            ? undefined
-            : {
-                kind: MarkupKind.Markdown,
-                value: d.docComment,
-              },
-      }));
+    return kind;
   });
 
   connection.onReferences(({ textDocument, position }) => {
@@ -419,18 +382,14 @@ export async function lspCmd() {
     }
 
     const refs =
-      findReferences(
-        ns,
-        module.document.offsetAt(position),
-        state.getTypedProject(),
-      )?.references ?? [];
+      findReferences(ns, position, state.getTypedProject())?.references ?? [];
 
     return refs.map(([referenceNs, referenceExpr]) => {
       const referenceModule = state.moduleByNs(referenceNs)!;
 
       return {
         uri: referenceModule.document.uri,
-        range: spannedToRange(referenceModule.document, referenceExpr.span),
+        range: referenceExpr.range,
       };
     });
   });
@@ -450,11 +409,7 @@ export async function lspCmd() {
       return;
     }
 
-    const refs = findReferences(
-      ns,
-      module.document.offsetAt(position),
-      state.getTypedProject(),
-    );
+    const refs = findReferences(ns, position, state.getTypedProject());
 
     if (refs === undefined) {
       return;
@@ -467,10 +422,7 @@ export async function lspCmd() {
 
         getOrDefault(changes, module.document.uri, []).push({
           newText: newName,
-          range: spannedToRange(
-            module.document,
-            refs.resolution.declaration.binding.span,
-          ),
+          range: refs.resolution.declaration.binding.range,
         });
 
         break;
@@ -494,7 +446,7 @@ export async function lspCmd() {
 
       getOrDefault(changes, refModule.document.uri, []).push({
         newText,
-        range: spannedToRange(refModule.document, ident.span),
+        range: ident.range,
       });
     }
 
@@ -513,12 +465,14 @@ export async function lspCmd() {
     }
 
     const formatted_ = format(module.untyped);
+
+    const start: Position = { line: 0, character: 0 };
+    const len = module.document.getText().length;
+    const end = module.document.positionAt(len);
+
     return [
       {
-        range: spannedToRange(module.document, [
-          0,
-          module.document.getText().length,
-        ]),
+        range: { start, end },
         newText: formatted_,
       } as TextEdit,
     ];
@@ -536,18 +490,18 @@ export async function lspCmd() {
 
     const decls = module.typed.declarations.map((st) => ({
       name: st.binding.name,
-      span: st.span,
+      range: st.range,
     }));
     const typeDecl = module.typed.typeDeclarations.map((st) => ({
       name: st.name,
-      span: st.span,
+      range: st.range,
     }));
-    return decls.concat(typeDecl).map(({ span, name }) => ({
+    return decls.concat(typeDecl).map(({ range, name }) => ({
       kind: SymbolKind.Variable,
       name,
       location: {
         uri: textDocument.uri,
-        range: spannedToRange(module.document, span),
+        range,
       },
     }));
   });
@@ -558,11 +512,11 @@ export async function lspCmd() {
       return;
     }
 
-    return module.typed.declarations.map(({ span, binding, scheme }) => {
+    return module.typed.declarations.map(({ range, binding, scheme }) => {
       const tpp = typeToString(binding.$.asType(), scheme);
       return {
         command: { title: tpp, command: "noop" },
-        range: spannedToRange(module.document, span),
+        range,
       };
     });
   });
@@ -575,8 +529,7 @@ export async function lspCmd() {
       return;
     }
 
-    const offset = module.document.offsetAt(position);
-    const resolved = goToDefinitionOf(module.typed, offset);
+    const resolved = goToDefinitionOf(module.typed, position);
     if (resolved === undefined) {
       return undefined;
     }
@@ -588,7 +541,7 @@ export async function lspCmd() {
 
     return {
       uri: definitionDoc.uri,
-      range: spannedToRange(definitionDoc, resolved.span),
+      range: resolved.range,
     };
   });
 
@@ -598,8 +551,7 @@ export async function lspCmd() {
       return;
     }
 
-    const offset = module.document.offsetAt(position);
-    const hoverData = hoverOn(module.ns, module.typed, offset);
+    const hoverData = hoverOn(module.ns, module.typed, position);
     if (hoverData === undefined) {
       return undefined;
     }
@@ -607,7 +559,7 @@ export async function lspCmd() {
     const [scheme, hover] = hoverData;
     const md = hoverToMarkdown(scheme, hover);
     return {
-      range: spannedToRange(module.document, hover.span),
+      range: hover.range,
       contents: {
         kind: MarkupKind.Markdown,
         value: md,
@@ -617,13 +569,6 @@ export async function lspCmd() {
 
   documents.listen(connection);
   connection.listen();
-}
-
-function spannedToRange(doc: TextDocument, [start, end]: Span): Range {
-  return {
-    start: doc.positionAt(start),
-    end: doc.positionAt(end),
-  };
 }
 
 function toDiagnosticSeverity(severity: Severity): DiagnosticSeverity {

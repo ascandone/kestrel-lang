@@ -1,12 +1,12 @@
 import { showErrorLine } from "./errors/showErrorLine";
-import { Span } from "./parser";
+import { Range } from "./parser";
 import { Type, typeToString } from "./typecheck";
 import { col, withDisabled } from "./utils/colors";
 
 export type Severity = "error" | "warning";
 
 export type ErrorInfo = {
-  span: Span;
+  range: Range;
   description: ErrorDescription;
 };
 
@@ -227,6 +227,19 @@ export class TraitNotSatified implements ErrorDescription {
   }
 }
 
+export class AmbiguousTypeVar implements ErrorDescription {
+  severity: Severity = "error";
+  errorName: string = "Ambiguous type variable";
+  constructor(
+    public trait: string,
+    public type: string,
+  ) {}
+
+  shortDescription(): string {
+    return `An ambiguous type variable prevents the trait '${this.trait}' to be solved in '${this.type}'`;
+  }
+}
+
 export class TypeMismatch implements ErrorDescription {
   constructor(
     public expected: Type,
@@ -254,9 +267,42 @@ export class TypeMismatch implements ErrorDescription {
   }
 }
 
+export class InvalidField implements ErrorDescription {
+  severity: Severity = "error";
+  errorName: string = "Invalid field";
+
+  constructor(
+    public type: string,
+    public field: string,
+  ) {}
+
+  shortDescription(): string {
+    return `The field '${this.field}' does not exist on type '${this.type}'`;
+  }
+}
+
+export class MissingRequiredFields implements ErrorDescription {
+  severity: Severity = "error";
+  errorName: string = "Missing required fields";
+
+  constructor(
+    public type: string,
+    public fields: string[],
+  ) {}
+
+  shortDescription(): string {
+    if (this.fields.length === 1) {
+      return `Missing field '${this.fields[0]}' (required on type '${this.type}')`;
+    }
+
+    const missingFields = this.fields.map((f) => `'${f}'`).join(", ");
+    return `Missing the following fields: ${missingFields} (required on type '${this.type}')`;
+  }
+}
+
 export function errorInfoToString(
   src: string,
-  { description, span }: ErrorInfo,
+  { description, range }: ErrorInfo,
   disableColors: boolean = false,
 ): string {
   return withDisabled(disableColors, () => {
@@ -268,6 +314,6 @@ export function errorInfoToString(
 
 ${description.shortDescription()}
 
-${showErrorLine(src, span)}`;
+${showErrorLine(src, range)}`;
   });
 }
