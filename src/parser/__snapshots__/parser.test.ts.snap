@@ -702,10 +702,16 @@ exports[`Fault tolerance > faulty infix 1`] = `
           },
         },
         "right": {
-          "range": [
-            11,
-            11,
-          ],
+          "range": {
+            "end": {
+              "character": 11,
+              "line": 0,
+            },
+            "start": {
+              "character": 11,
+              "line": 0,
+            },
+          },
           "type": "syntax-err",
         },
         "type": "infix",
@@ -798,10 +804,16 @@ exports[`Fault tolerance > missing string lit termination 1`] = `
         },
       },
       "value": {
-        "range": [
-          7,
-          9,
-        ],
+        "range": {
+          "end": {
+            "character": 9,
+            "line": 0,
+          },
+          "start": {
+            "character": 7,
+            "line": 0,
+          },
+        },
         "type": "syntax-err",
       },
     },
