@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { UntypedImport, unsafeParse } from "../parser";
+import { Position, Range, UntypedImport, unsafeParse } from "../parser";
 import {
   Deps,
   resetTraitsRegistry,
@@ -2246,6 +2246,8 @@ describe("prelude", () => {
 });
 
 describe("modules", () => {
+  const mockPosition: Position = { line: 0, character: 0 };
+  const mockRange: Range = { start: mockPosition, end: mockPosition };
   test("implicitly imports values of the modules in the prelude", () => {
     const [A] = tcProgram(
       "A",
@@ -2261,9 +2263,9 @@ describe("modules", () => {
       { A },
       [
         {
-          span: [0, 0],
+          range: mockRange,
           ns: "A",
-          exposing: [{ type: "value", name: "x", span: [0, 0] }],
+          exposing: [{ type: "value", name: "x", range: mockRange }],
         },
       ],
     );
@@ -2288,10 +2290,15 @@ describe("modules", () => {
       { A },
       [
         {
-          span: [0, 0],
+          range: mockRange,
           ns: "A",
           exposing: [
-            { type: "type", name: "MyType", exposeImpl: false, span: [0, 0] },
+            {
+              type: "type",
+              name: "MyType",
+              exposeImpl: false,
+              range: mockRange,
+            },
           ],
         },
       ],
@@ -2314,10 +2321,15 @@ describe("modules", () => {
       { A },
       [
         {
-          span: [0, 0],
+          range: mockRange,
           ns: "A",
           exposing: [
-            { type: "type", name: "MyType", exposeImpl: true, span: [0, 0] },
+            {
+              type: "type",
+              name: "MyType",
+              exposeImpl: true,
+              range: mockRange,
+            },
           ],
         },
       ],

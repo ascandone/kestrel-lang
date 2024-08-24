@@ -16,7 +16,7 @@ export type PolyTypeAst<TypeResolutionMeta = unknown> = {
   where: TraitDef[];
 };
 
-export type TypeAst<TypeResolutionMeta = unknown> = SpanMeta &
+export type TypeAst<TypeResolutionMeta = unknown> = RangeMeta &
   (
     | {
         type: "var";
@@ -42,7 +42,7 @@ export type UntypedMatchPattern = MatchPattern;
 export type MatchPattern<
   TypeMeta = unknown,
   IdentifierResolutionMeta = unknown,
-> = (TypeMeta & SpanMeta) &
+> = (TypeMeta & RangeMeta) &
   (
     | {
         type: "identifier";
@@ -61,7 +61,7 @@ export type MatchPattern<
   );
 
 export type Binding<TypeMeta = unknown> = { name: string } & TypeMeta &
-  SpanMeta;
+  RangeMeta;
 
 export type SyntaxSugar =
   | {
@@ -71,7 +71,7 @@ export type SyntaxSugar =
     }
   | {
       type: "let#";
-      mapper: SpanMeta & { namespace?: string; name: string };
+      mapper: RangeMeta & { namespace?: string; name: string };
       pattern: MatchPattern;
       value: UntypedExpr;
       body: UntypedExpr;
@@ -91,8 +91,8 @@ export type StructField<
   StructResolutionMeta,
   FieldResolutionMeta,
   SyntaxSugar,
-> = SpanMeta & {
-  field: { name: string } & SpanMeta & FieldResolutionMeta;
+> = RangeMeta & {
+  field: { name: string } & RangeMeta & FieldResolutionMeta;
   value: Expr<
     TypeMeta,
     IdentifierResolutionMeta,
@@ -125,7 +125,7 @@ export type Expr<
     }
   | {
       type: "struct-literal";
-      struct: { name: string } & SpanMeta & StructResolutionMeta;
+      struct: { name: string } & RangeMeta & StructResolutionMeta;
       fields: StructField<
         TypeMeta,
         IdentifierResolutionMeta,
@@ -190,7 +190,7 @@ export type Expr<
         FieldResolutionMeta,
         SyntaxSugar
       >;
-      field: { name: string; structName?: string } & SpanMeta;
+      field: { name: string; structName?: string } & RangeMeta;
     } & FieldResolutionMeta)
   | {
       type: "let";
@@ -258,7 +258,7 @@ export type Expr<
     }
 ) &
   TypeMeta &
-  SpanMeta;
+  RangeMeta;
 
 export type UntypedDeclaration = Declaration<
   unknown,
@@ -275,7 +275,7 @@ export type Declaration<
   StructResolutionMeta,
   FieldResolutionMeta,
   SyntaxSugar,
-> = SpanMeta & {
+> = RangeMeta & {
   pub: boolean;
   binding: Binding<TypeMeta>;
   docComment?: string;
@@ -283,7 +283,7 @@ export type Declaration<
     | {
         inline: boolean;
         extern: false;
-        typeHint?: PolyTypeAst<TypeResolutionMeta> & SpanMeta;
+        typeHint?: PolyTypeAst<TypeResolutionMeta> & RangeMeta;
         value: Expr<
           TypeMeta,
           IdentifierResolutionMeta,
@@ -294,26 +294,26 @@ export type Declaration<
       }
     | {
         extern: true;
-        typeHint: PolyTypeAst<TypeResolutionMeta> & SpanMeta;
+        typeHint: PolyTypeAst<TypeResolutionMeta> & RangeMeta;
       }
   );
 
 export type TypeVariant<TypeMeta, TypeResolutionMeta = unknown> = (TypeMeta &
-  SpanMeta) & {
+  RangeMeta) & {
   name: string;
   args: TypeAst<TypeResolutionMeta>[];
 };
 
-export type StructDeclarationField<TypeMeta> = (TypeMeta & SpanMeta) & {
+export type StructDeclarationField<TypeMeta> = (TypeMeta & RangeMeta) & {
   name: string;
   type_: TypeAst<TypeResolutionMeta>;
 };
 
 export type UntypedTypeVariant = TypeVariant<unknown>;
 export type UntypedTypeDeclaration = TypeDeclaration<unknown>;
-export type TypeDeclaration<TypeMeta> = SpanMeta & {
+export type TypeDeclaration<TypeMeta> = RangeMeta & {
   name: string;
-  params: Array<{ name: string } & SpanMeta>;
+  params: Array<{ name: string } & RangeMeta>;
   docComment?: string;
 } & (
     | { type: "adt"; variants: TypeVariant<TypeMeta>[]; pub: boolean | ".." }
@@ -326,7 +326,7 @@ export type TypeDeclaration<TypeMeta> = SpanMeta & {
   );
 
 export type UntypedExposedValue = ExposedValue<unknown, unknown>;
-export type ExposedValue<ResolvedTypeMeta, ResolvedValueMeta> = SpanMeta &
+export type ExposedValue<ResolvedTypeMeta, ResolvedValueMeta> = RangeMeta &
   (
     | ({
         type: "type";
@@ -340,7 +340,7 @@ export type ExposedValue<ResolvedTypeMeta, ResolvedValueMeta> = SpanMeta &
   );
 
 export type UntypedImport = Import<UntypedExposedValue>;
-export type Import<Exposing> = SpanMeta & {
+export type Import<Exposing> = RangeMeta & {
   ns: string;
   exposing: Exposing[];
 };
@@ -352,5 +352,13 @@ export type UntypedModule = {
   declarations: UntypedDeclaration[];
 };
 
-export type Span = [startIdx: number, endIdx: number];
-export type SpanMeta = { span: Span };
+export type Position = {
+  line: number;
+  character: number;
+};
+export type Range = {
+  start: Position;
+  end: Position;
+};
+
+export type RangeMeta = { range: Range };

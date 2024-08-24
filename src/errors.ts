@@ -1,12 +1,12 @@
 import { showErrorLine } from "./errors/showErrorLine";
-import { Span } from "./parser";
+import { Range } from "./parser";
 import { Type, typeToString } from "./typecheck";
 import { col, withDisabled } from "./utils/colors";
 
 export type Severity = "error" | "warning";
 
 export type ErrorInfo = {
-  span: Span;
+  range: Range;
   description: ErrorDescription;
 };
 
@@ -302,7 +302,7 @@ export class MissingRequiredFields implements ErrorDescription {
 
 export function errorInfoToString(
   src: string,
-  { description, span }: ErrorInfo,
+  { description, range }: ErrorInfo,
   disableColors: boolean = false,
 ): string {
   return withDisabled(disableColors, () => {
@@ -314,6 +314,6 @@ export function errorInfoToString(
 
 ${description.shortDescription()}
 
-${showErrorLine(src, span)}`;
+${showErrorLine(src, range)}`;
   });
 }

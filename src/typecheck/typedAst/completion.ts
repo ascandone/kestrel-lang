@@ -1,16 +1,20 @@
 import { TypedDeclaration, TypedExpr, TypedModule } from "../typedAst";
 import { contains, firstBy } from "./common";
 import { DependenciesProvider } from ".";
-import { CompletionItem, CompletionItemKind } from "vscode-languageserver";
+import {
+  CompletionItem,
+  CompletionItemKind,
+  Position,
+} from "vscode-languageserver";
 import { Instantiator, TVar, typeToString, unify } from "../type";
 
 export function getCompletionItems(
   module: TypedModule,
-  offset: number,
+  position: Position,
   deps: DependenciesProvider,
 ): CompletionItem[] | undefined {
   for (const decl of module.declarations) {
-    const d = new ExprCompletion(module, deps).declCompletion(decl, offset);
+    const d = new ExprCompletion(module, deps).declCompletion(decl, position);
     if (d !== undefined) {
       return d;
     }
@@ -27,20 +31,20 @@ class ExprCompletion {
 
   declCompletion(
     declaration: TypedDeclaration,
-    offset: number,
+    position: Position,
   ): CompletionItem[] | undefined {
     if (declaration.extern) {
       return undefined;
     }
 
-    return this.exprCompletion(declaration.value, offset);
+    return this.exprCompletion(declaration.value, position);
   }
 
   private exprCompletion(
     expr: TypedExpr,
-    offset: number,
+    position: Position,
   ): CompletionItem[] | undefined {
-    if (!contains(expr, offset)) {
+    if (!contains(expr, position)) {
       return undefined;
     }
 
@@ -57,53 +61,55 @@ class ExprCompletion {
         return undefined;
 
       case "fn":
-        return this.exprCompletion(expr.body, offset);
+        return this.exprCompletion(expr.body, position);
 
       case "list-literal":
-        return firstBy(expr.values, (arg) => this.exprCompletion(arg, offset));
+        return firstBy(expr.values, (arg) =>
+          this.exprCompletion(arg, position),
+        );
 
       case "field-access":
         if (expr.field.name === "") {
           return this.fieldCompletion(expr.struct.$);
         }
 
-        return this.exprCompletion(expr.struct, offset);
+        return this.exprCompletion(expr.struct, position);
 
       case "struct-literal":
         return (
           firstBy(
             expr.fields.map((f) => f.value),
-            (arg) => this.exprCompletion(arg, offset),
+            (arg) => this.exprCompletion(arg, position),
           ) ??
           (expr.spread === undefined
             ? undefined
-            : this.exprCompletion(expr.spread, offset))
+            : this.exprCompletion(expr.spread, position))
         );
 
       case "application":
         return (
-          firstBy(expr.args, (arg) => this.exprCompletion(arg, offset)) ??
-          this.exprCompletion(expr.caller, offset)
+          firstBy(expr.args, (arg) => this.exprCompletion(arg, position)) ??
+          this.exprCompletion(expr.caller, position)
         );
 
       case "if":
         return (
-          this.exprCompletion(expr.condition, offset) ??
-          this.exprCompletion(expr.then, offset) ??
-          this.exprCompletion(expr.else, offset)
+          this.exprCompletion(expr.condition, position) ??
+          this.exprCompletion(expr.then, position) ??
+          this.exprCompletion(expr.else, position)
         );
 
       case "let":
         return (
-          this.exprCompletion(expr.value, offset) ??
-          this.exprCompletion(expr.body, offset)
+          this.exprCompletion(expr.value, position) ??
+          this.exprCompletion(expr.body, position)
         );
 
       case "match":
         return (
-          this.exprCompletion(expr.expr, offset) ??
+          this.exprCompletion(expr.expr, position) ??
           firstBy(expr.clauses, ([_pattern, expr]) =>
-            this.exprCompletion(expr, offset),
+            this.exprCompletion(expr, position),
           )
         );
     }

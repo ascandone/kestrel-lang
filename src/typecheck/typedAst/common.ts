@@ -1,4 +1,4 @@
-import { SpanMeta } from "../../parser";
+import { Position, RangeMeta } from "../../parser";
 import {
   TypedDeclaration,
   TypedExpr,
@@ -36,24 +36,24 @@ export type StatementType =
 
 export function statementByOffset(
   module: TypedModule,
-  offset: number,
+  position: Position,
 ): StatementType | undefined {
   // TODO this can be optimized with a binary search
   // or at least with an early exit
   for (const declaration of module.declarations) {
-    if (contains(declaration, offset)) {
+    if (contains(declaration, position)) {
       return { type: "declaration", declaration };
     }
   }
 
   for (const import_ of module.imports) {
-    if (contains(import_, offset)) {
+    if (contains(import_, position)) {
       return { type: "import", import: import_ };
     }
   }
 
   for (const typeDeclaration of module.typeDeclarations) {
-    if (contains(typeDeclaration, offset)) {
+    if (contains(typeDeclaration, position)) {
       return { type: "type-declaration", typeDeclaration };
     }
   }
@@ -61,9 +61,15 @@ export function statementByOffset(
   return undefined;
 }
 
-export function contains(spanned: SpanMeta, offset: number) {
-  const [start, end] = spanned.span;
-  return start <= offset && end >= offset;
+export function gtEqPos(p1: Position, p2: Position): boolean {
+  if (p1.line === p2.line) {
+    return p1.character >= p2.character;
+  }
+  return p1.line > p2.line;
+}
+
+export function contains({ range }: RangeMeta, position: Position) {
+  return gtEqPos(position, range.start) && gtEqPos(range.end, position);
 }
 
 export function foldTree<T>(

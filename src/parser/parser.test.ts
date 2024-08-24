@@ -1,6 +1,7 @@
 import { expect, test, describe } from "vitest";
 import { parse, unsafeParse } from "./parser";
-import { Span, UntypedModule } from "./ast";
+import { UntypedModule } from "./ast";
+import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 
 test("parsing a declaration", () => {
   const src = "let x = 0";
@@ -12,16 +13,16 @@ test("parsing a declaration", () => {
         pub: false,
         extern: false,
         inline: false,
-        binding: { name: "x", span: spanOf(src, "x") },
+        binding: { name: "x", range: rangeOf(src, "x") },
         value: {
           type: "constant",
           value: {
             type: "int",
             value: 0,
           },
-          span: spanOf(src, "0"),
+          range: rangeOf(src, "0"),
         },
-        span: spanOf(src, src),
+        range: rangeOf(src, src),
       },
     ],
   });
@@ -37,31 +38,31 @@ test("parsing two declarations", () => {
         pub: false,
         extern: false,
         inline: false,
-        binding: { name: "x", span: spanOf(src, "x") },
+        binding: { name: "x", range: rangeOf(src, "x") },
         value: {
           type: "constant",
           value: {
             type: "int",
             value: 0,
           },
-          span: spanOf(src, "0"),
+          range: rangeOf(src, "0"),
         },
-        span: spanOf(src, "let x = 0"),
+        range: rangeOf(src, "let x = 0"),
       },
       {
         pub: false,
         extern: false,
         inline: false,
-        binding: { name: "y", span: spanOf(src, "y") },
+        binding: { name: "y", range: rangeOf(src, "y") },
         value: {
           type: "constant",
           value: {
             type: "int",
             value: 1,
           },
-          span: spanOf(src, "1"),
+          range: rangeOf(src, "1"),
         },
-        span: spanOf(src, "let y = 1"),
+        range: rangeOf(src, "let y = 1"),
       },
     ],
   });
@@ -896,8 +897,3 @@ describe("Fault tolerance", () => {
     expect(parse(src).parsed).toMatchSnapshot();
   });
 });
-
-function spanOf(src: string, substr: string = src): Span {
-  const index = src.indexOf(substr);
-  return [index, index + substr.length];
-}

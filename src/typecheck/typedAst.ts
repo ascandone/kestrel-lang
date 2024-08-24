@@ -5,7 +5,7 @@ import {
   Expr,
   Import,
   MatchPattern,
-  SpanMeta,
+  RangeMeta,
   StructDeclarationField,
   StructField,
   TypeAst,
@@ -117,6 +117,6 @@ export type TypedModule = {
   declarations: TypedDeclaration[];
 };
 
-export type Node = TypeMeta & SpanMeta;
+export type Node = TypeMeta & RangeMeta;
 
 export type Identifier = TypedExpr & { type: "identifier" };
