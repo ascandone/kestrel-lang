@@ -6,7 +6,13 @@ export type Doc =
   | { type: "text"; text: string }
   | { type: "concat"; docs: Doc[] }
   | { type: "lines"; lines: number }
-  | { type: "break"; unbroken: string; broken?: string; flex: boolean }
+  | {
+      type: "break";
+      unbroken: string;
+      beforeBreak?: string;
+      afterBreak?: string;
+      flex: boolean;
+    }
   | { type: "force-broken"; doc: Doc }
   | { type: "next-break-fits"; doc: Doc; enabled: boolean }
   | { type: "nest"; doc: Doc; condition: NestCondition }
@@ -25,12 +31,22 @@ export function text(...texts: string[]): Doc {
   return { type: "text", text: texts.join("") };
 }
 
-export function break_(unbroken: string = " ", broken?: string): Doc {
-  return { type: "break", unbroken, broken, flex: false };
+export function break_(
+  unbroken: string = " ",
+  beforeBreak?: string,
+  afterBreak?: string,
+): Doc {
+  return {
+    type: "break",
+    unbroken,
+    beforeBreak,
+    afterBreak,
+    flex: false,
+  };
 }
 
 export function flexBreak(unbroken: string = " ", broken?: string): Doc {
-  return { type: "break", unbroken, broken, flex: true };
+  return { type: "break", unbroken, beforeBreak: broken, flex: true };
 }
 
 export function nextBreakFits(doc: Doc, enabled = true): Doc {
@@ -194,30 +210,41 @@ export function pprint(
   const buf: string[] = [];
   let width = 0;
 
+  function pushText(text: string | undefined) {
+    if (text === undefined) {
+      return;
+    }
+
+    buf.push(text);
+    width += text.length;
+  }
+
+  function pushNewlines(lines: number, indentation: number) {
+    for (let i = 0; i < lines; i++) {
+      buf.push("\n");
+    }
+    for (let i = 0; i < indentation; i++) {
+      buf.push(indentationSymbol);
+    }
+    width = indentation;
+  }
+
   // eslint-disable-next-line no-constant-condition
   while (true) {
     if (docsStack === null) {
       return buf.join("");
     }
-    const mode: Mode = docsStack.mode;
-    const indentation: number = docsStack.indentation;
-    const doc: Doc = docsStack.doc;
+
+    const { mode, indentation, doc } = docsStack;
     docsStack = docsStack.tail;
 
     switch (doc.type) {
       case "text":
-        buf.push(doc.text);
-        width += doc.text.length;
+        pushText(doc.text);
         break;
 
       case "lines":
-        for (let i = 0; i < doc.lines + 1; i++) {
-          buf.push("\n");
-        }
-        for (let i = 0; i < indentation; i++) {
-          buf.push(indentationSymbol);
-        }
-        width = indentation;
+        pushNewlines(doc.lines + 1, indentation);
         break;
 
       case "nest": {
@@ -246,14 +273,9 @@ export function pprint(
             buf.push(doc.unbroken);
             width = unbrokenWidth;
           } else {
-            if (doc.broken !== undefined) {
-              buf.push(doc.broken);
-            }
-            buf.push("\n");
-            for (let i = 0; i < indentation; i++) {
-              buf.push(indentationSymbol);
-            }
-            width = indentation;
+            pushText(doc.beforeBreak);
+            pushNewlines(1, indentation);
+            pushText(doc.afterBreak);
           }
           break;
         }
@@ -261,19 +283,13 @@ export function pprint(
         switch (mode) {
           case "unbroken":
           case "forced-unbroken":
-            buf.push(doc.unbroken);
-            width += doc.unbroken.length;
+            pushText(doc.unbroken);
             break;
           case "broken":
           case "forced-broken":
-            if (doc.broken !== undefined) {
-              buf.push(doc.broken);
-            }
-            buf.push("\n");
-            for (let i = 0; i < indentation; i++) {
-              buf.push(indentationSymbol);
-            }
-            width = indentation;
+            pushText(doc.beforeBreak);
+            pushNewlines(1, indentation);
+            pushText(doc.afterBreak);
             break;
         }
         break;

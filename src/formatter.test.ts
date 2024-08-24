@@ -209,6 +209,48 @@ test("pipe operator in let", () => {
 `).toBeFormatted();
 });
 
+test("allow single line pipelines", () => {
+  expect(`let a = x |> f()
+`).toBeFormatted();
+});
+
+test("force break short pipelines when on many lines", () => {
+  expect(`let a = {
+  x
+  |> f()
+}
+`).toBeFormatted();
+});
+
+test("break long pipelines", () => {
+  expect(`let a = x |> super_long_fn_that_should_wrap() |> super_long_fn_that_should_wrap()
+`).toBeFormatted(
+    `let a = {
+  x
+  |> super_long_fn_that_should_wrap()
+  |> super_long_fn_that_should_wrap()
+}
+`,
+  );
+});
+
+test.todo("bug: import breaks format", () => {
+  expect(`let a = 1
+
+let a = x |> super_long_fn_that_should_wrap() |> super_long_fn_that_should_wrap()
+
+`).toBeFormatted(
+    `let a = {
+  x
+  |> super_long_fn_that_should_wrap()
+  |> super_long_fn_that_should_wrap()
+}
+`,
+  );
+});
+
+test.todo("wrap a fn with only one arg");
+
 test("pipe within a list", () => {
   expect(`let t = Test.describe("descr", [
   example_value
