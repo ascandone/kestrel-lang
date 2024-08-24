@@ -3,7 +3,7 @@ import { parse, unsafeParse } from "./parser";
 import { UntypedModule } from "./ast";
 import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 
-test.todo("parsing a declaration", () => {
+test("parsing a declaration", () => {
   const src = "let x = 0";
   expect(unsafeParse(src)).toEqual<UntypedModule>({
     imports: [],
@@ -28,7 +28,7 @@ test.todo("parsing a declaration", () => {
   });
 });
 
-test.todo("parsing two declarations", () => {
+test("parsing two declarations", () => {
   const src = `let x = 0\nlet y = 1`;
   expect(unsafeParse(src)).toEqual<UntypedModule>({
     imports: [],
