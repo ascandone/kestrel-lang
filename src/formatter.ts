@@ -323,7 +323,11 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         ast.caller.type === "identifier" &&
         isTupleN(ast.caller.namespace, ast.caller.name);
 
-      return nextBreakFits(
+      if (ast.args.length === 0) {
+        return concat(exprToDoc(ast.caller, false), text("()"));
+      }
+
+      return broken(
         group(
           isTuple ? nil : exprToDoc(ast.caller, false),
           text("("),
@@ -345,7 +349,6 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
           break_("", ","),
           text(")"),
         ),
-        false,
       );
     }
 
