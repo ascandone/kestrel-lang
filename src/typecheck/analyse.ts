@@ -11,7 +11,7 @@ import {
 import {
   Binding,
   ConstLiteral,
-  SpanMeta,
+  RangeMeta,
   TypeAst,
   UntypedDeclaration,
   UntypedExpr,
@@ -202,7 +202,7 @@ export class Analysis {
   private checkUnusedVars(expr: Binding) {
     if (this.unusedBindings.has(expr)) {
       this.errors.push({
-        span: expr.span,
+        range: expr.range,
         description: new UnusedVariable(expr.name, "local"),
       });
     }
@@ -221,7 +221,7 @@ export class Analysis {
         const res = this.evaluateResolution(expr, localScope);
         if (res === undefined) {
           this.errors.push({
-            span: expr.span,
+            range: expr.range,
             description: new UnboundVariable(expr.name),
           });
           return;
@@ -406,7 +406,7 @@ export class Analysis {
       case "pipe": {
         if (expr.right.type !== "application") {
           this.errors.push({
-            span: expr.right.span,
+            range: expr.right.range,
             description: new InvalidPipe(),
           });
           return;
@@ -520,22 +520,22 @@ export class Analysis {
   }
 }
 
-function unifyErrToErrorInfo(node: SpanMeta, e: UnifyError): ErrorInfo {
+function unifyErrToErrorInfo(node: RangeMeta, e: UnifyError): ErrorInfo {
   switch (e.type) {
     case "missing-trait":
       return {
-        span: node.span,
+        range: node.range,
         description: new TraitNotSatified(e.type_, e.trait),
       };
 
     case "type-mismatch":
       return {
-        span: node.span,
+        range: node.range,
         description: new TypeMismatch(e.left, e.right),
       };
 
     case "occurs-check":
-      return { span: node.span, description: new OccursCheck() };
+      return { range: node.range, description: new OccursCheck() };
   }
 }
 
