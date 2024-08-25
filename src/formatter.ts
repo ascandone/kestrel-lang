@@ -153,6 +153,14 @@ function block_(...docs: Doc[]): Doc {
   );
 }
 
+function blockOpt_(...docs: Doc[]): Doc {
+  return concat(
+    //
+    nest(break_("", "{"), ...docs),
+    break_("", "", "}"),
+  );
+}
+
 function infixAliasForName(name: string) {
   if (name === "Cons") {
     return "::";
@@ -160,11 +168,11 @@ function infixAliasForName(name: string) {
   return name;
 }
 
-function asBlock(isBlock: boolean, docs: Doc[]): Doc {
+function asBlockOpt(isBlock: boolean, docs: Doc[]): Doc {
   if (isBlock) {
     return concat(...docs);
   }
-  return block_(...docs);
+  return blockOpt_(...docs);
 }
 
 function exprToDocWithComments(ast: UntypedExpr, block: boolean): Doc {
@@ -218,22 +226,26 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
       const fields = sepBy(break_(), fieldLines);
 
       return concat(
+        //
         text(ast.struct.name),
         text(" "),
-        //
         fieldLines.length === 0 ? text("{ }") : block_(fields),
       );
     }
 
-    case "pipe":
-      return broken(
-        asBlock(block, [
+    case "pipe": {
+      const isNewLine = ast.left.range.end.line !== ast.range.end.line;
+      const wrapped = isNewLine ? broken : concat;
+
+      return wrapped(
+        asBlockOpt(block, [
           exprToDoc(ast.left, true),
           break_(),
           text("|> "),
           exprToDoc(ast.right, true),
         ]),
       );
+    }
 
     case "constant":
       return constToDoc(ast.value);
