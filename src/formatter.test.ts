@@ -234,14 +234,17 @@ test("break long pipelines", () => {
   );
 });
 
-test.todo("bug: import breaks format", () => {
-  expect(`let a = 1
+test("bug: import breaks format", () => {
+  expect(`import X
 
-let a = x |> super_long_fn_that_should_wrap() |> super_long_fn_that_should_wrap()
+let a = x |> super_long_fn_that_should_wrap() |> super_long_fn_that_should_wrap() |> super_long_fn_that_should_wrap()
 
 `).toBeFormatted(
-    `let a = {
+    `import X
+
+let a = {
   x
+  |> super_long_fn_that_should_wrap()
   |> super_long_fn_that_should_wrap()
   |> super_long_fn_that_should_wrap()
 }

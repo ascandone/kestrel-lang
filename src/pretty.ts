@@ -165,7 +165,7 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
         break;
 
       case "lines":
-        return true;
+        break;
 
       case "nest": {
         let newIndentation;
