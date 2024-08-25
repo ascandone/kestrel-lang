@@ -209,6 +209,49 @@ test("pipe operator in let", () => {
 `).toBeFormatted();
 });
 
+test("allow single line pipelines", () => {
+  expect(`let a = x |> f()
+`).toBeFormatted();
+});
+
+test("force break short pipelines when on many lines", () => {
+  expect(`let a = {
+  x
+  |> f()
+}
+`).toBeFormatted();
+});
+
+test("break long pipelines", () => {
+  expect(`let a = x |> super_long_fn_that_should_wrap() |> super_long_fn_that_should_wrap()
+`).toBeFormatted(
+    `let a = {
+  x
+  |> super_long_fn_that_should_wrap()
+  |> super_long_fn_that_should_wrap()
+}
+`,
+  );
+});
+
+test("bug: import breaks format", () => {
+  expect(`import X
+
+let a = x |> super_long_fn_that_should_wrap() |> super_long_fn_that_should_wrap() |> super_long_fn_that_should_wrap()
+
+`).toBeFormatted(
+    `import X
+
+let a = {
+  x
+  |> super_long_fn_that_should_wrap()
+  |> super_long_fn_that_should_wrap()
+  |> super_long_fn_that_should_wrap()
+}
+`,
+  );
+});
+
 test("pipe within a list", () => {
   expect(`let t = Test.describe("descr", [
   example_value
@@ -311,6 +354,77 @@ test("toplevel nested let expr", () => {
 `).toBeFormatted();
 });
 
+test("allows spaces in toplevel nested let expr", () => {
+  expect(`let f = {
+  let x = value;
+
+  let y = value2;
+
+  body
+}
+`).toBeFormatted(`let f = {
+  let x = value;
+
+  let y = value2;
+
+  body
+}
+`);
+});
+
+test("force at 1 space in toplevel nested let expr", () => {
+  expect(`let f = { let x = value; body }
+`).toBeFormatted(`let f = {
+  let x = value;
+  body
+}
+`);
+});
+
+test("allows at most 1 space in toplevel nested let expr", () => {
+  expect(`let f = {
+  let x = value;
+
+
+
+  let y = value2;
+
+
+
+  body
+}
+`).toBeFormatted(`let f = {
+  let x = value;
+
+  let y = value2;
+
+  body
+}
+`);
+});
+
+test("allow zero lines after struct", () => {
+  expect(`let f = {
+  let p = Person {
+    name: "hello",
+    age: 42,
+  };
+  body
+}
+`).toBeFormatted();
+});
+
+test("nested let", () => {
+  expect(`let a = {
+  let l1 = {
+    let l2 = value;
+    e
+  };
+  body
+}
+`).toBeFormatted();
+});
+
 test("toplevel nested let# expr", () => {
   expect(`let f = {
   let#and_then x = value;
@@ -396,7 +510,65 @@ test("order between type declrs and declrs", () => {
 });
 
 describe("comments", () => {
-  test.todo("regular comments");
+  test("doc comments on declrs", () => {
+    expect(`let f =
+      // c1
+      0 +
+      // c2
+      1
+`).toBeFormatted(`let f =
+  // c1
+  // c2
+  0 + 1
+`);
+  });
+
+  test("doc comments on declrs", () => {
+    expect(`let f = fn {
+        // c
+        42
+    }
+`).toBeFormatted(`let f = fn {
+  // c
+  42
+}
+`);
+  });
+
+  test("doc comments in if expr", () => {
+    expect(`let f = if b {
+    // c
+    42
+} else {
+  // d
+  100
+}
+`).toBeFormatted(`let f =
+  if b {
+    // c
+    42
+  } else {
+    // d
+    100
+  }
+
+`);
+  });
+
+  test.todo("doc comments in lists", () => {
+    expect(`let f = [
+  0,
+  // comment
+  1,
+]
+`).toBeFormatted(`let f = [
+  0,
+  // comment
+  1,
+]
+
+`);
+  });
 
   test("doc comments on declrs", () => {
     expect(`/// First line
@@ -738,6 +910,13 @@ test("long arg as last arg", () => {
   "something that should wrap 'cause its very long and it's overflowing",
 )
 `;
+  expect(src).toBeFormatted();
+});
+
+test("long arg as last arg", () => {
+  const src = `let x = a_super_long_function_that_wraps_but_does_not_have_space_to_wrap_a_super_long()
+`;
+
   expect(src).toBeFormatted();
 });
 

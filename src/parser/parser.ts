@@ -51,6 +51,7 @@ import Parser, {
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import {
+  LineComment,
   Position,
   Range,
   TypeAst,
@@ -62,6 +63,8 @@ import {
   UntypedModule,
   UntypedTypeDeclaration,
 } from "./ast";
+
+const COMMENTS_CHANNEL = 1;
 
 interface InfixExprContext extends ExprContext {
   _op: { text: string };
@@ -315,8 +318,10 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     range: rangeOfCtx(ctx),
   });
 
-  visitBlockExpr = (ctx: BlockExprContext): UntypedExpr =>
-    this.visit(ctx.block());
+  visitBlockExpr = (ctx: BlockExprContext): UntypedExpr => {
+    const e = this.visit(ctx.block());
+    return { ...e, range: rangeOfCtx(ctx) };
+  };
 
   visitBlockContentExpr = (ctx: BlockContentExprContext): UntypedExpr =>
     this.visit(ctx.expr());
@@ -749,8 +754,19 @@ export function parse(input: string): ParseResult {
   lexer.removeErrorListeners();
   lexer.addErrorListener(lexerErrorListener);
 
-  const tokens = new antlr4.CommonTokenStream(lexer);
-  const parser = new Parser(tokens);
+  const tkStream = new antlr4.CommonTokenStream(lexer);
+  const parser = new Parser(tkStream);
+
+  tkStream.fill();
+
+  const lineComments = tkStream.tokens
+    .filter((tk) => tk.channel === COMMENTS_CHANNEL)
+    .map(
+      (tk): LineComment => ({
+        comment: tk.text,
+        range: rangeOfTk(tk),
+      }),
+    );
 
   const parsingErrorListener = new ParsingErrorListener();
   parser.removeErrorListeners();
@@ -768,6 +784,7 @@ export function parse(input: string): ParseResult {
     .map((d) => new DeclarationVisitor().visit(d));
 
   const parsed: UntypedModule = {
+    lineComments,
     ...(docs === "" ? {} : { moduleDoc: docs }),
     imports: declCtx.import__list().map((i): UntypedImport => {
       return {

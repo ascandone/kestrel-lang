@@ -66,7 +66,7 @@ export default class KestrelLexer extends Lexer {
 	public static readonly SLASH_4 = 51;
 	public static readonly SLASH_3 = 52;
 	public static readonly SLASH_2 = 53;
-	public static readonly LineComment = 54;
+	public static readonly LINE_COMMENT = 54;
 	public static readonly EXPOSING_NESTED = 55;
 	public static readonly INFIX_ID = 56;
 	public static readonly ID = 57;
@@ -140,7 +140,7 @@ export default class KestrelLexer extends Lexer {
                                                              null, "SLASH_4", 
                                                              "SLASH_3", 
                                                              "SLASH_2", 
-                                                             "LineComment", 
+                                                             "LINE_COMMENT", 
                                                              "EXPOSING_NESTED", 
                                                              "INFIX_ID", 
                                                              "ID", "TYPE_ID", 
@@ -159,7 +159,7 @@ export default class KestrelLexer extends Lexer {
 		"T__25", "T__26", "T__27", "T__28", "T__29", "T__30", "T__31", "T__32", 
 		"T__33", "T__34", "T__35", "T__36", "T__37", "T__38", "T__39", "T__40", 
 		"T__41", "T__42", "T__43", "T__44", "T__45", "T__46", "T__47", "T__48", 
-		"T__49", "SLASH_4", "SLASH_3", "SLASH_2", "LineComment", "EXPOSING_NESTED", 
+		"T__49", "SLASH_4", "SLASH_3", "SLASH_2", "LINE_COMMENT", "EXPOSING_NESTED", 
 		"INFIX_ID", "ID", "TYPE_ID", "INT", "CHAR", "STRING", "DoubleStringCharacter", 
 		"FLOAT", "NEWLINE", "WS", "MODULEDOC_COMMENT_LINE", "DOC_COMMENT_LINE", 
 		"INFIX_CHAR",
