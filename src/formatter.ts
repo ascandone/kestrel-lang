@@ -226,25 +226,15 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
       const fields = sepBy(break_(), fieldLines);
 
       return concat(
+        //
         text(ast.struct.name),
         text(" "),
-        //
         fieldLines.length === 0 ? text("{ }") : block_(fields),
       );
     }
 
     case "pipe": {
       const isNewLine = ast.left.range.end.line !== ast.range.end.line;
-
-      // if (isSameLine) {
-      //   return asBlock(block, [
-      //     exprToDoc(ast.left, true),
-      //     break_(),
-      //     text("|> "),
-      //     exprToDoc(ast.right, true),
-      //   ]);
-      // }
-
       const wrapped = isNewLine ? broken : concat;
 
       return wrapped(
