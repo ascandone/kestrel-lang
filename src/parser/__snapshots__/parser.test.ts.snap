@@ -112,6 +112,7 @@ exports[`+ is left-associative 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -169,6 +170,7 @@ exports[`Comments > doc comments 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -177,6 +179,7 @@ exports[`Comments > doc comments on extern types 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "docComment": " first line
@@ -264,6 +267,7 @@ exports[`Comments > doc comments on externs 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -272,6 +276,7 @@ exports[`Comments > doc comments on types 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "docComment": " first line
@@ -394,6 +399,7 @@ exports[`Comments > doc comments with many declrs 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -448,6 +454,7 @@ exports[`Comments > moduledoc comments 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "moduleDoc": " Module level comment
  Second line
 ",
@@ -505,6 +512,7 @@ exports[`Decorators > inline decorator 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -584,6 +592,7 @@ exports[`Fault tolerance > dot notation in struct 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -638,6 +647,7 @@ exports[`Fault tolerance > faulty decl 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -702,10 +712,16 @@ exports[`Fault tolerance > faulty infix 1`] = `
           },
         },
         "right": {
-          "range": [
-            11,
-            11,
-          ],
+          "range": {
+            "end": {
+              "character": 11,
+              "line": 0,
+            },
+            "start": {
+              "character": 11,
+              "line": 0,
+            },
+          },
           "type": "syntax-err",
         },
         "type": "infix",
@@ -713,6 +729,7 @@ exports[`Fault tolerance > faulty infix 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -763,6 +780,7 @@ exports[`Fault tolerance > missing expr 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -798,15 +816,22 @@ exports[`Fault tolerance > missing string lit termination 1`] = `
         },
       },
       "value": {
-        "range": [
-          7,
-          9,
-        ],
+        "range": {
+          "end": {
+            "character": 9,
+            "line": 0,
+          },
+          "start": {
+            "character": 7,
+            "line": 0,
+          },
+        },
         "type": "syntax-err",
       },
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -871,6 +896,7 @@ exports[`extern bindings > let decls 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -935,6 +961,7 @@ exports[`extern bindings > let decls defining infix operators 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -943,6 +970,7 @@ exports[`extern bindings > types 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -1014,6 +1042,21 @@ exports[`ignoring comments 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [
+    {
+      "comment": "// ignoring comments",
+      "range": {
+        "end": {
+          "character": 24,
+          "line": 1,
+        },
+        "start": {
+          "character": 4,
+          "line": 1,
+        },
+      },
+    },
+  ],
   "typeDeclarations": [],
 }
 `;
@@ -1066,6 +1109,7 @@ exports[`imports > identifiers can be qualified 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1089,6 +1133,7 @@ exports[`imports > import nested modules 1`] = `
       },
     },
   ],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1112,6 +1157,7 @@ exports[`imports > import single module 1`] = `
       },
     },
   ],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1166,6 +1212,7 @@ exports[`imports > parse pub modifier 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1174,6 +1221,7 @@ exports[`imports > parse pub modifier on extern types 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -1255,6 +1303,7 @@ exports[`imports > parse pub modifier on extern values 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1263,6 +1312,7 @@ exports[`imports > parse pub modifier on types 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -1289,6 +1339,7 @@ exports[`imports > parse pub(..) modifier on types 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -1359,6 +1410,7 @@ exports[`imports > type constructors can be qualified 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1424,6 +1476,7 @@ exports[`imports > type defs can be qualified 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1462,6 +1515,7 @@ exports[`imports > unqualified import of a value 1`] = `
       },
     },
   ],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1500,6 +1554,7 @@ exports[`imports > unqualified import of an infix value 1`] = `
       },
     },
   ],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1539,6 +1594,7 @@ exports[`imports > unqualified import of types (non-opaque) 1`] = `
       },
     },
   ],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1593,6 +1649,7 @@ exports[`imports > unqualified import of types 1`] = `
       },
     },
   ],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1659,6 +1716,7 @@ exports[`imports > unqualified import of values 1`] = `
       },
     },
   ],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1828,6 +1886,7 @@ exports[`it should be possible to mix pipe with infix 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -1908,12 +1967,12 @@ exports[`monadic let syntax sugar 1`] = `
         },
         "range": {
           "end": {
-            "character": 10,
-            "line": 3,
+            "character": 5,
+            "line": 4,
           },
           "start": {
-            "character": 6,
-            "line": 2,
+            "character": 12,
+            "line": 1,
           },
         },
         "type": "let#",
@@ -1936,6 +1995,7 @@ exports[`monadic let syntax sugar 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -2016,12 +2076,12 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
         },
         "range": {
           "end": {
-            "character": 10,
-            "line": 3,
+            "character": 5,
+            "line": 4,
           },
           "start": {
-            "character": 6,
-            "line": 2,
+            "character": 12,
+            "line": 1,
           },
         },
         "type": "let#",
@@ -2044,6 +2104,7 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -2129,6 +2190,7 @@ exports[`parse * expr 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -2245,6 +2307,7 @@ exports[`parse + and * prec 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -2361,6 +2424,7 @@ exports[`parse + and * prec with parens 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -2446,6 +2510,7 @@ exports[`parse + expr 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -2531,6 +2596,7 @@ exports[`parse +. expr 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -2641,6 +2707,7 @@ exports[`parse <= and && prec 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -2726,6 +2793,7 @@ exports[`parse - expr 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -2808,6 +2876,7 @@ exports[`parse appl with 1 arg 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -2920,6 +2989,7 @@ exports[`parse appl with 3 args 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3035,6 +3105,7 @@ exports[`parse appl with nested expr 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3119,6 +3190,7 @@ exports[`parse appl with nested parens 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3185,6 +3257,7 @@ exports[`parse appl with no args 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3282,6 +3355,7 @@ exports[`parse appl with trailing comma 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3319,11 +3393,11 @@ exports[`parse block with no let 1`] = `
       "value": {
         "range": {
           "end": {
-            "character": 11,
+            "character": 13,
             "line": 1,
           },
           "start": {
-            "character": 10,
+            "character": 8,
             "line": 1,
           },
         },
@@ -3336,6 +3410,7 @@ exports[`parse block with no let 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3390,6 +3465,7 @@ exports[`parse chars 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3532,6 +3608,7 @@ exports[`parse cons operator is right-associative 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3629,6 +3706,7 @@ exports[`parse conslist sugar 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3680,6 +3758,7 @@ exports[`parse empty list sugar 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3734,6 +3813,7 @@ exports[`parse empty strings 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3788,6 +3868,7 @@ exports[`parse float 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3871,6 +3952,7 @@ exports[`parse fn with 1 arg 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -3968,6 +4050,7 @@ exports[`parse fn with 2 args 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4080,6 +4163,7 @@ exports[`parse fn with let 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4148,6 +4232,7 @@ exports[`parse fn with no args 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4200,6 +4285,7 @@ exports[`parse ident 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4299,6 +4385,7 @@ exports[`parse if expr 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4440,6 +4527,7 @@ exports[`parse if expr with a let expr 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4508,12 +4596,12 @@ exports[`parse let block with one let 1`] = `
         },
         "range": {
           "end": {
-            "character": 3,
-            "line": 3,
+            "character": 1,
+            "line": 4,
           },
           "start": {
-            "character": 2,
-            "line": 2,
+            "character": 8,
+            "line": 1,
           },
         },
         "type": "let",
@@ -4538,6 +4626,7 @@ exports[`parse let block with one let 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4650,12 +4739,12 @@ exports[`parse let block with two let stmts 1`] = `
         },
         "range": {
           "end": {
-            "character": 3,
-            "line": 4,
+            "character": 1,
+            "line": 5,
           },
           "start": {
-            "character": 2,
-            "line": 2,
+            "character": 8,
+            "line": 1,
           },
         },
         "type": "let",
@@ -4680,6 +4769,7 @@ exports[`parse let block with two let stmts 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4783,6 +4873,7 @@ exports[`parse list sugar with many values 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4837,6 +4928,7 @@ exports[`parse nonempty strings 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4906,6 +4998,7 @@ exports[`parse singleton list sugar 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -4960,6 +5053,7 @@ exports[`parse strings with escaped quotes 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -5014,6 +5108,7 @@ exports[`parse strings with newlines 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -5115,6 +5210,7 @@ exports[`parse tuple sugar 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -5196,6 +5292,7 @@ exports[`parse unary ! expr 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -5294,6 +5391,7 @@ exports[`pattern matching > binding with identifier 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -5360,6 +5458,7 @@ exports[`pattern matching > empty match expression 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -5461,6 +5560,7 @@ exports[`pattern matching > matching char literals 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -5590,6 +5690,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -5752,6 +5853,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -5914,6 +6016,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -6014,6 +6117,7 @@ exports[`pattern matching > matching constructor with no args 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -6129,6 +6233,7 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -6230,6 +6335,7 @@ exports[`pattern matching > matching float literals 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -6331,6 +6437,7 @@ exports[`pattern matching > matching int literals 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -6460,6 +6567,7 @@ exports[`pattern matching > matching many clauses, with trailing comma 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -6589,6 +6697,7 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -6703,6 +6812,7 @@ exports[`pattern matching > matching pattern in fn param 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -6831,11 +6941,11 @@ exports[`pattern matching > matching pattern in let 1`] = `
         },
         "range": {
           "end": {
-            "character": 35,
+            "character": 37,
             "line": 0,
           },
           "start": {
-            "character": 10,
+            "character": 8,
             "line": 0,
           },
         },
@@ -6859,6 +6969,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -7001,11 +7112,11 @@ exports[`pattern matching > matching pattern in let# 1`] = `
         },
         "range": {
           "end": {
-            "character": 41,
+            "character": 43,
             "line": 0,
           },
           "start": {
-            "character": 10,
+            "character": 8,
             "line": 0,
           },
         },
@@ -7029,6 +7140,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -7160,6 +7272,7 @@ exports[`pattern matching > matching qualified constructors 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -7261,6 +7374,7 @@ exports[`pattern matching > matching str literals 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -7390,6 +7504,7 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -7515,6 +7630,7 @@ exports[`pipe syntax sugar 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -7651,6 +7767,7 @@ exports[`pipe syntax sugar should be chainable 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -7776,6 +7893,7 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -7926,6 +8044,7 @@ exports[`structs > construct fields with many fields 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -7991,6 +8110,7 @@ exports[`structs > construct fields with no fields 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -7999,6 +8119,7 @@ exports[`structs > doc comments 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "docComment": " example docs
@@ -8027,6 +8148,7 @@ exports[`structs > empty struct 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "fields": [],
@@ -8053,6 +8175,7 @@ exports[`structs > field 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "fields": [
@@ -8179,6 +8302,7 @@ exports[`structs > field access 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -8187,6 +8311,7 @@ exports[`structs > many fields 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "fields": [
@@ -8268,6 +8393,7 @@ exports[`structs > pub modifier 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "fields": [],
@@ -8294,6 +8420,7 @@ exports[`structs > pub(..) modifier 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "fields": [],
@@ -8391,6 +8518,7 @@ exports[`structs > qualified field access 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -8399,6 +8527,7 @@ exports[`structs > type params 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "fields": [],
@@ -8608,6 +8737,7 @@ exports[`structs > update a struct 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -8679,6 +8809,7 @@ exports[`traits > parses many traits in a polytype for the same tvar 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -8786,6 +8917,7 @@ exports[`traits > parses traits for many vars 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -8856,6 +8988,7 @@ exports[`traits > parses traits in a polytype 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -8864,6 +8997,7 @@ exports[`type declarations > many type params 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -8930,6 +9064,7 @@ exports[`type declarations > single type param 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -8970,6 +9105,7 @@ exports[`type declarations > trailing comma after variants 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -9025,6 +9161,7 @@ exports[`type declarations > type with a variant with complex args 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -9128,6 +9265,7 @@ exports[`type declarations > type with a variant with many args 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -9200,6 +9338,7 @@ exports[`type declarations > type with a variant with no args 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -9241,6 +9380,7 @@ exports[`type declarations > type with a variant with one arg 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -9298,6 +9438,7 @@ exports[`type declarations > type with many variants 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "T",
@@ -9353,6 +9494,7 @@ exports[`type declarations > type with no variants 1`] = `
 {
   "declarations": [],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [
     {
       "name": "Never",
@@ -9498,6 +9640,7 @@ exports[`type hints > parses Fn type with args 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -9594,6 +9737,7 @@ exports[`type hints > parses Fn type with no args 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -9658,6 +9802,7 @@ exports[`type hints > parses a concrete type with no args as a type hint (extern
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -9740,6 +9885,7 @@ exports[`type hints > parses a concrete type with no args as a type hint (no whi
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -9822,6 +9968,7 @@ exports[`type hints > parses a concrete type with no args as a type hint 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -9920,6 +10067,7 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -10033,6 +10181,7 @@ exports[`type hints > parses concrete type with 2 args 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -10163,6 +10312,7 @@ exports[`type hints > parses tuple type syntax sugar 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -10244,6 +10394,7 @@ exports[`type hints > parses type vars hints 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;
@@ -10324,6 +10475,7 @@ exports[`type hints > parses underscore type 1`] = `
     },
   ],
   "imports": [],
+  "lineComments": [],
   "typeDeclarations": [],
 }
 `;

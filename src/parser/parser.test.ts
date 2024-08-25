@@ -6,6 +6,7 @@ import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 test.todo("parsing a declaration", () => {
   const src = "let x = 0";
   expect(unsafeParse(src)).toEqual<UntypedModule>({
+    lineComments: [],
     imports: [],
     typeDeclarations: [],
     declarations: [
@@ -31,6 +32,7 @@ test.todo("parsing a declaration", () => {
 test.todo("parsing two declarations", () => {
   const src = `let x = 0\nlet y = 1`;
   expect(unsafeParse(src)).toEqual<UntypedModule>({
+    lineComments: [],
     imports: [],
     typeDeclarations: [],
     declarations: [
@@ -148,7 +150,7 @@ test("parse ident", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("a constructor ident shouldn't be allowed in let binding", () => {
+test("a constructor ident shouldn't be allowed in let binding", () => {
   const src = "let X = x";
   expect(() => unsafeParse(src)).toThrow();
 });
@@ -340,7 +342,7 @@ test("monadic let syntax sugar should handle qualified names", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("monadic let syntax sugar should not contain space", () => {
+test("monadic let syntax sugar should not contain space", () => {
   const src = `
     let _ = {
       let #bind_f x = expr;

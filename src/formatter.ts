@@ -1,7 +1,9 @@
 import {
   ConstLiteral,
+  LineComment,
   MatchPattern,
   PolyTypeAst,
+  RangeMeta,
   TypeAst,
   UntypedDeclaration,
   UntypedExpr,
@@ -27,6 +29,23 @@ import {
   nestOnBreak,
 } from "./pretty";
 import { gtEqPos } from "./typecheck/typedAst/common";
+
+let currentLineComments: LineComment[] = [];
+function popComments(ast: RangeMeta): Doc[] {
+  const poppedComments: string[] = [];
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const comment = currentLineComments.at(-1);
+
+    if (comment === undefined || comment.range.end.line >= ast.range.end.line) {
+      break;
+    }
+
+    poppedComments.push(comment.comment);
+    currentLineComments.pop();
+  }
+  return poppedComments.map((comment) => concat(text(comment), lines()));
+}
 
 const ORDERED_PREFIX_SYMBOLS = [["!"]];
 
@@ -114,7 +133,7 @@ function constToDoc(lit: ConstLiteral): Doc {
 }
 
 function indentWithSpaceBreak(docs: Doc[], unbroken?: string): Doc {
-  return concat(
+  return group(
     nest(
       //
       break_(""),
@@ -156,6 +175,10 @@ function asBlockOpt(isBlock: boolean, docs: Doc[]): Doc {
   return blockOpt_(...docs);
 }
 
+function exprToDocWithComments(ast: UntypedExpr, block: boolean): Doc {
+  return concat(...popComments(ast), exprToDoc(ast, block));
+}
+
 function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
   switch (ast.type) {
     /* v8 ignore next 2 */
@@ -171,7 +194,10 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
             sepBy(
               concat(text(","), break_()),
               ast.values.map((expr) =>
-                exprToDoc(expr, expr.type !== "let" && expr.type !== "let#"),
+                exprToDocWithComments(
+                  expr,
+                  expr.type !== "let" && expr.type !== "let#",
+                ),
               ),
             ),
           ],
@@ -330,7 +356,7 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         text("fn"),
         sepByString(",", params),
         text(" "),
-        block_(exprToDoc(ast.body, true)),
+        block_(exprToDocWithComments(ast.body, true)),
       );
     }
 
@@ -339,10 +365,10 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         text("if "),
         exprToDoc(ast.condition, false),
         text(" "),
-        block_(exprToDoc(ast.then, true)),
+        block_(exprToDocWithComments(ast.then, true)),
 
         text(" else "),
-        block_(exprToDoc(ast.else, true)),
+        block_(exprToDocWithComments(ast.else, true)),
       );
 
     case "let#": {
@@ -352,8 +378,8 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
       const inner = concat(
         text(`let#${ns}${ast.mapper.name} `),
         patternToDoc(ast.pattern),
-        text(` = `),
-        exprToDoc(ast.value, false),
+        text(` =`),
+        declarationValueToDoc(ast.value),
         text(";"),
         break_(),
         exprToDoc(ast.body, true),
@@ -367,13 +393,18 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
     }
 
     case "let": {
+      const linesDiff = Math.min(
+        Math.max(ast.body.range.start.line - ast.value.range.end.line - 1, 0),
+        1,
+      );
+
       const inner = concat(
         text("let "),
         patternToDoc(ast.pattern),
-        text(" = "),
-        exprToDoc(ast.value, false),
+        text(" ="),
+        declarationValueToDoc(ast.value),
         text(";"),
-        break_(),
+        lines(linesDiff),
         exprToDoc(ast.body, true),
       );
 
@@ -510,6 +541,32 @@ function handleDocComment(content: string, init = "///") {
   );
 }
 
+function declarationValueToDoc(expr: UntypedExpr): Doc {
+  const exprDoc = exprToDoc(expr, false);
+
+  switch (expr.type) {
+    case "if":
+      return indentWithSpaceBreak([exprDoc]);
+
+    default: {
+      const poppedComments = popComments(expr);
+
+      if (poppedComments.length === 0) {
+        return concat(text(" "), exprDoc);
+      }
+
+      return broken(
+        nest(
+          //
+          break_(),
+          ...poppedComments,
+          exprDoc,
+        ),
+      );
+    }
+  }
+}
+
 function declToDoc(ast: UntypedDeclaration): Doc {
   const name =
     isInfix(ast.binding.name) || isPrefix(ast.binding.name)
@@ -525,14 +582,7 @@ function declToDoc(ast: UntypedDeclaration): Doc {
     ast.typeHint === undefined
       ? nil
       : concat(text(": "), typeHintToDoc(ast.typeHint)),
-    ast.extern
-      ? nil
-      : concat(
-          text(" ="),
-          ["if"].includes(ast.value.type)
-            ? indentWithSpaceBreak([exprToDoc(ast.value, false)])
-            : concat(text(" "), exprToDoc(ast.value, false)),
-        ),
+    ast.extern ? nil : concat(text(" ="), declarationValueToDoc(ast.value)),
   );
 }
 
@@ -653,6 +703,9 @@ export function formatExpr(expr: UntypedExpr): string {
 }
 
 export function format(ast: UntypedModule): string {
+  currentLineComments = [...(ast.lineComments ?? [])];
+  currentLineComments.reverse();
+
   const importsDocs = ast.imports
     .sort((i1, i2) => (i1.ns > i2.ns ? 1 : -1))
     .map(importToDoc)

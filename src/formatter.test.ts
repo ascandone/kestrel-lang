@@ -353,6 +353,77 @@ test("toplevel nested let expr", () => {
 `).toBeFormatted();
 });
 
+test("allows spaces in toplevel nested let expr", () => {
+  expect(`let f = {
+  let x = value;
+
+  let y = value2;
+
+  body
+}
+`).toBeFormatted(`let f = {
+  let x = value;
+
+  let y = value2;
+
+  body
+}
+`);
+});
+
+test("force at 1 space in toplevel nested let expr", () => {
+  expect(`let f = { let x = value; body }
+`).toBeFormatted(`let f = {
+  let x = value;
+  body
+}
+`);
+});
+
+test("allows at most 1 space in toplevel nested let expr", () => {
+  expect(`let f = {
+  let x = value;
+
+
+
+  let y = value2;
+
+
+
+  body
+}
+`).toBeFormatted(`let f = {
+  let x = value;
+
+  let y = value2;
+
+  body
+}
+`);
+});
+
+test("allow zero lines after struct", () => {
+  expect(`let f = {
+  let p = Person {
+    name: "hello",
+    age: 42,
+  };
+  body
+}
+`).toBeFormatted();
+});
+
+test("nested let", () => {
+  expect(`let a = {
+  let l1 = {
+    let l2 = value;
+    e
+  };
+  body
+}
+`).toBeFormatted();
+});
+
 test("toplevel nested let# expr", () => {
   expect(`let f = {
   let#and_then x = value;
@@ -438,7 +509,65 @@ test("order between type declrs and declrs", () => {
 });
 
 describe("comments", () => {
-  test.todo("regular comments");
+  test("doc comments on declrs", () => {
+    expect(`let f =
+      // c1
+      0 +
+      // c2
+      1
+`).toBeFormatted(`let f =
+  // c1
+  // c2
+  0 + 1
+`);
+  });
+
+  test("doc comments on declrs", () => {
+    expect(`let f = fn {
+        // c
+        42
+    }
+`).toBeFormatted(`let f = fn {
+  // c
+  42
+}
+`);
+  });
+
+  test("doc comments in if expr", () => {
+    expect(`let f = if b {
+    // c
+    42
+} else {
+  // d
+  100
+}
+`).toBeFormatted(`let f =
+  if b {
+    // c
+    42
+  } else {
+    // d
+    100
+  }
+
+`);
+  });
+
+  test.todo("doc comments in lists", () => {
+    expect(`let f = [
+  0,
+  // comment
+  1,
+]
+`).toBeFormatted(`let f = [
+  0,
+  // comment
+  1,
+]
+
+`);
+  });
 
   test("doc comments on declrs", () => {
     expect(`/// First line

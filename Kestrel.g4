@@ -4,7 +4,7 @@ SLASH_4: '////';
 SLASH_3: '///';
 SLASH_2: '//';
 
-LineComment: SLASH_2 ~[\r\n]* -> channel(HIDDEN);
+LINE_COMMENT: SLASH_2 ~[\r\n]* -> channel(HIDDEN);
 
 EXPOSING_NESTED: '(' '..' ')';
 INFIX_ID: '(' INFIX_CHAR+ ')';
