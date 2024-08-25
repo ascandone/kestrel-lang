@@ -396,7 +396,65 @@ test("order between type declrs and declrs", () => {
 });
 
 describe("comments", () => {
-  test.todo("regular comments");
+  test("doc comments on declrs", () => {
+    expect(`let f =
+      // c1
+      0 +
+      // c2
+      1
+`).toBeFormatted(`let f =
+  // c1
+  // c2
+  0 + 1
+`);
+  });
+
+  test("doc comments on declrs", () => {
+    expect(`let f = fn {
+        // c
+        42
+    }
+`).toBeFormatted(`let f = fn {
+  // c
+  42
+}
+`);
+  });
+
+  test("doc comments in if expr", () => {
+    expect(`let f = if b {
+    // c
+    42
+} else {
+  // d
+  100
+}
+`).toBeFormatted(`let f =
+  if b {
+    // c
+    42
+  } else {
+    // d
+    100
+  }
+
+`);
+  });
+
+  test.todo("doc comments in lists", () => {
+    expect(`let f = [
+  0,
+  // comment
+  1,
+]
+`).toBeFormatted(`let f = [
+  0,
+  // comment
+  1,
+]
+
+`);
+  });
 
   test("doc comments on declrs", () => {
     expect(`/// First line

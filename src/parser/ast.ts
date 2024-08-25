@@ -351,7 +351,7 @@ export type UntypedModule = {
   imports: UntypedImport[];
   typeDeclarations: UntypedTypeDeclaration[];
   declarations: UntypedDeclaration[];
-  lineComments: LineComment[];
+  lineComments?: LineComment[];
 };
 
 export type Position = {
