@@ -376,12 +376,6 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         1,
       );
 
-      console.log(
-        { linesDiff },
-        ast.body.range.start.line,
-        ast.value.range.end.line,
-      );
-
       const inner = concat(
         text("let "),
         patternToDoc(ast.pattern),
