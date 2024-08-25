@@ -318,8 +318,10 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     range: rangeOfCtx(ctx),
   });
 
-  visitBlockExpr = (ctx: BlockExprContext): UntypedExpr =>
-    this.visit(ctx.block());
+  visitBlockExpr = (ctx: BlockExprContext): UntypedExpr => {
+    const e = this.visit(ctx.block());
+    return { ...e, range: rangeOfCtx(ctx) };
+  };
 
   visitBlockContentExpr = (ctx: BlockContentExprContext): UntypedExpr =>
     this.visit(ctx.expr());

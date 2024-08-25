@@ -371,13 +371,24 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
     }
 
     case "let": {
+      const linesDiff = Math.min(
+        ast.body.range.start.line - ast.value.range.end.line - 1,
+        1,
+      );
+
+      console.log(
+        { linesDiff },
+        ast.body.range.start.line,
+        ast.value.range.end.line,
+      );
+
       const inner = concat(
         text("let "),
         patternToDoc(ast.pattern),
         text(" ="),
         declarationValueToDoc(ast.value),
         text(";"),
-        break_(),
+        lines(linesDiff),
         exprToDoc(ast.body, true),
       );
 

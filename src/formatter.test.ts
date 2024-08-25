@@ -311,6 +311,68 @@ test("toplevel nested let expr", () => {
 `).toBeFormatted();
 });
 
+test("allows spaces in toplevel nested let expr", () => {
+  expect(`let f = {
+  let x = value;
+
+  let y = value2;
+
+  body
+}
+`).toBeFormatted(`let f = {
+  let x = value;
+
+  let y = value2;
+
+  body
+}
+`);
+});
+
+test("allows at most 1 space in toplevel nested let expr", () => {
+  expect(`let f = {
+  let x = value;
+
+
+
+  let y = value2;
+
+
+
+  body
+}
+`).toBeFormatted(`let f = {
+  let x = value;
+
+  let y = value2;
+
+  body
+}
+`);
+});
+
+test("allow zero lines after struct", () => {
+  expect(`let f = {
+  let p = Person {
+    name: "hello",
+    age: 42,
+  };
+  body
+}
+`).toBeFormatted();
+});
+
+test("nested let", () => {
+  expect(`let a = {
+  let let_hash = {
+    let nested = value;
+    e
+  };
+  body
+}
+`).toBeFormatted();
+});
+
 test("toplevel nested let# expr", () => {
   expect(`let f = {
   let#and_then x = value;
