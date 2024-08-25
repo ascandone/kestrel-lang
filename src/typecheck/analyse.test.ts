@@ -14,7 +14,7 @@ import {
   UnboundVariable,
   UnusedVariable,
 } from "../errors";
-import { spanOf } from "./typedAst/__test__/utils";
+import { rangeOf } from "./typedAst/__test__/utils";
 
 describe("infer constants", () => {
   test("int", () => {
@@ -95,7 +95,7 @@ describe("globals resolution", () => {
 
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
-        span: spanOf(a.source, "unbound_var"),
+        range: rangeOf(a.source, "unbound_var"),
         description: new UnboundVariable("unbound_var"),
       },
     ]);
@@ -118,7 +118,7 @@ describe("globals resolution", () => {
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
         description: new DuplicateDeclaration("x"),
-        span: spanOf(a.source, "x", 1),
+        range: rangeOf(a.source, "x", 1),
       },
     ]);
 
@@ -631,7 +631,7 @@ describe("functions and application", () => {
             args: [],
           },
         ),
-        span: spanOf(a.source, "42"),
+        range: rangeOf(a.source, "42"),
       },
     ]);
   });
@@ -873,7 +873,7 @@ describe("unused locals checks", () => {
 
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
-        span: spanOf(a.source, "unused_var"),
+        range: rangeOf(a.source, "unused_var"),
         description: new UnusedVariable("unused_var", "local"),
       },
     ]);
