@@ -372,7 +372,7 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
 
     case "let": {
       const linesDiff = Math.min(
-        ast.body.range.start.line - ast.value.range.end.line - 1,
+        Math.max(ast.body.range.start.line - ast.value.range.end.line - 1, 0),
         1,
       );
 

@@ -1967,12 +1967,12 @@ exports[`monadic let syntax sugar 1`] = `
         },
         "range": {
           "end": {
-            "character": 10,
-            "line": 3,
+            "character": 5,
+            "line": 4,
           },
           "start": {
-            "character": 6,
-            "line": 2,
+            "character": 12,
+            "line": 1,
           },
         },
         "type": "let#",
@@ -2076,12 +2076,12 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
         },
         "range": {
           "end": {
-            "character": 10,
-            "line": 3,
+            "character": 5,
+            "line": 4,
           },
           "start": {
-            "character": 6,
-            "line": 2,
+            "character": 12,
+            "line": 1,
           },
         },
         "type": "let#",
@@ -3393,11 +3393,11 @@ exports[`parse block with no let 1`] = `
       "value": {
         "range": {
           "end": {
-            "character": 11,
+            "character": 13,
             "line": 1,
           },
           "start": {
-            "character": 10,
+            "character": 8,
             "line": 1,
           },
         },
@@ -4596,12 +4596,12 @@ exports[`parse let block with one let 1`] = `
         },
         "range": {
           "end": {
-            "character": 3,
-            "line": 3,
+            "character": 1,
+            "line": 4,
           },
           "start": {
-            "character": 2,
-            "line": 2,
+            "character": 8,
+            "line": 1,
           },
         },
         "type": "let",
@@ -4739,12 +4739,12 @@ exports[`parse let block with two let stmts 1`] = `
         },
         "range": {
           "end": {
-            "character": 3,
-            "line": 4,
+            "character": 1,
+            "line": 5,
           },
           "start": {
-            "character": 2,
-            "line": 2,
+            "character": 8,
+            "line": 1,
           },
         },
         "type": "let",
@@ -6941,11 +6941,11 @@ exports[`pattern matching > matching pattern in let 1`] = `
         },
         "range": {
           "end": {
-            "character": 35,
+            "character": 37,
             "line": 0,
           },
           "start": {
-            "character": 10,
+            "character": 8,
             "line": 0,
           },
         },
@@ -7112,11 +7112,11 @@ exports[`pattern matching > matching pattern in let# 1`] = `
         },
         "range": {
           "end": {
-            "character": 41,
+            "character": 43,
             "line": 0,
           },
           "start": {
-            "character": 10,
+            "character": 8,
             "line": 0,
           },
         },

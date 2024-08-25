@@ -329,6 +329,15 @@ test("allows spaces in toplevel nested let expr", () => {
 `);
 });
 
+test("force at 1 space in toplevel nested let expr", () => {
+  expect(`let f = { let x = value; body }
+`).toBeFormatted(`let f = {
+  let x = value;
+  body
+}
+`);
+});
+
 test("allows at most 1 space in toplevel nested let expr", () => {
   expect(`let f = {
   let x = value;
@@ -364,8 +373,8 @@ test("allow zero lines after struct", () => {
 
 test("nested let", () => {
   expect(`let a = {
-  let let_hash = {
-    let nested = value;
+  let l1 = {
+    let l2 = value;
     e
   };
   body
