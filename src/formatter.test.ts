@@ -870,6 +870,13 @@ test("long arg as last arg", () => {
   expect(src).toBeFormatted();
 });
 
+test("long arg as last arg", () => {
+  const src = `let x = a_super_long_function_that_wraps_but_does_not_have_space_to_wrap_a_super_long()
+`;
+
+  expect(src).toBeFormatted();
+});
+
 test("let inside list", () => {
   const src = `let x = [
   {
