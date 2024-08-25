@@ -150,7 +150,7 @@ test("parse ident", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("a constructor ident shouldn't be allowed in let binding", () => {
+test("a constructor ident shouldn't be allowed in let binding", () => {
   const src = "let X = x";
   expect(() => unsafeParse(src)).toThrow();
 });
@@ -342,7 +342,7 @@ test("monadic let syntax sugar should handle qualified names", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.skip("monadic let syntax sugar should not contain space", () => {
+test("monadic let syntax sugar should not contain space", () => {
   const src = `
     let _ = {
       let #bind_f x = expr;
