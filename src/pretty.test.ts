@@ -48,6 +48,26 @@ test("renders break", () => {
   ).toBe(`ab\ncd`);
 });
 
+test("does not render indentation", () => {
+  expect(
+    pprint(
+      group(
+        broken(
+          nest(
+            //
+
+            text("if"),
+            break_(),
+            text("then"),
+            lines(2),
+            text("else"),
+          ),
+        ),
+      ),
+    ),
+  ).toBe(`if\n  then\n\n\n  else`);
+});
+
 test("renders break of many lines", () => {
   expect(
     pprint(

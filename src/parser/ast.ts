@@ -345,11 +345,13 @@ export type Import<Exposing> = RangeMeta & {
   exposing: Exposing[];
 };
 
+export type LineComment = { comment: string } & RangeMeta;
 export type UntypedModule = {
   moduleDoc?: string;
   imports: UntypedImport[];
   typeDeclarations: UntypedTypeDeclaration[];
   declarations: UntypedDeclaration[];
+  lineComments?: LineComment[];
 };
 
 export type Position = {

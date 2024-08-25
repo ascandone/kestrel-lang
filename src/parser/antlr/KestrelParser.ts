@@ -73,7 +73,7 @@ export default class KestrelParser extends Parser {
 	public static readonly SLASH_4 = 51;
 	public static readonly SLASH_3 = 52;
 	public static readonly SLASH_2 = 53;
-	public static readonly LineComment = 54;
+	public static readonly LINE_COMMENT = 54;
 	public static readonly EXPOSING_NESTED = 55;
 	public static readonly INFIX_ID = 56;
 	public static readonly ID = 57;
@@ -173,7 +173,7 @@ export default class KestrelParser extends Parser {
                                                              null, "SLASH_4", 
                                                              "SLASH_3", 
                                                              "SLASH_2", 
-                                                             "LineComment", 
+                                                             "LINE_COMMENT", 
                                                              "EXPOSING_NESTED", 
                                                              "INFIX_ID", 
                                                              "ID", "TYPE_ID", 

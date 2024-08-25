@@ -6,6 +6,7 @@ import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 test("parsing a declaration", () => {
   const src = "let x = 0";
   expect(unsafeParse(src)).toEqual<UntypedModule>({
+    lineComments: [],
     imports: [],
     typeDeclarations: [],
     declarations: [
@@ -31,6 +32,7 @@ test("parsing a declaration", () => {
 test("parsing two declarations", () => {
   const src = `let x = 0\nlet y = 1`;
   expect(unsafeParse(src)).toEqual<UntypedModule>({
+    lineComments: [],
     imports: [],
     typeDeclarations: [],
     declarations: [
