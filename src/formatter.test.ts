@@ -252,8 +252,6 @@ let a = {
   );
 });
 
-test.todo("wrap a fn with only one arg");
-
 test("pipe within a list", () => {
   expect(`let t = Test.describe("descr", [
   example_value
