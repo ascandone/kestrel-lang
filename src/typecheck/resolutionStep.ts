@@ -966,6 +966,22 @@ class ResolutionStep {
       }
     }
 
+    for (const import_ of this.imports) {
+      for (const exposed of import_.exposing) {
+        if (
+          exposed.type === "type" &&
+          exposed.resolved !== undefined &&
+          exposed.resolved.name === structName &&
+          exposed.resolved.type === "struct"
+        ) {
+          return {
+            declaration: exposed.resolved,
+            namespace: import_.ns,
+          };
+        }
+      }
+    }
+
     return undefined;
   }
 
