@@ -100,11 +100,7 @@ type DocStack = null | {
 
 function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
   // eslint-disable-next-line no-constant-condition
-  while (true) {
-    if (width < 0) {
-      return false;
-    }
-
+  while (width >= 0) {
     if (docsStack === null) {
       return true;
     }
@@ -180,6 +176,8 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
       }
     }
   }
+
+  return false;
 }
 
 export function pprint(
