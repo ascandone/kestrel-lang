@@ -56,6 +56,13 @@ test("application that wraps", () => {
 `).toBeFormatted();
 });
 
+test("only wrap last arg of fn", () => {
+  expect(`let a = map2(Some(10), Some(20), fn a, b {
+  a + b
+})
+`).toBeFormatted();
+});
+
 test("constructor application with many args", () => {
   expect(`let x = Constr(0, 1, 2)\n`).toBeFormatted();
 });

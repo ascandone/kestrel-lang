@@ -317,7 +317,7 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         return concat(exprToDoc(ast.caller, false), text("()"));
       }
 
-      return broken(
+      return nextBreakFits(
         group(
           isTuple ? nil : exprToDoc(ast.caller, false),
           text("("),
@@ -339,6 +339,7 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
           break_("", ","),
           text(")"),
         ),
+        false,
       );
     }
 
