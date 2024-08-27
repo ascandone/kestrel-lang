@@ -336,7 +336,7 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
               }),
             ),
           ),
-          break_("", ","),
+          break_("", isTuple ? "" : ","),
           text(")"),
         ),
         false,
