@@ -23,7 +23,22 @@ import {
   parse,
 } from "../parser";
 import { bool, char, float, int, list, string } from "./core";
+import { TraitImpl, defaultTraitImpls } from "./defaultImports";
 import { PolyType, TVar, Type, UnifyError, instantiate, unify } from "./type";
+
+export function resetTraitsRegistry(
+  traitImpls: TraitImpl[] = defaultTraitImpls,
+) {
+  TVar.resetTraitImpls();
+  for (const impl of traitImpls) {
+    TVar.registerTraitImpl(
+      impl.moduleName,
+      impl.typeName,
+      impl.trait,
+      impl.deps ?? [],
+    );
+  }
+}
 
 export type Deps = Record<string, Analysis>;
 

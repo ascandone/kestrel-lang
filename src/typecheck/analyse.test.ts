@@ -1,5 +1,5 @@
 import { test, expect, describe } from "vitest";
-import { Analysis } from "./analyse";
+import { Analysis, resetTraitsRegistry } from "./analyse";
 import { typeToString } from "./type";
 import {
   AmbiguousTypeVar,
@@ -19,7 +19,7 @@ import {
   UnusedVariable,
 } from "../errors";
 import { rangeOf } from "./typedAst/__test__/utils";
-import { resetTraitsRegistry } from "./typecheck";
+import { beforeEach } from "node:test";
 
 describe("infer constants", () => {
   test("int", () => {
@@ -2101,3 +2101,7 @@ function getTypes(a: Analysis): Record<string, string> {
   });
   return Object.fromEntries(kvs);
 }
+
+beforeEach(() => {
+  resetTraitsRegistry();
+});
