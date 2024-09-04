@@ -4,6 +4,7 @@ import { typeToString } from "./type";
 import {
   AmbiguousTypeVar,
   ArityMismatch,
+  BadImport,
   DuplicateDeclaration,
   ErrorInfo,
   InvalidCatchall,
@@ -12,16 +13,22 @@ import {
   InvalidTypeArity,
   MissingRequiredFields,
   NonExhaustiveMatch,
+  NonExistingImport,
   TraitNotSatified,
   TypeMismatch,
   TypeParamShadowing,
+  UnboundModule,
   UnboundType,
   UnboundTypeParam,
   UnboundVariable,
+  UnimportedModule,
+  UnusedExposing,
+  UnusedImport,
   UnusedVariable,
 } from "../errors";
 import { rangeOf } from "./typedAst/__test__/utils";
 import { beforeEach } from "node:test";
+import { dummyRange } from "./defaultImports";
 
 describe("infer constants", () => {
   test("int", () => {
@@ -200,6 +207,385 @@ describe("globals resolution", () => {
       a: "a",
       b: "a",
     });
+  });
+});
+
+describe.todo("modules", () => {
+  test.todo("imports cannot shadow values");
+  test.todo("imports cannot shadow types");
+  test.todo("imports cannot shadow constructors");
+  test.todo("imports cannot shadow fields");
+
+  test("implicitly imports values of the modules in the prelude", () => {
+    const A = new Analysis(
+      "A",
+      `
+      pub let x = 42
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      pub let y = x
+    `,
+      {
+        dependencies: { A },
+        implicitImports: [
+          {
+            range: dummyRange,
+            ns: "A",
+            exposing: [{ type: "value", name: "x", range: dummyRange }],
+          },
+        ],
+      },
+    );
+
+    expect(getTypes(a)).toEqual({
+      y: "Int",
+    });
+  });
+
+  test("implicitly imports types of the modules in the prelude", () => {
+    const A = new Analysis(
+      "A",
+      `
+      type MyType {}
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      let x: Fn(MyType) -> MyType = fn x { x }
+    `,
+      {
+        dependencies: { A },
+        implicitImports: [
+          {
+            range: dummyRange,
+            ns: "A",
+            exposing: [
+              {
+                type: "type",
+                name: "MyType",
+                exposeImpl: false,
+                range: dummyRange,
+              },
+            ],
+          },
+        ],
+      },
+    );
+    expect(a.errors).toEqual([]); // TODO check assertion
+  });
+
+  test("implicitly imports variants of the modules in the prelude", () => {
+    const A = new Analysis(
+      "A",
+      `
+      pub(..) type MyType { A }
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      pub let x = A
+    `,
+      {
+        dependencies: { A },
+        implicitImports: [
+          {
+            range: dummyRange,
+            ns: "A",
+            exposing: [
+              {
+                type: "type",
+                name: "MyType",
+                exposeImpl: true,
+                range: dummyRange,
+              },
+            ],
+          },
+        ],
+      },
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "MyType",
+    });
+  });
+
+  test("handles nested type references from other modules", () => {
+    const A = new Analysis(
+      "A",
+      `
+      pub(..) type T { T }
+      pub(..) type Boxed { Boxed(T) }
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      import A.{Boxed(..), T(..)}
+      pub let x = Boxed(T)
+    `,
+      { dependencies: { A } },
+    );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Boxed",
+    });
+  });
+
+  test("detects unused imports when there are not exposed vars", () => {
+    const A = new Analysis("A", ``);
+    const a = new Analysis("Main", `import A`, { dependencies: { A } });
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(UnusedImport);
+  });
+
+  test("detects unused exposed values", () => {
+    const A = new Analysis("A", `pub let x = 42`);
+    const a = new Analysis("Main", `import A.{x}`, { dependencies: { A } });
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(UnusedExposing);
+  });
+
+  test("detects unused types", () => {
+    const A = new Analysis("A", `pub type T { }`);
+    const a = new Analysis("Main", `import A.{T}`, { dependencies: { A } });
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(UnusedExposing);
+  });
+
+  test("handles variants imports", () => {
+    const A = new Analysis(
+      "A",
+      `
+      pub(..) type MyType { Constr }
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      import A
+      pub let x = A.Constr
+    `,
+      { dependencies: { A } },
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "MyType",
+    });
+  });
+
+  test("handles nested imports", () => {
+    const Mod = new Analysis(
+      "Mod",
+      `
+      pub let x = 42
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      import A/B/C
+      pub let x = A/B/C.x
+    `,
+      { dependencies: { "A/B/C": Mod } },
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Int",
+    });
+  });
+
+  test("allow importing types (unqualified)", () => {
+    const Mod = new Analysis("Mod", `pub type Example { }`);
+
+    const a = new Analysis(
+      "Main",
+      `
+      import Mod.{Example}
+      extern pub let x: Example
+    `,
+      { dependencies: { Mod } },
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Example",
+    });
+  });
+
+  test("allow importing types (qualified)", () => {
+    const Mod = new Analysis("Mod", `pub type Example { }`);
+    const a = new Analysis(
+      "Main",
+      `
+      import Mod
+      extern pub let x: Mod.Example
+    `,
+      { dependencies: { Mod } },
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Example",
+    });
+  });
+
+  test("allow using imported types in match patterns", () => {
+    const Mod = new Analysis("Mod", `pub(..) type T { Constr }`);
+    const a = new Analysis(
+      "Main",
+      `
+      import Mod.{T(..)}
+      pub let x = match Constr {
+        Constr => 0,
+      }
+    `,
+      { dependencies: { Mod } },
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test("error when import a non-existing module", () => {
+    const a = new Analysis("Main", `import ModuleNotFound`);
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(UnboundModule);
+  });
+
+  test("error when importing a non-existing type", () => {
+    const Mod = new Analysis("Mod", ``);
+    const a = new Analysis("Main", `import Mod.{NotFound}`, {
+      dependencies: { Mod },
+    });
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
+  });
+
+  test("error when importing a type the is not pub", () => {
+    const Mod = new Analysis("Mod", `type PrivateType {}`);
+    const a = new Analysis("Main", `import Mod.{PrivateType}`, {
+      dependencies: { Mod },
+    });
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
+  });
+
+  test("error when importing a non-existing value", () => {
+    const Mod = new Analysis("Mod", ``);
+    const a = new Analysis("Main", `import Mod.{not_found}`, {
+      dependencies: { Mod },
+    });
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
+  });
+
+  test("error when importing a private value", () => {
+    const Mod = new Analysis("Mod", `let not_found = 42`);
+    const a = new Analysis("Main", `import Mod.{not_found}`, {
+      dependencies: { Mod },
+    });
+    expect(
+      a.errors.some((e) => e.description instanceof NonExistingImport),
+    ).toBeTruthy();
+  });
+
+  test("qualified imports should not work on priv functions", () => {
+    const Mod = new Analysis("Mod", `let not_found = 42`);
+    const a = new Analysis(
+      "Main",
+      `
+      import Mod
+      pub let v = Mod.not_found
+    `,
+      { dependencies: { Mod } },
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
+  });
+
+  test("qualified imports should not work on priv constructors", () => {
+    const Mod = new Analysis("Mod", `pub type T { A }`);
+    const a = new Analysis(
+      "Main",
+      `
+      import Mod
+      pub let v = Mod.A
+    `,
+      { dependencies: { Mod } },
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
+  });
+
+  test("qualified imports should not work on priv types", () => {
+    const Mod = new Analysis("Mod", `type PrivateType {}`);
+    const a = new Analysis(
+      "Main",
+      `
+      import Mod
+      extern pub let x: Mod.PrivateType
+    `,
+      { dependencies: { Mod } },
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(UnboundType);
+  });
+
+  test("error when expose impl is run on a extern type", () => {
+    const Mod = new Analysis("Mod", `extern pub type ExternType`);
+    const a = new Analysis("Main", `import Mod.{ExternType(..)}`, {
+      dependencies: { Mod },
+    });
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(BadImport);
+  });
+
+  test("error when expose impl is run on a opaque type", () => {
+    // Note it is `pub` instead of `pub(..)`
+    const Mod = new Analysis("Mod", `pub type T {}`);
+    const a = new Analysis("Main", `import Mod.{T(..)}`, {
+      dependencies: { Mod },
+    });
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(BadImport);
+  });
+
+  test("error when qualifier is not an imported module", () => {
+    const a = new Analysis("Main", `pub let x = NotImported.value`);
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(UnimportedModule);
+  });
+
+  test("types from different modules with the same name aren't treated the same", () => {
+    const Mod = new Analysis("Mod", `pub(..) type T { Constr }`);
+    const a = new Analysis(
+      "Main",
+      `
+      import Mod
+      type T { Constr }
+      pub let t: T = Mod.Constr
+    `,
+      { dependencies: { Mod } },
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch);
   });
 });
 
@@ -2426,6 +2812,45 @@ describe.todo("struct", () => {
   });
 
   test.todo("namespaced struct names");
+});
+
+describe.todo("prelude", () => {
+  test("intrinsics' types are not visible by default", () => {
+    const a = new Analysis("Main", `pub let x: Int = 0`);
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      expect.objectContaining<ErrorInfo["description"]>(new UnboundType("Int")),
+    ]);
+  });
+
+  test("checks extern types", () => {
+    const a = new Analysis(
+      "Main",
+      `extern type ExtType
+     extern pub let x : ExtType
+     pub let y: ExtType = x
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test("typechecks extern values", () => {
+    const a = new Analysis(
+      "Main",
+      `
+     type Unit { }
+     extern pub let x : Unit
+     pub let y = x
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual(
+      expect.objectContaining({
+        y: "Unit",
+      }),
+    );
+  });
 });
 
 function getTypes(a: Analysis): Record<string, string> {
