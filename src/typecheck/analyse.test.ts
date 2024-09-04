@@ -2,11 +2,13 @@ import { test, expect, describe } from "vitest";
 import { Analysis } from "./analyse";
 import { typeToString } from "./type";
 import {
+  AmbiguousTypeVar,
   DuplicateDeclaration,
   ErrorInfo,
   InvalidCatchall,
   InvalidPipe,
   InvalidTypeArity,
+  TraitNotSatified,
   TypeMismatch,
   TypeParamShadowing,
   UnboundType,
@@ -15,6 +17,7 @@ import {
   UnusedVariable,
 } from "../errors";
 import { rangeOf } from "./typedAst/__test__/utils";
+import { resetTraitsRegistry } from "./typecheck";
 
 describe("infer constants", () => {
   test("int", () => {
@@ -915,6 +918,558 @@ describe("unused locals checks", () => {
     );
 
     expect(a.errors).toEqual([]);
+  });
+});
+
+describe.todo("traits", () => {
+  test("fails to typecheck when a required trait is not implemented", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern type String
+        extern pub let show: Fn(a) -> String where a: Show
+        pub let x = show(42) // note that 'Int' doesn't implement 'Show' in this test
+      `,
+    );
+    expect(a.errors).toHaveLength(1);
+    expect(getTypes(a)).toEqual({
+      show: "Fn(a) -> String where a: Show",
+      x: "String",
+    });
+  });
+
+  test("succeeds to typecheck when a required trait is not implemented", () => {
+    resetTraitsRegistry([
+      { trait: "Show", moduleName: "Int", typeName: "Int" },
+    ]);
+
+    const a = new Analysis(
+      "Main",
+      `
+        extern type String
+        extern pub let show: Fn(a) -> String where a: Show
+        pub let x = show(42)
+      `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test("propagates the trait constraint", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern type String
+        extern let show: Fn(a) -> String where a: Show
+
+        pub let use_show = fn value {
+          show(value)
+        }
+      `,
+    );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      show: "Fn(a) -> String where a: Show",
+      use_show: "Fn(a) -> String where a: Show",
+    });
+  });
+
+  test("fails to typecheck when unify occurs later", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern type String
+        extern let show: Fn(a) -> String where a: Show
+
+        extern type Int
+        extern pub let (+): Fn(Int, Int) -> Int
+        pub let f = fn x {
+          let _ = show(x);
+          x + 1
+        }
+      `,
+    );
+    expect(a.errors).not.toEqual([]);
+  });
+
+  test("infers multiple traits", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern type Unit
+        extern let show: Fn(a) -> Unit where a: Show
+        extern let eq: Fn(a) -> Unit where a: Eq
+
+        pub let f = fn x {
+          let _ = show(x);
+          eq(x)
+        }
+      `,
+    );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual(
+      expect.objectContaining({
+        f: "Fn(a) -> Unit where a: Eq + Show",
+      }),
+    );
+  });
+
+  test("does not break generalization", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern type Unit
+        extern let show: Fn(a) -> Unit where a: Show
+        extern let eq: Fn(a) -> Unit where a: Eq
+
+        pub let f = fn x {
+          let _ = show(x);
+          let _ = eq(x);
+          0
+        }
+      `,
+    );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual(
+      expect.objectContaining({
+        eq: "Fn(a) -> Unit where a: Eq",
+        show: "Fn(a) -> Unit where a: Show",
+      }),
+    );
+  });
+
+  test("is able to derive Eq trait in ADTs with only a singleton", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+        type MyType {
+          Singleton
+        }
+
+        pub let example = take_eq(Singleton)
+      `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test("does not derive Eq trait in ADTs when at least one argument", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern type NotEq
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type MyType {
+          Singleton,
+          Box(NotEq)
+        }
+
+        pub let example = take_eq(Singleton)
+      `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+  });
+
+  test("derives Eq even when constructors have arguments that derive Eq", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type EqType { }
+
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type MyType {
+          Singleton,
+          Box(EqType)
+        }
+
+        pub let example = take_eq(Singleton)
+      `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test("requires deps to derive Eq in order to derive Eq", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type MyType<a> {
+          Box(a)
+        }
+
+        extern type NotEq
+        extern let my_type: MyType<NotEq>
+
+        pub let example = take_eq(my_type)
+      `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+  });
+
+  test("derives Eq when dependencies derive Eq", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        type IsEq { }
+
+        pub(..) type Option<a> {
+          Some(a),
+          None,
+        }
+
+        extern let is_eq: Option<IsEq>
+
+        pub let example = take_eq(is_eq)
+      `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test("derives in self-recursive types", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type Rec<a> {
+          End,
+          Nest(Rec<a>),
+        }
+
+        pub let example = take_eq(End)
+      `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test("derives in self-recursive types (nested)", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type Box<a> { Box(a) }
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        pub(..) type Rec<a> {
+          End,
+          Nest(Box<Rec<a>>),
+        }
+
+        pub let example = take_eq(End)
+      `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  describe("auto deriving for struct", () => {
+    test("is able to derive Eq in empty structs", () => {
+      const a = new Analysis(
+        "Main",
+        `
+          extern let take_eq: Fn(a) -> a where a: Eq
+  
+          type MyType struct { }
+  
+          pub let example = take_eq(MyType { })
+        `,
+      );
+
+      expect(a.errors).toEqual([]);
+    });
+
+    test("is able to derive Show in empty structs", () => {
+      const a = new Analysis(
+        "Main",
+        `
+          extern let take_shoq: Fn(a) -> a where a: Show
+  
+          type MyType struct { }
+  
+          pub let example = take_shoq(MyType { })
+        `,
+      );
+
+      expect(a.errors).toEqual([]);
+    });
+
+    test("is able to derive Eq in structs where all the fields are Eq", () => {
+      const a = new Analysis(
+        "Main",
+        `
+          extern let take_eq: Fn(a) -> a where a: Eq
+          type EqT { EqT }
+  
+          type MyType struct {
+            x: EqT
+          }
+  
+          pub let example = take_eq(MyType { x: EqT })
+        `,
+      );
+
+      expect(a.errors).toEqual([]);
+    });
+
+    test("is not able to derive Eq in structs where at least a fields is not Eq", () => {
+      const a = new Analysis(
+        "Main",
+        `
+          extern let take_eq: Fn(a) -> a where a: Eq
+  
+          extern type NotEq
+          extern let x: NotEq
+  
+          type MyType struct {
+            x: NotEq
+          }
+  
+          pub let example = take_eq(MyType { x: x })
+        `,
+      );
+
+      expect(a.errors).toHaveLength(1);
+      expect(a.errors[0]?.description).toBeInstanceOf(TraitNotSatified);
+    });
+
+    test("requires struct params to be Eq when they appear in struct, for it to be derived", () => {
+      const a = new Analysis(
+        "Main",
+        `
+          extern let take_eq: Fn(a) -> a where a: Eq
+  
+          type MyType<a, b> struct {
+            x: b,
+          }
+  
+          pub let example = fn x {
+            take_eq(MyType { x: x })
+          }
+        `,
+      );
+
+      expect(a.errors).toEqual([]);
+      expect(getTypes(a)).toEqual({
+        example: "Fn(a) -> MyType<b, a> where a: Eq",
+        take_eq: "Fn(a) -> a where a: Eq",
+      });
+    });
+
+    test("derives deps in recursive types", () => {
+      // TODO assertion
+      const a = new Analysis(
+        "Main",
+        `
+          type Option<a> { None, Some(a) }
+
+          extern let take_eq: Fn(a) -> a where a: Eq
+  
+          type Rec<a> struct {
+            field: Option<Rec<a>>,
+          }
+
+          pub let example = {
+            take_eq(MyType {
+              field: Some(MyType {
+                field: None
+              })
+            })
+          }
+        `,
+      );
+
+      expect(a.errors).toEqual([]);
+    });
+  });
+
+  test("fails to derives in self-recursive types when not derivable (nested)", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type Box<a> { Box(a) }
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        extern type NotEq
+        pub(..) type Rec<a> {
+          End,
+          Nest(Box<Rec<a>>, NotEq),
+        }
+
+        pub let example = take_eq(End)
+      `,
+    );
+
+    expect(a.errors).not.toEqual([]);
+  });
+
+  test("forbid ambiguous instantiations", () => {
+    const a = new Analysis(
+      "Main",
+      `extern let take_default: Fn(a) -> x where a: Default
+    extern let default: a where a: Default
+    pub let forbidden = take_default(default)
+    `,
+    );
+
+    expect(a.errors).not.toEqual([]);
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toEqual(
+      new AmbiguousTypeVar("Default", "Fn(b) -> a where b: Default"),
+    );
+  });
+
+  test("allow non-ambiguos instantiations", () => {
+    resetTraitsRegistry([
+      { trait: "Default", moduleName: "Main", typeName: "X" },
+    ]);
+
+    const a = new Analysis(
+      "Main",
+      `
+    extern type X
+
+    extern let take_x: Fn(X) -> X
+    extern let default: a where a: Default
+    pub let forbidden = take_x(default)
+`,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test("allow non-ambiguous instantiations when setting let type", () => {
+    resetTraitsRegistry([
+      { trait: "Default", moduleName: "Main", typeName: "X" },
+    ]);
+
+    const a = new Analysis(
+      "Main",
+      `
+    extern type X
+    extern let default: a where a: Default
+
+    pub let legal: X = default
+`,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test("repro", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type List<a> { Nil, Cons(a, List<a>) }
+
+      type Bool { True, False }
+      type Option<a> { None, Some(a) }
+
+      extern let find: Fn(List<a>, Fn(a) -> Bool) -> Option<a>
+      extern let (==): Fn(a, a) -> Bool where a: Eq
+
+      pub let res = None == find(Nil, fn _ {
+        False
+      })
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(AmbiguousTypeVar);
+  });
+
+  test("allow ambiguous type vars in let exprs", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      extern type String
+      extern let show: Fn(a) -> String where a: Show
+
+      pub let e = {
+        let _ = fn s {
+          show(s)
+        };
+        42
+      }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(0);
+  });
+
+  test("do not leak allowed instantiated vars when preventing ambiguous vars", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      extern type String
+      extern let show: Fn(a) -> String where a: Show
+      extern let showable: a where a: Show
+
+      pub let e = {
+        let showable1 = showable;
+        let _ = show(showable1);
+        42
+      }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(AmbiguousTypeVar);
+  });
+
+  test("do not emit ambiguos type error when variable is unbound", () => {
+    resetTraitsRegistry([
+      { trait: "Default", moduleName: "Main", typeName: "X" },
+    ]);
+
+    const a = new Analysis(
+      "Main",
+      `
+    extern type X
+    extern let show: Fn(a) -> X where a: Default
+
+    pub let x = show(unbound_var)
+`,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(UnboundVariable);
+  });
+
+  // TODO Skip until type sigs are fixed
+  test.todo("forbid ambiguous instantiations within args", () => {
+    resetTraitsRegistry([
+      {
+        moduleName: "Main",
+        typeName: "Option",
+        trait: "Default",
+        deps: [["Default"]],
+      },
+    ]);
+
+    const a = new Analysis(
+      "Main",
+      `
+      extern type Option<a>
+      extern let default: a where a: Default
+      pub let forbidden: Option<a> = default
+  `,
+    );
+
+    expect(a.errors).not.toEqual([]);
+    expect(a.errors.length).toBe(1);
+    expect(a.errors[0]!.description).toEqual(
+      new AmbiguousTypeVar("Default", "Option<a> where a: Default"),
+    );
   });
 });
 
