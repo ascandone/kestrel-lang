@@ -91,7 +91,7 @@ let value =
 
 There are few built-in types, such as `Int`, `Float`, `String`.
 
-Kestrel has Hindely-Milner type inference, meaning that you don't need to manually write types, as they will be inferred by the typechecker. Still, is possible to give `let` declarations explicit type hints:
+Kestrel has Hindley-Milner type inference, meaning that you don't need to manually write types, as they will be inferred by the typechecker. Still, is possible to give `let` declarations explicit type hints:
 
 ```rust
 let x: Int = 42
