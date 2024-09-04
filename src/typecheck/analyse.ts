@@ -23,8 +23,9 @@ import {
   parse,
 } from "../parser";
 import { bool, char, float, int, list, string } from "./core";
-import { Deps } from "./resolutionStep";
 import { PolyType, TVar, Type, UnifyError, instantiate, unify } from "./type";
+
+export type Deps = Record<string, Analysis>;
 
 export type AnalyseOptions = {
   dependencies?: Deps;
@@ -76,7 +77,7 @@ export class Analysis {
   constructor(
     public readonly ns: string,
     public readonly source: string,
-    // private options: AnalyseOptions = {},
+    public options: AnalyseOptions = {},
   ) {
     const parseResult = parse(source);
     // TODO push parsing/lexer errs in errs

@@ -6,8 +6,10 @@ import {
   DuplicateDeclaration,
   ErrorInfo,
   InvalidCatchall,
+  InvalidField,
   InvalidPipe,
   InvalidTypeArity,
+  MissingRequiredFields,
   TraitNotSatified,
   TypeMismatch,
   TypeParamShadowing,
@@ -1471,6 +1473,626 @@ describe.todo("traits", () => {
       new AmbiguousTypeVar("Default", "Option<a> where a: Default"),
     );
   });
+});
+
+describe.todo("struct", () => {
+  test("allow creating types", () => {
+    const a = new Analysis(
+      "Main",
+      `type Person struct { }
+      extern pub let p: Person
+    `,
+    );
+
+    expect(a.errors).toHaveLength(0);
+  });
+
+  test("allow recursive types", () => {
+    const a = new Analysis(
+      "Main",
+      `extern type List<a>
+      type Person struct {
+        friends: List<Person>,
+      }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(0);
+  });
+
+  test("allow accessing a type's field", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      extern type String
+
+      type Person struct {
+        name: String
+      }
+
+      extern let p: Person
+
+      pub let p_name = p.name
+    `,
+    );
+
+    expect(a.errors).toHaveLength(0);
+    expect(getTypes(a)).toEqual({
+      p: "Person",
+      p_name: "String",
+    });
+  });
+
+  test("infer type when accessing known field", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      extern type String
+
+      type Person struct {
+        name: String
+      }
+
+      pub let p_name = fn p { p.name }
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      p_name: "Fn(Person) -> String",
+    });
+  });
+
+  test("do not allow invalid field access", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      extern type String
+      type Person struct {
+        name: String
+      }
+
+      extern let p: Person
+      pub let invalid = p.invalid_field
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toEqual(
+      new InvalidField("Person", "invalid_field"),
+    );
+    expect(getTypes(a)).toEqual({
+      p: "Person",
+      invalid: "a",
+    });
+  });
+
+  test.todo("handle resolution of other modules' fields", () => {
+    const Person = new Analysis(
+      "Person",
+      `
+      extern type String
+      pub(..) type Person struct {
+        name: String
+      }
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      import Person.{Person(..)}
+      pub let name = fn p { p.name }
+    `,
+      { dependencies: { Person } },
+    );
+
+    expect(a.errors).toHaveLength(0);
+    expect(getTypes(a)).toEqual({
+      name: "Fn(Person) -> String",
+    });
+  });
+
+  test("forbid unknown field on unbound value", () => {
+    const a = new Analysis("Main", `pub let f = fn p { p.invalid_field }`);
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toEqual(
+      new InvalidField("a", "invalid_field"),
+    );
+  });
+
+  test("prevent resolution of other modules' fields when import is not (..)", () => {
+    const Person = new Analysis(
+      "Person",
+      `
+      extern type String
+      pub(..) type Person struct {
+        name: String
+      }
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      import Person.{Person}
+
+      extern pub let x: Person // <- this prevents UnusedExposing err
+
+      pub let name = fn p { p.name }
+    `,
+      { dependencies: { Person } },
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(InvalidField);
+  });
+
+  test.todo("emit bad import if trying to import(..) private fields");
+
+  test("allow accessing fields in other modules if public", () => {
+    const Person = new Analysis(
+      "Person",
+      `
+      extern type String
+      pub(..) type Person struct {
+        name: String
+      }
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      import Person.{Person}
+
+      extern pub let p: Person
+
+      pub let name = p.name 
+    `,
+      { dependencies: { Person } },
+    );
+
+    expect(a.errors).toHaveLength(0);
+    expect(getTypes(a)).toEqual({
+      p: "Person",
+      name: "String",
+    });
+  });
+
+  test("allow accessing fields in same module with qualified field syntax", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern type String
+        type Person struct {
+          name: String
+        }
+
+        pub let name = fn p {
+          p.Person#name
+        }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(0);
+    expect(getTypes(a)).toEqual({
+      name: "Fn(Person) -> String",
+    });
+  });
+
+  test("emit err when field accessed with qualified syntax is invalid", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type Person struct { }
+
+        pub let name = fn p {
+          p.Person#invalid_field
+        }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toEqual(
+      new InvalidField("Person", "invalid_field"),
+    );
+  });
+
+  test("allow accessing fields in other modules with qualified field syntax", () => {
+    const Person = new Analysis(
+      "Person",
+      `
+      extern type String
+      pub(..) type Person struct {
+        name: String
+      }
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      import Person.{Person}
+
+      pub let name = fn p {
+        p.Person#name
+      }
+    `,
+      { dependencies: { Person } },
+    );
+
+    expect(a.errors).toHaveLength(0);
+    expect(getTypes(a)).toEqual({
+      name: "Fn(Person) -> String",
+    });
+  });
+
+  test("emit error when struct of qualified field does not exist", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      pub let name = fn p {
+        p.InvalidType#name
+      }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toEqual(new UnboundType("InvalidType"));
+  });
+
+  test("emit error when qualified field does not exist", () => {
+    const Person = new Analysis(
+      "Person",
+      `
+        pub(..) type Person struct {}
+  `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      import Person.{Person}
+      pub let name = fn p {
+        p.Person#invalid_field
+      }
+    `,
+      { dependencies: { Person } },
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toEqual(
+      new InvalidField("Person", "invalid_field"),
+    );
+  });
+
+  test("emit error when qualified field is private", () => {
+    const Person = new Analysis(
+      "Person",
+      `
+        extern type Int
+        pub type Person struct {
+          private_field: Int
+        }
+  `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      import Person.{Person}
+      pub let name = fn p {
+        p.Person#private_field
+      }
+    `,
+      { dependencies: { Person } },
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toEqual(
+      new InvalidField("Person", "private_field"),
+    );
+  });
+
+  test("emit InvalidField if trying to access private fields", () => {
+    const Person = new Analysis(
+      "Person",
+      `
+      extern type String
+      pub type Person struct { // note fields are  private
+        name: String
+      }
+    `,
+    );
+
+    const a = new Analysis(
+      "Main",
+      `
+      import Person.{Person}
+
+      extern pub let p: Person
+
+      pub let name = p.name 
+    `,
+      { dependencies: { Person } },
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(InvalidField);
+  });
+
+  test("allow creating structs", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type X { X }
+
+        pub type Struct struct {
+          x: X
+        }
+
+        pub let s = Struct {
+          x: X
+        }
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      s: "Struct",
+    });
+  });
+
+  test("typecheck params in struct types", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type Person<a, b, c> struct { }
+        extern pub let p: Person
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(InvalidTypeArity);
+    expect(getTypes(a)).toEqual({
+      p: "Person",
+    });
+  });
+
+  test("handling params in dot access", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type Box<a> struct {
+          field: a
+        }
+
+        extern type Int
+        extern let box: Box<Int>
+
+        pub let field = box.field
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      box: "Box<Int>",
+      field: "Int",
+    });
+  });
+
+  test("inferring params in dot access", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type Box<a> struct {
+          field: a
+        }
+
+        pub let get_field = fn box { box.field }
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      get_field: "Fn(Box<a>) -> a",
+    });
+  });
+
+  test("making sure field values are generalized", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      extern type Int
+      type Box<a> struct {
+        field: a
+      }
+
+      pub let get_field_1: Fn(Box<Int>) -> Int = fn box { box.field }
+      pub let get_field_2 = fn box { box.field }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      get_field_1: "Fn(Box<Int>) -> Int",
+      get_field_2: "Fn(Box<a>) -> a",
+    });
+  });
+
+  test("handling params in struct definition (phantom types)", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type Box<a, b> struct { }
+
+        pub let box = Box { }
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      box: "Box<a, b>",
+    });
+  });
+
+  test("typecheck extra fields", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type Struct struct {}
+
+        pub let s = Struct {
+          extra: 42
+        }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toEqual(
+      new InvalidField("Struct", "extra"),
+    );
+
+    expect(getTypes(a)).toEqual({
+      s: "Struct",
+    });
+  });
+
+  test("typecheck missing fields", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        extern type String
+        type Person struct {
+          name: String,
+          second_name: String,
+        }
+
+        pub let p = Person { }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toEqual(
+      new MissingRequiredFields("Person", ["name", "second_name"]),
+    );
+
+    expect(getTypes(a)).toEqual({
+      p: "Person",
+    });
+  });
+
+  test.todo("prevent from creating structs with private fields");
+
+  test("typecheck fields of wrong type", () => {
+    const a = new Analysis(
+      "Main",
+      `
+        type X {  }
+        type Struct struct {
+          field: X,
+        }
+
+        pub let s = Struct {
+          field: "not x"
+        }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch);
+
+    expect(getTypes(a)).toEqual({
+      s: "Struct",
+    });
+  });
+
+  test("handling params in struct definition when fields are bound to params", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type Box<a, b> struct {
+        a: a,
+        b: b,
+      }
+
+      pub let box = Box {
+        a: "str",
+        b: 42,
+      }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      box: "Box<String, Int>",
+    });
+  });
+
+  test("instantiated fresh vars when creating structs", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type Box<a> struct { a: a }
+
+      pub let str_box = Box { a: "abc" }
+      pub let int_box = Box { a: 42 }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      str_box: "Box<String>",
+      int_box: "Box<Int>",
+    });
+  });
+
+  test("updating a infers the spread arg", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type Box<a> struct { a: a }
+
+      pub let set_a = fn box {
+        Box {
+          a: 0,
+          ..box
+        }
+      }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      set_a: "Fn(Box<Int>) -> Box<Int>",
+    });
+  });
+
+  test("allow to specify a subset of the fields when update another struct", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type Str<a, b> struct {
+        a: a,
+        b: b
+      }
+
+      pub let x = fn other {
+        Str {
+          a: 0,
+          ..other
+        }
+      }
+      
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test.todo("namespaced struct names");
 });
 
 function getTypes(a: Analysis): Record<string, string> {
