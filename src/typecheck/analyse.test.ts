@@ -3,6 +3,7 @@ import { Analysis, resetTraitsRegistry } from "./analyse";
 import { typeToString } from "./type";
 import {
   AmbiguousTypeVar,
+  ArityMismatch,
   DuplicateDeclaration,
   ErrorInfo,
   InvalidCatchall,
@@ -10,6 +11,7 @@ import {
   InvalidPipe,
   InvalidTypeArity,
   MissingRequiredFields,
+  NonExhaustiveMatch,
   TraitNotSatified,
   TypeMismatch,
   TypeParamShadowing,
@@ -861,6 +863,337 @@ describe("pipe operator", () => {
 
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(InvalidPipe);
+  });
+});
+
+describe.todo("pattern matching", () => {
+  test("typechecks matched expressions", () => {
+    const a = new Analysis("Main", `pub let v = match unbound { }`);
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(UnboundVariable);
+  });
+
+  test("typechecks clause return type", () => {
+    const a = new Analysis("Main", `pub let v = match 0 { _ => unbound }`);
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(UnboundVariable);
+  });
+
+  test("unifies clause return types", () => {
+    const a = new Analysis(
+      "Main",
+      `pub let _ = match 0 {
+        _ => 0,
+        _ => 0.0,
+      }
+    `,
+    );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+  });
+
+  test("infers return type", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      pub let x = match 1.1 { _ => 0 }
+    `,
+    );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Int",
+    });
+  });
+
+  test("infers matched type when is a lit", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    pub let f = fn x {
+        match x {
+          42 => 0,
+        }
+      }
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Int) -> Int",
+    });
+  });
+
+  test("infers matched type when there are no args", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type T { C }
+
+      pub let f = fn x {
+        match x {
+          C => 0,
+        }
+      }
+    `,
+    );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(T) -> Int",
+    });
+  });
+
+  test("infers matched type when is qualified", () => {
+    const A = new Analysis("A", `pub(..) type T { T }`);
+
+    const a = new Analysis(
+      "Main",
+      `
+      import A.{T(..)}
+
+      pub let f = fn x {
+        match x {
+          A.T => 0,
+        }
+      }
+    `,
+      {
+        dependencies: { A },
+      },
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(T) -> Int",
+    });
+  });
+
+  test("infers matched type when there are concrete args", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type Bool { }
+      type T { C(Bool) }
+
+      pub let f = fn x {
+        match x {
+          C(_) => 0,
+        }
+      }
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(T) -> Int",
+    });
+  });
+
+  test("typechecks constructor args", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type T<a> { C(a, a, a) }
+
+      pub let f = fn x {
+        match x {
+          C(_, _) => 0,
+        }
+      }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(ArityMismatch);
+    const err = a.errors[0]!.description as ArityMismatch;
+    expect(err.expected).toEqual(3);
+    expect(err.got).toEqual(2);
+  });
+
+  test("infers nested types in p match", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type Bool {
+        True,
+      }
+
+      type Box<a> {
+        Make(a),
+      }
+
+      pub let f = fn x {
+        match x {
+          Make(True) => 0,
+        }
+      }
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Box<Bool>) -> Int",
+    });
+  });
+
+  test("infers nested types in p match, matching on a zero-args variant", () => {
+    const a = new Analysis(
+      "Main",
+      `
+
+      type Option<a> {
+        None,
+        Some(a),
+      }
+
+      pub let f = fn x {
+        match x {
+          None => 2,
+        }
+      }
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Option<a>) -> Int",
+    });
+  });
+
+  test("use pattern matching bound vars", () => {
+    const a = new Analysis("Main", `pub let x = match 0 { a => a }`);
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Int",
+    });
+  });
+
+  test("use pattern matching bound vars in nested types", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type Boxed<a> { Boxed(a) }
+
+      pub let x = match Boxed(42) {
+        Boxed(a) => a
+      }
+    `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Int",
+    });
+  });
+
+  test("return error on wrong matched type", () => {
+    const a = new Analysis(
+      "Main",
+      `type X { X }
+      pub let v = match 42 {
+        X => 0
+      }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+  });
+
+  test("return error on unbound types", () => {
+    const a = new Analysis(
+      "Main",
+      `pub let v = fn x {
+        match x {
+          NotFound => 0
+        }
+      }
+    `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(UnboundVariable);
+  });
+
+  test("infers fn match param type", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    extern type T
+    type Box { Boxed(T) }
+
+    pub let f = fn Boxed(n) { n }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Box) -> T",
+    });
+  });
+
+  test("infers let match type", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    extern type T
+    type Box { Boxed(T) }
+
+    pub let f = fn box {
+      let Boxed(n) = box;
+      n
+    }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Box) -> T",
+    });
+  });
+
+  test("force exhaustive match in let binding when there are many values for a const", () => {
+    const a = new Analysis(
+      "Main",
+      `pub let f = {
+      let 42 = 42;
+      0
+    }
+  `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
+  });
+
+  test("force exhaustive match in let binding when there are many constructors", () => {
+    const a = new Analysis(
+      "Main",
+      `type Union { A, B }
+
+    pub let f = {
+      let A = A;
+      0
+    }
+  `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
+  });
+
+  test("force exhaustive match in fns binding when there are many constructors", () => {
+    const a = new Analysis(
+      "Main",
+      `type Union { A, B }
+
+    pub let f = fn A { 0 }
+  `,
+    );
+
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
   });
 });
 
