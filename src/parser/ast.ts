@@ -81,6 +81,10 @@ export type SyntaxSugar =
       operator: string;
       left: UntypedExpr;
       right: UntypedExpr;
+    }
+  | {
+      type: "block";
+      inner: UntypedExpr;
     };
 
 export type UntypedExpr = Expr<unknown, unknown, unknown, unknown, SyntaxSugar>;

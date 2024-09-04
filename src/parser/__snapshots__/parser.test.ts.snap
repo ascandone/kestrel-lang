@@ -1922,9 +1922,50 @@ exports[`monadic let syntax sugar 1`] = `
         },
       },
       "value": {
-        "body": {
-          "name": "body",
-          "namespace": undefined,
+        "inner": {
+          "body": {
+            "name": "body",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 10,
+                "line": 3,
+              },
+              "start": {
+                "character": 6,
+                "line": 3,
+              },
+            },
+            "type": "identifier",
+          },
+          "mapper": {
+            "name": "bind_f",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 16,
+                "line": 2,
+              },
+              "start": {
+                "character": 10,
+                "line": 2,
+              },
+            },
+          },
+          "pattern": {
+            "name": "x",
+            "range": {
+              "end": {
+                "character": 18,
+                "line": 2,
+              },
+              "start": {
+                "character": 17,
+                "line": 2,
+              },
+            },
+            "type": "identifier",
+          },
           "range": {
             "end": {
               "character": 10,
@@ -1932,38 +1973,25 @@ exports[`monadic let syntax sugar 1`] = `
             },
             "start": {
               "character": 6,
-              "line": 3,
-            },
-          },
-          "type": "identifier",
-        },
-        "mapper": {
-          "name": "bind_f",
-          "namespace": undefined,
-          "range": {
-            "end": {
-              "character": 16,
-              "line": 2,
-            },
-            "start": {
-              "character": 10,
               "line": 2,
             },
           },
-        },
-        "pattern": {
-          "name": "x",
-          "range": {
-            "end": {
-              "character": 18,
-              "line": 2,
+          "type": "let#",
+          "value": {
+            "name": "expr",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 25,
+                "line": 2,
+              },
+              "start": {
+                "character": 21,
+                "line": 2,
+              },
             },
-            "start": {
-              "character": 17,
-              "line": 2,
-            },
+            "type": "identifier",
           },
-          "type": "identifier",
         },
         "range": {
           "end": {
@@ -1975,22 +2003,7 @@ exports[`monadic let syntax sugar 1`] = `
             "line": 1,
           },
         },
-        "type": "let#",
-        "value": {
-          "name": "expr",
-          "namespace": undefined,
-          "range": {
-            "end": {
-              "character": 25,
-              "line": 2,
-            },
-            "start": {
-              "character": 21,
-              "line": 2,
-            },
-          },
-          "type": "identifier",
-        },
+        "type": "block",
       },
     },
   ],
@@ -2031,9 +2044,50 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
         },
       },
       "value": {
-        "body": {
-          "name": "body",
-          "namespace": undefined,
+        "inner": {
+          "body": {
+            "name": "body",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 10,
+                "line": 3,
+              },
+              "start": {
+                "character": 6,
+                "line": 3,
+              },
+            },
+            "type": "identifier",
+          },
+          "mapper": {
+            "name": "bind",
+            "namespace": "Task",
+            "range": {
+              "end": {
+                "character": 19,
+                "line": 2,
+              },
+              "start": {
+                "character": 10,
+                "line": 2,
+              },
+            },
+          },
+          "pattern": {
+            "name": "x",
+            "range": {
+              "end": {
+                "character": 21,
+                "line": 2,
+              },
+              "start": {
+                "character": 20,
+                "line": 2,
+              },
+            },
+            "type": "identifier",
+          },
           "range": {
             "end": {
               "character": 10,
@@ -2041,38 +2095,25 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
             },
             "start": {
               "character": 6,
-              "line": 3,
-            },
-          },
-          "type": "identifier",
-        },
-        "mapper": {
-          "name": "bind",
-          "namespace": "Task",
-          "range": {
-            "end": {
-              "character": 19,
-              "line": 2,
-            },
-            "start": {
-              "character": 10,
               "line": 2,
             },
           },
-        },
-        "pattern": {
-          "name": "x",
-          "range": {
-            "end": {
-              "character": 21,
-              "line": 2,
+          "type": "let#",
+          "value": {
+            "name": "expr",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 28,
+                "line": 2,
+              },
+              "start": {
+                "character": 24,
+                "line": 2,
+              },
             },
-            "start": {
-              "character": 20,
-              "line": 2,
-            },
+            "type": "identifier",
           },
-          "type": "identifier",
         },
         "range": {
           "end": {
@@ -2084,22 +2125,7 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
             "line": 1,
           },
         },
-        "type": "let#",
-        "value": {
-          "name": "expr",
-          "namespace": undefined,
-          "range": {
-            "end": {
-              "character": 28,
-              "line": 2,
-            },
-            "start": {
-              "character": 24,
-              "line": 2,
-            },
-          },
-          "type": "identifier",
-        },
+        "type": "block",
       },
     },
   ],
@@ -3391,6 +3417,23 @@ exports[`parse block with no let 1`] = `
         },
       },
       "value": {
+        "inner": {
+          "range": {
+            "end": {
+              "character": 11,
+              "line": 1,
+            },
+            "start": {
+              "character": 10,
+              "line": 1,
+            },
+          },
+          "type": "constant",
+          "value": {
+            "type": "int",
+            "value": 1,
+          },
+        },
         "range": {
           "end": {
             "character": 13,
@@ -3401,11 +3444,7 @@ exports[`parse block with no let 1`] = `
             "line": 1,
           },
         },
-        "type": "constant",
-        "value": {
-          "type": "int",
-          "value": 1,
-        },
+        "type": "block",
       },
     },
   ],
@@ -4563,7 +4602,38 @@ exports[`parse let block with one let 1`] = `
         },
       },
       "value": {
-        "body": {
+        "inner": {
+          "body": {
+            "range": {
+              "end": {
+                "character": 3,
+                "line": 3,
+              },
+              "start": {
+                "character": 2,
+                "line": 3,
+              },
+            },
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 1,
+            },
+          },
+          "pattern": {
+            "name": "x",
+            "range": {
+              "end": {
+                "character": 7,
+                "line": 2,
+              },
+              "start": {
+                "character": 6,
+                "line": 2,
+              },
+            },
+            "type": "identifier",
+          },
           "range": {
             "end": {
               "character": 3,
@@ -4571,28 +4641,27 @@ exports[`parse let block with one let 1`] = `
             },
             "start": {
               "character": 2,
-              "line": 3,
+              "line": 2,
             },
           },
-          "type": "constant",
+          "type": "let",
           "value": {
-            "type": "int",
-            "value": 1,
-          },
-        },
-        "pattern": {
-          "name": "x",
-          "range": {
-            "end": {
-              "character": 7,
-              "line": 2,
+            "range": {
+              "end": {
+                "character": 11,
+                "line": 2,
+              },
+              "start": {
+                "character": 10,
+                "line": 2,
+              },
             },
-            "start": {
-              "character": 6,
-              "line": 2,
+            "type": "constant",
+            "value": {
+              "type": "int",
+              "value": 0,
             },
           },
-          "type": "identifier",
         },
         "range": {
           "end": {
@@ -4604,24 +4673,7 @@ exports[`parse let block with one let 1`] = `
             "line": 1,
           },
         },
-        "type": "let",
-        "value": {
-          "range": {
-            "end": {
-              "character": 11,
-              "line": 2,
-            },
-            "start": {
-              "character": 10,
-              "line": 2,
-            },
-          },
-          "type": "constant",
-          "value": {
-            "type": "int",
-            "value": 0,
-          },
-        },
+        "type": "block",
       },
     },
   ],
@@ -4662,8 +4714,39 @@ exports[`parse let block with two let stmts 1`] = `
         },
       },
       "value": {
-        "body": {
+        "inner": {
           "body": {
+            "body": {
+              "range": {
+                "end": {
+                  "character": 3,
+                  "line": 4,
+                },
+                "start": {
+                  "character": 2,
+                  "line": 4,
+                },
+              },
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 2,
+              },
+            },
+            "pattern": {
+              "name": "y",
+              "range": {
+                "end": {
+                  "character": 7,
+                  "line": 3,
+                },
+                "start": {
+                  "character": 6,
+                  "line": 3,
+                },
+              },
+              "type": "identifier",
+            },
             "range": {
               "end": {
                 "character": 3,
@@ -4671,25 +4754,38 @@ exports[`parse let block with two let stmts 1`] = `
               },
               "start": {
                 "character": 2,
-                "line": 4,
+                "line": 3,
               },
             },
-            "type": "constant",
+            "type": "let",
             "value": {
-              "type": "int",
-              "value": 2,
+              "range": {
+                "end": {
+                  "character": 11,
+                  "line": 3,
+                },
+                "start": {
+                  "character": 10,
+                  "line": 3,
+                },
+              },
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 1,
+              },
             },
           },
           "pattern": {
-            "name": "y",
+            "name": "x",
             "range": {
               "end": {
                 "character": 7,
-                "line": 3,
+                "line": 2,
               },
               "start": {
                 "character": 6,
-                "line": 3,
+                "line": 2,
               },
             },
             "type": "identifier",
@@ -4701,7 +4797,7 @@ exports[`parse let block with two let stmts 1`] = `
             },
             "start": {
               "character": 2,
-              "line": 3,
+              "line": 2,
             },
           },
           "type": "let",
@@ -4709,33 +4805,19 @@ exports[`parse let block with two let stmts 1`] = `
             "range": {
               "end": {
                 "character": 11,
-                "line": 3,
+                "line": 2,
               },
               "start": {
                 "character": 10,
-                "line": 3,
+                "line": 2,
               },
             },
             "type": "constant",
             "value": {
               "type": "int",
-              "value": 1,
+              "value": 0,
             },
           },
-        },
-        "pattern": {
-          "name": "x",
-          "range": {
-            "end": {
-              "character": 7,
-              "line": 2,
-            },
-            "start": {
-              "character": 6,
-              "line": 2,
-            },
-          },
-          "type": "identifier",
         },
         "range": {
           "end": {
@@ -4747,24 +4829,7 @@ exports[`parse let block with two let stmts 1`] = `
             "line": 1,
           },
         },
-        "type": "let",
-        "value": {
-          "range": {
-            "end": {
-              "character": 11,
-              "line": 2,
-            },
-            "start": {
-              "character": 10,
-              "line": 2,
-            },
-          },
-          "type": "constant",
-          "value": {
-            "type": "int",
-            "value": 0,
-          },
-        },
+        "type": "block",
       },
     },
   ],
@@ -6848,96 +6913,124 @@ exports[`pattern matching > matching pattern in let 1`] = `
         },
       },
       "value": {
-        "body": {
-          "name": "res",
-          "namespace": undefined,
+        "inner": {
+          "body": {
+            "name": "res",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 35,
+                "line": 0,
+              },
+              "start": {
+                "character": 32,
+                "line": 0,
+              },
+            },
+            "type": "identifier",
+          },
+          "pattern": {
+            "args": [
+              {
+                "name": "a",
+                "range": {
+                  "end": {
+                    "character": 17,
+                    "line": 0,
+                  },
+                  "start": {
+                    "character": 16,
+                    "line": 0,
+                  },
+                },
+                "type": "identifier",
+              },
+              {
+                "args": [
+                  {
+                    "name": "b",
+                    "range": {
+                      "end": {
+                        "character": 20,
+                        "line": 0,
+                      },
+                      "start": {
+                        "character": 19,
+                        "line": 0,
+                      },
+                    },
+                    "type": "identifier",
+                  },
+                  {
+                    "name": "c",
+                    "range": {
+                      "end": {
+                        "character": 25,
+                        "line": 0,
+                      },
+                      "start": {
+                        "character": 24,
+                        "line": 0,
+                      },
+                    },
+                    "type": "identifier",
+                  },
+                ],
+                "name": "Cons",
+                "namespace": "List",
+                "range": {
+                  "end": {
+                    "character": 25,
+                    "line": 0,
+                  },
+                  "start": {
+                    "character": 19,
+                    "line": 0,
+                  },
+                },
+                "type": "constructor",
+              },
+            ],
+            "name": "X",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 26,
+                "line": 0,
+              },
+              "start": {
+                "character": 14,
+                "line": 0,
+              },
+            },
+            "type": "constructor",
+          },
           "range": {
             "end": {
               "character": 35,
               "line": 0,
             },
             "start": {
-              "character": 32,
+              "character": 10,
               "line": 0,
             },
           },
-          "type": "identifier",
-        },
-        "pattern": {
-          "args": [
-            {
-              "name": "a",
-              "range": {
-                "end": {
-                  "character": 17,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 16,
-                  "line": 0,
-                },
+          "type": "let",
+          "value": {
+            "name": "x",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 30,
+                "line": 0,
               },
-              "type": "identifier",
-            },
-            {
-              "args": [
-                {
-                  "name": "b",
-                  "range": {
-                    "end": {
-                      "character": 20,
-                      "line": 0,
-                    },
-                    "start": {
-                      "character": 19,
-                      "line": 0,
-                    },
-                  },
-                  "type": "identifier",
-                },
-                {
-                  "name": "c",
-                  "range": {
-                    "end": {
-                      "character": 25,
-                      "line": 0,
-                    },
-                    "start": {
-                      "character": 24,
-                      "line": 0,
-                    },
-                  },
-                  "type": "identifier",
-                },
-              ],
-              "name": "Cons",
-              "namespace": "List",
-              "range": {
-                "end": {
-                  "character": 25,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 19,
-                  "line": 0,
-                },
+              "start": {
+                "character": 29,
+                "line": 0,
               },
-              "type": "constructor",
             },
-          ],
-          "name": "X",
-          "namespace": undefined,
-          "range": {
-            "end": {
-              "character": 26,
-              "line": 0,
-            },
-            "start": {
-              "character": 14,
-              "line": 0,
-            },
+            "type": "identifier",
           },
-          "type": "constructor",
         },
         "range": {
           "end": {
@@ -6949,22 +7042,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
             "line": 0,
           },
         },
-        "type": "let",
-        "value": {
-          "name": "x",
-          "namespace": undefined,
-          "range": {
-            "end": {
-              "character": 30,
-              "line": 0,
-            },
-            "start": {
-              "character": 29,
-              "line": 0,
-            },
-          },
-          "type": "identifier",
-        },
+        "type": "block",
       },
     },
   ],
@@ -7005,110 +7083,138 @@ exports[`pattern matching > matching pattern in let# 1`] = `
         },
       },
       "value": {
-        "body": {
-          "name": "res",
-          "namespace": undefined,
+        "inner": {
+          "body": {
+            "name": "res",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 41,
+                "line": 0,
+              },
+              "start": {
+                "character": 38,
+                "line": 0,
+              },
+            },
+            "type": "identifier",
+          },
+          "mapper": {
+            "name": "ident",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 19,
+                "line": 0,
+              },
+              "start": {
+                "character": 14,
+                "line": 0,
+              },
+            },
+          },
+          "pattern": {
+            "args": [
+              {
+                "name": "a",
+                "range": {
+                  "end": {
+                    "character": 23,
+                    "line": 0,
+                  },
+                  "start": {
+                    "character": 22,
+                    "line": 0,
+                  },
+                },
+                "type": "identifier",
+              },
+              {
+                "args": [
+                  {
+                    "name": "b",
+                    "range": {
+                      "end": {
+                        "character": 26,
+                        "line": 0,
+                      },
+                      "start": {
+                        "character": 25,
+                        "line": 0,
+                      },
+                    },
+                    "type": "identifier",
+                  },
+                  {
+                    "name": "c",
+                    "range": {
+                      "end": {
+                        "character": 31,
+                        "line": 0,
+                      },
+                      "start": {
+                        "character": 30,
+                        "line": 0,
+                      },
+                    },
+                    "type": "identifier",
+                  },
+                ],
+                "name": "Cons",
+                "namespace": "List",
+                "range": {
+                  "end": {
+                    "character": 31,
+                    "line": 0,
+                  },
+                  "start": {
+                    "character": 25,
+                    "line": 0,
+                  },
+                },
+                "type": "constructor",
+              },
+            ],
+            "name": "X",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 32,
+                "line": 0,
+              },
+              "start": {
+                "character": 20,
+                "line": 0,
+              },
+            },
+            "type": "constructor",
+          },
           "range": {
             "end": {
               "character": 41,
               "line": 0,
             },
             "start": {
-              "character": 38,
+              "character": 10,
               "line": 0,
             },
           },
-          "type": "identifier",
-        },
-        "mapper": {
-          "name": "ident",
-          "namespace": undefined,
-          "range": {
-            "end": {
-              "character": 19,
-              "line": 0,
-            },
-            "start": {
-              "character": 14,
-              "line": 0,
-            },
-          },
-        },
-        "pattern": {
-          "args": [
-            {
-              "name": "a",
-              "range": {
-                "end": {
-                  "character": 23,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 22,
-                  "line": 0,
-                },
+          "type": "let#",
+          "value": {
+            "name": "x",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 36,
+                "line": 0,
               },
-              "type": "identifier",
-            },
-            {
-              "args": [
-                {
-                  "name": "b",
-                  "range": {
-                    "end": {
-                      "character": 26,
-                      "line": 0,
-                    },
-                    "start": {
-                      "character": 25,
-                      "line": 0,
-                    },
-                  },
-                  "type": "identifier",
-                },
-                {
-                  "name": "c",
-                  "range": {
-                    "end": {
-                      "character": 31,
-                      "line": 0,
-                    },
-                    "start": {
-                      "character": 30,
-                      "line": 0,
-                    },
-                  },
-                  "type": "identifier",
-                },
-              ],
-              "name": "Cons",
-              "namespace": "List",
-              "range": {
-                "end": {
-                  "character": 31,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 25,
-                  "line": 0,
-                },
+              "start": {
+                "character": 35,
+                "line": 0,
               },
-              "type": "constructor",
             },
-          ],
-          "name": "X",
-          "namespace": undefined,
-          "range": {
-            "end": {
-              "character": 32,
-              "line": 0,
-            },
-            "start": {
-              "character": 20,
-              "line": 0,
-            },
+            "type": "identifier",
           },
-          "type": "constructor",
         },
         "range": {
           "end": {
@@ -7120,22 +7226,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
             "line": 0,
           },
         },
-        "type": "let#",
-        "value": {
-          "name": "x",
-          "namespace": undefined,
-          "range": {
-            "end": {
-              "character": 36,
-              "line": 0,
-            },
-            "start": {
-              "character": 35,
-              "line": 0,
-            },
-          },
-          "type": "identifier",
-        },
+        "type": "block",
       },
     },
   ],

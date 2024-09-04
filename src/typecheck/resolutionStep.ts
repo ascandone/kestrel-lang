@@ -696,6 +696,9 @@ class ResolutionStep {
   private annotateExpr(ast: UntypedExpr): TypedExpr {
     switch (ast.type) {
       // syntax sugar
+      case "block":
+        return this.annotateExpr(ast.inner);
+
       case "pipe":
         if (ast.right.type !== "application") {
           this.errors.push({

@@ -81,6 +81,9 @@ function getBindingPower(name: string): number | undefined {
 
 function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
   switch (other.type) {
+    case "block":
+      return hasLowerPrec(bindingPower, other.inner);
+
     case "infix": {
       const selfBindingPower = getBindingPower(other.operator);
 
@@ -184,6 +187,9 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
     /* v8 ignore next 2 */
     case "syntax-err":
       throw new Error("[unreachable]");
+
+    case "block":
+      return exprToDoc(ast.inner, false);
 
     case "list-literal":
       return group(
