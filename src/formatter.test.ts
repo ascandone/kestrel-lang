@@ -369,14 +369,7 @@ test("allows spaces in toplevel nested let expr", () => {
 
   body
 }
-`).toBeFormatted(`let f = {
-  let x = value;
-
-  let y = value2;
-
-  body
-}
-`);
+`).toBeFormatted();
 });
 
 test("force at 1 space in toplevel nested let expr", () => {
@@ -437,6 +430,17 @@ test("toplevel nested let# expr", () => {
   let#and_then x = value;
   let#My/Mod.and_then y = value2;
   let#and_then z = value3;
+  body
+}
+`).toBeFormatted();
+});
+
+test("allow lines between toplevel nested let# expr", () => {
+  expect(`let f = {
+  let#My/Mod.and_then y = value2;
+
+  let#and_then z = value3;
+
   body
 }
 `).toBeFormatted();

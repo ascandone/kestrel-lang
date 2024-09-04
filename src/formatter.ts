@@ -381,7 +381,7 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
         text(` =`),
         declarationValueToDoc(ast.value),
         text(";"),
-        break_(),
+        linesBetweenLet(ast),
         exprToDoc(ast.body, true),
       );
 
@@ -393,18 +393,13 @@ function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
     }
 
     case "let": {
-      const linesDiff = Math.min(
-        Math.max(ast.body.range.start.line - ast.value.range.end.line - 1, 0),
-        1,
-      );
-
       const inner = concat(
         text("let "),
         patternToDoc(ast.pattern),
         text(" ="),
         declarationValueToDoc(ast.value),
         text(";"),
-        lines(linesDiff),
+        linesBetweenLet(ast),
         exprToDoc(ast.body, true),
       );
 
@@ -762,3 +757,12 @@ function autoParens(infixIndex: number, expr: UntypedExpr) {
 }
 
 const DOT_ACCESS_BINDING_POWER = 0;
+
+function linesBetweenLet(ast: UntypedExpr & { type: "let" | "let#" }) {
+  const linesDiff = Math.min(
+    Math.max(ast.body.range.start.line - ast.value.range.end.line - 1, 0),
+    1,
+  );
+
+  return lines(linesDiff);
+}
