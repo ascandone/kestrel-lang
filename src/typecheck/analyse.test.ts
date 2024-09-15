@@ -822,7 +822,7 @@ describe("ADTs", () => {
     expect(a.errors[0]!.description).toBeInstanceOf(TypeParamShadowing);
   });
 
-  test.todo("prevents catchall to be used in type args", () => {
+  test("prevents catchall to be used in type args", () => {
     const a = new Analysis(
       "Main",
       `
