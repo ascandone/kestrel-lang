@@ -2853,6 +2853,12 @@ describe.todo("prelude", () => {
   });
 });
 
+test.todo("type error when main has not type Task<Unit>", () => {
+  const a = new Analysis("Main", `pub let main = "not-task-type"`);
+  expect(a.errors).toHaveLength(1);
+  expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch);
+});
+
 function getTypes(a: Analysis): Record<string, string> {
   const kvs = [...a.getPublicDeclarations()].map((decl) => {
     return [decl.binding.name, typeToString(a.getType(decl.binding))];
