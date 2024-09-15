@@ -781,7 +781,7 @@ describe("ADTs", () => {
     });
   });
 
-  test.todo("allows using parametric types in constructors", () => {
+  test("allows using parametric types in constructors", () => {
     const a = new Analysis(
       "Main",
       `

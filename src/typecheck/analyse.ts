@@ -25,7 +25,15 @@ import {
 } from "../parser";
 import { bool, char, float, int, list, string } from "./core";
 import { TraitImpl, defaultTraitImpls } from "./defaultImports";
-import { PolyType, TVar, Type, UnifyError, instantiate, unify } from "./type";
+import {
+  PolyType,
+  TVar,
+  Type,
+  UnifyError,
+  generalizeAsScheme,
+  instantiate,
+  unify,
+} from "./type";
 
 export function resetTraitsRegistry(
   traitImpls: TraitImpl[] = defaultTraitImpls,
@@ -395,7 +403,7 @@ export class Analysis {
 
   private typecheckLetDeclaration(decl: UntypedDeclaration) {
     if (decl.typeHint !== undefined) {
-      const typeHintType = this.typeAstToType(decl.typeHint.mono);
+      const typeHintType = this.typeAstToType(decl.typeHint.mono, {});
       this.unifyNode(decl.binding, typeHintType);
     }
     if (decl.extern) {
@@ -540,41 +548,42 @@ export class Analysis {
     }
   }
 
-  private typeAstToType(t: TypeAst): Type {
-    const helper = (t: TypeAst): Type => {
-      switch (t.type) {
-        case "named": {
-          const resolved = this.resolution.resolveType(t);
-          if (resolved === undefined) {
-            throw new Error("TODO handle undefined type: " + t.name);
-          }
-
-          // TODO actually resolve type
-          return {
-            type: "named",
-            args: t.args.map((arg) => helper(arg)),
-            moduleName: resolved.ns,
-            name: resolved.declaration.name,
-          };
+  private typeAstToType(t: TypeAst, boundTypes: Record<string, Type>): Type {
+    switch (t.type) {
+      case "named": {
+        const resolved = this.resolution.resolveType(t);
+        if (resolved === undefined) {
+          throw new Error("TODO handle undefined type: " + t.name);
         }
 
-        case "fn":
-          return {
-            type: "fn",
-            args: t.args.map((arg) => helper(arg)),
-            return: helper(t.return),
-          };
-
-        case "var":
-          // TODO
-          return TVar.fresh().asType();
-
-        case "any":
-          return TVar.fresh().asType();
+        return {
+          type: "named",
+          args: t.args.map((arg) => this.typeAstToType(arg, boundTypes)),
+          moduleName: resolved.ns,
+          name: resolved.declaration.name,
+        };
       }
-    };
 
-    return helper(t);
+      case "fn":
+        return {
+          type: "fn",
+          args: t.args.map((arg) => this.typeAstToType(arg, boundTypes)),
+          return: this.typeAstToType(t.return, boundTypes),
+        };
+
+      case "var": {
+        const lookup = boundTypes[t.ident];
+        if (lookup === undefined) {
+          const fresh = TVar.fresh().asType();
+          boundTypes[t.ident] = fresh;
+          return fresh;
+        }
+        return lookup;
+      }
+
+      case "any":
+        return TVar.fresh().asType();
+    }
   }
 
   private getVariantType(
@@ -583,25 +592,32 @@ export class Analysis {
   ): PolyType {
     // TODO cache and generalize
 
+    const params = declaration.params.map((p): [string, Type] => [
+      p.name,
+      TVar.fresh().asType(),
+    ]);
+
     const ret: Type = {
       type: "named",
-      args: declaration.params.map(() => TVar.fresh().asType()),
-      moduleName: this.ns,
       name: declaration.name,
+      moduleName: this.ns, // TODO handle imported
+      args: params.map((p) => p[1]),
     };
 
+    let mono: Type;
     if (variant.args.length === 0) {
-      return [{}, ret];
+      mono = ret;
+    } else {
+      mono = {
+        type: "fn",
+        args: variant.args.map((arg) =>
+          this.typeAstToType(arg, Object.fromEntries(params)),
+        ),
+        return: ret,
+      };
     }
 
-    return [
-      {},
-      {
-        type: "fn",
-        args: variant.args.map((arg) => this.typeAstToType(arg)),
-        return: ret,
-      },
-    ];
+    return [generalizeAsScheme(mono), mono];
   }
 
   // --- Public interface
