@@ -58,7 +58,7 @@ export type AnalyseOptions = {
   mainType?: Type;
 };
 
-export type PolyTypeNode = UntypedTypeVariant;
+export type PolyTypeNode = UntypedTypeVariant | UntypedTypeDeclaration;
 export type TypedNode = Binding | UntypedExpr;
 export type IdentifierResolution =
   | {
@@ -399,24 +399,43 @@ export class Analysis {
     this.initDeclarationsTypecheck();
   }
 
-  private initHydrateTypes() {
-    for (const typeDecl of this.module.typeDeclarations) {
-      switch (typeDecl.type) {
-        case "extern":
-          return;
-        case "adt":
-          this.hydrateAdt(typeDecl);
-          return;
-        case "struct":
-          throw new Error("handle struct types hydration");
-      }
+  private initHydrateTypeDeclaration(declaration: UntypedTypeDeclaration) {
+    const params = declaration.params.map((p): [string, Type] => [
+      p.name,
+      TVar.fresh().asType(),
+    ]);
+
+    const bound = Object.fromEntries(params);
+
+    const type: Type = {
+      type: "named",
+      name: declaration.name,
+      moduleName: this.ns,
+      args: params.map((p) => p[1]),
+    };
+
+    const scheme = generalizeAsScheme(type);
+    this.polyTypeAnnotations.set(declaration, [scheme, type]);
+
+    switch (declaration.type) {
+      case "adt":
+        for (const variant of declaration.variants) {
+          const t = this.buildVariantType(variant, bound, type);
+          this.polyTypeAnnotations.set(variant, [scheme, t]);
+        }
+        return;
+
+      case "struct":
+        throw new Error("handle struct types hydration");
+
+      case "extern":
+        return;
     }
   }
 
-  private hydrateAdt(typeDecl: UntypedTypeDeclaration & { type: "adt" }) {
-    for (const variant of typeDecl.variants) {
-      const t = this.buildVariantType(variant, typeDecl);
-      this.polyTypeAnnotations.set(variant, t);
+  private initHydrateTypes() {
+    for (const declaration of this.module.typeDeclarations) {
+      this.initHydrateTypeDeclaration(declaration);
     }
   }
 
@@ -479,9 +498,13 @@ export class Analysis {
             return;
 
           case "constructor": {
-            const mono = instantiate(
-              this.buildVariantType(resolution.variant, resolution.declaration),
-            );
+            const lookup = this.polyTypeAnnotations.get(resolution.variant);
+            if (lookup === undefined) {
+              throw new Error("UNDEFINED LO FOR: " + resolution.variant.name);
+              return;
+            }
+
+            const mono = instantiate(lookup);
             this.unifyNode(expr, mono);
             return;
           }
@@ -623,36 +646,21 @@ export class Analysis {
 
   private buildVariantType(
     variant: UntypedTypeVariant,
-    declaration: UntypedTypeDeclaration & { type: "adt" },
-  ): PolyType {
+    bound: Record<string, Type>,
+    retType: Type,
+  ): Type {
     // TODO cache and generalize
+    // TODO reuse declaration's type
 
-    const params = declaration.params.map((p): [string, Type] => [
-      p.name,
-      TVar.fresh().asType(),
-    ]);
-
-    const ret: Type = {
-      type: "named",
-      name: declaration.name,
-      moduleName: this.ns, // TODO handle imported
-      args: params.map((p) => p[1]),
-    };
-
-    let mono: Type;
     if (variant.args.length === 0) {
-      mono = ret;
+      return retType;
     } else {
-      mono = {
+      return {
         type: "fn",
-        args: variant.args.map((arg) =>
-          this.typeAstToType(arg, Object.fromEntries(params), true),
-        ),
-        return: ret,
+        args: variant.args.map((arg) => this.typeAstToType(arg, bound, true)),
+        return: retType,
       };
     }
-
-    return [generalizeAsScheme(mono), mono];
   }
 
   // --- Public interface

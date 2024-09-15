@@ -1,4 +1,4 @@
-import { test, expect, describe } from "vitest";
+import { test, expect, describe, beforeEach } from "vitest";
 import { Analysis, resetTraitsRegistry } from "./analyse";
 import { typeToString } from "./type";
 import {
@@ -27,7 +27,6 @@ import {
   UnusedVariable,
 } from "../errors";
 import { rangeOf } from "./typedAst/__test__/utils";
-import { beforeEach } from "node:test";
 import { dummyRange } from "./defaultImports";
 
 describe("infer constants", () => {
