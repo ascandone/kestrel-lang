@@ -539,6 +539,10 @@ class TypeAstsHydration {
 export class Analysis {
   errors: ErrorInfo[] = [];
 
+  private typeDeclarationsAnnotations = new WeakMap<
+    UntypedDeclaration,
+    PolyType
+  >();
   private typeAnnotations = new WeakMap<TypedNode, TVar>();
   private module: UntypedModule;
 
@@ -579,7 +583,8 @@ export class Analysis {
       if (typeHintType !== undefined) {
         // const typeHintType = this.typeAstToType(decl.typeHint.mono, {}, false);
         // TODO scheme
-        this.unifyNode(decl.binding, typeHintType[1]);
+
+        this.typeDeclarationsAnnotations.set(decl, typeHintType);
       }
     }
     if (decl.extern) {
@@ -587,6 +592,12 @@ export class Analysis {
     }
 
     this.typecheckExpr(decl.value);
+
+    const valueType = this.getType(decl.value);
+    const scheme = generalizeAsScheme(valueType);
+    this.typeDeclarationsAnnotations.set(decl, [scheme, valueType]);
+    // TODO traverse typeHint and compare with polyType
+
     this.unifyNodes(decl.binding, decl.value);
   }
 
@@ -619,11 +630,24 @@ export class Analysis {
         }
 
         switch (resolution.type) {
-          case "global-variable":
+          case "global-variable": {
             // TODO instantiate
             // TODO check order
-            this.unifyNodes(expr, resolution.declaration.binding);
+
+            // TODO handle external ns
+            const poly = this.typeDeclarationsAnnotations.get(
+              resolution.declaration,
+            );
+            if (poly === undefined) {
+              throw new Error(
+                "TODO handle unresolved type for: " +
+                  resolution.declaration.binding.name,
+              );
+            }
+
+            this.unifyNode(expr, instantiate(poly));
             return;
+          }
 
           case "local-variable":
             this.unifyNodes(expr, resolution.binding);
@@ -738,6 +762,15 @@ export class Analysis {
       return tvar.asType();
     }
     return lookup.asType();
+  }
+
+  getDeclarationType(node: UntypedDeclaration): PolyType {
+    const t = this.typeDeclarationsAnnotations.get(node);
+    if (t === undefined) {
+      throw new Error("[unrechable] undefined decl");
+    }
+
+    return t;
   }
 
   *getDeclarations(): Generator<UntypedDeclaration> {
