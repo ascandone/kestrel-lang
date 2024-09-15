@@ -5,6 +5,7 @@ import {
   OccursCheck,
   TraitNotSatified,
   TypeMismatch,
+  UnboundType,
   UnboundVariable,
   UnusedVariable,
 } from "../errors";
@@ -166,8 +167,12 @@ class ResolutionAnalysis {
       return;
     }
 
+    this.emitError({
+      description: new UnboundType(typeAst.name),
+      range: typeAst.range,
+    });
+
     // TODO check imported and check if is qualified
-    // TODO emit unbound type
   }
 
   private runTypeAstResolution(typeAst: TypeAst) {
