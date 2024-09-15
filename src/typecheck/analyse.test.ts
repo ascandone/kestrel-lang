@@ -720,7 +720,7 @@ describe("ADTs", () => {
     });
   });
 
-  test.todo("handles types that do not exist", () => {
+  test("handles types that do not exist", () => {
     const a = new Analysis(
       "Main",
       `
