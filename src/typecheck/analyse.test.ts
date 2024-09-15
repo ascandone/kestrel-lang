@@ -810,7 +810,7 @@ describe("ADTs", () => {
     expect(a.errors[0]!.description).toBeInstanceOf(UnboundTypeParam);
   });
 
-  test.todo("doesn't allow shadowing type params", () => {
+  test("doesn't allow shadowing type params", () => {
     const a = new Analysis(
       "Main",
       `
