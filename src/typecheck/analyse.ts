@@ -597,8 +597,6 @@ export class Analysis {
     const scheme = generalizeAsScheme(valueType);
     this.typeDeclarationsAnnotations.set(decl, [scheme, valueType]);
     // TODO traverse typeHint and compare with polyType
-
-    this.unifyNodes(decl.binding, decl.value);
   }
 
   private unifyNode(node: TypedNode, type: Type) {
