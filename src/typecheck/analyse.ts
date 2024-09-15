@@ -68,41 +68,34 @@ export type IdentifierResolution =
 
 type LocalScope = Record<string, Binding>;
 
-export class Analysis {
-  errors: ErrorInfo[] = [];
-
+class ResolutionAnalysis {
   /** record of types declared in this module */
   private locallyDefinedTypes = new Map<string, UntypedTypeDeclaration>();
-
   /** record of variants declared in this module */
   private locallyDefinedVariants = new Map<
     string,
     [UntypedTypeDeclaration & { type: "adt" }, UntypedTypeVariant]
   >();
 
+  private unusedBindings = new WeakSet<Binding>();
   private identifiersResolutions = new WeakMap<
     UntypedExpr & { type: "identifier" },
     IdentifierResolution
   >();
-  private unusedBindings = new WeakSet<Binding>();
-
-  private typeAnnotations = new WeakMap<TypedNode, TVar>();
-  private module: UntypedModule;
 
   constructor(
-    public readonly ns: string,
-    public readonly source: string,
-    public options: AnalyseOptions = {},
+    private ns: string,
+    private module: UntypedModule,
+    private emitError: (error: ErrorInfo) => void,
   ) {
-    const parseResult = parse(source);
-    // TODO push parsing/lexer errs in errs
-
-    this.module = parseResult.parsed;
-
     this.initTypesResolution();
     this.initDeclarationsResolution();
+  }
 
-    this.initDeclarationsTypecheck();
+  public resolveIdentifier(
+    identifier: UntypedExpr & { type: "identifier" },
+  ): IdentifierResolution | undefined {
+    return this.identifiersResolutions.get(identifier);
   }
 
   private initTypesResolution() {
@@ -137,93 +130,6 @@ export class Analysis {
     }
   }
 
-  private initDeclarationsTypecheck() {
-    for (const letDecl of this.module.declarations) {
-      this.typecheckLetDeclaration(letDecl);
-    }
-  }
-
-  private typecheckLetDeclaration(decl: UntypedDeclaration) {
-    if (decl.typeHint !== undefined) {
-      const typeHintType = this.typeAstToType(decl.typeHint.mono);
-      this.unifyNode(decl.binding, typeHintType);
-    }
-    if (decl.extern) {
-      return;
-    }
-
-    this.typecheckExpr(decl.value);
-    this.unifyNodes(decl.binding, decl.value);
-  }
-
-  private unifyNode(node: TypedNode, type: Type) {
-    const err = unify(this.getType(node), type);
-    if (err !== undefined) {
-      this.errors.push(unifyErrToErrorInfo(node, err));
-      return;
-    }
-  }
-
-  private unifyNodes(left: TypedNode, right: TypedNode) {
-    this.unifyNode(left, this.getType(right));
-  }
-
-  private evaluateResolution(
-    identifier: UntypedExpr & { type: "identifier" },
-    localScope: LocalScope = {},
-  ): IdentifierResolution | undefined {
-    // Search locals first
-    const localLookup = localScope[identifier.name];
-    if (localLookup !== undefined) {
-      return { type: "local-variable", binding: localLookup };
-    }
-
-    // search variants
-    const variantLookup = this.locallyDefinedVariants.get(identifier.name);
-    if (variantLookup !== undefined) {
-      const [declaration, variant] = variantLookup;
-
-      return {
-        type: "constructor",
-        namespace: this.ns,
-        declaration,
-        variant,
-      };
-    }
-
-    // TODO search locallyDefinedDeclarations instead
-    for (const declaration of this.getDeclarations()) {
-      if (declaration.binding.name === identifier.name) {
-        return {
-          type: "global-variable",
-          declaration,
-          namespace: this.ns,
-        };
-      }
-    }
-    return undefined;
-  }
-
-  private extractPatternIdentifiers(pattern: UntypedMatchPattern): Binding[] {
-    switch (pattern.type) {
-      case "identifier":
-        return [pattern];
-
-      case "lit":
-      case "constructor":
-        throw new Error("TODO handle pattern of type: " + pattern.type);
-    }
-  }
-
-  private checkUnusedVars(expr: Binding) {
-    if (this.unusedBindings.has(expr)) {
-      this.errors.push({
-        range: expr.range,
-        description: new UnusedVariable(expr.name, "local"),
-      });
-    }
-  }
-
   private runValuesResolution(
     expr: UntypedExpr,
     localScope: LocalScope,
@@ -236,7 +142,7 @@ export class Analysis {
       case "identifier": {
         const res = this.evaluateResolution(expr, localScope);
         if (res === undefined) {
-          this.errors.push({
+          this.emitError({
             range: expr.range,
             description: new UnboundVariable(expr.name),
           });
@@ -329,6 +235,119 @@ export class Analysis {
     }
   }
 
+  private evaluateResolution(
+    identifier: UntypedExpr & { type: "identifier" },
+    localScope: LocalScope = {},
+  ): IdentifierResolution | undefined {
+    // Search locals first
+    const localLookup = localScope[identifier.name];
+    if (localLookup !== undefined) {
+      return { type: "local-variable", binding: localLookup };
+    }
+
+    // search variants
+    const variantLookup = this.locallyDefinedVariants.get(identifier.name);
+    if (variantLookup !== undefined) {
+      const [declaration, variant] = variantLookup;
+
+      return {
+        type: "constructor",
+        namespace: this.ns,
+        declaration,
+        variant,
+      };
+    }
+
+    // TODO search locallyDefinedDeclarations instead
+    for (const declaration of this.module.declarations) {
+      if (declaration.binding.name === identifier.name) {
+        return {
+          type: "global-variable",
+          declaration,
+          namespace: this.ns,
+        };
+      }
+    }
+    return undefined;
+  }
+
+  private extractPatternIdentifiers(pattern: UntypedMatchPattern): Binding[] {
+    switch (pattern.type) {
+      case "identifier":
+        return [pattern];
+
+      case "lit":
+      case "constructor":
+        throw new Error("TODO handle pattern of type: " + pattern.type);
+    }
+  }
+
+  private checkUnusedVars(expr: Binding) {
+    if (this.unusedBindings.has(expr)) {
+      this.emitError({
+        range: expr.range,
+        description: new UnusedVariable(expr.name, "local"),
+      });
+    }
+  }
+}
+
+export class Analysis {
+  errors: ErrorInfo[] = [];
+
+  private typeAnnotations = new WeakMap<TypedNode, TVar>();
+  private module: UntypedModule;
+  private resolution: ResolutionAnalysis;
+
+  constructor(
+    public readonly ns: string,
+    public readonly source: string,
+    public options: AnalyseOptions = {},
+  ) {
+    const parseResult = parse(source);
+    // TODO push parsing/lexer errs in errs
+
+    this.module = parseResult.parsed;
+    this.resolution = new ResolutionAnalysis(
+      ns,
+      this.module,
+      this.errors.push.bind(this.errors),
+    );
+
+    this.initDeclarationsTypecheck();
+  }
+
+  private initDeclarationsTypecheck() {
+    for (const letDecl of this.module.declarations) {
+      this.typecheckLetDeclaration(letDecl);
+    }
+  }
+
+  private typecheckLetDeclaration(decl: UntypedDeclaration) {
+    if (decl.typeHint !== undefined) {
+      const typeHintType = this.typeAstToType(decl.typeHint.mono);
+      this.unifyNode(decl.binding, typeHintType);
+    }
+    if (decl.extern) {
+      return;
+    }
+
+    this.typecheckExpr(decl.value);
+    this.unifyNodes(decl.binding, decl.value);
+  }
+
+  private unifyNode(node: TypedNode, type: Type) {
+    const err = unify(this.getType(node), type);
+    if (err !== undefined) {
+      this.errors.push(unifyErrToErrorInfo(node, err));
+      return;
+    }
+  }
+
+  private unifyNodes(left: TypedNode, right: TypedNode) {
+    this.unifyNode(left, this.getType(right));
+  }
+
   private typecheckExpr(expr: UntypedExpr): undefined {
     switch (expr.type) {
       case "syntax-err":
@@ -339,7 +358,7 @@ export class Analysis {
         return;
 
       case "identifier": {
-        const resolution = this.identifiersResolutions.get(expr);
+        const resolution = this.resolution.resolveIdentifier(expr);
         if (resolution === undefined) {
           // error was already emitted during resolution
           return;
