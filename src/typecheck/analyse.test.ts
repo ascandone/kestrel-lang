@@ -678,7 +678,7 @@ describe("ADTs", () => {
     });
   });
 
-  test.todo("generalize type constructors", () => {
+  test("generalize type constructors", () => {
     const a = new Analysis(
       "Main",
       `
