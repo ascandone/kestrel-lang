@@ -13,6 +13,7 @@ import {
 import {
   Binding,
   ConstLiteral,
+  PolyTypeAst,
   RangeMeta,
   TypeAst,
   UntypedDeclaration,
@@ -58,7 +59,7 @@ export type AnalyseOptions = {
   mainType?: Type;
 };
 
-export type PolyTypeNode = UntypedTypeVariant | UntypedTypeDeclaration;
+export type PolyTypeNode = UntypedTypeVariant;
 export type TypedNode = Binding | UntypedExpr;
 export type IdentifierResolution =
   | {
@@ -372,31 +373,38 @@ class ResolutionAnalysis {
   }
 }
 
-export class Analysis {
-  errors: ErrorInfo[] = [];
-
-  private polyTypeAnnotations = new WeakMap<PolyTypeNode, PolyType>();
-  private typeAnnotations = new WeakMap<TypedNode, TVar>();
-  private module: UntypedModule;
-  private resolution: ResolutionAnalysis;
+class TypeAstsHydration {
+  private polyTypes = new WeakMap<
+    UntypedTypeDeclaration | PolyTypeAst | UntypedTypeVariant,
+    PolyType
+  >();
+  public getPolytype(
+    node: UntypedTypeDeclaration | PolyTypeAst | UntypedTypeVariant,
+  ): PolyType | undefined {
+    return this.polyTypes.get(node);
+  }
 
   constructor(
-    public readonly ns: string,
-    public readonly source: string,
-    public options: AnalyseOptions = {},
+    private ns: string,
+    private module: UntypedModule,
+    private resolution: ResolutionAnalysis,
+    private emitError: (error: ErrorInfo) => void,
   ) {
-    const parseResult = parse(source);
-    // TODO push parsing/lexer errs in errs
-
-    this.module = parseResult.parsed;
-    this.resolution = new ResolutionAnalysis(
-      ns,
-      this.module,
-      this.errors.push.bind(this.errors),
-    );
-
     this.initHydrateTypes();
-    this.initDeclarationsTypecheck();
+  }
+
+  private initHydrateTypes() {
+    for (const declaration of this.module.typeDeclarations) {
+      this.initHydrateTypeDeclaration(declaration);
+    }
+
+    for (const declaration of this.module.declarations) {
+      if (declaration.typeHint !== undefined) {
+        const t = this.typeAstToType(declaration.typeHint.mono, {}, false);
+        // TODO scheme
+        this.polyTypes.set(declaration.typeHint, [{}, t]);
+      }
+    }
   }
 
   private initHydrateTypeDeclaration(declaration: UntypedTypeDeclaration) {
@@ -415,13 +423,13 @@ export class Analysis {
     };
 
     const scheme = generalizeAsScheme(type);
-    this.polyTypeAnnotations.set(declaration, [scheme, type]);
+    this.polyTypes.set(declaration, [scheme, type]);
 
     switch (declaration.type) {
       case "adt":
         for (const variant of declaration.variants) {
           const t = this.buildVariantType(variant, bound, type);
-          this.polyTypeAnnotations.set(variant, [scheme, t]);
+          this.polyTypes.set(variant, [scheme, t]);
         }
         return;
 
@@ -433,10 +441,103 @@ export class Analysis {
     }
   }
 
-  private initHydrateTypes() {
-    for (const declaration of this.module.typeDeclarations) {
-      this.initHydrateTypeDeclaration(declaration);
+  private buildVariantType(
+    variant: UntypedTypeVariant,
+    bound: Record<string, Type>,
+    retType: Type,
+  ): Type {
+    // TODO cache and generalize
+    // TODO reuse declaration's type
+
+    if (variant.args.length === 0) {
+      return retType;
+    } else {
+      return {
+        type: "fn",
+        args: variant.args.map((arg) => this.typeAstToType(arg, bound, true)),
+        return: retType,
+      };
     }
+  }
+
+  private typeAstToType(
+    t: TypeAst,
+    boundTypes: Record<string, Type>,
+    forbidUnbound: boolean,
+  ): Type {
+    switch (t.type) {
+      case "any":
+        return TVar.fresh().asType();
+
+      case "named": {
+        const resolved = this.resolution.resolveType(t);
+        if (resolved === undefined) {
+          return TVar.fresh().asType();
+        }
+
+        return {
+          type: "named",
+          args: t.args.map((arg) =>
+            this.typeAstToType(arg, boundTypes, forbidUnbound),
+          ),
+          moduleName: resolved.ns,
+          name: resolved.declaration.name,
+        };
+      }
+
+      case "fn":
+        return {
+          type: "fn",
+          args: t.args.map((arg) =>
+            this.typeAstToType(arg, boundTypes, forbidUnbound),
+          ),
+          return: this.typeAstToType(t.return, boundTypes, forbidUnbound),
+        };
+
+      case "var": {
+        return getOrWriteDefault(boundTypes, t.ident, (): Type => {
+          if (forbidUnbound) {
+            this.emitError({
+              description: new UnboundTypeParam(t.ident),
+              range: t.range,
+            });
+          }
+          return TVar.fresh().asType();
+        });
+      }
+    }
+  }
+}
+
+export class Analysis {
+  errors: ErrorInfo[] = [];
+
+  private typeAnnotations = new WeakMap<TypedNode, TVar>();
+  private module: UntypedModule;
+
+  private resolution: ResolutionAnalysis;
+  private typesHydration: TypeAstsHydration;
+
+  constructor(
+    public readonly ns: string,
+    public readonly source: string,
+    public options: AnalyseOptions = {},
+  ) {
+    const parseResult = parse(source);
+    const emitError = this.errors.push.bind(this.errors);
+
+    // TODO push parsing/lexer errs in errs
+
+    this.module = parseResult.parsed;
+    this.resolution = new ResolutionAnalysis(ns, this.module, emitError);
+    this.typesHydration = new TypeAstsHydration(
+      ns,
+      this.module,
+      this.resolution,
+      emitError,
+    );
+
+    this.initDeclarationsTypecheck();
   }
 
   private initDeclarationsTypecheck() {
@@ -447,8 +548,12 @@ export class Analysis {
 
   private typecheckLetDeclaration(decl: UntypedDeclaration) {
     if (decl.typeHint !== undefined) {
-      const typeHintType = this.typeAstToType(decl.typeHint.mono, {}, false);
-      this.unifyNode(decl.binding, typeHintType);
+      const typeHintType = this.typesHydration.getPolytype(decl.typeHint);
+      if (typeHintType !== undefined) {
+        // const typeHintType = this.typeAstToType(decl.typeHint.mono, {}, false);
+        // TODO scheme
+        this.unifyNode(decl.binding, typeHintType[1]);
+      }
     }
     if (decl.extern) {
       return;
@@ -498,7 +603,7 @@ export class Analysis {
             return;
 
           case "constructor": {
-            const lookup = this.polyTypeAnnotations.get(resolution.variant);
+            const lookup = this.typesHydration.getPolytype(resolution.variant);
             if (lookup === undefined) {
               throw new Error("UNDEFINED LO FOR: " + resolution.variant.name);
               return;
@@ -593,73 +698,6 @@ export class Analysis {
       case "field-access":
       case "match":
         throw new Error("TODO handle typecheck of: " + expr.type);
-    }
-  }
-
-  private typeAstToType(
-    t: TypeAst,
-    boundTypes: Record<string, Type>,
-    forbidUnbound: boolean,
-  ): Type {
-    switch (t.type) {
-      case "any":
-        return TVar.fresh().asType();
-
-      case "named": {
-        const resolved = this.resolution.resolveType(t);
-        if (resolved === undefined) {
-          return TVar.fresh().asType();
-        }
-
-        return {
-          type: "named",
-          args: t.args.map((arg) =>
-            this.typeAstToType(arg, boundTypes, forbidUnbound),
-          ),
-          moduleName: resolved.ns,
-          name: resolved.declaration.name,
-        };
-      }
-
-      case "fn":
-        return {
-          type: "fn",
-          args: t.args.map((arg) =>
-            this.typeAstToType(arg, boundTypes, forbidUnbound),
-          ),
-          return: this.typeAstToType(t.return, boundTypes, forbidUnbound),
-        };
-
-      case "var": {
-        return getOrWriteDefault(boundTypes, t.ident, (): Type => {
-          if (forbidUnbound) {
-            this.errors.push({
-              description: new UnboundTypeParam(t.ident),
-              range: t.range,
-            });
-          }
-          return TVar.fresh().asType();
-        });
-      }
-    }
-  }
-
-  private buildVariantType(
-    variant: UntypedTypeVariant,
-    bound: Record<string, Type>,
-    retType: Type,
-  ): Type {
-    // TODO cache and generalize
-    // TODO reuse declaration's type
-
-    if (variant.args.length === 0) {
-      return retType;
-    } else {
-      return {
-        type: "fn",
-        args: variant.args.map((arg) => this.typeAstToType(arg, bound, true)),
-        return: retType,
-      };
     }
   }
 
