@@ -2,6 +2,7 @@
 import {
   ErrorInfo,
   InvalidPipe,
+  InvalidTypeArity,
   OccursCheck,
   TraitNotSatified,
   TypeMismatch,
@@ -473,6 +474,17 @@ class TypeAstsHydration {
         const resolved = this.resolution.resolveType(t);
         if (resolved === undefined) {
           return TVar.fresh().asType();
+        }
+
+        if (resolved.declaration.params.length !== t.args.length) {
+          this.emitError({
+            description: new InvalidTypeArity(
+              resolved.declaration.name,
+              resolved.declaration.params.length,
+              t.args.length,
+            ),
+            range: t.range,
+          });
         }
 
         return {
