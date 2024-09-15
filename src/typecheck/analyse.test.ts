@@ -798,7 +798,7 @@ describe("ADTs", () => {
     });
   });
 
-  test.todo("forbids unbound type params", () => {
+  test("forbids unbound type params", () => {
     const a = new Analysis(
       "Main",
       `

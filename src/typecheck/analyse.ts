@@ -6,6 +6,7 @@ import {
   TraitNotSatified,
   TypeMismatch,
   UnboundType,
+  UnboundTypeParam,
   UnboundVariable,
   UnusedVariable,
 } from "../errors";
@@ -57,6 +58,7 @@ export type AnalyseOptions = {
   mainType?: Type;
 };
 
+export type PolyTypeNode = UntypedTypeVariant;
 export type TypedNode = Binding | UntypedExpr;
 export type IdentifierResolution =
   | {
@@ -373,6 +375,7 @@ class ResolutionAnalysis {
 export class Analysis {
   errors: ErrorInfo[] = [];
 
+  private polyTypeAnnotations = new WeakMap<PolyTypeNode, PolyType>();
   private typeAnnotations = new WeakMap<TypedNode, TVar>();
   private module: UntypedModule;
   private resolution: ResolutionAnalysis;
@@ -392,7 +395,29 @@ export class Analysis {
       this.errors.push.bind(this.errors),
     );
 
+    this.initHydrateTypes();
     this.initDeclarationsTypecheck();
+  }
+
+  private initHydrateTypes() {
+    for (const typeDecl of this.module.typeDeclarations) {
+      switch (typeDecl.type) {
+        case "extern":
+          return;
+        case "adt":
+          this.hydrateAdt(typeDecl);
+          return;
+        case "struct":
+          throw new Error("handle struct types hydration");
+      }
+    }
+  }
+
+  private hydrateAdt(typeDecl: UntypedTypeDeclaration & { type: "adt" }) {
+    for (const variant of typeDecl.variants) {
+      const t = this.buildVariantType(variant, typeDecl);
+      this.polyTypeAnnotations.set(variant, t);
+    }
   }
 
   private initDeclarationsTypecheck() {
@@ -403,7 +428,7 @@ export class Analysis {
 
   private typecheckLetDeclaration(decl: UntypedDeclaration) {
     if (decl.typeHint !== undefined) {
-      const typeHintType = this.typeAstToType(decl.typeHint.mono, {});
+      const typeHintType = this.typeAstToType(decl.typeHint.mono, {}, false);
       this.unifyNode(decl.binding, typeHintType);
     }
     if (decl.extern) {
@@ -455,7 +480,7 @@ export class Analysis {
 
           case "constructor": {
             const mono = instantiate(
-              this.getVariantType(resolution.variant, resolution.declaration),
+              this.buildVariantType(resolution.variant, resolution.declaration),
             );
             this.unifyNode(expr, mono);
             return;
@@ -548,17 +573,26 @@ export class Analysis {
     }
   }
 
-  private typeAstToType(t: TypeAst, boundTypes: Record<string, Type>): Type {
+  private typeAstToType(
+    t: TypeAst,
+    boundTypes: Record<string, Type>,
+    forbidUnbound: boolean,
+  ): Type {
     switch (t.type) {
+      case "any":
+        return TVar.fresh().asType();
+
       case "named": {
         const resolved = this.resolution.resolveType(t);
         if (resolved === undefined) {
-          throw new Error("TODO handle undefined type: " + t.name);
+          return TVar.fresh().asType();
         }
 
         return {
           type: "named",
-          args: t.args.map((arg) => this.typeAstToType(arg, boundTypes)),
+          args: t.args.map((arg) =>
+            this.typeAstToType(arg, boundTypes, forbidUnbound),
+          ),
           moduleName: resolved.ns,
           name: resolved.declaration.name,
         };
@@ -567,26 +601,27 @@ export class Analysis {
       case "fn":
         return {
           type: "fn",
-          args: t.args.map((arg) => this.typeAstToType(arg, boundTypes)),
-          return: this.typeAstToType(t.return, boundTypes),
+          args: t.args.map((arg) =>
+            this.typeAstToType(arg, boundTypes, forbidUnbound),
+          ),
+          return: this.typeAstToType(t.return, boundTypes, forbidUnbound),
         };
 
       case "var": {
-        const lookup = boundTypes[t.ident];
-        if (lookup === undefined) {
-          const fresh = TVar.fresh().asType();
-          boundTypes[t.ident] = fresh;
-          return fresh;
-        }
-        return lookup;
+        return getOrWriteDefault(boundTypes, t.ident, (): Type => {
+          if (forbidUnbound) {
+            this.errors.push({
+              description: new UnboundTypeParam(t.ident),
+              range: t.range,
+            });
+          }
+          return TVar.fresh().asType();
+        });
       }
-
-      case "any":
-        return TVar.fresh().asType();
     }
   }
 
-  private getVariantType(
+  private buildVariantType(
     variant: UntypedTypeVariant,
     declaration: UntypedTypeDeclaration & { type: "adt" },
   ): PolyType {
@@ -611,7 +646,7 @@ export class Analysis {
       mono = {
         type: "fn",
         args: variant.args.map((arg) =>
-          this.typeAstToType(arg, Object.fromEntries(params)),
+          this.typeAstToType(arg, Object.fromEntries(params), true),
         ),
         return: ret,
       };
@@ -682,4 +717,18 @@ function getConstantType(x: ConstLiteral): Type {
     case "char":
       return char;
   }
+}
+
+function getOrWriteDefault<T, K extends string | number = string>(
+  r: Record<K, T>,
+  k: K,
+  onDefault: () => T,
+): T {
+  const lookup = r[k];
+  if (lookup !== undefined) {
+    return lookup;
+  }
+  const defaultValue = onDefault();
+  r[k] = defaultValue;
+  return defaultValue;
 }
