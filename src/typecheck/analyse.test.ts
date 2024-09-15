@@ -834,7 +834,7 @@ describe("ADTs", () => {
     expect(a.errors[0]!.description).toBeInstanceOf(InvalidCatchall);
   });
 
-  test.todo("allows self-recursive type", () => {
+  test("allows self-recursive type", () => {
     const a = new Analysis(
       "Main",
       `
