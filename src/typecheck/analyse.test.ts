@@ -733,7 +733,7 @@ describe("ADTs", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(UnboundType);
   });
 
-  test.todo("checks arity in constructors", () => {
+  test("checks arity in constructors", () => {
     const a = new Analysis(
       "Main",
       `  
@@ -751,6 +751,7 @@ describe("ADTs", () => {
     const desc = a.errors[0]?.description as InvalidTypeArity;
     expect(desc.expected).toEqual(1);
     expect(desc.got).toEqual(2);
+    expect(desc.type).toEqual("T");
   });
 
   test("add types to the type pool", () => {
