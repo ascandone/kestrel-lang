@@ -7,6 +7,7 @@ import {
   OccursCheck,
   TraitNotSatified,
   TypeMismatch,
+  TypeParamShadowing,
   UnboundType,
   UnboundTypeParam,
   UnboundVariable,
@@ -410,18 +411,25 @@ class TypeAstsHydration {
   }
 
   private initHydrateTypeDeclaration(declaration: UntypedTypeDeclaration) {
-    const params = declaration.params.map((p): [string, Type] => [
-      p.name,
-      TVar.fresh().asType(),
-    ]);
+    const bound: Record<string, Type> = {};
+    const args = declaration.params.map((p): Type => {
+      if (bound[p.name] !== undefined) {
+        this.emitError({
+          description: new TypeParamShadowing(p.name),
+          range: p.range,
+        });
+      }
 
-    const bound = Object.fromEntries(params);
+      const fresh = TVar.fresh().asType();
+      bound[p.name] = fresh;
+      return fresh;
+    });
 
     const type: Type = {
       type: "named",
       name: declaration.name,
       moduleName: this.ns,
-      args: params.map((p) => p[1]),
+      args,
     };
 
     const scheme = generalizeAsScheme(type);
