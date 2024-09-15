@@ -766,7 +766,7 @@ describe("ADTs", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test.todo("handles parametric types", () => {
+  test("handles parametric types", () => {
     const a = new Analysis(
       "Main",
       `
