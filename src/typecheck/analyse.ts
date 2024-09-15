@@ -1,6 +1,7 @@
 /* eslint-disable require-yield */
 import {
   ErrorInfo,
+  InvalidCatchall,
   InvalidPipe,
   InvalidTypeArity,
   OccursCheck,
@@ -468,6 +469,12 @@ class TypeAstsHydration {
   ): Type {
     switch (t.type) {
       case "any":
+        if (forbidUnbound) {
+          this.emitError({
+            description: new InvalidCatchall(),
+            range: t.range,
+          });
+        }
         return TVar.fresh().asType();
 
       case "named": {
