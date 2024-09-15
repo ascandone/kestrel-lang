@@ -66,6 +66,11 @@ export type IdentifierResolution =
       namespace: string;
     };
 
+export type TypeResolution = {
+  declaration: UntypedTypeDeclaration;
+  ns: string;
+};
+
 type LocalScope = Record<string, Binding>;
 
 class ResolutionAnalysis {
@@ -83,6 +88,11 @@ class ResolutionAnalysis {
     IdentifierResolution
   >();
 
+  private typesResolutions = new WeakMap<
+    TypeAst & { type: "named" },
+    TypeResolution
+  >();
+
   constructor(
     private ns: string,
     private module: UntypedModule,
@@ -98,24 +108,40 @@ class ResolutionAnalysis {
     return this.identifiersResolutions.get(identifier);
   }
 
+  public resolveType(
+    typeAst: TypeAst & { type: "named" },
+  ): TypeResolution | undefined {
+    return this.typesResolutions.get(typeAst);
+  }
+
   private initTypesResolution() {
     // 1. register all the types
     for (const typeDecl of this.module.typeDeclarations) {
       this.locallyDefinedTypes.set(typeDecl.name, typeDecl);
     }
 
-    // 2. register constructors and fields
+    // 2. register and resolve constructors and fields
     for (const typeDecl of this.module.typeDeclarations) {
       switch (typeDecl.type) {
         case "adt":
           for (const variant of typeDecl.variants) {
             this.locallyDefinedVariants.set(variant.name, [typeDecl, variant]);
+            for (const arg of variant.args) {
+              this.runTypeAstResolution(arg);
+            }
           }
           break;
         case "struct":
           throw new Error("TODO handle struct");
         case "extern":
           break;
+      }
+    }
+
+    // 3. resolve type hints
+    for (const decl of this.module.declarations) {
+      if (decl.typeHint !== undefined) {
+        this.runTypeAstResolution(decl.typeHint.mono);
       }
     }
   }
@@ -127,6 +153,45 @@ class ResolutionAnalysis {
       }
 
       this.runValuesResolution(letDecl.value, {});
+    }
+  }
+
+  private runNamedTypeResolution(typeAst: TypeAst & { type: "named" }) {
+    const localT = this.locallyDefinedTypes.get(typeAst.name);
+    if (localT !== undefined) {
+      this.typesResolutions.set(typeAst, {
+        declaration: localT,
+        ns: this.ns,
+      });
+      return;
+    }
+
+    // TODO check imported and check if is qualified
+    // TODO emit unbound type
+  }
+
+  private runTypeAstResolution(typeAst: TypeAst) {
+    switch (typeAst.type) {
+      case "named": {
+        // TODO emit
+        for (const arg of typeAst.args) {
+          this.runTypeAstResolution(arg);
+        }
+
+        return this.runNamedTypeResolution(typeAst);
+      }
+
+      case "fn": {
+        for (const arg of typeAst.args) {
+          this.runTypeAstResolution(arg);
+        }
+        this.runTypeAstResolution(typeAst.return);
+        return;
+      }
+
+      case "var":
+      case "any":
+        return;
     }
   }
 
@@ -473,14 +538,20 @@ export class Analysis {
   private typeAstToType(t: TypeAst): Type {
     const helper = (t: TypeAst): Type => {
       switch (t.type) {
-        case "named":
+        case "named": {
+          const resolved = this.resolution.resolveType(t);
+          if (resolved === undefined) {
+            throw new Error("TODO handle undefined type: " + t.name);
+          }
+
           // TODO actually resolve type
           return {
             type: "named",
             args: t.args.map((arg) => helper(arg)),
-            moduleName: this.ns,
-            name: t.name,
+            moduleName: resolved.ns,
+            name: resolved.declaration.name,
           };
+        }
 
         case "fn":
           return {
@@ -509,7 +580,7 @@ export class Analysis {
 
     const ret: Type = {
       type: "named",
-      args: [],
+      args: declaration.params.map(() => TVar.fresh().asType()),
       moduleName: this.ns,
       name: declaration.name,
     };
