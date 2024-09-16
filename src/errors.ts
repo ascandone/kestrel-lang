@@ -43,6 +43,15 @@ export class DuplicateDeclaration implements ErrorDescription {
   }
 }
 
+export class DuplicateTypeDeclaration implements ErrorDescription {
+  constructor(public ident: string) {}
+  severity: Severity = "error";
+  errorName = "Duplicate type declaration";
+  shortDescription() {
+    return `"${this.ident}" was already defined`;
+  }
+}
+
 export class UnboundVariable implements ErrorDescription {
   constructor(public ident: string) {}
   severity: Severity = "error";
