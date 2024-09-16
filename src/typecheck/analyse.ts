@@ -822,16 +822,16 @@ export class Analysis {
     }
   }
 
-  private typecheckPattern(p: UntypedMatchPattern): undefined {
-    switch (p.type) {
+  private typecheckPattern(pattern: UntypedMatchPattern): undefined {
+    switch (pattern.type) {
       case "lit":
-        this.unifyNode(p, getConstantType(p.literal));
+        this.unifyNode(pattern, getConstantType(pattern.literal));
         return;
 
       case "constructor": {
-        const resolution = this.resolution.resolveIdentifier(p);
+        const resolution = this.resolution.resolveIdentifier(pattern);
         if (resolution === undefined || resolution.type !== "constructor") {
-          throw new Error("TODO tc pattern of type:  " + p.type);
+          throw new Error("TODO unbound tc pattern of type:  " + pattern.type);
           return;
         }
 
@@ -840,8 +840,23 @@ export class Analysis {
         );
 
         const t = instantiate(declarationType);
-        this.unifyNode(p, t);
+        this.unifyNode(pattern, t);
 
+        if (resolution.variant.args.length !== pattern.args.length) {
+          throw new Error("TODO handle differnt args");
+        }
+        // TODO check resolution.variant.args.lenght=
+
+        for (let i = 0; i < pattern.args.length; i++) {
+          const nestedPattern = pattern.args[i]!,
+            arg = resolution.variant.args[i]!;
+
+          this.unifyNode(
+            nestedPattern,
+            instantiate(this.typesHydration.getPolytype(arg)),
+          );
+          this.typecheckPattern(nestedPattern);
+        }
         return;
       }
 
