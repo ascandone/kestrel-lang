@@ -331,11 +331,18 @@ class ResolutionAnalysis {
         return;
       }
 
+      case "match":
+        this.runValuesResolution(expr.expr, localScope);
+        for (const [, subExpr] of expr.clauses) {
+          this.runValuesResolution(subExpr, localScope);
+          // TODO match resolution on patterns
+        }
+        return;
+
       case "let#":
       case "infix":
       case "struct-literal":
       case "field-access":
-      case "match":
         throw new Error("TODO resolution on: " + expr.type);
     }
   }
@@ -778,11 +785,17 @@ export class Analysis {
         return;
       }
 
+      case "match":
+        for (const [, subExpr] of expr.clauses) {
+          this.typecheckExpr(subExpr);
+          this.unifyNodes(subExpr, expr);
+        }
+        return;
+
       case "let#":
       case "infix":
       case "struct-literal":
       case "field-access":
-      case "match":
         throw new Error("TODO handle typecheck of: " + expr.type);
     }
   }

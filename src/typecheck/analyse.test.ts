@@ -643,7 +643,7 @@ describe("ADTs", () => {
     ]);
   });
 
-  test.todo("can be used as type hint", () => {
+  test("can be used as type hint", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1093,7 +1093,7 @@ describe("functions and application", () => {
     });
   });
 
-  test.todo("generalize values", () => {
+  test("generalize values", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1285,7 +1285,7 @@ describe("pipe operator", () => {
   });
 });
 
-describe.todo("pattern matching", () => {
+describe("pattern matching", () => {
   test("typechecks matched expressions", () => {
     const a = new Analysis("Main", `pub let v = match unbound { }`);
 
@@ -1325,7 +1325,7 @@ describe.todo("pattern matching", () => {
     });
   });
 
-  test("infers matched type when is a lit", () => {
+  test.todo("infers matched type when is a lit", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1343,7 +1343,7 @@ describe.todo("pattern matching", () => {
     });
   });
 
-  test("infers matched type when there are no args", () => {
+  test.todo("infers matched type when there are no args", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1362,7 +1362,7 @@ describe.todo("pattern matching", () => {
     });
   });
 
-  test("infers matched type when is qualified", () => {
+  test.todo("infers matched type when is qualified", () => {
     const A = new Analysis("A", `pub(..) type T { T }`);
 
     const a = new Analysis(
@@ -1387,7 +1387,7 @@ describe.todo("pattern matching", () => {
     });
   });
 
-  test("infers matched type when there are concrete args", () => {
+  test.todo("infers matched type when there are concrete args", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1408,7 +1408,7 @@ describe.todo("pattern matching", () => {
     });
   });
 
-  test("typechecks constructor args", () => {
+  test.todo("typechecks constructor args", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1429,7 +1429,7 @@ describe.todo("pattern matching", () => {
     expect(err.got).toEqual(2);
   });
 
-  test("infers nested types in p match", () => {
+  test.todo("infers nested types in p match", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1455,10 +1455,12 @@ describe.todo("pattern matching", () => {
     });
   });
 
-  test("infers nested types in p match, matching on a zero-args variant", () => {
-    const a = new Analysis(
-      "Main",
-      `
+  test.todo(
+    "infers nested types in p match, matching on a zero-args variant",
+    () => {
+      const a = new Analysis(
+        "Main",
+        `
 
       type Option<a> {
         None,
@@ -1471,15 +1473,16 @@ describe.todo("pattern matching", () => {
         }
       }
     `,
-    );
+      );
 
-    expect(a.errors).toEqual([]);
-    expect(getTypes(a)).toEqual({
-      f: "Fn(Option<a>) -> Int",
-    });
-  });
+      expect(a.errors).toEqual([]);
+      expect(getTypes(a)).toEqual({
+        f: "Fn(Option<a>) -> Int",
+      });
+    },
+  );
 
-  test("use pattern matching bound vars", () => {
+  test.todo("use pattern matching bound vars", () => {
     const a = new Analysis("Main", `pub let x = match 0 { a => a }`);
 
     expect(a.errors).toEqual([]);
@@ -1488,7 +1491,7 @@ describe.todo("pattern matching", () => {
     });
   });
 
-  test("use pattern matching bound vars in nested types", () => {
+  test.todo("use pattern matching bound vars in nested types", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1506,7 +1509,7 @@ describe.todo("pattern matching", () => {
     });
   });
 
-  test("return error on wrong matched type", () => {
+  test.todo("return error on wrong matched type", () => {
     const a = new Analysis(
       "Main",
       `type X { X }
@@ -1520,7 +1523,7 @@ describe.todo("pattern matching", () => {
     expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
   });
 
-  test("return error on unbound types", () => {
+  test.todo("return error on unbound types", () => {
     const a = new Analysis(
       "Main",
       `pub let v = fn x {
@@ -1535,7 +1538,7 @@ describe.todo("pattern matching", () => {
     expect(a.errors[0]!.description).toBeInstanceOf(UnboundVariable);
   });
 
-  test("infers fn match param type", () => {
+  test.todo("infers fn match param type", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1552,7 +1555,7 @@ describe.todo("pattern matching", () => {
     });
   });
 
-  test("infers let match type", () => {
+  test.todo("infers let match type", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1572,48 +1575,57 @@ describe.todo("pattern matching", () => {
     });
   });
 
-  test("force exhaustive match in let binding when there are many values for a const", () => {
-    const a = new Analysis(
-      "Main",
-      `pub let f = {
+  test.todo(
+    "force exhaustive match in let binding when there are many values for a const",
+    () => {
+      const a = new Analysis(
+        "Main",
+        `pub let f = {
       let 42 = 42;
       0
     }
   `,
-    );
+      );
 
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
-  });
+      expect(a.errors).toHaveLength(1);
+      expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
+    },
+  );
 
-  test("force exhaustive match in let binding when there are many constructors", () => {
-    const a = new Analysis(
-      "Main",
-      `type Union { A, B }
+  test.todo(
+    "force exhaustive match in let binding when there are many constructors",
+    () => {
+      const a = new Analysis(
+        "Main",
+        `type Union { A, B }
 
     pub let f = {
       let A = A;
       0
     }
   `,
-    );
+      );
 
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
-  });
+      expect(a.errors).toHaveLength(1);
+      expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
+    },
+  );
 
-  test("force exhaustive match in fns binding when there are many constructors", () => {
-    const a = new Analysis(
-      "Main",
-      `type Union { A, B }
+  test.todo(
+    "force exhaustive match in fns binding when there are many constructors",
+    () => {
+      const a = new Analysis(
+        "Main",
+        `type Union { A, B }
 
     pub let f = fn A { 0 }
   `,
-    );
+      );
 
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
-  });
+      expect(a.errors).toHaveLength(1);
+      expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
+    },
+  );
 });
 
 describe("unused locals checks", () => {
