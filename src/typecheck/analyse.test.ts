@@ -1343,7 +1343,7 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo("infers matched type when there are no args", () => {
+  test("infers matched type when there are no args", () => {
     const a = new Analysis(
       "Main",
       `
