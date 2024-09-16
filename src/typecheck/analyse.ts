@@ -1,5 +1,6 @@
 /* eslint-disable require-yield */
 import {
+  DuplicateDeclaration,
   DuplicateTypeDeclaration,
   ErrorInfo,
   InvalidCatchall,
@@ -150,7 +151,17 @@ class ResolutionAnalysis {
       switch (typeDecl.type) {
         case "adt":
           for (const variant of typeDecl.variants) {
-            this.locallyDefinedVariants.set(variant.name, [typeDecl, variant]);
+            if (this.locallyDefinedVariants.has(variant.name)) {
+              this.emitError({
+                description: new DuplicateDeclaration(variant.name),
+                range: variant.range,
+              });
+            } else {
+              this.locallyDefinedVariants.set(variant.name, [
+                typeDecl,
+                variant,
+              ]);
+            }
             for (const arg of variant.args) {
               this.runTypeAstResolution(arg);
             }
