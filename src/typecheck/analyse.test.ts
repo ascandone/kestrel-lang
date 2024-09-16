@@ -847,7 +847,7 @@ describe("ADTs", () => {
 });
 
 describe("type hints", () => {
-  test.todo("type hints are used by typechecker", () => {
+  test("type hints are used by typechecker", () => {
     const a = new Analysis(
       "Main",
       `
@@ -862,7 +862,7 @@ describe("type hints", () => {
     });
   });
 
-  test.todo("type hints of fns are used by typechecker", () => {
+  test("type hints of fns are used by typechecker", () => {
     const a = new Analysis(
       "Main",
       `
@@ -879,7 +879,7 @@ describe("type hints", () => {
     );
   });
 
-  test.todo("type hints of fns are used by typechecker (args)", () => {
+  test("type hints of fns are used by typechecker (args)", () => {
     const a = new Analysis(
       "Main",
       `
@@ -911,8 +911,8 @@ describe("type hints", () => {
     });
   });
 
-  test.todo("vars type hints should be generalized", () => {
-    const a = new Analysis("Main", "let x: a = 0");
+  test("vars type hints should be generalized", () => {
+    const a = new Analysis("Main", "pub let x: a = 0");
     expect(a.errors).toHaveLength(1);
     expect(getTypes(a)).toEqual({
       x: "a",
@@ -920,14 +920,14 @@ describe("type hints", () => {
   });
 
   test.todo("unify generalized values", () => {
-    const a = new Analysis("Main", "let f: Fn(ta) -> tb = fn x { x }");
-    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    const a = new Analysis("Main", "pub let f: Fn(ta) -> tb = fn x { x }");
+    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch);
     expect(getTypes(a)).toEqual({
       f: "Fn(ta) -> tb",
     });
   });
 
-  test.todo("vars type hints are used by typechecker", () => {
+  test("vars type hints are used by typechecker", () => {
     const a = new Analysis(
       "Main",
       "pub let eq: Fn(a, a, b) -> a = fn x, y, z { x }",
@@ -938,7 +938,7 @@ describe("type hints", () => {
     });
   });
 
-  test.todo("type hints instantiate polytypes", () => {
+  test("type hints instantiate polytypes", () => {
     const a = new Analysis(
       "Main",
       `
@@ -952,8 +952,7 @@ describe("type hints", () => {
     });
   });
 
-  // TODO resolve this
-  test.todo("unknown types are ignored", () => {
+  test("unknown types are ignored", () => {
     const a = new Analysis("Main", "pub let x: NotFound = 1");
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]!.description).toBeInstanceOf(UnboundType);
