@@ -624,7 +624,24 @@ describe("ADTs", () => {
     ]);
   });
 
-  test.todo("cannot declare variants twice");
+  test("cannot declare variants twice", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type T {
+        Constructor,
+        Constructor<T>,
+      }
+    `,
+    );
+
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new DuplicateDeclaration("Constructor"),
+        range: rangeOf(a.source, "Constructor", 2),
+      },
+    ]);
+  });
 
   test.todo("can be used as type hint", () => {
     const a = new Analysis(
