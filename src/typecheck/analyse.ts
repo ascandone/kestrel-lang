@@ -66,8 +66,11 @@ export type AnalyseOptions = {
   mainType?: Type;
 };
 
-export type PolyTypeNode = UntypedTypeVariant;
 export type TypedNode = Binding | UntypedExpr | UntypedMatchPattern;
+
+export type ResolvableNode =
+  | (UntypedExpr & { type: "identifier" })
+  | (UntypedMatchPattern & { type: "constructor" });
 export type IdentifierResolution =
   | {
       type: "local-variable";
@@ -103,7 +106,7 @@ class ResolutionAnalysis {
 
   private unusedBindings = new WeakSet<Binding>();
   private identifiersResolutions = new WeakMap<
-    UntypedExpr & { type: "identifier" },
+    ResolvableNode,
     IdentifierResolution
   >();
 
@@ -122,7 +125,7 @@ class ResolutionAnalysis {
   }
 
   public resolveIdentifier(
-    identifier: UntypedExpr & { type: "identifier" },
+    identifier: ResolvableNode,
   ): IdentifierResolution | undefined {
     return this.identifiersResolutions.get(identifier);
   }
@@ -333,9 +336,9 @@ class ResolutionAnalysis {
 
       case "match":
         this.runValuesResolution(expr.expr, localScope);
-        for (const [, subExpr] of expr.clauses) {
+        for (const [pattern, subExpr] of expr.clauses) {
           this.runValuesResolution(subExpr, localScope);
-          // TODO match resolution on patterns
+          this.runPatternResolution(pattern);
         }
         return;
 
@@ -347,14 +350,42 @@ class ResolutionAnalysis {
     }
   }
 
+  private runPatternResolution(pattern: UntypedMatchPattern) {
+    switch (pattern.type) {
+      case "lit":
+        return;
+
+      case "identifier":
+        return;
+
+      case "constructor": {
+        const res = this.evaluateResolution(pattern);
+        if (res === undefined) {
+          this.emitError({
+            range: pattern.range,
+            description: new UnboundVariable(pattern.name),
+          });
+          return;
+        }
+        this.identifiersResolutions.set(pattern, res);
+        for (const arg of pattern.args) {
+          this.runPatternResolution(arg);
+        }
+        return;
+      }
+    }
+  }
+
   private evaluateResolution(
-    identifier: UntypedExpr & { type: "identifier" },
+    identifier: ResolvableNode,
     localScope: LocalScope = {},
   ): IdentifierResolution | undefined {
     // Search locals first
-    const localLookup = localScope[identifier.name];
-    if (localLookup !== undefined) {
-      return { type: "local-variable", binding: localLookup };
+    if (identifier.type === "identifier") {
+      const localLookup = localScope[identifier.name];
+      if (localLookup !== undefined) {
+        return { type: "local-variable", binding: localLookup };
+      }
     }
 
     // search variants
@@ -404,14 +435,11 @@ class ResolutionAnalysis {
   }
 }
 
+export type PolytypeNode = UntypedTypeDeclaration | PolyTypeAst | TypeAst;
+
 class TypeAstsHydration {
-  private polyTypes = new WeakMap<
-    UntypedTypeDeclaration | PolyTypeAst | UntypedTypeVariant,
-    PolyType
-  >();
-  public getPolytype(
-    node: UntypedTypeDeclaration | PolyTypeAst | UntypedTypeVariant,
-  ): PolyType {
+  private polyTypes = new WeakMap<PolytypeNode, PolyType>();
+  public getPolytype(node: PolytypeNode): PolyType {
     const t = this.polyTypes.get(node);
     if (t === undefined) {
       throw new Error("[unreachable] unbounde polytype");
@@ -465,12 +493,13 @@ class TypeAstsHydration {
 
     const scheme = generalizeAsScheme(type);
     this.polyTypes.set(declaration, [scheme, type]);
-
     switch (declaration.type) {
       case "adt":
         for (const variant of declaration.variants) {
-          const t = this.buildVariantType(variant, bound, type);
-          this.polyTypes.set(variant, [scheme, t]);
+          for (const arg of variant.args) {
+            const p = this.typeAstToPoly(arg, bound, true);
+            this.polyTypes.set(arg, p);
+          }
         }
         return;
 
@@ -479,28 +508,6 @@ class TypeAstsHydration {
 
       case "extern":
         return;
-    }
-  }
-
-  private buildVariantType(
-    variant: UntypedTypeVariant,
-    bound: Record<string, Type>,
-    retType: Type,
-  ): Type {
-    // TODO cache and generalize
-    // TODO reuse declaration's type
-
-    if (variant.args.length === 0) {
-      return retType;
-    } else {
-      // TODO reuse polytype
-      return {
-        type: "fn",
-        args: variant.args.map(
-          (arg) => this.typeAstToPoly(arg, bound, true)[1],
-        ),
-        return: retType,
-      };
     }
   }
 
@@ -696,13 +703,25 @@ export class Analysis {
             return;
 
           case "constructor": {
-            const lookup = this.typesHydration.getPolytype(resolution.variant);
-            if (lookup === undefined) {
-              throw new Error("UNDEFINED LO FOR: " + resolution.variant.name);
-              return;
-            }
+            const [scheme, declarationType] = this.typesHydration.getPolytype(
+              resolution.declaration,
+            );
 
-            const mono = instantiate(lookup);
+            const constructorType = ((): Type => {
+              if (resolution.variant.args.length === 0) {
+                return declarationType;
+              } else {
+                return {
+                  type: "fn",
+                  args: resolution.variant.args.map(
+                    (arg) => this.typesHydration.getPolytype(arg)[1],
+                  ),
+                  return: declarationType,
+                };
+              }
+            })();
+
+            const mono = instantiate([scheme, constructorType]);
             this.unifyNode(expr, mono);
             return;
           }
@@ -809,10 +828,25 @@ export class Analysis {
         this.unifyNode(p, getConstantType(p.literal));
         return;
 
-      case "identifier":
-      case "constructor":
+      case "constructor": {
+        const resolution = this.resolution.resolveIdentifier(p);
+        if (resolution === undefined || resolution.type !== "constructor") {
+          throw new Error("TODO tc pattern of type:  " + p.type);
+          return;
+        }
+
+        const declarationType = this.typesHydration.getPolytype(
+          resolution.declaration,
+        );
+
+        const t = instantiate(declarationType);
+        this.unifyNode(p, t);
+
         return;
-        throw new Error("TODO tc pattern of type:  " + p.type);
+      }
+
+      case "identifier":
+        return;
     }
   }
 
