@@ -6,6 +6,7 @@ import {
   ArityMismatch,
   BadImport,
   DuplicateDeclaration,
+  DuplicateTypeDeclaration,
   ErrorInfo,
   InvalidCatchall,
   InvalidField,
@@ -606,7 +607,23 @@ describe("named types", () => {
 });
 
 describe("ADTs", () => {
-  test.todo("cannot be declared twice");
+  test("cannot be declared twice", () => {
+    const a = new Analysis(
+      "Main",
+      `
+    extern type X
+    type X {}
+  `,
+    );
+
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new DuplicateTypeDeclaration("X"),
+        range: rangeOf(a.source, "type X {}"),
+      },
+    ]);
+  });
+
   test.todo("cannot declare variants twice");
 
   test.todo("can be used as type hint", () => {
