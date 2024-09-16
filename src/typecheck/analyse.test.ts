@@ -1387,7 +1387,7 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo("infers matched type when there are concrete args", () => {
+  test("infers matched type when there are concrete args", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1455,12 +1455,10 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo(
-    "infers nested types in p match, matching on a zero-args variant",
-    () => {
-      const a = new Analysis(
-        "Main",
-        `
+  test("infers nested types in p match, matching on a zero-args variant", () => {
+    const a = new Analysis(
+      "Main",
+      `
 
       type Option<a> {
         None,
@@ -1473,14 +1471,13 @@ describe("pattern matching", () => {
         }
       }
     `,
-      );
+    );
 
-      expect(a.errors).toEqual([]);
-      expect(getTypes(a)).toEqual({
-        f: "Fn(Option<a>) -> Int",
-      });
-    },
-  );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Option<a>) -> Int",
+    });
+  });
 
   test.todo("use pattern matching bound vars", () => {
     const a = new Analysis("Main", `pub let x = match 0 { a => a }`);
