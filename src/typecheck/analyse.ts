@@ -1,5 +1,6 @@
 /* eslint-disable require-yield */
 import {
+  DuplicateTypeDeclaration,
   ErrorInfo,
   InvalidCatchall,
   InvalidPipe,
@@ -134,7 +135,14 @@ class ResolutionAnalysis {
   private initTypesResolution() {
     // 1. register all the types
     for (const typeDecl of this.module.typeDeclarations) {
-      this.locallyDefinedTypes.set(typeDecl.name, typeDecl);
+      if (this.locallyDefinedTypes.has(typeDecl.name)) {
+        this.emitError({
+          description: new DuplicateTypeDeclaration(typeDecl.name),
+          range: typeDecl.range,
+        });
+      } else {
+        this.locallyDefinedTypes.set(typeDecl.name, typeDecl);
+      }
     }
 
     // 2. register and resolve constructors and fields
