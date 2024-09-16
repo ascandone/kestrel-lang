@@ -67,7 +67,7 @@ export type AnalyseOptions = {
 };
 
 export type PolyTypeNode = UntypedTypeVariant;
-export type TypedNode = Binding | UntypedExpr;
+export type TypedNode = Binding | UntypedExpr | UntypedMatchPattern;
 export type IdentifierResolution =
   | {
       type: "local-variable";
@@ -786,9 +786,12 @@ export class Analysis {
       }
 
       case "match":
-        for (const [, subExpr] of expr.clauses) {
-          this.typecheckExpr(subExpr);
+        this.typecheckExpr(expr.expr);
+        for (const [pattern, subExpr] of expr.clauses) {
           this.unifyNodes(subExpr, expr);
+          this.unifyNodes(expr.expr, pattern);
+          this.typecheckExpr(subExpr);
+          this.typecheckPattern(pattern);
         }
         return;
 
@@ -797,6 +800,19 @@ export class Analysis {
       case "struct-literal":
       case "field-access":
         throw new Error("TODO handle typecheck of: " + expr.type);
+    }
+  }
+
+  private typecheckPattern(p: UntypedMatchPattern): undefined {
+    switch (p.type) {
+      case "lit":
+        this.unifyNode(p, getConstantType(p.literal));
+        return;
+
+      case "identifier":
+      case "constructor":
+        return;
+        throw new Error("TODO tc pattern of type:  " + p.type);
     }
   }
 

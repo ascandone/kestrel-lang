@@ -1325,7 +1325,7 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo("infers matched type when is a lit", () => {
+  test("infers matched type when is a lit", () => {
     const a = new Analysis(
       "Main",
       `
