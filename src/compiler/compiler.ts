@@ -378,12 +378,27 @@ class Compiler {
 
           const infixName = toJsInfix(src.caller.name);
           if (infixName !== undefined) {
-            return {
+            const infixExpr: t.Expression = {
               type: "BinaryExpression",
               operator: infixName,
               left: this.compileExprAsJsExpr(src.args[0]!, undefined),
               right: this.compileExprAsJsExpr(src.args[1]!, undefined),
             };
+
+            if (infixName === "/") {
+              return {
+                type: "CallExpression",
+                callee: {
+                  type: "MemberExpression",
+                  object: { type: "Identifier", name: "Math" },
+                  computed: false,
+                  property: { type: "Identifier", name: "floor" },
+                },
+                arguments: [infixExpr],
+              };
+            }
+
+            return infixExpr;
           }
 
           const infixLogicalName = toJsInfixLogical(src.caller.name);
@@ -1125,6 +1140,7 @@ function toJsInfix(
     case "<":
     case ">=":
     case ">":
+    case "%":
       return kestrelCaller;
 
     default:

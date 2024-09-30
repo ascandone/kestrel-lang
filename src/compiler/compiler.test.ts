@@ -120,6 +120,16 @@ describe("intrinsics", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$x = 1 === 2;"`);
   });
 
+  test("compile %", () => {
+    const out = compileSrc(`pub let x = 3 % 2`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = 3 % 2;"`);
+  });
+
+  test("compile / (integer division)", () => {
+    const out = compileSrc(`pub let x = 3 / 2`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = Math.floor(3 / 2);"`);
+  });
+
   test("precedence between * and +", () => {
     const out = compileSrc(`pub let x = (1 + 2) * 3`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = (1 + 2) * 3;"`);
