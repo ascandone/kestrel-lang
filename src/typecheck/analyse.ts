@@ -337,8 +337,16 @@ class ResolutionAnalysis {
       case "match":
         this.runValuesResolution(expr.expr, localScope);
         for (const [pattern, subExpr] of expr.clauses) {
-          this.runValuesResolution(subExpr, localScope);
-          this.runPatternResolution(pattern);
+          this.runPatternResolution(pattern, localScope);
+          const bindings = this.extractPatternIdentifiers(pattern);
+
+          const newBindings: LocalScope = Object.fromEntries(
+            bindings.map((b) => [b.name, b]),
+          );
+          this.runValuesResolution(subExpr, {
+            ...localScope,
+            ...newBindings,
+          });
         }
         return;
 
@@ -350,7 +358,10 @@ class ResolutionAnalysis {
     }
   }
 
-  private runPatternResolution(pattern: UntypedMatchPattern) {
+  private runPatternResolution(
+    pattern: UntypedMatchPattern,
+    scope: LocalScope,
+  ) {
     switch (pattern.type) {
       case "lit":
         return;
@@ -368,8 +379,9 @@ class ResolutionAnalysis {
           return;
         }
         this.identifiersResolutions.set(pattern, res);
+
         for (const arg of pattern.args) {
-          this.runPatternResolution(arg);
+          this.runPatternResolution(arg, scope);
         }
         return;
       }
@@ -828,6 +840,9 @@ export class Analysis {
         this.unifyNode(pattern, getConstantType(pattern.literal));
         return;
 
+      case "identifier":
+        return;
+
       case "constructor": {
         const resolution = this.resolution.resolveIdentifier(pattern);
         if (resolution === undefined || resolution.type !== "constructor") {
@@ -859,9 +874,6 @@ export class Analysis {
         }
         return;
       }
-
-      case "identifier":
-        return;
     }
   }
 
