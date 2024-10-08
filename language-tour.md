@@ -89,7 +89,7 @@ let value =
 
 ## Types
 
-There are few built-in types, such as `Int`, `Float`, `String`.
+There are a few built-in types, such as `Int`, `Float`, `String`.
 
 Kestrel has Hindley-Milner type inference, meaning that you don't need to manually write types, as they will be inferred by the typechecker. Still, is possible to give `let` declarations explicit type hints:
 
@@ -114,7 +114,7 @@ let identity = fn x { x }
 
 In the example above, `a` is a type variable that can be instantiated to any possible type, as long as every occurrence is instantiated to the same type. This is the same as writing `<T>(x: T) => T` in typescript
 
-#### Custom types
+#### Custom types (unions)
 
 You can also create your own types, specifying its constructors:
 
@@ -176,9 +176,37 @@ match (n % 3, n % 5) {
 }
 ```
 
+#### Custom types (structs)
+
+You can also define, create and manipulate structs:
+
+```rust
+type Person struct {
+  name: String,
+  age: Int,
+}
+
+// you can instantiate a struct:
+let p = Person {
+  name: "John Doe",
+  age: 42
+}
+
+// you can access fields of a struct:
+let age = p.age
+
+// you can update a previosly defined struct
+let increment_age = fn p {
+  Person {
+    age: p.age + 1,
+    ..p
+  }
+}
+```
+
 ## Modules
 
-You can import values and types of different modules with `import` statements, that must be appear first in the module.
+You can import values and types of different modules with `import` statements, that must appear first in the module.
 
 ```
 import MyModule
@@ -235,6 +263,34 @@ Here's the classic hello world example:
 import IO
 
 pub let main = IO.println("Hello world!")
+```
+
+## Traits
+
+Kestrel extends the Hindley-Milner type system with a lightweight version of traits. Each type variable can be associate with one or more named traits, defining constraints for that variables.
+Defined traits are built-in and not extensible by the users, nor parametric.
+
+Built-in traits are currently: `Show` (used to represent a value that can be converted to a human-readable string), `Eq` (used for values that can have equality), `Ord` (used for values which can be compared)
+
+```rust
+let show: Fn(a) -> String where a: Show
+
+// the following is valid, because Int implements Show
+show(42)
+
+// the following is not, because Fn() -> Int doen't
+show(fn { 0 })
+```
+
+Primitive values (`Int`, `Float`, `String` and `Char`) implement all those traits.
+Implementation is derived for union types whose constructors' arguments implement some trait, or for structs whose fields implement some trait. For example:
+
+```rust
+// this type implements Show
+type Bool { True, False }
+
+// this type implements show if 'a' implements Show
+type Option<a> { None, Some(a) }
 ```
 
 ## Syntax sugar
