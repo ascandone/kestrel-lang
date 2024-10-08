@@ -270,7 +270,7 @@ pub let main = IO.println("Hello world!")
 Kestrel extends the Hindley-Milner type system with a lightweight version of traits. Each type variable can be associate with one or more named traits, defining constraints for that variables.
 Defined traits are built-in and not extensible by the users, nor parametric.
 
-Built-in traits are currently: `Show` (used to represent a value that can be converted to a human-readable string), `Eq` (used for values that can have equality), `Ord` (used for value which can be compared)
+Built-in traits are currently: `Show` (used to represent a value that can be converted to a human-readable string), `Eq` (used for values that can have equality), `Ord` (used for values which can be compared)
 
 ```rust
 let show: Fn(a) -> String where a: Show
