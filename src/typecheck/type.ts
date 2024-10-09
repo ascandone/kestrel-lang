@@ -473,6 +473,10 @@ export class Instantiator {
   }
 }
 
+export function instantiate([scheme, mono]: PolyType): Type {
+  return new Instantiator().instantiateFromScheme(mono, scheme);
+}
+
 export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
   return new Instantiator().instantiateFromScheme(mono, scheme);
 }
