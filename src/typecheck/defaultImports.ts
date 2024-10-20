@@ -2,7 +2,7 @@ import { Position, Range, UntypedImport } from "../parser";
 import { TraitImplDependency } from "./type";
 
 const dummyPosition: Position = { character: 0, line: 0 };
-const dummyRange: Range = { start: dummyPosition, end: dummyPosition };
+export const dummyRange: Range = { start: dummyPosition, end: dummyPosition };
 
 export const defaultImports: UntypedImport[] = [
   {
