@@ -432,8 +432,12 @@ class ResolutionAnalysis {
         return [pattern];
 
       case "lit":
+        return [];
+
       case "constructor":
-        throw new Error("TODO handle pattern of type: " + pattern.type);
+        return pattern.args.flatMap((arg) =>
+          this.extractPatternIdentifiers(arg),
+        );
     }
   }
 
