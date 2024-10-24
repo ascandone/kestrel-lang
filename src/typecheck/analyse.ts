@@ -33,6 +33,7 @@ import {
 import { bool, char, float, int, list, string } from "./core";
 import { TraitImpl, defaultTraitImpls } from "./defaultImports";
 import {
+  Instantiator,
   PolyType,
   TVar,
   Type,
@@ -513,8 +514,8 @@ class TypeAstsHydration {
       case "adt":
         for (const variant of declaration.variants) {
           for (const arg of variant.args) {
-            const p = this.typeAstToPoly(arg, bound, true);
-            this.polyTypes.set(arg, p);
+            const [_scheme, mono] = this.typeAstToPoly(arg, bound, true);
+            this.polyTypes.set(arg, [scheme, mono]);
           }
         }
         return;
@@ -840,11 +841,11 @@ export class Analysis {
 
   private typecheckPattern(pattern: UntypedMatchPattern): undefined {
     switch (pattern.type) {
-      case "lit":
-        this.unifyNode(pattern, getConstantType(pattern.literal));
+      case "identifier":
         return;
 
-      case "identifier":
+      case "lit":
+        this.unifyNode(pattern, getConstantType(pattern.literal));
         return;
 
       case "constructor": {
@@ -858,7 +859,8 @@ export class Analysis {
           resolution.declaration,
         );
 
-        const t = instantiate(declarationType);
+        const instantiator = new Instantiator();
+        const t = instantiator.instantiate(declarationType);
         this.unifyNode(pattern, t);
 
         if (resolution.variant.args.length !== pattern.args.length) {
@@ -872,7 +874,7 @@ export class Analysis {
 
           this.unifyNode(
             nestedPattern,
-            instantiate(this.typesHydration.getPolytype(arg)),
+            instantiator.instantiate(this.typesHydration.getPolytype(arg)),
           );
           this.typecheckPattern(nestedPattern);
         }
