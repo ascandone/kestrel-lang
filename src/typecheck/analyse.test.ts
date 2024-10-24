@@ -1429,7 +1429,7 @@ describe("pattern matching", () => {
     expect(err.got).toEqual(2);
   });
 
-  test.todo("infers nested types in p match", () => {
+  test("infers nested types in p match", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1479,7 +1479,7 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo("use pattern matching bound vars", () => {
+  test("use pattern matching bound vars", () => {
     const a = new Analysis("Main", `pub let x = match 0 { a => a }`);
 
     expect(a.errors).toEqual([]);
@@ -1488,7 +1488,22 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo("use pattern matching bound vars in nested types", () => {
+  test("unify expr with arg", () => {
+    const a = new Analysis(
+      "Main",
+      `
+      type Boxed<a> { Boxed(a) }
+
+      pub let x = match Boxed(42) {
+        Boxed("str") => 0
+      }
+    `,
+    );
+
+    expect(a.errors).not.toEqual([]);
+  });
+
+  test("use pattern matching bound vars in nested types", () => {
     const a = new Analysis(
       "Main",
       `
@@ -1506,7 +1521,7 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo("return error on wrong matched type", () => {
+  test("return error on wrong matched type", () => {
     const a = new Analysis(
       "Main",
       `type X { X }
