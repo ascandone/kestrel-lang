@@ -1550,7 +1550,7 @@ describe("pattern matching", () => {
     expect(a.errors[0]!.description).toBeInstanceOf(UnboundVariable);
   });
 
-  test.todo("infers fn match param type", () => {
+  test("infers fn match param type", () => {
     const a = new Analysis(
       "Main",
       `
