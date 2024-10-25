@@ -273,6 +273,10 @@ class ResolutionAnalysis {
       }
 
       case "fn": {
+        for (const arg of expr.params) {
+          this.runPatternResolution(arg, localScope);
+        }
+
         const paramsBindings = expr.params
           .flatMap((p) => this.extractPatternIdentifiers(p))
           .map((p) => [p.name, p]);
@@ -749,9 +753,12 @@ export class Analysis {
         this.unifyNode(expr, {
           type: "fn",
           args: expr.params.map((pattern) => {
-            if (pattern.type !== "identifier") {
-              throw new Error("handle pattern != ident");
-            }
+            this.typecheckPattern(pattern);
+
+            // if (pattern.type !== "identifier") {
+
+            //   throw new Error("handle pattern != ident");
+            // }
             return this.getType(pattern);
           }),
           return: this.getType(expr.body),
