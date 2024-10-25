@@ -1535,7 +1535,7 @@ describe("pattern matching", () => {
     expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
   });
 
-  test.todo("return error on unbound types", () => {
+  test("return error on unbound types", () => {
     const a = new Analysis(
       "Main",
       `pub let v = fn x {
