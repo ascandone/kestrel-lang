@@ -851,7 +851,6 @@ export class Analysis {
       case "constructor": {
         const resolution = this.resolution.resolveIdentifier(pattern);
         if (resolution === undefined || resolution.type !== "constructor") {
-          throw new Error("TODO unbound tc pattern of type:  " + pattern.type);
           return;
         }
 
