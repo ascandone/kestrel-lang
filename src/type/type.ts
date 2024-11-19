@@ -1,7 +1,13 @@
 import { defaultMapGet } from "../data/defaultMap";
 
 export type Type =
-  | { tag: "Named"; name: string; args: Type[] }
+  | {
+      tag: "Named";
+      name: string;
+      args: Type[];
+      module: string;
+      package: string;
+    }
   | { tag: "Fn"; args: Type[]; return: Type }
   | { tag: "Var"; id: number };
 
@@ -89,28 +95,42 @@ export class Unifier {
       return;
     }
 
-    // case (Named _ _, Named _ _)
-    if (t1.tag === "Named" && t2.tag === "Named") {
-      if (t1.name !== t2.name || t1.args.length !== t2.args.length) {
-        throw new TypeMismatchError();
-      }
+    // case (Named name mod _, Named name1 mod _) where arity, name, mod, package is eq
+    if (
+      t1.tag === "Named" &&
+      t2.tag === "Named" &&
+      t1.name === t2.name &&
+      t1.module === t2.module &&
+      t1.package === t2.package &&
+      t1.args.length === t2.args.length
+    ) {
       for (let i = 0; i < t1.args.length; i++) {
         this.unify(t1.args[i]!, t2.args[i]!);
       }
-
       return;
     }
 
-    // case (Fn _ _, Fn _ _)
-    if (t1.tag === "Fn" && t2.tag === "Fn") {
-      if (t1.args.length !== t2.args.length) {
-        throw new TypeMismatchError();
-      }
+    // case (Named _ , Named _)
+    if (t1.tag === "Named" && t2.tag === "Named") {
+      throw new TypeMismatchError();
+    }
+
+    // case (Fn _ _, Fn _ _) where arity is eq
+    if (
+      t1.tag === "Fn" &&
+      t2.tag === "Fn" &&
+      t1.args.length === t2.args.length
+    ) {
       for (let i = 0; i < t1.args.length; i++) {
         this.unify(t1.args[i]!, t2.args[i]!);
       }
       this.unify(t1.return, t2.return);
       return;
+    }
+
+    // case (Fn _ _, Fn _ _)
+    if (t1.tag === "Fn" && t2.tag === "Fn") {
+      throw new TypeMismatchError();
     }
 
     // case (Var _, _)
@@ -144,6 +164,8 @@ export class Unifier {
             tag: "Named",
             name: t.name,
             args: t.args.map(helper),
+            module: t.module,
+            package: t.package,
           };
 
         case "Fn":
