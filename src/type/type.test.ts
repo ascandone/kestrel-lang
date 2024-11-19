@@ -51,13 +51,36 @@ describe("unify", () => {
   test("unify two concrete vars that do not match", () => {
     const u = new Unifier();
 
-    expect(() => u.unify(num, bool), "different type").toThrow();
-    expect(() => u.unify(tuple(num, num), tuple()), "different arity").toThrow(
-      TypeMismatchError,
-    );
-    expect(() => u.unify(list(num), list(bool)), "different args").toThrow(
-      TypeMismatchError,
-    );
+    expect(() => {
+      u.unify(num, bool);
+    }, "different type").toThrow();
+
+    expect(() => {
+      u.unify(tuple(num, num), tuple());
+    }, "different arity").toThrow(TypeMismatchError);
+
+    expect(() => {
+      u.unify(list(num), list(bool));
+    }, "different args").toThrow(TypeMismatchError);
+  });
+
+  test("fail to unify two named types in a different module", () => {
+    const u = new Unifier();
+
+    expect(() => {
+      u.unify(
+        { ...num, module: "SomeModule" },
+        { ...num, module: "AnotherModule" },
+      );
+    }).toThrow();
+  });
+
+  test("fail to unify two named types in a different package", () => {
+    const u = new Unifier();
+
+    expect(() => {
+      u.unify({ ...num, package: "core" }, { ...num, package: "ext" });
+    }).toThrow();
   });
 
   test("TypeVar is unbound initially", () => {
