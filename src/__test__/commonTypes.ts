@@ -1,30 +1,58 @@
 import { Type } from "../type/type";
 
-export const string: Type = { tag: "Named", name: "String", args: [] };
-export const num: Type = { tag: "Named", name: "Num", args: [] };
-export const bool: Type = { tag: "Named", name: "Bool", args: [] };
+export const string: Type = {
+  tag: "Named",
+  module: "Main",
+  package: "core",
+  name: "String",
+  args: [],
+};
+export const num = {
+  tag: "Named",
+  module: "Main",
+  package: "core",
+  name: "Num",
+  args: [],
+} satisfies Type;
+export const bool: Type = {
+  tag: "Named",
+  module: "Main",
+  package: "core",
+  name: "Bool",
+  args: [],
+};
 export const list = (x: Type): Type => ({
   tag: "Named",
+  module: "Main",
+  package: "core",
   name: "List",
   args: [x],
 });
 export const tuple = (...ts: Type[]): Type => ({
   tag: "Named",
+  module: "Main",
+  package: "core",
   name: `Tuple${ts.length}`,
   args: ts,
 });
 export const result = (t1: Type, t2: Type): Type => ({
   tag: "Named",
+  module: "Main",
+  package: "core",
   name: `Result`,
   args: [t1, t2],
 });
 export const unit: Type = {
   tag: "Named",
+  module: "Main",
+  package: "core",
   name: `Unit`,
   args: [],
 };
 export const maybe = (...ts: Type[]): Type => ({
   tag: "Named",
+  module: "Main",
+  package: "core",
   name: "Maybe",
   args: ts,
 });
