@@ -63,6 +63,14 @@ export class ResolutionAnalysis {
     UntypedDeclaration[]
   >();
   private currentDeclaration: UntypedDeclaration | undefined = undefined;
+  private isThunk = false;
+  private enterThunk(): VoidFunction {
+    const oldValue = this.isThunk;
+    this.isThunk = true;
+    return () => {
+      this.isThunk = oldValue;
+    };
+  }
 
   /** record of types declared in this module */
   private locallyDefinedTypes = new Map<string, UntypedTypeDeclaration>();
@@ -262,10 +270,12 @@ export class ResolutionAnalysis {
           .flatMap((p) => this.extractPatternIdentifiers(p))
           .map((p) => [p.name, p]);
 
+        const onExit = this.enterThunk();
         this.runValuesResolution(expr.body, {
           ...localScope,
           ...Object.fromEntries(paramsBindings),
         });
+        onExit();
         return;
       }
 
@@ -412,6 +422,13 @@ export class ResolutionAnalysis {
         defaultWeakmapGet(this.callGraph, currentDeclaration, () => []).push(
           declaration,
         );
+        if (!this.isThunk) {
+          defaultWeakmapGet(
+            this.directCallGraph,
+            currentDeclaration,
+            () => [],
+          ).push(declaration);
+        }
 
         return {
           type: "global-variable",
