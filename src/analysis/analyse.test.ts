@@ -5,6 +5,7 @@ import {
   AmbiguousTypeVar,
   ArityMismatch,
   BadImport,
+  CyclicDefinition,
   DuplicateDeclaration,
   DuplicateTypeDeclaration,
   ErrorInfo,
@@ -148,7 +149,7 @@ describe("globals resolution", () => {
     });
   });
 
-  test.todo("let declarations in reverse order", () => {
+  test("let declarations in reverse order", () => {
     const a = new Analysis(
       "Main",
       unsafeParse(`
@@ -164,7 +165,7 @@ describe("globals resolution", () => {
     });
   });
 
-  test.todo("allow dependency cycle between declarations inside thunks", () => {
+  test("allow dependency cycle between declarations inside thunks", () => {
     const a = new Analysis(
       "Main",
       unsafeParse(`
@@ -174,9 +175,13 @@ describe("globals resolution", () => {
     );
 
     expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      a: "a",
+      b: "Fn() -> a",
+    });
   });
 
-  test.todo("forbid self-recusive definitions outside of fns", () => {
+  test("forbid self-recusive definitions outside of fns", () => {
     const a = new Analysis(
       "Main",
       unsafeParse(`
@@ -187,11 +192,10 @@ describe("globals resolution", () => {
     expect(a.errors).toHaveLength(1);
     expect(getTypes(a)).toEqual({
       a: "a",
-      b: "a",
     });
   });
 
-  test.todo("forbid dependency cycles outside of fns", () => {
+  test("forbid dependency cycles outside of fns", () => {
     const a = new Analysis(
       "Main",
       unsafeParse(`
@@ -200,7 +204,11 @@ describe("globals resolution", () => {
 `),
     );
 
-    expect(a.errors).toHaveLength(1);
+    expect(a.errors).toEqual([
+      expect.objectContaining({
+        description: new CyclicDefinition(["a", "b"]),
+      }),
+    ]);
     expect(getTypes(a)).toEqual({
       a: "a",
       b: "a",

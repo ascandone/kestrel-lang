@@ -66,6 +66,7 @@ export class Analysis {
 
   private resolution: ResolutionAnalysis;
   private typesHydration: TypeAstsHydration;
+  private currentDeclarationGroup: UntypedDeclaration[] = [];
 
   constructor(
     public readonly ns: string,
@@ -85,8 +86,11 @@ export class Analysis {
   }
 
   private initDeclarationsTypecheck() {
-    for (const letDecl of this.module.declarations) {
-      this.typecheckLetDeclaration(letDecl);
+    for (const declGroup of this.resolution.sortedDeclarations) {
+      this.currentDeclarationGroup = declGroup;
+      for (const letDecl of declGroup) {
+        this.typecheckLetDeclaration(letDecl);
+      }
     }
   }
 
@@ -155,6 +159,12 @@ export class Analysis {
             const poly = this.typeDeclarationsAnnotations.get(
               resolution.declaration,
             );
+
+            if (this.currentDeclarationGroup.includes(resolution.declaration)) {
+              // TODO unify with mono
+              return;
+            }
+
             if (poly === undefined) {
               throw new Error(
                 "TODO handle unresolved type for: " +
