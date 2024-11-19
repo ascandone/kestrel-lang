@@ -1,4 +1,4 @@
-import { defaultWeakmapGet } from "../data/defaultMap";
+import { defaultMapGet } from "../data/defaultMap";
 import {
   DirectedGraph,
   detectCycles,
@@ -419,11 +419,11 @@ export class ResolutionAnalysis {
     // TODO search locallyDefinedDeclarations instead
     for (const declaration of this.module.declarations) {
       if (declaration.binding.name === identifier.name) {
-        defaultWeakmapGet(this.callGraph, currentDeclaration, () => []).push(
+        defaultMapGet(this.callGraph, currentDeclaration, () => []).push(
           declaration,
         );
         if (!this.isThunk) {
-          defaultWeakmapGet(
+          defaultMapGet(
             this.directCallGraph,
             currentDeclaration,
             () => [],
