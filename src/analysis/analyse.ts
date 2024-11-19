@@ -69,12 +69,18 @@ export class Analysis {
   private currentDeclarationGroup: UntypedDeclaration[] = [];
 
   constructor(
+    public readonly package_: string,
     public readonly ns: string,
     public readonly module: UntypedModule,
     public options: AnalyseOptions = {},
   ) {
     const emitError = this.errors.push.bind(this.errors);
-    this.resolution = new ResolutionAnalysis(ns, module, emitError);
+    this.resolution = new ResolutionAnalysis(
+      this.package_,
+      ns,
+      module,
+      emitError,
+    );
     this.typesHydration = new TypeAstsHydration(
       ns,
       module,

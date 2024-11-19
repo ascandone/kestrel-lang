@@ -29,6 +29,7 @@ type LocalScope = Record<string, Binding>;
 export type TypeResolution = {
   declaration: UntypedTypeDeclaration;
   ns: string;
+  package: string;
 };
 
 export type IdentifierResolution =
@@ -92,9 +93,10 @@ export class ResolutionAnalysis {
   >();
 
   constructor(
-    private ns: string,
-    private module: UntypedModule,
-    private emitError: (error: ErrorInfo) => void,
+    public readonly package_: string,
+    public readonly ns: string,
+    private readonly module: UntypedModule,
+    private readonly emitError: (error: ErrorInfo) => void,
   ) {
     this.initTypesResolution();
     this.initDeclarationsResolution();
@@ -191,6 +193,7 @@ export class ResolutionAnalysis {
       this.typesResolutions.set(typeAst, {
         declaration: localT,
         ns: this.ns,
+        package: this.package_,
       });
       return;
     }
