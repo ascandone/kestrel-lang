@@ -1,4 +1,11 @@
+import { defaultWeakmapGet } from "../data/defaultMap";
 import {
+  DirectedGraph,
+  detectCycles,
+  findStronglyConnectedComponents,
+} from "../data/graph";
+import {
+  CyclicDefinition,
   DuplicateDeclaration,
   DuplicateTypeDeclaration,
   ErrorInfo,
@@ -46,6 +53,17 @@ export type ResolvableNode =
   | (UntypedMatchPattern & { type: "constructor" });
 
 export class ResolutionAnalysis {
+  public readonly sortedDeclarations: Array<Array<UntypedDeclaration>>;
+  private readonly callGraph = new WeakMap<
+    UntypedDeclaration,
+    UntypedDeclaration[]
+  >();
+  private readonly directCallGraph = new WeakMap<
+    UntypedDeclaration,
+    UntypedDeclaration[]
+  >();
+  private currentDeclaration: UntypedDeclaration | undefined = undefined;
+
   /** record of types declared in this module */
   private locallyDefinedTypes = new Map<string, UntypedTypeDeclaration>();
   /** record of variants declared in this module */
@@ -72,6 +90,19 @@ export class ResolutionAnalysis {
   ) {
     this.initTypesResolution();
     this.initDeclarationsResolution();
+
+    const directCallGraph = this.buildCallGraph(this.directCallGraph);
+    const cycle = detectCycles(directCallGraph);
+
+    if (cycle !== undefined) {
+      this.emitError({
+        range: cycle[0]!.range,
+        description: new CyclicDefinition(cycle.map((d) => d.binding.name)),
+      });
+    }
+
+    const callGraph = this.buildCallGraph(this.callGraph);
+    this.sortedDeclarations = findStronglyConnectedComponents(callGraph);
   }
 
   public resolveIdentifier(
@@ -141,6 +172,7 @@ export class ResolutionAnalysis {
         continue;
       }
 
+      this.currentDeclaration = letDecl;
       this.runValuesResolution(letDecl.value, {});
     }
   }
@@ -346,6 +378,13 @@ export class ResolutionAnalysis {
     identifier: ResolvableNode,
     localScope: LocalScope = {},
   ): IdentifierResolution | undefined {
+    const currentDeclaration = this.currentDeclaration;
+    if (currentDeclaration === undefined) {
+      throw new Error(
+        "[unrechable] this.currentDeclaration should never be empty",
+      );
+    }
+
     // Search locals first
     if (identifier.type === "identifier") {
       const localLookup = localScope[identifier.name];
@@ -370,6 +409,10 @@ export class ResolutionAnalysis {
     // TODO search locallyDefinedDeclarations instead
     for (const declaration of this.module.declarations) {
       if (declaration.binding.name === identifier.name) {
+        defaultWeakmapGet(this.callGraph, currentDeclaration, () => []).push(
+          declaration,
+        );
+
         return {
           type: "global-variable",
           declaration,
@@ -402,5 +445,19 @@ export class ResolutionAnalysis {
         description: new UnusedVariable(expr.name, "local"),
       });
     }
+  }
+
+  private buildCallGraph(
+    repr: WeakMap<UntypedDeclaration, UntypedDeclaration[]>,
+  ): DirectedGraph<UntypedDeclaration> {
+    return {
+      toKey(node) {
+        return node.binding.name;
+      },
+      getNeighbours(node) {
+        return repr.get(node) ?? [];
+      },
+      getNodes: () => this.module.declarations,
+    };
   }
 }
