@@ -9,7 +9,7 @@ test("allow declarations in swapped order", () => {
     let y = 0
   `);
 
-  const ra = new ResolutionAnalysis("Main", src, noErrors);
+  const ra = new ResolutionAnalysis("core", "Main", src, noErrors);
 
   expect(getSortedBindings(ra)).toEqual([["y"], ["x"]]);
 });
@@ -20,7 +20,7 @@ test("allow dependency cycles in functions", () => {
     let y = x
   `);
 
-  const ra = new ResolutionAnalysis("Main", src, noErrors);
+  const ra = new ResolutionAnalysis("core", "Main", src, noErrors);
 
   expect(getSortedBindings(ra)).toEqual([["x", "y"]]);
 });
@@ -32,7 +32,7 @@ test("forbid dependency cycles outside functions", () => {
     let y = x
   `);
 
-  new ResolutionAnalysis("Main", src, emitError);
+  new ResolutionAnalysis("core", "Main", src, emitError);
   expect(emitError).toHaveBeenCalledWith(
     expect.objectContaining({
       description: new CyclicDefinition(["x", "y"]),
