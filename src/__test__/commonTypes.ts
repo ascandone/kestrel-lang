@@ -13,6 +13,11 @@ export const tuple = (...ts: Type[]): Type => ({
   name: `Tuple${ts.length}`,
   args: ts,
 });
+export const result = (t1: Type, t2: Type): Type => ({
+  tag: "Named",
+  name: `Result`,
+  args: [t1, t2],
+});
 export const unit: Type = {
   tag: "Named",
   name: `Unit`,
