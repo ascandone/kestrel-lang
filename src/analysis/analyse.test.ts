@@ -1,6 +1,6 @@
 import { test, expect, describe, beforeEach } from "vitest";
 import { Analysis, resetTraitsRegistry } from "./analyse";
-import { typeToString } from "./type";
+import { typeToString } from "../typecheck/type";
 import {
   AmbiguousTypeVar,
   ArityMismatch,
@@ -27,8 +27,8 @@ import {
   UnusedImport,
   UnusedVariable,
 } from "../errors";
-import { rangeOf } from "./typedAst/__test__/utils";
-import { dummyRange } from "./defaultImports";
+import { rangeOf } from "../typecheck/typedAst/__test__/utils";
+import { dummyRange } from "../typecheck/defaultImports";
 import { unsafeParse } from "../parser";
 
 describe("infer constants", () => {

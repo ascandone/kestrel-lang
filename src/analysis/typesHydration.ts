@@ -13,7 +13,13 @@ import {
   UntypedTypeDeclaration,
 } from "../parser";
 import { ResolutionAnalysis } from "./resolution";
-import { PolyType, TVar, Type, TypeScheme, generalizeAsScheme } from "./type";
+import {
+  PolyType,
+  TVar,
+  Type,
+  TypeScheme,
+  generalizeAsScheme,
+} from "../typecheck/type";
 
 export type PolytypeNode = UntypedTypeDeclaration | PolyTypeAst | TypeAst;
 
