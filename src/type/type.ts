@@ -78,19 +78,31 @@ export class Unifier {
     t1 = this.resolveOnce(t1);
     t2 = this.resolveOnce(t2);
 
-    if (
-      (t1.tag === "Named" && t2.tag === "Fn") ||
-      (t1.tag === "Fn" && t2.tag === "Named")
-    ) {
-      throw new TypeMismatchError();
-    } else if (t1.tag === "Named" && t2.tag === "Named") {
+    // case (Var id, Var id1) where id == id1
+    if (t1.tag === "Var" && t2.tag === "Var" && t1.id === t2.id) {
+      return;
+    }
+
+    // case (Var id, Var id1)
+    if (t1.tag === "Var" && t2.tag === "Var") {
+      this.substitutions.set(t2.id, t1);
+      return;
+    }
+
+    // case (Named _ _, Named _ _)
+    if (t1.tag === "Named" && t2.tag === "Named") {
       if (t1.name !== t2.name || t1.args.length !== t2.args.length) {
         throw new TypeMismatchError();
       }
       for (let i = 0; i < t1.args.length; i++) {
         this.unify(t1.args[i]!, t2.args[i]!);
       }
-    } else if (t1.tag === "Fn" && t2.tag === "Fn") {
+
+      return;
+    }
+
+    // case (Fn _ _, Fn _ _)
+    if (t1.tag === "Fn" && t2.tag === "Fn") {
       if (t1.args.length !== t2.args.length) {
         throw new TypeMismatchError();
       }
@@ -98,19 +110,24 @@ export class Unifier {
         this.unify(t1.args[i]!, t2.args[i]!);
       }
       this.unify(t1.return, t2.return);
-    } else if (t1.tag === "Var" && t2.tag !== "Var") {
+      return;
+    }
+
+    // case (Var _, _)
+    if (t1.tag === "Var") {
       this.occursCheck(t1.id, t2);
       this.substitutions.set(t1.id, t2);
-    } else if (t1.tag !== "Var" && t2.tag === "Var") {
-      this.unify(t2, t1);
-    } else if (t1.tag === "Var" && t2.tag === "Var") {
-      if (t1.id === t2.id) {
-        return;
-      }
-      this.substitutions.set(t2.id, t1);
-    } else {
-      throw new Error("[unreachable]");
+      return;
     }
+
+    // case (_, Var _)
+    if (t2.tag === "Var") {
+      this.unify(t2, t1);
+      return;
+    }
+
+    // case (_, _)
+    throw new TypeMismatchError();
   }
 
   instantiate(t: Type, resolve: boolean = true): Type {
