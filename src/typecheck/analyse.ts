@@ -14,7 +14,6 @@ import {
   UntypedImport,
   UntypedMatchPattern,
   UntypedModule,
-  parse,
 } from "../parser";
 import { bool, char, float, int, list, string } from "./core";
 import { TraitImpl, defaultTraitImpls } from "./defaultImports";
@@ -64,26 +63,20 @@ export class Analysis {
     PolyType
   >();
   private typeAnnotations = new WeakMap<TypedNode, TVar>();
-  private module: UntypedModule;
 
   private resolution: ResolutionAnalysis;
   private typesHydration: TypeAstsHydration;
 
   constructor(
     public readonly ns: string,
-    public readonly source: string,
+    public readonly module: UntypedModule,
     public options: AnalyseOptions = {},
   ) {
-    const parseResult = parse(source);
     const emitError = this.errors.push.bind(this.errors);
-
-    // TODO push parsing/lexer errs in errs
-
-    this.module = parseResult.parsed;
-    this.resolution = new ResolutionAnalysis(ns, this.module, emitError);
+    this.resolution = new ResolutionAnalysis(ns, module, emitError);
     this.typesHydration = new TypeAstsHydration(
       ns,
-      this.module,
+      module,
       this.resolution,
       emitError,
     );
