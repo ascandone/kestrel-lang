@@ -13,8 +13,13 @@ export function defaultRecordGet<K extends keyof any, V>(
   return defaultValue;
 }
 
-export function defaultWeakmapGet<K extends object, V>(
-  wm: WeakMap<K, NonNullable<V>>,
+export interface MapLike<K, V> {
+  get(key: K): V | undefined;
+  set(key: K, value: V): this;
+}
+
+export function defaultMapGet<K, V>(
+  wm: MapLike<K, NonNullable<V>>,
   k: K,
   makeDefault: () => NonNullable<V>,
 ) {
