@@ -62,7 +62,7 @@ export class UnboundVariable implements ErrorDescription {
 }
 
 export class CyclicDefinition implements ErrorDescription {
-  constructor(public ident: string) {}
+  constructor(public path: string[]) {}
   severity: Severity = "error";
   errorName = "Cyclic definition";
   // TODO better error
