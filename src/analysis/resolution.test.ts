@@ -25,7 +25,7 @@ test("allow dependency cycles in functions", () => {
   expect(getSortedBindings(ra)).toEqual([["x", "y"]]);
 });
 
-test.todo("forbid dependency cycles outside functions", () => {
+test("forbid dependency cycles outside functions", () => {
   const emitError = vi.fn();
   const src = unsafeParse(`
     let x = y
@@ -33,7 +33,11 @@ test.todo("forbid dependency cycles outside functions", () => {
   `);
 
   new ResolutionAnalysis("Main", src, emitError);
-  expect(emitError).toHaveBeenCalledWith(new CyclicDefinition(["x", "y"]));
+  expect(emitError).toHaveBeenCalledWith(
+    expect.objectContaining({
+      description: new CyclicDefinition(["x", "y"]),
+    }),
+  );
 });
 
 function getSortedBindings(res: ResolutionAnalysis) {
