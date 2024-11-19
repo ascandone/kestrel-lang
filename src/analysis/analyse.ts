@@ -15,8 +15,8 @@ import {
   UntypedMatchPattern,
   UntypedModule,
 } from "../parser";
-import { bool, char, float, int, list, string } from "./core";
-import { TraitImpl, defaultTraitImpls } from "./defaultImports";
+import { bool, char, float, int, list, string } from "../typecheck/core";
+import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
 import { ResolutionAnalysis } from "./resolution";
 import {
   Instantiator,
@@ -28,7 +28,7 @@ import {
   instantiate,
   resolveType,
   unify,
-} from "./type";
+} from "../typecheck/type";
 import { TypeAstsHydration } from "./typesHydration";
 
 export function resetTraitsRegistry(
