@@ -155,36 +155,42 @@ export class Unifier {
       t = this.resolve(t);
     }
 
-    const instantiated = new Map<number, Type>();
-
-    const helper = (t: Type): Type => {
-      switch (t.tag) {
-        case "Named":
-          return {
-            tag: "Named",
-            name: t.name,
-            args: t.args.map(helper),
-            module: t.module,
-            package: t.package,
-          };
-
-        case "Fn":
-          return {
-            tag: "Fn",
-            args: t.args.map(helper),
-            return: helper(t.return),
-          };
-
-        case "Var":
-          return defaultMapGet(instantiated, t.id, () => this.freshVar());
-      }
-    };
-
-    return helper(t);
+    return new Instantiator(this).instantiate(t);
   }
 }
 
 /** Pre: type is already resolved */
 export function normalizeResolved(t: Type): Type {
   return new Unifier().instantiate(t);
+}
+
+export class Instantiator {
+  constructor(private unifier: Unifier) {}
+
+  private readonly instantiated = new Map<number, Type>();
+
+  public instantiate(t: Type): Type {
+    switch (t.tag) {
+      case "Named":
+        return {
+          tag: "Named",
+          name: t.name,
+          args: t.args.map((t) => this.instantiate(t)),
+          module: t.module,
+          package: t.package,
+        };
+
+      case "Fn":
+        return {
+          tag: "Fn",
+          args: t.args.map((t) => this.instantiate(t)),
+          return: this.instantiate(t.return),
+        };
+
+      case "Var":
+        return defaultMapGet(this.instantiated, t.id, () =>
+          this.unifier.freshVar(),
+        );
+    }
+  }
 }
