@@ -1,4 +1,4 @@
-import { showErrorLine } from "./errors/showErrorLine";
+import { showErrorLine } from "./utils/showErrorLine";
 import { Range } from "./parser";
 import { Type, typeToString } from "./typecheck";
 import { col, withDisabled } from "./utils/colors";
