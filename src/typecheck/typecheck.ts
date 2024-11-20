@@ -46,7 +46,7 @@ import {
   TraitNotSatified,
   TypeMismatch,
   UnboundTypeParam,
-} from "../errors";
+} from "../analysis/errors";
 import { castAst, findFieldInModule } from "./resolutionStep";
 import { createRecordGraph, topsort } from "../data/graph";
 

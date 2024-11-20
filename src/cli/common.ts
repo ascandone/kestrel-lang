@@ -11,7 +11,7 @@ import { compileProject, defaultEntryPoint } from "../compiler";
 import { col } from "../utils/colors";
 import { Config, readConfig } from "./config";
 import { join } from "node:path";
-import { errorInfoToString } from "../errors";
+import { errorInfoToString } from "../analysis/errors";
 import * as paths from "./paths";
 
 export const EXTENSION = "kes";

@@ -12,7 +12,7 @@ import {
   UnboundType,
   UnboundVariable,
   UnusedVariable,
-} from "../errors";
+} from "./errors";
 import {
   Binding,
   TypeAst,
