@@ -7,7 +7,16 @@ import {
   TypeMismatchError,
   Unifier,
 } from "./type";
-import { num, bool, list, tuple, fn, _0, _1 } from "../__test__/commonTypes";
+import {
+  num,
+  bool,
+  list,
+  tuple,
+  fn,
+  _0,
+  _1,
+  result,
+} from "../__test__/commonTypes";
 
 describe("unify", () => {
   test("unifing two concrete vars when they match", () => {
@@ -458,6 +467,25 @@ describe("unify traits", () => {
     expect(() => {
       u.unify(t0, num);
     }).not.toThrow();
+  });
+
+  test("handling unification of traits with deps", () => {
+    const u = new Unifier();
+    const result_ = result(_0, _1); // the passed type params are not relevant for the test
+
+    // Note that we are only imposing the constraint on the second parameter of Result
+    u.registerTraitImpl(result_.package, result_.module, result_.name, "Eq", [
+      false,
+      true,
+    ]);
+
+    const t0 = u.freshVar(["Eq"]);
+    const ta = u.freshVar();
+    const tb = u.freshVar();
+    u.unify(t0, result(ta, tb));
+
+    expect(resolvedTypeTraitsOfVar(u, ta)).toEqual([]);
+    expect(resolvedTypeTraitsOfVar(u, tb)).toEqual(["Eq"]);
   });
 });
 

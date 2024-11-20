@@ -216,7 +216,14 @@ export class Unifier {
             );
           }
 
-          // TODO handle dependencies
+          for (let i = 0; i < deps.length; i++) {
+            const isArgumentADepedency = deps[i]!,
+              arg = type.args[i]!;
+
+            if (isArgumentADepedency) {
+              this.assocTraits(arg, new Set([trait]));
+            }
+          }
         }
         break;
       }
