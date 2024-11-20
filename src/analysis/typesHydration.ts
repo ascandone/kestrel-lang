@@ -1,4 +1,4 @@
-import { defaultRecordGet } from "../data/defaultMap";
+import { defaultMapGet } from "../data/defaultMap";
 import {
   ErrorInfo,
   InvalidCatchall,
@@ -8,83 +8,82 @@ import {
 } from "../errors";
 import {
   PolyTypeAst,
+  Range,
   TypeAst,
   UntypedModule,
   UntypedTypeDeclaration,
 } from "../parser";
+import { Type, Unifier } from "../type/type";
 import { ResolutionAnalysis } from "./resolution";
-import {
-  PolyType,
-  TVar,
-  Type,
-  TypeScheme,
-  generalizeAsScheme,
-} from "../typecheck/type";
 
 export type PolytypeNode = UntypedTypeDeclaration | PolyTypeAst | TypeAst;
 
 export class TypeAstsHydration {
-  private polyTypes = new WeakMap<PolytypeNode, PolyType>();
-  public getPolytype(node: PolytypeNode): PolyType {
-    const t = this.polyTypes.get(node);
-    if (t === undefined) {
-      throw new Error("[unreachable] unbounde polytype");
-    }
-    return t;
+  /**
+   * Remember to handle instantiation before unifying it
+   * */
+  public getPolyType(node: PolytypeNode): Type {
+    return this.polyTypes.get(node)!;
   }
+
+  private readonly polyTypes = new WeakMap<PolytypeNode, Type>();
 
   constructor(
-    private ns: string,
-    private module: UntypedModule,
-    private resolution: ResolutionAnalysis,
-    private emitError: (error: ErrorInfo) => void,
+    private readonly package_: string,
+    private readonly ns: string,
+    private readonly module: UntypedModule,
+    private readonly resolution: ResolutionAnalysis,
+    private readonly emitError: (error: ErrorInfo) => void,
   ) {
-    this.initHydrateTypes();
-  }
-
-  private initHydrateTypes() {
+    // Hydrate type declarations
     for (const declaration of this.module.typeDeclarations) {
       this.initHydrateTypeDeclaration(declaration);
     }
 
+    // Hydrate type declarations' type hints
     for (const declaration of this.module.declarations) {
-      if (declaration.typeHint !== undefined) {
-        const poly = this.typeAstToPoly(declaration.typeHint.mono, {}, false);
-        this.polyTypes.set(declaration.typeHint, poly);
+      if (declaration.typeHint === undefined) {
+        continue;
       }
+
+      const type = this.typeHintToType(declaration.typeHint.mono);
+      this.polyTypes.set(declaration.typeHint, type);
     }
   }
 
   private initHydrateTypeDeclaration(declaration: UntypedTypeDeclaration) {
-    const bound: Record<string, Type> = {};
-    const args = declaration.params.map((p): Type => {
-      if (bound[p.name] !== undefined) {
-        this.emitError({
-          description: new TypeParamShadowing(p.name),
-          range: p.range,
-        });
-      }
+    // Since we are creating a polytype, we don't care whether the variables are fresh
+    // therefore we can use a local instance of a unifier as a type variables pool
+    const unifier = new Unifier();
 
-      const fresh = TVar.fresh().asType();
-      bound[p.name] = fresh;
-      return fresh;
-    });
+    const bound = new Map<string, Type>();
 
     const type: Type = {
-      type: "named",
+      tag: "Named",
+      module: this.ns,
+      package: this.package_,
       name: declaration.name,
-      moduleName: this.ns,
-      args,
+      args: declaration.params.map((p): Type => {
+        if (bound.has(p.name)) {
+          this.emitError({
+            description: new TypeParamShadowing(p.name),
+            range: p.range,
+          });
+        }
+
+        const fresh = unifier.freshVar();
+        bound.set(p.name, fresh);
+        return fresh;
+      }),
     };
 
-    const scheme = generalizeAsScheme(type);
-    this.polyTypes.set(declaration, [scheme, type]);
+    this.polyTypes.set(declaration, type);
     switch (declaration.type) {
       case "adt":
         for (const variant of declaration.variants) {
           for (const arg of variant.args) {
-            const [_scheme, mono] = this.typeAstToPoly(arg, bound, true);
-            this.polyTypes.set(arg, [scheme, mono]);
+            const type = this.adtArgToType(arg, unifier, bound);
+            this.polyTypes.set(arg, type);
           }
         }
         return;
@@ -97,72 +96,96 @@ export class TypeAstsHydration {
     }
   }
 
-  private typeAstToPoly(
-    t: TypeAst,
-    boundTypes: Record<string, Type>,
-    forbidUnbound: boolean,
-  ): PolyType {
-    const scheme: TypeScheme = {};
-    const recur = (t: TypeAst): Type => {
-      switch (t.type) {
-        case "any":
-          if (forbidUnbound) {
-            this.emitError({
-              description: new InvalidCatchall(),
-              range: t.range,
-            });
-          }
-          return TVar.fresh().asType();
+  // --- Cast type ASTs to actual types
+  private adtArgToType(
+    typeAst: TypeAst,
+    unifier: Unifier,
+    bound: Map<string, Type>,
+  ): Type {
+    return this.typeAstToType(typeAst, {
+      getFreshVariable: () => unifier.freshVar(),
+      getTypeVariable: (name, range) => {
+        const lookup = bound.get(name);
+        if (lookup === undefined) {
+          this.emitError({
+            description: new UnboundTypeParam(name),
+            range,
+          });
+          return unifier.freshVar();
+        }
+        return lookup;
+      },
+      onCatchall: (range) => {
+        this.emitError({
+          description: new InvalidCatchall(),
+          range,
+        });
+      },
+    });
+  }
 
-        case "var": {
-          return defaultRecordGet(boundTypes, t.ident, (): Type => {
-            if (forbidUnbound) {
-              this.emitError({
-                description: new UnboundTypeParam(t.ident),
-                range: t.range,
-              });
-            }
+  private typeHintToType(typeAst: TypeAst): Type {
+    // Same as before: since we are going to instantiate this type later on,
+    // we can have a local instance of Unifier
+    const unifier = new Unifier();
 
-            const [tvar, id] = TVar.freshWithId();
-            scheme[id] = t.ident;
-            return tvar.asType();
+    const boundTypes = new Map<string, Type>();
+
+    return this.typeAstToType(typeAst, {
+      getFreshVariable: () => unifier.freshVar(),
+      getTypeVariable: (name) =>
+        defaultMapGet(boundTypes, name, () => unifier.freshVar()),
+    });
+  }
+
+  private typeAstToType(
+    typeAst: TypeAst,
+    options: {
+      getTypeVariable: (name: string, range: Range) => Type;
+      getFreshVariable: () => Type;
+      onCatchall?: (range: Range) => void;
+    },
+  ): Type {
+    switch (typeAst.type) {
+      case "any":
+        options.onCatchall?.(typeAst.range);
+        return options.getFreshVariable();
+
+      case "var":
+        return options.getTypeVariable(typeAst.ident, typeAst.range);
+
+      case "fn":
+        return {
+          tag: "Fn",
+          args: typeAst.args.map((arg) => this.typeAstToType(arg, options)),
+          return: this.typeAstToType(typeAst.return, options),
+        };
+
+      case "named": {
+        const resolution = this.resolution.resolveType(typeAst);
+        if (resolution === undefined) {
+          return options.getFreshVariable();
+        }
+
+        if (resolution.declaration.params.length !== typeAst.args.length) {
+          this.emitError({
+            description: new InvalidTypeArity(
+              resolution.declaration.name,
+              resolution.declaration.params.length,
+              typeAst.args.length,
+            ),
+            range: typeAst.range,
           });
         }
 
-        case "named": {
-          const resolved = this.resolution.resolveType(t);
-          if (resolved === undefined) {
-            return TVar.fresh().asType();
-          }
-
-          if (resolved.declaration.params.length !== t.args.length) {
-            this.emitError({
-              description: new InvalidTypeArity(
-                resolved.declaration.name,
-                resolved.declaration.params.length,
-                t.args.length,
-              ),
-              range: t.range,
-            });
-          }
-
-          return {
-            type: "named",
-            args: t.args.map((arg) => recur(arg)),
-            moduleName: resolved.ns,
-            name: resolved.declaration.name,
-          };
-        }
-
-        case "fn":
-          return {
-            type: "fn",
-            args: t.args.map((arg) => recur(arg)),
-            return: recur(t.return),
-          };
+        return {
+          tag: "Named",
+          module: resolution.ns,
+          package: resolution.package,
+          name: resolution.declaration.name,
+          args: typeAst.args.map((arg) => this.typeAstToType(arg, options)),
+        };
       }
-    };
-
-    return [scheme, recur(t)];
+    }
   }
 }
