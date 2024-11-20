@@ -26,7 +26,7 @@ import {
   UnusedExposing,
   UnusedImport,
   UnusedVariable,
-} from "../errors";
+} from "./errors";
 import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 import { dummyRange } from "../typecheck/defaultImports";
 import { unsafeParse } from "../parser";

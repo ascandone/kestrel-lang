@@ -1,9 +1,9 @@
-import { showErrorLine } from "./utils/showErrorLine";
-import { Range } from "./parser";
-import { Type as LegacyType } from "./typecheck/type";
-import { Type, typePPrint } from "./type";
-import { typeToString } from "./typecheck";
-import { col, withDisabled } from "./utils/colors";
+import { showErrorLine } from "../utils/showErrorLine";
+import { Range } from "../parser";
+import { Type as LegacyType } from "../typecheck/type";
+import { Type, typePPrint } from "../type";
+import { typeToString } from "../typecheck";
+import { col, withDisabled } from "../utils/colors";
 
 export type Severity = "error" | "warning";
 

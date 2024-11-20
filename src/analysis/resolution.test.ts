@@ -1,7 +1,7 @@
 import { test, expect, vi } from "vitest";
 import { ResolutionAnalysis } from "./resolution";
 import { unsafeParse } from "../parser";
-import { CyclicDefinition } from "../errors";
+import { CyclicDefinition } from "./errors";
 
 test("allow declarations in swapped order", () => {
   const src = unsafeParse(`
