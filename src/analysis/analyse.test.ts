@@ -990,7 +990,7 @@ describe("ADTs", () => {
   });
 });
 
-describe.todo("type hints", () => {
+describe("type hints", () => {
   test("type hints are used by typechecker", () => {
     const a = new Analysis(
       "core",
@@ -1059,7 +1059,7 @@ describe.todo("type hints", () => {
     });
   });
 
-  test("vars type hints should be generalized", () => {
+  test.todo("vars type hints should be generalized", () => {
     const a = new Analysis("core", "Main", unsafeParse("pub let x: a = 0"));
     expect(a.errors).toHaveLength(1);
     expect(getTypes(a)).toEqual({
