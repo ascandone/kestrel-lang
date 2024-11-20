@@ -1567,7 +1567,7 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo("typechecks constructor args", () => {
+  test("typechecks constructor args", () => {
     const a = new Analysis(
       "core",
       "Main",
