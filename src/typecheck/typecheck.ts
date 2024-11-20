@@ -48,7 +48,7 @@ import {
   UnboundTypeParam,
 } from "../errors";
 import { castAst, findFieldInModule } from "./resolutionStep";
-import { topologicalSort } from "../utils/topsort";
+import { createRecordGraph, topsort } from "../data/graph";
 
 export type TypeMeta = { $: TVar };
 
@@ -957,7 +957,8 @@ function topSortedModules(
     dependencyGraph[ns] = deps;
   }
 
-  return topologicalSort(dependencyGraph);
+  const graph = createRecordGraph(dependencyGraph);
+  return topsort(graph);
 }
 
 function getDependencies(program: UntypedModule): string[] {
