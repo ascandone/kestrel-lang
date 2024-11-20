@@ -165,6 +165,11 @@ export class Analysis {
       case "syntax-err":
         return;
 
+      case "block":
+        this.unifyNodes(expr, expr.inner);
+        this.typecheckExpr(expr.inner);
+        return;
+
       case "constant":
         this.unifyNode(expr, getConstantType(expr.value));
         return;
