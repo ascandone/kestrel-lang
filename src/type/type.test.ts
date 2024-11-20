@@ -487,6 +487,36 @@ describe("unify traits", () => {
     expect(resolvedTypeTraitsOfVar(u, ta)).toEqual([]);
     expect(resolvedTypeTraitsOfVar(u, tb)).toEqual(["Eq"]);
   });
+
+  test("failing unification of traits in nested deps", () => {
+    const u = new Unifier();
+    const result_ = result(_0, _1); // the passed type params are not relevant for the test
+
+    // Note that we are only imposing the constraint on the second parameter of Result
+    u.registerTraitImpl(result_.package, result_.module, result_.name, "Eq", [
+      false,
+      true,
+    ]);
+
+    const t0 = u.freshVar(["Eq"]);
+    const ta = u.freshVar();
+    const tb = u.freshVar();
+    u.unify(t0, result(ta, tb));
+
+    // Note that Num does not implement Eq in this test
+
+    expect(() => {
+      u.unify(ta, num);
+    }).not.toThrow(MissingTraitError);
+
+    expect(() => {
+      u.unify(tb, num);
+    }).toThrow(MissingTraitError);
+
+    expect(() => {
+      u.unify(t0, result(num, num));
+    }).toThrow(MissingTraitError);
+  });
 });
 
 describe("instantiation", () => {
