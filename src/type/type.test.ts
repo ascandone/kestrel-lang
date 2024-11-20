@@ -1,5 +1,6 @@
 import { test, expect, describe } from "vitest";
 import {
+  MissingTraitError,
   normalizeResolved,
   OccursCheckError,
   Type,
@@ -429,6 +430,37 @@ describe("unify traits", () => {
       "Show",
     ]);
   });
+
+  test("unify trait-associated type var with a named type which does not implements the trait", () => {
+    const u = new Unifier();
+    const t0 = u.freshVar(["Show"]);
+
+    expect(() => {
+      u.unify(t0, num);
+    }).toThrow(MissingTraitError);
+  });
+
+  test("unifing trait-associated type var with a fn never succeeds", () => {
+    const u = new Unifier();
+    const t0 = u.freshVar(["Show"]);
+
+    expect(() => {
+      u.unify(t0, fn([], num));
+    }).toThrow(MissingTraitError);
+  });
+
+  test.todo(
+    "unify trait-associated type var with a named type which implements the trait",
+    () => {
+      const u = new Unifier();
+      // TODO register num as Show
+      const t0 = u.freshVar(["Show"]);
+
+      expect(() => {
+        u.unify(t0, num);
+      }).not.toThrow();
+    },
+  );
 });
 
 describe("instantiation", () => {

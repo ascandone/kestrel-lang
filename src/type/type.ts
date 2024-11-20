@@ -13,6 +13,11 @@ export type Type =
 
 export class TypeMismatchError extends Error {}
 export class OccursCheckError extends Error {}
+export class MissingTraitError extends Error {
+  constructor(public trait: string) {
+    super();
+  }
+}
 
 export class Unifier {
   private nextId = 0;
@@ -179,8 +184,7 @@ export class Unifier {
     return new Instantiator(this).instantiate(t);
   }
 
-  private link(id: number, type: Type) {
-    const traits = this.getResolvedTypeTraitsMut(id);
+  private assocTraits(type: Type, traits: Set<string>) {
     switch (type.tag) {
       case "Var": {
         const newPointerTraits = this.getResolvedTypeTraitsMut(type.id);
@@ -192,12 +196,23 @@ export class Unifier {
         break;
       }
 
-      case "Named":
+      case "Named": {
+        for (const trait of traits) {
+          throw new MissingTraitError(trait);
+        }
+        break;
+      }
+
       case "Fn":
-        // TODO check type impl traits
+        for (const trait of traits) {
+          throw new MissingTraitError(trait);
+        }
         break;
     }
+  }
 
+  private link(id: number, type: Type) {
+    this.assocTraits(type, this.getResolvedTypeTraitsMut(id));
     this.substitutions.set(id, type);
   }
 }
