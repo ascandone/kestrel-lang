@@ -16,13 +16,26 @@ export class OccursCheckError extends Error {}
 
 export class Unifier {
   private nextId = 0;
-  private substitutions = new Map<number, Type>();
+  private readonly substitutions = new Map<number, Type>();
+  private readonly traits = new Map<number, Set<string>>();
 
-  freshVar(): Type & { tag: "Var" } {
+  freshVar(traits: Iterable<string> = []): Type & { tag: "Var" } {
+    const id = this.nextId++;
+    this.traits.set(id, new Set(traits));
     return {
       tag: "Var",
-      id: this.nextId++,
+      id,
     };
+  }
+
+  private getResolvedTypeTraitsMut(id: number) {
+    return defaultMapGet(this.traits, id, () => new Set());
+  }
+
+  getResolvedTypeTraits(id: number) {
+    const values = [...this.getResolvedTypeTraitsMut(id).values()];
+    values.sort();
+    return values;
   }
 
   resolve(t: Type): Type {
@@ -103,12 +116,6 @@ export class Unifier {
       return;
     }
 
-    // case (Var id, Var id1)
-    if (t1.tag === "Var" && t2.tag === "Var") {
-      this.substitutions.set(t2.id, t1);
-      return;
-    }
-
     // case (Named name mod _, Named name1 mod _) where arity, name, mod, package is eq
     if (
       t1.tag === "Named" &&
@@ -150,7 +157,7 @@ export class Unifier {
     // case (Var _, _)
     if (t1.tag === "Var") {
       this.occursCheck(t1.id, t2);
-      this.substitutions.set(t1.id, t2);
+      this.link(t1.id, t2);
       return;
     }
 
@@ -170,6 +177,28 @@ export class Unifier {
     }
 
     return new Instantiator(this).instantiate(t);
+  }
+
+  private link(id: number, type: Type) {
+    const traits = this.getResolvedTypeTraitsMut(id);
+    switch (type.tag) {
+      case "Var": {
+        const newPointerTraits = this.getResolvedTypeTraitsMut(type.id);
+
+        for (const trait of traits) {
+          newPointerTraits.add(trait);
+        }
+
+        break;
+      }
+
+      case "Named":
+      case "Fn":
+        // TODO check type impl traits
+        break;
+    }
+
+    this.substitutions.set(id, type);
   }
 }
 
