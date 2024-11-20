@@ -1,6 +1,8 @@
 import { showErrorLine } from "./utils/showErrorLine";
 import { Range } from "./parser";
-import { Type, typeToString } from "./typecheck";
+import { Type as LegacyType } from "./typecheck/type";
+import { Type, typePPrint } from "./type";
+import { typeToString } from "./typecheck";
 import { col, withDisabled } from "./utils/colors";
 
 export type Severity = "error" | "warning";
@@ -226,7 +228,7 @@ export class TraitNotSatified implements ErrorDescription {
   errorName: string = "Trait not satisfied";
 
   constructor(
-    public readonly type: Type,
+    public readonly type: LegacyType,
     public readonly trait: string,
   ) {}
 
@@ -251,8 +253,8 @@ export class AmbiguousTypeVar implements ErrorDescription {
 
 export class TypeMismatch implements ErrorDescription {
   constructor(
-    public expected: Type,
-    public got: Type,
+    public expected: LegacyType,
+    public got: LegacyType,
   ) {}
 
   errorName = "Type mismatch";
@@ -269,6 +271,33 @@ export class TypeMismatch implements ErrorDescription {
 
     const nsRight =
       qualify && this.got.type === "named" ? `${this.got.moduleName}.` : "";
+
+    return `Expected:  ${nsLeft}${expected}
+     Got:  ${nsRight}${got}
+`;
+  }
+}
+
+export class TypeMismatch_REWRITE implements ErrorDescription {
+  constructor(
+    public expected: Type,
+    public got: Type,
+  ) {}
+
+  errorName = "Type mismatch";
+  severity: Severity = "error";
+  shortDescription(): string {
+    const expected = typePPrint(this.expected);
+    const got = typePPrint(this.got);
+    const qualify = expected === got;
+
+    const nsLeft =
+      qualify && this.expected.tag === "Named"
+        ? `${this.expected.module}.`
+        : "";
+
+    const nsRight =
+      qualify && this.got.tag === "Named" ? `${this.got.module}.` : "";
 
     return `Expected:  ${nsLeft}${expected}
      Got:  ${nsRight}${got}
