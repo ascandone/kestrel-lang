@@ -449,18 +449,16 @@ describe("unify traits", () => {
     }).toThrow(MissingTraitError);
   });
 
-  test.todo(
-    "unify trait-associated type var with a named type which implements the trait",
-    () => {
-      const u = new Unifier();
-      // TODO register num as Show
-      const t0 = u.freshVar(["Show"]);
+  test("unify trait-associated type var with a named type which implements the trait", () => {
+    const u = new Unifier();
+    u.registerTraitImpl(num.package, num.module, num.name, "Show", []);
 
-      expect(() => {
-        u.unify(t0, num);
-      }).not.toThrow();
-    },
-  );
+    const t0 = u.freshVar(["Show"]);
+
+    expect(() => {
+      u.unify(t0, num);
+    }).not.toThrow();
+  });
 });
 
 describe("instantiation", () => {
