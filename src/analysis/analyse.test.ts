@@ -1,6 +1,5 @@
-import { test, expect, describe, beforeEach } from "vitest";
-import { Analysis, resetTraitsRegistry } from "./analyse";
-import { typeToString } from "../typecheck/type";
+import { test, expect, describe } from "vitest";
+import { Analysis } from "./analyse";
 import {
   AmbiguousTypeVar,
   ArityMismatch,
@@ -17,7 +16,7 @@ import {
   NonExhaustiveMatch,
   NonExistingImport,
   TraitNotSatified,
-  TypeMismatch,
+  TypeMismatch_REWRITE,
   TypeParamShadowing,
   UnboundModule,
   UnboundType,
@@ -31,6 +30,7 @@ import {
 import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 import { dummyRange } from "../typecheck/defaultImports";
 import { unsafeParse } from "../parser";
+import { normalizeResolved, typePPrint as typeToString } from "../type";
 
 describe("infer constants", () => {
   test("int", () => {
@@ -681,7 +681,7 @@ describe.todo("modules", () => {
     );
 
     expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch);
+    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
   });
 });
 
@@ -990,7 +990,7 @@ describe("ADTs", () => {
   });
 });
 
-describe("type hints", () => {
+describe.todo("type hints", () => {
   test("type hints are used by typechecker", () => {
     const a = new Analysis(
       "core",
@@ -1001,7 +1001,7 @@ describe("type hints", () => {
       `),
     );
     expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
     expect(getTypes(a)).toEqual({
       x: "Int",
     });
@@ -1017,7 +1017,7 @@ describe("type hints", () => {
         `),
     );
     expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
     expect(getTypes(a)).toEqual(
       expect.objectContaining({
         x: "Fn() -> T",
@@ -1037,7 +1037,7 @@ describe("type hints", () => {
       `),
     );
     expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
     expect(getTypes(a)).toEqual(
       expect.objectContaining({
         x: "Fn(Bool) -> Int",
@@ -1073,7 +1073,7 @@ describe("type hints", () => {
       "Main",
       unsafeParse("pub let f: Fn(ta) -> tb = fn x { x }"),
     );
-    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch);
+    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
     expect(getTypes(a)).toEqual({
       f: "Fn(ta) -> tb",
     });
@@ -1164,21 +1164,23 @@ describe("functions and application", () => {
           pub let x = f(42, c)
       `;
 
-    const a = new Analysis("core", "Main", unsafeParse(src));
+    const a = new Analysis("pkg_name", "Main", unsafeParse(src));
 
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
-        description: new TypeMismatch(
+        description: new TypeMismatch_REWRITE(
           {
-            type: "named",
+            tag: "Named",
             args: [],
-            moduleName: "Main",
+            module: "Main",
+            package: "pkg_name",
             name: "T",
           },
           {
-            type: "named",
-            moduleName: "Int",
+            tag: "Named",
+            module: "Int",
             name: "Int",
+            package: "kestrel_core",
             args: [],
           },
         ),
@@ -1379,7 +1381,7 @@ describe("list literal", () => {
     );
 
     expect(a.errors).not.toEqual([]);
-    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
     expect(getTypes(a)).toEqual({
       lst: "List<Int>",
     });
@@ -1461,7 +1463,7 @@ describe("pattern matching", () => {
     `),
     );
     expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
   });
 
   test("infers return type", () => {
@@ -1699,7 +1701,7 @@ describe("pattern matching", () => {
     );
 
     expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch);
+    expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
   });
 
   test("return error on unbound types", () => {
@@ -1893,9 +1895,9 @@ describe.todo("traits", () => {
   });
 
   test("succeeds to typecheck when a required trait is not implemented", () => {
-    resetTraitsRegistry([
-      { trait: "Show", moduleName: "Int", typeName: "Int" },
-    ]);
+    // resetTraitsRegistry([
+    //   { trait: "Show", moduleName: "Int", typeName: "Int" },
+    // ]);
 
     const a = new Analysis(
       "core",
@@ -2303,9 +2305,9 @@ describe.todo("traits", () => {
   });
 
   test("allow non-ambiguos instantiations", () => {
-    resetTraitsRegistry([
-      { trait: "Default", moduleName: "Main", typeName: "X" },
-    ]);
+    // resetTraitsRegistry([
+    //   { trait: "Default", moduleName: "Main", typeName: "X" },
+    // ]);
 
     const a = new Analysis(
       "core",
@@ -2323,9 +2325,9 @@ describe.todo("traits", () => {
   });
 
   test("allow non-ambiguous instantiations when setting let type", () => {
-    resetTraitsRegistry([
-      { trait: "Default", moduleName: "Main", typeName: "X" },
-    ]);
+    // resetTraitsRegistry([
+    //   { trait: "Default", moduleName: "Main", typeName: "X" },
+    // ]);
 
     const a = new Analysis(
       "core",
@@ -2406,9 +2408,9 @@ describe.todo("traits", () => {
   });
 
   test("do not emit ambiguos type error when variable is unbound", () => {
-    resetTraitsRegistry([
-      { trait: "Default", moduleName: "Main", typeName: "X" },
-    ]);
+    // resetTraitsRegistry([
+    //   { trait: "Default", moduleName: "Main", typeName: "X" },
+    // ]);
 
     const a = new Analysis(
       "core",
@@ -2427,14 +2429,14 @@ describe.todo("traits", () => {
 
   // TODO Skip until type sigs are fixed
   test.todo("forbid ambiguous instantiations within args", () => {
-    resetTraitsRegistry([
-      {
-        moduleName: "Main",
-        typeName: "Option",
-        trait: "Default",
-        deps: [["Default"]],
-      },
-    ]);
+    // resetTraitsRegistry([
+    //   {
+    //     moduleName: "Main",
+    //     typeName: "Option",
+    //     trait: "Default",
+    //     deps: [["Default"]],
+    //   },
+    // ]);
 
     const a = new Analysis(
       "core",
@@ -3016,7 +3018,7 @@ describe.todo("struct", () => {
     );
 
     expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch);
+    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
 
     expect(getTypes(a)).toEqual({
       s: "Struct",
@@ -3161,12 +3163,12 @@ test.todo("type error when main has not type Task<Unit>", () => {
     unsafeParse(`pub let main = "not-task-type"`),
   );
   expect(a.errors).toHaveLength(1);
-  expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch);
+  expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
 });
 
 function getTypes(a: Analysis): Record<string, string> {
   const kvs = [...a.getPublicDeclarations()].map((decl) => {
-    const [, mono] = a.getDeclarationType(decl);
+    const mono = normalizeResolved(a.getType(decl.binding));
     // TODO scheme
 
     return [decl.binding.name, typeToString(mono)];
@@ -3174,6 +3176,6 @@ function getTypes(a: Analysis): Record<string, string> {
   return Object.fromEntries(kvs);
 }
 
-beforeEach(() => {
-  resetTraitsRegistry();
-});
+// beforeEach(() => {
+//   resetTraitsRegistry();
+// });

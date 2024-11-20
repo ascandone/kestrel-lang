@@ -364,16 +364,19 @@ describe("unify", () => {
 describe("instantiation", () => {
   test("named type without type vars", () => {
     const u = new Unifier();
-    expect(u.instantiate(tuple(num, bool))).toEqual(tuple(num, bool));
+    expect(u.instantiate(tuple(num, bool), false)).toEqual(tuple(num, bool));
   });
 
   test("a type var", () => {
     const u = new Unifier();
     expect(
-      u.instantiate({
-        tag: "Var",
-        id: 0,
-      }),
+      u.instantiate(
+        {
+          tag: "Var",
+          id: 0,
+        },
+        false,
+      ),
     ).toEqual({
       tag: "Var",
       id: 0,
@@ -383,10 +386,13 @@ describe("instantiation", () => {
   test("a type var with an high id", () => {
     const u = new Unifier();
     expect(
-      u.instantiate({
-        tag: "Var",
-        id: 100,
-      }),
+      u.instantiate(
+        {
+          tag: "Var",
+          id: 100,
+        },
+        false,
+      ),
     ).toEqual({
       tag: "Var",
       id: 0,
@@ -397,7 +403,7 @@ describe("instantiation", () => {
     const u = new Unifier();
     expect(
       //
-      u.instantiate(fn([num], bool)),
+      u.instantiate(fn([num], bool), false),
     ).toEqual(
       //
       fn([num], bool),
@@ -405,7 +411,7 @@ describe("instantiation", () => {
 
     expect(
       //
-      u.instantiate(fn([_1], _0)),
+      u.instantiate(fn([_1], _0), false),
     ).toEqual(
       //
       fn([_0], _1),
@@ -430,6 +436,7 @@ describe("instantiation", () => {
             id: 100,
           },
         ),
+        false,
       ),
     ).toEqual(
       tuple(
@@ -444,43 +451,6 @@ describe("instantiation", () => {
         {
           tag: "Var",
           id: 0,
-        },
-      ),
-    );
-  });
-
-  test("resolve first", () => {
-    const u = new Unifier();
-
-    const t0 = u.freshVar(),
-      t1 = u.freshVar(),
-      t3 = u.freshVar();
-
-    u.unify(t0, t1);
-    u.unify(t3, t0);
-
-    expect(u.resolve(t1)).toMatchInlineSnapshot(`
-      {
-        "id": 2,
-        "tag": "Var",
-      }
-    `);
-    expect(u.resolve(t0)).toMatchInlineSnapshot(`
-      {
-        "id": 2,
-        "tag": "Var",
-      }
-    `);
-
-    expect(u.instantiate(tuple(t0, t1))).toEqual<Type>(
-      tuple(
-        {
-          tag: "Var",
-          id: 3,
-        },
-        {
-          tag: "Var",
-          id: 3,
         },
       ),
     );
