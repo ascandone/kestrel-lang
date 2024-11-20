@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { format } from "../formatter";
+import { format } from "../format";
 import { unsafeParse } from "../parser";
 import { optimizeModule } from "./optimize";
 import { typecheck } from "../typecheck";

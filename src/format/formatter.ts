@@ -11,7 +11,7 @@ import {
   UntypedModule,
   UntypedTypeDeclaration,
   UntypedTypeVariant,
-} from "./parser";
+} from "../parser";
 import {
   Doc,
   lines,
@@ -28,7 +28,7 @@ import {
   nextBreakFits,
   nestOnBreak,
 } from "./pretty";
-import { gtEqPos } from "./typecheck/typedAst/common";
+import { gtEqPos } from "../typecheck/typedAst/common";
 
 let currentLineComments: LineComment[] = [];
 function popComments(ast: RangeMeta): Doc[] {

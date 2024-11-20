@@ -35,7 +35,7 @@ import {
 import { readProjectWithDeps } from "../common";
 import { ErrorInfo, Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
-import { format } from "../../formatter";
+import { format } from "../../format";
 import { Config, readConfig } from "../config";
 import { getCompletionItems } from "../../typecheck/typedAst/completion";
 

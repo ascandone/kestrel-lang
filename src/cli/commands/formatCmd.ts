@@ -1,6 +1,6 @@
 import { readFile, readdir, writeFile } from "fs/promises";
 import { EXTENSION, parseModule } from "../common";
-import { format } from "../../formatter";
+import { format } from "../../format";
 import { exit } from "process";
 import { stat } from "node:fs/promises";
 import { join } from "path";
