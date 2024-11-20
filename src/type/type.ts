@@ -61,7 +61,9 @@ export class Unifier {
         if (substitution === undefined) {
           return t;
         }
-        return this.resolveOnce(substitution);
+        const resolution = this.resolveOnce(substitution);
+        this.substitutions.set(t.id, resolution);
+        return resolution;
       }
     }
   }
