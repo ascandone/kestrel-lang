@@ -1,4 +1,5 @@
 import {
+  ArityMismatch,
   ErrorInfo,
   InvalidPipe,
   OccursCheck,
@@ -306,7 +307,14 @@ export class Analysis {
         this.unifyNode(pattern, t);
 
         if (resolution.variant.args.length !== pattern.args.length) {
-          throw new Error("TODO handle differnt args");
+          this.errors.push({
+            range: pattern.range,
+            description: new ArityMismatch(
+              resolution.variant.args.length,
+              pattern.args.length,
+            ),
+          });
+          return;
         }
         // TODO check resolution.variant.args.lenght=
 
