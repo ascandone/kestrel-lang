@@ -28,14 +28,26 @@ export class Unifier {
   resolve(t: Type): Type {
     t = this.resolveOnce(t);
 
-    if (t.tag === "Var") {
-      return t;
-    }
+    switch (t.tag) {
+      case "Var":
+        return t;
 
-    return {
-      ...t,
-      args: t.args.map((arg) => this.resolve(arg)),
-    };
+      case "Named":
+        return {
+          tag: "Named",
+          module: t.module,
+          name: t.name,
+          package: t.package,
+          args: t.args.map((arg) => this.resolve(arg)),
+        };
+
+      case "Fn":
+        return {
+          tag: "Fn",
+          args: t.args.map((arg) => this.resolve(arg)),
+          return: this.resolve(t.return),
+        };
+    }
   }
 
   private resolveOnce(t: Type): Type {
@@ -150,7 +162,7 @@ export class Unifier {
     throw new TypeMismatchError();
   }
 
-  instantiate(t: Type, resolve: boolean = true): Type {
+  instantiate(t: Type, resolve: boolean): Type {
     if (resolve) {
       t = this.resolve(t);
     }
@@ -161,7 +173,7 @@ export class Unifier {
 
 /** Pre: type is already resolved */
 export function normalizeResolved(t: Type): Type {
-  return new Unifier().instantiate(t);
+  return new Unifier().instantiate(t, false);
 }
 
 export class Instantiator {

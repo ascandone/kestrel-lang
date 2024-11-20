@@ -2,48 +2,29 @@ import {
   ErrorInfo,
   InvalidPipe,
   OccursCheck,
-  TraitNotSatified,
-  TypeMismatch,
+  TypeMismatch_REWRITE,
 } from "../errors";
 import {
   Binding,
   ConstLiteral,
-  RangeMeta,
   UntypedDeclaration,
   UntypedExpr,
   UntypedImport,
   UntypedMatchPattern,
   UntypedModule,
+  Range,
 } from "../parser";
-import { bool, char, float, int, list, string } from "../typecheck/core";
-import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
-import { ResolutionAnalysis } from "./resolution";
+import { IdentifierResolution, ResolutionAnalysis } from "./resolution";
 import {
-  Instantiator,
-  PolyType,
-  TVar,
   Type,
-  UnifyError,
-  generalizeAsScheme,
-  instantiate,
-  resolveType,
-  unify,
-} from "../typecheck/type";
+  Instantiator,
+  Unifier,
+  TypeMismatchError,
+  OccursCheckError,
+} from "../type";
+import { bool, char, float, int, list, string } from "./coreTypes";
 import { TypeAstsHydration } from "./typesHydration";
-
-export function resetTraitsRegistry(
-  traitImpls: TraitImpl[] = defaultTraitImpls,
-) {
-  TVar.resetTraitImpls();
-  for (const impl of traitImpls) {
-    TVar.registerTraitImpl(
-      impl.moduleName,
-      impl.typeName,
-      impl.trait,
-      impl.deps ?? [],
-    );
-  }
-}
+import { defaultMapGet } from "../data/defaultMap";
 
 export type Deps = Record<string, Analysis>;
 
@@ -53,26 +34,24 @@ export type AnalyseOptions = {
   mainType?: Type;
 };
 
+// | UntypedDeclaration // TODO do we also need UntypedDeclaration too instead of just Binding?
 export type TypedNode = Binding | UntypedExpr | UntypedMatchPattern;
 
 export class Analysis {
-  errors: ErrorInfo[] = [];
+  public readonly errors: ErrorInfo[] = [];
 
-  private typeDeclarationsAnnotations = new WeakMap<
-    UntypedDeclaration,
-    PolyType
-  >();
-  private typeAnnotations = new WeakMap<TypedNode, TVar>();
+  private readonly typeAnnotations = new WeakMap<TypedNode, Type>();
 
-  private resolution: ResolutionAnalysis;
-  private typesHydration: TypeAstsHydration;
+  private readonly resolution: ResolutionAnalysis;
+  private readonly typesHydration: TypeAstsHydration;
   private currentDeclarationGroup: UntypedDeclaration[] = [];
+  private readonly unifier = new Unifier();
 
   constructor(
     public readonly package_: string,
     public readonly ns: string,
     public readonly module: UntypedModule,
-    public options: AnalyseOptions = {},
+    public readonly options: AnalyseOptions = {},
   ) {
     const emitError = this.errors.push.bind(this.errors);
     this.resolution = new ResolutionAnalysis(
@@ -82,16 +61,14 @@ export class Analysis {
       emitError,
     );
     this.typesHydration = new TypeAstsHydration(
+      this.package_,
       ns,
       module,
       this.resolution,
       emitError,
     );
 
-    this.initDeclarationsTypecheck();
-  }
-
-  private initDeclarationsTypecheck() {
+    // Typecheck each declaration
     for (const declGroup of this.resolution.sortedDeclarations) {
       this.currentDeclarationGroup = declGroup;
       for (const letDecl of declGroup) {
@@ -101,43 +78,86 @@ export class Analysis {
   }
 
   private typecheckLetDeclaration(decl: UntypedDeclaration) {
-    if (decl.typeHint !== undefined) {
-      const typeHintType = this.typesHydration.getPolytype(decl.typeHint);
-      this.typeDeclarationsAnnotations.set(decl, typeHintType);
+    if (decl.extern) {
+      const typeHintType = this.typesHydration.getPolyType(decl.typeHint);
+      this.typeAnnotations.set(decl.binding, typeHintType);
+      return;
     }
 
-    if (decl.extern) {
-      return;
+    // TODO properly apply hint
+    if (decl.typeHint) {
+      const typeHintType = this.typesHydration.getPolyType(decl.typeHint);
+      this.unifyNode(decl.value, this.unifier.instantiate(typeHintType, false));
     }
 
     this.typecheckExpr(decl.value);
+    this.unifyNodes(decl.value, decl.binding);
 
-    const valueType = this.getType(decl.value);
+    // const valueType = this.getType(decl.value);
+    // TODO traverse typeHint and compare with polyType
+    // const typeHintType = this.typesHydration.getType(decl.typeHint);
+    // const err = applyHint(valueType, typeHintType);
+    // if (err !== undefined) {
+    //   // TODO better position
+    //   this.errors.push(unifyErrToErrorInfo(decl.value, err));
+    // }
+  }
 
-    if (decl.typeHint !== undefined) {
-      // TODO traverse typeHint and compare with polyType
-      const typeHintType = this.typesHydration.getPolytype(decl.typeHint);
-      const err = applyHint(valueType, typeHintType);
-      if (err !== undefined) {
-        // TODO better position
-        this.errors.push(unifyErrToErrorInfo(decl.value, err));
+  private typecheckResolvedIdentifier(
+    expr: UntypedExpr,
+    resolution: IdentifierResolution,
+  ) {
+    switch (resolution.type) {
+      case "global-variable": {
+        // TODO instantiate
+        // TODO check order
+
+        // TODO handle external ns
+        const poly = this.typeAnnotations.get(resolution.declaration.binding);
+
+        if (this.currentDeclarationGroup.includes(resolution.declaration)) {
+          // TODO unify with mono
+          return;
+        }
+
+        if (poly === undefined) {
+          throw new Error(
+            "TODO handle unresolved type for: " +
+              resolution.declaration.binding.name,
+          );
+        }
+
+        // TODO do not instantiate when this binding is in the current decl group
+        this.unifyNode(expr, this.unifier.instantiate(poly, true));
+        return;
       }
-    } else {
-      const scheme = generalizeAsScheme(valueType);
-      this.typeDeclarationsAnnotations.set(decl, [scheme, valueType]);
-    }
-  }
 
-  private unifyNode(node: TypedNode, type: Type) {
-    const err = unify(this.getType(node), type);
-    if (err !== undefined) {
-      this.errors.push(unifyErrToErrorInfo(node, err));
-      return;
-    }
-  }
+      case "local-variable":
+        this.unifyNodes(expr, resolution.binding);
+        return;
 
-  private unifyNodes(left: TypedNode, right: TypedNode) {
-    this.unifyNode(left, this.getType(right));
+      case "constructor": {
+        const declarationType = this.typesHydration.getPolyType(
+          resolution.declaration,
+        );
+
+        const constructorType: Type =
+          resolution.variant.args.length === 0
+            ? declarationType
+            : {
+                tag: "Fn",
+                args: resolution.variant.args.map((arg) =>
+                  this.typesHydration.getPolyType(arg),
+                ),
+                return: declarationType,
+              };
+
+        const mono = this.unifier.instantiate(constructorType, false);
+
+        this.unifyNode(expr, mono);
+        return;
+      }
+    }
   }
 
   private typecheckExpr(expr: UntypedExpr): undefined {
@@ -156,65 +176,13 @@ export class Analysis {
           return;
         }
 
-        switch (resolution.type) {
-          case "global-variable": {
-            // TODO instantiate
-            // TODO check order
-
-            // TODO handle external ns
-            const poly = this.typeDeclarationsAnnotations.get(
-              resolution.declaration,
-            );
-
-            if (this.currentDeclarationGroup.includes(resolution.declaration)) {
-              // TODO unify with mono
-              return;
-            }
-
-            if (poly === undefined) {
-              throw new Error(
-                "TODO handle unresolved type for: " +
-                  resolution.declaration.binding.name,
-              );
-            }
-
-            this.unifyNode(expr, instantiate(poly));
-            return;
-          }
-
-          case "local-variable":
-            this.unifyNodes(expr, resolution.binding);
-            return;
-
-          case "constructor": {
-            const [scheme, declarationType] = this.typesHydration.getPolytype(
-              resolution.declaration,
-            );
-
-            const constructorType = ((): Type => {
-              if (resolution.variant.args.length === 0) {
-                return declarationType;
-              } else {
-                return {
-                  type: "fn",
-                  args: resolution.variant.args.map(
-                    (arg) => this.typesHydration.getPolytype(arg)[1],
-                  ),
-                  return: declarationType,
-                };
-              }
-            })();
-
-            const mono = instantiate([scheme, constructorType]);
-            this.unifyNode(expr, mono);
-            return;
-          }
-        }
+        this.typecheckResolvedIdentifier(expr, resolution);
+        return;
       }
 
       case "fn":
         this.unifyNode(expr, {
-          type: "fn",
+          tag: "Fn",
           args: expr.params.map((pattern) => {
             this.typecheckPattern(pattern);
 
@@ -222,9 +190,9 @@ export class Analysis {
 
             //   throw new Error("handle pattern != ident");
             // }
-            return this.getType(pattern);
+            return this.getRawType(pattern);
           }),
-          return: this.getType(expr.body),
+          return: this.getRawType(expr.body),
         });
         this.typecheckExpr(expr.body);
         return;
@@ -232,9 +200,9 @@ export class Analysis {
       case "application":
         this.typecheckExpr(expr.caller);
         this.unifyNode(expr.caller, {
-          type: "fn",
-          args: expr.args.map((arg) => this.getType(arg)),
-          return: this.getType(expr),
+          tag: "Fn",
+          args: expr.args.map((arg) => this.getRawType(arg)),
+          return: this.getRawType(expr),
         });
         for (const arg of expr.args) {
           this.typecheckExpr(arg);
@@ -259,7 +227,7 @@ export class Analysis {
         return;
 
       case "list-literal": {
-        const listType = TVar.fresh().asType();
+        const listType = this.unifier.freshVar();
         this.unifyNode(expr, list(listType));
         for (const value of expr.values) {
           this.unifyNode(value, listType);
@@ -281,12 +249,12 @@ export class Analysis {
         this.typecheckExpr(expr.right.caller);
         this.typecheckExpr(expr.left);
         this.unifyNode(expr.right.caller, {
-          type: "fn",
+          tag: "Fn",
           args: [
-            this.getType(expr.left),
-            ...expr.right.args.map((arg) => this.getType(arg)),
+            this.getRawType(expr.left),
+            ...expr.right.args.map((arg) => this.getRawType(arg)),
           ],
-          return: this.getType(expr),
+          return: this.getRawType(expr),
         });
         return;
       }
@@ -324,11 +292,11 @@ export class Analysis {
           return;
         }
 
-        const declarationType = this.typesHydration.getPolytype(
+        const declarationType = this.typesHydration.getPolyType(
           resolution.declaration,
         );
 
-        const instantiator = new Instantiator();
+        const instantiator = new Instantiator(this.unifier);
         const t = instantiator.instantiate(declarationType);
         this.unifyNode(pattern, t);
 
@@ -343,7 +311,7 @@ export class Analysis {
 
           this.unifyNode(
             nestedPattern,
-            instantiator.instantiate(this.typesHydration.getPolytype(arg)),
+            instantiator.instantiate(this.typesHydration.getPolyType(arg)),
           );
           this.typecheckPattern(nestedPattern);
         }
@@ -352,25 +320,58 @@ export class Analysis {
     }
   }
 
-  // --- Public interface
-  getType(node: TypedNode): Type {
-    const lookup = this.typeAnnotations.get(node);
-    if (lookup === undefined) {
-      // initialize node
-      const tvar = TVar.fresh();
-      this.typeAnnotations.set(node, tvar);
-      return tvar.asType();
+  // Unify wrappers
+
+  private unify(expected: Type, got: Type, range: Range) {
+    try {
+      this.unifier.unify(expected, got);
+    } catch (error) {
+      expected = this.unifier.resolve(expected);
+      got = this.unifier.resolve(got);
+
+      if (error instanceof TypeMismatchError) {
+        this.errors.push({
+          range,
+          description: new TypeMismatch_REWRITE(expected, got),
+        });
+        return;
+      }
+
+      if (error instanceof OccursCheckError) {
+        this.errors.push({
+          range,
+          description: new OccursCheck(),
+        });
+        return;
+      }
+
+      throw error;
     }
-    return lookup.asType();
   }
 
-  getDeclarationType(node: UntypedDeclaration): PolyType {
-    const t = this.typeDeclarationsAnnotations.get(node);
-    if (t === undefined) {
-      throw new Error("[unrechable] undefined decl");
-    }
+  private unifyNode(node: TypedNode, type: Type) {
+    this.unify(this.getRawType(node), type, node.range);
+  }
 
-    return t;
+  private unifyNodes(left: TypedNode, right: TypedNode) {
+    this.unifyNode(left, this.getRawType(right));
+  }
+
+  /** Get the type without resolving it - or create it as fresh instead */
+  private getRawType(node: TypedNode): Type {
+    return defaultMapGet(this.typeAnnotations, node, () =>
+      this.unifier.freshVar(),
+    );
+  }
+
+  // --- Public interface
+
+  /**
+   * Get a resolved type
+   */
+  getType(node: TypedNode): Type {
+    const type = this.getRawType(node);
+    return this.unifier.resolve(type);
   }
 
   *getDeclarations(): Generator<UntypedDeclaration> {
@@ -388,29 +389,9 @@ export class Analysis {
   }
 }
 
-function unifyErrToErrorInfo(node: RangeMeta, e: UnifyError): ErrorInfo {
-  switch (e.type) {
-    case "missing-trait":
-      return {
-        range: node.range,
-        description: new TraitNotSatified(e.type_, e.trait),
-      };
-
-    case "type-mismatch":
-      return {
-        range: node.range,
-        description: new TypeMismatch(e.left, e.right),
-      };
-
-    case "occurs-check":
-      return { range: node.range, description: new OccursCheck() };
-  }
-}
-
 // Keep this in sync with core
-function getConstantType(x: ConstLiteral): Type {
-  // Keep this in sync with core
-  switch (x.type) {
+function getConstantType(lit: ConstLiteral): Type {
+  switch (lit.type) {
     case "int":
       return int;
 
@@ -425,62 +406,63 @@ function getConstantType(x: ConstLiteral): Type {
   }
 }
 
-function applyHint(
-  valueType: Type,
-  [scheme, hintMono]: PolyType,
-): UnifyError | undefined {
-  const resT = resolveType(valueType),
-    resHint = resolveType(hintMono);
+// TODO move to type
+// function applyHint(
+//   valueType: Type,
+//   [scheme, hintMono]: PolyType,
+// ): UnifyError | undefined {
+//   const resT = resolveType(valueType),
+//     resHint = resolveType(hintMono);
 
-  switch (resHint.type) {
-    case "named":
-      if (resT.type === "named") {
-        if (resT.name !== resHint.name) {
-          return { type: "type-mismatch", left: resT, right: resHint };
-        }
+//   switch (resHint.type) {
+//     case "named":
+//       if (resT.type === "named") {
+//         if (resT.name !== resHint.name) {
+//           return { type: "type-mismatch", left: resT, right: resHint };
+//         }
 
-        for (let i = 0; i < resHint.args.length; i++) {
-          const err = applyHint(resT.args[i]!, [scheme, resHint.args[i]!]);
-          if (err !== undefined) {
-            return err;
-          }
-        }
-      }
-      return unify(valueType, resHint);
+//         for (let i = 0; i < resHint.args.length; i++) {
+//           const err = applyHint(resT.args[i]!, [scheme, resHint.args[i]!]);
+//           if (err !== undefined) {
+//             return err;
+//           }
+//         }
+//       }
+//       return unify(valueType, resHint);
 
-    case "fn":
-      if (resT.type === "fn") {
-        // TODO mismatched number of args
-        for (let i = 0; i < resHint.args.length; i++) {
-          const err = unify(resT.args[i]!, resHint.args[i]!);
-          if (err !== undefined) {
-            return err;
-          }
-        }
+//     case "fn":
+//       if (resT.type === "fn") {
+//         // TODO mismatched number of args
+//         for (let i = 0; i < resHint.args.length; i++) {
+//           const err = unify(resT.args[i]!, resHint.args[i]!);
+//           if (err !== undefined) {
+//             return err;
+//           }
+//         }
 
-        const err = applyHint(resT.return, [scheme, resHint.return]);
-        if (err !== undefined) {
-          return err;
-        }
+//         const err = applyHint(resT.return, [scheme, resHint.return]);
+//         if (err !== undefined) {
+//           return err;
+//         }
 
-        return;
-      }
+//         return;
+//       }
 
-      return unify(valueType, resHint);
+//       return unify(valueType, resHint);
 
-    case "unbound": {
-      const bound = scheme[resHint.id];
-      if (bound === undefined) {
-        return unify(valueType, hintMono);
-      } else {
-        unify(valueType, TVar.fresh().asType());
+//     case "unbound": {
+//       const bound = scheme[resHint.id];
+//       if (bound === undefined) {
+//         return unify(valueType, hintMono);
+//       } else {
+//         unify(valueType, TVar.fresh().asType());
 
-        return {
-          type: "type-mismatch",
-          left: valueType,
-          right: hintMono,
-        };
-      }
-    }
-  }
-}
+//         return {
+//           type: "type-mismatch",
+//           left: valueType,
+//           right: hintMono,
+//         };
+//       }
+//     }
+//   }
+// }
