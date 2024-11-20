@@ -227,7 +227,7 @@ describe("unify", () => {
     const t0 = u.freshVar();
     const t1 = u.freshVar();
     u.unify(t0, t1);
-    expect(u.resolve(t0)).toEqual<Type>(t0);
+    expect(u.resolve(t0)).toEqual<Type>(u.resolve(t0));
     expect(u.resolve(t0)).toEqual(u.resolve(t1));
   });
 
@@ -276,9 +276,9 @@ describe("unify", () => {
     u.unify(t0, t1);
     u.unify(t1, t2);
 
-    expect(u.resolve(t0), "a").toEqual<Type>(t0);
-    expect(u.resolve(t1), "b").toEqual<Type>(t0);
-    expect(u.resolve(t1), "c").toEqual<Type>(t0);
+    expect(u.resolve(t0), "a").toEqual<Type>(u.resolve(t0));
+    expect(u.resolve(t1), "b").toEqual<Type>(u.resolve(t0));
+    expect(u.resolve(t2), "c").toEqual<Type>(u.resolve(t0));
 
     u.unify(t0, bool);
 
@@ -358,6 +358,76 @@ describe("unify", () => {
 
     u.unify(t1, num);
     expect(u.resolve(t0)).toEqual(list(num));
+  });
+});
+
+describe("unify traits", () => {
+  test("merge traits when unifying", () => {
+    const u = new Unifier();
+    const t0 = u.freshVar(["Show"]);
+    const t1 = u.freshVar(["Eq"]);
+
+    u.unify(t0, t1);
+
+    expect(resolvedTypeTraitsOfVar(u, t0)).toEqual(["Eq", "Show"]);
+    expect(resolvedTypeTraitsOfVar(u, t1)).toEqual(["Eq", "Show"]);
+  });
+
+  test("merge traits when unifying (swapped)", () => {
+    const u = new Unifier();
+    const t0 = u.freshVar(["Show"]);
+    const t1 = u.freshVar(["Eq"]);
+
+    u.unify(t1, t0);
+
+    expect(resolvedTypeTraitsOfVar(u, t0)).toEqual(["Eq", "Show"]);
+    expect(resolvedTypeTraitsOfVar(u, t1)).toEqual(["Eq", "Show"]);
+  });
+
+  test("merge traits in a transitive unification", () => {
+    const u = new Unifier();
+    const t0 = u.freshVar(["Show", "Json"]);
+    const t1 = u.freshVar(["Eq"]);
+    const t2 = u.freshVar(["Ord"]);
+
+    u.unify(t0, t1);
+    u.unify(t1, t2);
+
+    expect(resolvedTypeTraitsOfVar(u, t0)).toEqual([
+      "Eq",
+      "Json",
+      "Ord",
+      "Show",
+    ]);
+    expect(resolvedTypeTraitsOfVar(u, t1)).toEqual([
+      "Eq",
+      "Json",
+      "Ord",
+      "Show",
+    ]);
+  });
+
+  test("merge traits in a transitive unification (reversed)", () => {
+    const u = new Unifier();
+    const t0 = u.freshVar(["Show", "Json"]);
+    const t1 = u.freshVar(["Eq"]);
+    const t2 = u.freshVar(["Ord"]);
+
+    u.unify(t1, t0);
+    u.unify(t2, t1);
+
+    expect(resolvedTypeTraitsOfVar(u, t0)).toEqual([
+      "Eq",
+      "Json",
+      "Ord",
+      "Show",
+    ]);
+    expect(resolvedTypeTraitsOfVar(u, t1)).toEqual([
+      "Eq",
+      "Json",
+      "Ord",
+      "Show",
+    ]);
   });
 });
 
@@ -476,3 +546,12 @@ describe("normalize", () => {
     );
   });
 });
+
+function resolvedTypeTraitsOfVar(u: Unifier, t: Type) {
+  t = u.resolve(t);
+  if (t.tag !== "Var") {
+    throw new Error("not a type variable");
+  }
+
+  return u.getResolvedTypeTraits(t.id);
+}
