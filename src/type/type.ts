@@ -23,6 +23,7 @@ export class Unifier {
   private nextId = 0;
   private readonly substitutions = new Map<number, Type>();
   private readonly traits = new Map<number, Set<string>>();
+  private readonly namedTypesTraitImpls = new Map<ImpKey, boolean[]>();
 
   freshVar(traits: Iterable<string> = []): Type & { tag: "Var" } {
     const id = this.nextId++;
@@ -198,7 +199,24 @@ export class Unifier {
 
       case "Named": {
         for (const trait of traits) {
-          throw new MissingTraitError(trait);
+          const key = getTraitImplementationKey(
+            type.package,
+            type.module,
+            type.name,
+            trait,
+          );
+          const deps = this.namedTypesTraitImpls.get(key);
+          if (deps === undefined) {
+            throw new MissingTraitError(trait);
+          }
+
+          if (deps.length !== type.args.length) {
+            throw new Error(
+              "[unrechable] invalidy arity for trait declaration",
+            );
+          }
+
+          // TODO handle dependencies
         }
         break;
       }
@@ -214,6 +232,22 @@ export class Unifier {
   private link(id: number, type: Type) {
     this.assocTraits(type, this.getResolvedTypeTraitsMut(id));
     this.substitutions.set(id, type);
+  }
+
+  public registerTraitImpl(
+    package_: string,
+    module: string,
+    name: string,
+    trait: string,
+    dependencies: boolean[],
+  ) {
+    const key = getTraitImplementationKey(package_, module, name, trait);
+    if (this.namedTypesTraitImpls.has(key)) {
+      throw new Error(
+        `[unreachable] cannot register a trait twice (while declaring ${key})`,
+      );
+    }
+    this.namedTypesTraitImpls.set(key, dependencies);
   }
 }
 
@@ -251,4 +285,14 @@ export class Instantiator {
         );
     }
   }
+}
+
+type ImpKey = string;
+function getTraitImplementationKey(
+  package_: string,
+  module: string,
+  name: string,
+  trait: string,
+): ImpKey {
+  return `${package_}-${module}-${name}:${trait}`;
 }
