@@ -1,7 +1,7 @@
-import { TypedProject } from "./cli/common";
-import { Position } from "./parser";
-import { TypedModule, TypedTypeAst, typeToString } from "./typecheck";
-import { gtEqPos } from "./typecheck/typedAst/common";
+import { TypedProject } from "../../common";
+import { Position } from "../../../parser";
+import { TypedModule, TypedTypeAst, typeToString } from "../../../typecheck";
+import { gtEqPos } from "../../../typecheck/typedAst/common";
 
 export type Variant = {
   name: string;

@@ -1,6 +1,6 @@
 import { ModuleDoc, makeModuleDoc } from "./documentation";
-import { unsafeParse } from "./parser";
-import { typecheck } from "./typecheck";
+import { unsafeParse } from "../../../parser";
+import { typecheck } from "../../../typecheck";
 import { test, expect } from "vitest";
 
 test("Extract values documentation", () => {

@@ -1,5 +1,5 @@
 import { writeFile, readFile } from "fs/promises";
-import { makeProjectDoc } from "../../documentation";
+import { makeProjectDoc } from "./docsCmd/documentation";
 import { check } from "../common";
 import { join } from "node:path";
 import { exit } from "process";
