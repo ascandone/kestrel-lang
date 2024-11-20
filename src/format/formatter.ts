@@ -693,10 +693,6 @@ type Statement =
   | { type: "decl"; decl: UntypedDeclaration }
   | { type: "type"; decl: UntypedTypeDeclaration };
 
-export function formatExpr(expr: UntypedExpr): string {
-  return pprint(exprToDoc(expr, false));
-}
-
 export function format(ast: UntypedModule): string {
   currentLineComments = [...(ast.lineComments ?? [])];
   currentLineComments.reverse();
