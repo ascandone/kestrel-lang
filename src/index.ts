@@ -1,5 +1,5 @@
 export * from "./parser";
-export * from "./format/formatter";
+export * from "./format";
 export * from "./compiler";
 export * from "./typecheck";
 export * from "./errors";
