@@ -3,7 +3,7 @@ import {
   InvalidPipe,
   OccursCheck,
   TypeMismatch_REWRITE,
-} from "../errors";
+} from "./errors";
 import {
   Binding,
   ConstLiteral,

@@ -5,7 +5,7 @@ import {
   InvalidTypeArity,
   TypeParamShadowing,
   UnboundTypeParam,
-} from "../errors";
+} from "./errors";
 import {
   PolyTypeAst,
   Range,
