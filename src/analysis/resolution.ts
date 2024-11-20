@@ -240,6 +240,10 @@ export class ResolutionAnalysis {
       case "constant":
         return;
 
+      case "block":
+        this.runValuesResolution(expr.inner, localScope);
+        return;
+
       case "identifier": {
         const res = this.evaluateResolution(expr, localScope);
         if (res === undefined) {
