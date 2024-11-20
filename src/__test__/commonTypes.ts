@@ -35,13 +35,14 @@ export const tuple = (...ts: Type[]): Type => ({
   name: `Tuple${ts.length}`,
   args: ts,
 });
-export const result = (t1: Type, t2: Type): Type => ({
-  tag: "Named",
-  module: "Main",
-  package: "core",
-  name: `Result`,
-  args: [t1, t2],
-});
+export const result = (t1: Type, t2: Type) =>
+  ({
+    tag: "Named",
+    module: "Main",
+    package: "core",
+    name: `Result`,
+    args: [t1, t2],
+  }) satisfies Type;
 export const unit: Type = {
   tag: "Named",
   module: "Main",
