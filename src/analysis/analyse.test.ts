@@ -2804,16 +2804,29 @@ function getTypes(a: Analysis): Record<string, string> {
   return Object.fromEntries(kvs);
 }
 
+type Deps = Record<string, Analysis>;
+
 type TestAnalyseOptions = {
   package_?: string;
   namespace?: string;
-} & AnalyseOptions;
+  dependencies?: Deps;
+} & Omit<AnalyseOptions, "getDependency">;
 
 function performAnalysis(
   src: string,
-  { package_ = "core", namespace = "Main", ...opts }: TestAnalyseOptions = {},
+  {
+    package_ = "core",
+    namespace = "Main",
+    dependencies = {},
+    ...opts
+  }: TestAnalyseOptions = {},
 ): [analysis: Analysis] {
-  const analysis = new Analysis(package_, namespace, unsafeParse(src), opts);
+  const analysis = new Analysis(package_, namespace, unsafeParse(src), {
+    getDependency(ns) {
+      return dependencies[ns];
+    },
+    ...opts,
+  });
   return [analysis];
 }
 

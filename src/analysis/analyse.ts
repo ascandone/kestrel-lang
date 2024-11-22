@@ -27,10 +27,8 @@ import { bool, char, float, int, list, string } from "./coreTypes";
 import { TypeAstsHydration } from "./typesHydration";
 import { defaultMapGet } from "../data/defaultMap";
 
-export type Deps = Record<string, Analysis>;
-
 export type AnalyseOptions = {
-  dependencies?: Deps;
+  getDependency?: (namespace: string) => Analysis | undefined;
   implicitImports?: UntypedImport[];
   mainType?: Type;
 };
