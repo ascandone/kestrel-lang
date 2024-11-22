@@ -177,7 +177,16 @@ export class ResolutionAnalysis {
   }
 
   private initDeclarationsResolution() {
+    const foundDeclarations = new Set<string>();
     for (const letDecl of this.module.declarations) {
+      if (foundDeclarations.has(letDecl.binding.name)) {
+        this.emitError({
+          range: letDecl.binding.range,
+          description: new DuplicateDeclaration(letDecl.binding.name),
+        });
+      }
+      foundDeclarations.add(letDecl.binding.name);
+
       if (letDecl.extern) {
         continue;
       }

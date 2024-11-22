@@ -122,7 +122,7 @@ describe("globals resolution", () => {
     });
   });
 
-  test.todo("forbid duplicate identifiers", () => {
+  test("forbid duplicate identifiers", () => {
     const src = `
       let x = 42
       let x = "override"
@@ -135,7 +135,7 @@ describe("globals resolution", () => {
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
         description: new DuplicateDeclaration("x"),
-        range: rangeOf(src, "x", 1),
+        range: rangeOf(src, "x", 2),
       },
     ]);
 
