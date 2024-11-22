@@ -177,8 +177,10 @@ export class ResolutionAnalysis {
   }
 
   private initDeclarationsResolution() {
+    // Add declarations to unused bindings and check for duplicates
     const foundDeclarations = new Set<string>();
     for (const letDecl of this.module.declarations) {
+      this.unusedBindings.add(letDecl.binding);
       if (foundDeclarations.has(letDecl.binding.name)) {
         this.emitError({
           range: letDecl.binding.range,
@@ -186,13 +188,26 @@ export class ResolutionAnalysis {
         });
       }
       foundDeclarations.add(letDecl.binding.name);
+    }
 
+    // Run resolution in each declaration's value
+    for (const letDecl of this.module.declarations) {
       if (letDecl.extern) {
         continue;
       }
 
       this.currentDeclaration = letDecl;
       this.runValuesResolution(letDecl.value, {});
+    }
+
+    // Iterate declarations again to check for unused bindings
+    for (const letDecl of this.module.declarations) {
+      if (!letDecl.pub && this.unusedBindings.has(letDecl.binding)) {
+        this.emitError({
+          range: letDecl.binding.range,
+          description: new UnusedVariable(letDecl.binding.name, "global"),
+        });
+      }
     }
   }
 
@@ -254,8 +269,8 @@ export class ResolutionAnalysis {
         return;
 
       case "identifier": {
-        const res = this.evaluateResolution(expr, localScope);
-        if (res === undefined) {
+        const resolution = this.evaluateResolution(expr, localScope);
+        if (resolution === undefined) {
           this.emitError({
             range: expr.range,
             description: new UnboundVariable(expr.name),
@@ -263,13 +278,15 @@ export class ResolutionAnalysis {
           return;
         }
 
-        this.identifiersResolutions.set(expr, res);
-        switch (res.type) {
+        this.identifiersResolutions.set(expr, resolution);
+        switch (resolution.type) {
           case "local-variable":
-            this.unusedBindings.delete(res.binding);
+            this.unusedBindings.delete(resolution.binding);
             break;
 
           case "global-variable":
+            this.unusedBindings.delete(resolution.declaration.binding);
+            break;
           case "constructor":
             break;
         }
