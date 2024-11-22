@@ -108,9 +108,6 @@ export class Analysis {
   ) {
     switch (resolution.type) {
       case "global-variable": {
-        // TODO check order
-
-        // TODO handle external ns
         const poly = this.getRawType(resolution.declaration.binding);
 
         const isSelfRecursive = this.currentDeclarationGroup.includes(
@@ -183,11 +180,6 @@ export class Analysis {
           tag: "Fn",
           args: expr.params.map((pattern) => {
             this.typecheckPattern(pattern);
-
-            // if (pattern.type !== "identifier") {
-
-            //   throw new Error("handle pattern != ident");
-            // }
             return this.getRawType(pattern);
           }),
           return: this.getRawType(expr.body),
