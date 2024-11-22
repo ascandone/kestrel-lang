@@ -1,5 +1,5 @@
 import { test, expect, describe } from "vitest";
-import { Analysis } from "./analyse";
+import { AnalyseOptions, Analysis } from "./analyse";
 import {
   AmbiguousTypeVar,
   ArityMismatch,
@@ -34,7 +34,7 @@ import { normalizeResolved, typePPrint as typeToString } from "../type";
 
 describe("infer constants", () => {
   test("int", () => {
-    const a = new Analysis("core", "Main", unsafeParse(`pub let x = 42`));
+    const [a] = performAnalysis(`pub let x = 42`);
     expect(a.errors).toEqual([]);
 
     expect(getTypes(a)).toEqual({
@@ -43,12 +43,10 @@ describe("infer constants", () => {
   });
 
   test("float", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         pub let x = 42.2
-      `),
+      `,
     );
 
     expect(a.errors).toEqual([]);
@@ -58,13 +56,7 @@ describe("infer constants", () => {
   });
 
   test("string", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
-          pub let x = "abc"
-        `),
-    );
+    const [a] = performAnalysis(`pub let x = "abc"`);
 
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -73,13 +65,7 @@ describe("infer constants", () => {
   });
 
   test("char", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
-            pub let x = 'a'
-          `),
-    );
+    const [a] = performAnalysis(`pub let x = 'a'`);
 
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -90,13 +76,11 @@ describe("infer constants", () => {
 
 describe("globals resolution", () => {
   test("resolve a global variable already declared", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         let x = 42
         pub let y = x
-      `),
+      `,
     );
 
     expect(a.errors).toEqual([]);
@@ -106,10 +90,8 @@ describe("globals resolution", () => {
   });
 
   test("emit unbound var when variable is not found", () => {
-    const src = `
-        pub let x = unbound_var
-      `;
-    const a = new Analysis("core", "Main", unsafeParse(src));
+    const src = `pub let x = unbound_var`;
+    const [a] = performAnalysis(src);
 
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
@@ -130,7 +112,7 @@ describe("globals resolution", () => {
       pub let y = x
     `;
 
-    const a = new Analysis("core", "Main", unsafeParse(src));
+    const [a] = performAnalysis(src);
 
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
@@ -146,11 +128,7 @@ describe("globals resolution", () => {
   });
 
   test("self-recursive declarations", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`pub let f = fn _ { f(42) }`),
-    );
+    const [a] = performAnalysis(`pub let f = fn _ { f(42) }`);
 
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -159,13 +137,11 @@ describe("globals resolution", () => {
   });
 
   test("let declarations in reverse order", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     pub let a = b
     pub let b = 42
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -176,13 +152,11 @@ describe("globals resolution", () => {
   });
 
   test("allow dependency cycle between declarations inside thunks", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     pub let a = b()
     pub let b = fn { a }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -193,12 +167,10 @@ describe("globals resolution", () => {
   });
 
   test("forbid self-recusive definitions outside of fns", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
   pub let a = a
-`),
+`,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -208,13 +180,11 @@ describe("globals resolution", () => {
   });
 
   test("forbid dependency cycles outside of fns", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
   pub let a = b
   pub let b = a
-`),
+`,
     );
 
     expect(a.errors).toEqual([
@@ -236,20 +206,17 @@ describe.todo("modules", () => {
   test.todo("imports cannot shadow fields");
 
   test("implicitly imports values of the modules in the prelude", () => {
-    const A = new Analysis(
-      "core",
-      "A",
-      unsafeParse(`
+    const [A] = performAnalysis(
+      `
       pub let x = 42
-    `),
+    `,
+      { namespace: "A" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       pub let y = x
-    `),
+    `,
       {
         dependencies: { A },
         implicitImports: [
@@ -268,20 +235,12 @@ describe.todo("modules", () => {
   });
 
   test("implicitly imports types of the modules in the prelude", () => {
-    const A = new Analysis(
-      "core",
-      "A",
-      unsafeParse(`
-      type MyType {}
-    `),
-    );
+    const [A] = performAnalysis(`type MyType {}`, { namespace: "A" });
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       let x: Fn(MyType) -> MyType = fn x { x }
-    `),
+    `,
       {
         dependencies: { A },
         implicitImports: [
@@ -304,20 +263,17 @@ describe.todo("modules", () => {
   });
 
   test("implicitly imports variants of the modules in the prelude", () => {
-    const A = new Analysis(
-      "core",
-      "A",
-      unsafeParse(`
+    const [A] = performAnalysis(
+      `
       pub(..) type MyType { A }
-    `),
+    `,
+      { namespace: "A" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       pub let x = A
-    `),
+    `,
       {
         dependencies: { A },
         implicitImports: [
@@ -344,22 +300,19 @@ describe.todo("modules", () => {
   });
 
   test("handles nested type references from other modules", () => {
-    const A = new Analysis(
-      "core",
-      "A",
-      unsafeParse(`
+    const [A] = performAnalysis(
+      `
       pub(..) type T { T }
       pub(..) type Boxed { Boxed(T) }
-    `),
+    `,
+      { namespace: "A" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import A.{Boxed(..), T(..)}
       pub let x = Boxed(T)
-    `),
+    `,
       { dependencies: { A } },
     );
     expect(a.errors).toEqual([]);
@@ -369,8 +322,8 @@ describe.todo("modules", () => {
   });
 
   test("detects unused imports when there are not exposed vars", () => {
-    const A = new Analysis("core", "A", unsafeParse(``));
-    const a = new Analysis("core", "Main", unsafeParse(`import A`), {
+    const [A] = performAnalysis(``, { namespace: "A" });
+    const [a] = performAnalysis(`import A`, {
       dependencies: { A },
     });
     expect(a.errors).toHaveLength(1);
@@ -378,8 +331,8 @@ describe.todo("modules", () => {
   });
 
   test("detects unused exposed values", () => {
-    const A = new Analysis("core", "A", unsafeParse(`pub let x = 42`));
-    const a = new Analysis("core", "Main", unsafeParse(`import A.{x}`), {
+    const [A] = performAnalysis(`pub let x = 42`, { namespace: "A" });
+    const [a] = performAnalysis(`import A.{x}`, {
       dependencies: { A },
     });
     expect(a.errors).toHaveLength(1);
@@ -387,8 +340,8 @@ describe.todo("modules", () => {
   });
 
   test("detects unused types", () => {
-    const A = new Analysis("core", "A", unsafeParse(`pub type T { }`));
-    const a = new Analysis("core", "Main", unsafeParse(`import A.{T}`), {
+    const [A] = performAnalysis(`pub type T { }`, { namespace: "A" });
+    const [a] = performAnalysis(`import A.{T}`, {
       dependencies: { A },
     });
     expect(a.errors).toHaveLength(1);
@@ -396,21 +349,15 @@ describe.todo("modules", () => {
   });
 
   test("handles variants imports", () => {
-    const A = new Analysis(
-      "core",
-      "A",
-      unsafeParse(`
-      pub(..) type MyType { Constr }
-    `),
-    );
+    const [A] = performAnalysis(`pub(..) type MyType { Constr }`, {
+      namespace: "A",
+    });
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import A
       pub let x = A.Constr
-    `),
+    `,
       { dependencies: { A } },
     );
 
@@ -421,21 +368,18 @@ describe.todo("modules", () => {
   });
 
   test("handles nested imports", () => {
-    const Mod = new Analysis(
-      "core",
-      "Mod",
-      unsafeParse(`
+    const [Mod] = performAnalysis(
+      `
       pub let x = 42
-    `),
+    `,
+      { namespace: "Mod" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import A/B/C
       pub let x = A/B/C.x
-    `),
+    `,
       { dependencies: { "A/B/C": Mod } },
     );
 
@@ -446,19 +390,13 @@ describe.todo("modules", () => {
   });
 
   test("allow importing types (unqualified)", () => {
-    const Mod = new Analysis(
-      "core",
-      "Mod",
-      unsafeParse(`pub type Example { }`),
-    );
+    const [Mod] = performAnalysis(`pub type Example { }`, { namespace: "Mod" });
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import Mod.{Example}
       extern pub let x: Example
-    `),
+    `,
       { dependencies: { Mod } },
     );
 
@@ -469,18 +407,12 @@ describe.todo("modules", () => {
   });
 
   test("allow importing types (qualified)", () => {
-    const Mod = new Analysis(
-      "core",
-      "Mod",
-      unsafeParse(`pub type Example { }`),
-    );
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [Mod] = performAnalysis(`pub type Example { }`, { namespace: "Mod" });
+    const [a] = performAnalysis(
+      `
       import Mod
       extern pub let x: Mod.Example
-    `),
+    `,
       { dependencies: { Mod } },
     );
 
@@ -491,20 +423,16 @@ describe.todo("modules", () => {
   });
 
   test("allow using imported types in match patterns", () => {
-    const Mod = new Analysis(
-      "core",
-      "Mod",
-      unsafeParse(`pub(..) type T { Constr }`),
-    );
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [Mod] = performAnalysis(`pub(..) type T { Constr }`, {
+      namespace: "Mod",
+    });
+    const [a] = performAnalysis(
+      `
       import Mod.{T(..)}
       pub let x = match Constr {
         Constr => 0,
       }
-    `),
+    `,
       { dependencies: { Mod } },
     );
 
@@ -512,81 +440,55 @@ describe.todo("modules", () => {
   });
 
   test("error when import a non-existing module", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`import ModuleNotFound`),
-    );
+    const [a] = performAnalysis(`import ModuleNotFound`);
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(UnboundModule);
   });
 
   test("error when importing a non-existing type", () => {
-    const Mod = new Analysis("core", "Mod", unsafeParse(``));
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`import Mod.{NotFound}`),
-      {
-        dependencies: { Mod },
-      },
-    );
+    const [Mod] = performAnalysis(``, { namespace: "Mod" });
+    const [a] = performAnalysis(`import Mod.{NotFound}`, {
+      dependencies: { Mod },
+    });
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
   test("error when importing a type the is not pub", () => {
-    const Mod = new Analysis("core", "Mod", unsafeParse(`type PrivateType {}`));
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`import Mod.{PrivateType}`),
-      {
-        dependencies: { Mod },
-      },
-    );
+    const [Mod] = performAnalysis(`type PrivateType {}`, { namespace: "Mod" });
+    const [a] = performAnalysis(`import Mod.{PrivateType}`, {
+      dependencies: { Mod },
+    });
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
   test("error when importing a non-existing value", () => {
-    const Mod = new Analysis("core", "Mod", unsafeParse(``));
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`import Mod.{not_found}`),
-      {
-        dependencies: { Mod },
-      },
-    );
+    const [Mod] = performAnalysis(``, { namespace: "Mod" });
+    const [a] = performAnalysis(`import Mod.{not_found}`, {
+      dependencies: { Mod },
+    });
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
   test("error when importing a private value", () => {
-    const Mod = new Analysis("core", "Mod", unsafeParse(`let not_found = 42`));
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`import Mod.{not_found}`),
-      {
-        dependencies: { Mod },
-      },
-    );
+    const [Mod] = performAnalysis(`let not_found = 42`, { namespace: "Mod" });
+    const [a] = performAnalysis(`import Mod.{not_found}`, {
+      dependencies: { Mod },
+    });
     expect(
       a.errors.some((e) => e.description instanceof NonExistingImport),
     ).toBeTruthy();
   });
 
   test("qualified imports should not work on priv functions", () => {
-    const Mod = new Analysis("core", "Mod", unsafeParse(`let not_found = 42`));
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [Mod] = performAnalysis(`let not_found = 42`, { namespace: "Mod" });
+    const [a] = performAnalysis(
+      `
       import Mod
       pub let v = Mod.not_found
-    `),
+    `,
       { dependencies: { Mod } },
     );
 
@@ -595,14 +497,12 @@ describe.todo("modules", () => {
   });
 
   test("qualified imports should not work on priv constructors", () => {
-    const Mod = new Analysis("core", "Mod", unsafeParse(`pub type T { A }`));
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [Mod] = performAnalysis(`pub type T { A }`, { namespace: "Mod" });
+    const [a] = performAnalysis(
+      `
       import Mod
       pub let v = Mod.A
-    `),
+    `,
       { dependencies: { Mod } },
     );
 
@@ -611,14 +511,12 @@ describe.todo("modules", () => {
   });
 
   test("qualified imports should not work on priv types", () => {
-    const Mod = new Analysis("core", "Mod", unsafeParse(`type PrivateType {}`));
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [Mod] = performAnalysis(`type PrivateType {}`, { namespace: "Mod" });
+    const [a] = performAnalysis(
+      `
       import Mod
       extern pub let x: Mod.PrivateType
-    `),
+    `,
       { dependencies: { Mod } },
     );
 
@@ -627,27 +525,20 @@ describe.todo("modules", () => {
   });
 
   test("error when expose impl is run on a extern type", () => {
-    const Mod = new Analysis(
-      "core",
-      "Mod",
-      unsafeParse(`extern pub type ExternType`),
-    );
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`import Mod.{ExternType(..)}`),
-      {
-        dependencies: { Mod },
-      },
-    );
+    const [Mod] = performAnalysis(`extern pub type ExternType`, {
+      namespace: "Mod",
+    });
+    const [a] = performAnalysis(`import Mod.{ExternType(..)}`, {
+      dependencies: { Mod },
+    });
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(BadImport);
   });
 
   test("error when expose impl is run on a opaque type", () => {
     // Note it is `pub` instead of `pub(..)`
-    const Mod = new Analysis("core", "Mod", unsafeParse(`pub type T {}`));
-    const a = new Analysis("core", "Main", unsafeParse(`import Mod.{T(..)}`), {
+    const [Mod] = performAnalysis(`pub type T {}`, { namespace: "Mod" });
+    const [a] = performAnalysis(`import Mod.{T(..)}`, {
       dependencies: { Mod },
     });
     expect(a.errors).toHaveLength(1);
@@ -655,29 +546,21 @@ describe.todo("modules", () => {
   });
 
   test("error when qualifier is not an imported module", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`pub let x = NotImported.value`),
-    );
+    const [a] = performAnalysis(`pub let x = NotImported.value`);
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(UnimportedModule);
   });
 
   test("types from different modules with the same name aren't treated the same", () => {
-    const Mod = new Analysis(
-      "core",
-      "Mod",
-      unsafeParse(`pub(..) type T { Constr }`),
-    );
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [Mod] = performAnalysis(`pub(..) type T { Constr }`, {
+      namespace: "Mod",
+    });
+    const [a] = performAnalysis(
+      `
       import Mod
       type T { Constr }
       pub let t: T = Mod.Constr
-    `),
+    `,
       { dependencies: { Mod } },
     );
 
@@ -688,13 +571,11 @@ describe.todo("modules", () => {
 
 describe("named types", () => {
   test("are resolved when defined as extern", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type Int
       extern pub let x: Int
-      `),
+      `,
     );
 
     expect(a.errors).toEqual<ErrorInfo[]>([]);
@@ -711,7 +592,7 @@ describe("ADTs", () => {
     type X {}
   `;
 
-    const a = new Analysis("core", "Main", unsafeParse(src));
+    const [a] = performAnalysis(src);
 
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
@@ -729,7 +610,7 @@ describe("ADTs", () => {
       }
     `;
 
-    const a = new Analysis("core", "Main", unsafeParse(src));
+    const [a] = performAnalysis(src);
 
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
@@ -740,16 +621,14 @@ describe("ADTs", () => {
   });
 
   test("can be used as type hint", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     extern type X
     extern pub let x: X
 
     type T { }
     pub let f: Fn(T) -> X = fn _ { x }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -760,13 +639,11 @@ describe("ADTs", () => {
   });
 
   test("handles constructor without args nor params", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     type T { C }
     pub let c = C
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -776,14 +653,12 @@ describe("ADTs", () => {
   });
 
   test("handles constructor with one (non-parametric) arg", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     extern type Int
     type T { C(Int) }
     pub let c = C
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -793,17 +668,15 @@ describe("ADTs", () => {
   });
 
   test("handles constructor with complex arg", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     extern type Int
     type Option<a> { }
     type T {
       C(Option<Int>, Int)
     }
     pub let c = C
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -813,10 +686,8 @@ describe("ADTs", () => {
   });
 
   test("generalize type constructors", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type Box<a> {
         Box(a),
         Nested(Box<a>)
@@ -824,7 +695,7 @@ describe("ADTs", () => {
       
       pub let x = Nested(Box(42))
       pub let y = Nested(Box("abc"))
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -835,10 +706,8 @@ describe("ADTs", () => {
   });
 
   test("handles constructor wrapping a function", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     type A {}
     type B {}
     type C {}
@@ -846,7 +715,7 @@ describe("ADTs", () => {
       C(Fn(A, B) -> C)
     }
     pub let c = C
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -856,14 +725,12 @@ describe("ADTs", () => {
   });
 
   test("handles types that do not exist", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     type T {
       C(NotFound)
     }
-  `),
+  `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -871,16 +738,14 @@ describe("ADTs", () => {
   });
 
   test("checks arity in constructors", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`  
+    const [a] = performAnalysis(
+      `  
       type T<a> { }
 
       type T1<a, b> {
         C(T<a, b>)
       }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -893,26 +758,22 @@ describe("ADTs", () => {
   });
 
   test("add types to the type pool", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type A {}
       type B { C(A) }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
   });
 
   test("handles parametric types", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type Box<a, b> { C }
         pub let a = C
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -922,14 +783,12 @@ describe("ADTs", () => {
   });
 
   test("allows using parametric types in constructors", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type T<a, b> { C(b) }
         pub let a = C
         pub let b = C(1)
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -940,12 +799,10 @@ describe("ADTs", () => {
   });
 
   test("forbids unbound type params", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type T { C(a) }
-  `),
+  `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -953,12 +810,10 @@ describe("ADTs", () => {
   });
 
   test("doesn't allow shadowing type params", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type Box<a, a> { }
-  `),
+  `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -966,12 +821,10 @@ describe("ADTs", () => {
   });
 
   test("prevents catchall to be used in type args", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type T { C(_) }
-  `),
+  `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -979,12 +832,10 @@ describe("ADTs", () => {
   });
 
   test("allows self-recursive type", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type T { C(T) }
-      `),
+      `,
     );
 
     expect(a.errors).toEqual([]);
@@ -993,13 +844,11 @@ describe("ADTs", () => {
 
 describe("type hints", () => {
   test("type hints are used by typechecker", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type Int
         pub let x: Int = 1.1
-      `),
+      `,
     );
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
@@ -1009,13 +858,11 @@ describe("type hints", () => {
   });
 
   test("type hints of fns are used by typechecker", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type T { C }
         pub let x: Fn() -> T = fn { 42 }
-        `),
+        `,
     );
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
@@ -1027,15 +874,13 @@ describe("type hints", () => {
   });
 
   test("type hints of fns are used by typechecker (args)", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type Bool
       extern type Int
       extern pub let (!): Fn(Bool) -> Bool
       pub let x: Fn(Bool) -> Int = fn x { !x }
-      `),
+      `,
     );
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
@@ -1047,12 +892,10 @@ describe("type hints", () => {
   });
 
   test("_ type hints are ignored by typechecker", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type Int
-      pub let x: _ = 1`),
+      pub let x: _ = 1`,
     );
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -1061,7 +904,7 @@ describe("type hints", () => {
   });
 
   test.todo("vars type hints should be generalized", () => {
-    const a = new Analysis("core", "Main", unsafeParse("pub let x: a = 0"));
+    const [a] = performAnalysis("pub let x: a = 0");
     expect(a.errors).toHaveLength(1);
     expect(getTypes(a)).toEqual({
       x: "a",
@@ -1069,11 +912,7 @@ describe("type hints", () => {
   });
 
   test.todo("unify generalized values", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse("pub let f: Fn(ta) -> tb = fn x { x }"),
-    );
+    const [a] = performAnalysis("pub let f: Fn(ta) -> tb = fn x { x }");
     expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
     expect(getTypes(a)).toEqual({
       f: "Fn(ta) -> tb",
@@ -1081,10 +920,8 @@ describe("type hints", () => {
   });
 
   test("vars type hints are used by typechecker", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse("pub let eq: Fn(a, a, b) -> a = fn x, y, z { x }"),
+    const [a] = performAnalysis(
+      "pub let eq: Fn(a, a, b) -> a = fn x, y, z { x }",
     );
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -1093,13 +930,11 @@ describe("type hints", () => {
   });
 
   test("type hints instantiate polytypes", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type Int
       pub let f: Fn(Int) -> Int = fn x { x }
-    `),
+    `,
     );
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -1108,11 +943,7 @@ describe("type hints", () => {
   });
 
   test("unknown types are ignored", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse("pub let x: NotFound = 1"),
-    );
+    const [a] = performAnalysis("pub let x: NotFound = 1");
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]!.description).toBeInstanceOf(UnboundType);
     expect(getTypes(a)).toEqual({
@@ -1123,12 +954,10 @@ describe("type hints", () => {
 
 describe("functions and application", () => {
   test("returning a constant", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         pub let f = fn { 42 }
-      `),
+      `,
     );
 
     expect(a.errors).toEqual<ErrorInfo[]>([]);
@@ -1138,14 +967,12 @@ describe("functions and application", () => {
   });
 
   test("application return type", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type Bool
         extern let cmp: Fn(a, a) -> Bool
         pub let x = cmp(1, 2)
-      `),
+      `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1165,7 +992,7 @@ describe("functions and application", () => {
           pub let x = f(42, c)
       `;
 
-    const a = new Analysis("pkg_name", "Main", unsafeParse(src));
+    const [a] = performAnalysis(src, { package_: "pkg_name" });
 
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
@@ -1191,15 +1018,13 @@ describe("functions and application", () => {
   });
 
   test("typecheck fn args", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     extern type Int
     extern type Bool
     extern let cmp: Fn(Int, Int) -> Bool
     pub let f = fn x, y { cmp(x, y) }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1209,12 +1034,10 @@ describe("functions and application", () => {
   });
 
   test("typechecks generic values", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     pub let id = fn x { x }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1224,13 +1047,11 @@ describe("functions and application", () => {
   });
 
   test("generalize values", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       pub let id = fn x { x }
       pub let v = id(42)
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1243,10 +1064,8 @@ describe("functions and application", () => {
 
 describe("if expression", () => {
   test("typecheck if ret value", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     type Bool { True }
     pub let f =
       if True {
@@ -1254,7 +1073,7 @@ describe("if expression", () => {
       } else {
         1
       }
-  `),
+  `,
     );
 
     expect(getTypes(a)).toEqual({
@@ -1263,10 +1082,8 @@ describe("if expression", () => {
   });
 
   test("unify if clauses", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     type Bool { True }
     pub let f = fn x {
       if True {
@@ -1275,7 +1092,7 @@ describe("if expression", () => {
         x
       }
     }
-  `),
+  `,
     );
 
     expect(getTypes(a)).toEqual({
@@ -1284,10 +1101,8 @@ describe("if expression", () => {
   });
 
   test("typecheck if condition", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     pub let f = fn x {
       if x {
         0
@@ -1295,7 +1110,7 @@ describe("if expression", () => {
         0
       }
     }
-  `),
+  `,
     );
 
     expect(getTypes(a)).toEqual({
@@ -1306,15 +1121,13 @@ describe("if expression", () => {
 
 describe("let expressions", () => {
   test("infers return value", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     pub let x = {
       let y = 42;
       y
     }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1324,15 +1137,13 @@ describe("let expressions", () => {
   });
 
   test.todo("allow self-recursive let expressions", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       pub let f = {
         let g = fn _ { g(1) };
         g
     }
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1344,7 +1155,7 @@ describe("let expressions", () => {
 
 describe("list literal", () => {
   test("typecheck empty list", () => {
-    const a = new Analysis("core", "Main", unsafeParse(`pub let lst = []`));
+    const [a] = performAnalysis(`pub let lst = []`);
 
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -1353,7 +1164,7 @@ describe("list literal", () => {
   });
 
   test("typecheck singleton list as the value's type", () => {
-    const a = new Analysis("core", "Main", unsafeParse(`pub let lst = [42]`));
+    const [a] = performAnalysis(`pub let lst = [42]`);
 
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -1362,11 +1173,7 @@ describe("list literal", () => {
   });
 
   test("typecheck many values", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`pub let lst = [0, 1, 2]`),
-    );
+    const [a] = performAnalysis(`pub let lst = [0, 1, 2]`);
 
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -1375,11 +1182,7 @@ describe("list literal", () => {
   });
 
   test("fail typechecking when values have different type", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`pub let lst = [0, 1, "not an int"]`),
-    );
+    const [a] = performAnalysis(`pub let lst = [0, 1, "not an int"]`);
 
     expect(a.errors).not.toEqual([]);
     expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
@@ -1393,10 +1196,8 @@ describe("pipe operator", () => {
   test.todo("infer pipe operator left side and right side");
 
   test("infers return type", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     extern type T
     extern let t: T
 
@@ -1408,7 +1209,7 @@ describe("pipe operator", () => {
     extern let f: Fn(T, T1) -> Ret
     pub let x = t |> f(t1)
     // let x = f(t, t1)
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1418,12 +1219,10 @@ describe("pipe operator", () => {
   });
 
   test("emits error when right side is not function call", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     pub let x = 0 |> 1
-  `),
+  `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -1433,47 +1232,35 @@ describe("pipe operator", () => {
 
 describe("pattern matching", () => {
   test("typechecks matched expressions", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`pub let v = match unbound { }`),
-    );
+    const [a] = performAnalysis(`pub let v = match unbound { }`);
 
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]!.description).toBeInstanceOf(UnboundVariable);
   });
 
   test("typechecks clause return type", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`pub let v = match 0 { _ => unbound }`),
-    );
+    const [a] = performAnalysis(`pub let v = match 0 { _ => unbound }`);
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]!.description).toBeInstanceOf(UnboundVariable);
   });
 
   test("unifies clause return types", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`pub let _ = match 0 {
+    const [a] = performAnalysis(
+      `pub let _ = match 0 {
         _ => 0,
         _ => 0.0,
       }
-    `),
+    `,
     );
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]!.description).toBeInstanceOf(TypeMismatch_REWRITE);
   });
 
   test("infers return type", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       pub let x = match 1.1 { _ => 0 }
-    `),
+    `,
     );
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -1482,16 +1269,14 @@ describe("pattern matching", () => {
   });
 
   test("infers matched type when is a lit", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     pub let f = fn x {
         match x {
           42 => 0,
         }
       }
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1501,10 +1286,8 @@ describe("pattern matching", () => {
   });
 
   test("infers matched type when there are no args", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type T { C }
 
       pub let f = fn x {
@@ -1512,7 +1295,7 @@ describe("pattern matching", () => {
           C => 0,
         }
       }
-    `),
+    `,
     );
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -1521,12 +1304,10 @@ describe("pattern matching", () => {
   });
 
   test.todo("infers matched type when is qualified", () => {
-    const A = new Analysis("core", "A", unsafeParse(`pub(..) type T { T }`));
+    const [A] = performAnalysis(`pub(..) type T { T }`, { namespace: "A" });
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import A.{T(..)}
 
       pub let f = fn x {
@@ -1534,7 +1315,7 @@ describe("pattern matching", () => {
           A.T => 0,
         }
       }
-    `),
+    `,
       {
         dependencies: { A },
       },
@@ -1547,10 +1328,8 @@ describe("pattern matching", () => {
   });
 
   test("infers matched type when there are concrete args", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type Bool { }
       type T { C(Bool) }
 
@@ -1559,7 +1338,7 @@ describe("pattern matching", () => {
           C(_) => 0,
         }
       }
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1569,10 +1348,8 @@ describe("pattern matching", () => {
   });
 
   test("typechecks constructor args", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type T<a> { C(a, a, a) }
 
       pub let f = fn x {
@@ -1580,7 +1357,7 @@ describe("pattern matching", () => {
           C(_, _) => 0,
         }
       }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -1591,10 +1368,8 @@ describe("pattern matching", () => {
   });
 
   test("infers nested types in p match", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type Bool {
         True,
       }
@@ -1608,7 +1383,7 @@ describe("pattern matching", () => {
           Make(True) => 0,
         }
       }
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1618,10 +1393,8 @@ describe("pattern matching", () => {
   });
 
   test("infers nested types in p match, matching on a zero-args variant", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
 
       type Option<a> {
         None,
@@ -1633,7 +1406,7 @@ describe("pattern matching", () => {
           None => 2,
         }
       }
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1643,11 +1416,7 @@ describe("pattern matching", () => {
   });
 
   test("use pattern matching bound vars", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`pub let x = match 0 { a => a }`),
-    );
+    const [a] = performAnalysis(`pub let x = match 0 { a => a }`);
 
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -1656,32 +1425,28 @@ describe("pattern matching", () => {
   });
 
   test("unify expr with arg", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type Boxed<a> { Boxed(a) }
 
       pub let x = match Boxed(42) {
         Boxed("str") => 0
       }
-    `),
+    `,
     );
 
     expect(a.errors).not.toEqual([]);
   });
 
   test("use pattern matching bound vars in nested types", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type Boxed<a> { Boxed(a) }
 
       pub let x = match Boxed(42) {
         Boxed(a) => a
       }
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1691,14 +1456,12 @@ describe("pattern matching", () => {
   });
 
   test("return error on wrong matched type", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`type X { X }
+    const [a] = performAnalysis(
+      `type X { X }
       pub let v = match 42 {
         X => 0
       }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -1706,15 +1469,13 @@ describe("pattern matching", () => {
   });
 
   test("return error on unbound types", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`pub let v = fn x {
+    const [a] = performAnalysis(
+      `pub let v = fn x {
         match x {
           NotFound => 0
         }
       }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -1722,15 +1483,13 @@ describe("pattern matching", () => {
   });
 
   test("infers fn match param type", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     extern type T
     type Box { Boxed(T) }
 
     pub let f = fn Boxed(n) { n }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1740,10 +1499,8 @@ describe("pattern matching", () => {
   });
 
   test.todo("infers let match type", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     extern type T
     type Box { Boxed(T) }
 
@@ -1751,7 +1508,7 @@ describe("pattern matching", () => {
       let Boxed(n) = box;
       n
     }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1763,15 +1520,12 @@ describe("pattern matching", () => {
   test.todo(
     "force exhaustive match in let binding when there are many values for a const",
     () => {
-      const a = new Analysis(
-        "core",
-        "Main",
-        unsafeParse(`pub let f = {
-      let 42 = 42;
-      0
-    }
-  `),
-      );
+      const [a] = performAnalysis(`
+        pub let f = {
+          let 42 = 42;
+          0
+        }
+  `);
 
       expect(a.errors).toHaveLength(1);
       expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
@@ -1781,16 +1535,14 @@ describe("pattern matching", () => {
   test.todo(
     "force exhaustive match in let binding when there are many constructors",
     () => {
-      const a = new Analysis(
-        "core",
-        "Main",
-        unsafeParse(`type Union { A, B }
+      const [a] = performAnalysis(
+        `type Union { A, B }
 
     pub let f = {
       let A = A;
       0
     }
-  `),
+  `,
       );
 
       expect(a.errors).toHaveLength(1);
@@ -1801,13 +1553,11 @@ describe("pattern matching", () => {
   test.todo(
     "force exhaustive match in fns binding when there are many constructors",
     () => {
-      const a = new Analysis(
-        "core",
-        "Main",
-        unsafeParse(`type Union { A, B }
+      const [a] = performAnalysis(
+        `type Union { A, B }
 
     pub let f = fn A { 0 }
-  `),
+  `,
       );
 
       expect(a.errors).toHaveLength(1);
@@ -1825,7 +1575,7 @@ describe("unused locals checks", () => {
       }
     `;
 
-    const a = new Analysis("core", "Main", unsafeParse(src));
+    const [a] = performAnalysis(src);
 
     expect(a.errors).toEqual<ErrorInfo[]>([
       {
@@ -1836,14 +1586,12 @@ describe("unused locals checks", () => {
   });
 
   test.todo("detect unused pattern match locals", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     pub let a = match "something" {
       x => 42,
     }
-  `),
+  `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -1853,7 +1601,7 @@ describe("unused locals checks", () => {
   test("detect unused private globals", () => {
     const src = `let x = 42`;
 
-    const a = new Analysis("core", "Main", unsafeParse(src));
+    const [a] = performAnalysis(src);
 
     expect(a.errors).toHaveLength(1);
     expect(a.errors).toEqual<ErrorInfo[]>([
@@ -1870,18 +1618,16 @@ describe("unused locals checks", () => {
       pub let y = x
     `;
 
-    const a = new Analysis("core", "Main", unsafeParse(src));
+    const [a] = performAnalysis(src);
     expect(a.errors).toEqual([]);
   });
 
   test("do not detect unused globals when private vars are used", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     let x = 42
     pub let y = x
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -1890,14 +1636,12 @@ describe("unused locals checks", () => {
 
 describe.todo("traits", () => {
   test("fails to typecheck when a required trait is not implemented", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type String
         extern pub let show: Fn(a) -> String where a: Show
         pub let x = show(42) // note that 'Int' doesn't implement 'Show' in this test
-      `),
+      `,
     );
     expect(a.errors).toHaveLength(1);
     expect(getTypes(a)).toEqual({
@@ -1911,31 +1655,27 @@ describe.todo("traits", () => {
     //   { trait: "Show", moduleName: "Int", typeName: "Int" },
     // ]);
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type String
         extern pub let show: Fn(a) -> String where a: Show
         pub let x = show(42)
-      `),
+      `,
     );
 
     expect(a.errors).toEqual([]);
   });
 
   test("propagates the trait constraint", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type String
         extern let show: Fn(a) -> String where a: Show
 
         pub let use_show = fn value {
           show(value)
         }
-      `),
+      `,
     );
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
@@ -1945,10 +1685,8 @@ describe.todo("traits", () => {
   });
 
   test("fails to typecheck when unify occurs later", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type String
         extern let show: Fn(a) -> String where a: Show
 
@@ -1958,16 +1696,14 @@ describe.todo("traits", () => {
           let _ = show(x);
           x + 1
         }
-      `),
+      `,
     );
     expect(a.errors).not.toEqual([]);
   });
 
   test("infers multiple traits", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type Unit
         extern let show: Fn(a) -> Unit where a: Show
         extern let eq: Fn(a) -> Unit where a: Eq
@@ -1976,7 +1712,7 @@ describe.todo("traits", () => {
           let _ = show(x);
           eq(x)
         }
-      `),
+      `,
     );
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual(
@@ -1987,10 +1723,8 @@ describe.todo("traits", () => {
   });
 
   test("does not break generalization", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type Unit
         extern let show: Fn(a) -> Unit where a: Show
         extern let eq: Fn(a) -> Unit where a: Eq
@@ -2000,7 +1734,7 @@ describe.todo("traits", () => {
           let _ = eq(x);
           0
         }
-      `),
+      `,
     );
     expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual(
@@ -2012,27 +1746,23 @@ describe.todo("traits", () => {
   });
 
   test("is able to derive Eq trait in ADTs with only a singleton", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern let take_eq: Fn(a) -> a where a: Eq
         type MyType {
           Singleton
         }
 
         pub let example = take_eq(Singleton)
-      `),
+      `,
     );
 
     expect(a.errors).toEqual([]);
   });
 
   test("does not derive Eq trait in ADTs when at least one argument", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type NotEq
         extern let take_eq: Fn(a) -> a where a: Eq
 
@@ -2042,17 +1772,15 @@ describe.todo("traits", () => {
         }
 
         pub let example = take_eq(Singleton)
-      `),
+      `,
     );
 
     expect(a.errors).toHaveLength(1);
   });
 
   test("derives Eq even when constructors have arguments that derive Eq", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type EqType { }
 
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -2063,17 +1791,15 @@ describe.todo("traits", () => {
         }
 
         pub let example = take_eq(Singleton)
-      `),
+      `,
     );
 
     expect(a.errors).toEqual([]);
   });
 
   test("requires deps to derive Eq in order to derive Eq", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern let take_eq: Fn(a) -> a where a: Eq
 
         pub(..) type MyType<a> {
@@ -2084,17 +1810,15 @@ describe.todo("traits", () => {
         extern let my_type: MyType<NotEq>
 
         pub let example = take_eq(my_type)
-      `),
+      `,
     );
 
     expect(a.errors).toHaveLength(1);
   });
 
   test("derives Eq when dependencies derive Eq", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern let take_eq: Fn(a) -> a where a: Eq
 
         type IsEq { }
@@ -2107,17 +1831,15 @@ describe.todo("traits", () => {
         extern let is_eq: Option<IsEq>
 
         pub let example = take_eq(is_eq)
-      `),
+      `,
     );
 
     expect(a.errors).toEqual([]);
   });
 
   test("derives in self-recursive types", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern let take_eq: Fn(a) -> a where a: Eq
 
         pub(..) type Rec<a> {
@@ -2126,17 +1848,15 @@ describe.todo("traits", () => {
         }
 
         pub let example = take_eq(End)
-      `),
+      `,
     );
 
     expect(a.errors).toEqual([]);
   });
 
   test("derives in self-recursive types (nested)", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type Box<a> { Box(a) }
         extern let take_eq: Fn(a) -> a where a: Eq
 
@@ -2146,7 +1866,7 @@ describe.todo("traits", () => {
         }
 
         pub let example = take_eq(End)
-      `),
+      `,
     );
 
     expect(a.errors).toEqual([]);
@@ -2154,42 +1874,36 @@ describe.todo("traits", () => {
 
   describe("auto deriving for struct", () => {
     test("is able to derive Eq in empty structs", () => {
-      const a = new Analysis(
-        "core",
-        "Main",
-        unsafeParse(`
+      const [a] = performAnalysis(
+        `
           extern let take_eq: Fn(a) -> a where a: Eq
   
           type MyType struct { }
   
           pub let example = take_eq(MyType { })
-        `),
+        `,
       );
 
       expect(a.errors).toEqual([]);
     });
 
     test("is able to derive Show in empty structs", () => {
-      const a = new Analysis(
-        "core",
-        "Main",
-        unsafeParse(`
+      const [a] = performAnalysis(
+        `
           extern let take_shoq: Fn(a) -> a where a: Show
   
           type MyType struct { }
   
           pub let example = take_shoq(MyType { })
-        `),
+        `,
       );
 
       expect(a.errors).toEqual([]);
     });
 
     test("is able to derive Eq in structs where all the fields are Eq", () => {
-      const a = new Analysis(
-        "core",
-        "Main",
-        unsafeParse(`
+      const [a] = performAnalysis(
+        `
           extern let take_eq: Fn(a) -> a where a: Eq
           type EqT { EqT }
   
@@ -2198,17 +1912,15 @@ describe.todo("traits", () => {
           }
   
           pub let example = take_eq(MyType { x: EqT })
-        `),
+        `,
       );
 
       expect(a.errors).toEqual([]);
     });
 
     test("is not able to derive Eq in structs where at least a fields is not Eq", () => {
-      const a = new Analysis(
-        "core",
-        "Main",
-        unsafeParse(`
+      const [a] = performAnalysis(
+        `
           extern let take_eq: Fn(a) -> a where a: Eq
   
           extern type NotEq
@@ -2219,7 +1931,7 @@ describe.todo("traits", () => {
           }
   
           pub let example = take_eq(MyType { x: x })
-        `),
+        `,
       );
 
       expect(a.errors).toHaveLength(1);
@@ -2227,10 +1939,8 @@ describe.todo("traits", () => {
     });
 
     test("requires struct params to be Eq when they appear in struct, for it to be derived", () => {
-      const a = new Analysis(
-        "core",
-        "Main",
-        unsafeParse(`
+      const [a] = performAnalysis(
+        `
           extern let take_eq: Fn(a) -> a where a: Eq
   
           type MyType<a, b> struct {
@@ -2240,7 +1950,7 @@ describe.todo("traits", () => {
           pub let example = fn x {
             take_eq(MyType { x: x })
           }
-        `),
+        `,
       );
 
       expect(a.errors).toEqual([]);
@@ -2252,10 +1962,8 @@ describe.todo("traits", () => {
 
     test("derives deps in recursive types", () => {
       // TODO assertion
-      const a = new Analysis(
-        "core",
-        "Main",
-        unsafeParse(`
+      const [a] = performAnalysis(
+        `
           type Option<a> { None, Some(a) }
 
           extern let take_eq: Fn(a) -> a where a: Eq
@@ -2271,7 +1979,7 @@ describe.todo("traits", () => {
               })
             })
           }
-        `),
+        `,
       );
 
       expect(a.errors).toEqual([]);
@@ -2279,10 +1987,8 @@ describe.todo("traits", () => {
   });
 
   test("fails to derives in self-recursive types when not derivable (nested)", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type Box<a> { Box(a) }
         extern let take_eq: Fn(a) -> a where a: Eq
 
@@ -2293,20 +1999,18 @@ describe.todo("traits", () => {
         }
 
         pub let example = take_eq(End)
-      `),
+      `,
     );
 
     expect(a.errors).not.toEqual([]);
   });
 
   test("forbid ambiguous instantiations", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`extern let take_default: Fn(a) -> x where a: Default
+    const [a] = performAnalysis(
+      `extern let take_default: Fn(a) -> x where a: Default
     extern let default: a where a: Default
     pub let forbidden = take_default(default)
-    `),
+    `,
     );
 
     expect(a.errors).not.toEqual([]);
@@ -2321,16 +2025,14 @@ describe.todo("traits", () => {
     //   { trait: "Default", moduleName: "Main", typeName: "X" },
     // ]);
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     extern type X
 
     extern let take_x: Fn(X) -> X
     extern let default: a where a: Default
     pub let forbidden = take_x(default)
-`),
+`,
     );
 
     expect(a.errors).toEqual([]);
@@ -2341,25 +2043,21 @@ describe.todo("traits", () => {
     //   { trait: "Default", moduleName: "Main", typeName: "X" },
     // ]);
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     extern type X
     extern let default: a where a: Default
 
     pub let legal: X = default
-`),
+`,
     );
 
     expect(a.errors).toEqual([]);
   });
 
   test("repro", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type List<a> { Nil, Cons(a, List<a>) }
 
       type Bool { True, False }
@@ -2371,7 +2069,7 @@ describe.todo("traits", () => {
       pub let res = None == find(Nil, fn _ {
         False
       })
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -2379,10 +2077,8 @@ describe.todo("traits", () => {
   });
 
   test("allow ambiguous type vars in let exprs", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type String
       extern let show: Fn(a) -> String where a: Show
 
@@ -2392,17 +2088,15 @@ describe.todo("traits", () => {
         };
         42
       }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(0);
   });
 
   test("do not leak allowed instantiated vars when preventing ambiguous vars", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type String
       extern let show: Fn(a) -> String where a: Show
       extern let showable: a where a: Show
@@ -2412,7 +2106,7 @@ describe.todo("traits", () => {
         let _ = show(showable1);
         42
       }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -2424,15 +2118,13 @@ describe.todo("traits", () => {
     //   { trait: "Default", moduleName: "Main", typeName: "X" },
     // ]);
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
     extern type X
     extern let show: Fn(a) -> X where a: Default
 
     pub let x = show(unbound_var)
-`),
+`,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -2450,14 +2142,12 @@ describe.todo("traits", () => {
     //   },
     // ]);
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type Option<a>
       extern let default: a where a: Default
       pub let forbidden: Option<a> = default
-  `),
+  `,
     );
 
     expect(a.errors).not.toEqual([]);
@@ -2470,36 +2160,30 @@ describe.todo("traits", () => {
 
 describe.todo("struct", () => {
   test("allow creating types", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`type Person struct { }
+    const [a] = performAnalysis(
+      `type Person struct { }
       extern pub let p: Person
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(0);
   });
 
   test("allow recursive types", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`extern type List<a>
+    const [a] = performAnalysis(
+      `extern type List<a>
       type Person struct {
         friends: List<Person>,
       }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(0);
   });
 
   test("allow accessing a type's field", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type String
 
       type Person struct {
@@ -2509,7 +2193,7 @@ describe.todo("struct", () => {
       extern let p: Person
 
       pub let p_name = p.name
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(0);
@@ -2520,10 +2204,8 @@ describe.todo("struct", () => {
   });
 
   test("infer type when accessing known field", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type String
 
       type Person struct {
@@ -2531,7 +2213,7 @@ describe.todo("struct", () => {
       }
 
       pub let p_name = fn p { p.name }
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -2541,10 +2223,8 @@ describe.todo("struct", () => {
   });
 
   test("do not allow invalid field access", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type String
       type Person struct {
         name: String
@@ -2552,7 +2232,7 @@ describe.todo("struct", () => {
 
       extern let p: Person
       pub let invalid = p.invalid_field
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -2566,24 +2246,21 @@ describe.todo("struct", () => {
   });
 
   test.todo("handle resolution of other modules' fields", () => {
-    const Person = new Analysis(
-      "core",
-      "Person",
-      unsafeParse(`
+    const [Person] = performAnalysis(
+      `
       extern type String
       pub(..) type Person struct {
         name: String
       }
-    `),
+    `,
+      { namespace: "Person" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import Person.{Person(..)}
       pub let name = fn p { p.name }
-    `),
+    `,
       { dependencies: { Person } },
     );
 
@@ -2594,11 +2271,7 @@ describe.todo("struct", () => {
   });
 
   test("forbid unknown field on unbound value", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`pub let f = fn p { p.invalid_field }`),
-    );
+    const [a] = performAnalysis(`pub let f = fn p { p.invalid_field }`);
 
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toEqual(
@@ -2607,27 +2280,24 @@ describe.todo("struct", () => {
   });
 
   test("prevent resolution of other modules' fields when import is not (..)", () => {
-    const Person = new Analysis(
-      "core",
-      "Person",
-      unsafeParse(`
+    const [Person] = performAnalysis(
+      `
       extern type String
       pub(..) type Person struct {
         name: String
       }
-    `),
+    `,
+      { namespace: "Person" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import Person.{Person}
 
       extern pub let x: Person // <- this prevents UnusedExposing err
 
       pub let name = fn p { p.name }
-    `),
+    `,
       { dependencies: { Person } },
     );
 
@@ -2638,27 +2308,24 @@ describe.todo("struct", () => {
   test.todo("emit bad import if trying to import(..) private fields");
 
   test("allow accessing fields in other modules if public", () => {
-    const Person = new Analysis(
-      "core",
-      "Person",
-      unsafeParse(`
+    const [Person] = performAnalysis(
+      `
       extern type String
       pub(..) type Person struct {
         name: String
       }
-    `),
+    `,
+      { namespace: "Person" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import Person.{Person}
 
       extern pub let p: Person
 
       pub let name = p.name 
-    `),
+    `,
       { dependencies: { Person } },
     );
 
@@ -2670,10 +2337,8 @@ describe.todo("struct", () => {
   });
 
   test("allow accessing fields in same module with qualified field syntax", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type String
         type Person struct {
           name: String
@@ -2682,7 +2347,7 @@ describe.todo("struct", () => {
         pub let name = fn p {
           p.Person#name
         }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(0);
@@ -2692,16 +2357,14 @@ describe.todo("struct", () => {
   });
 
   test("emit err when field accessed with qualified syntax is invalid", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type Person struct { }
 
         pub let name = fn p {
           p.Person#invalid_field
         }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -2711,27 +2374,24 @@ describe.todo("struct", () => {
   });
 
   test("allow accessing fields in other modules with qualified field syntax", () => {
-    const Person = new Analysis(
-      "core",
-      "Person",
-      unsafeParse(`
+    const [Person] = performAnalysis(
+      `
       extern type String
       pub(..) type Person struct {
         name: String
       }
-    `),
+    `,
+      { namespace: "Person" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import Person.{Person}
 
       pub let name = fn p {
         p.Person#name
       }
-    `),
+    `,
       { dependencies: { Person } },
     );
 
@@ -2742,14 +2402,12 @@ describe.todo("struct", () => {
   });
 
   test("emit error when struct of qualified field does not exist", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       pub let name = fn p {
         p.InvalidType#name
       }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -2757,23 +2415,20 @@ describe.todo("struct", () => {
   });
 
   test("emit error when qualified field does not exist", () => {
-    const Person = new Analysis(
-      "core",
-      "Person",
-      unsafeParse(`
+    const [Person] = performAnalysis(
+      `
         pub(..) type Person struct {}
-  `),
+  `,
+      { namespace: "Person" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import Person.{Person}
       pub let name = fn p {
         p.Person#invalid_field
       }
-    `),
+    `,
       { dependencies: { Person } },
     );
 
@@ -2784,26 +2439,23 @@ describe.todo("struct", () => {
   });
 
   test("emit error when qualified field is private", () => {
-    const Person = new Analysis(
-      "core",
-      "Person",
-      unsafeParse(`
+    const [Person] = performAnalysis(
+      `
         extern type Int
         pub type Person struct {
           private_field: Int
         }
-  `),
+  `,
+      { namespace: "Person" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import Person.{Person}
       pub let name = fn p {
         p.Person#private_field
       }
-    `),
+    `,
       { dependencies: { Person } },
     );
 
@@ -2814,27 +2466,24 @@ describe.todo("struct", () => {
   });
 
   test("emit InvalidField if trying to access private fields", () => {
-    const Person = new Analysis(
-      "core",
-      "Person",
-      unsafeParse(`
+    const [Person] = performAnalysis(
+      `
       extern type String
       pub type Person struct { // note fields are  private
         name: String
       }
-    `),
+    `,
+      { namespace: "Person" },
     );
 
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       import Person.{Person}
 
       extern pub let p: Person
 
       pub let name = p.name 
-    `),
+    `,
       { dependencies: { Person } },
     );
 
@@ -2843,10 +2492,8 @@ describe.todo("struct", () => {
   });
 
   test("allow creating structs", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type X { X }
 
         pub type Struct struct {
@@ -2856,7 +2503,7 @@ describe.todo("struct", () => {
         pub let s = Struct {
           x: X
         }
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -2866,13 +2513,11 @@ describe.todo("struct", () => {
   });
 
   test("typecheck params in struct types", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type Person<a, b, c> struct { }
         extern pub let p: Person
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -2883,10 +2528,8 @@ describe.todo("struct", () => {
   });
 
   test("handling params in dot access", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type Box<a> struct {
           field: a
         }
@@ -2895,7 +2538,7 @@ describe.todo("struct", () => {
         extern let box: Box<Int>
 
         pub let field = box.field
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -2906,16 +2549,14 @@ describe.todo("struct", () => {
   });
 
   test("inferring params in dot access", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type Box<a> struct {
           field: a
         }
 
         pub let get_field = fn box { box.field }
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -2925,10 +2566,8 @@ describe.todo("struct", () => {
   });
 
   test("making sure field values are generalized", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       extern type Int
       type Box<a> struct {
         field: a
@@ -2936,7 +2575,7 @@ describe.todo("struct", () => {
 
       pub let get_field_1: Fn(Box<Int>) -> Int = fn box { box.field }
       pub let get_field_2 = fn box { box.field }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -2947,14 +2586,12 @@ describe.todo("struct", () => {
   });
 
   test("handling params in struct definition (phantom types)", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type Box<a, b> struct { }
 
         pub let box = Box { }
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -2964,16 +2601,14 @@ describe.todo("struct", () => {
   });
 
   test("typecheck extra fields", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type Struct struct {}
 
         pub let s = Struct {
           extra: 42
         }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -2987,10 +2622,8 @@ describe.todo("struct", () => {
   });
 
   test("typecheck missing fields", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         extern type String
         type Person struct {
           name: String,
@@ -2998,7 +2631,7 @@ describe.todo("struct", () => {
         }
 
         pub let p = Person { }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -3014,10 +2647,8 @@ describe.todo("struct", () => {
   test.todo("prevent from creating structs with private fields");
 
   test("typecheck fields of wrong type", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
         type X {  }
         type Struct struct {
           field: X,
@@ -3026,7 +2657,7 @@ describe.todo("struct", () => {
         pub let s = Struct {
           field: "not x"
         }
-    `),
+    `,
     );
 
     expect(a.errors).toHaveLength(1);
@@ -3038,10 +2669,8 @@ describe.todo("struct", () => {
   });
 
   test("handling params in struct definition when fields are bound to params", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type Box<a, b> struct {
         a: a,
         b: b,
@@ -3051,7 +2680,7 @@ describe.todo("struct", () => {
         a: "str",
         b: 42,
       }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -3061,15 +2690,13 @@ describe.todo("struct", () => {
   });
 
   test("instantiated fresh vars when creating structs", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type Box<a> struct { a: a }
 
       pub let str_box = Box { a: "abc" }
       pub let int_box = Box { a: 42 }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -3080,10 +2707,8 @@ describe.todo("struct", () => {
   });
 
   test("updating a infers the spread arg", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type Box<a> struct { a: a }
 
       pub let set_a = fn box {
@@ -3092,7 +2717,7 @@ describe.todo("struct", () => {
           ..box
         }
       }
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -3102,10 +2727,8 @@ describe.todo("struct", () => {
   });
 
   test("allow to specify a subset of the fields when update another struct", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
       type Str<a, b> struct {
         a: a,
         b: b
@@ -3118,7 +2741,7 @@ describe.todo("struct", () => {
         }
       }
       
-  `),
+  `,
     );
 
     expect(a.errors).toEqual([]);
@@ -3129,34 +2752,31 @@ describe.todo("struct", () => {
 
 describe.todo("prelude", () => {
   test("intrinsics' types are not visible by default", () => {
-    const a = new Analysis("core", "Main", unsafeParse(`pub let x: Int = 0`));
+    const [a] = performAnalysis(`pub let x: Int = 0`);
     expect(a.errors).toEqual<ErrorInfo[]>([
       expect.objectContaining<ErrorInfo["description"]>(new UnboundType("Int")),
     ]);
   });
 
   test("checks extern types", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`extern type ExtType
+    const [a] = performAnalysis(
+      `extern type ExtType
      extern pub let x : ExtType
      pub let y: ExtType = x
-    `),
+    `,
+      { namespace: "Person" },
     );
 
     expect(a.errors).toEqual([]);
   });
 
   test("typechecks extern values", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
+    const [a] = performAnalysis(
+      `
      type Unit { }
      extern pub let x : Unit
      pub let y = x
-    `),
+    `,
     );
 
     expect(a.errors).toEqual([]);
@@ -3169,11 +2789,7 @@ describe.todo("prelude", () => {
 });
 
 test.todo("type error when main has not type Task<Unit>", () => {
-  const a = new Analysis(
-    "core",
-    "Main",
-    unsafeParse(`pub let main = "not-task-type"`),
-  );
+  const [a] = performAnalysis(`pub let main = "not-task-type"`);
   expect(a.errors).toHaveLength(1);
   expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
 });
@@ -3186,6 +2802,19 @@ function getTypes(a: Analysis): Record<string, string> {
     return [decl.binding.name, typeToString(mono)];
   });
   return Object.fromEntries(kvs);
+}
+
+type TestAnalyseOptions = {
+  package_?: string;
+  namespace?: string;
+} & AnalyseOptions;
+
+function performAnalysis(
+  src: string,
+  { package_ = "core", namespace = "Main", ...opts }: TestAnalyseOptions = {},
+): [analysis: Analysis] {
+  const analysis = new Analysis(package_, namespace, unsafeParse(src), opts);
+  return [analysis];
 }
 
 // beforeEach(() => {
