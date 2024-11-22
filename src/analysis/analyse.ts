@@ -110,26 +110,20 @@ export class Analysis {
   ) {
     switch (resolution.type) {
       case "global-variable": {
-        // TODO instantiate
         // TODO check order
 
         // TODO handle external ns
-        const poly = this.typeAnnotations.get(resolution.declaration.binding);
+        const poly = this.getRawType(resolution.declaration.binding);
 
-        if (this.currentDeclarationGroup.includes(resolution.declaration)) {
-          // TODO unify with mono
-          return;
-        }
+        const isSelfRecursive = this.currentDeclarationGroup.includes(
+          resolution.declaration,
+        );
 
-        if (poly === undefined) {
-          throw new Error(
-            "TODO handle unresolved type for: " +
-              resolution.declaration.binding.name,
-          );
-        }
+        this.unifyNode(
+          expr,
+          isSelfRecursive ? poly : this.unifier.instantiate(poly, true),
+        );
 
-        // TODO do not instantiate when this binding is in the current decl group
-        this.unifyNode(expr, this.unifier.instantiate(poly, true));
         return;
       }
 

@@ -144,7 +144,7 @@ describe("globals resolution", () => {
     });
   });
 
-  test.todo("self-recursive declarations", () => {
+  test("self-recursive declarations", () => {
     const a = new Analysis(
       "core",
       "Main",
