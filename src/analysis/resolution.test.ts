@@ -1,11 +1,11 @@
 import { test, expect, vi } from "vitest";
 import { ResolutionAnalysis } from "./resolution";
 import { unsafeParse } from "../parser";
-import { CyclicDefinition } from "./errors";
+import { CyclicDefinition, ErrorInfo } from "./errors";
 
 test("allow declarations in swapped order", () => {
   const src = unsafeParse(`
-    let x = y
+    pub let x = y
     let y = 0
   `);
 
@@ -16,8 +16,8 @@ test("allow declarations in swapped order", () => {
 
 test("allow dependency cycles in functions", () => {
   const src = unsafeParse(`
-    let x = fn { y() }
-    let y = x
+    pub let x = fn { y() }
+    pub let y = x
   `);
 
   const ra = new ResolutionAnalysis("core", "Main", src, noErrors);
@@ -44,6 +44,8 @@ function getSortedBindings(res: ResolutionAnalysis) {
   return res.sortedDeclarations.map((ds) => ds.map((d) => d.binding.name));
 }
 
-function noErrors() {
+function noErrors(e: ErrorInfo) {
+  console.error(e);
+
   throw new Error("No errors allowed");
 }

@@ -124,8 +124,8 @@ describe("globals resolution", () => {
 
   test("forbid duplicate identifiers", () => {
     const src = `
-      let x = 42
-      let x = "override"
+      pub let x = 42
+      pub let x = "override"
   
       pub let y = x
     `;
@@ -140,6 +140,7 @@ describe("globals resolution", () => {
     ]);
 
     expect(getTypes(a)).toEqual({
+      x: "a",
       y: "Int",
     });
   });
@@ -1849,17 +1850,28 @@ describe("unused locals checks", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(UnusedVariable);
   });
 
-  test.todo("detect unused private globals", () => {
-    const a = new Analysis(
-      "core",
-      "Main",
-      unsafeParse(`
-    let x = 42
-  `),
-    );
+  test("detect unused private globals", () => {
+    const src = `let x = 42`;
+
+    const a = new Analysis("core", "Main", unsafeParse(src));
 
     expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(UnusedVariable);
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new UnusedVariable("x", "global"),
+        range: rangeOf(src, "x"),
+      },
+    ]);
+  });
+
+  test("allow used private globals", () => {
+    const src = `
+      let x = 42
+      pub let y = x
+    `;
+
+    const a = new Analysis("core", "Main", unsafeParse(src));
+    expect(a.errors).toEqual([]);
   });
 
   test("do not detect unused globals when private vars are used", () => {
