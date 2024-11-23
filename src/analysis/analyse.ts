@@ -149,7 +149,17 @@ export class Analysis {
         return;
 
       case "constructor": {
-        const declarationType = this.typesHydration.getPolyType(
+        const analysis =
+          resolution.namespace === this.ns
+            ? this
+            : this.options.getDependency?.(resolution.namespace);
+
+        if (analysis === undefined) {
+          // probably unreachable
+          throw new Error("TODO handle");
+        }
+
+        const declarationType = analysis.typesHydration.getPolyType(
           resolution.declaration,
         );
 
@@ -159,7 +169,7 @@ export class Analysis {
             : {
                 tag: "Fn",
                 args: resolution.variant.args.map((arg) =>
-                  this.typesHydration.getPolyType(arg),
+                  analysis.typesHydration.getPolyType(arg),
                 ),
                 return: declarationType,
               };

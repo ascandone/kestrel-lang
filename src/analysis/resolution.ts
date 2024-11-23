@@ -197,6 +197,20 @@ export class ResolutionAnalysis {
           declarationLookup,
         ]);
 
+        if (
+          declarationLookup.type === "adt" &&
+          declarationLookup.pub === ".."
+        ) {
+          for (const exposedVariant of declarationLookup.variants) {
+            this.importedValues.set(exposedVariant.name, {
+              type: "constructor",
+              declaration: declarationLookup,
+              variant: exposedVariant,
+              namespace: analysis.ns,
+            });
+          }
+        }
+
         break;
       }
 

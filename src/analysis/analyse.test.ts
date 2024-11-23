@@ -264,17 +264,18 @@ describe("modules", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test.todo("implicitly imports variants of the modules in the prelude", () => {
+  test("implicitly imports variants of the modules in the prelude", () => {
     const [A] = performAnalysis(
       `
-      pub(..) type MyType { A }
+      pub(..) type MyType { Variant }
     `,
       { namespace: "A" },
     );
 
     const [a] = performAnalysis(
       `
-      pub let x = A
+      // import A.{MyType(..)}
+      pub let x = Variant
     `,
       {
         dependencies: { A },
@@ -301,7 +302,7 @@ describe("modules", () => {
     });
   });
 
-  test.todo("handles nested type references from other modules", () => {
+  test("handles nested type references from other modules", () => {
     const [A] = performAnalysis(
       `
       pub(..) type T { T }
@@ -391,7 +392,7 @@ describe("modules", () => {
     });
   });
 
-  test.todo("allow importing types (unqualified)", () => {
+  test("allow importing types (unqualified)", () => {
     const [Mod] = performAnalysis(`pub type Example { }`, { namespace: "Mod" });
 
     const [a] = performAnalysis(
