@@ -17,6 +17,7 @@ import {
   Binding,
   TypeAst,
   UntypedDeclaration,
+  UntypedExposedValue,
   UntypedExpr,
   UntypedImport,
   UntypedMatchPattern,
@@ -88,6 +89,10 @@ export class ResolutionAnalysis {
   >();
 
   private importedValues = new Map<string, IdentifierResolution>();
+  private importedTypes = new Map<
+    string,
+    [resolution: ResolutionAnalysis, typeDeclaration: UntypedTypeDeclaration]
+  >();
 
   private unusedBindings = new WeakSet<Binding>();
   private identifiersResolutions = new WeakMap<
@@ -142,31 +147,61 @@ export class ResolutionAnalysis {
 
   private initImportsResolution() {
     for (const import_ of [...this.implicitImports, ...this.module.imports]) {
-      this.registerImport(import_);
+      const dep = this.getDependency(import_.ns);
+      if (dep === undefined) {
+        throw new Error("TODO dep not found");
+      }
+      for (const exposedValue of import_.exposing) {
+        this.registerExposedValue(dep, import_, exposedValue);
+      }
     }
   }
 
-  private registerImport(import_: UntypedImport) {
-    const dep = this.getDependency(import_.ns);
-    if (dep === undefined) {
-      throw new Error("TODO dep not found");
-    }
+  private registerExposedValue(
+    analysis: ResolutionAnalysis,
+    import_: UntypedImport,
+    exposedValue: UntypedExposedValue,
+  ) {
+    switch (exposedValue.type) {
+      case "value": {
+        const declarationLookup = analysis.locallyDefinedDeclarations.get(
+          exposedValue.name,
+        );
+        if (declarationLookup === undefined || !declarationLookup.pub) {
+          throw new Error("TODO imported value not found");
+        }
 
-    for (const exposedValue of import_.exposing) {
-      const declarationLookup = dep.locallyDefinedDeclarations.get(
-        exposedValue.name,
-      );
-      if (declarationLookup === undefined || !declarationLookup.pub) {
-        throw new Error("TODO imported value not found");
+        // TODO set resolution of imported value
+
+        this.importedValues.set(exposedValue.name, {
+          type: "global-variable",
+          declaration: declarationLookup,
+          namespace: import_.ns,
+        });
+        break;
       }
 
-      // TODO set resolution of imported value
+      case "type": {
+        const declarationLookup = analysis.locallyDefinedTypes.get(
+          exposedValue.name,
+        );
+        if (
+          declarationLookup === undefined ||
+          declarationLookup.pub === false
+        ) {
+          throw new Error("TODO imported value not found");
+        }
 
-      this.importedValues.set(exposedValue.name, {
-        type: "global-variable",
-        declaration: declarationLookup,
-        namespace: import_.ns,
-      });
+        this.importedTypes.set(declarationLookup.name, [
+          analysis,
+          declarationLookup,
+        ]);
+
+        break;
+      }
+
+      default:
+        return exposedValue satisfies void;
     }
   }
 
@@ -255,10 +290,21 @@ export class ResolutionAnalysis {
   }
 
   private runNamedTypeResolution(typeAst: TypeAst & { type: "named" }) {
-    const localT = this.locallyDefinedTypes.get(typeAst.name);
-    if (localT !== undefined) {
+    const importedType = this.importedTypes.get(typeAst.name);
+    if (importedType !== undefined) {
+      const [resolution, declaration] = importedType;
       this.typesResolutions.set(typeAst, {
-        declaration: localT,
+        declaration,
+        ns: resolution.ns,
+        package: resolution.package_,
+      });
+      return;
+    }
+
+    const localTypeLookup = this.locallyDefinedTypes.get(typeAst.name);
+    if (localTypeLookup !== undefined) {
+      this.typesResolutions.set(typeAst, {
+        declaration: localTypeLookup,
         ns: this.ns,
         package: this.package_,
       });

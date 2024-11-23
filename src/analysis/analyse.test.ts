@@ -235,12 +235,13 @@ describe("modules", () => {
     });
   });
 
-  test.todo("implicitly imports types of the modules in the prelude", () => {
-    const [A] = performAnalysis(`type MyType {}`, { namespace: "A" });
+  test("implicitly imports types of the modules in the prelude", () => {
+    const [A] = performAnalysis(`pub type MyType {}`, { namespace: "A" });
 
     const [a] = performAnalysis(
       `
-      let x: Fn(MyType) -> MyType = fn x { x }
+      // import A.{MyType}
+      pub let x: Fn(MyType) -> MyType = fn x { x }
     `,
       {
         dependencies: { A },
@@ -260,7 +261,7 @@ describe("modules", () => {
         ],
       },
     );
-    expect(a.errors).toEqual([]); // TODO check assertion
+    expect(a.errors).toEqual([]);
   });
 
   test.todo("implicitly imports variants of the modules in the prelude", () => {
