@@ -199,7 +199,7 @@ describe("globals resolution", () => {
   });
 });
 
-describe.todo("modules", () => {
+describe("modules", () => {
   test.todo("imports cannot shadow values");
   test.todo("imports cannot shadow types");
   test.todo("imports cannot shadow constructors");
@@ -215,8 +215,9 @@ describe.todo("modules", () => {
 
     const [a] = performAnalysis(
       `
-      pub let y = x
-    `,
+        // import A.{x}
+        pub let y = x
+      `,
       {
         dependencies: { A },
         implicitImports: [
@@ -234,7 +235,7 @@ describe.todo("modules", () => {
     });
   });
 
-  test("implicitly imports types of the modules in the prelude", () => {
+  test.todo("implicitly imports types of the modules in the prelude", () => {
     const [A] = performAnalysis(`type MyType {}`, { namespace: "A" });
 
     const [a] = performAnalysis(
@@ -262,7 +263,7 @@ describe.todo("modules", () => {
     expect(a.errors).toEqual([]); // TODO check assertion
   });
 
-  test("implicitly imports variants of the modules in the prelude", () => {
+  test.todo("implicitly imports variants of the modules in the prelude", () => {
     const [A] = performAnalysis(
       `
       pub(..) type MyType { A }
@@ -299,7 +300,7 @@ describe.todo("modules", () => {
     });
   });
 
-  test("handles nested type references from other modules", () => {
+  test.todo("handles nested type references from other modules", () => {
     const [A] = performAnalysis(
       `
       pub(..) type T { T }
@@ -321,7 +322,7 @@ describe.todo("modules", () => {
     });
   });
 
-  test("detects unused imports when there are not exposed vars", () => {
+  test.todo("detects unused imports when there are not exposed vars", () => {
     const [A] = performAnalysis(``, { namespace: "A" });
     const [a] = performAnalysis(`import A`, {
       dependencies: { A },
@@ -330,7 +331,7 @@ describe.todo("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(UnusedImport);
   });
 
-  test("detects unused exposed values", () => {
+  test.todo("detects unused exposed values", () => {
     const [A] = performAnalysis(`pub let x = 42`, { namespace: "A" });
     const [a] = performAnalysis(`import A.{x}`, {
       dependencies: { A },
@@ -339,7 +340,7 @@ describe.todo("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(UnusedExposing);
   });
 
-  test("detects unused types", () => {
+  test.todo("detects unused types", () => {
     const [A] = performAnalysis(`pub type T { }`, { namespace: "A" });
     const [a] = performAnalysis(`import A.{T}`, {
       dependencies: { A },
@@ -348,7 +349,7 @@ describe.todo("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(UnusedExposing);
   });
 
-  test("handles variants imports", () => {
+  test.todo("handles variants imports", () => {
     const [A] = performAnalysis(`pub(..) type MyType { Constr }`, {
       namespace: "A",
     });
@@ -367,7 +368,7 @@ describe.todo("modules", () => {
     });
   });
 
-  test("handles nested imports", () => {
+  test.todo("handles nested imports", () => {
     const [Mod] = performAnalysis(
       `
       pub let x = 42
@@ -389,7 +390,7 @@ describe.todo("modules", () => {
     });
   });
 
-  test("allow importing types (unqualified)", () => {
+  test.todo("allow importing types (unqualified)", () => {
     const [Mod] = performAnalysis(`pub type Example { }`, { namespace: "Mod" });
 
     const [a] = performAnalysis(
@@ -406,7 +407,7 @@ describe.todo("modules", () => {
     });
   });
 
-  test("allow importing types (qualified)", () => {
+  test.todo("allow importing types (qualified)", () => {
     const [Mod] = performAnalysis(`pub type Example { }`, { namespace: "Mod" });
     const [a] = performAnalysis(
       `
@@ -422,7 +423,7 @@ describe.todo("modules", () => {
     });
   });
 
-  test("allow using imported types in match patterns", () => {
+  test.todo("allow using imported types in match patterns", () => {
     const [Mod] = performAnalysis(`pub(..) type T { Constr }`, {
       namespace: "Mod",
     });
@@ -439,13 +440,13 @@ describe.todo("modules", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test("error when import a non-existing module", () => {
+  test.todo("error when import a non-existing module", () => {
     const [a] = performAnalysis(`import ModuleNotFound`);
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(UnboundModule);
   });
 
-  test("error when importing a non-existing type", () => {
+  test.todo("error when importing a non-existing type", () => {
     const [Mod] = performAnalysis(``, { namespace: "Mod" });
     const [a] = performAnalysis(`import Mod.{NotFound}`, {
       dependencies: { Mod },
@@ -454,7 +455,7 @@ describe.todo("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
-  test("error when importing a type the is not pub", () => {
+  test.todo("error when importing a type the is not pub", () => {
     const [Mod] = performAnalysis(`type PrivateType {}`, { namespace: "Mod" });
     const [a] = performAnalysis(`import Mod.{PrivateType}`, {
       dependencies: { Mod },
@@ -463,7 +464,7 @@ describe.todo("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
-  test("error when importing a non-existing value", () => {
+  test.todo("error when importing a non-existing value", () => {
     const [Mod] = performAnalysis(``, { namespace: "Mod" });
     const [a] = performAnalysis(`import Mod.{not_found}`, {
       dependencies: { Mod },
@@ -472,7 +473,7 @@ describe.todo("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
-  test("error when importing a private value", () => {
+  test.todo("error when importing a private value", () => {
     const [Mod] = performAnalysis(`let not_found = 42`, { namespace: "Mod" });
     const [a] = performAnalysis(`import Mod.{not_found}`, {
       dependencies: { Mod },
@@ -482,7 +483,7 @@ describe.todo("modules", () => {
     ).toBeTruthy();
   });
 
-  test("qualified imports should not work on priv functions", () => {
+  test.todo("qualified imports should not work on priv functions", () => {
     const [Mod] = performAnalysis(`let not_found = 42`, { namespace: "Mod" });
     const [a] = performAnalysis(
       `
@@ -496,7 +497,7 @@ describe.todo("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
   });
 
-  test("qualified imports should not work on priv constructors", () => {
+  test.todo("qualified imports should not work on priv constructors", () => {
     const [Mod] = performAnalysis(`pub type T { A }`, { namespace: "Mod" });
     const [a] = performAnalysis(
       `
@@ -524,7 +525,7 @@ describe.todo("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(UnboundType);
   });
 
-  test("error when expose impl is run on a extern type", () => {
+  test.todo("error when expose impl is run on a extern type", () => {
     const [Mod] = performAnalysis(`extern pub type ExternType`, {
       namespace: "Mod",
     });
@@ -535,7 +536,7 @@ describe.todo("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(BadImport);
   });
 
-  test("error when expose impl is run on a opaque type", () => {
+  test.todo("error when expose impl is run on a opaque type", () => {
     // Note it is `pub` instead of `pub(..)`
     const [Mod] = performAnalysis(`pub type T {}`, { namespace: "Mod" });
     const [a] = performAnalysis(`import Mod.{T(..)}`, {
@@ -545,28 +546,31 @@ describe.todo("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(BadImport);
   });
 
-  test("error when qualifier is not an imported module", () => {
+  test.todo("error when qualifier is not an imported module", () => {
     const [a] = performAnalysis(`pub let x = NotImported.value`);
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(UnimportedModule);
   });
 
-  test("types from different modules with the same name aren't treated the same", () => {
-    const [Mod] = performAnalysis(`pub(..) type T { Constr }`, {
-      namespace: "Mod",
-    });
-    const [a] = performAnalysis(
-      `
+  test.todo(
+    "types from different modules with the same name aren't treated the same",
+    () => {
+      const [Mod] = performAnalysis(`pub(..) type T { Constr }`, {
+        namespace: "Mod",
+      });
+      const [a] = performAnalysis(
+        `
       import Mod
       type T { Constr }
       pub let t: T = Mod.Constr
     `,
-      { dependencies: { Mod } },
-    );
+        { dependencies: { Mod } },
+      );
 
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
-  });
+      expect(a.errors).toHaveLength(1);
+      expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
+    },
+  );
 });
 
 describe("named types", () => {

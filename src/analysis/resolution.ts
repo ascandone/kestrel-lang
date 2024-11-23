@@ -18,6 +18,7 @@ import {
   TypeAst,
   UntypedDeclaration,
   UntypedExpr,
+  UntypedImport,
   UntypedMatchPattern,
   UntypedModule,
   UntypedTypeDeclaration,
@@ -81,6 +82,13 @@ export class ResolutionAnalysis {
     [UntypedTypeDeclaration & { type: "adt" }, UntypedTypeVariant]
   >();
 
+  private readonly locallyDefinedDeclarations = new Map<
+    string,
+    UntypedDeclaration
+  >();
+
+  private importedValues = new Map<string, IdentifierResolution>();
+
   private unusedBindings = new WeakSet<Binding>();
   private identifiersResolutions = new WeakMap<
     ResolvableNode,
@@ -93,11 +101,16 @@ export class ResolutionAnalysis {
   >();
 
   constructor(
-    public readonly package_: string,
-    public readonly ns: string,
+    private readonly package_: string,
+    private readonly ns: string,
     private readonly module: UntypedModule,
     private readonly emitError: (error: ErrorInfo) => void,
+    private readonly getDependency: (
+      namespace: string,
+    ) => ResolutionAnalysis | undefined = () => undefined,
+    private readonly implicitImports: UntypedImport[] = [],
   ) {
+    this.initImportsResolution();
     this.initTypesResolution();
     this.initDeclarationsResolution();
 
@@ -125,6 +138,36 @@ export class ResolutionAnalysis {
     typeAst: TypeAst & { type: "named" },
   ): TypeResolution | undefined {
     return this.typesResolutions.get(typeAst);
+  }
+
+  private initImportsResolution() {
+    for (const import_ of [...this.implicitImports, ...this.module.imports]) {
+      this.registerImport(import_);
+    }
+  }
+
+  private registerImport(import_: UntypedImport) {
+    const dep = this.getDependency(import_.ns);
+    if (dep === undefined) {
+      throw new Error("TODO dep not found");
+    }
+
+    for (const exposedValue of import_.exposing) {
+      const declarationLookup = dep.locallyDefinedDeclarations.get(
+        exposedValue.name,
+      );
+      if (declarationLookup === undefined || !declarationLookup.pub) {
+        throw new Error("TODO imported value not found");
+      }
+
+      // TODO set resolution of imported value
+
+      this.importedValues.set(exposedValue.name, {
+        type: "global-variable",
+        declaration: declarationLookup,
+        namespace: import_.ns,
+      });
+    }
   }
 
   private initTypesResolution() {
@@ -178,16 +221,16 @@ export class ResolutionAnalysis {
 
   private initDeclarationsResolution() {
     // Add declarations to unused bindings and check for duplicates
-    const foundDeclarations = new Set<string>();
     for (const letDecl of this.module.declarations) {
       this.unusedBindings.add(letDecl.binding);
-      if (foundDeclarations.has(letDecl.binding.name)) {
+      if (this.locallyDefinedDeclarations.has(letDecl.binding.name)) {
         this.emitError({
           range: letDecl.binding.range,
           description: new DuplicateDeclaration(letDecl.binding.name),
         });
+      } else {
+        this.locallyDefinedDeclarations.set(letDecl.binding.name, letDecl);
       }
-      foundDeclarations.add(letDecl.binding.name);
     }
 
     // Run resolution in each declaration's value
@@ -421,14 +464,19 @@ export class ResolutionAnalysis {
     identifier: ResolvableNode,
     localScope: LocalScope = {},
   ): IdentifierResolution | undefined {
-    const currentDeclaration = this.currentDeclaration;
-    if (currentDeclaration === undefined) {
+    if (this.currentDeclaration === undefined) {
       throw new Error(
-        "[unrechable] this.currentDeclaration should never be empty",
+        "[unreachable] this.currentDeclaration should never be empty",
       );
     }
 
-    // Search locals first
+    // search imported values
+    const importedValueLookup = this.importedValues.get(identifier.name);
+    if (importedValueLookup !== undefined) {
+      return importedValueLookup;
+    }
+
+    // search locally defined values
     if (identifier.type === "identifier") {
       const localLookup = localScope[identifier.name];
       if (localLookup !== undefined) {
@@ -449,27 +497,28 @@ export class ResolutionAnalysis {
       };
     }
 
-    // TODO search locallyDefinedDeclarations instead
-    for (const declaration of this.module.declarations) {
-      if (declaration.binding.name === identifier.name) {
-        defaultMapGet(this.callGraph, currentDeclaration, () => []).push(
-          declaration,
-        );
-        if (!this.isThunk) {
-          defaultMapGet(
-            this.directCallGraph,
-            currentDeclaration,
-            () => [],
-          ).push(declaration);
-        }
-
-        return {
-          type: "global-variable",
-          declaration,
-          namespace: this.ns,
-        };
+    const globalDeclarationLookup = this.locallyDefinedDeclarations.get(
+      identifier.name,
+    );
+    if (globalDeclarationLookup !== undefined) {
+      defaultMapGet(this.callGraph, this.currentDeclaration, () => []).push(
+        globalDeclarationLookup,
+      );
+      if (!this.isThunk) {
+        defaultMapGet(
+          this.directCallGraph,
+          this.currentDeclaration,
+          () => [],
+        ).push(globalDeclarationLookup);
       }
+
+      return {
+        type: "global-variable",
+        declaration: globalDeclarationLookup,
+        namespace: this.ns,
+      };
     }
+
     return undefined;
   }
 

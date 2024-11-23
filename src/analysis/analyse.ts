@@ -52,12 +52,24 @@ export class Analysis {
     public readonly module: UntypedModule,
     public readonly options: AnalyseOptions = {},
   ) {
+    const getDependencyResolutionAnalysis = (
+      ns: string,
+    ): ResolutionAnalysis | undefined => {
+      const dep = options.getDependency?.(ns);
+      if (dep === undefined) {
+        return undefined;
+      }
+      return dep.resolution;
+    };
+
     const emitError = this.errors.push.bind(this.errors);
     this.resolution = new ResolutionAnalysis(
       this.package_,
       ns,
       module,
       emitError,
+      getDependencyResolutionAnalysis,
+      options.implicitImports,
     );
     this.typesHydration = new TypeAstsHydration(
       this.package_,
@@ -108,17 +120,27 @@ export class Analysis {
   ) {
     switch (resolution.type) {
       case "global-variable": {
-        const poly = this.getRawType(resolution.declaration.binding);
-
-        const isSelfRecursive = this.currentDeclarationGroup.includes(
+        const isRecursive = this.currentDeclarationGroup.includes(
           resolution.declaration,
         );
+        if (isRecursive) {
+          const mono = this.getRawType(resolution.declaration.binding);
+          this.unifyNode(expr, mono);
+          return;
+        }
 
-        this.unifyNode(
-          expr,
-          isSelfRecursive ? poly : this.unifier.instantiate(poly, true),
-        );
+        const analysis =
+          resolution.namespace === this.ns
+            ? this
+            : this.options.getDependency?.(resolution.namespace);
 
+        if (analysis === undefined) {
+          // probably unreachable
+          throw new Error("TODO handle");
+        }
+
+        const poly = analysis.getType(resolution.declaration.binding);
+        this.unifyNode(expr, this.unifier.instantiate(poly, false));
         return;
       }
 
