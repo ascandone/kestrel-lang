@@ -351,7 +351,7 @@ describe("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(UnusedExposing);
   });
 
-  test.todo("handles variants imports", () => {
+  test("handles variants imports", () => {
     const [A] = performAnalysis(`pub(..) type MyType { Constr }`, {
       namespace: "A",
     });
@@ -370,12 +370,12 @@ describe("modules", () => {
     });
   });
 
-  test.todo("handles nested imports", () => {
+  test("handles nested imports", () => {
     const [Mod] = performAnalysis(
       `
       pub let x = 42
     `,
-      { namespace: "Mod" },
+      { namespace: "A/B/C" },
     );
 
     const [a] = performAnalysis(

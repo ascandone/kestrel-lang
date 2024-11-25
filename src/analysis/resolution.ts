@@ -530,13 +530,26 @@ export class ResolutionAnalysis {
       );
     }
 
+    if (identifier.namespace !== undefined) {
+      const analysis = this.getDependency(identifier.namespace);
+      if (analysis === undefined) {
+        throw new Error("TODO invalid dependency");
+      }
+
+      const resolution = ResolutionAnalysis.identifierResolution(
+        analysis,
+        identifier,
+      );
+
+      return resolution;
+    }
+
     // search imported values
     const importedValueLookup = this.importedValues.get(identifier.name);
     if (importedValueLookup !== undefined) {
       return importedValueLookup;
     }
 
-    // search locally defined values
     if (identifier.type === "identifier") {
       const localLookup = localScope[identifier.name];
       if (localLookup !== undefined) {
@@ -544,42 +557,29 @@ export class ResolutionAnalysis {
       }
     }
 
-    // search variants
-    const variantLookup = this.locallyDefinedVariants.get(identifier.name);
-    if (variantLookup !== undefined) {
-      const [declaration, variant] = variantLookup;
-
-      return {
-        type: "constructor",
-        namespace: this.ns,
-        declaration,
-        variant,
-      };
-    }
-
-    const globalDeclarationLookup = this.locallyDefinedDeclarations.get(
-      identifier.name,
+    const resolution = ResolutionAnalysis.identifierResolution(
+      this,
+      identifier,
     );
-    if (globalDeclarationLookup !== undefined) {
+
+    if (
+      resolution !== undefined &&
+      resolution.type === "global-variable" &&
+      resolution.namespace === this.ns
+    ) {
       defaultMapGet(this.callGraph, this.currentDeclaration, () => []).push(
-        globalDeclarationLookup,
+        resolution.declaration,
       );
       if (!this.isThunk) {
         defaultMapGet(
           this.directCallGraph,
           this.currentDeclaration,
           () => [],
-        ).push(globalDeclarationLookup);
+        ).push(resolution.declaration);
       }
-
-      return {
-        type: "global-variable",
-        declaration: globalDeclarationLookup,
-        namespace: this.ns,
-      };
     }
 
-    return undefined;
+    return resolution;
   }
 
   private extractPatternIdentifiers(pattern: UntypedMatchPattern): Binding[] {
@@ -618,5 +618,34 @@ export class ResolutionAnalysis {
       },
       getNodes: () => this.module.declarations,
     };
+  }
+
+  private static identifierResolution(
+    analysis: ResolutionAnalysis,
+    identifier: ResolvableNode,
+  ): IdentifierResolution | undefined {
+    const variantLookup = analysis.locallyDefinedVariants.get(identifier.name);
+    if (variantLookup !== undefined) {
+      const [declaration, variant] = variantLookup;
+      return {
+        type: "constructor",
+        namespace: analysis.ns,
+        declaration,
+        variant,
+      };
+    }
+
+    const globalDeclarationLookup = analysis.locallyDefinedDeclarations.get(
+      identifier.name,
+    );
+    if (globalDeclarationLookup !== undefined) {
+      return {
+        type: "global-variable",
+        declaration: globalDeclarationLookup,
+        namespace: analysis.ns,
+      };
+    }
+
+    return undefined;
   }
 }
