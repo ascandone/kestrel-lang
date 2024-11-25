@@ -2753,11 +2753,13 @@ describe.todo("struct", () => {
   test.todo("namespaced struct names");
 });
 
-describe.todo("prelude", () => {
+describe("prelude", () => {
   test("intrinsics' types are not visible by default", () => {
     const [a] = performAnalysis(`pub let x: Int = 0`);
     expect(a.errors).toEqual<ErrorInfo[]>([
-      expect.objectContaining<ErrorInfo["description"]>(new UnboundType("Int")),
+      expect.objectContaining({
+        description: new UnboundType("Int"),
+      }),
     ]);
   });
 
