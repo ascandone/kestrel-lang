@@ -554,25 +554,22 @@ describe("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(UnimportedModule);
   });
 
-  test.todo(
-    "types from different modules with the same name aren't treated the same",
-    () => {
-      const [Mod] = performAnalysis(`pub(..) type T { Constr }`, {
-        namespace: "Mod",
-      });
-      const [a] = performAnalysis(
-        `
+  test("types from different modules with the same name aren't treated the same", () => {
+    const [Mod] = performAnalysis(`pub(..) type T { Constr }`, {
+      namespace: "Mod",
+    });
+    const [a] = performAnalysis(
+      `
       import Mod
       type T { Constr }
       pub let t: T = Mod.Constr
     `,
-        { dependencies: { Mod } },
-      );
+      { dependencies: { Mod } },
+    );
 
-      expect(a.errors).toHaveLength(1);
-      expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
-    },
-  );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
+  });
 });
 
 describe("named types", () => {
