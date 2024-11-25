@@ -914,6 +914,18 @@ describe("type hints", () => {
     });
   });
 
+  test("instantiate extern globals", () => {
+    const [a] = performAnalysis(`
+      extern pub let id: Fn(a) -> a
+      pub let x = id(42)
+    `);
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      id: "Fn(a) -> a",
+      x: "Int",
+    });
+  });
+
   test.todo("unify generalized values", () => {
     const [a] = performAnalysis("pub let f: Fn(ta) -> tb = fn x { x }");
     expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);

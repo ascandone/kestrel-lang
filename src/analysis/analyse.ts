@@ -91,7 +91,10 @@ export class Analysis {
   private typecheckLetDeclaration(decl: UntypedDeclaration) {
     if (decl.extern) {
       const typeHintType = this.typesHydration.getPolyType(decl.typeHint);
-      this.typeAnnotations.set(decl.binding, typeHintType);
+      this.typeAnnotations.set(
+        decl.binding,
+        this.unifier.instantiate(typeHintType, false),
+      );
       return;
     }
 
