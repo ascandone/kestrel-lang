@@ -129,15 +129,7 @@ export class Analysis {
           return;
         }
 
-        const analysis =
-          resolution.namespace === this.ns
-            ? this
-            : this.options.getDependency?.(resolution.namespace);
-
-        if (analysis === undefined) {
-          // probably unreachable
-          throw new Error("TODO handle");
-        }
+        const analysis = this.getDependencyByNs(resolution.namespace);
 
         const poly = analysis.getType(resolution.declaration.binding);
         this.unifyNode(expr, this.unifier.instantiate(poly, false));
@@ -314,7 +306,9 @@ export class Analysis {
           return;
         }
 
-        const declarationType = this.typesHydration.getPolyType(
+        const analysis = this.getDependencyByNs(resolution.namespace);
+
+        const declarationType = analysis.typesHydration.getPolyType(
           resolution.declaration,
         );
 
@@ -347,6 +341,16 @@ export class Analysis {
         return;
       }
     }
+  }
+
+  private getDependencyByNs(namespace: string): Analysis {
+    const analysis =
+      namespace === this.ns ? this : this.options.getDependency?.(namespace);
+
+    if (analysis === undefined) {
+      throw new Error("[unreachable] unbound analaysis");
+    }
+    return analysis;
   }
 
   // Unify wrappers

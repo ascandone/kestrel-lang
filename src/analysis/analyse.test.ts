@@ -425,7 +425,7 @@ describe("modules", () => {
     });
   });
 
-  test.todo("allow using imported types in match patterns", () => {
+  test("allow using imported types in match patterns", () => {
     const [Mod] = performAnalysis(`pub(..) type T { Constr }`, {
       namespace: "Mod",
     });

@@ -23,7 +23,11 @@ export class TypeAstsHydration {
    * Remember to handle instantiation before unifying it
    * */
   public getPolyType(node: PolytypeNode): Type {
-    return this.polyTypes.get(node)!;
+    const t = this.polyTypes.get(node);
+    if (t === undefined) {
+      throw new Error("[unrechable] polytype not set");
+    }
+    return t;
   }
 
   private readonly polyTypes = new WeakMap<PolytypeNode, Type>();
