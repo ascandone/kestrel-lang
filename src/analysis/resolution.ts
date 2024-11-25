@@ -105,16 +105,23 @@ export class ResolutionAnalysis {
     TypeResolution
   >();
 
+  private getDependency: (namespace: string) => ResolutionAnalysis | undefined;
   constructor(
     private readonly package_: string,
     private readonly ns: string,
     private readonly module: UntypedModule,
     private readonly emitError: (error: ErrorInfo) => void,
-    private readonly getDependency: (
-      namespace: string,
-    ) => ResolutionAnalysis | undefined = () => undefined,
+    getDependency: (namespace: string) => ResolutionAnalysis | undefined = () =>
+      undefined,
     private readonly implicitImports: UntypedImport[] = [],
   ) {
+    this.getDependency = (ns: string) => {
+      if (ns === this.ns) {
+        return this;
+      }
+      return getDependency(ns);
+    };
+
     this.initImportsResolution();
     this.initTypesResolution();
     this.initDeclarationsResolution();
@@ -304,19 +311,31 @@ export class ResolutionAnalysis {
   }
 
   private runNamedTypeResolution(typeAst: TypeAst & { type: "named" }) {
-    const importedType = this.importedTypes.get(typeAst.name);
-    if (importedType !== undefined) {
-      const [resolution, declaration] = importedType;
-      this.typesResolutions.set(typeAst, {
-        declaration,
-        ns: resolution.ns,
-        package: resolution.package_,
-      });
-      return;
+    if (typeAst.namespace === undefined) {
+      const importedType = this.importedTypes.get(typeAst.name);
+
+      if (importedType !== undefined) {
+        const [resolution, declaration] = importedType;
+        this.typesResolutions.set(typeAst, {
+          declaration,
+          ns: resolution.ns,
+          package: resolution.package_,
+        });
+        return;
+      }
     }
 
-    const localTypeLookup = this.locallyDefinedTypes.get(typeAst.name);
-    if (localTypeLookup !== undefined) {
+    const resolution = this.getDependency(typeAst.namespace ?? this.ns);
+    if (resolution === undefined) {
+      throw new Error("TODO handle unbound dep");
+    }
+
+    const localTypeLookup = resolution.locallyDefinedTypes.get(typeAst.name);
+    localTypeLookup: if (localTypeLookup !== undefined) {
+      if (resolution.ns !== this.ns && localTypeLookup.pub === false) {
+        break localTypeLookup;
+      }
+
       this.typesResolutions.set(typeAst, {
         declaration: localTypeLookup,
         ns: this.ns,
@@ -329,8 +348,6 @@ export class ResolutionAnalysis {
       description: new UnboundType(typeAst.name),
       range: typeAst.range,
     });
-
-    // TODO check imported and check if is qualified
   }
 
   private runTypeAstResolution(typeAst: TypeAst) {

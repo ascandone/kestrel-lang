@@ -409,7 +409,7 @@ describe("modules", () => {
     });
   });
 
-  test.todo("allow importing types (qualified)", () => {
+  test("allow importing types (qualified)", () => {
     const [Mod] = performAnalysis(`pub type Example { }`, { namespace: "Mod" });
     const [a] = performAnalysis(
       `
