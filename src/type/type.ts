@@ -177,12 +177,12 @@ export class Unifier {
     throw new TypeMismatchError();
   }
 
-  instantiate(t: Type, resolve: boolean): Type {
+  instantiate(t: Type, resolve: boolean, traitsMap: TraitsMap = {}): Type {
     if (resolve) {
       t = this.resolve(t);
     }
 
-    return new Instantiator(this).instantiate(t);
+    return new Instantiator(this).instantiate(t, traitsMap);
   }
 
   private assocTraits(type: Type, traits: Set<string>) {
@@ -260,21 +260,22 @@ export class Unifier {
 
 /** Pre: type is already resolved */
 export function normalizeResolved(t: Type): Type {
-  return new Unifier().instantiate(t, false);
+  return new Unifier().instantiate(t, false, {});
 }
 
+export type TraitsMap = Record<number, string[]>;
 export class Instantiator {
   constructor(private unifier: Unifier) {}
 
   private readonly instantiated = new Map<number, Type>();
 
-  public instantiate(t: Type): Type {
+  public instantiate(t: Type, traitsMap: TraitsMap = {}): Type {
     switch (t.tag) {
       case "Named":
         return {
           tag: "Named",
           name: t.name,
-          args: t.args.map((t) => this.instantiate(t)),
+          args: t.args.map((t) => this.instantiate(t, traitsMap)),
           module: t.module,
           package: t.package,
         };
@@ -282,14 +283,19 @@ export class Instantiator {
       case "Fn":
         return {
           tag: "Fn",
-          args: t.args.map((t) => this.instantiate(t)),
-          return: this.instantiate(t.return),
+          args: t.args.map((t) => this.instantiate(t, traitsMap)),
+          return: this.instantiate(t.return, traitsMap),
         };
 
       case "Var":
-        return defaultMapGet(this.instantiated, t.id, () =>
-          this.unifier.freshVar(),
-        );
+        return defaultMapGet(this.instantiated, t.id, () => {
+          const traits = traitsMap[t.id] ?? [];
+          traits.push(...this.unifier.getResolvedTypeTraits(t.id));
+
+          const fv = this.unifier.freshVar(traits);
+
+          return fv;
+        });
     }
   }
 }

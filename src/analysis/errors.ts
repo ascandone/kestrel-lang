@@ -238,6 +238,22 @@ export class TraitNotSatified implements ErrorDescription {
   }
 }
 
+export class TraitNotSatified_REWRITE implements ErrorDescription {
+  severity: Severity = "error";
+
+  errorName: string = "Trait not satisfied";
+
+  constructor(
+    public readonly type: Type,
+    public readonly trait: string,
+  ) {}
+
+  shortDescription(): string {
+    const type = typePPrint(this.type);
+    return `Cannot satisfy trait ${this.trait} for type ${type}`;
+  }
+}
+
 export class AmbiguousTypeVar implements ErrorDescription {
   severity: Severity = "error";
   errorName: string = "Ambiguous type variable";

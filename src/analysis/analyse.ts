@@ -3,6 +3,7 @@ import {
   ErrorInfo,
   InvalidPipe,
   OccursCheck,
+  TraitNotSatified_REWRITE,
   TypeMismatch_REWRITE,
 } from "./errors";
 import {
@@ -22,6 +23,7 @@ import {
   Unifier,
   TypeMismatchError,
   OccursCheckError,
+  MissingTraitError,
 } from "../type";
 import { bool, char, float, int, list, string } from "./coreTypes";
 import { TypeAstsHydration } from "./typesHydration";
@@ -90,10 +92,12 @@ export class Analysis {
 
   private typecheckLetDeclaration(decl: UntypedDeclaration) {
     if (decl.extern) {
-      const typeHintType = this.typesHydration.getPolyType(decl.typeHint);
+      const [typeHintType, traitsMap] = this.typesHydration.getAstPolytype(
+        decl.typeHint,
+      );
       this.typeAnnotations.set(
         decl.binding,
-        this.unifier.instantiate(typeHintType, false),
+        this.unifier.instantiate(typeHintType, false, traitsMap),
       );
       return;
     }
@@ -381,6 +385,14 @@ export class Analysis {
         return;
       }
 
+      if (error instanceof MissingTraitError) {
+        this.errors.push({
+          range,
+          description: new TraitNotSatified_REWRITE(got, error.trait),
+        });
+        return;
+      }
+
       throw error;
     }
   }
@@ -408,6 +420,10 @@ export class Analysis {
   getType(node: TypedNode): Type {
     const type = this.getRawType(node);
     return this.unifier.resolve(type);
+  }
+
+  getResolvedTypeTraits(id: number) {
+    return this.unifier.getResolvedTypeTraits(id);
   }
 
   *getDeclarations(): Generator<UntypedDeclaration> {

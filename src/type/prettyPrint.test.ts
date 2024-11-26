@@ -13,6 +13,7 @@ import {
   _2,
   _3,
 } from "../__test__/commonTypes";
+import { Type, Unifier } from "./type";
 
 test("0-arity types", () => {
   expect(typePPrint(num)).toBe("Num");
@@ -77,4 +78,36 @@ test("pretty print vars", () => {
 
   expect(typePPrint({ tag: "Var", id: 52 })).toBe("a1");
   expect(typePPrint({ tag: "Var", id: 53 })).toBe("b1");
+});
+
+test("print traits when traits are unified with the var", () => {
+  const unifier = new Unifier();
+
+  const a = unifier.freshVar(["Ord", "Show"]);
+  const b = unifier.freshVar();
+  const c = unifier.freshVar(["Read"]);
+  const f: Type = { tag: "Fn", args: [a, b], return: c };
+
+  expect(typePPrint(f, (id) => unifier.getResolvedTypeTraits(id))).toBe(
+    "Fn(a, b) -> c where a: Ord + Show, c: Read",
+  );
+});
+
+test("print traits when traits are passed as map", () => {
+  const f: Type = {
+    tag: "Fn",
+    args: [_0, _1],
+    return: _2,
+  };
+
+  expect(
+    typePPrint(
+      f,
+      (id) =>
+        ({
+          0: ["Ord", "Show"],
+          2: ["Read"],
+        })[id] ?? [],
+    ),
+  ).toBe("Fn(a, b) -> c where a: Ord + Show, c: Read");
 });

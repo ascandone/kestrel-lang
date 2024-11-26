@@ -1649,7 +1649,7 @@ describe("unused locals checks", () => {
   });
 });
 
-describe.todo("traits", () => {
+describe("traits", () => {
   test("fails to typecheck when a required trait is not implemented", () => {
     const [a] = performAnalysis(
       `
@@ -1665,27 +1665,30 @@ describe.todo("traits", () => {
     });
   });
 
-  test("succeeds to typecheck when a required trait is not implemented", () => {
-    // resetTraitsRegistry([
-    //   { trait: "Show", moduleName: "Int", typeName: "Int" },
-    // ]);
+  test.todo(
+    "succeeds to typecheck when a required trait is not implemented",
+    () => {
+      // resetTraitsRegistry([
+      //   { trait: "Show", moduleName: "Int", typeName: "Int" },
+      // ]);
 
-    const [a] = performAnalysis(
-      `
+      const [a] = performAnalysis(
+        `
         extern type String
         extern pub let show: Fn(a) -> String where a: Show
         pub let x = show(42)
       `,
-    );
+      );
 
-    expect(a.errors).toEqual([]);
-  });
+      expect(a.errors).toEqual([]);
+    },
+  );
 
   test("propagates the trait constraint", () => {
     const [a] = performAnalysis(
       `
         extern type String
-        extern let show: Fn(a) -> String where a: Show
+        extern pub let show: Fn(a) -> String where a: Show
 
         pub let use_show = fn value {
           show(value)
@@ -1699,7 +1702,7 @@ describe.todo("traits", () => {
     });
   });
 
-  test("fails to typecheck when unify occurs later", () => {
+  test.todo("fails to typecheck when unify occurs later", () => {
     const [a] = performAnalysis(
       `
         extern type String
@@ -1716,51 +1719,55 @@ describe.todo("traits", () => {
     expect(a.errors).not.toEqual([]);
   });
 
-  test("infers multiple traits", () => {
+  test.todo("infers multiple traits", () => {
     const [a] = performAnalysis(
       `
         extern type Unit
         extern let show: Fn(a) -> Unit where a: Show
         extern let eq: Fn(a) -> Unit where a: Eq
 
+        let snd = fn _a, b { b }
+
         pub let f = fn x {
-          let _ = show(x);
-          eq(x)
+          snd(
+            show(x),
+            eq(x)
+          )
         }
       `,
     );
     expect(a.errors).toEqual([]);
-    expect(getTypes(a)).toEqual(
-      expect.objectContaining({
-        f: "Fn(a) -> Unit where a: Eq + Show",
-      }),
-    );
+    expect(getTypes(a)).toEqual({
+      f: "Fn(a) -> Unit where a: Eq + Show",
+    });
   });
 
-  test("does not break generalization", () => {
+  test.todo("does not break generalization", () => {
     const [a] = performAnalysis(
       `
         extern type Unit
-        extern let show: Fn(a) -> Unit where a: Show
-        extern let eq: Fn(a) -> Unit where a: Eq
+        extern pub let show: Fn(a) -> Unit where a: Show
+        extern pub let eq: Fn(a) -> Unit where a: Eq
+
+        let snd = fn _a, b { b }
 
         pub let f = fn x {
-          let _ = show(x);
-          let _ = eq(x);
-          0
+          snd(
+            show(x),
+            eq(x)
+          )
         }
       `,
     );
     expect(a.errors).toEqual([]);
-    expect(getTypes(a)).toEqual(
-      expect.objectContaining({
-        eq: "Fn(a) -> Unit where a: Eq",
-        show: "Fn(a) -> Unit where a: Show",
-      }),
-    );
+    expect(getTypes(a)).toEqual({
+      eq: "Fn(a) -> Unit where a: Eq",
+      show: "Fn(a) -> Unit where a: Show",
+      f: "Fn(a) -> Unit where a: Eq + Show",
+    });
   });
 
-  test("is able to derive Eq trait in ADTs with only a singleton", () => {
+  test.todo("is able to derive Eq trait in ADTs with only a singleton", () => {
     const [a] = performAnalysis(
       `
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -1775,9 +1782,11 @@ describe.todo("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test("does not derive Eq trait in ADTs when at least one argument", () => {
-    const [a] = performAnalysis(
-      `
+  test.todo(
+    "does not derive Eq trait in ADTs when at least one argument",
+    () => {
+      const [a] = performAnalysis(
+        `
         extern type NotEq
         extern let take_eq: Fn(a) -> a where a: Eq
 
@@ -1788,14 +1797,17 @@ describe.todo("traits", () => {
 
         pub let example = take_eq(Singleton)
       `,
-    );
+      );
 
-    expect(a.errors).toHaveLength(1);
-  });
+      expect(a.errors).toHaveLength(1);
+    },
+  );
 
-  test("derives Eq even when constructors have arguments that derive Eq", () => {
-    const [a] = performAnalysis(
-      `
+  test.todo(
+    "derives Eq even when constructors have arguments that derive Eq",
+    () => {
+      const [a] = performAnalysis(
+        `
         type EqType { }
 
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -1807,12 +1819,13 @@ describe.todo("traits", () => {
 
         pub let example = take_eq(Singleton)
       `,
-    );
+      );
 
-    expect(a.errors).toEqual([]);
-  });
+      expect(a.errors).toEqual([]);
+    },
+  );
 
-  test("requires deps to derive Eq in order to derive Eq", () => {
+  test.todo("requires deps to derive Eq in order to derive Eq", () => {
     const [a] = performAnalysis(
       `
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -1831,7 +1844,7 @@ describe.todo("traits", () => {
     expect(a.errors).toHaveLength(1);
   });
 
-  test("derives Eq when dependencies derive Eq", () => {
+  test.todo("derives Eq when dependencies derive Eq", () => {
     const [a] = performAnalysis(
       `
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -1852,7 +1865,7 @@ describe.todo("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test("derives in self-recursive types", () => {
+  test.todo("derives in self-recursive types", () => {
     const [a] = performAnalysis(
       `
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -1869,7 +1882,7 @@ describe.todo("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test("derives in self-recursive types (nested)", () => {
+  test.todo("derives in self-recursive types (nested)", () => {
     const [a] = performAnalysis(
       `
         type Box<a> { Box(a) }
@@ -1887,7 +1900,7 @@ describe.todo("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  describe("auto deriving for struct", () => {
+  describe.todo("auto deriving for struct", () => {
     test("is able to derive Eq in empty structs", () => {
       const [a] = performAnalysis(
         `
@@ -2001,9 +2014,11 @@ describe.todo("traits", () => {
     });
   });
 
-  test("fails to derives in self-recursive types when not derivable (nested)", () => {
-    const [a] = performAnalysis(
-      `
+  test.todo(
+    "fails to derives in self-recursive types when not derivable (nested)",
+    () => {
+      const [a] = performAnalysis(
+        `
         type Box<a> { Box(a) }
         extern let take_eq: Fn(a) -> a where a: Eq
 
@@ -2015,12 +2030,13 @@ describe.todo("traits", () => {
 
         pub let example = take_eq(End)
       `,
-    );
+      );
 
-    expect(a.errors).not.toEqual([]);
-  });
+      expect(a.errors).not.toEqual([]);
+    },
+  );
 
-  test("forbid ambiguous instantiations", () => {
+  test.todo("forbid ambiguous instantiations", () => {
     const [a] = performAnalysis(
       `extern let take_default: Fn(a) -> x where a: Default
     extern let default: a where a: Default
@@ -2035,7 +2051,7 @@ describe.todo("traits", () => {
     );
   });
 
-  test("allow non-ambiguos instantiations", () => {
+  test.todo("allow non-ambiguos instantiations", () => {
     // resetTraitsRegistry([
     //   { trait: "Default", moduleName: "Main", typeName: "X" },
     // ]);
@@ -2053,7 +2069,7 @@ describe.todo("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test("allow non-ambiguous instantiations when setting let type", () => {
+  test.todo("allow non-ambiguous instantiations when setting let type", () => {
     // resetTraitsRegistry([
     //   { trait: "Default", moduleName: "Main", typeName: "X" },
     // ]);
@@ -2070,7 +2086,7 @@ describe.todo("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test("repro", () => {
+  test.todo("repro", () => {
     const [a] = performAnalysis(
       `
       type List<a> { Nil, Cons(a, List<a>) }
@@ -2091,7 +2107,7 @@ describe.todo("traits", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(AmbiguousTypeVar);
   });
 
-  test("allow ambiguous type vars in let exprs", () => {
+  test.todo("allow ambiguous type vars in let exprs", () => {
     const [a] = performAnalysis(
       `
       extern type String
@@ -2109,9 +2125,11 @@ describe.todo("traits", () => {
     expect(a.errors).toHaveLength(0);
   });
 
-  test("do not leak allowed instantiated vars when preventing ambiguous vars", () => {
-    const [a] = performAnalysis(
-      `
+  test.todo(
+    "do not leak allowed instantiated vars when preventing ambiguous vars",
+    () => {
+      const [a] = performAnalysis(
+        `
       extern type String
       extern let show: Fn(a) -> String where a: Show
       extern let showable: a where a: Show
@@ -2122,13 +2140,14 @@ describe.todo("traits", () => {
         42
       }
     `,
-    );
+      );
 
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(AmbiguousTypeVar);
-  });
+      expect(a.errors).toHaveLength(1);
+      expect(a.errors[0]?.description).toBeInstanceOf(AmbiguousTypeVar);
+    },
+  );
 
-  test("do not emit ambiguos type error when variable is unbound", () => {
+  test.todo("do not emit ambiguos type error when variable is unbound", () => {
     // resetTraitsRegistry([
     //   { trait: "Default", moduleName: "Main", typeName: "X" },
     // ]);
@@ -2816,7 +2835,10 @@ function getTypes(a: Analysis): Record<string, string> {
     const mono = normalizeResolved(a.getType(decl.binding));
     // TODO scheme
 
-    return [decl.binding.name, typeToString(mono)];
+    return [
+      decl.binding.name,
+      typeToString(mono, a.getResolvedTypeTraits.bind(a)),
+    ];
   });
   return Object.fromEntries(kvs);
 }

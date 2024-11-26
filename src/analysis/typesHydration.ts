@@ -13,7 +13,7 @@ import {
   UntypedModule,
   UntypedTypeDeclaration,
 } from "../parser";
-import { Type, Unifier } from "../type/type";
+import { TraitsMap, Type, Unifier } from "../type";
 import { ResolutionAnalysis } from "./resolution";
 
 export type PolytypeNode = UntypedTypeDeclaration | PolyTypeAst | TypeAst;
@@ -25,11 +25,26 @@ export class TypeAstsHydration {
   public getPolyType(node: PolytypeNode): Type {
     const t = this.polyTypes.get(node);
     if (t === undefined) {
-      throw new Error("[unrechable] polytype not set");
+      throw new Error("[unreachable] polytype not set");
     }
     return t;
   }
 
+  public getAstPolytype(node: PolyTypeAst): [Type, TraitsMap] {
+    const t = this.polyTypes.get(node);
+    if (t === undefined) {
+      throw new Error("[unreachable] polytype not set");
+    }
+
+    const traitsMap = this.traitsMaps.get(node);
+    if (traitsMap === undefined) {
+      throw new Error("[unreachable] polytype not set");
+    }
+
+    return [t, traitsMap];
+  }
+
+  private readonly traitsMaps = new WeakMap<PolyTypeAst, TraitsMap>();
   private readonly polyTypes = new WeakMap<PolytypeNode, Type>();
 
   constructor(
@@ -50,7 +65,8 @@ export class TypeAstsHydration {
         continue;
       }
 
-      const type = this.typeHintToType(declaration.typeHint.mono);
+      const [type, traitsMap] = this.typeHintToType(declaration.typeHint);
+      this.traitsMaps.set(declaration.typeHint, traitsMap);
       this.polyTypes.set(declaration.typeHint, type);
     }
   }
@@ -128,18 +144,32 @@ export class TypeAstsHydration {
     });
   }
 
-  private typeHintToType(typeAst: TypeAst): Type {
+  private typeHintToType(typeAst: PolyTypeAst): [Type, TraitsMap] {
     // Same as before: since we are going to instantiate this type later on,
     // we can have a local instance of Unifier
     const unifier = new Unifier();
 
     const boundTypes = new Map<string, Type>();
+    const boundTraits = new Map<string, string[]>();
+    for (const traitDef of typeAst.where) {
+      boundTraits.set(traitDef.typeVar, traitDef.traits);
+    }
 
-    return this.typeAstToType(typeAst, {
+    const outputTraits: TraitsMap = {};
+
+    const type = this.typeAstToType(typeAst.mono, {
+      boundTraits,
       getFreshVariable: () => unifier.freshVar(),
       getTypeVariable: (name) =>
-        defaultMapGet(boundTypes, name, () => unifier.freshVar()),
+        defaultMapGet(boundTypes, name, () => {
+          const traits = boundTraits.get(name) ?? [];
+          const tvar = unifier.freshVar();
+          outputTraits[tvar.id] = traits;
+          return tvar;
+        }),
     });
+
+    return [type, outputTraits];
   }
 
   private typeAstToType(
@@ -148,6 +178,7 @@ export class TypeAstsHydration {
       getTypeVariable: (name: string, range: Range) => Type;
       getFreshVariable: () => Type;
       onCatchall?: (range: Range) => void;
+      boundTraits?: Map<string, string[]>;
     },
   ): Type {
     switch (typeAst.type) {
