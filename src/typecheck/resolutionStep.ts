@@ -43,7 +43,7 @@ import {
   UnusedExposing,
   UnusedImport,
   UnusedVariable,
-} from "../errors";
+} from "../analysis/errors";
 import { FramesStack } from "./frame";
 
 export type Deps = Record<string, TypedModule>;

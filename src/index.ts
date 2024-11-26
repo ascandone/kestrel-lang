@@ -2,7 +2,7 @@ export * from "./parser";
 export * from "./format";
 export * from "./compiler";
 export * from "./typecheck";
-export * from "./errors";
+export * from "./analysis/errors";
 export type {
   Variant,
   Item,

@@ -33,7 +33,7 @@ import {
   UnusedImport,
   UnusedVariable,
   TraitNotSatified,
-} from "../errors";
+} from "../analysis/errors";
 import { TraitImpl } from "./defaultImports";
 
 test("infer int", () => {

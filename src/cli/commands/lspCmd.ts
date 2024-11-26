@@ -33,7 +33,7 @@ import {
   getInlayHints,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
-import { ErrorInfo, Severity } from "../../errors";
+import { ErrorInfo, Severity } from "../../analysis/errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../format";
 import { Config, readConfig } from "../config";
