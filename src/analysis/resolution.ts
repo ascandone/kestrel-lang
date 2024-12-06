@@ -156,7 +156,7 @@ export class ResolutionAnalysis {
     for (const import_ of [...this.implicitImports, ...this.module.imports]) {
       const dep = this.getDependency(import_.ns);
       if (dep === undefined) {
-        throw new Error("TODO dep not found");
+        return;
       }
       for (const exposedValue of import_.exposing) {
         this.registerExposedValue(dep, import_, exposedValue);

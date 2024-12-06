@@ -5,6 +5,7 @@ import {
   ArityMismatch,
   BadImport,
   CyclicDefinition,
+  CyclicModuleDependency,
   DuplicateDeclaration,
   DuplicateTypeDeclaration,
   ErrorInfo,
@@ -31,6 +32,7 @@ import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 import { dummyRange } from "../typecheck/defaultImports";
 import { unsafeParse } from "../parser";
 import { normalizeResolved, typePPrint as typeToString } from "../type";
+import { compilePackage } from "./package";
 
 describe("infer constants", () => {
   test("int", () => {
@@ -2821,6 +2823,111 @@ describe("prelude", () => {
         y: "Unit",
       }),
     );
+  });
+});
+
+describe("package compilation", () => {
+  test("compile singleton module with no dependencies", () => {
+    const core = compilePackage({
+      package: "kestrel_core",
+      exposedModules: new Set(),
+      packageDependencies: {},
+      packageModules: {
+        Main: unsafeParse(`
+          pub let x = 42
+        `),
+      },
+    });
+
+    expect(core.package).toBe("kestrel_core");
+    expect(core.errors).toEqual([]);
+    expect(getTypes(core.modules.get("Main")!)).toEqual({
+      x: "Int",
+    });
+  });
+
+  test("with dependencies in the same package", () => {
+    const core = compilePackage({
+      package: "kestrel_core",
+      exposedModules: new Set(),
+      packageDependencies: {},
+      packageModules: {
+        Main: unsafeParse(`
+          import Dep.{y}
+          pub let x = y
+        `),
+        Dep: unsafeParse(`
+          pub let y = 42
+        `),
+      },
+    });
+
+    expect(core.errors).toEqual([]);
+
+    expect(getTypes(core.modules.get("Dep")!)).toEqual({
+      y: "Int",
+    });
+
+    expect(getTypes(core.modules.get("Main")!)).toEqual({
+      x: "Int",
+    });
+  });
+
+  test("forbids cyclic deps", () => {
+    const core = compilePackage({
+      package: "kestrel_core",
+      exposedModules: new Set(),
+      packageDependencies: {},
+      packageModules: {
+        A: unsafeParse(`
+          import B.{y}
+          pub let x = y
+        `),
+        B: unsafeParse(`
+          import A.{x}
+          pub let y = x
+        `),
+      },
+    });
+
+    expect(core.errors).toEqual([
+      expect.objectContaining({
+        description: new CyclicModuleDependency(["A", "B"]),
+      }),
+    ]);
+  });
+
+  test("get deps from other packages", () => {
+    const kestrel_core = compilePackage({
+      package: "kestrel_core",
+      exposedModules: new Set(["Core"]),
+      packageDependencies: {},
+      packageModules: {
+        Core: unsafeParse(`
+          pub let y = 0
+        `),
+      },
+    });
+
+    const main = compilePackage({
+      package: "main",
+      exposedModules: new Set(),
+      packageDependencies: {
+        kestrel_core,
+      },
+      packageModules: {
+        Main: unsafeParse(`
+          import Core.{y}
+          pub let x = y
+        `),
+      },
+    });
+
+    expect(main.errors).toEqual([]);
+
+    expect(getTypes(main.modules.get("Main")!)).toEqual({
+      x: "Int",
+    });
   });
 });
 

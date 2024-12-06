@@ -355,7 +355,7 @@ export class Analysis {
       namespace === this.ns ? this : this.options.getDependency?.(namespace);
 
     if (analysis === undefined) {
-      throw new Error("[unreachable] unbound analaysis");
+      throw new Error("[unreachable] unbound analysis");
     }
     return analysis;
   }

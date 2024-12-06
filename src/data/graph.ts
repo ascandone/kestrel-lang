@@ -1,3 +1,5 @@
+import { LinkedList, linkedListToArray } from "./linkedList";
+
 export type GraphKey = string | number;
 
 /** A readonly view of a directed graph */
@@ -195,15 +197,4 @@ export function toRecordGraph(graph: DirectedGraph<string>): RecordGraph {
     rg[graph.toKey(node)] = [...graph.getNeighbours(node)];
   }
   return rg;
-}
-
-type LinkedList<T> = undefined | [head: T, tail: LinkedList<T>];
-function linkedListToArray<T>(linkedList: LinkedList<T>): T[] {
-  const acc: T[] = [];
-  while (linkedList !== undefined) {
-    const [hd, tl] = linkedList;
-    acc.push(hd);
-    linkedList = tl;
-  }
-  return acc;
 }

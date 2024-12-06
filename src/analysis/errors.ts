@@ -354,6 +354,17 @@ export class MissingRequiredFields implements ErrorDescription {
   }
 }
 
+// Project compilation errors
+export class CyclicModuleDependency implements ErrorDescription {
+  constructor(public readonly path: string[]) {}
+  severity: Severity = "error";
+  errorName = "Cyclic module dependency";
+
+  shortDescription() {
+    return `Got a cyclic module dependency: [${this.path.join(", ")}]`;
+  }
+}
+
 export function errorInfoToString(
   src: string,
   { description, range }: ErrorInfo,
