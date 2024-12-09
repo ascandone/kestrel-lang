@@ -16,7 +16,11 @@ import {
   UntypedModule,
   Range,
 } from "../parser";
-import { IdentifierResolution, ResolutionAnalysis } from "./resolution";
+import {
+  IdentifierResolution,
+  NamespaceResolution,
+  ResolutionAnalysis,
+} from "./resolution";
 import {
   Type,
   Instantiator,
@@ -43,7 +47,7 @@ export class Analysis {
 
   private readonly typeAnnotations = new WeakMap<TypedNode, Type>();
 
-  private readonly resolution: ResolutionAnalysis;
+  public readonly resolution: ResolutionAnalysis;
   private readonly typesHydration: TypeAstsHydration;
   private currentDeclarationGroup: UntypedDeclaration[] = [];
   private readonly unifier = new Unifier();
@@ -54,23 +58,13 @@ export class Analysis {
     public readonly module: UntypedModule,
     public readonly options: AnalyseOptions = {},
   ) {
-    const getDependencyResolutionAnalysis = (
-      ns: string,
-    ): ResolutionAnalysis | undefined => {
-      const dep = options.getDependency?.(ns);
-      if (dep === undefined) {
-        return undefined;
-      }
-      return dep.resolution;
-    };
-
     const emitError = this.errors.push.bind(this.errors);
     this.resolution = new ResolutionAnalysis(
       this.package_,
       ns,
       module,
       emitError,
-      getDependencyResolutionAnalysis,
+      options.getDependency,
       options.implicitImports,
     );
     this.typesHydration = new TypeAstsHydration(
@@ -148,15 +142,7 @@ export class Analysis {
         return;
 
       case "constructor": {
-        const analysis =
-          resolution.namespace === this.ns
-            ? this
-            : this.options.getDependency?.(resolution.namespace);
-
-        if (analysis === undefined) {
-          // probably unreachable
-          throw new Error("TODO handle");
-        }
+        const analysis = this.getDependencyByNs(resolution.namespace);
 
         const declarationType = analysis.typesHydration.getPolyType(
           resolution.declaration,
@@ -350,14 +336,13 @@ export class Analysis {
     }
   }
 
-  private getDependencyByNs(namespace: string): Analysis {
-    const analysis =
-      namespace === this.ns ? this : this.options.getDependency?.(namespace);
-
-    if (analysis === undefined) {
-      throw new Error("[unreachable] unbound analysis");
+  private getDependencyByNs(namespace: NamespaceResolution): Analysis {
+    switch (namespace.type) {
+      case "self":
+        return this;
+      case "imported":
+        return namespace.analysis;
     }
-    return analysis;
   }
 
   // Unify wrappers

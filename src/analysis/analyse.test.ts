@@ -1,4 +1,4 @@
-import { test, expect, describe } from "vitest";
+import { test, expect, describe, vi } from "vitest";
 import { AnalyseOptions, Analysis } from "./analyse";
 import {
   AmbiguousTypeVar,
@@ -571,6 +571,35 @@ describe("modules", () => {
 
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
+  });
+
+  test("getDependencies is only fetched once", () => {
+    const [Mod] = performAnalysis(`pub let x = 42`, {
+      namespace: "Mod",
+    });
+
+    const getDependency = vi.fn((ns: string): Analysis => {
+      if (ns === "Mod") {
+        return Mod;
+      }
+
+      throw new Error("Invalid dep");
+    });
+
+    const a = new Analysis(
+      "core",
+      "Main",
+      unsafeParse(`
+      import Mod
+      pub let x1 = Mod.x
+      pub let x2 = Mod.x
+      pub let x3 = Mod.x
+    `),
+      { getDependency },
+    );
+
+    expect(a.errors).toHaveLength(0);
+    expect(getDependency).toHaveBeenCalledTimes(1);
   });
 });
 

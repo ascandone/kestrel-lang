@@ -25,6 +25,7 @@ import {
   UntypedTypeDeclaration,
   UntypedTypeVariant,
 } from "../parser";
+import type { Analysis } from "./analyse";
 
 type LocalScope = Record<string, Binding>;
 
@@ -34,6 +35,10 @@ export type TypeResolution = {
   package: string;
 };
 
+export type NamespaceResolution =
+  | { type: "self" }
+  | { type: "imported"; analysis: Analysis };
+
 export type IdentifierResolution =
   | {
       type: "local-variable";
@@ -42,13 +47,13 @@ export type IdentifierResolution =
   | {
       type: "global-variable";
       declaration: UntypedDeclaration;
-      namespace: string;
+      namespace: NamespaceResolution;
     }
   | {
       type: "constructor";
       variant: UntypedTypeVariant;
       declaration: UntypedTypeDeclaration & { type: "adt" };
-      namespace: string;
+      namespace: NamespaceResolution;
     };
 
 export type ResolvableNode =
@@ -105,24 +110,18 @@ export class ResolutionAnalysis {
     TypeResolution
   >();
 
-  private getDependency: (namespace: string) => ResolutionAnalysis | undefined;
+  private readonly importedModules = new Map<string, Analysis>();
+
   constructor(
     private readonly package_: string,
     private readonly ns: string,
     private readonly module: UntypedModule,
     private readonly emitError: (error: ErrorInfo) => void,
-    getDependency: (namespace: string) => ResolutionAnalysis | undefined = () =>
+    getDependency: (namespace: string) => Analysis | undefined = () =>
       undefined,
     private readonly implicitImports: UntypedImport[] = [],
   ) {
-    this.getDependency = (ns: string) => {
-      if (ns === this.ns) {
-        return this;
-      }
-      return getDependency(ns);
-    };
-
-    this.initImportsResolution();
+    this.initImportsResolution(getDependency);
     this.initTypesResolution();
     this.initDeclarationsResolution();
 
@@ -152,44 +151,56 @@ export class ResolutionAnalysis {
     return this.typesResolutions.get(typeAst);
   }
 
-  private initImportsResolution() {
+  private initImportsResolution(
+    getDependency: (namespace: string) => Analysis | undefined,
+  ) {
     for (const import_ of [...this.implicitImports, ...this.module.imports]) {
-      const dep = this.getDependency(import_.ns);
-      if (dep === undefined) {
-        return;
+      const analysis = getDependency(import_.ns);
+      if (analysis === undefined) {
+        continue;
+        throw new Error("TODO dependency not found: " + import_.ns);
       }
+      this.importedModules.set(import_.ns, analysis);
+
       for (const exposedValue of import_.exposing) {
-        this.registerExposedValue(dep, import_, exposedValue);
+        this.registerExposedValue(analysis, exposedValue);
       }
     }
   }
 
+  private getDependencyByNs(
+    namespace: NamespaceResolution,
+  ): ResolutionAnalysis {
+    switch (namespace.type) {
+      case "self":
+        return this;
+      case "imported":
+        return namespace.analysis.resolution;
+    }
+  }
+
   private registerExposedValue(
-    analysis: ResolutionAnalysis,
-    import_: UntypedImport,
+    analysis: Analysis,
     exposedValue: UntypedExposedValue,
   ) {
     switch (exposedValue.type) {
       case "value": {
-        const declarationLookup = analysis.locallyDefinedDeclarations.get(
-          exposedValue.name,
-        );
+        const declarationLookup =
+          analysis.resolution.locallyDefinedDeclarations.get(exposedValue.name);
         if (declarationLookup === undefined || !declarationLookup.pub) {
           throw new Error("TODO imported value not found");
         }
 
-        // TODO set resolution of imported value
-
         this.importedValues.set(exposedValue.name, {
           type: "global-variable",
           declaration: declarationLookup,
-          namespace: import_.ns,
+          namespace: { type: "imported", analysis },
         });
         break;
       }
 
       case "type": {
-        const declarationLookup = analysis.locallyDefinedTypes.get(
+        const declarationLookup = analysis.resolution.locallyDefinedTypes.get(
           exposedValue.name,
         );
         if (
@@ -200,7 +211,7 @@ export class ResolutionAnalysis {
         }
 
         this.importedTypes.set(declarationLookup.name, [
-          analysis,
+          analysis.resolution,
           declarationLookup,
         ]);
 
@@ -213,7 +224,7 @@ export class ResolutionAnalysis {
               type: "constructor",
               declaration: declarationLookup,
               variant: exposedVariant,
-              namespace: analysis.ns,
+              namespace: { type: "imported", analysis },
             });
           }
         }
@@ -310,6 +321,27 @@ export class ResolutionAnalysis {
     }
   }
 
+  private getImportedModule(
+    namespace: string | undefined,
+  ): NamespaceResolution {
+    switch (namespace) {
+      case this.ns:
+      case undefined:
+        return { type: "self" };
+
+      default: {
+        const analysis = this.importedModules.get(namespace);
+        if (analysis === undefined) {
+          throw new Error("TODO unimported ns");
+        }
+        return {
+          type: "imported",
+          analysis,
+        };
+      }
+    }
+  }
+
   private runNamedTypeResolution(typeAst: TypeAst & { type: "named" }) {
     if (typeAst.namespace === undefined) {
       const importedType = this.importedTypes.get(typeAst.name);
@@ -325,10 +357,9 @@ export class ResolutionAnalysis {
       }
     }
 
-    const resolution = this.getDependency(typeAst.namespace ?? this.ns);
-    if (resolution === undefined) {
-      throw new Error("TODO handle unbound dep");
-    }
+    const namespaceResolution = this.getImportedModule(typeAst.namespace);
+
+    const resolution = this.getDependencyByNs(namespaceResolution);
 
     const localTypeLookup = resolution.locallyDefinedTypes.get(typeAst.name);
     localTypeLookup: if (localTypeLookup !== undefined) {
@@ -548,17 +579,8 @@ export class ResolutionAnalysis {
     }
 
     if (identifier.namespace !== undefined) {
-      const analysis = this.getDependency(identifier.namespace);
-      if (analysis === undefined) {
-        throw new Error("TODO invalid dependency");
-      }
-
-      const resolution = ResolutionAnalysis.identifierResolution(
-        analysis,
-        identifier,
-      );
-
-      return resolution;
+      const namespaceResolution = this.getImportedModule(identifier.namespace);
+      return this.identifierResolution(namespaceResolution, identifier);
     }
 
     // search imported values
@@ -574,15 +596,12 @@ export class ResolutionAnalysis {
       }
     }
 
-    const resolution = ResolutionAnalysis.identifierResolution(
-      this,
-      identifier,
-    );
+    const resolution = this.identifierResolution({ type: "self" }, identifier);
 
     if (
       resolution !== undefined &&
       resolution.type === "global-variable" &&
-      resolution.namespace === this.ns
+      resolution.namespace.type === "self"
     ) {
       defaultMapGet(this.callGraph, this.currentDeclaration, () => []).push(
         resolution.declaration,
@@ -637,16 +656,18 @@ export class ResolutionAnalysis {
     };
   }
 
-  private static identifierResolution(
-    analysis: ResolutionAnalysis,
+  private identifierResolution(
+    namespaceResolution: NamespaceResolution,
     identifier: ResolvableNode,
   ): IdentifierResolution | undefined {
+    const analysis = this.getDependencyByNs(namespaceResolution);
+
     const variantLookup = analysis.locallyDefinedVariants.get(identifier.name);
     if (variantLookup !== undefined) {
       const [declaration, variant] = variantLookup;
       return {
         type: "constructor",
-        namespace: analysis.ns,
+        namespace: namespaceResolution,
         declaration,
         variant,
       };
@@ -659,7 +680,7 @@ export class ResolutionAnalysis {
       return {
         type: "global-variable",
         declaration: globalDeclarationLookup,
-        namespace: analysis.ns,
+        namespace: namespaceResolution,
       };
     }
 
