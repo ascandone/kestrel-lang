@@ -1,7 +1,9 @@
-import { showErrorLine } from "./utils/showErrorLine";
-import { Range } from "./parser";
-import { Type, typeToString } from "./typecheck";
-import { col, withDisabled } from "./utils/colors";
+import { showErrorLine } from "../utils/showErrorLine";
+import { Range } from "../parser";
+import { Type as LegacyType } from "../typecheck/type";
+import { Type, typePPrint } from "../type";
+import { typeToString } from "../typecheck";
+import { col, withDisabled } from "../utils/colors";
 
 export type Severity = "error" | "warning";
 
@@ -43,6 +45,15 @@ export class DuplicateDeclaration implements ErrorDescription {
   }
 }
 
+export class DuplicateTypeDeclaration implements ErrorDescription {
+  constructor(public ident: string) {}
+  severity: Severity = "error";
+  errorName = "Duplicate type declaration";
+  shortDescription() {
+    return `"${this.ident}" was already defined`;
+  }
+}
+
 export class UnboundVariable implements ErrorDescription {
   constructor(public ident: string) {}
   severity: Severity = "error";
@@ -53,7 +64,7 @@ export class UnboundVariable implements ErrorDescription {
 }
 
 export class CyclicDefinition implements ErrorDescription {
-  constructor(public ident: string) {}
+  constructor(public path: string[]) {}
   severity: Severity = "error";
   errorName = "Cyclic definition";
   // TODO better error
@@ -217,12 +228,28 @@ export class TraitNotSatified implements ErrorDescription {
   errorName: string = "Trait not satisfied";
 
   constructor(
-    public readonly type: Type,
+    public readonly type: LegacyType,
     public readonly trait: string,
   ) {}
 
   shortDescription(): string {
     const type = typeToString(this.type);
+    return `Cannot satisfy trait ${this.trait} for type ${type}`;
+  }
+}
+
+export class TraitNotSatified_REWRITE implements ErrorDescription {
+  severity: Severity = "error";
+
+  errorName: string = "Trait not satisfied";
+
+  constructor(
+    public readonly type: Type,
+    public readonly trait: string,
+  ) {}
+
+  shortDescription(): string {
+    const type = typePPrint(this.type);
     return `Cannot satisfy trait ${this.trait} for type ${type}`;
   }
 }
@@ -242,8 +269,8 @@ export class AmbiguousTypeVar implements ErrorDescription {
 
 export class TypeMismatch implements ErrorDescription {
   constructor(
-    public expected: Type,
-    public got: Type,
+    public expected: LegacyType,
+    public got: LegacyType,
   ) {}
 
   errorName = "Type mismatch";
@@ -260,6 +287,33 @@ export class TypeMismatch implements ErrorDescription {
 
     const nsRight =
       qualify && this.got.type === "named" ? `${this.got.moduleName}.` : "";
+
+    return `Expected:  ${nsLeft}${expected}
+     Got:  ${nsRight}${got}
+`;
+  }
+}
+
+export class TypeMismatch_REWRITE implements ErrorDescription {
+  constructor(
+    public expected: Type,
+    public got: Type,
+  ) {}
+
+  errorName = "Type mismatch";
+  severity: Severity = "error";
+  shortDescription(): string {
+    const expected = typePPrint(this.expected);
+    const got = typePPrint(this.got);
+    const qualify = expected === got;
+
+    const nsLeft =
+      qualify && this.expected.tag === "Named"
+        ? `${this.expected.module}.`
+        : "";
+
+    const nsRight =
+      qualify && this.got.tag === "Named" ? `${this.got.module}.` : "";
 
     return `Expected:  ${nsLeft}${expected}
      Got:  ${nsRight}${got}
@@ -297,6 +351,17 @@ export class MissingRequiredFields implements ErrorDescription {
 
     const missingFields = this.fields.map((f) => `'${f}'`).join(", ");
     return `Missing the following fields: ${missingFields} (required on type '${this.type}')`;
+  }
+}
+
+// Project compilation errors
+export class CyclicModuleDependency implements ErrorDescription {
+  constructor(public readonly path: string[]) {}
+  severity: Severity = "error";
+  errorName = "Cyclic module dependency";
+
+  shortDescription() {
+    return `Got a cyclic module dependency: [${this.path.join(", ")}]`;
   }
 }
 
