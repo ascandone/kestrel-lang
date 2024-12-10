@@ -535,8 +535,12 @@ export class ResolutionAnalysis {
         }
         return;
 
-      case "let#":
       case "infix":
+        this.runValuesResolution(expr.left, localScope);
+        this.runValuesResolution(expr.right, localScope);
+        return;
+
+      case "let#":
       case "struct-literal":
       case "field-access":
         throw new Error("TODO resolution on: " + expr.type);
