@@ -1,16 +1,16 @@
-import {
-  TypedBinding,
-  TypedDeclaration,
-  TypedExpr,
-  TypedMatchPattern,
-  TypedModule,
-  TypedTypeDeclaration,
-  TypedTypeVariant,
-} from "../typecheck";
 import { ConcreteType, TVar, Type, resolveType } from "../typecheck/type";
 import * as t from "@babel/types";
 import generate from "@babel/generator";
-import { Binding, ConstLiteral } from "../parser";
+import {
+  Binding,
+  ConstLiteral,
+  UntypedDeclaration,
+  UntypedExpr,
+  UntypedMatchPattern,
+  UntypedModule,
+  UntypedTypeDeclaration,
+  UntypedTypeVariant,
+} from "../parser";
 import { BinaryExpression } from "@babel/types";
 import { optimizeModule } from "./optimize";
 import { exit } from "node:process";
@@ -19,26 +19,27 @@ import {
   AdtReprType,
   TAG_FIELD,
   getAdtReprType,
+  getAdtReprType_REWRITE,
   joinAndExprs,
   sanitizeNamespace,
 } from "./utils";
-import {
-  deriveEqAdt,
-  deriveEqStruct,
-  deriveShowAdt,
-  deriveShowStruct,
-} from "./derive";
+// import {
+//   deriveEqAdt,
+//   deriveEqStruct,
+//   deriveShowAdt,
+//   deriveShowStruct,
+// } from "./derive";
+import { Analysis } from "../analysis";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
 };
 
 export function compile(
-  ns: string,
-  ast: TypedModule,
+  analysis: Analysis,
   options: CompileOptions = {},
 ): string {
-  return new Compiler(ns, options).compile(ast);
+  return new Compiler(analysis, options).compile(analysis.module);
 }
 
 const EQ_IDENTIFIER: t.Identifier = { type: "Identifier", name: "_eq" };
@@ -60,7 +61,7 @@ class Compiler {
   private tailCallIdent: t.Identifier | undefined;
 
   private isTailCall(
-    src: TypedExpr & { type: "application" },
+    src: UntypedExpr & { type: "application" },
     tailPosBinding: Binding<unknown> | undefined,
   ): boolean {
     if (tailPosBinding === undefined) {
@@ -92,8 +93,8 @@ class Compiler {
   }
 
   constructor(
-    private ns: string,
-    private options: CompileOptions,
+    private readonly analysis: Analysis,
+    private readonly options: CompileOptions,
   ) {}
 
   private getCurrentFrame(): Frame {
@@ -105,7 +106,7 @@ class Compiler {
   }
 
   private precomputeValue(
-    expr: TypedExpr,
+    expr: UntypedExpr,
     makeIdent = () => this.makeFreshIdent(),
   ): t.Identifier {
     const jsExpr = this.compileExprAsJsExpr(expr, undefined);
@@ -134,7 +135,7 @@ class Compiler {
   }
 
   private compileExprAsJsStms(
-    src: TypedExpr,
+    src: UntypedExpr,
     tailPosCaller: Binding<unknown> | undefined,
     as: CompilationMode,
   ): void {
@@ -342,7 +343,7 @@ class Compiler {
   }
 
   private compileExprAsJsExpr(
-    src: TypedExpr,
+    src: UntypedExpr,
     tailPosCaller: Binding<unknown> | undefined,
   ): t.Expression {
     switch (src.type) {
@@ -734,7 +735,7 @@ class Compiler {
    * compile a pattern to a list of conditions used to test if `matchedExpr` matches the pattern
    * */
   private compileCheckPatternConditions(
-    pattern: TypedMatchPattern,
+    pattern: UntypedMatchPattern,
     matchedExpr: t.Expression,
   ): t.Expression[] {
     switch (pattern.type) {
@@ -869,7 +870,7 @@ class Compiler {
     }
 
     if (!isFn) {
-      buf.push(sanitizeNamespace(this.ns));
+      buf.push(sanitizeNamespace(this.analysis.ns));
     }
 
     buf.reverse();
@@ -882,7 +883,7 @@ class Compiler {
     return buf.join("$");
   }
 
-  private compileDeclaration(decl: TypedDeclaration): t.Statement[] {
+  private compileDeclaration(decl: UntypedDeclaration): t.Statement[] {
     if (decl.extern) {
       return [];
     }
@@ -898,8 +899,9 @@ class Compiler {
     this.compileExprAsJsStms(decl.value, undefined, {
       type: "assign_var",
       declare: true,
-      ident: makeGlobalIdentifier(this.ns, decl.binding.name),
-      dictParams: findDeclarationDictsParams(decl.binding.$.asType()),
+      ident: makeGlobalIdentifier(this.analysis.ns, decl.binding.name),
+      // dictParams: findDeclarationDictsParams(decl.binding.$.asType()),
+      dictParams: [],
     });
     this.frames.pop();
 
@@ -909,7 +911,7 @@ class Compiler {
   }
 
   private compileVariant(
-    variant: TypedTypeVariant,
+    variant: UntypedTypeVariant,
     index: number,
     repr: AdtReprType,
   ): t.Statement {
@@ -919,7 +921,7 @@ class Compiler {
       declarations: [
         {
           type: "VariableDeclarator",
-          id: makeGlobalIdentifier(this.ns, variant.name),
+          id: makeGlobalIdentifier(this.analysis.ns, variant.name),
           init: makeVariantBody(index, variant.args.length, repr),
         },
       ],
@@ -927,121 +929,121 @@ class Compiler {
   }
 
   private compileAdt(
-    decl: TypedTypeDeclaration & { type: "adt" },
+    decl: UntypedTypeDeclaration & { type: "adt" },
   ): t.Statement[] {
     const buf: t.Statement[] = [];
 
-    if (this.ns !== "Bool" && decl.name !== "Bool") {
+    if (this.analysis.ns !== "Bool" && decl.name !== "Bool") {
       buf.push(
         ...decl.variants.map(
           (d, index): t.Statement =>
-            this.compileVariant(d, index, getAdtReprType(decl)),
+            this.compileVariant(d, index, getAdtReprType_REWRITE(decl)),
         ),
       );
     }
 
-    if (
-      // Bool equality is implemented inside core
-      decl.name !== "Bool" &&
-      this.shouldDeriveTrait("Eq", decl)
-    ) {
-      buf.push({
-        type: "VariableDeclaration",
-        kind: "const",
-        declarations: [
-          {
-            type: "VariableDeclarator",
-            id: {
-              type: "Identifier",
-              name: `Eq_${sanitizeNamespace(this.ns)}$${decl.name}`,
-            },
-            init: deriveEqAdt(decl),
-          },
-        ],
-      });
-    }
+    // if (
+    //   // Bool equality is implemented inside core
+    //   decl.name !== "Bool" &&
+    //   this.shouldDeriveTrait("Eq", decl)
+    // ) {
+    //   buf.push({
+    //     type: "VariableDeclaration",
+    //     kind: "const",
+    //     declarations: [
+    //       {
+    //         type: "VariableDeclarator",
+    //         id: {
+    //           type: "Identifier",
+    //           name: `Eq_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
+    //         },
+    //         init: deriveEqAdt(decl),
+    //       },
+    //     ],
+    //   });
+    // }
 
-    if (
-      // Bool and List show are implemented inside core
-      decl.name !== "Bool" &&
-      decl.name !== "List" &&
-      this.shouldDeriveTrait("Show", decl)
-    ) {
-      buf.push({
-        type: "VariableDeclaration",
-        kind: "const",
-        declarations: [
-          {
-            type: "VariableDeclarator",
-            id: {
-              type: "Identifier",
-              name: `Show_${sanitizeNamespace(this.ns)}$${decl.name}`,
-            },
-            init: deriveShowAdt(decl),
-          },
-        ],
-      });
-    }
+    // if (
+    //   // Bool and List show are implemented inside core
+    //   decl.name !== "Bool" &&
+    //   decl.name !== "List" &&
+    //   this.shouldDeriveTrait("Show", decl)
+    // ) {
+    //   buf.push({
+    //     type: "VariableDeclaration",
+    //     kind: "const",
+    //     declarations: [
+    //       {
+    //         type: "VariableDeclarator",
+    //         id: {
+    //           type: "Identifier",
+    //           name: `Show_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
+    //         },
+    //         init: deriveShowAdt(decl),
+    //       },
+    //     ],
+    //   });
+    // }
 
     return buf;
   }
 
   private compileStruct(
-    decl: TypedTypeDeclaration & { type: "struct" },
+    decl: UntypedTypeDeclaration & { type: "struct" },
   ): t.Statement[] {
     const buf: t.Statement[] = [];
-    if (this.shouldDeriveTrait("Eq", decl)) {
-      buf.push({
-        type: "VariableDeclaration",
-        kind: "const",
-        declarations: [
-          {
-            type: "VariableDeclarator",
-            id: {
-              type: "Identifier",
-              name: `Eq_${sanitizeNamespace(this.ns)}$${decl.name}`,
-            },
-            init: deriveEqStruct(decl),
-          },
-        ],
-      });
-    }
+    // if (this.shouldDeriveTrait("Eq", decl)) {
+    //   buf.push({
+    //     type: "VariableDeclaration",
+    //     kind: "const",
+    //     declarations: [
+    //       {
+    //         type: "VariableDeclarator",
+    //         id: {
+    //           type: "Identifier",
+    //           name: `Eq_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
+    //         },
+    //         init: deriveEqStruct(decl),
+    //       },
+    //     ],
+    //   });
+    // }
 
-    if (this.shouldDeriveTrait("Show", decl)) {
-      buf.push({
-        type: "VariableDeclaration",
-        kind: "const",
-        declarations: [
-          {
-            type: "VariableDeclarator",
-            id: {
-              type: "Identifier",
-              name: `Show_${sanitizeNamespace(this.ns)}$${decl.name}`,
-            },
-            init: deriveShowStruct(decl),
-          },
-        ],
-      });
-    }
+    // if (this.shouldDeriveTrait("Show", decl)) {
+    //   buf.push({
+    //     type: "VariableDeclaration",
+    //     kind: "const",
+    //     declarations: [
+    //       {
+    //         type: "VariableDeclarator",
+    //         id: {
+    //           type: "Identifier",
+    //           name: `Show_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
+    //         },
+    //         init: deriveShowStruct(decl),
+    //       },
+    //     ],
+    //   });
+    // }
 
     return buf;
   }
 
-  compile(src: TypedModule): string {
+  public compile(src: UntypedModule): string {
     const body: t.Statement[] = [];
 
-    for (const decl of src.typeDeclarations) {
-      switch (decl.type) {
-        case "extern":
-          break;
-        case "adt":
-          body.push(...this.compileAdt(decl));
-          break;
-        case "struct":
-          body.push(...this.compileStruct(decl));
-          break;
-      }
-    }
+    // for (const decl of src.typeDeclarations) {
+    //   switch (decl.type) {
+    //     case "extern":
+    //       break;
+    //     case "adt":
+    //       body.push(...this.compileAdt(decl));
+    //       break;
+    //     case "struct":
+    //       body.push(...this.compileStruct(decl));
+    //       break;
+    //   }
+    // }
 
     for (const decl of src.declarations) {
       const outNode = this.compileDeclaration(decl);
@@ -1056,29 +1058,29 @@ class Compiler {
     }).code;
   }
 
-  private shouldDeriveTrait(
-    trait: string,
-    typedDeclaration: TypedTypeDeclaration,
-  ): boolean {
-    if (
-      this.options.allowDeriving !== undefined &&
-      !this.options.allowDeriving.includes(trait)
-    ) {
-      return false;
-    }
+  // private shouldDeriveTrait(
+  //   trait: string,
+  //   typedDeclaration: UntypedTypeDeclaration,
+  // ): boolean {
+  //   if (
+  //     this.options.allowDeriving !== undefined &&
+  //     !this.options.allowDeriving.includes(trait)
+  //   ) {
+  //     return false;
+  //   }
 
-    const deps = TVar.typeImplementsTrait(
-      {
-        type: "named",
-        name: typedDeclaration.name,
-        moduleName: this.ns,
-        args: typedDeclaration.params.map(() => TVar.fresh().asType()),
-      },
-      trait,
-    );
+  //   const deps = TVar.typeImplementsTrait(
+  //     {
+  //       type: "named",
+  //       name: typedDeclaration.name,
+  //       moduleName: this.analysis.ns,
+  //       args: typedDeclaration.params.map(() => TVar.fresh().asType()),
+  //     },
+  //     trait,
+  //   );
 
-    return deps !== undefined;
-  }
+  //   return deps !== undefined;
+  // }
 }
 
 function compileConst(ast: ConstLiteral): t.Expression {
@@ -1229,7 +1231,7 @@ class Frame {
       | {
           type: "let";
           jsPatternName: string;
-          binding: TypedBinding | undefined;
+          binding: Binding | undefined;
         }
       | { type: "fn" },
   ) {}
@@ -1478,7 +1480,7 @@ export type CompileProjectOptions = {
 };
 
 export function compileProject(
-  typedProject: Record<string, TypedModule>,
+  typedProject: Record<string, UntypedModule>,
   {
     entrypoint = defaultEntryPoint,
     externs = {},
@@ -1539,7 +1541,7 @@ function doNotDeclare(as: CompilationMode): CompilationMode {
   return as.type === "assign_var" ? { ...as, declare: false } : as;
 }
 
-function isPrimitiveEq(args: TypedExpr[]): boolean {
+function isPrimitiveEq(args: UntypedExpr[]): boolean {
   const resolvedType = args[0]!.$.resolve();
 
   if (resolvedType.type === "unbound" || resolvedType.value.type === "fn") {
