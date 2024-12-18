@@ -109,7 +109,7 @@ export class TypeAstsHydration {
         return;
 
       case "struct":
-        throw new Error("handle struct types hydration");
+        return;
 
       case "extern":
         return;

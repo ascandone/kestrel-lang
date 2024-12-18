@@ -271,8 +271,13 @@ export class ResolutionAnalysis {
             }
           }
           break;
+
         case "struct":
-          throw new Error("TODO handle struct");
+          for (const field of typeDecl.fields) {
+            this.runTypeAstResolution(field.type_);
+          }
+          break;
+
         case "extern":
           break;
       }

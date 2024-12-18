@@ -30,7 +30,7 @@ import {
 } from "./errors";
 import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 import { dummyRange } from "../typecheck/defaultImports";
-import { unsafeParse } from "../parser";
+import { unsafeParse, Range } from "../parser";
 import { normalizeResolved, typePPrint as typeToString } from "../type";
 import { compilePackage } from "./package";
 
@@ -2223,7 +2223,7 @@ describe("traits", () => {
   });
 });
 
-describe.todo("struct", () => {
+describe("struct", () => {
   test("allow creating types", () => {
     const [a] = performAnalysis(
       `type Person struct { }
@@ -2232,6 +2232,9 @@ describe.todo("struct", () => {
     );
 
     expect(a.errors).toHaveLength(0);
+    expect(getTypes(a)).toEqual({
+      p: "Person",
+    });
   });
 
   test("allow recursive types", () => {
@@ -2246,7 +2249,24 @@ describe.todo("struct", () => {
     expect(a.errors).toHaveLength(0);
   });
 
-  test("allow accessing a type's field", () => {
+  test("forbid using unknown types", () => {
+    const [a, { rangeOf }] = performAnalysis(
+      `
+      type Person struct {
+        name: InvalidType,
+      }
+    `,
+    );
+
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        range: rangeOf("InvalidType"),
+        description: new UnboundType("InvalidType"),
+      },
+    ]);
+  });
+
+  test.todo("allow accessing a type's field", () => {
     const [a] = performAnalysis(
       `
       extern type String
@@ -2268,7 +2288,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("infer type when accessing known field", () => {
+  test.todo("infer type when accessing known field", () => {
     const [a] = performAnalysis(
       `
       extern type String
@@ -2287,7 +2307,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("do not allow invalid field access", () => {
+  test.todo("do not allow invalid field access", () => {
     const [a] = performAnalysis(
       `
       extern type String
@@ -2335,7 +2355,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("forbid unknown field on unbound value", () => {
+  test.todo("forbid unknown field on unbound value", () => {
     const [a] = performAnalysis(`pub let f = fn p { p.invalid_field }`);
 
     expect(a.errors).toHaveLength(1);
@@ -2344,35 +2364,38 @@ describe.todo("struct", () => {
     );
   });
 
-  test("prevent resolution of other modules' fields when import is not (..)", () => {
-    const [Person] = performAnalysis(
-      `
+  test.todo(
+    "prevent resolution of other modules' fields when import is not (..)",
+    () => {
+      const [Person] = performAnalysis(
+        `
       extern type String
       pub(..) type Person struct {
         name: String
       }
     `,
-      { namespace: "Person" },
-    );
+        { namespace: "Person" },
+      );
 
-    const [a] = performAnalysis(
-      `
+      const [a] = performAnalysis(
+        `
       import Person.{Person}
 
       extern pub let x: Person // <- this prevents UnusedExposing err
 
       pub let name = fn p { p.name }
     `,
-      { dependencies: { Person } },
-    );
+        { dependencies: { Person } },
+      );
 
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(InvalidField);
-  });
+      expect(a.errors).toHaveLength(1);
+      expect(a.errors[0]?.description).toBeInstanceOf(InvalidField);
+    },
+  );
 
   test.todo("emit bad import if trying to import(..) private fields");
 
-  test("allow accessing fields in other modules if public", () => {
+  test.todo("allow accessing fields in other modules if public", () => {
     const [Person] = performAnalysis(
       `
       extern type String
@@ -2401,9 +2424,11 @@ describe.todo("struct", () => {
     });
   });
 
-  test("allow accessing fields in same module with qualified field syntax", () => {
-    const [a] = performAnalysis(
-      `
+  test.todo(
+    "allow accessing fields in same module with qualified field syntax",
+    () => {
+      const [a] = performAnalysis(
+        `
         extern type String
         type Person struct {
           name: String
@@ -2413,60 +2438,67 @@ describe.todo("struct", () => {
           p.Person#name
         }
     `,
-    );
+      );
 
-    expect(a.errors).toHaveLength(0);
-    expect(getTypes(a)).toEqual({
-      name: "Fn(Person) -> String",
-    });
-  });
+      expect(a.errors).toHaveLength(0);
+      expect(getTypes(a)).toEqual({
+        name: "Fn(Person) -> String",
+      });
+    },
+  );
 
-  test("emit err when field accessed with qualified syntax is invalid", () => {
-    const [a] = performAnalysis(
-      `
+  test.todo(
+    "emit err when field accessed with qualified syntax is invalid",
+    () => {
+      const [a] = performAnalysis(
+        `
         type Person struct { }
 
         pub let name = fn p {
           p.Person#invalid_field
         }
     `,
-    );
+      );
 
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toEqual(
-      new InvalidField("Person", "invalid_field"),
-    );
-  });
+      expect(a.errors).toHaveLength(1);
+      expect(a.errors[0]?.description).toEqual(
+        new InvalidField("Person", "invalid_field"),
+      );
+    },
+  );
 
-  test("allow accessing fields in other modules with qualified field syntax", () => {
-    const [Person] = performAnalysis(
-      `
+  test.todo(
+    "allow accessing fields in other modules with qualified field syntax",
+    () => {
+      const [Person] = performAnalysis(
+        `
       extern type String
       pub(..) type Person struct {
         name: String
       }
     `,
-      { namespace: "Person" },
-    );
+        { namespace: "Person" },
+      );
 
-    const [a] = performAnalysis(
-      `
+      const [a] = performAnalysis(
+        `
       import Person.{Person}
 
       pub let name = fn p {
         p.Person#name
       }
     `,
-      { dependencies: { Person } },
-    );
+        { dependencies: { Person } },
+      );
 
-    expect(a.errors).toHaveLength(0);
-    expect(getTypes(a)).toEqual({
-      name: "Fn(Person) -> String",
-    });
-  });
+      expect(a.errors).toHaveLength(0);
+      expect(getTypes(a)).toEqual({
+        name: "Fn(Person) -> String",
+      });
+    },
+  );
 
-  test("emit error when struct of qualified field does not exist", () => {
+  test.todo("emit error when struct of qualified field does not exist", () => {
     const [a] = performAnalysis(
       `
       pub let name = fn p {
@@ -2479,7 +2511,7 @@ describe.todo("struct", () => {
     expect(a.errors[0]?.description).toEqual(new UnboundType("InvalidType"));
   });
 
-  test("emit error when qualified field does not exist", () => {
+  test.todo("emit error when qualified field does not exist", () => {
     const [Person] = performAnalysis(
       `
         pub(..) type Person struct {}
@@ -2503,7 +2535,7 @@ describe.todo("struct", () => {
     );
   });
 
-  test("emit error when qualified field is private", () => {
+  test.todo("emit error when qualified field is private", () => {
     const [Person] = performAnalysis(
       `
         extern type Int
@@ -2530,7 +2562,7 @@ describe.todo("struct", () => {
     );
   });
 
-  test("emit InvalidField if trying to access private fields", () => {
+  test.todo("emit InvalidField if trying to access private fields", () => {
     const [Person] = performAnalysis(
       `
       extern type String
@@ -2556,7 +2588,7 @@ describe.todo("struct", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(InvalidField);
   });
 
-  test("allow creating structs", () => {
+  test.todo("allow creating structs", () => {
     const [a] = performAnalysis(
       `
         type X { X }
@@ -2577,7 +2609,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("typecheck params in struct types", () => {
+  test.todo("typecheck params in struct types", () => {
     const [a] = performAnalysis(
       `
         type Person<a, b, c> struct { }
@@ -2592,7 +2624,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("handling params in dot access", () => {
+  test.todo("handling params in dot access", () => {
     const [a] = performAnalysis(
       `
         type Box<a> struct {
@@ -2613,7 +2645,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("inferring params in dot access", () => {
+  test.todo("inferring params in dot access", () => {
     const [a] = performAnalysis(
       `
         type Box<a> struct {
@@ -2630,7 +2662,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("making sure field values are generalized", () => {
+  test.todo("making sure field values are generalized", () => {
     const [a] = performAnalysis(
       `
       extern type Int
@@ -2650,7 +2682,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("handling params in struct definition (phantom types)", () => {
+  test.todo("handling params in struct definition (phantom types)", () => {
     const [a] = performAnalysis(
       `
         type Box<a, b> struct { }
@@ -2665,7 +2697,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("typecheck extra fields", () => {
+  test.todo("typecheck extra fields", () => {
     const [a] = performAnalysis(
       `
         type Struct struct {}
@@ -2686,7 +2718,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("typecheck missing fields", () => {
+  test.todo("typecheck missing fields", () => {
     const [a] = performAnalysis(
       `
         extern type String
@@ -2711,7 +2743,7 @@ describe.todo("struct", () => {
 
   test.todo("prevent from creating structs with private fields");
 
-  test("typecheck fields of wrong type", () => {
+  test.todo("typecheck fields of wrong type", () => {
     const [a] = performAnalysis(
       `
         type X {  }
@@ -2733,9 +2765,11 @@ describe.todo("struct", () => {
     });
   });
 
-  test("handling params in struct definition when fields are bound to params", () => {
-    const [a] = performAnalysis(
-      `
+  test.todo(
+    "handling params in struct definition when fields are bound to params",
+    () => {
+      const [a] = performAnalysis(
+        `
       type Box<a, b> struct {
         a: a,
         b: b,
@@ -2746,15 +2780,16 @@ describe.todo("struct", () => {
         b: 42,
       }
   `,
-    );
+      );
 
-    expect(a.errors).toEqual([]);
-    expect(getTypes(a)).toEqual({
-      box: "Box<String, Int>",
-    });
-  });
+      expect(a.errors).toEqual([]);
+      expect(getTypes(a)).toEqual({
+        box: "Box<String, Int>",
+      });
+    },
+  );
 
-  test("instantiated fresh vars when creating structs", () => {
+  test.todo("instantiated fresh vars when creating structs", () => {
     const [a] = performAnalysis(
       `
       type Box<a> struct { a: a }
@@ -2771,7 +2806,7 @@ describe.todo("struct", () => {
     });
   });
 
-  test("updating a infers the spread arg", () => {
+  test.todo("updating a infers the spread arg", () => {
     const [a] = performAnalysis(
       `
       type Box<a> struct { a: a }
@@ -2791,9 +2826,11 @@ describe.todo("struct", () => {
     });
   });
 
-  test("allow to specify a subset of the fields when update another struct", () => {
-    const [a] = performAnalysis(
-      `
+  test.todo(
+    "allow to specify a subset of the fields when update another struct",
+    () => {
+      const [a] = performAnalysis(
+        `
       type Str<a, b> struct {
         a: a,
         b: b
@@ -2807,10 +2844,11 @@ describe.todo("struct", () => {
       }
       
   `,
-    );
+      );
 
-    expect(a.errors).toEqual([]);
-  });
+      expect(a.errors).toEqual([]);
+    },
+  );
 
   test.todo("namespaced struct names");
 });
@@ -2987,6 +3025,10 @@ type TestAnalyseOptions = {
   dependencies?: Deps;
 } & Omit<AnalyseOptions, "getDependency">;
 
+type AnalysisUtils = {
+  rangeOf(subStr?: string, occurrenceNumber?: number): Range;
+};
+
 function performAnalysis(
   src: string,
   {
@@ -2995,14 +3037,21 @@ function performAnalysis(
     dependencies = {},
     ...opts
   }: TestAnalyseOptions = {},
-): [analysis: Analysis] {
+): [analysis: Analysis, utils: AnalysisUtils] {
   const analysis = new Analysis(package_, namespace, unsafeParse(src), {
     getDependency(ns) {
       return dependencies[ns];
     },
     ...opts,
   });
-  return [analysis];
+  return [
+    analysis,
+    {
+      rangeOf(substr, occurrence) {
+        return rangeOf(src, substr, occurrence);
+      },
+    },
+  ];
 }
 
 // beforeEach(() => {
