@@ -471,6 +471,14 @@ export class Instantiator {
   instantiatePoly(poly: PolyTypeMeta) {
     return this.instantiateFromScheme(poly.$.asType(), poly.scheme);
   }
+
+  instantiate([scheme, mono]: PolyType) {
+    return this.instantiateFromScheme(mono, scheme);
+  }
+}
+
+export function instantiate([scheme, mono]: PolyType): Type {
+  return new Instantiator().instantiateFromScheme(mono, scheme);
 }
 
 export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
