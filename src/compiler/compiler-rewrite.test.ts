@@ -41,7 +41,7 @@ describe("datatype representation", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$x = \`a\`;"`);
   });
 
-  test.skip("represent Bool with booleans", () => {
+  test("represent Bool with booleans", () => {
     const boolModule = typecheckSource(
       "Bool",
       `pub(..) type Bool { True, False }`,
