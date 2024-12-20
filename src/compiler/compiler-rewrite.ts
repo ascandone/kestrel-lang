@@ -433,17 +433,20 @@ class Compiler {
       }
 
       case "identifier": {
-        if (src.resolution === undefined) {
+        const resolution = this.analysis.resolution.resolveIdentifier(src);
+
+        if (resolution === undefined) {
           throw new Error("[unreachable] undefined resolution");
         }
 
-        switch (src.resolution.type) {
+        switch (resolution.type) {
           case "constructor":
             if (
-              src.resolution.declaration.name === "Bool" &&
-              src.resolution.namespace === "Bool"
+              resolution.declaration.name === "Bool" &&
+              resolution.namespace.type === "imported" &&
+              resolution.namespace.analysis.ns === "Bool"
             ) {
-              switch (src.resolution.variant.name) {
+              switch (resolution.variant.name) {
                 case "True":
                   return { type: "BooleanLiteral", value: true };
                 case "False":
@@ -454,16 +457,16 @@ class Compiler {
               }
             }
             return makeGlobalIdentifier(
-              src.resolution.namespace,
-              src.resolution.variant.name,
+              resolution.namespace,
+              resolution.variant.name,
             );
 
           case "local-variable": {
-            const res = this.bindingsJsName.get(src.resolution.binding);
+            const res = this.bindingsJsName.get(resolution.binding);
             if (res === undefined) {
               throw new Error(
                 "[unreachable] undefined resolution for: " +
-                  src.resolution.binding.name,
+                  resolution.binding.name,
               );
             }
             return res;
@@ -471,18 +474,18 @@ class Compiler {
 
           case "global-variable": {
             let ident: t.Identifier;
-            if (src.resolution.declaration.binding.name === "==") {
+            if (resolution.declaration.binding.name === "==") {
               ident = EQ_IDENTIFIER;
             } else {
               ident = makeGlobalIdentifier(
-                src.resolution.namespace,
-                src.resolution.declaration.binding.name,
+                resolution.namespace,
+                resolution.declaration.binding.name,
               );
             }
 
             // TODO what about let exprs?
             const traitArgs = resolvePassedDicts(
-              src.resolution.declaration.binding.$,
+              resolution.declaration.binding.$,
               src.$,
             );
 
