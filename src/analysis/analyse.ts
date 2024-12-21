@@ -115,31 +115,24 @@ export class Analysis {
     // }
   }
 
-  private typecheckResolvedIdentifier(
-    expr: UntypedExpr,
-    resolution: IdentifierResolution,
-  ) {
+  private typecheckResolvedIdentifier(resolution: IdentifierResolution): Type {
     switch (resolution.type) {
       case "global-variable": {
         const isRecursive = this.currentDeclarationGroup.includes(
           resolution.declaration,
         );
         if (isRecursive) {
-          const mono = this.getRawType(resolution.declaration.binding);
-          this.unifyNode(expr, mono);
-          return;
+          return this.getRawType(resolution.declaration.binding);
         }
 
         const analysis = this.getDependencyByNs(resolution.namespace);
 
         const poly = analysis.getType(resolution.declaration.binding);
-        this.unifyNode(expr, this.unifier.instantiate(poly, false));
-        return;
+        return this.unifier.instantiate(poly, false);
       }
 
       case "local-variable":
-        this.unifyNodes(expr, resolution.binding);
-        return;
+        return this.getRawType(resolution.binding);
 
       case "constructor": {
         const analysis = this.getDependencyByNs(resolution.namespace);
@@ -159,10 +152,7 @@ export class Analysis {
                 return: declarationType,
               };
 
-        const mono = this.unifier.instantiate(constructorType, false);
-
-        this.unifyNode(expr, mono);
-        return;
+        return this.unifier.instantiate(constructorType, false);
       }
     }
   }
@@ -188,7 +178,8 @@ export class Analysis {
           return;
         }
 
-        this.typecheckResolvedIdentifier(expr, resolution);
+        const mono = this.typecheckResolvedIdentifier(resolution);
+        this.unifyNode(expr, mono);
         return;
       }
 
@@ -276,8 +267,30 @@ export class Analysis {
         }
         return;
 
+      case "infix": {
+        this.typecheckExpr(expr.left);
+        this.typecheckExpr(expr.right);
+
+        const resolution = this.resolution.resolveIdentifier(expr);
+        if (resolution === undefined) {
+          // error was already emitted during resolution
+          return;
+        }
+
+        this.unify(
+          this.typecheckResolvedIdentifier(resolution),
+          {
+            tag: "Fn",
+            args: [this.getRawType(expr.left), this.getRawType(expr.right)],
+            return: this.getRawType(expr),
+          },
+          expr.range,
+        );
+
+        return;
+      }
+
       case "let#":
-      case "infix":
       case "struct-literal":
       case "field-access":
         throw new Error("TODO handle typecheck of: " + expr.type);

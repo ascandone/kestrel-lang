@@ -1079,6 +1079,22 @@ describe("functions and application", () => {
     });
   });
 
+  test("typecheck infix", () => {
+    const [a] = performAnalysis(
+      `
+    extern type Int
+    extern type Bool
+    extern let (<): Fn(Int, Int) -> Bool
+    pub let f = fn x, y { x < y }
+  `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(Int, Int) -> Bool",
+    });
+  });
+
   test("typechecks generic values", () => {
     const [a] = performAnalysis(
       `

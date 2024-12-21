@@ -58,6 +58,7 @@ export type IdentifierResolution =
 
 export type ResolvableNode =
   | (UntypedExpr & { type: "identifier" })
+  | (UntypedExpr & { type: "infix" })
   | (UntypedMatchPattern & { type: "constructor" });
 
 export class ResolutionAnalysis {
@@ -411,6 +412,43 @@ export class ResolutionAnalysis {
     }
   }
 
+  private runIdentifierResolution(
+    expr: ResolvableNode,
+    localScope: LocalScope,
+  ) {
+    const name = (() => {
+      switch (expr.type) {
+        case "identifier":
+        case "constructor":
+          return expr.name;
+        case "infix":
+          return expr.operator;
+      }
+    })();
+
+    const resolution = this.evaluateResolution(name, expr, localScope);
+    if (resolution === undefined) {
+      this.emitError({
+        range: expr.range,
+        description: new UnboundVariable(name),
+      });
+      return;
+    }
+
+    this.identifiersResolutions.set(expr, resolution);
+    switch (resolution.type) {
+      case "local-variable":
+        this.unusedBindings.delete(resolution.binding);
+        break;
+
+      case "global-variable":
+        this.unusedBindings.delete(resolution.declaration.binding);
+        break;
+      case "constructor":
+        break;
+    }
+  }
+
   private runValuesResolution(
     expr: UntypedExpr,
     localScope: LocalScope,
@@ -424,31 +462,15 @@ export class ResolutionAnalysis {
         this.runValuesResolution(expr.inner, localScope);
         return;
 
-      case "identifier": {
-        const resolution = this.evaluateResolution(expr, localScope);
-        if (resolution === undefined) {
-          this.emitError({
-            range: expr.range,
-            description: new UnboundVariable(expr.name),
-          });
-          return;
-        }
-
-        this.identifiersResolutions.set(expr, resolution);
-        switch (resolution.type) {
-          case "local-variable":
-            this.unusedBindings.delete(resolution.binding);
-            break;
-
-          case "global-variable":
-            this.unusedBindings.delete(resolution.declaration.binding);
-            break;
-          case "constructor":
-            break;
-        }
-
+      case "identifier":
+        this.runIdentifierResolution(expr, localScope);
         return;
-      }
+
+      case "infix":
+        this.runIdentifierResolution(expr, localScope);
+        this.runValuesResolution(expr.left, localScope);
+        this.runValuesResolution(expr.right, localScope);
+        return;
 
       case "fn": {
         for (const arg of expr.params) {
@@ -536,7 +558,6 @@ export class ResolutionAnalysis {
         return;
 
       case "let#":
-      case "infix":
       case "struct-literal":
       case "field-access":
         throw new Error("TODO resolution on: " + expr.type);
@@ -555,7 +576,7 @@ export class ResolutionAnalysis {
         return;
 
       case "constructor": {
-        const res = this.evaluateResolution(pattern);
+        const res = this.evaluateResolution(pattern.name, pattern);
         if (res === undefined) {
           this.emitError({
             range: pattern.range,
@@ -574,6 +595,7 @@ export class ResolutionAnalysis {
   }
 
   private evaluateResolution(
+    name: string,
     identifier: ResolvableNode,
     localScope: LocalScope = {},
   ): IdentifierResolution | undefined {
@@ -583,25 +605,25 @@ export class ResolutionAnalysis {
       );
     }
 
-    if (identifier.namespace !== undefined) {
+    if (identifier.type !== "infix" && identifier.namespace !== undefined) {
       const namespaceResolution = this.getImportedModule(identifier.namespace);
-      return this.identifierResolution(namespaceResolution, identifier);
+      return this.identifierResolution(name, namespaceResolution);
     }
 
     // search imported values
-    const importedValueLookup = this.importedValues.get(identifier.name);
+    const importedValueLookup = this.importedValues.get(name);
     if (importedValueLookup !== undefined) {
       return importedValueLookup;
     }
 
     if (identifier.type === "identifier") {
-      const localLookup = localScope[identifier.name];
+      const localLookup = localScope[name];
       if (localLookup !== undefined) {
         return { type: "local-variable", binding: localLookup };
       }
     }
 
-    const resolution = this.identifierResolution({ type: "self" }, identifier);
+    const resolution = this.identifierResolution(name, { type: "self" });
 
     if (
       resolution !== undefined &&
@@ -662,12 +684,12 @@ export class ResolutionAnalysis {
   }
 
   private identifierResolution(
+    name: string,
     namespaceResolution: NamespaceResolution,
-    identifier: ResolvableNode,
   ): IdentifierResolution | undefined {
     const analysis = this.getDependencyByNs(namespaceResolution);
 
-    const variantLookup = analysis.locallyDefinedVariants.get(identifier.name);
+    const variantLookup = analysis.locallyDefinedVariants.get(name);
     if (variantLookup !== undefined) {
       const [declaration, variant] = variantLookup;
       return {
@@ -678,9 +700,8 @@ export class ResolutionAnalysis {
       };
     }
 
-    const globalDeclarationLookup = analysis.locallyDefinedDeclarations.get(
-      identifier.name,
-    );
+    const globalDeclarationLookup =
+      analysis.locallyDefinedDeclarations.get(name);
     if (globalDeclarationLookup !== undefined) {
       return {
         type: "global-variable",
