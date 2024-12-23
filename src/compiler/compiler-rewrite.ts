@@ -1,4 +1,5 @@
-import { ConcreteType, TVar, Type, resolveType } from "../typecheck/type";
+import { ConcreteType, TVar, resolveType } from "../typecheck/type";
+import { Type } from "../type/type";
 import * as t from "@babel/types";
 import generate from "@babel/generator";
 import {
@@ -367,14 +368,40 @@ class Compiler {
       }
 
       case "infix": {
+        const leftArgType = this.analysis.getType(src.left);
+
+        if (src.operator === "==" && isPrimitiveEq(leftArgType)) {
+          return {
+            type: "BinaryExpression",
+            operator: "===",
+            left: this.compileExprAsJsExpr(src.left, undefined),
+            right: this.compileExprAsJsExpr(src.right, undefined),
+          };
+        }
+
         const infixName = toJsInfix(src.operator);
         if (infixName !== undefined) {
-          return {
+          const infixExpr: t.Expression = {
             type: "BinaryExpression",
             operator: infixName,
             left: this.compileExprAsJsExpr(src.left, undefined),
             right: this.compileExprAsJsExpr(src.right, undefined),
           };
+
+          if (infixName === "/") {
+            return {
+              type: "CallExpression",
+              callee: {
+                type: "MemberExpression",
+                object: { type: "Identifier", name: "Math" },
+                computed: false,
+                property: { type: "Identifier", name: "floor" },
+              },
+              arguments: [infixExpr],
+            };
+          }
+
+          return infixExpr;
         }
 
         const infixLogicalName = toJsInfixLogical(src.operator);
@@ -392,50 +419,6 @@ class Compiler {
 
       case "application": {
         if (src.caller.type === "identifier") {
-          if (src.caller.name === "==" && isPrimitiveEq(src.args)) {
-            return {
-              type: "BinaryExpression",
-              operator: "===",
-              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
-              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
-            };
-          }
-
-          const infixName = toJsInfix(src.caller.name);
-          if (infixName !== undefined) {
-            const infixExpr: t.Expression = {
-              type: "BinaryExpression",
-              operator: infixName,
-              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
-              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
-            };
-
-            if (infixName === "/") {
-              return {
-                type: "CallExpression",
-                callee: {
-                  type: "MemberExpression",
-                  object: { type: "Identifier", name: "Math" },
-                  computed: false,
-                  property: { type: "Identifier", name: "floor" },
-                },
-                arguments: [infixExpr],
-              };
-            }
-
-            return infixExpr;
-          }
-
-          const infixLogicalName = toJsInfixLogical(src.caller.name);
-          if (infixLogicalName !== undefined) {
-            return {
-              type: "LogicalExpression",
-              operator: infixLogicalName,
-              left: this.compileExprAsJsExpr(src.args[0]!, undefined),
-              right: this.compileExprAsJsExpr(src.args[1]!, undefined),
-            };
-          }
-
           const prefixName = toJsPrefix(src.caller.name);
           if (prefixName !== undefined) {
             return {
@@ -1568,38 +1551,30 @@ function doNotDeclare(as: CompilationMode): CompilationMode {
   return as.type === "assign_var" ? { ...as, declare: false } : as;
 }
 
-function isPrimitiveEq(args: UntypedExpr[]): boolean {
-  const resolvedType = args[0]!.$.resolve();
+const KESTREL_CORE = "kestrel_core";
 
-  if (resolvedType.type === "unbound" || resolvedType.value.type === "fn") {
+function isPrimitiveEq(leftArgType: Type): boolean {
+  if (
+    leftArgType.tag === "Var" ||
+    leftArgType.tag === "Fn" ||
+    leftArgType.package !== KESTREL_CORE
+  ) {
     return false;
   }
 
-  if (
-    resolvedType.value.name === "Int" &&
-    resolvedType.value.moduleName === "Int"
-  ) {
+  if (leftArgType.name === "Int" && leftArgType.module === "Int") {
     return true;
   }
 
-  if (
-    resolvedType.value.name === "Float" &&
-    resolvedType.value.moduleName === "Float"
-  ) {
+  if (leftArgType.name === "Float" && leftArgType.module === "Float") {
     return true;
   }
 
-  if (
-    resolvedType.value.name === "String" &&
-    resolvedType.value.moduleName === "String"
-  ) {
+  if (leftArgType.name === "String" && leftArgType.module === "String") {
     return true;
   }
 
-  if (
-    resolvedType.value.name === "Char" &&
-    resolvedType.value.moduleName === "Char"
-  ) {
+  if (leftArgType.name === "Char" && leftArgType.module === "Char") {
     return true;
   }
 
