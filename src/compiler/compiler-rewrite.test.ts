@@ -148,12 +148,12 @@ describe("intrinsics", () => {
   });
 });
 
-test.todo("nested namespaces", () => {
+test("nested namespaces", () => {
   const out = compileSrc(`pub let x = 42`, { ns: "Json/Encode" });
   expect(out).toMatchInlineSnapshot(`"const Json$Encode$x = 42;"`);
 });
 
-test.todo("refer to previously defined idents", () => {
+test("refer to previously defined idents", () => {
   const out = compileSrc(`
       let x = 0
       let y = x
@@ -181,8 +181,8 @@ test.todo("function calls with args", () => {
   expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f(1, 2);"`);
 });
 
-describe.todo("let expressions", () => {
-  test("let expressions", () => {
+describe("let expressions", () => {
+  test.skip("let expressions", () => {
     const out = compileSrc(`
       let x = {
           let local = 0;
@@ -196,7 +196,7 @@ describe.todo("let expressions", () => {
       `);
   });
 
-  test("let expressions with multiple vars", () => {
+  test.skip("let expressions with multiple vars", () => {
     const out = compileSrc(`
         let x = {
           let local1 = 0;
@@ -212,7 +212,7 @@ describe.todo("let expressions", () => {
       `);
   });
 
-  test("nested let exprs", () => {
+  test.skip("nested let exprs", () => {
     const out = compileSrc(`
         let x = {
           let local = {
@@ -230,7 +230,7 @@ describe.todo("let expressions", () => {
       `);
   });
 
-  test("shadowed let exprs", () => {
+  test.skip("shadowed let exprs", () => {
     const out = compileSrc(`
         let x = {
           let a = 0;
@@ -246,7 +246,7 @@ describe.todo("let expressions", () => {
         `);
   });
 
-  test("two let as fn args, shadowing", () => {
+  test.skip("two let as fn args, shadowing", () => {
     const out = compileSrc(`
       extern let f: Fn(a, a) -> a
       let x = f(
@@ -262,7 +262,7 @@ describe.todo("let expressions", () => {
     `);
   });
 
-  test("let inside scope", () => {
+  test.skip("let inside scope", () => {
     const out = compileSrc(`
   let f = fn {
     let x = 0;
@@ -280,7 +280,7 @@ describe.todo("let expressions", () => {
   `);
   });
 
-  test("let inside arg of a function", () => {
+  test.skip("let inside arg of a function", () => {
     const out = compileSrc(`
   extern let f: Fn(a) -> a
   let a = f({
@@ -295,7 +295,7 @@ describe.todo("let expressions", () => {
   `);
   });
 
-  test("function with a scoped identified as caller", () => {
+  test.skip("function with a scoped identified as caller", () => {
     const out = compileSrc(`
   let x = {
     let f = fn { 0 };
@@ -309,7 +309,7 @@ describe.todo("let expressions", () => {
     `);
   });
 
-  test("infix exprs producing statements", () => {
+  test.skip("infix exprs producing statements", () => {
     const out = compileSrc(`
     let a = { let x = 0; x } + { let x = 1; x }
   `);

@@ -31,6 +31,7 @@ import {
 //   deriveShowStruct,
 // } from "./derive";
 import { Analysis } from "../analysis";
+import { NamespaceResolution } from "../analysis/resolution";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -447,7 +448,7 @@ class Compiler {
         }
 
         switch (resolution.type) {
-          case "constructor":
+          case "constructor": {
             if (
               resolution.declaration.name === "Bool" &&
               resolution.namespace.type === "imported" &&
@@ -463,10 +464,12 @@ class Compiler {
                   throw new Error("[unreachable] invalid boolean constructor");
               }
             }
+
             return makeGlobalIdentifier(
-              resolution.namespace,
+              this.namespaceToString(resolution.namespace),
               resolution.variant.name,
             );
+          }
 
           case "local-variable": {
             const res = this.bindingsJsName.get(resolution.binding);
@@ -485,20 +488,21 @@ class Compiler {
               ident = EQ_IDENTIFIER;
             } else {
               ident = makeGlobalIdentifier(
-                resolution.namespace,
+                this.namespaceToString(resolution.namespace),
                 resolution.declaration.binding.name,
               );
             }
 
             // TODO what about let exprs?
-            const traitArgs = resolvePassedDicts(
-              resolution.declaration.binding.$,
-              src.$,
-            );
+            // const traitArgs = resolvePassedDicts(
+            //   resolution.declaration.binding.$,
+            //   src.$,
+            // );
 
-            if (traitArgs.length === 0) {
-              return ident;
-            }
+            return ident;
+            // if (traitArgs.length === 0) {
+            //   return ident;
+            // }
 
             return {
               type: "CallExpression",
@@ -738,6 +742,15 @@ class Compiler {
           property: { type: "Identifier", name: src.field.name },
           computed: false,
         };
+    }
+  }
+
+  private namespaceToString(resolution: NamespaceResolution): string {
+    switch (resolution.type) {
+      case "self":
+        return this.analysis.ns;
+      case "imported":
+        return resolution.analysis.ns;
     }
   }
 
