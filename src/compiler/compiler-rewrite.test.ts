@@ -67,41 +67,41 @@ describe("datatype representation", () => {
   test.todo("represent Unit as null");
 });
 
-describe.skip("intrinsics", () => {
-  test.skip("compile + of ints", () => {
+describe("intrinsics", () => {
+  test("compile + of ints", () => {
     const out = compileSrc(`pub let x = 1 + 2`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = 1 + 2;"`);
   });
 
-  test.skip("compile * of ints", () => {
+  test("compile * of ints", () => {
     const out = compileSrc(`pub let x = 1 * 2`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = 1 * 2;"`);
   });
 
-  test.skip("strings concat", () => {
+  test("strings concat", () => {
     const out = compileSrc(`let x = "a" ++ "b"`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = \`a\` + \`b\`;"`);
   });
 
-  test.skip("boolean negation", () => {
+  test("boolean negation", () => {
     const out = compileSrc(`let x = fn b { !b }`);
 
     expect(out).toMatchInlineSnapshot(`"const Main$x = b => !b;"`);
   });
 
-  test.skip("infix &&", () => {
+  test("infix &&", () => {
     const out = compileSrc(`let x = fn a, b { a && b }`);
 
     expect(out).toMatchInlineSnapshot(`"const Main$x = (a, b) => a && b;"`);
   });
 
-  test.skip("infix ||", () => {
+  test("infix ||", () => {
     const out = compileSrc(`let x = fn a, b { a || b }`);
 
     expect(out).toMatchInlineSnapshot(`"const Main$x = (a, b) => a || b;"`);
   });
 
-  test.skip("boolean negation and && prec", () => {
+  test("boolean negation and && prec", () => {
     const out = compileSrc(`let x = fn t, f { !(t && f)}`);
 
     expect(out).toMatchInlineSnapshot(`
