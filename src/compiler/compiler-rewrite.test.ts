@@ -109,32 +109,37 @@ describe("intrinsics", () => {
     `);
   });
 
-  test.skip("compile == of ints", () => {
+  test("compile == of ints", () => {
     const out = compileSrc(`pub let x = 1 == 2`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = 1 === 2;"`);
   });
 
-  test.skip("compile %", () => {
+  test("compile %", () => {
     const out = compileSrc(`pub let x = 3 % 2`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = 3 % 2;"`);
   });
 
-  test.skip("compile / (integer division)", () => {
+  test("compile !", () => {
+    const out = compileSrc(`pub let x = fn a { !a }`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = a => !a;"`);
+  });
+
+  test("compile / (integer division)", () => {
     const out = compileSrc(`pub let x = 3 / 2`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = Math.floor(3 / 2);"`);
   });
 
-  test.skip("precedence between * and +", () => {
+  test("precedence between * and +", () => {
     const out = compileSrc(`pub let x = (1 + 2) * 3`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = (1 + 2) * 3;"`);
   });
 
-  test.skip("precedence between * and + (2)", () => {
+  test("precedence between * and + (2)", () => {
     const out = compileSrc(`pub let x = 1 + 2 * 3`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = 1 + 2 * 3;"`);
   });
 
-  test.skip("math expr should have same semantics as js", () => {
+  test("math expr should have same semantics as js", () => {
     const expr = "2 * 3 + 4";
     const compiled = compileSrc(`pub let x = ${expr}`);
 
