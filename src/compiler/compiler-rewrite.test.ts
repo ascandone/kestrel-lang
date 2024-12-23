@@ -164,7 +164,7 @@ test("refer to previously defined idents", () => {
     `);
 });
 
-test.todo("function calls with no args", () => {
+test("function calls with no args", () => {
   const out = compileSrc(`
       extern let f: Fn() -> a
       let y = f()
@@ -172,7 +172,7 @@ test.todo("function calls with no args", () => {
   expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f();"`);
 });
 
-test.todo("function calls with args", () => {
+test("function calls with args", () => {
   const out = compileSrc(`
       extern let f: Fn(a, a) -> a
       let y = f(1, 2)
@@ -322,7 +322,7 @@ describe("let expressions", () => {
   });
 });
 
-describe.todo("lambda expressions", () => {
+describe("lambda expressions", () => {
   test("toplevel fn without params", () => {
     const out = compileSrc(`
     let f = fn { 42 }
@@ -375,7 +375,7 @@ describe.todo("lambda expressions", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$a = (() => 42)();"`);
   });
 
-  test("(let) closures", () => {
+  test.skip("(let) closures", () => {
     const out = compileSrc(`
     let a = {
       let captured = 42;
@@ -401,7 +401,7 @@ describe.todo("lambda expressions", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$a = () => () => 100;"`);
   });
 
-  test("recursion in closures", () => {
+  test.skip("recursion in closures", () => {
     const out = compileSrc(`
     let f = {
       let x = fn { fn { x() } };
@@ -431,7 +431,7 @@ describe.todo("lambda expressions", () => {
     );
   });
 
-  test("do not let GEN values be shadowed", () => {
+  test.skip("do not let GEN values be shadowed", () => {
     const out = compileSrc(`
       type Box<a> { Box(a) }
       let x = fn Box(a) {
