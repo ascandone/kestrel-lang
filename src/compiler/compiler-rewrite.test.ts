@@ -447,7 +447,7 @@ describe("lambda expressions", () => {
   });
 });
 
-describe.todo("if expressions", () => {
+describe("if expressions", () => {
   test("if expression", () => {
     const out = compileSrc(`
   let x =
@@ -522,7 +522,7 @@ describe.todo("if expressions", () => {
     `);
   });
 
-  test("let expr inside if condition", () => {
+  test.todo("let expr inside if condition", () => {
     const out = compileSrc(`
     let x = if { let a = 0; a == 1 } {
         "a"
@@ -542,7 +542,7 @@ describe.todo("if expressions", () => {
     `);
   });
 
-  test("let expr inside if branch", () => {
+  test.todo("let expr inside if branch", () => {
     const out = compileSrc(`
     let x = if 0 {
       let y = 100;  
