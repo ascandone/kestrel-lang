@@ -604,7 +604,7 @@ describe("if expressions", () => {
   });
 });
 
-describe.todo("list literal", () => {
+describe("list literal", () => {
   test("compile empty list", () => {
     const out = compileSrc(`let x = []`);
     expect(out).toMatchInlineSnapshot(`
@@ -626,7 +626,7 @@ describe.todo("list literal", () => {
     `);
   });
 
-  test("compile list that wraps statements", () => {
+  test.skip("compile list that wraps statements", () => {
     const out = compileSrc(`let x = [{ let loc = 42; loc }]`);
     expect(out).toMatchInlineSnapshot(`
       "const Main$x$loc = 42;
