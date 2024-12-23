@@ -366,6 +366,30 @@ class Compiler {
         return ident;
       }
 
+      case "infix": {
+        const infixName = toJsInfix(src.operator);
+        if (infixName !== undefined) {
+          return {
+            type: "BinaryExpression",
+            operator: infixName,
+            left: this.compileExprAsJsExpr(src.left, undefined),
+            right: this.compileExprAsJsExpr(src.right, undefined),
+          };
+        }
+
+        const infixLogicalName = toJsInfixLogical(src.operator);
+        if (infixLogicalName !== undefined) {
+          return {
+            type: "LogicalExpression",
+            operator: infixLogicalName,
+            left: this.compileExprAsJsExpr(src.left, undefined),
+            right: this.compileExprAsJsExpr(src.right, undefined),
+          };
+        }
+
+        throw new Error("Invalid infix: " + src.operator);
+      }
+
       case "application": {
         if (src.caller.type === "identifier") {
           if (src.caller.name === "==" && isPrimitiveEq(src.args)) {
