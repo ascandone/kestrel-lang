@@ -1059,18 +1059,18 @@ class Compiler {
   public compile(src: UntypedModule): string {
     const body: t.Statement[] = [];
 
-    // for (const decl of src.typeDeclarations) {
-    //   switch (decl.type) {
-    //     case "extern":
-    //       break;
-    //     case "adt":
-    //       body.push(...this.compileAdt(decl));
-    //       break;
-    //     case "struct":
-    //       body.push(...this.compileStruct(decl));
-    //       break;
-    //   }
-    // }
+    for (const decl of src.typeDeclarations) {
+      switch (decl.type) {
+        case "extern":
+          break;
+        case "adt":
+          body.push(...this.compileAdt(decl));
+          break;
+        case "struct":
+          body.push(...this.compileStruct(decl));
+          break;
+      }
+    }
 
     for (const decl of src.declarations) {
       const outNode = this.compileDeclaration(decl);
