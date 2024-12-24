@@ -1310,7 +1310,7 @@ describe.todo("modules", () => {
   });
 });
 
-describe.todo("pattern matching", () => {
+describe("pattern matching", () => {
   test("pattern matching an enum repr", () => {
     const out = compileSrc(`
     type T {
@@ -1700,7 +1700,7 @@ describe.todo("pattern matching", () => {
     `);
   });
 
-  test("compiling let match", () => {
+  test.skip("compiling let match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1719,7 +1719,7 @@ describe.todo("pattern matching", () => {
     `);
   });
 
-  test("compiling let within let match", () => {
+  test.skip("compiling let within let match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1742,7 +1742,7 @@ describe.todo("pattern matching", () => {
     `);
   });
 
-  test("compiling nested let match", () => {
+  test.skip("compiling nested let match", () => {
     const out = compileSrc(`
     type Pair { Pair(Int, Int) }
 
