@@ -145,6 +145,9 @@ class Compiler {
       case "syntax-err":
         throw new Error("[unreachable]");
 
+      case "block":
+        return this.compileExprAsJsStms(src.inner, tailPosCaller, as);
+
       case "if": {
         if (as.type === "assign_var" && as.declare) {
           this.statementsBuf.push({
@@ -351,6 +354,9 @@ class Compiler {
     switch (src.type) {
       case "syntax-err":
         throw new Error("[unreachable]");
+
+      case "block":
+        return this.compileExprAsJsExpr(src.inner, tailPosCaller);
 
       case "constant":
         return compileConst(src.value);
@@ -773,19 +779,17 @@ class Compiler {
       }
 
       case "constructor": {
-        if (
-          pattern.resolution === undefined ||
-          pattern.resolution.type !== "constructor"
-        ) {
+        const resolution = this.analysis.resolution.resolveIdentifier(pattern);
+
+        if (resolution === undefined || resolution.type !== "constructor") {
           throw new Error("[unreachable] invalid pattern resolution");
         }
 
-        if (
-          pattern.resolution.namespace === "Bool" &&
-          pattern.resolution.declaration.name === "Bool"
-        ) {
+        const namespace = this.namespaceToString(resolution.namespace);
+
+        if (namespace === "Bool" && resolution.declaration.name === "Bool") {
           return [
-            pattern.resolution.variant.name === "True"
+            resolution.variant.name === "True"
               ? matchedExpr
               : {
                   type: "UnaryExpression",
@@ -796,15 +800,15 @@ class Compiler {
           ];
         }
 
-        const variantName = pattern.resolution.variant.name;
-        const index = pattern.resolution.declaration.variants.findIndex(
+        const variantName = resolution.variant.name;
+        const index = resolution.declaration.variants.findIndex(
           (variant) => variant.name === variantName,
         );
         if (index === -1) {
           throw new Error("[unreachable] variant not found in declaration");
         }
 
-        const repr = getAdtReprType(pattern.resolution.declaration);
+        const repr = getAdtReprType(resolution.declaration);
         const eqLeftSide: t.Expression = (() => {
           switch (repr) {
             case "enum":
@@ -822,7 +826,7 @@ class Compiler {
         })();
 
         const singleVariantDeclaration =
-          pattern.resolution.declaration.variants.length === 1;
+          resolution.declaration.variants.length === 1;
 
         return [
           ...(singleVariantDeclaration

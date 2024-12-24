@@ -182,7 +182,7 @@ test("function calls with args", () => {
 });
 
 describe("let expressions", () => {
-  test.skip("let expressions", () => {
+  test("let expressions", () => {
     const out = compileSrc(`
       let x = {
           let local = 0;
@@ -196,7 +196,7 @@ describe("let expressions", () => {
       `);
   });
 
-  test.skip("let expressions with multiple vars", () => {
+  test("let expressions with multiple vars", () => {
     const out = compileSrc(`
         let x = {
           let local1 = 0;
@@ -212,7 +212,7 @@ describe("let expressions", () => {
       `);
   });
 
-  test.skip("nested let exprs", () => {
+  test("nested let exprs", () => {
     const out = compileSrc(`
         let x = {
           let local = {
@@ -230,7 +230,7 @@ describe("let expressions", () => {
       `);
   });
 
-  test.skip("shadowed let exprs", () => {
+  test("shadowed let exprs", () => {
     const out = compileSrc(`
         let x = {
           let a = 0;
@@ -246,7 +246,7 @@ describe("let expressions", () => {
         `);
   });
 
-  test.skip("two let as fn args, shadowing", () => {
+  test("two let as fn args, shadowing", () => {
     const out = compileSrc(`
       extern let f: Fn(a, a) -> a
       let x = f(
@@ -262,7 +262,7 @@ describe("let expressions", () => {
     `);
   });
 
-  test.skip("let inside scope", () => {
+  test("let inside scope", () => {
     const out = compileSrc(`
   let f = fn {
     let x = 0;
@@ -280,7 +280,7 @@ describe("let expressions", () => {
   `);
   });
 
-  test.skip("let inside arg of a function", () => {
+  test("let inside arg of a function", () => {
     const out = compileSrc(`
   extern let f: Fn(a) -> a
   let a = f({
@@ -295,7 +295,7 @@ describe("let expressions", () => {
   `);
   });
 
-  test.skip("function with a scoped identified as caller", () => {
+  test("function with a scoped identified as caller", () => {
     const out = compileSrc(`
   let x = {
     let f = fn { 0 };
@@ -309,7 +309,7 @@ describe("let expressions", () => {
     `);
   });
 
-  test.skip("infix exprs producing statements", () => {
+  test("infix exprs producing statements", () => {
     const out = compileSrc(`
     let a = { let x = 0; x } + { let x = 1; x }
   `);
@@ -375,7 +375,7 @@ describe("lambda expressions", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$a = (() => 42)();"`);
   });
 
-  test.skip("(let) closures", () => {
+  test("(let) closures", () => {
     const out = compileSrc(`
     let a = {
       let captured = 42;
@@ -626,7 +626,7 @@ describe("list literal", () => {
     `);
   });
 
-  test.skip("compile list that wraps statements", () => {
+  test("compile list that wraps statements", () => {
     const out = compileSrc(`let x = [{ let loc = 42; loc }]`);
     expect(out).toMatchInlineSnapshot(`
       "const Main$x$loc = 42;
