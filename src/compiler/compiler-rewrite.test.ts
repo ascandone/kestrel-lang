@@ -635,7 +635,7 @@ describe("list literal", () => {
   });
 });
 
-describe.todo("TCO", () => {
+describe("TCO", () => {
   test("does not apply inside infix application", () => {
     const out = compileSrc(`
     extern let (+): Fn(Int, Int) -> Int

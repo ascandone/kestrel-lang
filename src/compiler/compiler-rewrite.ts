@@ -74,16 +74,18 @@ class Compiler {
       return false;
     }
 
-    if (src.caller.resolution === undefined) {
+    const resolution = this.analysis.resolution.resolveIdentifier(src.caller);
+
+    if (resolution === undefined) {
       // This should be unreachable
       return false;
     }
 
-    switch (src.caller.resolution.type) {
+    switch (resolution.type) {
       case "local-variable":
-        return src.caller.resolution.binding === tailPosBinding;
+        return resolution.binding === tailPosBinding;
       case "global-variable":
-        return src.caller.resolution.declaration.binding === tailPosBinding;
+        return resolution.declaration.binding === tailPosBinding;
       case "constructor":
         return false;
     }
