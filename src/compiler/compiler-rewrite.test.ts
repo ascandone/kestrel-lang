@@ -894,7 +894,7 @@ describe.todo("TCO", () => {
   });
 });
 
-describe.todo("ADTs", () => {
+describe("ADTs", () => {
   test("do not emit Bool repr", () => {
     const out = compileSrc(
       `
@@ -991,7 +991,7 @@ describe.todo("ADTs", () => {
   });
 });
 
-describe.todo("structs", () => {
+describe("structs", () => {
   test("struct declaration is a noop", () => {
     const out = compileSrc(`
       extern type String
@@ -1005,7 +1005,7 @@ describe.todo("structs", () => {
     `);
   });
 
-  test("struct declaration", () => {
+  test.skip("struct declaration", () => {
     const out = compileSrc(`
       extern type Int
       type Point struct {
@@ -1027,7 +1027,7 @@ describe.todo("structs", () => {
     `);
   });
 
-  test("empty struct is represented as {}", () => {
+  test.skip("empty struct is represented as {}", () => {
     const out = compileSrc(`
       extern type Int
       type Nil struct { }
@@ -1040,7 +1040,7 @@ describe.todo("structs", () => {
     `);
   });
 
-  test("field access", () => {
+  test.skip("field access", () => {
     const out = compileSrc(`
       extern type Int
 
@@ -1059,7 +1059,7 @@ describe.todo("structs", () => {
     `);
   });
 
-  test("field access of struct lit", () => {
+  test.skip("field access of struct lit", () => {
     const out = compileSrc(`
       extern type Int
       type Box struct { x: Int }
@@ -1074,7 +1074,7 @@ describe.todo("structs", () => {
     `);
   });
 
-  test("struct update", () => {
+  test.skip("struct update", () => {
     const out = compileSrc(`
       extern type Int
       type Point3D struct {
@@ -1100,7 +1100,7 @@ describe.todo("structs", () => {
     `);
   });
 
-  test("struct update when expr is not ident", () => {
+  test.skip("struct update when expr is not ident", () => {
     const out = compileSrc(`
       extern type Int
       type Point3D struct {
@@ -1130,7 +1130,7 @@ describe.todo("structs", () => {
   // Note: this should never happen, as currently there aren't any
   // builtin infix ops that yield structs
   // still, it's better to handle it
-  test("field access of infix expr", () => {
+  test.skip("field access of infix expr", () => {
     const out = compileSrc(`
       pub let x_f = (1 + 2).x
     `);
