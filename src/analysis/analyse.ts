@@ -32,6 +32,8 @@ import {
 import { bool, char, float, int, list, string } from "./coreTypes";
 import { TypeAstsHydration } from "./typesHydration";
 import { defaultMapGet } from "../data/defaultMap";
+import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
+import { TraitImplDependency } from "../typecheck/type";
 
 export type AnalyseOptions = {
   getDependency?: (namespace: string) => Analysis | undefined;
@@ -437,6 +439,45 @@ export class Analysis {
       }
     }
   }
+
+  private static namedTypesTraitImpls = new Map<
+    string,
+    TraitImplDependency[]
+  >();
+
+  public static resetTraitImpls() {
+    Analysis.namedTypesTraitImpls = new Map();
+  }
+
+  /**
+   * E.g.
+   * // impl Eq for Int
+   * registerTraitImpl("Basics", "Int", "Eq")
+   *
+   * // impl Eq for Result<a, b> where a: Eq, b: Eq
+   * registerTraitImpl("Basics", "Result", "Eq", [["Eq"], ["Eq"]])
+   */
+  public static registerTraitImpl(
+    moduleName: string,
+    typeName: string,
+    trait: string,
+    dependencies: TraitImplDependency[],
+  ) {
+    const id = getNamedTypeTraitId(moduleName, typeName, trait);
+    if (Analysis.namedTypesTraitImpls.has(id)) {
+      throw new Error("Cannot register trait twice for the same type");
+    }
+
+    Analysis.namedTypesTraitImpls.set(id, dependencies);
+  }
+}
+
+function getNamedTypeTraitId(
+  moduleName: string,
+  typeName: string,
+  trait: string,
+): string {
+  return `${moduleName}.${typeName}:${trait}`;
 }
 
 // Keep this in sync with core
@@ -453,6 +494,20 @@ function getConstantType(lit: ConstLiteral): Type {
 
     case "char":
       return char;
+  }
+}
+
+export function resetTraitsRegistry(
+  traitImpls: TraitImpl[] = defaultTraitImpls,
+) {
+  Analysis.resetTraitImpls();
+  for (const impl of traitImpls) {
+    TVar.registerTraitImpl(
+      impl.moduleName,
+      impl.typeName,
+      impl.trait,
+      impl.deps ?? [],
+    );
   }
 }
 

@@ -1712,24 +1712,21 @@ describe("traits", () => {
     });
   });
 
-  test.todo(
-    "succeeds to typecheck when a required trait is not implemented",
-    () => {
-      // resetTraitsRegistry([
-      //   { trait: "Show", moduleName: "Int", typeName: "Int" },
-      // ]);
+  test("succeeds to typecheck when a required trait is not implemented", () => {
+    // resetTraitsRegistry([
+    //   { trait: "Show", moduleName: "Int", typeName: "Int" },
+    // ]);
 
-      const [a] = performAnalysis(
-        `
+    const [a] = performAnalysis(
+      `
         extern type String
         extern pub let show: Fn(a) -> String where a: Show
         pub let x = show(42)
       `,
-      );
+    );
 
-      expect(a.errors).toEqual([]);
-    },
-  );
+    expect(a.errors).toEqual([]);
+  });
 
   test("propagates the trait constraint", () => {
     const [a] = performAnalysis(
