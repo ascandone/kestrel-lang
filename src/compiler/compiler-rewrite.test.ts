@@ -1139,7 +1139,7 @@ describe("structs", () => {
   });
 });
 
-describe.todo("modules", () => {
+describe("modules", () => {
   test("variables from modules different than Main are namespaced", () => {
     const out = compileSrc(`let a = 42`, { ns: "ExampleModule" });
     expect(out).toMatchInlineSnapshot(`
