@@ -1,4 +1,4 @@
-import { test, expect, describe } from "vitest";
+import { test, expect, describe, beforeEach } from "vitest";
 import {
   MissingTraitError,
   normalizeResolved,
@@ -17,6 +17,7 @@ import {
   _1,
   result,
 } from "../__test__/commonTypes";
+import { resetTraitsRegistry } from "../analysis";
 
 describe("unify", () => {
   test("unifing two concrete vars when they match", () => {
@@ -459,9 +460,9 @@ describe("unify traits", () => {
   });
 
   test("unify trait-associated type var with a named type which implements the trait", () => {
-    const u = new Unifier();
-    u.registerTraitImpl(num.package, num.module, num.name, "Show", []);
+    registerTypeImpl(num, "Show");
 
+    const u = new Unifier();
     const t0 = u.freshVar(["Show"]);
 
     expect(() => {
@@ -474,10 +475,7 @@ describe("unify traits", () => {
     const result_ = result(_0, _1); // the passed type params are not relevant for the test
 
     // Note that we are only imposing the constraint on the second parameter of Result
-    u.registerTraitImpl(result_.package, result_.module, result_.name, "Eq", [
-      false,
-      true,
-    ]);
+    registerTypeImpl(result_, "Eq", [false, true]);
 
     const t0 = u.freshVar(["Eq"]);
     const ta = u.freshVar();
@@ -493,10 +491,7 @@ describe("unify traits", () => {
     const result_ = result(_0, _1); // the passed type params are not relevant for the test
 
     // Note that we are only imposing the constraint on the second parameter of Result
-    u.registerTraitImpl(result_.package, result_.module, result_.name, "Eq", [
-      false,
-      true,
-    ]);
+    registerTypeImpl(result_, "Eq", [false, true]);
 
     const t0 = u.freshVar(["Eq"]);
     const ta = u.freshVar();
@@ -643,3 +638,21 @@ function resolvedTypeTraitsOfVar(u: Unifier, t: Type) {
 
   return u.getResolvedTypeTraits(t.id);
 }
+
+function registerTypeImpl(
+  type: Type & { tag: "Named" },
+  trait: string,
+  deps: boolean[] = [],
+) {
+  Unifier.registerTraitImpl({
+    packageName: type.package,
+    moduleName: type.module,
+    typeName: type.name,
+    trait,
+    deps,
+  });
+}
+
+beforeEach(() => {
+  resetTraitsRegistry();
+});

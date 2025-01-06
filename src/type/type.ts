@@ -1,4 +1,5 @@
 import { defaultMapGet } from "../data/defaultMap";
+import { TraitImpl } from "../typecheck/defaultImports";
 
 export type Type =
   | {
@@ -23,7 +24,7 @@ export class Unifier {
   private nextId = 0;
   private readonly substitutions = new Map<number, Type>();
   private readonly traits = new Map<number, Set<string>>();
-  private readonly namedTypesTraitImpls = new Map<ImpKey, boolean[]>();
+  private static namedTypesTraitImpls = new Map<ImpKey, boolean[]>();
 
   freshVar(traits: Iterable<string> = []): Type & { tag: "Var" } {
     const id = this.nextId++;
@@ -34,7 +35,7 @@ export class Unifier {
     };
   }
 
-  private getResolvedTypeTraitsMut(id: number) {
+  public getResolvedTypeTraitsMut(id: number): Set<string> {
     return defaultMapGet(this.traits, id, () => new Set());
   }
 
@@ -199,13 +200,14 @@ export class Unifier {
 
       case "Named": {
         for (const trait of traits) {
-          const key = getTraitImplementationKey(
-            type.package,
-            type.module,
-            type.name,
+          const key = getNamedTypeTraitId({
+            packageName: type.package,
+            moduleName: type.module,
+            typeName: type.name,
             trait,
-          );
-          const deps = this.namedTypesTraitImpls.get(key);
+          });
+          const deps = Unifier.namedTypesTraitImpls.get(key);
+
           if (deps === undefined) {
             throw new MissingTraitError(trait);
           }
@@ -241,20 +243,31 @@ export class Unifier {
     this.substitutions.set(id, type);
   }
 
-  public registerTraitImpl(
-    package_: string,
-    module: string,
-    name: string,
-    trait: string,
-    dependencies: boolean[],
-  ) {
-    const key = getTraitImplementationKey(package_, module, name, trait);
-    if (this.namedTypesTraitImpls.has(key)) {
+  public static resetTraitImpls() {
+    Unifier.namedTypesTraitImpls = new Map();
+  }
+
+  /**
+   * E.g.
+   * // impl Eq for Int
+   * registerTraitImpl("Basics", "Int", "Eq")
+   *
+   * // impl Eq for Result<a, b> where a: Eq, b: Eq
+   * registerTraitImpl("Basics", "Result", "Eq", [true, true])
+   */
+
+  public static registerTraitImpl(traitImpl: TraitImpl, register = true) {
+    const key = getNamedTypeTraitId(traitImpl);
+    if (Unifier.namedTypesTraitImpls.has(key)) {
       throw new Error(
         `[unreachable] cannot register a trait twice (while declaring ${key})`,
       );
     }
-    this.namedTypesTraitImpls.set(key, dependencies);
+    if (register) {
+      Unifier.namedTypesTraitImpls.set(key, traitImpl.deps ?? []);
+    } else {
+      Unifier.namedTypesTraitImpls.delete(key);
+    }
   }
 }
 
@@ -301,11 +314,12 @@ export class Instantiator {
 }
 
 type ImpKey = string;
-function getTraitImplementationKey(
-  package_: string,
-  module: string,
-  name: string,
-  trait: string,
-): ImpKey {
-  return `${package_}-${module}-${name}:${trait}`;
+
+function getNamedTypeTraitId({
+  packageName,
+  moduleName,
+  typeName,
+  trait,
+}: TraitImpl): ImpKey {
+  return `${packageName}:${moduleName}.${typeName}:${trait}`;
 }

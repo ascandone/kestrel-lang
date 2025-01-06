@@ -1,5 +1,5 @@
-import { test, expect, describe, vi } from "vitest";
-import { AnalyseOptions, Analysis } from "./analyse";
+import { test, expect, describe, vi, beforeEach } from "vitest";
+import { AnalyseOptions, Analysis, resetTraitsRegistry } from "./analyse";
 import {
   AmbiguousTypeVar,
   ArityMismatch,
@@ -1698,6 +1698,8 @@ describe("unused locals checks", () => {
 
 describe("traits", () => {
   test("fails to typecheck when a required trait is not implemented", () => {
+    resetTraitsRegistry([]);
+
     const [a] = performAnalysis(
       `
         extern type String
@@ -1713,9 +1715,14 @@ describe("traits", () => {
   });
 
   test("succeeds to typecheck when a required trait is not implemented", () => {
-    // resetTraitsRegistry([
-    //   { trait: "Show", moduleName: "Int", typeName: "Int" },
-    // ]);
+    resetTraitsRegistry([
+      {
+        packageName: "kestrel_core",
+        trait: "Show",
+        moduleName: "Int",
+        typeName: "Int",
+      },
+    ]);
 
     const [a] = performAnalysis(
       `
@@ -3067,6 +3074,6 @@ function performAnalysis(
   ];
 }
 
-// beforeEach(() => {
-//   resetTraitsRegistry();
-// });
+beforeEach(() => {
+  resetTraitsRegistry();
+});

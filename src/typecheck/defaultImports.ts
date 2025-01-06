@@ -103,6 +103,7 @@ export const defaultImports: UntypedImport[] = [
 ];
 
 export type TraitImpl = {
+  packageName: string;
   moduleName: string;
   typeName: string;
   trait: string;
@@ -130,4 +131,4 @@ export const defaultTraitImpls: TraitImpl[] = [
   { moduleName: "Float", typeName: "Float", trait: Eq },
   { moduleName: "Float", typeName: "Float", trait: Ord },
   { moduleName: "Float", typeName: "Float", trait: Show },
-];
+].map((o) => ({ ...o, packageName: "kestrel_core" }));

@@ -64,7 +64,7 @@ function getNamedTypeTraitId(
   return `${moduleName}.${typeName}:${trait}`;
 }
 
-export type TraitImplDependency = string[] | undefined;
+export type TraitImplDependency = boolean;
 export class TVar {
   private constructor(
     private value: TVarResolution | { type: "linked"; to: TVar },
@@ -140,8 +140,7 @@ export class TVar {
 
     const r: Array<{ id: number; traits: string[] }> = [];
     for (let i = 0; i < lookup.length; i++) {
-      const deps = lookup[i];
-      if (deps === undefined) {
+      if (!lookup[i]!) {
         continue;
       }
 

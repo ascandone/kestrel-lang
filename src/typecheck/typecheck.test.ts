@@ -610,7 +610,14 @@ describe("traits", () => {
       `,
       {},
       [],
-      [{ moduleName: "Int", typeName: "Int", trait: "Show" }],
+      [
+        {
+          packageName: "kestrel_core",
+          moduleName: "Int",
+          typeName: "Int",
+          trait: "Show",
+        },
+      ],
     );
     expect(errs).toEqual([]);
   });
@@ -979,7 +986,14 @@ describe("traits", () => {
 `,
       {},
       [],
-      [{ trait: "Default", moduleName: "Main", typeName: "X" }],
+      [
+        {
+          packageName: "kestre_core",
+          trait: "Default",
+          moduleName: "Main",
+          typeName: "X",
+        },
+      ],
     );
 
     expect(errs).toEqual([]);
@@ -995,7 +1009,14 @@ describe("traits", () => {
 `,
       {},
       [],
-      [{ trait: "Default", moduleName: "Main", typeName: "X" }],
+      [
+        {
+          packageName: "kestre_core",
+          trait: "Default",
+          moduleName: "Main",
+          typeName: "X",
+        },
+      ],
     );
 
     expect(errs).toEqual([]);
@@ -1069,7 +1090,14 @@ describe("traits", () => {
 `,
       {},
       [],
-      [{ trait: "Default", moduleName: "Main", typeName: "X" }],
+      [
+        {
+          packageName: "kestre_core",
+          trait: "Default",
+          moduleName: "Main",
+          typeName: "X",
+        },
+      ],
     );
 
     expect(errs).toHaveLength(1);
@@ -1088,10 +1116,11 @@ describe("traits", () => {
       [],
       [
         {
+          packageName: "kestre_core",
           moduleName: "Main",
           typeName: "Option",
           trait: "Default",
-          deps: [["Default"]],
+          deps: [true],
         },
       ],
     );

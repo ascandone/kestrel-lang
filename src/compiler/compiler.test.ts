@@ -2263,7 +2263,14 @@ describe("traits compilation", () => {
 `,
       {
         allowDeriving: ["Eq"],
-        traitImpl: [{ typeName: "Int", moduleName: "Main", trait: "Eq" }],
+        traitImpl: [
+          {
+            packageName: "kestrel_core",
+            typeName: "Int",
+            moduleName: "Main",
+            trait: "Eq",
+          },
+        ],
       },
     );
 
@@ -2293,15 +2300,17 @@ describe("traits compilation", () => {
       {
         traitImpl: [
           {
+            packageName: "kestrel_core",
             typeName: "Int",
             moduleName: "Main",
             trait: "FromJson",
           },
           {
+            packageName: "kestrel_core",
             typeName: "Option",
             moduleName: "Main",
             trait: "FromJson",
-            deps: [["FromJson"]],
+            deps: [true],
           },
         ],
       },
@@ -2327,12 +2336,18 @@ describe("traits compilation", () => {
     `,
       {
         traitImpl: [
-          { typeName: "Int", moduleName: "Main", trait: "FromJson" },
           {
+            packageName: "kestrel_core",
+            typeName: "Int",
+            moduleName: "Main",
+            trait: "FromJson",
+          },
+          {
+            packageName: "kestrel_core",
             typeName: "Option",
             moduleName: "Main",
             trait: "FromJson",
-            deps: [["FromJson"]],
+            deps: [true],
           },
         ],
       },
@@ -2397,7 +2412,14 @@ describe("derive Eq instance for Adt", () => {
     `,
       {
         allowDeriving: ["Eq"],
-        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+        traitImpl: [
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Eq",
+          },
+        ],
       },
     );
     expect(out).toMatchInlineSnapshot(`
@@ -2418,7 +2440,14 @@ describe("derive Eq instance for Adt", () => {
     `,
       {
         allowDeriving: ["Eq"],
-        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+        traitImpl: [
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Eq",
+          },
+        ],
       },
     );
     expect(out).toMatchInlineSnapshot(`
@@ -2450,8 +2479,18 @@ describe("derive Eq instance for Adt", () => {
       {
         allowDeriving: ["Eq"],
         traitImpl: [
-          { moduleName: "Main", typeName: "Int", trait: "Eq" },
-          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Eq",
+          },
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Bool",
+            trait: "Eq",
+          },
         ],
       },
     );
@@ -2494,8 +2533,18 @@ describe("derive Eq instance for Adt", () => {
       {
         allowDeriving: ["Eq"],
         traitImpl: [
-          { moduleName: "Main", typeName: "Int", trait: "Eq" },
-          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Eq",
+          },
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Bool",
+            trait: "Eq",
+          },
         ],
       },
     );
@@ -2620,7 +2669,14 @@ describe("derive Eq instance for structs", () => {
     `,
       {
         allowDeriving: ["Eq"],
-        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+        traitImpl: [
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Eq",
+          },
+        ],
       },
     );
 
@@ -2654,8 +2710,18 @@ describe("derive Eq instance for structs", () => {
       {
         allowDeriving: ["Eq"],
         traitImpl: [
-          { moduleName: "Main", typeName: "Int", trait: "Eq" },
-          { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Eq",
+          },
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Bool",
+            trait: "Eq",
+          },
         ],
       },
     );
@@ -2749,7 +2815,14 @@ describe("Derive Show instance for Adts", () => {
     `,
       {
         allowDeriving: ["Show"],
-        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+        traitImpl: [
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Show",
+          },
+        ],
       },
     );
 
@@ -2771,7 +2844,14 @@ describe("Derive Show instance for Adts", () => {
     `,
       {
         allowDeriving: ["Show"],
-        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+        traitImpl: [
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Show",
+          },
+        ],
       },
     );
 
@@ -2790,7 +2870,12 @@ describe("Derive Show instance for Adts", () => {
       {
         allowDeriving: ["Show"],
         traitImpl: [
-          { moduleName: "Example/Namespace", typeName: "Int", trait: "Show" },
+          {
+            packageName: "kestrel_core",
+            moduleName: "Example/Namespace",
+            typeName: "Int",
+            trait: "Show",
+          },
         ],
         ns: "Example/Namespace",
       },
@@ -2828,7 +2913,14 @@ describe("Derive Show instance for Adts", () => {
     `,
       {
         allowDeriving: ["Show"],
-        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+        traitImpl: [
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Show",
+          },
+        ],
       },
     );
 
@@ -2971,7 +3063,14 @@ describe("Derive Show instance for structs", () => {
     `,
       {
         allowDeriving: ["Show"],
-        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+        traitImpl: [
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Show",
+          },
+        ],
       },
     );
 
@@ -3005,7 +3104,14 @@ describe("Derive Show instance for structs", () => {
     `,
       {
         allowDeriving: ["Show"],
-        traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+        traitImpl: [
+          {
+            packageName: "kestrel_core",
+            moduleName: "Main",
+            typeName: "Int",
+            trait: "Show",
+          },
+        ],
       },
     );
 

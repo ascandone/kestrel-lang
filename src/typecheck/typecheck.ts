@@ -27,7 +27,6 @@ import {
   instantiateFromScheme,
   TypeScheme,
   PolyType,
-  TraitImplDependency,
   TVarResolution,
   Instantiator,
   typeToString,
@@ -114,7 +113,7 @@ class Typechecker {
     trait: string,
     typeDecl: TypedTypeDeclaration & { type: "adt" },
   ) {
-    const deps: TraitImplDependency[] = [];
+    const deps: boolean[] = [];
 
     const depParams = new Set<string>();
 
@@ -123,7 +122,7 @@ class Typechecker {
       this.ns,
       typeDecl.name,
       trait,
-      typeDecl.params.map((_) => undefined),
+      typeDecl.params.map((_) => false),
     );
 
     for (const variant of typeDecl.variants) {
@@ -153,11 +152,7 @@ class Typechecker {
     }
 
     for (const param of typeDecl.params) {
-      if (depParams.has(param.name)) {
-        deps.push([trait]);
-      } else {
-        deps.push(undefined);
-      }
+      deps.push(depParams.has(param.name));
     }
 
     TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
@@ -168,7 +163,7 @@ class Typechecker {
     trait: string,
     typeDecl: TypedTypeDeclaration & { type: "struct" },
   ) {
-    const deps: TraitImplDependency[] = [];
+    const deps: boolean[] = [];
 
     const depParams = new Set<string>();
 
@@ -177,7 +172,7 @@ class Typechecker {
       this.ns,
       typeDecl.name,
       trait,
-      typeDecl.params.map((_) => undefined),
+      typeDecl.params.map((_) => false),
     );
 
     for (const field of typeDecl.fields) {
@@ -198,11 +193,7 @@ class Typechecker {
     }
 
     for (const param of typeDecl.params) {
-      if (depParams.has(param.name)) {
-        deps.push([trait]);
-      } else {
-        deps.push(undefined);
-      }
+      deps.push(depParams.has(param.name));
     }
 
     TVar.removeTraitImpl(this.ns, typeDecl.name, trait);

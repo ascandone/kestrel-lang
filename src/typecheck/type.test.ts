@@ -660,7 +660,7 @@ describe("traits", () => {
   });
 
   test("fails to unify a tvar with a concrete type that implements the trait when type vars don't", () => {
-    TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [["Ord"]]);
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [true]);
 
     const $a = TVar.fresh(["Ord"]);
 
@@ -672,7 +672,7 @@ describe("traits", () => {
   });
 
   test("succeeds to unify a tvar with a concrete type that implements the trait (including type args)", () => {
-    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [true]);
     TVar.registerTraitImpl(BASICS_MODULE, "Int", "ord", []);
 
     const $a = TVar.fresh(["ord"]);
@@ -685,7 +685,7 @@ describe("traits", () => {
     // unify(a: ord, List<b>)
     // => b: ord
 
-    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [true]);
 
     const $a = TVar.fresh(["ord"]);
     const $b = TVar.fresh();
@@ -703,7 +703,7 @@ describe("traits", () => {
     // impl ord for List<a> where a: ord
     // unify(List<a: ord>, List<Int>) => fail
 
-    TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [["Ord"]]);
+    TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [true]);
 
     const $a = TVar.fresh(["Ord"]);
 
