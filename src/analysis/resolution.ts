@@ -661,6 +661,11 @@ export class ResolutionAnalysis {
   }
 
   private checkUnusedVars(expr: Binding) {
+    const isIgnored = expr.name.startsWith("_");
+    if (isIgnored) {
+      return;
+    }
+
     if (this.unusedBindings.has(expr)) {
       this.emitError({
         range: expr.range,

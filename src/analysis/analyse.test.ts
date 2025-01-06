@@ -1647,6 +1647,19 @@ describe("unused locals checks", () => {
     ]);
   });
 
+  test("do not detect unused let locals with underscore", () => {
+    const src = `
+      pub let f = {
+        let _unused_var = 42;
+        0
+      }
+    `;
+
+    const [a] = performAnalysis(src);
+
+    expect(a.errors).toEqual<ErrorInfo[]>([]);
+  });
+
   test.todo("detect unused pattern match locals", () => {
     const [a] = performAnalysis(
       `
