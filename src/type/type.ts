@@ -267,11 +267,6 @@ export class Unifier {
   }
 }
 
-/** Pre: type is already resolved */
-export function normalizeResolved(t: Type): Type {
-  return new Unifier().instantiate(t);
-}
-
 export type TraitsMap = Record<number, string[]>;
 export class Instantiator {
   constructor(private unifier: Unifier) {}

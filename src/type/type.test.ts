@@ -1,7 +1,6 @@
 import { test, expect, describe, beforeEach } from "vitest";
 import {
   MissingTraitError,
-  normalizeResolved,
   OccursCheckError,
   Type,
   TypeMismatchError,
@@ -605,7 +604,7 @@ describe("instantiation", () => {
 
 describe("normalize", () => {
   test("type with vars", () => {
-    const out = normalizeResolved(
+    const out = new Unifier().instantiate(
       tuple(
         { tag: "Var", id: 100 },
         { tag: "Var", id: 101 },
