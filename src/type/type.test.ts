@@ -517,19 +517,16 @@ describe("unify traits", () => {
 describe("instantiation", () => {
   test("named type without type vars", () => {
     const u = new Unifier();
-    expect(u.instantiate(tuple(num, bool), false)).toEqual(tuple(num, bool));
+    expect(u.instantiate(tuple(num, bool))).toEqual(tuple(num, bool));
   });
 
   test("a type var", () => {
     const u = new Unifier();
     expect(
-      u.instantiate(
-        {
-          tag: "Var",
-          id: 0,
-        },
-        false,
-      ),
+      u.instantiate({
+        tag: "Var",
+        id: 0,
+      }),
     ).toEqual({
       tag: "Var",
       id: 0,
@@ -539,13 +536,10 @@ describe("instantiation", () => {
   test("a type var with an high id", () => {
     const u = new Unifier();
     expect(
-      u.instantiate(
-        {
-          tag: "Var",
-          id: 100,
-        },
-        false,
-      ),
+      u.instantiate({
+        tag: "Var",
+        id: 100,
+      }),
     ).toEqual({
       tag: "Var",
       id: 0,
@@ -556,7 +550,7 @@ describe("instantiation", () => {
     const u = new Unifier();
     expect(
       //
-      u.instantiate(fn([num], bool), false),
+      u.instantiate(fn([num], bool)),
     ).toEqual(
       //
       fn([num], bool),
@@ -564,7 +558,7 @@ describe("instantiation", () => {
 
     expect(
       //
-      u.instantiate(fn([_1], _0), false),
+      u.instantiate(fn([_1], _0)),
     ).toEqual(
       //
       fn([_0], _1),
@@ -589,7 +583,6 @@ describe("instantiation", () => {
             id: 100,
           },
         ),
-        false,
       ),
     ).toEqual(
       tuple(

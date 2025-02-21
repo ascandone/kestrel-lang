@@ -178,11 +178,7 @@ export class Unifier {
     throw new TypeMismatchError();
   }
 
-  instantiate(t: Type, resolve: boolean, traitsMap: TraitsMap = {}): Type {
-    if (resolve) {
-      t = this.resolve(t);
-    }
-
+  instantiate(t: Type, traitsMap: TraitsMap = {}): Type {
     return new Instantiator(this).instantiate(t, traitsMap);
   }
 
@@ -273,7 +269,7 @@ export class Unifier {
 
 /** Pre: type is already resolved */
 export function normalizeResolved(t: Type): Type {
-  return new Unifier().instantiate(t, false, {});
+  return new Unifier().instantiate(t);
 }
 
 export type TraitsMap = Record<number, string[]>;

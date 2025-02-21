@@ -105,7 +105,7 @@ export class Analysis {
     // TODO properly apply hint
     if (decl.typeHint) {
       const typeHintType = this.typesHydration.getPolyType(decl.typeHint);
-      this.unifyNode(decl.value, this.unifier.instantiate(typeHintType, false));
+      this.unifyNode(decl.value, this.unifier.instantiate(typeHintType));
     }
 
     this.typecheckExpr(decl.value);
@@ -148,7 +148,7 @@ export class Analysis {
 
         const poly = analysis.getType(resolution.declaration.binding);
 
-        return this.unifier.instantiate(poly, false, traitsMap);
+        return this.unifier.instantiate(poly, traitsMap);
       }
 
       case "local-variable":
@@ -172,7 +172,7 @@ export class Analysis {
                 return: declarationType,
               };
 
-        return this.unifier.instantiate(constructorType, false);
+        return this.unifier.instantiate(constructorType);
       }
     }
   }
@@ -444,7 +444,7 @@ export class Analysis {
     const traitMap = this.traitMapAnnotations.get(binding) ?? {};
 
     const unifier = new Unifier();
-    const mono = unifier.instantiate(this.getRawType(binding), false, traitMap);
+    const mono = unifier.instantiate(this.getRawType(binding), traitMap);
 
     return [mono, unifier.getResolvedTypeTraits.bind(unifier)];
   }
