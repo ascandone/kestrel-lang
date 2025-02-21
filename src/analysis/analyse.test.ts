@@ -31,7 +31,7 @@ import {
 import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 import { dummyRange } from "../typecheck/defaultImports";
 import { unsafeParse, Range } from "../parser";
-import { normalizeResolved, typePPrint as typeToString } from "../type";
+import { typePPrint as typeToString } from "../type";
 import { compilePackage } from "./package";
 
 describe("infer constants", () => {
@@ -1766,7 +1766,7 @@ describe("traits", () => {
     });
   });
 
-  test.todo("fails to typecheck when unify occurs later", () => {
+  test("fails to typecheck when unify occurs later", () => {
     const [a] = performAnalysis(
       `
         extern type String
@@ -1783,20 +1783,17 @@ describe("traits", () => {
     expect(a.errors).not.toEqual([]);
   });
 
-  test.todo("infers multiple traits", () => {
+  test("infers multiple traits", () => {
     const [a] = performAnalysis(
       `
-        extern type Unit
+        type Unit { Unit }
         extern let show: Fn(a) -> Unit where a: Show
         extern let eq: Fn(a) -> Unit where a: Eq
 
-        let snd = fn _a, b { b }
-
         pub let f = fn x {
-          snd(
-            show(x),
-            eq(x)
-          )
+          let _ = show(x);
+          let _ = eq(x);
+          Unit
         }
       `,
     );
@@ -1806,7 +1803,7 @@ describe("traits", () => {
     });
   });
 
-  test.todo("does not break generalization", () => {
+  test("does not break generalization", () => {
     const [a] = performAnalysis(
       `
         extern type Unit
@@ -3039,13 +3036,8 @@ test.todo("type error when main has not type Task<Unit>", () => {
 
 function getTypes(a: Analysis): Record<string, string> {
   const kvs = [...a.getPublicDeclarations()].map((decl) => {
-    const mono = normalizeResolved(a.getType(decl.binding));
-    // TODO scheme
-
-    return [
-      decl.binding.name,
-      typeToString(mono, a.getResolvedTypeTraits.bind(a)),
-    ];
+    const [mono, getTraits] = a.getPolyType(decl.binding);
+    return [decl.binding.name, typeToString(mono, getTraits)];
   });
   return Object.fromEntries(kvs);
 }

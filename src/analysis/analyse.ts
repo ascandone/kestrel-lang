@@ -28,6 +28,7 @@ import {
   TypeMismatchError,
   OccursCheckError,
   MissingTraitError,
+  TraitsMap,
 } from "../type";
 import { bool, char, float, int, list, string } from "./coreTypes";
 import { TypeAstsHydration } from "./typesHydration";
@@ -47,6 +48,11 @@ export class Analysis {
   public readonly errors: ErrorInfo[] = [];
 
   private readonly typeAnnotations = new WeakMap<TypedNode, Type>();
+  /** Only meant for top level declarations */
+  private readonly traitMapAnnotations = new WeakMap<
+    Binding<unknown>,
+    TraitsMap
+  >();
 
   public readonly resolution: ResolutionAnalysis;
   private readonly typesHydration: TypeAstsHydration;
@@ -80,21 +86,20 @@ export class Analysis {
     for (const declGroup of this.resolution.sortedDeclarations) {
       this.currentDeclarationGroup = declGroup;
       for (const letDecl of declGroup) {
-        this.typecheckLetDeclaration(letDecl);
+        const [mono, traitsMap] = this.typecheckLetDeclaration(letDecl);
+        this.typeAnnotations.set(letDecl.binding, mono);
+        this.traitMapAnnotations.set(letDecl.binding, traitsMap);
       }
     }
   }
 
-  private typecheckLetDeclaration(decl: UntypedDeclaration) {
+  private typecheckLetDeclaration(decl: UntypedDeclaration): [Type, TraitsMap] {
     if (decl.extern) {
       const [typeHintType, traitsMap] = this.typesHydration.getAstPolytype(
         decl.typeHint,
       );
-      this.typeAnnotations.set(
-        decl.binding,
-        this.unifier.instantiate(typeHintType, false, traitsMap),
-      );
-      return;
+
+      return [typeHintType, traitsMap];
     }
 
     // TODO properly apply hint
@@ -104,7 +109,16 @@ export class Analysis {
     }
 
     this.typecheckExpr(decl.value);
+
+    // ↓ Needed for self-recursive bindings
     this.unifyNodes(decl.value, decl.binding);
+
+    const mono = this.getType(decl.value);
+    const traitsMap = extractTraitsMap(mono, (id) =>
+      this.getResolvedTypeTraits(id),
+    );
+
+    return [mono, traitsMap];
 
     // const valueType = this.getType(decl.value);
     // TODO traverse typeHint and compare with polyType
@@ -128,8 +142,13 @@ export class Analysis {
 
         const analysis = this.getDependencyByNs(resolution.namespace);
 
+        const traitsMap = analysis.traitMapAnnotations.get(
+          resolution.declaration.binding,
+        );
+
         const poly = analysis.getType(resolution.declaration.binding);
-        return this.unifier.instantiate(poly, false);
+
+        return this.unifier.instantiate(poly, false, traitsMap);
       }
 
       case "local-variable":
@@ -221,8 +240,8 @@ export class Analysis {
       case "let":
         this.unifyNodes(expr, expr.value);
 
-        this.typecheckExpr(expr.body);
         this.typecheckExpr(expr.value);
+        this.typecheckExpr(expr.body);
         return;
 
       case "list-literal": {
@@ -421,6 +440,15 @@ export class Analysis {
     return this.unifier.resolve(type);
   }
 
+  getPolyType(binding: Binding): [Type, (id: number) => string[]] {
+    const traitMap = this.traitMapAnnotations.get(binding) ?? {};
+
+    const unifier = new Unifier();
+    const mono = unifier.instantiate(this.getRawType(binding), false, traitMap);
+
+    return [mono, unifier.getResolvedTypeTraits.bind(unifier)];
+  }
+
   getResolvedTypeTraits(id: number) {
     return this.unifier.getResolvedTypeTraits(id);
   }
@@ -526,3 +554,28 @@ export function resetTraitsRegistry(
 //     }
 //   }
 // }
+
+function extractTraitsMap(t: Type, getTraits: (id: number) => string[]) {
+  const traitsMap: TraitsMap = {};
+  function helper(t: Type) {
+    switch (t.tag) {
+      case "Fn":
+        helper(t.return);
+      case "Named":
+        for (const arg of t.args) {
+          helper(arg);
+        }
+        return;
+
+      case "Var": {
+        if (t.id in traitsMap) {
+          return;
+        }
+        const traits = getTraits(t.id);
+        traitsMap[t.id] = traits;
+      }
+    }
+  }
+  helper(t);
+  return traitsMap;
+}
