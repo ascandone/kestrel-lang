@@ -474,7 +474,7 @@ export class ResolutionAnalysis {
 
       case "fn": {
         for (const arg of expr.params) {
-          this.runPatternResolution(arg, localScope);
+          this.runPatternResolution(arg);
         }
 
         const paramsBindings = expr.params
@@ -523,6 +523,7 @@ export class ResolutionAnalysis {
           this.unusedBindings.add(binding);
         }
 
+        this.runPatternResolution(expr.pattern);
         this.runValuesResolution(expr.body, {
           ...localScope,
           ...Object.fromEntries(bindingsEntries),
@@ -544,7 +545,7 @@ export class ResolutionAnalysis {
       case "match":
         this.runValuesResolution(expr.expr, localScope);
         for (const [pattern, subExpr] of expr.clauses) {
-          this.runPatternResolution(pattern, localScope);
+          this.runPatternResolution(pattern);
           const bindings = this.extractPatternIdentifiers(pattern);
 
           const newBindings: LocalScope = Object.fromEntries(
@@ -564,10 +565,7 @@ export class ResolutionAnalysis {
     }
   }
 
-  private runPatternResolution(
-    pattern: UntypedMatchPattern,
-    scope: LocalScope,
-  ) {
+  private runPatternResolution(pattern: UntypedMatchPattern) {
     switch (pattern.type) {
       case "lit":
         return;
@@ -587,7 +585,7 @@ export class ResolutionAnalysis {
         this.identifiersResolutions.set(pattern, res);
 
         for (const arg of pattern.args) {
-          this.runPatternResolution(arg, scope);
+          this.runPatternResolution(arg);
         }
         return;
       }

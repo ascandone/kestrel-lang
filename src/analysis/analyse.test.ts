@@ -1560,7 +1560,7 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo("infers let match type", () => {
+  test("infers let match type", () => {
     const [a] = performAnalysis(
       `
     extern type T

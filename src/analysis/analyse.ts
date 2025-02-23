@@ -238,10 +238,12 @@ export class Analysis {
         return;
 
       case "let":
-        this.unifyNodes(expr, expr.value);
-
         this.typecheckExpr(expr.value);
         this.typecheckExpr(expr.body);
+        this.typecheckPattern(expr.pattern);
+
+        this.unifyNodes(expr, expr.body);
+        this.unifyNodes(expr.pattern, expr.value);
         return;
 
       case "list-literal": {
