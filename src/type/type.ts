@@ -243,6 +243,54 @@ export class Unifier {
     Unifier.namedTypesTraitImpls = new Map();
   }
 
+  public static getTraitDepsFor(
+    trait: string,
+    type: Type,
+  ): number[] | undefined {
+    class CannotDerive extends Error {}
+
+    function* recur(type: Type): Generator<number> {
+      switch (type.tag) {
+        case "Fn":
+          throw new CannotDerive();
+
+        case "Var":
+          yield type.id;
+          return;
+
+        case "Named": {
+          const key = getNamedTypeTraitId({
+            moduleName: type.module,
+            packageName: type.package,
+            typeName: type.name,
+            trait,
+          });
+          const deps = Unifier.namedTypesTraitImpls.get(key);
+          if (deps === undefined) {
+            throw new CannotDerive();
+          }
+
+          for (let i = 0; i < deps.length; i++) {
+            if (!deps[i]!) {
+              continue;
+            }
+            yield* recur(type.args[i]!);
+          }
+        }
+      }
+    }
+
+    try {
+      return [...recur(type)];
+    } catch (err) {
+      if (!(err instanceof CannotDerive)) {
+        throw err;
+      }
+
+      return undefined;
+    }
+  }
+
   /**
    * E.g.
    * // impl Eq for Int
@@ -251,19 +299,21 @@ export class Unifier {
    * // impl Eq for Result<a, b> where a: Eq, b: Eq
    * registerTraitImpl("Basics", "Result", "Eq", [true, true])
    */
-
-  public static registerTraitImpl(traitImpl: TraitImpl, register = true) {
+  public static registerTraitImpl(traitImpl: TraitImpl) {
     const key = getNamedTypeTraitId(traitImpl);
+
     if (Unifier.namedTypesTraitImpls.has(key)) {
       throw new Error(
         `[unreachable] cannot register a trait twice (while declaring ${key})`,
       );
     }
-    if (register) {
-      Unifier.namedTypesTraitImpls.set(key, traitImpl.deps ?? []);
-    } else {
-      Unifier.namedTypesTraitImpls.delete(key);
-    }
+
+    Unifier.namedTypesTraitImpls.set(key, traitImpl.deps ?? []);
+  }
+
+  public static unregisterTraitImpl(traitImpl: Omit<TraitImpl, "deps">) {
+    const key = getNamedTypeTraitId(traitImpl);
+    Unifier.namedTypesTraitImpls.delete(key);
   }
 }
 

@@ -513,6 +513,171 @@ describe("unify traits", () => {
   });
 });
 
+describe("derive traits dependencies", () => {
+  const mockTraitImpl = {
+    trait: "Eq",
+    packageName: "core",
+    moduleName: "Main",
+  } as const;
+
+  const mockType = {
+    tag: "Named",
+    module: mockTraitImpl.moduleName,
+    package: mockTraitImpl.packageName,
+  } as const;
+
+  test("cannot derive an unregisted named type", () => {
+    resetTraitsRegistry([]);
+    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
+      ...mockType,
+      name: "Custom",
+      args: [],
+    });
+
+    expect(deps).toEqual(undefined);
+  });
+
+  test("cannot derive a function type", () => {
+    resetTraitsRegistry([]);
+    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
+      tag: "Fn",
+      args: [],
+      return: { tag: "Var", id: 42 },
+    });
+
+    expect(deps).toEqual(undefined);
+  });
+
+  test("derive without type args", () => {
+    resetTraitsRegistry([
+      {
+        ...mockTraitImpl,
+        typeName: "Int",
+      },
+    ]);
+
+    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
+      ...mockType,
+      name: "Int",
+      args: [],
+    });
+
+    expect(deps).toEqual([]);
+  });
+
+  test("derive with type args when args derive", () => {
+    resetTraitsRegistry([
+      {
+        ...mockTraitImpl,
+        typeName: "Int",
+      },
+      {
+        ...mockTraitImpl,
+        typeName: "Bool",
+      },
+      {
+        ...mockTraitImpl,
+        typeName: "Result",
+        deps: [true, true],
+      },
+    ]);
+
+    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
+      ...mockType,
+      name: "Result",
+      args: [
+        { ...mockType, name: "Int", args: [] },
+        { ...mockType, name: "Bool", args: [] },
+      ],
+    });
+
+    expect(deps).toEqual([]);
+  });
+
+  test("derive with type args when args do not derive", () => {
+    resetTraitsRegistry([
+      {
+        ...mockTraitImpl,
+        typeName: "Int",
+      },
+      // Bool does not derive
+      {
+        ...mockTraitImpl,
+        typeName: "Result",
+        deps: [true, true],
+      },
+    ]);
+
+    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
+      ...mockType,
+      name: "Result",
+      args: [
+        { ...mockType, name: "Int", args: [] },
+        { ...mockType, name: "Bool", args: [] },
+      ],
+    });
+
+    expect(deps).toEqual(undefined);
+  });
+
+  test("return type var dependencies", () => {
+    resetTraitsRegistry([
+      {
+        ...mockTraitImpl,
+        typeName: "Result",
+        deps: [true, true],
+      },
+    ]);
+
+    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
+      ...mockType,
+      name: "Result",
+      args: [
+        { tag: "Var", id: 100 },
+        { tag: "Var", id: 200 },
+      ],
+    });
+
+    expect(deps).toEqual([100, 200]);
+  });
+
+  test("return type var dependencies (nested)", () => {
+    resetTraitsRegistry([
+      {
+        ...mockTraitImpl,
+        typeName: "List",
+        deps: [true],
+      },
+      {
+        ...mockTraitImpl,
+        typeName: "Result",
+        deps: [false, true],
+      },
+    ]);
+
+    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
+      ...mockType,
+      name: "Result",
+      args: [
+        {
+          ...mockType,
+          tag: "Named",
+          name: "Int",
+          args: [],
+        },
+        {
+          ...mockType,
+          tag: "Named",
+          name: "List",
+          args: [{ tag: "Var", id: 42 }],
+        },
+      ],
+    });
+
+    expect(deps).toEqual([42]);
+  });
+});
+
 describe("instantiation", () => {
   test("named type without type vars", () => {
     const u = new Unifier();

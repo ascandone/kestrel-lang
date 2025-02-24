@@ -1828,7 +1828,7 @@ describe("traits", () => {
     });
   });
 
-  test.todo("is able to derive Eq trait in ADTs with only a singleton", () => {
+  test("is able to derive Eq trait in ADTs with only a singleton", () => {
     const [a] = performAnalysis(
       `
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -1843,11 +1843,9 @@ describe("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test.todo(
-    "does not derive Eq trait in ADTs when at least one argument",
-    () => {
-      const [a] = performAnalysis(
-        `
+  test("does not derive Eq trait in ADTs when at least one argument", () => {
+    const [a] = performAnalysis(
+      `
         extern type NotEq
         extern let take_eq: Fn(a) -> a where a: Eq
 
@@ -1858,17 +1856,14 @@ describe("traits", () => {
 
         pub let example = take_eq(Singleton)
       `,
-      );
+    );
 
-      expect(a.errors).toHaveLength(1);
-    },
-  );
+    expect(a.errors).toHaveLength(1);
+  });
 
-  test.todo(
-    "derives Eq even when constructors have arguments that derive Eq",
-    () => {
-      const [a] = performAnalysis(
-        `
+  test("derives Eq even when constructors have arguments that derive Eq", () => {
+    const [a] = performAnalysis(
+      `
         type EqType { }
 
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -1880,11 +1875,10 @@ describe("traits", () => {
 
         pub let example = take_eq(Singleton)
       `,
-      );
+    );
 
-      expect(a.errors).toEqual([]);
-    },
-  );
+    expect(a.errors).toEqual([]);
+  });
 
   test.todo("requires deps to derive Eq in order to derive Eq", () => {
     const [a] = performAnalysis(

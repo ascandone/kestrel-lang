@@ -15,6 +15,7 @@ import {
 } from "../parser";
 import { TraitsMap, Type, Unifier } from "../type";
 import { ResolutionAnalysis } from "./resolution";
+import { TraitImpl } from "../typecheck/defaultImports";
 
 export type PolytypeNode = UntypedTypeDeclaration | PolyTypeAst | TypeAst;
 
@@ -106,6 +107,9 @@ export class TypeAstsHydration {
             this.polyTypes.set(arg, type);
           }
         }
+
+        this.adtDerive("Eq", declaration);
+        this.adtDerive("Show", declaration);
         return;
 
       case "struct":
@@ -114,6 +118,55 @@ export class TypeAstsHydration {
       case "extern":
         return;
     }
+  }
+
+  private adtDerive(
+    trait: string,
+    typeDecl: UntypedTypeDeclaration & { type: "adt" },
+  ) {
+    const deps: boolean[] = [];
+
+    const depParams = new Set<string>();
+
+    const traitImpl: TraitImpl = {
+      trait,
+      moduleName: this.ns,
+      packageName: this.package_,
+      typeName: typeDecl.name,
+      deps: typeDecl.params.map(() => false),
+    };
+
+    // Register recursive type
+    Unifier.registerTraitImpl(traitImpl);
+
+    for (const variant of typeDecl.variants) {
+      for (const arg of variant.args) {
+        const argType = this.getPolyType(arg);
+
+        const neededVars = Unifier.getTraitDepsFor(trait, argType);
+
+        if (neededVars === undefined) {
+          Unifier.unregisterTraitImpl(traitImpl);
+          return;
+        }
+
+        // for (const { id } of impl) {
+        //   const name = variant.scheme[id];
+        //   if (name !== undefined) {
+        //     depParams.add(name);
+        //   }
+        // }
+      }
+
+      // Singleton always derives any trait
+    }
+
+    for (const param of typeDecl.params) {
+      deps.push(depParams.has(param.name));
+    }
+
+    Unifier.unregisterTraitImpl(traitImpl);
+    Unifier.registerTraitImpl({ ...traitImpl, deps });
   }
 
   // --- Cast type ASTs to actual types
