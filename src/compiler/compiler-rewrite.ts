@@ -1058,39 +1058,39 @@ class Compiler {
     decl: UntypedTypeDeclaration & { type: "struct" },
   ): t.Statement[] {
     const buf: t.Statement[] = [];
-    // if (this.shouldDeriveTrait("Eq", decl)) {
-    //   buf.push({
-    //     type: "VariableDeclaration",
-    //     kind: "const",
-    //     declarations: [
-    //       {
-    //         type: "VariableDeclarator",
-    //         id: {
-    //           type: "Identifier",
-    //           name: `Eq_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
-    //         },
-    //         init: deriveEqStruct(decl),
-    //       },
-    //     ],
-    //   });
-    // }
+    if (this.shouldDeriveTrait("Eq", decl)) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Eq_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
+            },
+            init: deriveEqStruct(this.analysis.resolution, decl),
+          },
+        ],
+      });
+    }
 
-    // if (this.shouldDeriveTrait("Show", decl)) {
-    //   buf.push({
-    //     type: "VariableDeclaration",
-    //     kind: "const",
-    //     declarations: [
-    //       {
-    //         type: "VariableDeclarator",
-    //         id: {
-    //           type: "Identifier",
-    //           name: `Show_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
-    //         },
-    //         init: deriveShowStruct(decl),
-    //       },
-    //     ],
-    //   });
-    // }
+    if (this.shouldDeriveTrait("Show", decl)) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Show_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
+            },
+            init: deriveShowStruct(this.analysis.resolution, decl),
+          },
+        ],
+      });
+    }
 
     return buf;
   }
