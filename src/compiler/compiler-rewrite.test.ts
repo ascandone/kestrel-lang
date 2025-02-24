@@ -1,10 +1,8 @@
-import { test, expect, describe, beforeEach } from "vitest";
+import { test, expect, describe } from "vitest";
 import { unsafeParse } from "../parser";
 import { compile } from "./compiler-rewrite";
 import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
-import { TVar } from "../typecheck/type";
 import { Analysis } from "../analysis";
-import { Unifier } from "../type";
 import { TraitRegistry } from "../type/traitsRegistry";
 
 describe("datatype representation", () => {
