@@ -2082,8 +2082,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  // <- TODO
-  test.skip("pass higher order trait dicts for types when their deps is in scope", () => {
+  test("pass higher order trait dicts for types when their deps is in scope", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
 
@@ -2105,7 +2104,7 @@ describe("traits compilation", () => {
       const Main$None = {
         $: 1
       };
-      const Main$f = Show_16 => x => Main$show(Show_Main$Option(Show_16))(Main$Some(x));"
+      const Main$f = Show_0 => x => Main$show(Show_Main$Option(Show_0))(Main$Some(x));"
     `);
   });
 
@@ -2203,7 +2202,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("fn returning arg handles params", () => {
+  test("fn returning arg handles params", () => {
     const out = compileSrc(
       `
       extern type Int
@@ -2218,19 +2217,25 @@ describe("traits compilation", () => {
     `,
       {
         traitImpl: [
-          { typeName: "Int", moduleName: "Main", trait: "FromJson" },
           {
+            packageName: "core",
+            typeName: "Int",
+            moduleName: "Main",
+            trait: "FromJson",
+          },
+          {
+            packageName: "core",
             typeName: "Option",
             moduleName: "Main",
             trait: "FromJson",
-            deps: [["FromJson"]],
+            deps: [true],
           },
         ],
       },
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$called = FromJson_9 => Main$from_json(FromJson_9)(Main$json);"
+      "const Main$called = FromJson_0 => Main$from_json(FromJson_0)(Main$json);"
     `);
   });
 });
