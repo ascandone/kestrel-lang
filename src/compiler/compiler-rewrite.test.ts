@@ -431,7 +431,7 @@ describe("lambda expressions", () => {
     );
   });
 
-  test.skip("do not let GEN values be shadowed", () => {
+  test("do not let GEN values be shadowed", () => {
     const out = compileSrc(`
       type Box<a> { Box(a) }
       let x = fn Box(a) {
@@ -1923,7 +1923,7 @@ describe("traits compilation", () => {
     );
   });
 
-  test.skip("do not pass extra args", () => {
+  test("do not pass extra args", () => {
     const out = compileSrc(
       `
       extern type String
@@ -1944,11 +1944,11 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$equal = (Eq_17, Show_17) => (x, y) => {
-        if (Main$eq(Eq_17)(x, y)) {
+      "const Main$equal = (Eq_1, Show_1) => (x, y) => {
+        if (Main$eq(Eq_1)(x, y)) {
           return \`ok\`;
         } else {
-          return Main$inspect(Show_17)(x);
+          return Main$inspect(Show_1)(x);
         }
       };"
     `);
@@ -2082,6 +2082,7 @@ describe("traits compilation", () => {
     `);
   });
 
+  // <- TODO
   test.skip("pass higher order trait dicts for types when their deps is in scope", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
