@@ -2338,6 +2338,27 @@ describe("traits", () => {
   });
 });
 
+describe("let#", () => {
+  test("typecheck happy path", () => {
+    const [a] = performAnalysis(
+      `
+      pub let out = fn init, bind, f {
+        // bind(init, fn x {
+        //   f(x)
+        // })
+        let#bind x = init;
+        f(x)
+      }
+      `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      out: "Fn(a, Fn(a, Fn(b) -> c) -> d, Fn(b) -> c) -> d",
+    });
+  });
+});
+
 describe("struct", () => {
   test("allow creating types", () => {
     const [a] = performAnalysis(

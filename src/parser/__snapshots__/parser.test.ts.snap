@@ -1951,6 +1951,7 @@ exports[`monadic let syntax sugar 1`] = `
                 "line": 2,
               },
             },
+            "type": "identifier",
           },
           "pattern": {
             "name": "x",
@@ -2073,6 +2074,7 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
                 "line": 2,
               },
             },
+            "type": "identifier",
           },
           "pattern": {
             "name": "x",
@@ -7112,6 +7114,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
                 "line": 0,
               },
             },
+            "type": "identifier",
           },
           "pattern": {
             "args": [

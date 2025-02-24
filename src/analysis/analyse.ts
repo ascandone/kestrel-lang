@@ -250,6 +250,26 @@ export class Analysis {
         this.unifyNodes(expr.pattern, expr.value);
         return;
 
+      case "let#":
+        this.unifyNode(expr.mapper, {
+          tag: "Fn",
+          args: [
+            this.getRawType(expr.value),
+            {
+              tag: "Fn",
+              args: [this.getRawType(expr.pattern)],
+              return: this.getRawType(expr.body),
+            },
+          ],
+          return: this.getRawType(expr),
+        });
+
+        this.typecheckExpr(expr.mapper);
+        this.typecheckExpr(expr.value);
+        this.typecheckExpr(expr.body);
+        this.typecheckPattern(expr.pattern);
+        return;
+
       case "list-literal": {
         const listType = this.unifier.freshVar();
         this.unifyNode(expr, list(listType));
@@ -316,7 +336,6 @@ export class Analysis {
         return;
       }
 
-      case "let#":
       case "struct-literal":
       case "field-access":
         throw new Error("TODO handle typecheck of: " + expr.type);

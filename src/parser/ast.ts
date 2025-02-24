@@ -71,7 +71,7 @@ export type SyntaxSugar =
     }
   | {
       type: "let#";
-      mapper: RangeMeta & { namespace?: string; name: string };
+      mapper: RangeMeta & (UntypedExpr & { type: "identifier" });
       pattern: MatchPattern;
       value: UntypedExpr;
       body: UntypedExpr;

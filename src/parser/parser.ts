@@ -346,6 +346,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
     range: rangeOfCtx(ctx),
     pattern: new MatchPatternVisitor().visit(ctx._pattern),
     mapper: {
+      type: "identifier",
       name: ctx._mapper._name.text,
       range: rangeOfCtx(ctx.qualifiedId()),
       namespace: ctx.qualifiedId().moduleNamespace()?.getText(),

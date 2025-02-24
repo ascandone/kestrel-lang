@@ -518,10 +518,33 @@ export class ResolutionAnalysis {
 
         const bindingsEntries = this.extractPatternIdentifiers(
           expr.pattern,
-        ).map((p) => [p.name, p] as const);
+        ).map((b) => {
+          this.unusedBindings.add(b);
+          return [b.name, b] as const;
+        });
+
+        this.runPatternResolution(expr.pattern);
+        this.runValuesResolution(expr.body, {
+          ...localScope,
+          ...Object.fromEntries(bindingsEntries),
+        });
+
         for (const [_, binding] of bindingsEntries) {
-          this.unusedBindings.add(binding);
+          this.checkUnusedVars(binding);
         }
+        return;
+      }
+
+      case "let#": {
+        this.runValuesResolution(expr.mapper, localScope);
+        this.runValuesResolution(expr.value, localScope);
+
+        const bindingsEntries = this.extractPatternIdentifiers(
+          expr.pattern,
+        ).map((b) => {
+          this.unusedBindings.add(b);
+          return [b.name, b] as const;
+        });
 
         this.runPatternResolution(expr.pattern);
         this.runValuesResolution(expr.body, {
@@ -558,7 +581,6 @@ export class ResolutionAnalysis {
         }
         return;
 
-      case "let#":
       case "struct-literal":
       case "field-access":
         throw new Error("TODO resolution on: " + expr.type);
