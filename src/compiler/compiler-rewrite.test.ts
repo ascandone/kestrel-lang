@@ -1889,14 +1889,14 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("do not duplicate vars", () => {
+  test("do not duplicate vars", () => {
     const out = compileSrc(`
       extern let show2: Fn(a, a) -> String where a: Show
       let f = show2
     `);
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$f = Show_5 => Main$show2(Show_5);"
-    `);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$f = Show_0 => Main$show2(Show_0);"`,
+    );
   });
 
   test("handle multiple traits", () => {
@@ -1911,7 +1911,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("handle multiple traits when applying to concrete args", () => {
+  test("handle multiple traits when applying to concrete args", () => {
     const out = compileSrc(
       `
       extern let show: Fn(a, a) -> String where a: Eq + Show
@@ -1956,7 +1956,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("do not duplicate when there's only one var to pass", () => {
+  test("do not duplicate when there's only one var to pass", () => {
     const out = compileSrc(
       `
       extern let show2: Fn(a, a) -> String where a: Show
@@ -1971,7 +1971,7 @@ describe("traits compilation", () => {
     );
   });
 
-  test.skip("pass an arg twice if needed", () => {
+  test("pass an arg twice if needed", () => {
     const out = compileSrc(
       `
       extern let show2: Fn(a, b) -> String where a: Show, b: Show
@@ -1984,7 +1984,7 @@ describe("traits compilation", () => {
     );
   });
 
-  test.skip("partial application", () => {
+  test("partial application", () => {
     const out = compileSrc(
       `
       extern let show2: Fn(a, b) -> String where a: Show, b: Show
@@ -1996,11 +1996,11 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(
-      `"const Main$f = Show_11 => arg => Main$show2(Show_11, Show_String$String)(arg, \`hello\`);"`,
+      `"const Main$f = Show_0 => arg => Main$show2(Show_0, Show_String$String)(arg, \`hello\`);"`,
     );
   });
 
-  test.skip("pass trait dicts for types with params when they do not have deps", () => {
+  test("pass trait dicts for types with params when they do not have deps", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
 
@@ -2058,7 +2058,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("trait deps in args when param aren't traits dependencies", () => {
+  test("trait deps in args when param aren't traits dependencies", () => {
     const out = compileSrc(`
       type IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
       extern let s: IsShow<a> where a: Show
@@ -2067,11 +2067,11 @@ describe("traits compilation", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$X = 0;
-      const Main$x = Show_6 => Main$s(Show_6);"
+      const Main$x = Show_0 => Main$s(Show_0);"
     `);
   });
 
-  test.skip("trait deps in args when param aren traits dependencies", () => {
+  test("trait deps in args when param aren traits dependencies", () => {
     const out = compileSrc(`
       type Option<a, b, c> { Some(b) } 
       extern let s: Option<a, b, c> where b: Show
@@ -2080,7 +2080,7 @@ describe("traits compilation", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Some = _0 => _0;
-      const Main$x = Show_11 => Main$s(Show_11);"
+      const Main$x = Show_1 => Main$s(Show_1);"
     `);
   });
 
