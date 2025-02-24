@@ -1727,6 +1727,23 @@ describe("traits", () => {
     });
   });
 
+  test("properly instantiate", () => {
+    const [a] = performAnalysis(
+      `
+        extern type String
+        pub let a = 42
+        extern pub let show: Fn(a, a) -> String where a: Eq + Show
+        pub let f = show
+      `,
+    );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      a: "Int",
+      show: "Fn(a, a) -> String where a: Eq + Show",
+      f: "Fn(a, a) -> String where a: Eq + Show",
+    });
+  });
+
   test("succeeds to typecheck when a required trait is not implemented", () => {
     const registry = TraitRegistry.from([
       {

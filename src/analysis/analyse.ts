@@ -150,7 +150,7 @@ export class Analysis {
           resolution.declaration.binding,
         );
 
-        const poly = analysis.getType(resolution.declaration.binding);
+        const poly = analysis.getRawType(resolution.declaration.binding);
 
         return this.unifier.instantiate(poly, traitsMap);
       }
