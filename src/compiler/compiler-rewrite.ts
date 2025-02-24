@@ -23,16 +23,15 @@ import {
   joinAndExprs,
   sanitizeNamespace,
 } from "./utils";
-// import {
-//   deriveEqAdt,
-//   deriveEqStruct,
-//   deriveShowAdt,
-//   deriveShowStruct,
-// } from "./derive";
+import {
+  deriveEqAdt,
+  deriveEqStruct,
+  deriveShowAdt,
+  deriveShowStruct,
+} from "./derive-rewrite";
 import { Analysis } from "../analysis";
 import { NamespaceResolution } from "../analysis/resolution";
 import { TraitRegistry } from "../type/traitsRegistry";
-import { typeToString } from "../typecheck";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -704,6 +703,8 @@ class Compiler {
         );
 
       case "struct-literal": {
+        throw new Error("TODO struct-lit");
+
         const resolution = src.struct.resolution;
         if (resolution === undefined) {
           throw new Error(
@@ -982,50 +983,75 @@ class Compiler {
       );
     }
 
-    // if (
-    //   // Bool equality is implemented inside core
-    //   decl.name !== "Bool" &&
-    //   this.shouldDeriveTrait("Eq", decl)
-    // ) {
-    //   buf.push({
-    //     type: "VariableDeclaration",
-    //     kind: "const",
-    //     declarations: [
-    //       {
-    //         type: "VariableDeclarator",
-    //         id: {
-    //           type: "Identifier",
-    //           name: `Eq_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
-    //         },
-    //         init: deriveEqAdt(decl),
-    //       },
-    //     ],
-    //   });
-    // }
+    if (
+      // Bool equality is implemented inside core
+      decl.name !== "Bool" &&
+      this.shouldDeriveTrait("Eq", decl)
+    ) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Eq_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
+            },
+            init: deriveEqAdt(this.analysis.resolution, decl),
+          },
+        ],
+      });
+    }
 
-    // if (
-    //   // Bool and List show are implemented inside core
-    //   decl.name !== "Bool" &&
-    //   decl.name !== "List" &&
-    //   this.shouldDeriveTrait("Show", decl)
-    // ) {
-    //   buf.push({
-    //     type: "VariableDeclaration",
-    //     kind: "const",
-    //     declarations: [
-    //       {
-    //         type: "VariableDeclarator",
-    //         id: {
-    //           type: "Identifier",
-    //           name: `Show_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
-    //         },
-    //         init: deriveShowAdt(decl),
-    //       },
-    //     ],
-    //   });
-    // }
+    if (
+      // Bool and List show are implemented inside core
+      decl.name !== "Bool" &&
+      decl.name !== "List" &&
+      this.shouldDeriveTrait("Show", decl)
+    ) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Show_${sanitizeNamespace(this.analysis.ns)}$${decl.name}`,
+            },
+            init: deriveShowAdt(this.analysis.resolution, decl),
+          },
+        ],
+      });
+    }
 
     return buf;
+  }
+
+  private shouldDeriveTrait(
+    trait: string,
+    typedDeclaration: UntypedTypeDeclaration,
+  ): boolean {
+    if (
+      this.options.allowDeriving !== undefined &&
+      !this.options.allowDeriving.includes(trait)
+    ) {
+      return false;
+    }
+
+    const deps = this.analysis.traitsRegistry.getTraitDepsFor(trait, {
+      tag: "Named",
+      name: typedDeclaration.name,
+      module: this.analysis.ns,
+      package: this.analysis.package_,
+      args: typedDeclaration.params.map((_, id) => ({
+        tag: "Var",
+        id,
+      })),
+    });
+
+    return deps !== undefined;
   }
 
   private compileStruct(
