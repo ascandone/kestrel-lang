@@ -1123,30 +1123,6 @@ class Compiler {
       sourceType: "script",
     }).code;
   }
-
-  // private shouldDeriveTrait(
-  //   trait: string,
-  //   typedDeclaration: UntypedTypeDeclaration,
-  // ): boolean {
-  //   if (
-  //     this.options.allowDeriving !== undefined &&
-  //     !this.options.allowDeriving.includes(trait)
-  //   ) {
-  //     return false;
-  //   }
-
-  //   const deps = TVar.typeImplementsTrait(
-  //     {
-  //       type: "named",
-  //       name: typedDeclaration.name,
-  //       moduleName: this.analysis.ns,
-  //       args: typedDeclaration.params.map(() => TVar.fresh().asType()),
-  //     },
-  //     trait,
-  //   );
-
-  //   return deps !== undefined;
-  // }
 }
 
 function compileConst(ast: ConstLiteral): t.Expression {
