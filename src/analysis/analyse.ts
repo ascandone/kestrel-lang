@@ -476,6 +476,16 @@ export class Analysis {
       }
     }
   }
+
+  *getDependencies(): Generator<UntypedImport> {
+    for (const import_ of this.options.implicitImports ?? []) {
+      yield import_;
+    }
+
+    for (const import_ of this.module.imports) {
+      yield import_;
+    }
+  }
 }
 
 // Keep this in sync with core

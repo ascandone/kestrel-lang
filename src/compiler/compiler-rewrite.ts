@@ -1,4 +1,5 @@
-import { Type, typePPrint } from "../type";
+import * as coreTypes from "../analysis/coreTypes";
+import { Type } from "../type";
 import * as t from "@babel/types";
 import generate from "@babel/generator";
 import {
@@ -12,13 +13,11 @@ import {
   UntypedTypeVariant,
 } from "../parser";
 import { BinaryExpression } from "@babel/types";
-import { optimizeModule } from "./optimize";
 import { exit } from "node:process";
 import { col } from "../utils/colors";
 import {
   AdtReprType,
   TAG_FIELD,
-  getAdtReprType,
   getAdtReprType_REWRITE,
   joinAndExprs,
   sanitizeNamespace,
@@ -39,7 +38,9 @@ export type CompileOptions = {
 
 export function compile(
   analysis: Analysis,
-  options: CompileOptions = {},
+  options: CompileOptions = {
+    allowDeriving: ["Eq", "Show"],
+  },
 ): string {
   return new Compiler(analysis, options).compile(analysis.module);
 }
@@ -703,54 +704,54 @@ class Compiler {
         );
 
       case "struct-literal": {
-        throw new Error("TODO struct-lit");
+        // throw new Error("TODO struct-lit");
 
-        const resolution = src.struct.resolution;
-        if (resolution === undefined) {
-          throw new Error(
-            "[unreachable] undefined resolution for struct declaration",
-          );
-        }
+        // const resolution = src.struct.resolution;
+        // if (resolution === undefined) {
+        //   throw new Error(
+        //     "[unreachable] undefined resolution for struct declaration",
+        //   );
+        // }
 
-        const properties: t.ObjectProperty[] = [];
+        // const properties: t.ObjectProperty[] = [];
 
-        let spreadIdentifier: t.Identifier | undefined;
-        for (const declarationField of resolution.declaration.fields) {
-          const structLitField = src.fields.find(
-            (f) => f.field.name === declarationField.name,
-          );
+        // let spreadIdentifier: t.Identifier | undefined;
+        // for (const declarationField of resolution.declaration.fields) {
+        //   const structLitField = src.fields.find(
+        //     (f) => f.field.name === declarationField.name,
+        //   );
 
-          if (structLitField !== undefined) {
-            properties.push({
-              type: "ObjectProperty",
-              key: { type: "Identifier", name: structLitField.field.name },
-              value: this.compileExprAsJsExpr(structLitField.value, undefined),
-              shorthand: true,
-              computed: false,
-            });
-          } else if (src.spread === undefined) {
-            throw new Error("[unreachable] missing fields");
-          } else {
-            if (spreadIdentifier === undefined) {
-              spreadIdentifier = this.precomputeValue(src.spread);
-            }
+        //   if (structLitField !== undefined) {
+        //     properties.push({
+        //       type: "ObjectProperty",
+        //       key: { type: "Identifier", name: structLitField.field.name },
+        //       value: this.compileExprAsJsExpr(structLitField.value, undefined),
+        //       shorthand: true,
+        //       computed: false,
+        //     });
+        //   } else if (src.spread === undefined) {
+        //     throw new Error("[unreachable] missing fields");
+        //   } else {
+        //     if (spreadIdentifier === undefined) {
+        //       spreadIdentifier = this.precomputeValue(src.spread);
+        //     }
 
-            properties.push({
-              type: "ObjectProperty",
-              key: { type: "Identifier", name: declarationField.name },
-              value: {
-                type: "MemberExpression",
-                object: spreadIdentifier,
-                property: { type: "Identifier", name: declarationField.name },
-                computed: false,
-              },
-              shorthand: true,
-              computed: false,
-            });
-          }
-        }
+        //     properties.push({
+        //       type: "ObjectProperty",
+        //       key: { type: "Identifier", name: declarationField.name },
+        //       value: {
+        //         type: "MemberExpression",
+        //         object: spreadIdentifier,
+        //         property: { type: "Identifier", name: declarationField.name },
+        //         computed: false,
+        //       },
+        //       shorthand: true,
+        //       computed: false,
+        //     });
+        //   }
+        // }
 
-        return { type: "ObjectExpression", properties };
+        return { type: "ObjectExpression", properties: [] };
       }
 
       case "field-access":
@@ -820,7 +821,7 @@ class Compiler {
           throw new Error("[unreachable] variant not found in declaration");
         }
 
-        const repr = getAdtReprType(resolution.declaration);
+        const repr = getAdtReprType_REWRITE(resolution.declaration);
         const eqLeftSide: t.Expression = (() => {
           switch (repr) {
             case "enum":
@@ -1327,31 +1328,6 @@ function findDeclarationDictsParams(
   return buf.map((name) => ({ type: "Identifier", name }));
 }
 
-function traitDepsForNamedType(
-  traitsRegistry: TraitRegistry,
-  trait: string,
-  t: Type & { tag: "Named" },
-): Type[] {
-  const deps = traitsRegistry.getTraitDepsFor(trait, t);
-  if (deps === undefined) {
-    throw new Error("[unreachable] type does not implement given trait");
-  }
-
-  const out: Type[] = [];
-
-  for (const dep of deps) {
-    const index = freshArgs.findIndex((v) => {
-      const r = v.resolve();
-      return r.type === "unbound" && r.id === dep.id;
-    });
-
-    const a = t.args[index]!;
-    out.push(a);
-  }
-
-  return out;
-}
-
 function applyTraitToType(
   traitsRegistry: TraitRegistry,
   type: Type,
@@ -1414,7 +1390,7 @@ function resolvePassedDicts(
               type: "Identifier",
               // TODO fix type err
               // Maybe the rest can be simplified?
-              name: applyTraitToType(traitsRegistry, instantiatedExpr, trait),
+              name: applyTraitToType(traitsRegistry, instantiatedExpr, trait)!,
             });
           }
         }
@@ -1465,12 +1441,7 @@ export const defaultEntryPoint: NonNullable<
   CompileProjectOptions["entrypoint"]
 > = {
   module: "Main",
-  type: {
-    type: "named",
-    moduleName: "Task",
-    name: "Task",
-    args: [{ type: "named", name: "Unit", moduleName: "Tuple", args: [] }],
-  },
+  type: coreTypes.task(coreTypes.unit),
 };
 
 export type CompileProjectOptions = {
@@ -1483,11 +1454,11 @@ export type CompileProjectOptions = {
 };
 
 export function compileProject(
-  typedProject: Record<string, UntypedModule>,
+  typedProject: Record<string, Analysis>,
   {
     entrypoint = defaultEntryPoint,
     externs = {},
-    optimize = false,
+    // optimize = false,
   }: CompileProjectOptions = {},
 ): string {
   const entry = typedProject[entrypoint.module];
@@ -1495,7 +1466,7 @@ export function compileProject(
     throw new Error(`Entrypoint not found: '${entrypoint.module}'`);
   }
 
-  const mainDecl = entry.declarations.find(
+  const mainDecl = [...entry.getDeclarations()].find(
     (d) => d.binding.name === "main" && d.pub,
   );
   if (mainDecl === undefined) {
@@ -1518,7 +1489,7 @@ export function compileProject(
       exit(1);
     }
 
-    for (const import_ of module.imports) {
+    for (const import_ of module.getDependencies()) {
       visit(import_.ns);
     }
 
@@ -1527,7 +1498,8 @@ export function compileProject(
       buf.push(extern);
     }
 
-    const out = compile(ns, optimize ? optimizeModule(module) : module);
+    // TODO handle optimize
+    const out = compile(module);
 
     buf.push(out);
   }
