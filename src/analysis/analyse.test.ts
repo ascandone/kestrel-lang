@@ -1874,7 +1874,7 @@ describe("traits", () => {
       }
       
       pub let f = fn x {
-        show((x))
+        show(Some(x))
       }
       `,
     );

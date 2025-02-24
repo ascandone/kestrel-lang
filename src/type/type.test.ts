@@ -17,6 +17,7 @@ import {
   result,
 } from "../__test__/commonTypes";
 import { TraitRegistry } from "./traitsRegistry";
+import { typePPrint } from "./prettyPrint";
 
 describe("unify", () => {
   test("unifing two concrete vars when they match", () => {
@@ -438,6 +439,31 @@ describe("unify traits", () => {
       "Ord",
       "Show",
     ]);
+  });
+
+  test("merge traits nested", () => {
+    const u = new Unifier(
+      TraitRegistry.from([
+        {
+          moduleName: "Main",
+          packageName: "core",
+          typeName: "List",
+          trait: "Show",
+          deps: [true],
+        },
+      ]),
+    );
+
+    const t0 = u.freshVar(["Show"]);
+    const tf: Type = { tag: "Fn", args: [t0], return: num };
+
+    const lst: Type = list(u.freshVar());
+
+    u.unify({ tag: "Fn", args: [lst], return: u.freshVar() }, tf);
+
+    expect(
+      typePPrint(u.resolve(lst), (id) => u.getResolvedTypeTraits(id)),
+    ).toEqual("List<b> where b: Show");
   });
 
   test("unify trait-associated type var with a named type which does not implements the trait", () => {

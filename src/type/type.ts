@@ -187,12 +187,8 @@ export class Unifier {
     return new Instantiator(this).instantiate(t, traitsMap);
   }
 
-  private assocTraits(type: Type, traits: Set<string>) {
-    if (traits.size === 0) {
-      // Apparently removing this early return breaks the code
-      // go figure 🤷
-      return;
-    }
+  private assocTraits(type: Type, traits: Iterable<string>) {
+    type = this.resolve(type);
 
     switch (type.tag) {
       case "Var": {
@@ -243,7 +239,7 @@ export class Unifier {
   }
 
   private link(id: number, type: Type) {
-    this.assocTraits(type, this.getResolvedTypeTraitsMut(id));
+    this.assocTraits(type, this.getResolvedTypeTraits(id));
     this.substitutions.set(id, type);
   }
 }
