@@ -1,5 +1,5 @@
 import { ConcreteType, TVar, resolveType } from "../typecheck/type";
-import { Type } from "../type/type";
+import { Type, Unifier } from "../type/type";
 import * as t from "@babel/types";
 import generate from "@babel/generator";
 import {
@@ -32,6 +32,7 @@ import {
 // } from "./derive";
 import { Analysis } from "../analysis";
 import { NamespaceResolution } from "../analysis/resolution";
+import { TraitRegistry } from "../type/traitsRegistry";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -510,15 +511,14 @@ class Compiler {
             }
 
             // TODO what about let exprs?
-            // const traitArgs = resolvePassedDicts(
-            //   resolution.declaration.binding.$,
-            //   src.$,
-            // );
+            const traitArgs = resolvePassedDicts(
+              this.analysis.getPolyType(resolution.declaration.binding),
+              this.analysis.getType(src),
+            );
 
-            return ident;
-            // if (traitArgs.length === 0) {
-            //   return ident;
-            // }
+            if (traitArgs.length === 0) {
+              return ident;
+            }
 
             return {
               type: "CallExpression",
@@ -937,8 +937,9 @@ class Compiler {
       type: "assign_var",
       declare: true,
       ident: makeGlobalIdentifier(this.analysis.ns, decl.binding.name),
-      // dictParams: findDeclarationDictsParams(decl.binding.$.asType()),
-      dictParams: [],
+      dictParams: findDeclarationDictsParams(
+        ...this.analysis.getPolyType(decl.binding),
+      ),
     });
     this.frames.pop();
 
@@ -1283,40 +1284,36 @@ class Frame {
   }
 }
 
-function findDeclarationDictsParams(type: Type): t.Identifier[] {
+function findDeclarationDictsParams(
+  type: Type,
+  getIdTraits: (id: number) => string[],
+): t.Identifier[] {
   const buf: string[] = [];
 
   function helper(type: Type) {
-    switch (type.type) {
-      case "fn":
+    switch (type.tag) {
+      case "Fn":
         for (const arg of type.args) {
           helper(arg);
         }
         helper(type.return);
         return;
 
-      case "named": {
+      case "Named": {
         for (const arg of type.args) {
           helper(arg);
         }
         return;
       }
 
-      case "var": {
-        const resolved = type.var.resolve();
-        switch (resolved.type) {
-          case "bound":
-            helper(resolved.value);
-            return;
-          case "unbound":
-            for (const trait of resolved.traits) {
-              const name = `${trait}_${resolved.id}`;
-              if (!buf.includes(name)) {
-                buf.push(name);
-              }
-            }
-            return;
+      case "Var": {
+        for (const trait of getIdTraits(type.id)) {
+          const name = `${trait}_${type.id}`;
+          if (!buf.includes(name)) {
+            buf.push(name);
+          }
         }
+        return;
       }
     }
   }
@@ -1327,20 +1324,11 @@ function findDeclarationDictsParams(type: Type): t.Identifier[] {
 }
 
 function traitDepsForNamedType(
-  t: Type & { type: "named" },
+  traitsRegistry: TraitRegistry,
   trait: string,
+  t: Type & { tag: "Named" },
 ): Type[] {
-  const freshArgs = t.args.map((_) => TVar.fresh());
-
-  // TODO simplify this workaround
-  const genericType: Type = {
-    type: "named",
-    moduleName: t.moduleName,
-    name: t.name,
-    args: freshArgs.map((a) => a.asType()),
-  };
-
-  const deps = TVar.typeImplementsTrait(genericType, trait);
+  const deps = traitsRegistry.getTraitDepsFor(trait, t);
   if (deps === undefined) {
     throw new Error("[unreachable] type does not implement given trait");
   }
@@ -1360,130 +1348,94 @@ function traitDepsForNamedType(
   return out;
 }
 
-function applyTraitToType(type: Type, trait: string): string {
-  const resolved = resolveType(type);
-
-  switch (resolved.type) {
-    case "fn":
+function applyTraitToType(
+  // traitsRegistry: TraitRegistry,
+  type: Type,
+  trait: string,
+): string {
+  switch (type.tag) {
+    case "Fn":
       throw new Error("TODO bound fn");
 
-    case "named": {
-      let name = `${trait}_${sanitizeNamespace(resolved.moduleName)}$${resolved.name}`;
-      const deps = traitDepsForNamedType(resolved, trait).map((dep) =>
-        applyTraitToType(dep, trait),
-      );
+    case "Var":
+      return `${trait}_${type.id}`;
 
-      if (deps.length !== 0) {
-        name += `(${deps.join(", ")})`;
-      }
+    case "Named": {
+      let name = `${trait}_${sanitizeNamespace(type.module)}$${type.name}`;
+
+      // const deps = traitDepsForNamedType(traitsRegistry, trait, type).map(
+      //   (dep) => applyTraitToType(traitsRegistry, dep, trait),
+      // );
+
+      // if (deps.length !== 0) {
+      //   name += `(${deps.join(", ")})`;
+      // }
 
       return name;
-    }
-
-    case "unbound": {
-      if (!resolved.traits.includes(trait)) {
-        throw new Error(
-          "TODO unbound does not impl needed trait: " +
-            JSON.stringify(resolved),
-        );
-      }
-
-      return `${trait}_${resolved.id}`;
     }
   }
 }
 
 function resolvePassedDicts(
-  genExpr: TVar,
-  instantiatedExpr: TVar,
+  [genExpr, genExprTraits]: [Type, (id: number) => string[]],
+  instantiatedExpr: Type,
 ): t.Identifier[] {
   const buf: t.Identifier[] = [];
 
   // e.g. { 0 => Set("Show", "Debug") }
   const alreadyVisitedVarsIds: Map<number, Set<string>> = new Map();
 
-  function checkedPush(genExprId: number, trait: string, name: string) {
-    let lookup = alreadyVisitedVarsIds.get(genExprId);
-    if (lookup === undefined) {
-      lookup = new Set();
-      alreadyVisitedVarsIds.set(genExprId, lookup);
-    }
-
-    if (lookup.has(trait)) {
-      // Do not add again
-      return;
-    }
-
-    lookup.add(trait);
-    buf.push({ type: "Identifier", name });
-  }
-
   function helper(genExpr: Type, instantiatedExpr: Type) {
-    switch (genExpr.type) {
-      case "fn": {
-        const resolved = resolveType(instantiatedExpr);
+    switch (genExpr.tag) {
+      case "Var": {
+        for (const trait of genExprTraits(genExpr.id)) {
+          let lookup = alreadyVisitedVarsIds.get(genExpr.id);
+          if (lookup === undefined) {
+            lookup = new Set();
+            alreadyVisitedVarsIds.set(genExpr.id, lookup);
+          }
 
-        if (resolved.type !== "fn") {
-          throw new Error(
-            "[unreachable] unexpected value of kind: " + resolved.type,
-          );
-        }
-
-        const instantiatedFn = resolved;
-
-        for (let i = 0; i < genExpr.args.length; i++) {
-          const genArg = genExpr.args[i]!,
-            instArg = instantiatedFn.args[i]!;
-
-          helper(genArg, instArg);
-        }
-
-        helper(genExpr.return, instantiatedFn.return);
-        return;
-      }
-
-      case "named": {
-        const resolved = resolveType(instantiatedExpr);
-        if (resolved.type !== "named") {
-          throw new Error(
-            "[unreachable] unexpected value of kind: " + resolved.type,
-          );
-        }
-
-        const instantiatedConcreteType = resolved;
-
-        for (let i = 0; i < genExpr.args.length; i++) {
-          const genArg = genExpr.args[i]!,
-            instArg = instantiatedConcreteType.args[i]!;
-
-          helper(genArg, instArg);
-        }
-        return;
-      }
-
-      case "var": {
-        const resolvedGenExpr = genExpr.var.resolve();
-        switch (resolvedGenExpr.type) {
-          case "bound":
-            return helper(resolvedGenExpr.value, instantiatedExpr);
-
-          case "unbound": {
-            for (const trait of resolvedGenExpr.traits) {
-              checkedPush(
-                resolvedGenExpr.id,
-                trait,
-                applyTraitToType(instantiatedExpr, trait),
-              );
-            }
-
-            return;
+          // Do not add again
+          if (!lookup.has(trait)) {
+            lookup.add(trait);
+            buf.push({
+              type: "Identifier",
+              name: applyTraitToType(instantiatedExpr, trait),
+            });
           }
         }
+        break;
+      }
+
+      case "Fn": {
+        if (instantiatedExpr.tag !== "Fn") {
+          throw new Error(
+            "[unreachable] unexpected value of kind: " + instantiatedExpr.tag,
+          );
+        }
+        for (let i = 0; i < genExpr.args.length; i++) {
+          helper(genExpr.args[i]!, instantiatedExpr.args[i]!);
+        }
+        helper(genExpr.return, instantiatedExpr.return);
+        break;
+      }
+
+      case "Named": {
+        if (instantiatedExpr.tag !== "Named") {
+          throw new Error(
+            "[unreachable] unexpected value of kind: " + instantiatedExpr.tag,
+          );
+        }
+        for (let i = 0; i < genExpr.args.length; i++) {
+          helper(genExpr.args[i]!, instantiatedExpr.args[i]!);
+        }
+        break;
       }
     }
   }
 
-  helper(genExpr.asType(), instantiatedExpr.asType());
+  helper(genExpr, instantiatedExpr);
+
   return buf;
 }
 

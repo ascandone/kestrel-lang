@@ -5,6 +5,7 @@ import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
 import { TVar } from "../typecheck/type";
 import { Analysis } from "../analysis";
 import { Unifier } from "../type";
+import { TraitRegistry } from "../type/traitsRegistry";
 
 describe("datatype representation", () => {
   test("int", () => {
@@ -639,6 +640,7 @@ describe("list literal", () => {
 describe("TCO", () => {
   test("does not apply inside infix application", () => {
     const out = compileSrc(`
+    extern type Int
     extern let (+): Fn(Int, Int) -> Int
     let loop = fn {
       1 + loop()
@@ -1819,7 +1821,7 @@ describe("pattern matching", () => {
 
 describe.todo("project compilation");
 
-describe.todo("traits compilation", () => {
+describe("traits compilation", () => {
   test("non-fn values", () => {
     const out = compileSrc(`
       extern let p: a where a: Show
@@ -1849,7 +1851,7 @@ describe.todo("traits compilation", () => {
     );
   });
 
-  test("unresolved traits", () => {
+  test.skip("unresolved traits", () => {
     const out = compileSrc(`
       extern let p: a  where a: Show
       let x = p //: a1 where a1: Show 
@@ -1875,7 +1877,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("applying with type variables", () => {
+  test.skip("applying with type variables", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
       let f = fn x { show(x) }
@@ -1885,7 +1887,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("do not duplicate vars", () => {
+  test.skip("do not duplicate vars", () => {
     const out = compileSrc(`
       extern let show2: Fn(a, a) -> String where a: Show
       let f = show2
@@ -1897,6 +1899,7 @@ describe.todo("traits compilation", () => {
 
   test("handle multiple traits", () => {
     const out = compileSrc(`
+      let a = 42
       extern let show: Fn(a, a) -> String where a: Eq + Show
       let f = show
     `);
@@ -1905,7 +1908,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("handle multiple traits when applying to concrete args", () => {
+  test.skip("handle multiple traits when applying to concrete args", () => {
     const out = compileSrc(
       `
       extern let show: Fn(a, a) -> String where a: Eq + Show
@@ -1919,7 +1922,7 @@ describe.todo("traits compilation", () => {
     );
   });
 
-  test("do not pass extra args", () => {
+  test.skip("do not pass extra args", () => {
     const out = compileSrc(
       `
       extern type String
@@ -1950,7 +1953,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("do not duplicate when there's only one var to pass", () => {
+  test.skip("do not duplicate when there's only one var to pass", () => {
     const out = compileSrc(
       `
       extern let show2: Fn(a, a) -> String where a: Show
@@ -1965,7 +1968,7 @@ describe.todo("traits compilation", () => {
     );
   });
 
-  test("pass an arg twice if needed", () => {
+  test.skip("pass an arg twice if needed", () => {
     const out = compileSrc(
       `
       extern let show2: Fn(a, b) -> String where a: Show, b: Show
@@ -1978,7 +1981,7 @@ describe.todo("traits compilation", () => {
     );
   });
 
-  test("partial application", () => {
+  test.skip("partial application", () => {
     const out = compileSrc(
       `
       extern let show2: Fn(a, b) -> String where a: Show, b: Show
@@ -1994,7 +1997,7 @@ describe.todo("traits compilation", () => {
     );
   });
 
-  test("pass trait dicts for types with params when they do not have deps", () => {
+  test.skip("pass trait dicts for types with params when they do not have deps", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
 
@@ -2009,7 +2012,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("pass higher order trait dicts for types with params when they do have deps", () => {
+  test.skip("pass higher order trait dicts for types with params when they do have deps", () => {
     const out = compileSrc(
       `
       extern let show: Fn(a) -> String where a: Show
@@ -2028,7 +2031,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("deeply nested higher order traits", () => {
+  test.skip("deeply nested higher order traits", () => {
     const out = compileSrc(
       `
       extern let show: Fn(a) -> String where a: Show
@@ -2052,7 +2055,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("trait deps in args when param aren't traits dependencies", () => {
+  test.skip("trait deps in args when param aren't traits dependencies", () => {
     const out = compileSrc(`
       type IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
       extern let s: IsShow<a> where a: Show
@@ -2065,7 +2068,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("trait deps in args when param aren traits dependencies", () => {
+  test.skip("trait deps in args when param aren traits dependencies", () => {
     const out = compileSrc(`
       type Option<a, b, c> { Some(b) } 
       extern let s: Option<a, b, c> where b: Show
@@ -2078,7 +2081,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("pass higher order trait dicts for types when their deps is in scope", () => {
+  test.skip("pass higher order trait dicts for types when their deps is in scope", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
 
@@ -2104,7 +2107,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("== handles traits dicts", () => {
+  test.skip("== handles traits dicts", () => {
     const out = compileSrc(
       `
   extern let (==): Fn(a, a) -> Bool where a: Eq
@@ -2117,7 +2120,7 @@ describe.todo("traits compilation", () => {
   `);
   });
 
-  test("== compares primitives directly", () => {
+  test.skip("== compares primitives directly", () => {
     const out = compileSrc(
       `
   extern type Bool
@@ -2138,7 +2141,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("== handles traits dicts on adts", () => {
+  test.skip("== handles traits dicts on adts", () => {
     const out = compileSrc(
       `
     extern type Int
@@ -2160,7 +2163,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("fn returning arg with traits", () => {
+  test.skip("fn returning arg with traits", () => {
     const out = compileSrc(
       `
       extern type Int
@@ -2198,7 +2201,7 @@ describe.todo("traits compilation", () => {
     `);
   });
 
-  test("fn returning arg handles params", () => {
+  test.skip("fn returning arg handles params", () => {
     const out = compileSrc(
       `
       extern type Int
@@ -2952,13 +2955,13 @@ function compileSrc(
   {
     ns = "Main",
     package_ = "kestrel_core",
-    // traitImpl = [],
+    traitImpl = [],
     deps = {},
     allowDeriving = [],
   }: CompileSrcOpts = {},
 ) {
-  // resetTraitsRegistry(traitImpl);
   const analysis = new Analysis(package_, ns, unsafeParse(src), {
+    baseTraitsRegistry: TraitRegistry.from(traitImpl),
     getDependency(namespace) {
       return deps[namespace];
     },
