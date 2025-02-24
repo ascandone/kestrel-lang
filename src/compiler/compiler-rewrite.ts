@@ -1,5 +1,4 @@
-import { ConcreteType, TVar, resolveType } from "../typecheck/type";
-import { Type, Unifier } from "../type/type";
+import { Type } from "../type";
 import * as t from "@babel/types";
 import generate from "@babel/generator";
 import {
@@ -938,7 +937,8 @@ class Compiler {
       declare: true,
       ident: makeGlobalIdentifier(this.analysis.ns, decl.binding.name),
       dictParams: findDeclarationDictsParams(
-        ...this.analysis.getPolyType(decl.binding),
+        this.analysis.getType(decl.binding),
+        (id) => this.analysis.getResolvedTypeTraits(id),
       ),
     });
     this.frames.pop();
@@ -1464,7 +1464,7 @@ export type CompileProjectOptions = {
   optimize?: boolean;
   entrypoint?: {
     module: string;
-    type: ConcreteType;
+    type: Type;
   };
 };
 

@@ -1851,14 +1851,14 @@ describe("traits compilation", () => {
     );
   });
 
-  test.skip("unresolved traits", () => {
+  test("unresolved traits", () => {
     const out = compileSrc(`
       extern let p: a  where a: Show
       let x = p //: a1 where a1: Show 
     `);
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$x = Show_1 => Main$p(Show_1);"
-    `);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$x = Show_2 => Main$p(Show_2);"`,
+    );
   });
 
   test("higher order fn", () => {
@@ -1877,13 +1877,15 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("applying with type variables", () => {
+  test("applying with type variables", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
-      let f = fn x { show(x) }
+      pub let e = 42 // used to increment the tvar counter
+      pub let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$f = Show_9 => x => Main$show(Show_9)(x);"
+      "const Main$e = 42;
+      const Main$f = Show_2 => x => Main$show(Show_2)(x);"
     `);
   });
 
@@ -1904,7 +1906,8 @@ describe("traits compilation", () => {
       let f = show
     `);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$f = (Eq_5, Show_5) => Main$show(Eq_5, Show_5);"
+      "const Main$a = 42;
+      const Main$f = (Eq_2, Show_2) => Main$show(Eq_2, Show_2);"
     `);
   });
 
