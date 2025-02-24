@@ -2015,7 +2015,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("pass higher order trait dicts for types with params when they do have deps", () => {
+  test("pass higher order trait dicts for types with params when they do have deps", () => {
     const out = compileSrc(
       `
       extern let show: Fn(a) -> String where a: Show
@@ -2034,7 +2034,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("deeply nested higher order traits", () => {
+  test("deeply nested higher order traits", () => {
     const out = compileSrc(
       `
       extern let show: Fn(a) -> String where a: Show

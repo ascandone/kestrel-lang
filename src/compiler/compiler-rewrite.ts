@@ -1,4 +1,4 @@
-import { Type } from "../type";
+import { Type, typePPrint } from "../type";
 import * as t from "@babel/types";
 import generate from "@babel/generator";
 import {
@@ -32,6 +32,7 @@ import {
 import { Analysis } from "../analysis";
 import { NamespaceResolution } from "../analysis/resolution";
 import { TraitRegistry } from "../type/traitsRegistry";
+import { typeToString } from "../typecheck";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -511,6 +512,7 @@ class Compiler {
 
             // TODO what about let exprs?
             const traitArgs = resolvePassedDicts(
+              this.analysis.traitsRegistry,
               this.analysis.getPolyType(resolution.declaration.binding),
               this.analysis.getType(src),
             );
@@ -1349,34 +1351,41 @@ function traitDepsForNamedType(
 }
 
 function applyTraitToType(
-  // traitsRegistry: TraitRegistry,
+  traitsRegistry: TraitRegistry,
   type: Type,
   trait: string,
-): string {
-  switch (type.tag) {
-    case "Fn":
-      throw new Error("TODO bound fn");
+): string | undefined {
+  const deps = traitsRegistry.getTraitDepsFor(trait, type) ?? new Set();
 
-    case "Var":
-      return `${trait}_${type.id}`;
+  function recur(type: Type): string | undefined {
+    switch (type.tag) {
+      case "Fn":
+        throw new Error("TODO bound fn");
 
-    case "Named": {
-      let name = `${trait}_${sanitizeNamespace(type.module)}$${type.name}`;
+      case "Var":
+        if (!deps.has(type.id)) {
+          return undefined;
+        }
 
-      // const deps = traitDepsForNamedType(traitsRegistry, trait, type).map(
-      //   (dep) => applyTraitToType(traitsRegistry, dep, trait),
-      // );
+        return `${trait}_${type.id}`;
 
-      // if (deps.length !== 0) {
-      //   name += `(${deps.join(", ")})`;
-      // }
+      case "Named": {
+        const args = type.args
+          .map((arg) => recur(arg))
+          .flatMap((x) => (x === undefined ? [] : [x]));
 
-      return name;
+        const appliedArgs = args.length === 0 ? "" : `(${args.join(", ")})`;
+
+        return `${trait}_${sanitizeNamespace(type.module)}$${type.name}${appliedArgs}`;
+      }
     }
   }
+
+  return recur(type);
 }
 
 function resolvePassedDicts(
+  traitsRegistry: TraitRegistry,
   [genExpr, genExprTraits]: [Type, (id: number) => string[]],
   instantiatedExpr: Type,
 ): t.Identifier[] {
@@ -1398,9 +1407,12 @@ function resolvePassedDicts(
           // Do not add again
           if (!lookup.has(trait)) {
             lookup.add(trait);
+
             buf.push({
               type: "Identifier",
-              name: applyTraitToType(instantiatedExpr, trait),
+              // TODO fix type err
+              // Maybe the rest can be simplified?
+              name: applyTraitToType(traitsRegistry, instantiatedExpr, trait),
             });
           }
         }
