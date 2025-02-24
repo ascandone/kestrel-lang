@@ -2939,10 +2939,6 @@ describe.todo("Derive Show instance for structs", () => {
   });
 });
 
-beforeEach(() => {
-  Unifier.resetTraitImpls();
-});
-
 type CompileSrcOpts = {
   ns?: string;
   package_?: string;
