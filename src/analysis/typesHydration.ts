@@ -153,17 +153,15 @@ export class TypeAstsHydration {
     const neededVarsSet = new Set<number>();
     for (const variant of typeDecl.variants) {
       for (const arg of variant.args) {
-        const argType = this.getPolyType(arg);
-
-        const neededVars = Unifier.getTraitDepsFor(trait, argType);
+        const neededVars = Unifier.getTraitDepsFor(
+          trait,
+          this.getPolyType(arg),
+          neededVarsSet,
+        );
 
         if (neededVars === undefined) {
           Unifier.unregisterTraitImpl(traitImpl);
           return;
-        }
-
-        for (const v of neededVars) {
-          neededVarsSet.add(v);
         }
       }
 

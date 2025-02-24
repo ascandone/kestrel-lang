@@ -248,16 +248,18 @@ export class Unifier {
   public static getTraitDepsFor(
     trait: string,
     type: Type,
-  ): number[] | undefined {
+    initialSet = new Set<number>(),
+  ): Set<number> | undefined {
+    const neededVars = initialSet;
     class CannotDerive extends Error {}
 
-    function* recur(type: Type): Generator<number> {
+    function recur(type: Type) {
       switch (type.tag) {
         case "Fn":
           throw new CannotDerive();
 
         case "Var":
-          yield type.id;
+          neededVars.add(type.id);
           return;
 
         case "Named": {
@@ -276,14 +278,15 @@ export class Unifier {
             if (!deps[i]!) {
               continue;
             }
-            yield* recur(type.args[i]!);
+            recur(type.args[i]!);
           }
         }
       }
     }
 
     try {
-      return [...recur(type)];
+      recur(type);
+      return neededVars;
     } catch (err) {
       if (!(err instanceof CannotDerive)) {
         throw err;

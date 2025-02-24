@@ -562,7 +562,7 @@ describe("derive traits dependencies", () => {
       args: [],
     });
 
-    expect(deps).toEqual([]);
+    expect(deps).toEqual(new Set());
   });
 
   test("derive with type args when args derive", () => {
@@ -591,7 +591,7 @@ describe("derive traits dependencies", () => {
       ],
     });
 
-    expect(deps).toEqual([]);
+    expect(deps).toEqual(new Set());
   });
 
   test("derive with type args when args do not derive", () => {
@@ -638,7 +638,7 @@ describe("derive traits dependencies", () => {
       ],
     });
 
-    expect(deps).toEqual([100, 200]);
+    expect(deps).toEqual(new Set([100, 200]));
   });
 
   test("return type var dependencies (nested)", () => {
@@ -674,7 +674,7 @@ describe("derive traits dependencies", () => {
       ],
     });
 
-    expect(deps).toEqual([42]);
+    expect(deps).toEqual(new Set([42]));
   });
 });
 
