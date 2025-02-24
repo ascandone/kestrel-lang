@@ -1880,7 +1880,7 @@ describe("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test.todo("requires deps to derive Eq in order to derive Eq", () => {
+  test("requires deps to derive Eq in order to derive Eq", () => {
     const [a] = performAnalysis(
       `
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -1899,7 +1899,7 @@ describe("traits", () => {
     expect(a.errors).toHaveLength(1);
   });
 
-  test.todo("derives Eq when dependencies derive Eq", () => {
+  test("derives Eq when dependencies derive Eq", () => {
     const [a] = performAnalysis(
       `
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -1920,7 +1920,29 @@ describe("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test.todo("derives in self-recursive types", () => {
+  test("only depend on actually needed param vars", () => {
+    const [a] = performAnalysis(
+      `
+        extern let take_eq: Fn(a) -> a where a: Eq
+
+        extern pub type NotEq
+        type IsEq { }
+
+        pub(..) type Option<not_needed, a> {
+          Some(a),
+          None,
+        }
+
+        extern let is_eq: Option<NotEq, IsEq>
+
+        pub let example = take_eq(is_eq)
+      `,
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
+  test("derives in self-recursive types", () => {
     const [a] = performAnalysis(
       `
         extern let take_eq: Fn(a) -> a where a: Eq
@@ -1937,7 +1959,7 @@ describe("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test.todo("derives in self-recursive types (nested)", () => {
+  test("derives in self-recursive types (nested)", () => {
     const [a] = performAnalysis(
       `
         type Box<a> { Box(a) }

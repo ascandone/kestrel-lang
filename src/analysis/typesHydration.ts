@@ -13,7 +13,7 @@ import {
   UntypedModule,
   UntypedTypeDeclaration,
 } from "../parser";
-import { TraitsMap, Type, Unifier } from "../type";
+import { TraitsMap, Type, TypeVar, Unifier } from "../type";
 import { ResolutionAnalysis } from "./resolution";
 import { TraitImpl } from "../typecheck/defaultImports";
 
@@ -48,6 +48,12 @@ export class TypeAstsHydration {
   private readonly traitsMaps = new WeakMap<PolyTypeAst, TraitsMap>();
   private readonly polyTypes = new WeakMap<PolytypeNode, Type>();
 
+  private readonly typeDeclarationScheme = new WeakMap<
+    UntypedTypeDeclaration,
+    /** map from a param's index to its var id */
+    TypeVar[]
+  >();
+
   constructor(
     private readonly package_: string,
     private readonly ns: string,
@@ -77,6 +83,7 @@ export class TypeAstsHydration {
     // therefore we can use a local instance of a unifier as a type variables pool
     const unifier = new Unifier();
 
+    const paramsVarId = <TypeVar[]>[];
     const bound = new Map<string, Type>();
 
     const type: Type = {
@@ -84,7 +91,7 @@ export class TypeAstsHydration {
       module: this.ns,
       package: this.package_,
       name: declaration.name,
-      args: declaration.params.map((p): Type => {
+      args: declaration.params.map((p, index): Type => {
         if (bound.has(p.name)) {
           this.emitError({
             description: new TypeParamShadowing(p.name),
@@ -94,10 +101,12 @@ export class TypeAstsHydration {
 
         const fresh = unifier.freshVar();
         bound.set(p.name, fresh);
+        paramsVarId[index] = fresh;
         return fresh;
       }),
     };
 
+    this.typeDeclarationScheme.set(declaration, paramsVarId);
     this.polyTypes.set(declaration, type);
     switch (declaration.type) {
       case "adt":
@@ -124,10 +133,6 @@ export class TypeAstsHydration {
     trait: string,
     typeDecl: UntypedTypeDeclaration & { type: "adt" },
   ) {
-    const deps: boolean[] = [];
-
-    const depParams = new Set<string>();
-
     const traitImpl: TraitImpl = {
       trait,
       moduleName: this.ns,
@@ -139,6 +144,13 @@ export class TypeAstsHydration {
     // Register recursive type
     Unifier.registerTraitImpl(traitImpl);
 
+    // Given a param's index, return its var
+    const paramsVars = this.typeDeclarationScheme.get(typeDecl);
+    if (paramsVars === undefined) {
+      throw new Error("[unreachable] scheme not found");
+    }
+
+    const neededVarsSet = new Set<number>();
     for (const variant of typeDecl.variants) {
       for (const arg of variant.args) {
         const argType = this.getPolyType(arg);
@@ -150,20 +162,15 @@ export class TypeAstsHydration {
           return;
         }
 
-        // for (const { id } of impl) {
-        //   const name = variant.scheme[id];
-        //   if (name !== undefined) {
-        //     depParams.add(name);
-        //   }
-        // }
+        for (const v of neededVars) {
+          neededVarsSet.add(v);
+        }
       }
 
       // Singleton always derives any trait
     }
 
-    for (const param of typeDecl.params) {
-      deps.push(depParams.has(param.name));
-    }
+    const deps: boolean[] = paramsVars.map(({ id }) => neededVarsSet.has(id));
 
     Unifier.unregisterTraitImpl(traitImpl);
     Unifier.registerTraitImpl({ ...traitImpl, deps });

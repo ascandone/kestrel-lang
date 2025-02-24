@@ -12,6 +12,8 @@ export type Type =
   | { tag: "Fn"; args: Type[]; return: Type }
   | { tag: "Var"; id: number };
 
+export type TypeVar = Type & { tag: "Var" };
+
 export class TypeMismatchError extends Error {}
 export class OccursCheckError extends Error {}
 export class MissingTraitError extends Error {
@@ -26,7 +28,7 @@ export class Unifier {
   private readonly traits = new Map<number, Set<string>>();
   private static namedTypesTraitImpls = new Map<ImpKey, boolean[]>();
 
-  freshVar(traits: Iterable<string> = []): Type & { tag: "Var" } {
+  freshVar(traits: Iterable<string> = []): TypeVar {
     const id = this.nextId++;
     this.traits.set(id, new Set(traits));
     return {
