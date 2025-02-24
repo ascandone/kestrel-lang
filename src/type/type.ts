@@ -274,12 +274,14 @@ export class Instantiator {
 
       case "Var":
         return defaultMapGet(this.instantiated, t.id, () => {
-          const traits = traitsMap[t.id] ?? [];
-          traits.push(...this.unifier.getResolvedTypeTraits(t.id));
+          return this.unifier.freshVar([
+            ...(traitsMap[t.id] ?? []),
 
-          const fv = this.unifier.freshVar(traits);
+            // it looks like removing this line doesn't break any test
+            // TODO investigate
 
-          return fv;
+            ...this.unifier.getResolvedTypeTraits(t.id),
+          ]);
         });
     }
   }

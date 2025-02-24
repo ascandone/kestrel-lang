@@ -1885,6 +1885,32 @@ describe("traits", () => {
     });
   });
 
+  test("instantiates traits", () => {
+    const [a] = performAnalysis(
+      `
+      extern type String
+      extern type Bool
+
+      extern pub let inspect: Fn(a) -> String where a: Show
+      extern pub let eq: Fn(a, a) -> Bool where a: Eq
+
+      pub let equal = fn x, y {
+        if eq(x, y) {
+          "ok"
+        } else {
+          inspect(x)
+        }
+      }
+    `,
+    );
+
+    expect(getTypes(a)).toEqual({
+      inspect: "Fn(a) -> String where a: Show",
+      eq: "Fn(a, a) -> Bool where a: Eq",
+      equal: "Fn(a, a) -> String where a: Eq + Show",
+    });
+  });
+
   test("does not derive Eq trait in ADTs when at least one argument", () => {
     const [a] = performAnalysis(
       `
