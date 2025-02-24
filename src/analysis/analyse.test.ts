@@ -17,6 +17,7 @@ import {
   NonExhaustiveMatch,
   NonExistingImport,
   TraitNotSatified,
+  TraitNotSatified_REWRITE,
   TypeMismatch_REWRITE,
   TypeParamShadowing,
   UnboundModule,
@@ -1861,6 +1862,29 @@ describe("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
+  test("is able to access traits in nested fn", () => {
+    const [a] = performAnalysis(
+      `
+      extern type String
+      extern let show: Fn(a) -> String where a: Show
+
+      type Option<a> {
+        Some(a),
+        None,
+      }
+      
+      pub let f = fn x {
+        show((x))
+      }
+      `,
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      f: "Fn(a) -> String where a: Show",
+    });
+  });
+
   test("does not derive Eq trait in ADTs when at least one argument", () => {
     const [a] = performAnalysis(
       `
@@ -1915,6 +1939,7 @@ describe("traits", () => {
     );
 
     expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]!.description).toBeInstanceOf(TraitNotSatified_REWRITE);
   });
 
   test("derives Eq when dependencies derive Eq", () => {

@@ -188,6 +188,12 @@ export class Unifier {
   }
 
   private assocTraits(type: Type, traits: Set<string>) {
+    if (traits.size === 0) {
+      // Apparently removing this early return breaks the code
+      // go figure 🤷
+      return;
+    }
+
     switch (type.tag) {
       case "Var": {
         const newPointerTraits = this.getResolvedTypeTraitsMut(type.id);
