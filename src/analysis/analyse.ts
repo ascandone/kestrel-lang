@@ -60,6 +60,8 @@ export class Analysis {
   private currentDeclarationGroup: UntypedDeclaration[] = [];
 
   private readonly unifier: Unifier;
+  public readonly traitsRegistry: TraitRegistry;
+
   constructor(
     public readonly package_: string,
     public readonly ns: string,
@@ -67,8 +69,10 @@ export class Analysis {
     public readonly options: AnalyseOptions = {},
   ) {
     const emitError = this.errors.push.bind(this.errors);
-    const traitsRegistry = new TraitRegistry(options.baseTraitsRegistry);
-    this.unifier = new Unifier(traitsRegistry);
+    this.traitsRegistry = new TraitRegistry(options.baseTraitsRegistry);
+
+    this.unifier = new Unifier(this.traitsRegistry);
+
     this.resolution = new ResolutionAnalysis(
       this.package_,
       ns,
@@ -82,7 +86,7 @@ export class Analysis {
       ns,
       module,
       this.resolution,
-      traitsRegistry,
+      this.traitsRegistry,
       emitError,
     );
 
@@ -489,6 +493,16 @@ export class Analysis {
       if (decl.pub) {
         yield decl;
       }
+    }
+  }
+
+  *getDependencies(): Generator<UntypedImport> {
+    for (const import_ of this.options.implicitImports ?? []) {
+      yield import_;
+    }
+
+    for (const import_ of this.module.imports) {
+      yield import_;
     }
   }
 }
