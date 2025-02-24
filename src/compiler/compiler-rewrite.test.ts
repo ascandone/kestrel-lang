@@ -2540,7 +2540,7 @@ describe.todo("derive Eq instance for structs", () => {
     expect(out).toMatchInlineSnapshot(`""`);
   });
 
-  test("no fields", () => {
+  test.todo("no fields", () => {
     const out = compileSrc(
       `
       type T struct { }
