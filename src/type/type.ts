@@ -1,5 +1,5 @@
 import { defaultMapGet } from "../data/defaultMap";
-import { TraitImpl } from "../typecheck/defaultImports";
+import { ITraitsRegistry, TraitRegistry } from "./traitsRegistry";
 
 export type Type =
   | {
@@ -26,7 +26,10 @@ export class Unifier {
   private nextId = 0;
   private readonly substitutions = new Map<number, Type>();
   private readonly traits = new Map<number, Set<string>>();
-  private static namedTypesTraitImpls = new Map<ImpKey, boolean[]>();
+
+  constructor(
+    private readonly traitsRegistry: ITraitsRegistry = new TraitRegistry(),
+  ) {}
 
   freshVar(traits: Iterable<string> = []): TypeVar {
     const id = this.nextId++;
@@ -198,13 +201,10 @@ export class Unifier {
 
       case "Named": {
         for (const trait of traits) {
-          const key = getNamedTypeTraitId({
-            packageName: type.package,
-            moduleName: type.module,
-            typeName: type.name,
+          const deps = this.traitsRegistry.getTraitImplDependencies(
             trait,
-          });
-          const deps = Unifier.namedTypesTraitImpls.get(key);
+            type,
+          );
 
           if (deps === undefined) {
             throw new MissingTraitError(trait);
@@ -239,86 +239,6 @@ export class Unifier {
   private link(id: number, type: Type) {
     this.assocTraits(type, this.getResolvedTypeTraitsMut(id));
     this.substitutions.set(id, type);
-  }
-
-  public static resetTraitImpls() {
-    Unifier.namedTypesTraitImpls = new Map();
-  }
-
-  public static getTraitDepsFor(
-    trait: string,
-    type: Type,
-    initialSet = new Set<number>(),
-  ): Set<number> | undefined {
-    const neededVars = initialSet;
-    class CannotDerive extends Error {}
-
-    function recur(type: Type) {
-      switch (type.tag) {
-        case "Fn":
-          throw new CannotDerive();
-
-        case "Var":
-          neededVars.add(type.id);
-          return;
-
-        case "Named": {
-          const key = getNamedTypeTraitId({
-            moduleName: type.module,
-            packageName: type.package,
-            typeName: type.name,
-            trait,
-          });
-          const deps = Unifier.namedTypesTraitImpls.get(key);
-          if (deps === undefined) {
-            throw new CannotDerive();
-          }
-
-          for (let i = 0; i < deps.length; i++) {
-            if (!deps[i]!) {
-              continue;
-            }
-            recur(type.args[i]!);
-          }
-        }
-      }
-    }
-
-    try {
-      recur(type);
-      return neededVars;
-    } catch (err) {
-      if (!(err instanceof CannotDerive)) {
-        throw err;
-      }
-
-      return undefined;
-    }
-  }
-
-  /**
-   * E.g.
-   * // impl Eq for Int
-   * registerTraitImpl("Basics", "Int", "Eq")
-   *
-   * // impl Eq for Result<a, b> where a: Eq, b: Eq
-   * registerTraitImpl("Basics", "Result", "Eq", [true, true])
-   */
-  public static registerTraitImpl(traitImpl: TraitImpl) {
-    const key = getNamedTypeTraitId(traitImpl);
-
-    if (Unifier.namedTypesTraitImpls.has(key)) {
-      throw new Error(
-        `[unreachable] cannot register a trait twice (while declaring ${key})`,
-      );
-    }
-
-    Unifier.namedTypesTraitImpls.set(key, traitImpl.deps ?? []);
-  }
-
-  public static unregisterTraitImpl(traitImpl: Omit<TraitImpl, "deps">) {
-    const key = getNamedTypeTraitId(traitImpl);
-    Unifier.namedTypesTraitImpls.delete(key);
   }
 }
 
@@ -357,15 +277,4 @@ export class Instantiator {
         });
     }
   }
-}
-
-type ImpKey = string;
-
-function getNamedTypeTraitId({
-  packageName,
-  moduleName,
-  typeName,
-  trait,
-}: TraitImpl): ImpKey {
-  return `${packageName}:${moduleName}.${typeName}:${trait}`;
 }

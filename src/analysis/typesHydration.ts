@@ -15,7 +15,7 @@ import {
 } from "../parser";
 import { TraitsMap, Type, TypeVar, Unifier } from "../type";
 import { ResolutionAnalysis } from "./resolution";
-import { TraitImpl } from "../typecheck/defaultImports";
+import { TraitRegistry, TypeId } from "../type/traitsRegistry";
 
 export type PolytypeNode = UntypedTypeDeclaration | PolyTypeAst | TypeAst;
 
@@ -59,6 +59,7 @@ export class TypeAstsHydration {
     private readonly ns: string,
     private readonly module: UntypedModule,
     private readonly resolution: ResolutionAnalysis,
+    private readonly traitsRegistry: TraitRegistry,
     private readonly emitError: (error: ErrorInfo) => void,
   ) {
     // Hydrate type declarations
@@ -133,16 +134,22 @@ export class TypeAstsHydration {
     trait: string,
     typeDecl: UntypedTypeDeclaration & { type: "adt" },
   ) {
-    const traitImpl: TraitImpl = {
-      trait,
-      moduleName: this.ns,
-      packageName: this.package_,
-      typeName: typeDecl.name,
-      deps: typeDecl.params.map(() => false),
+    const typeId: TypeId = {
+      module: this.ns,
+      package: this.package_,
+      name: typeDecl.name,
     };
 
     // Register recursive type
-    Unifier.registerTraitImpl(traitImpl);
+    this.traitsRegistry.registerTrait(
+      trait,
+      {
+        name: typeDecl.name,
+        module: this.ns,
+        package: this.package_,
+      },
+      typeDecl.params.map(() => false),
+    );
 
     // Given a param's index, return its var
     const paramsVars = this.typeDeclarationScheme.get(typeDecl);
@@ -153,14 +160,14 @@ export class TypeAstsHydration {
     const neededVarsSet = new Set<number>();
     for (const variant of typeDecl.variants) {
       for (const arg of variant.args) {
-        const neededVars = Unifier.getTraitDepsFor(
+        const neededVars = this.traitsRegistry.getTraitDepsFor(
           trait,
           this.getPolyType(arg),
           neededVarsSet,
         );
 
         if (neededVars === undefined) {
-          Unifier.unregisterTraitImpl(traitImpl);
+          this.traitsRegistry.unregisterTrait(trait, typeId);
           return;
         }
       }
@@ -168,10 +175,12 @@ export class TypeAstsHydration {
       // Singleton always derives any trait
     }
 
-    const deps: boolean[] = paramsVars.map(({ id }) => neededVarsSet.has(id));
-
-    Unifier.unregisterTraitImpl(traitImpl);
-    Unifier.registerTraitImpl({ ...traitImpl, deps });
+    this.traitsRegistry.unregisterTrait(trait, typeId);
+    this.traitsRegistry.registerTrait(
+      trait,
+      typeId,
+      paramsVars.map(({ id }) => neededVarsSet.has(id)),
+    );
   }
 
   // --- Cast type ASTs to actual types

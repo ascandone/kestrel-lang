@@ -33,9 +33,10 @@ import {
 import { bool, char, float, int, list, string } from "./coreTypes";
 import { TypeAstsHydration } from "./typesHydration";
 import { defaultMapGet } from "../data/defaultMap";
-import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
+import { TraitRegistry } from "../type/traitsRegistry";
 
 export type AnalyseOptions = {
+  baseTraitsRegistry?: TraitRegistry;
   getDependency?: (namespace: string) => Analysis | undefined;
   implicitImports?: UntypedImport[];
   mainType?: Type;
@@ -57,8 +58,8 @@ export class Analysis {
   public readonly resolution: ResolutionAnalysis;
   private readonly typesHydration: TypeAstsHydration;
   private currentDeclarationGroup: UntypedDeclaration[] = [];
-  private readonly unifier = new Unifier();
 
+  private readonly unifier: Unifier;
   constructor(
     public readonly package_: string,
     public readonly ns: string,
@@ -66,6 +67,8 @@ export class Analysis {
     public readonly options: AnalyseOptions = {},
   ) {
     const emitError = this.errors.push.bind(this.errors);
+    const traitsRegistry = new TraitRegistry(options.baseTraitsRegistry);
+    this.unifier = new Unifier(traitsRegistry);
     this.resolution = new ResolutionAnalysis(
       this.package_,
       ns,
@@ -79,6 +82,7 @@ export class Analysis {
       ns,
       module,
       this.resolution,
+      traitsRegistry,
       emitError,
     );
 
@@ -484,15 +488,6 @@ function getConstantType(lit: ConstLiteral): Type {
 
     case "char":
       return char;
-  }
-}
-
-export function resetTraitsRegistry(
-  traitImpls: TraitImpl[] = defaultTraitImpls,
-) {
-  Unifier.resetTraitImpls();
-  for (const impl of traitImpls) {
-    Unifier.registerTraitImpl(impl);
   }
 }
 

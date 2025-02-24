@@ -1,5 +1,5 @@
-import { test, expect, describe, vi, beforeEach } from "vitest";
-import { AnalyseOptions, Analysis, resetTraitsRegistry } from "./analyse";
+import { test, expect, describe, vi } from "vitest";
+import { AnalyseOptions, Analysis } from "./analyse";
 import {
   AmbiguousTypeVar,
   ArityMismatch,
@@ -33,6 +33,7 @@ import { dummyRange } from "../typecheck/defaultImports";
 import { unsafeParse, Range } from "../parser";
 import { typePPrint as typeToString } from "../type";
 import { compilePackage } from "./package";
+import { TraitRegistry } from "../type/traitsRegistry";
 
 describe("infer constants", () => {
   test("int", () => {
@@ -595,6 +596,7 @@ describe("modules", () => {
       pub let x2 = Mod.x
       pub let x3 = Mod.x
     `),
+
       { getDependency },
     );
 
@@ -1711,8 +1713,6 @@ describe("unused locals checks", () => {
 
 describe("traits", () => {
   test("fails to typecheck when a required trait is not implemented", () => {
-    resetTraitsRegistry([]);
-
     const [a] = performAnalysis(
       `
         extern type String
@@ -1728,7 +1728,7 @@ describe("traits", () => {
   });
 
   test("succeeds to typecheck when a required trait is not implemented", () => {
-    resetTraitsRegistry([
+    const registry = TraitRegistry.from([
       {
         packageName: "kestrel_core",
         trait: "Show",
@@ -1743,6 +1743,7 @@ describe("traits", () => {
         extern pub let show: Fn(a) -> String where a: Show
         pub let x = show(42)
       `,
+      { baseTraitsRegistry: registry },
     );
 
     expect(a.errors).toEqual([]);
@@ -3094,7 +3095,3 @@ function performAnalysis(
     },
   ];
 }
-
-beforeEach(() => {
-  resetTraitsRegistry();
-});

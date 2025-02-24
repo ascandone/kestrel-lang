@@ -1,4 +1,4 @@
-import { test, expect, describe, beforeEach } from "vitest";
+import { test, expect, describe } from "vitest";
 import {
   MissingTraitError,
   OccursCheckError,
@@ -16,7 +16,7 @@ import {
   _1,
   result,
 } from "../__test__/commonTypes";
-import { resetTraitsRegistry } from "../analysis";
+import { TraitRegistry } from "./traitsRegistry";
 
 describe("unify", () => {
   test("unifing two concrete vars when they match", () => {
@@ -459,9 +459,16 @@ describe("unify traits", () => {
   });
 
   test("unify trait-associated type var with a named type which implements the trait", () => {
-    registerTypeImpl(num, "Show");
-
-    const u = new Unifier();
+    const u = new Unifier(
+      TraitRegistry.from([
+        {
+          trait: "Show",
+          moduleName: num.module,
+          packageName: num.package,
+          typeName: num.name,
+        },
+      ]),
+    );
     const t0 = u.freshVar(["Show"]);
 
     expect(() => {
@@ -470,11 +477,20 @@ describe("unify traits", () => {
   });
 
   test("handling unification of traits with deps", () => {
-    const u = new Unifier();
     const result_ = result(_0, _1); // the passed type params are not relevant for the test
+    const u = new Unifier(
+      TraitRegistry.from([
+        {
+          trait: "Eq",
+          moduleName: result_.module,
+          packageName: result_.package,
+          typeName: result_.name,
+          deps: [false, true],
+        },
+      ]),
+    );
 
     // Note that we are only imposing the constraint on the second parameter of Result
-    registerTypeImpl(result_, "Eq", [false, true]);
 
     const t0 = u.freshVar(["Eq"]);
     const ta = u.freshVar();
@@ -486,11 +502,20 @@ describe("unify traits", () => {
   });
 
   test("failing unification of traits in nested deps", () => {
-    const u = new Unifier();
     const result_ = result(_0, _1); // the passed type params are not relevant for the test
 
-    // Note that we are only imposing the constraint on the second parameter of Result
-    registerTypeImpl(result_, "Eq", [false, true]);
+    const u = new Unifier(
+      TraitRegistry.from([
+        {
+          trait: "Eq",
+          moduleName: result_.module,
+          packageName: result_.package,
+          typeName: result_.name,
+          // Note that we are only imposing the constraint on the second parameter of Result
+          deps: [false, true],
+        },
+      ]),
+    );
 
     const t0 = u.freshVar(["Eq"]);
     const ta = u.freshVar();
@@ -510,171 +535,6 @@ describe("unify traits", () => {
     expect(() => {
       u.unify(t0, result(num, num));
     }).toThrow(MissingTraitError);
-  });
-});
-
-describe("derive traits dependencies", () => {
-  const mockTraitImpl = {
-    trait: "Eq",
-    packageName: "core",
-    moduleName: "Main",
-  } as const;
-
-  const mockType = {
-    tag: "Named",
-    module: mockTraitImpl.moduleName,
-    package: mockTraitImpl.packageName,
-  } as const;
-
-  test("cannot derive an unregisted named type", () => {
-    resetTraitsRegistry([]);
-    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
-      ...mockType,
-      name: "Custom",
-      args: [],
-    });
-
-    expect(deps).toEqual(undefined);
-  });
-
-  test("cannot derive a function type", () => {
-    resetTraitsRegistry([]);
-    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
-      tag: "Fn",
-      args: [],
-      return: { tag: "Var", id: 42 },
-    });
-
-    expect(deps).toEqual(undefined);
-  });
-
-  test("derive without type args", () => {
-    resetTraitsRegistry([
-      {
-        ...mockTraitImpl,
-        typeName: "Int",
-      },
-    ]);
-
-    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
-      ...mockType,
-      name: "Int",
-      args: [],
-    });
-
-    expect(deps).toEqual(new Set());
-  });
-
-  test("derive with type args when args derive", () => {
-    resetTraitsRegistry([
-      {
-        ...mockTraitImpl,
-        typeName: "Int",
-      },
-      {
-        ...mockTraitImpl,
-        typeName: "Bool",
-      },
-      {
-        ...mockTraitImpl,
-        typeName: "Result",
-        deps: [true, true],
-      },
-    ]);
-
-    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
-      ...mockType,
-      name: "Result",
-      args: [
-        { ...mockType, name: "Int", args: [] },
-        { ...mockType, name: "Bool", args: [] },
-      ],
-    });
-
-    expect(deps).toEqual(new Set());
-  });
-
-  test("derive with type args when args do not derive", () => {
-    resetTraitsRegistry([
-      {
-        ...mockTraitImpl,
-        typeName: "Int",
-      },
-      // Bool does not derive
-      {
-        ...mockTraitImpl,
-        typeName: "Result",
-        deps: [true, true],
-      },
-    ]);
-
-    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
-      ...mockType,
-      name: "Result",
-      args: [
-        { ...mockType, name: "Int", args: [] },
-        { ...mockType, name: "Bool", args: [] },
-      ],
-    });
-
-    expect(deps).toEqual(undefined);
-  });
-
-  test("return type var dependencies", () => {
-    resetTraitsRegistry([
-      {
-        ...mockTraitImpl,
-        typeName: "Result",
-        deps: [true, true],
-      },
-    ]);
-
-    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
-      ...mockType,
-      name: "Result",
-      args: [
-        { tag: "Var", id: 100 },
-        { tag: "Var", id: 200 },
-      ],
-    });
-
-    expect(deps).toEqual(new Set([100, 200]));
-  });
-
-  test("return type var dependencies (nested)", () => {
-    resetTraitsRegistry([
-      {
-        ...mockTraitImpl,
-        typeName: "List",
-        deps: [true],
-      },
-      {
-        ...mockTraitImpl,
-        typeName: "Result",
-        deps: [false, true],
-      },
-    ]);
-
-    const deps = Unifier.getTraitDepsFor(mockTraitImpl.trait, {
-      ...mockType,
-      name: "Result",
-      args: [
-        {
-          ...mockType,
-          tag: "Named",
-          name: "Int",
-          args: [],
-        },
-        {
-          ...mockType,
-          tag: "Named",
-          name: "List",
-          args: [{ tag: "Var", id: 42 }],
-        },
-      ],
-    });
-
-    expect(deps).toEqual(new Set([42]));
   });
 });
 
@@ -795,21 +655,3 @@ function resolvedTypeTraitsOfVar(u: Unifier, t: Type) {
 
   return u.getResolvedTypeTraits(t.id);
 }
-
-function registerTypeImpl(
-  type: Type & { tag: "Named" },
-  trait: string,
-  deps: boolean[] = [],
-) {
-  Unifier.registerTraitImpl({
-    packageName: type.package,
-    moduleName: type.module,
-    typeName: type.name,
-    trait,
-    deps,
-  });
-}
-
-beforeEach(() => {
-  resetTraitsRegistry();
-});
