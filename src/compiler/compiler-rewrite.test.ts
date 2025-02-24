@@ -4,6 +4,7 @@ import { compile } from "./compiler-rewrite";
 import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
 import { TVar } from "../typecheck/type";
 import { Analysis } from "../analysis";
+import { Unifier } from "../type";
 
 describe("datatype representation", () => {
   test("int", () => {
@@ -2939,7 +2940,7 @@ describe.todo("Derive Show instance for structs", () => {
 });
 
 beforeEach(() => {
-  TVar.resetTraitImpls();
+  Unifier.resetTraitImpls();
 });
 
 type CompileSrcOpts = {
