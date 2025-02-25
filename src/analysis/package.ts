@@ -56,7 +56,7 @@ export class PackageWatcher {
     this.reload();
   }
 
-  public addFile(ns: string, source: string) {
+  public upsertFile(ns: string, source: string) {
     this.errors = [];
     // TODO avoid mutating input's data
     this.options.packageModules[ns] = unsafeParse(source);

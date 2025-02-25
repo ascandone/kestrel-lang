@@ -20,8 +20,8 @@ function setup(opts: Partial<CompilePackageOptions> = {}) {
 test("cache HIT initially", () => {
   const [watcher, onVisit] = setup();
 
-  watcher.addFile("Dependency", `pub let x = 0`);
-  watcher.addFile(
+  watcher.upsertFile("Dependency", `pub let x = 0`);
+  watcher.upsertFile(
     "Main",
     `
     import Dependency
@@ -41,8 +41,8 @@ test("cache HIT initially", () => {
 test("recompile transitevely when changing a dependency", () => {
   const [watcher, onVisit] = setup();
 
-  watcher.addFile("Dependency", `pub let x = 0`);
-  watcher.addFile(
+  watcher.upsertFile("Dependency", `pub let x = 0`);
+  watcher.upsertFile(
     "Main",
     `
     import Dependency
@@ -51,7 +51,7 @@ test("recompile transitevely when changing a dependency", () => {
   );
 
   // This will invalide Main's cache
-  watcher.addFile("Dependency", `pub let x = "abc"`);
+  watcher.upsertFile("Dependency", `pub let x = "abc"`);
 
   expect(onVisit.mock.calls).toEqual([
     // add("Dependency")
@@ -68,8 +68,8 @@ test("recompile transitevely when changing a dependency", () => {
 test("do not invalidate dependency when not needed", () => {
   const [watcher, onVisit] = setup();
 
-  watcher.addFile("Dependency", `pub let x = 0`);
-  watcher.addFile(
+  watcher.upsertFile("Dependency", `pub let x = 0`);
+  watcher.upsertFile(
     "Main",
     `
     import Dependency
@@ -78,7 +78,7 @@ test("do not invalidate dependency when not needed", () => {
   );
 
   // This shouldn't invalide Dependency's cache
-  watcher.addFile(
+  watcher.upsertFile(
     "Main",
     `
     import Dependency
@@ -126,7 +126,7 @@ test("add a new module to the initial ones", () => {
     },
   });
 
-  w.addFile("NewMod", `import Main`);
+  w.upsertFile("NewMod", `import Main`);
 
   expect(onVisit.mock.calls).toEqual([
     // Init
@@ -148,7 +148,7 @@ test("override a file in the initial package", () => {
     },
   });
 
-  w.addFile("Dependency", `let y = 0`);
+  w.upsertFile("Dependency", `let y = 0`);
 
   expect(onVisit.mock.calls).toEqual([
     // Init
