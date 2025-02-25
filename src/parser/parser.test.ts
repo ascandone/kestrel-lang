@@ -870,7 +870,7 @@ describe("Decorators", () => {
 describe("Fault tolerance", () => {
   test("faulty infix", () => {
     const src = `let x = 1 +`;
-    expect(parse(src).parsed).toMatchSnapshot();
+    expect(parse(src)[0]).toMatchSnapshot();
   });
 
   test("faulty decl", () => {
@@ -878,24 +878,24 @@ describe("Fault tolerance", () => {
       let
       let x = 42
     `;
-    expect(parse(src).parsed).toMatchSnapshot();
+    expect(parse(src)[0]).toMatchSnapshot();
   });
 
   test("missing expr", () => {
     const src = `let x =   `;
-    expect(parse(src).parsed).toMatchSnapshot();
+    expect(parse(src)[0]).toMatchSnapshot();
   });
 
   test("missing string lit termination", () => {
     const src = `let x = "`;
 
-    expect(parse(src).parsed).toMatchSnapshot();
+    expect(parse(src)[0]).toMatchSnapshot();
   });
 
   test("dot notation in struct", () => {
     const src = `let x = str. `;
     // "str:" 8 - 12
 
-    expect(parse(src).parsed).toMatchSnapshot();
+    expect(parse(src)[0]).toMatchSnapshot();
   });
 });

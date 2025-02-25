@@ -3,14 +3,13 @@ import {
   linkedListIncludes,
   linkedListToArray,
 } from "../data/linkedList";
-import { UntypedModule, unsafeParse } from "../parser";
 import { Analysis } from "./analyse";
 import { CyclicModuleDependency, ErrorInfo } from "./errors";
 
 export type CompilePackageOptions = {
   package: string;
   exposedModules: Set<string>;
-  packageModules: Record<string, UntypedModule>;
+  packageModules: Record<string, string>;
   packageDependencies: Record<string, CompiledPackage>;
   onAnalysis?: (analysis: Analysis) => void;
 };
@@ -59,7 +58,7 @@ export class PackageWatcher {
   public upsertFile(ns: string, source: string) {
     this.errors = [];
     // TODO avoid mutating input's data
-    this.options.packageModules[ns] = unsafeParse(source);
+    this.options.packageModules[ns] = source;
     this.reload();
   }
 
@@ -87,7 +86,7 @@ export class PackageWatcher {
     // as long as the underlying module wasn't updated
     if (
       cachedVersion === undefined ||
-      cachedVersion.module !== this.options.packageModules[ns]
+      cachedVersion.source !== this.options.packageModules[ns]
     ) {
       return undefined;
     }
@@ -99,11 +98,11 @@ export class PackageWatcher {
   private cacheAnalyseModule = (
     analyseModule: (
       ns: string,
-      untypedMod: UntypedModule,
+      source: string,
       path?: LinkedList<string>,
     ) => Analysis,
   ): typeof analyseModule => {
-    return (ns, untypedMod, path) => {
+    return (ns, source, path) => {
       const cacheLookup = this.getCachedModule(ns);
       if (cacheLookup !== undefined) {
         return cacheLookup;
@@ -111,7 +110,7 @@ export class PackageWatcher {
 
       // Since we are starting analyse from scratch, we'll purge this ns' tracked deps
       this.trackedDependencies.set(ns, new Map());
-      const analysis = analyseModule(ns, untypedMod, path);
+      const analysis = analyseModule(ns, source, path);
       this.options.onAnalysis?.(analysis);
       this.modules.set(ns, analysis);
       return analysis;

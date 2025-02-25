@@ -700,14 +700,21 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
   };
 }
 
-export class AntlrLexerError {
+class AntlrLexerError {
   constructor(
     public readonly position: Position,
     public readonly description: string,
   ) {}
 }
 
-export class AntlrParsingError {
+class AntlrParsingError {
+  constructor(
+    public readonly range: Range,
+    public readonly description: string,
+  ) {}
+}
+
+export class BaseParsingError {
   constructor(
     public readonly range: Range,
     public readonly description: string,
@@ -750,7 +757,7 @@ export type ParseResult = {
   parsingErrors: AntlrParsingError[];
 };
 
-export function parse(input: string): ParseResult {
+export function parse(input: string): [UntypedModule, BaseParsingError[]] {
   const chars = new antlr4.CharStream(input);
   const lexer = new Lexer(chars);
 
@@ -815,24 +822,29 @@ export function parse(input: string): ParseResult {
     }),
   };
 
-  return {
-    parsed,
-    parsingErrors: parsingErrorListener.errors,
-    lexerErrors: lexerErrorListener.errors,
-  };
+  const errors: BaseParsingError[] = [
+    ...parsingErrorListener.errors.map(
+      (e) => new BaseParsingError(e.range, e.description),
+    ),
+    ...lexerErrorListener.errors.map(
+      (e) =>
+        new BaseParsingError(
+          { start: e.position, end: e.position },
+          e.description,
+        ),
+    ),
+  ];
+
+  return [parsed, errors];
 }
 
 export function unsafeParse(input: string): UntypedModule {
-  const parsed = parse(input);
-  if (parsed.lexerErrors.length !== 0) {
-    throw new Error(`Lexing error: ${parsed.lexerErrors[0]!.description}`);
+  const [parsed, errs] = parse(input);
+  if (errs.length !== 0) {
+    throw new Error(`Lexing error: ${errs[0]!.description}`);
   }
 
-  if (parsed.parsingErrors.length !== 0) {
-    throw new Error(`Parsing error: ${parsed.parsingErrors[0]!.description}`);
-  }
-
-  return parsed.parsed;
+  return parsed;
 }
 
 function normalizeInfix(name: string) {

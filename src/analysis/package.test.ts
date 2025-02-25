@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { CompilePackageOptions, PackageWatcher } from "./package";
-import { unsafeParse } from "../parser";
+import {} from "../parser";
 
 function setup(opts: Partial<CompilePackageOptions> = {}) {
   const onVisit = vi.fn();
@@ -100,11 +100,11 @@ test("do not invalidate dependency when not needed", () => {
 test("analyse the initial modules", () => {
   const [, onVisit] = setup({
     packageModules: {
-      Main: unsafeParse(`
+      Main: `
     import Dependency
     pub let y = Dependency.x
-  `),
-      Dependency: unsafeParse(`pub let x = 0`),
+  `,
+      Dependency: `pub let x = 0`,
     },
   });
 
@@ -118,11 +118,11 @@ test("analyse the initial modules", () => {
 test("add a new module to the initial ones", () => {
   const [w, onVisit] = setup({
     packageModules: {
-      Main: unsafeParse(`
+      Main: `
     import Dependency
     pub let y = Dependency.x
-  `),
-      Dependency: unsafeParse(`pub let x = 0`),
+  `,
+      Dependency: `pub let x = 0`,
     },
   });
 
@@ -140,11 +140,11 @@ test("add a new module to the initial ones", () => {
 test("override a file in the initial package", () => {
   const [w, onVisit] = setup({
     packageModules: {
-      Main: unsafeParse(`
+      Main: `
     import Dependency
     pub let y = Dependency.x
-  `),
-      Dependency: unsafeParse(`pub let x = 0`),
+  `,
+      Dependency: `pub let x = 0`,
     },
   });
 

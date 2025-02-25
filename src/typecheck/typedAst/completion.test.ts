@@ -24,9 +24,9 @@ let expr = p.
   const cursorPosition = positionOf(src, "p.");
   cursorPosition.character += 2;
 
-  const parsed = parse(src);
+  const [parsed] = parse(src);
 
-  const [typed, _] = typecheck("Main", parsed.parsed);
+  const [typed, _] = typecheck("Main", parsed);
 
   const ret = getCompletionItems(
     typed,
@@ -64,9 +64,9 @@ let expr = fn p { p. }
   const cursorPosition = positionOf(src, "p.");
   cursorPosition.character += 2;
 
-  const parsed = parse(src);
+  const [parsed] = parse(src);
 
-  const [typed, _] = typecheck("Main", parsed.parsed);
+  const [typed, _] = typecheck("Main", parsed);
 
   const ret = getCompletionItems(
     typed,

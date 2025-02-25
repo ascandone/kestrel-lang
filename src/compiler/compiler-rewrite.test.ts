@@ -1,5 +1,4 @@
 import { test, expect, describe } from "vitest";
-import { unsafeParse } from "../parser";
 import { compile } from "./compiler-rewrite";
 import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
 import { Analysis } from "../analysis";
@@ -3068,7 +3067,7 @@ function compileSrc(
     allowDeriving = [],
   }: CompileSrcOpts = {},
 ) {
-  const analysis = new Analysis(package_, ns, unsafeParse(src), {
+  const analysis = new Analysis(package_, ns, src, {
     baseTraitsRegistry: TraitRegistry.from(traitImpl),
     getDependency(namespace) {
       return deps[namespace];
@@ -3079,6 +3078,5 @@ function compileSrc(
 }
 
 function typecheckSource(ns: string, src: string) {
-  const parsed = unsafeParse(src);
-  return new Analysis("kestrel_core", ns, parsed, {});
+  return new Analysis("kestrel_core", ns, src, {});
 }

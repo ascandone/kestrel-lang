@@ -14,12 +14,7 @@ import {
   createConnection,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import {
-  AntlrLexerError,
-  AntlrParsingError,
-  UntypedModule,
-  parse,
-} from "../../parser";
+import { UntypedModule, parse } from "../../parser";
 import {
   typecheckProject,
   typeToString,
@@ -33,7 +28,7 @@ import {
   getInlayHints,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
-import { ErrorInfo, Severity } from "../../analysis/errors";
+import { ErrorInfo, Severity, ParsingError } from "../../analysis/errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../format";
 import { Config, readConfig } from "../config";
@@ -46,27 +41,9 @@ type Module = {
   package_: string;
   document: TextDocument;
   untyped?: UntypedModule;
-  lexerErrors: AntlrLexerError[];
-  parsingErrors: AntlrParsingError[];
+  parsingErrors: ErrorInfo[];
   typed?: TypedModule;
 };
-
-function parseErrToDiagnostic(
-  document: TextDocument,
-  err: AntlrParsingError,
-): PublishDiagnosticsParams {
-  return {
-    uri: document.uri,
-    diagnostics: [
-      {
-        message: err.description,
-        source: "Parsing",
-        severity: DiagnosticSeverity.Error,
-        range: err.range,
-      },
-    ],
-  };
-}
 
 function dedupParams(
   params: PublishDiagnosticsParams[],
@@ -82,23 +59,6 @@ function dedupParams(
   }
 
   return params_;
-}
-
-function lexerErrToDiagnostic(
-  document: TextDocument,
-  err: AntlrLexerError,
-): PublishDiagnosticsParams {
-  return {
-    uri: document.uri,
-    diagnostics: [
-      {
-        message: err.description,
-        source: "Parsing",
-        severity: DiagnosticSeverity.Error,
-        range: { start: err.position, end: err.position },
-      },
-    ],
-  };
 }
 
 function errorInfoToDiagnostic(
@@ -208,20 +168,22 @@ class State {
     document: TextDocument,
     skipTypecheck: boolean = false,
   ): PublishDiagnosticsParams[] {
-    const parsed = parse(document.getText());
+    const [parsed, parsingErrors_] = parse(document.getText());
 
+    const parsingErrors: ErrorInfo[] = parsingErrors_.map((err) => ({
+      description: new ParsingError(err.description),
+      range: err.range,
+    }));
     const diagnostics: PublishDiagnosticsParams[] = [
-      ...parsed.lexerErrors.map((e) => lexerErrToDiagnostic(document, e)),
-      ...parsed.parsingErrors.map((e) => parseErrToDiagnostic(document, e)),
+      errorInfoToDiagnostic(parsingErrors, document),
     ];
 
     this.modulesByNs[ns] = {
       ns,
       package_,
       document,
-      parsingErrors: parsed.parsingErrors,
-      lexerErrors: parsed.lexerErrors,
-      untyped: parsed.parsed,
+      parsingErrors,
+      untyped: parsed,
     };
 
     if (skipTypecheck) {
@@ -460,7 +422,7 @@ export async function lspCmd() {
       return;
     }
 
-    if (module.lexerErrors.length !== 0 || module.parsingErrors.length !== 0) {
+    if (module.parsingErrors.length !== 0) {
       return;
     }
 

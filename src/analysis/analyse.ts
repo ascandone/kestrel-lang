@@ -2,6 +2,7 @@ import {
   ArityMismatch,
   ErrorInfo,
   InvalidPipe,
+  ParsingError,
   OccursCheck,
   TraitNotSatified_REWRITE,
   TypeMismatch_REWRITE,
@@ -15,6 +16,7 @@ import {
   UntypedMatchPattern,
   UntypedModule,
   Range,
+  parse,
 } from "../parser";
 import {
   IdentifierResolution,
@@ -47,6 +49,7 @@ export type TypedNode = Binding | UntypedExpr | UntypedMatchPattern;
 
 export class Analysis {
   public readonly errors: ErrorInfo[] = [];
+  public readonly module: UntypedModule;
 
   private readonly typeAnnotations = new WeakMap<TypedNode, Type>();
   /** Only meant for top level declarations */
@@ -65,10 +68,21 @@ export class Analysis {
   constructor(
     public readonly package_: string,
     public readonly ns: string,
-    public readonly module: UntypedModule,
+    public readonly source: string,
     public readonly options: AnalyseOptions = {},
   ) {
+    const [module, parseErrors] = parse(source);
+
+    for (const err of parseErrors) {
+      this.errors.push({
+        description: new ParsingError(err.description),
+        range: err.range,
+      });
+    }
+
+    this.module = module;
     const emitError = this.errors.push.bind(this.errors);
+
     this.traitsRegistry = new TraitRegistry(options.baseTraitsRegistry);
 
     this.unifier = new Unifier(this.traitsRegistry);

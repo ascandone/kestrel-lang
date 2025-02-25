@@ -31,7 +31,7 @@ import {
 } from "./errors";
 import { rangeOf } from "../typecheck/typedAst/__test__/utils";
 import { dummyRange } from "../typecheck/defaultImports";
-import { unsafeParse, Range } from "../parser";
+import { Range } from "../parser";
 import { typePPrint as typeToString } from "../type";
 import { compilePackage } from "./package";
 import { TraitRegistry } from "../type/traitsRegistry";
@@ -591,13 +591,12 @@ describe("modules", () => {
     const a = new Analysis(
       "core",
       "Main",
-      unsafeParse(`
+      `
       import Mod
       pub let x1 = Mod.x
       pub let x2 = Mod.x
       pub let x3 = Mod.x
-    `),
-
+    `,
       { getDependency },
     );
 
@@ -3036,9 +3035,9 @@ describe("package compilation", () => {
       exposedModules: new Set(),
       packageDependencies: {},
       packageModules: {
-        Main: unsafeParse(`
+        Main: `
           pub let x = 42
-        `),
+        `,
       },
     });
 
@@ -3055,13 +3054,13 @@ describe("package compilation", () => {
       exposedModules: new Set(),
       packageDependencies: {},
       packageModules: {
-        Main: unsafeParse(`
+        Main: `
           import Dep.{y}
           pub let x = y
-        `),
-        Dep: unsafeParse(`
+        `,
+        Dep: `
           pub let y = 42
-        `),
+        `,
       },
     });
 
@@ -3082,14 +3081,14 @@ describe("package compilation", () => {
       exposedModules: new Set(),
       packageDependencies: {},
       packageModules: {
-        A: unsafeParse(`
+        A: `
           import B.{y}
           pub let x = y
-        `),
-        B: unsafeParse(`
+        `,
+        B: `
           import A.{x}
           pub let y = x
-        `),
+        `,
       },
     });
 
@@ -3106,9 +3105,9 @@ describe("package compilation", () => {
       exposedModules: new Set(["Core"]),
       packageDependencies: {},
       packageModules: {
-        Core: unsafeParse(`
+        Core: `
           pub let y = 0
-        `),
+        `,
       },
     });
 
@@ -3119,10 +3118,10 @@ describe("package compilation", () => {
         kestrel_core,
       },
       packageModules: {
-        Main: unsafeParse(`
+        Main: `
           import Core.{y}
           pub let x = y
-        `),
+        `,
       },
     });
 
@@ -3169,7 +3168,7 @@ function performAnalysis(
     ...opts
   }: TestAnalyseOptions = {},
 ): [analysis: Analysis, utils: AnalysisUtils] {
-  const analysis = new Analysis(package_, namespace, unsafeParse(src), {
+  const analysis = new Analysis(package_, namespace, src, {
     getDependency(ns) {
       return dependencies[ns];
     },
