@@ -1,7 +1,8 @@
 import { expect, test, vi } from "vitest";
-import { PackageWatcher } from "./package";
+import { CompilePackageOptions, PackageWatcher } from "./package";
+import { unsafeParse } from "../parser";
 
-function setup() {
+function setup(opts: Partial<CompilePackageOptions> = {}) {
   const onVisit = vi.fn();
   const watcher = new PackageWatcher({
     package: "kestrel_core",
@@ -11,6 +12,7 @@ function setup() {
     onAnalysis(analysis) {
       onVisit(analysis.ns);
     },
+    ...opts,
   });
   return [watcher, onVisit] as const;
 }
@@ -91,6 +93,69 @@ test("do not invalidate dependency when not needed", () => {
     ["Main"],
 
     // add("Main")
+    ["Main"],
+  ]);
+});
+
+test("analyse the initial modules", () => {
+  const [, onVisit] = setup({
+    packageModules: {
+      Main: unsafeParse(`
+    import Dependency
+    pub let y = Dependency.x
+  `),
+      Dependency: unsafeParse(`pub let x = 0`),
+    },
+  });
+
+  expect(onVisit.mock.calls).toEqual([
+    // Init
+    ["Dependency"],
+    ["Main"],
+  ]);
+});
+
+test("add a new module to the initial ones", () => {
+  const [w, onVisit] = setup({
+    packageModules: {
+      Main: unsafeParse(`
+    import Dependency
+    pub let y = Dependency.x
+  `),
+      Dependency: unsafeParse(`pub let x = 0`),
+    },
+  });
+
+  w.addFile("NewMod", `import Main`);
+
+  expect(onVisit.mock.calls).toEqual([
+    // Init
+    ["Dependency"],
+    ["Main"],
+    // Add(NewMod)
+    ["NewMod"],
+  ]);
+});
+
+test("override a file in the initial package", () => {
+  const [w, onVisit] = setup({
+    packageModules: {
+      Main: unsafeParse(`
+    import Dependency
+    pub let y = Dependency.x
+  `),
+      Dependency: unsafeParse(`pub let x = 0`),
+    },
+  });
+
+  w.addFile("Dependency", `let y = 0`);
+
+  expect(onVisit.mock.calls).toEqual([
+    // Init
+    ["Dependency"],
+    ["Main"],
+    // Add(Dependency)
+    ["Dependency"],
     ["Main"],
   ]);
 });
