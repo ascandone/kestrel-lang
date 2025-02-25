@@ -15,6 +15,7 @@
   "scripts": {
     "gen:parser": "bash ./gen-parser.sh",
     "test:watch": "vitest",
+    "test:ui": "vitest --ui",
     "test:w": "npm run test:watch",
     "test:run": "vitest --run --coverage",
     "ts:build": "tsc --project tsconfig.build.json",
