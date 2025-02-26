@@ -2943,7 +2943,7 @@ describe("struct", () => {
     },
   );
 
-  test.todo("instantiated fresh vars when creating structs", () => {
+  test("instantiated fresh vars when creating structs", () => {
     const [a] = performAnalysis(
       `
       type Box<a> struct { a: a }

@@ -411,14 +411,33 @@ export class Analysis {
           return;
         }
 
-        // TODO args
-        this.unifyNode(expr, {
-          tag: "Named",
-          name: struct.name,
-          module: this.ns,
-          package: this.package_,
-          args: struct.params.map(() => this.unifier.freshVar()),
-        });
+        const instantiator = new Instantiator(this.unifier);
+        const structDefinitionPolyType =
+          this.typesHydration.getPolyType(struct);
+        const fieldDefinitionMonoType = instantiator.instantiate(
+          structDefinitionPolyType,
+        );
+
+        for (const field of expr.fields) {
+          this.typecheckExpr(field.value);
+
+          const fieldDefinition = struct.fields.find((f) => f.name === f.name);
+          if (fieldDefinition === undefined) {
+            throw new Error("TODO field not found in original def");
+          }
+
+          const fieldDefinitionPolyType = this.typesHydration.getPolyType(
+            fieldDefinition.type_,
+          );
+
+          const fieldDefinitionMonoType = instantiator.instantiate(
+            fieldDefinitionPolyType,
+          );
+
+          this.unifyNode(field.value, fieldDefinitionMonoType);
+        }
+
+        this.unifyNode(expr, fieldDefinitionMonoType);
 
         return;
       }
