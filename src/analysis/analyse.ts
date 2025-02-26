@@ -398,7 +398,6 @@ export class Analysis {
           fieldDeclaration.type_,
         );
         const fieldMonoType = instantiator.instantiate(fieldPolyType);
-
         this.unifyNode(expr, fieldMonoType);
 
         return;
@@ -412,11 +411,17 @@ export class Analysis {
         }
 
         const instantiator = new Instantiator(this.unifier);
+
         const structDefinitionPolyType =
           this.typesHydration.getPolyType(struct);
         const fieldDefinitionMonoType = instantiator.instantiate(
           structDefinitionPolyType,
         );
+        this.unifyNode(expr, fieldDefinitionMonoType);
+        if (expr.spread !== undefined) {
+          this.typecheckExpr(expr.spread);
+          this.unifyNodes(expr, expr.spread);
+        }
 
         for (const field of expr.fields) {
           this.typecheckExpr(field.value);
@@ -429,15 +434,11 @@ export class Analysis {
           const fieldDefinitionPolyType = this.typesHydration.getPolyType(
             fieldDefinition.type_,
           );
-
           const fieldDefinitionMonoType = instantiator.instantiate(
             fieldDefinitionPolyType,
           );
-
           this.unifyNode(field.value, fieldDefinitionMonoType);
         }
-
-        this.unifyNode(expr, fieldDefinitionMonoType);
 
         return;
       }

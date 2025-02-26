@@ -2897,8 +2897,8 @@ describe("struct", () => {
 
   test.todo("prevent from creating structs with private fields");
 
-  test.todo("typecheck fields of wrong type", () => {
-    const [a] = performAnalysis(
+  test("typecheck fields of wrong type", () => {
+    const [a, u] = performAnalysis(
       `
         type X {  }
         type Struct struct {
@@ -2913,6 +2913,7 @@ describe("struct", () => {
 
     expect(a.errors).toHaveLength(1);
     expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
+    expect(a.errors[0]?.range).toEqual(u.rangeOf(`"not x"`));
 
     expect(getTypes(a)).toEqual({
       s: "Struct",
@@ -2960,7 +2961,7 @@ describe("struct", () => {
     });
   });
 
-  test.todo("updating a infers the spread arg", () => {
+  test("updating a infers the spread arg", () => {
     const [a] = performAnalysis(
       `
       type Box<a> struct { a: a }
@@ -2980,11 +2981,9 @@ describe("struct", () => {
     });
   });
 
-  test.todo(
-    "allow to specify a subset of the fields when update another struct",
-    () => {
-      const [a] = performAnalysis(
-        `
+  test("allow to specify a subset of the fields when update another struct", () => {
+    const [a] = performAnalysis(
+      `
       type Str<a, b> struct {
         a: a,
         b: b
@@ -2998,11 +2997,10 @@ describe("struct", () => {
       }
       
   `,
-      );
+    );
 
-      expect(a.errors).toEqual([]);
-    },
-  );
+    expect(a.errors).toEqual([]);
+  });
 
   test.skip("namespaced struct names");
 });
