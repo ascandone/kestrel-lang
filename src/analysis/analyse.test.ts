@@ -2231,11 +2231,7 @@ describe("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test.todo("allow non-ambiguous instantiations when setting let type", () => {
-    // resetTraitsRegistry([
-    //   { trait: "Default", moduleName: "Main", typeName: "X" },
-    // ]);
-
+  test("allow non-ambiguous instantiations when setting let type", () => {
     const [a] = performAnalysis(
       `
     extern type X
@@ -2243,6 +2239,16 @@ describe("traits", () => {
 
     pub let legal: X = default
 `,
+      {
+        baseTraitsRegistry: TraitRegistry.from([
+          {
+            packageName: "core",
+            trait: "Default",
+            moduleName: "Main",
+            typeName: "X",
+          },
+        ]),
+      },
     );
 
     expect(a.errors).toEqual([]);
@@ -2269,7 +2275,7 @@ describe("traits", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(AmbiguousTypeVar);
   });
 
-  test.todo("allow ambiguous type vars in let exprs", () => {
+  test("allow ambiguous type vars in let exprs", () => {
     const [a] = performAnalysis(
       `
       extern type String
@@ -2309,7 +2315,7 @@ describe("traits", () => {
     },
   );
 
-  test.todo("do not emit ambiguos type error when variable is unbound", () => {
+  test("do not emit ambiguos type error when variable is unbound", () => {
     // resetTraitsRegistry([
     //   { trait: "Default", moduleName: "Main", typeName: "X" },
     // ]);
@@ -2328,7 +2334,7 @@ describe("traits", () => {
   });
 
   // TODO Skip until type sigs are fixed
-  test.todo("forbid ambiguous instantiations within args", () => {
+  test.skip("forbid ambiguous instantiations within args", () => {
     // resetTraitsRegistry([
     //   {
     //     moduleName: "Main",
