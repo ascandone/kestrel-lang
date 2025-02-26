@@ -376,26 +376,52 @@ export class Analysis {
           return;
         }
 
-        const fieldDeclaration = analysis.resolution.resolveField(
+        const lookup = analysis.resolution.resolveField(
           structType.name,
           expr.field,
           this.ns,
           (e) => this.errors.push(e),
         );
-        if (fieldDeclaration === undefined) {
+        if (lookup === undefined) {
           return;
         }
+        const [fieldDeclaration, structDeclaration] = lookup;
 
-        const mono = analysis.typesHydration.getPolyType(
+        const instantiator = new Instantiator(this.unifier);
+
+        const structPolyType =
+          analysis.typesHydration.getPolyType(structDeclaration);
+        const structMonoType = instantiator.instantiate(structPolyType);
+        this.unifyNode(expr.struct, structMonoType);
+
+        const fieldPolyType = analysis.typesHydration.getPolyType(
           fieldDeclaration.type_,
         );
-        this.unifyNode(expr, mono);
+        const fieldMonoType = instantiator.instantiate(fieldPolyType);
+
+        this.unifyNode(expr, fieldMonoType);
 
         return;
       }
 
-      case "struct-literal":
-        throw new Error("TODO handle typecheck of: " + expr.type);
+      case "struct-literal": {
+        // TODO handle search in external module
+        const struct = this.resolution.resolveStruct(expr.struct.name, false);
+        if (struct === undefined) {
+          return;
+        }
+
+        // TODO args
+        this.unifyNode(expr, {
+          tag: "Named",
+          name: struct.name,
+          module: this.ns,
+          package: this.package_,
+          args: struct.params.map(() => this.unifier.freshVar()),
+        });
+
+        return;
+      }
     }
   }
 

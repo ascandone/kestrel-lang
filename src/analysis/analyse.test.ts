@@ -2740,7 +2740,7 @@ describe("struct", () => {
     ]);
   });
 
-  test.todo("allow creating structs", () => {
+  test("allow creating structs", () => {
     const [a] = performAnalysis(
       `
         type X { X }
@@ -2761,7 +2761,7 @@ describe("struct", () => {
     });
   });
 
-  test.todo("typecheck params in struct types", () => {
+  test("typecheck params in struct types", () => {
     const [a] = performAnalysis(
       `
         type Person<a, b, c> struct { }
@@ -2776,7 +2776,7 @@ describe("struct", () => {
     });
   });
 
-  test.todo("handling params in dot access", () => {
+  test("handling params in dot access", () => {
     const [a] = performAnalysis(
       `
         type Box<a> struct {
@@ -2784,7 +2784,7 @@ describe("struct", () => {
         }
 
         extern type Int
-        extern let box: Box<Int>
+        extern pub let box: Box<Int>
 
         pub let field = box.field
     `,
@@ -2797,7 +2797,7 @@ describe("struct", () => {
     });
   });
 
-  test.todo("inferring params in dot access", () => {
+  test.skip("inferring params in dot access", () => {
     const [a] = performAnalysis(
       `
         type Box<a> struct {
@@ -2814,7 +2814,7 @@ describe("struct", () => {
     });
   });
 
-  test.todo("making sure field values are generalized", () => {
+  test("making sure field values are generalized", () => {
     const [a] = performAnalysis(
       `
       extern type Int
@@ -2822,8 +2822,10 @@ describe("struct", () => {
         field: a
       }
 
-      pub let get_field_1: Fn(Box<Int>) -> Int = fn box { box.field }
-      pub let get_field_2 = fn box { box.field }
+      pub let get_field_1: Fn(Box<Int>) -> _ =
+        fn box { box.field }
+      pub let get_field_2: Fn(Box<_>) -> _ =
+        fn box { box.field }
   `,
     );
 
@@ -2834,7 +2836,7 @@ describe("struct", () => {
     });
   });
 
-  test.todo("handling params in struct definition (phantom types)", () => {
+  test("handling params in struct definition (phantom types)", () => {
     const [a] = performAnalysis(
       `
         type Box<a, b> struct { }

@@ -145,19 +145,12 @@ export class ResolutionAnalysis {
     this.sortedDeclarations = findStronglyConnectedComponents(callGraph);
   }
 
-  public resolveField(
-    typeName: string,
-    field: { name: string } & RangeMeta,
-    fromModule: string,
-    emitError: (error: ErrorInfo) => void,
-  ): StructDeclarationField<unknown> | undefined {
+  public resolveStruct(typeName: string, isExternalModule: boolean) {
     const typeDeclaration = this.locallyDefinedTypes.get(typeName);
     if (typeDeclaration === undefined) {
       throw new Error("TODO handle decl not found");
       return undefined;
     }
-
-    const isExternalModule = fromModule !== this.ns;
 
     if (isExternalModule && typeDeclaration.pub === false) {
       throw new Error("TODO handle private type");
@@ -166,6 +159,21 @@ export class ResolutionAnalysis {
 
     if (typeDeclaration.type !== "struct") {
       throw new Error("TODO handle not struct");
+      return undefined;
+    }
+
+    return typeDeclaration;
+  }
+
+  public resolveField(
+    typeName: string,
+    field: { name: string } & RangeMeta,
+    fromModule: string,
+    emitError: (error: ErrorInfo) => void,
+  ): [StructDeclarationField<unknown>, UntypedTypeDeclaration] | undefined {
+    const isExternalModule = fromModule !== this.ns;
+    const typeDeclaration = this.resolveStruct(typeName, isExternalModule);
+    if (typeDeclaration === undefined) {
       return undefined;
     }
 
@@ -189,7 +197,7 @@ export class ResolutionAnalysis {
       return undefined;
     }
 
-    return fieldLookup;
+    return [fieldLookup, typeDeclaration];
   }
 
   public resolveIdentifier(
@@ -674,8 +682,22 @@ export class ResolutionAnalysis {
         // TODO resolve field
         return;
 
-      case "struct-literal":
-        throw new Error("TODO resolution on: " + expr.type);
+      case "struct-literal": {
+        // TODO this needs to be qualified as well
+        for (const field of expr.fields) {
+          this.runValuesResolution(field.value, localScope);
+        }
+        if (expr.spread !== undefined) {
+          this.runValuesResolution(expr.spread, localScope);
+        }
+
+        const structResolution = this.resolveStruct(expr.struct.name, false);
+        if (structResolution === undefined) {
+          throw new Error("TODO handle undefined struct resolution");
+        }
+
+        return;
+      }
     }
   }
 
