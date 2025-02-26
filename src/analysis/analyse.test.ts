@@ -1393,7 +1393,7 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo("infers matched type when is qualified", () => {
+  test("infers matched type when is qualified", () => {
     const [A] = performAnalysis(`pub(..) type T { T }`, { namespace: "A" });
 
     const [a] = performAnalysis(
@@ -1607,53 +1607,44 @@ describe("pattern matching", () => {
     });
   });
 
-  test.todo(
-    "force exhaustive match in let binding when there are many values for a const",
-    () => {
-      const [a] = performAnalysis(`
+  test("force exhaustive match in let binding when there are many values for a const", () => {
+    const [a] = performAnalysis(`
         pub let f = {
           let 42 = 42;
           0
         }
   `);
 
-      expect(a.errors).toHaveLength(1);
-      expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
-    },
-  );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
+  });
 
-  test.todo(
-    "force exhaustive match in let binding when there are many constructors",
-    () => {
-      const [a] = performAnalysis(
-        `type Union { A, B }
+  test("force exhaustive match in let binding when there are many constructors", () => {
+    const [a] = performAnalysis(
+      `type Union { A, B }
 
     pub let f = {
       let A = A;
       0
     }
   `,
-      );
+    );
 
-      expect(a.errors).toHaveLength(1);
-      expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
-    },
-  );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
+  });
 
-  test.todo(
-    "force exhaustive match in fns binding when there are many constructors",
-    () => {
-      const [a] = performAnalysis(
-        `type Union { A, B }
+  test("force exhaustive match in fns binding when there are many constructors", () => {
+    const [a] = performAnalysis(
+      `type Union { A, B }
 
     pub let f = fn A { 0 }
   `,
-      );
+    );
 
-      expect(a.errors).toHaveLength(1);
-      expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
-    },
-  );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(NonExhaustiveMatch);
+  });
 });
 
 describe("unused locals checks", () => {

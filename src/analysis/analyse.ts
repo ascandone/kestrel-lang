@@ -6,6 +6,7 @@ import {
   OccursCheck,
   TraitNotSatified_REWRITE,
   TypeMismatch_REWRITE,
+  NonExhaustiveMatch,
 } from "./errors";
 import {
   Binding,
@@ -229,7 +230,7 @@ export class Analysis {
         this.unifyNode(expr, {
           tag: "Fn",
           args: expr.params.map((pattern) => {
-            this.typecheckPattern(pattern);
+            this.typecheckPattern(pattern, true);
             return this.getRawType(pattern);
           }),
           return: this.getRawType(expr.body),
@@ -262,7 +263,7 @@ export class Analysis {
       case "let":
         this.typecheckExpr(expr.value);
         this.typecheckExpr(expr.body);
-        this.typecheckPattern(expr.pattern);
+        this.typecheckPattern(expr.pattern, true);
 
         this.unifyNodes(expr, expr.body);
         this.unifyNodes(expr.pattern, expr.value);
@@ -285,7 +286,7 @@ export class Analysis {
         this.typecheckExpr(expr.mapper);
         this.typecheckExpr(expr.value);
         this.typecheckExpr(expr.body);
-        this.typecheckPattern(expr.pattern);
+        this.typecheckPattern(expr.pattern, true);
         return;
 
       case "list-literal": {
@@ -360,19 +361,35 @@ export class Analysis {
     }
   }
 
-  private typecheckPattern(pattern: UntypedMatchPattern): undefined {
+  private typecheckPattern(
+    pattern: UntypedMatchPattern,
+    forceExhaustive = false,
+  ): undefined {
     switch (pattern.type) {
       case "identifier":
         return;
 
       case "lit":
         this.unifyNode(pattern, getConstantType(pattern.literal));
+        if (forceExhaustive) {
+          this.errors.push({
+            description: new NonExhaustiveMatch(),
+            range: pattern.range,
+          });
+        }
         return;
 
       case "constructor": {
         const resolution = this.resolution.resolveIdentifier(pattern);
         if (resolution === undefined || resolution.type !== "constructor") {
           return;
+        }
+
+        if (forceExhaustive && resolution.declaration.variants.length > 1) {
+          this.errors.push({
+            range: pattern.range,
+            description: new NonExhaustiveMatch(),
+          });
         }
 
         const analysis = this.getDependencyByNs(resolution.namespace);
@@ -405,7 +422,7 @@ export class Analysis {
             nestedPattern,
             instantiator.instantiate(this.typesHydration.getPolyType(arg)),
           );
-          this.typecheckPattern(nestedPattern);
+          this.typecheckPattern(nestedPattern, forceExhaustive);
         }
         return;
       }
