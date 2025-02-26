@@ -123,6 +123,11 @@ export class TypeAstsHydration {
         return;
 
       case "struct":
+        for (const field of declaration.fields) {
+          // TODO double check bound arg
+          const type = this.adtArgToType(field.type_, unifier, bound);
+          this.polyTypes.set(field.type_, type);
+        }
         return;
 
       case "extern":

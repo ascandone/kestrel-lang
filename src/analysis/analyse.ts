@@ -32,6 +32,7 @@ import {
   OccursCheckError,
   MissingTraitError,
   TraitsMap,
+  typePPrint,
 } from "../type";
 import { bool, char, float, int, list, string } from "./coreTypes";
 import { TypeAstsHydration } from "./typesHydration";
@@ -355,8 +356,45 @@ export class Analysis {
         return;
       }
 
+      case "field-access": {
+        this.typecheckExpr(expr.struct);
+        const structType = this.getType(expr.struct);
+
+        if (structType.tag !== "Named") {
+          throw new Error(
+            "TODO handle struct with type: " + typePPrint(structType),
+          );
+        }
+
+        // TODO this should include package as well
+        const analysis =
+          structType.module === this.ns
+            ? this
+            : this.options.getDependency?.(structType.module);
+        if (analysis === undefined) {
+          throw new Error("TODO handle undefinde dep: " + structType.module);
+          return;
+        }
+
+        const fieldDeclaration = analysis.resolution.resolveField(
+          structType.name,
+          expr.field,
+          this.ns,
+          (e) => this.errors.push(e),
+        );
+        if (fieldDeclaration === undefined) {
+          return;
+        }
+
+        const mono = analysis.typesHydration.getPolyType(
+          fieldDeclaration.type_,
+        );
+        this.unifyNode(expr, mono);
+
+        return;
+      }
+
       case "struct-literal":
-      case "field-access":
         throw new Error("TODO handle typecheck of: " + expr.type);
     }
   }

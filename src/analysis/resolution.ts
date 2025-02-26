@@ -9,6 +9,7 @@ import {
   DuplicateDeclaration,
   DuplicateTypeDeclaration,
   ErrorInfo,
+  InvalidField,
   NonExistingImport,
   UnboundModule,
   UnboundType,
@@ -17,6 +18,8 @@ import {
 } from "./errors";
 import {
   Binding,
+  RangeMeta,
+  StructDeclarationField,
   TypeAst,
   UntypedDeclaration,
   UntypedExposedValue,
@@ -140,6 +143,53 @@ export class ResolutionAnalysis {
 
     const callGraph = this.buildCallGraph(this.callGraph);
     this.sortedDeclarations = findStronglyConnectedComponents(callGraph);
+  }
+
+  public resolveField(
+    typeName: string,
+    field: { name: string } & RangeMeta,
+    fromModule: string,
+    emitError: (error: ErrorInfo) => void,
+  ): StructDeclarationField<unknown> | undefined {
+    const typeDeclaration = this.locallyDefinedTypes.get(typeName);
+    if (typeDeclaration === undefined) {
+      throw new Error("TODO handle decl not found");
+      return undefined;
+    }
+
+    const isExternalModule = fromModule !== this.ns;
+
+    if (isExternalModule && typeDeclaration.pub === false) {
+      throw new Error("TODO handle private type");
+      return undefined;
+    }
+
+    if (typeDeclaration.type !== "struct") {
+      throw new Error("TODO handle not struct");
+      return undefined;
+    }
+
+    if (isExternalModule && typeDeclaration.pub !== "..") {
+      emitError({
+        description: new InvalidField(typeDeclaration.name, field.name),
+        range: field.range,
+      });
+
+      return undefined;
+    }
+
+    const fieldLookup = typeDeclaration.fields.find(
+      (structField) => structField.name === field.name,
+    );
+    if (fieldLookup === undefined) {
+      emitError({
+        description: new InvalidField(typeDeclaration.name, field.name),
+        range: field.range,
+      });
+      return undefined;
+    }
+
+    return fieldLookup;
   }
 
   public resolveIdentifier(
@@ -619,8 +669,12 @@ export class ResolutionAnalysis {
         }
         return;
 
-      case "struct-literal":
       case "field-access":
+        this.runValuesResolution(expr.struct, localScope);
+        // TODO resolve field
+        return;
+
+      case "struct-literal":
         throw new Error("TODO resolution on: " + expr.type);
     }
   }

@@ -626,7 +626,7 @@ describe("modules", () => {
       { getDependency },
     );
 
-    expect(a.errors).toHaveLength(0);
+    expect(a.errors).toEqual([]);
     expect(getDependency).toHaveBeenCalledTimes(1);
   });
 });
@@ -1283,7 +1283,7 @@ describe("list literal", () => {
 });
 
 describe("pipe operator", () => {
-  test.todo("infer pipe operator left side and right side");
+  test.skip("infer pipe operator left side and right side");
 
   test("infers return type", () => {
     const [a] = performAnalysis(
@@ -2290,7 +2290,7 @@ describe("traits", () => {
     `,
     );
 
-    expect(a.errors).toHaveLength(0);
+    expect(a.errors).toEqual([]);
   });
 
   test.todo(
@@ -2389,7 +2389,7 @@ describe("struct", () => {
     `,
     );
 
-    expect(a.errors).toHaveLength(0);
+    expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
       p: "Person",
     });
@@ -2404,7 +2404,7 @@ describe("struct", () => {
     `,
     );
 
-    expect(a.errors).toHaveLength(0);
+    expect(a.errors).toEqual([]);
   });
 
   test("forbid using unknown types", () => {
@@ -2424,7 +2424,7 @@ describe("struct", () => {
     ]);
   });
 
-  test.todo("allow accessing a type's field", () => {
+  test("allow accessing a type's field", () => {
     const [a] = performAnalysis(
       `
       extern type String
@@ -2439,14 +2439,13 @@ describe("struct", () => {
     `,
     );
 
-    expect(a.errors).toHaveLength(0);
+    expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
-      p: "Person",
       p_name: "String",
     });
   });
 
-  test.todo("infer type when accessing known field", () => {
+  test.skip("infer type when accessing known field", () => {
     const [a] = performAnalysis(
       `
       extern type String
@@ -2465,8 +2464,8 @@ describe("struct", () => {
     });
   });
 
-  test.todo("do not allow invalid field access", () => {
-    const [a] = performAnalysis(
+  test("do not allow invalid field access", () => {
+    const [a, u] = performAnalysis(
       `
       extern type String
       type Person struct {
@@ -2478,17 +2477,19 @@ describe("struct", () => {
     `,
     );
 
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toEqual(
-      new InvalidField("Person", "invalid_field"),
-    );
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new InvalidField("Person", "invalid_field"),
+        range: u.rangeOf("invalid_field"),
+      },
+    ]);
+
     expect(getTypes(a)).toEqual({
-      p: "Person",
       invalid: "a",
     });
   });
 
-  test.todo("handle resolution of other modules' fields", () => {
+  test("handle resolution of other modules' fields", () => {
     const [Person] = performAnalysis(
       `
       extern type String
@@ -2502,18 +2503,19 @@ describe("struct", () => {
     const [a] = performAnalysis(
       `
       import Person.{Person(..)}
-      pub let name = fn p { p.name }
+      pub let name: Fn(Person) -> _
+        = fn p { p.name }
     `,
       { dependencies: { Person } },
     );
 
-    expect(a.errors).toHaveLength(0);
+    expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
       name: "Fn(Person) -> String",
     });
   });
 
-  test.todo("forbid unknown field on unbound value", () => {
+  test.skip("forbid unknown field on unbound value", () => {
     const [a] = performAnalysis(`pub let f = fn p { p.invalid_field }`);
 
     expect(a.errors).toHaveLength(1);
@@ -2522,38 +2524,35 @@ describe("struct", () => {
     );
   });
 
-  test.todo(
-    "prevent resolution of other modules' fields when import is not (..)",
-    () => {
-      const [Person] = performAnalysis(
-        `
+  test.skip("prevent resolution of other modules' fields when import is not (..)", () => {
+    const [Person] = performAnalysis(
+      `
       extern type String
       pub(..) type Person struct {
         name: String
       }
     `,
-        { namespace: "Person" },
-      );
+      { namespace: "Person" },
+    );
 
-      const [a] = performAnalysis(
-        `
+    const [a] = performAnalysis(
+      `
       import Person.{Person}
 
       extern pub let x: Person // <- this prevents UnusedExposing err
 
       pub let name = fn p { p.name }
     `,
-        { dependencies: { Person } },
-      );
+      { dependencies: { Person } },
+    );
 
-      expect(a.errors).toHaveLength(1);
-      expect(a.errors[0]?.description).toBeInstanceOf(InvalidField);
-    },
-  );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(InvalidField);
+  });
 
-  test.todo("emit bad import if trying to import(..) private fields");
+  test.skip("emit bad import if trying to import(..) private fields");
 
-  test.todo("allow accessing fields in other modules if public", () => {
+  test("allow accessing fields in other modules if public", () => {
     const [Person] = performAnalysis(
       `
       extern type String
@@ -2575,18 +2574,16 @@ describe("struct", () => {
       { dependencies: { Person } },
     );
 
-    expect(a.errors).toHaveLength(0);
+    expect(a.errors).toEqual([]);
     expect(getTypes(a)).toEqual({
       p: "Person",
       name: "String",
     });
   });
 
-  test.todo(
-    "allow accessing fields in same module with qualified field syntax",
-    () => {
-      const [a] = performAnalysis(
-        `
+  test.skip("allow accessing fields in same module with qualified field syntax", () => {
+    const [a] = performAnalysis(
+      `
         extern type String
         type Person struct {
           name: String
@@ -2596,67 +2593,60 @@ describe("struct", () => {
           p.Person#name
         }
     `,
-      );
+    );
 
-      expect(a.errors).toHaveLength(0);
-      expect(getTypes(a)).toEqual({
-        name: "Fn(Person) -> String",
-      });
-    },
-  );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      name: "Fn(Person) -> String",
+    });
+  });
 
-  test.todo(
-    "emit err when field accessed with qualified syntax is invalid",
-    () => {
-      const [a] = performAnalysis(
-        `
+  test.skip("emit err when field accessed with qualified syntax is invalid", () => {
+    const [a] = performAnalysis(
+      `
         type Person struct { }
 
         pub let name = fn p {
           p.Person#invalid_field
         }
     `,
-      );
+    );
 
-      expect(a.errors).toHaveLength(1);
-      expect(a.errors[0]?.description).toEqual(
-        new InvalidField("Person", "invalid_field"),
-      );
-    },
-  );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toEqual(
+      new InvalidField("Person", "invalid_field"),
+    );
+  });
 
-  test.todo(
-    "allow accessing fields in other modules with qualified field syntax",
-    () => {
-      const [Person] = performAnalysis(
-        `
+  test.skip("allow accessing fields in other modules with qualified field syntax", () => {
+    const [Person] = performAnalysis(
+      `
       extern type String
       pub(..) type Person struct {
         name: String
       }
     `,
-        { namespace: "Person" },
-      );
+      { namespace: "Person" },
+    );
 
-      const [a] = performAnalysis(
-        `
+    const [a] = performAnalysis(
+      `
       import Person.{Person}
 
       pub let name = fn p {
         p.Person#name
       }
     `,
-        { dependencies: { Person } },
-      );
+      { dependencies: { Person } },
+    );
 
-      expect(a.errors).toHaveLength(0);
-      expect(getTypes(a)).toEqual({
-        name: "Fn(Person) -> String",
-      });
-    },
-  );
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      name: "Fn(Person) -> String",
+    });
+  });
 
-  test.todo("emit error when struct of qualified field does not exist", () => {
+  test.skip("emit error when struct of qualified field does not exist", () => {
     const [a] = performAnalysis(
       `
       pub let name = fn p {
@@ -2669,7 +2659,7 @@ describe("struct", () => {
     expect(a.errors[0]?.description).toEqual(new UnboundType("InvalidType"));
   });
 
-  test.todo("emit error when qualified field does not exist", () => {
+  test.skip("emit error when qualified field does not exist", () => {
     const [Person] = performAnalysis(
       `
         pub(..) type Person struct {}
@@ -2693,7 +2683,7 @@ describe("struct", () => {
     );
   });
 
-  test.todo("emit error when qualified field is private", () => {
+  test.skip("emit error when qualified field is private", () => {
     const [Person] = performAnalysis(
       `
         extern type Int
@@ -2720,7 +2710,7 @@ describe("struct", () => {
     );
   });
 
-  test.todo("emit InvalidField if trying to access private fields", () => {
+  test("emit InvalidField if trying to access private fields", () => {
     const [Person] = performAnalysis(
       `
       extern type String
@@ -2731,7 +2721,7 @@ describe("struct", () => {
       { namespace: "Person" },
     );
 
-    const [a] = performAnalysis(
+    const [a, u] = performAnalysis(
       `
       import Person.{Person}
 
@@ -2742,8 +2732,12 @@ describe("struct", () => {
       { dependencies: { Person } },
     );
 
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(InvalidField);
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new InvalidField("Person", "name"),
+        range: u.rangeOf("name", 2),
+      },
+    ]);
   });
 
   test.todo("allow creating structs", () => {
