@@ -10,6 +10,7 @@ import {
   DuplicateTypeDeclaration,
   ErrorInfo,
   NonExistingImport,
+  UnboundModule,
   UnboundType,
   UnboundVariable,
   UnusedVariable,
@@ -159,8 +160,11 @@ export class ResolutionAnalysis {
     for (const import_ of [...this.implicitImports, ...this.module.imports]) {
       const analysis = getDependency(import_.ns);
       if (analysis === undefined) {
+        this.emitError({
+          description: new UnboundModule(import_.ns),
+          range: import_.range,
+        });
         continue;
-        throw new Error("TODO dependency not found: " + import_.ns);
       }
       this.importedModules.set(import_.ns, analysis);
 

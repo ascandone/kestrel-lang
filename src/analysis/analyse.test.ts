@@ -446,10 +446,14 @@ describe("modules", () => {
     expect(a.errors).toEqual([]);
   });
 
-  test.todo("error when import a non-existing module", () => {
-    const [a] = performAnalysis(`import ModuleNotFound`);
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(UnboundModule);
+  test("error when import a non-existing module", () => {
+    const [a, u] = performAnalysis(`import ModuleNotFound`);
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new UnboundModule("ModuleNotFound"),
+        range: u.rangeOf("import ModuleNotFound"),
+      },
+    ]);
   });
 
   test("error when importing a non-existing type", () => {
@@ -3007,7 +3011,7 @@ describe("struct", () => {
     },
   );
 
-  test.todo("namespaced struct names");
+  test.skip("namespaced struct names");
 });
 
 describe("prelude", () => {
