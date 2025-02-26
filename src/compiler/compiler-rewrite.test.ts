@@ -1005,7 +1005,7 @@ describe("structs", () => {
     `);
   });
 
-  test.skip("struct declaration", () => {
+  test("struct creation", () => {
     const out = compileSrc(`
       extern type Int
       type Point struct {
@@ -1027,7 +1027,7 @@ describe("structs", () => {
     `);
   });
 
-  test.skip("empty struct is represented as {}", () => {
+  test("empty struct is represented as {}", () => {
     const out = compileSrc(`
       extern type Int
       type Nil struct { }
@@ -1040,7 +1040,7 @@ describe("structs", () => {
     `);
   });
 
-  test.skip("field access", () => {
+  test("field access", () => {
     const out = compileSrc(`
       extern type Int
 
@@ -1059,7 +1059,7 @@ describe("structs", () => {
     `);
   });
 
-  test.skip("field access of struct lit", () => {
+  test("field access of struct lit", () => {
     const out = compileSrc(`
       extern type Int
       type Box struct { x: Int }

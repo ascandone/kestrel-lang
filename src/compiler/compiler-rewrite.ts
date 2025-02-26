@@ -704,54 +704,57 @@ class Compiler {
         );
 
       case "struct-literal": {
-        // throw new Error("TODO struct-lit");
+        // TODO handle external structs
+        const structResolution = this.analysis.resolution.resolveStruct(
+          src.struct.name,
+          false,
+        );
 
-        // const resolution = src.struct.resolution;
-        // if (resolution === undefined) {
-        //   throw new Error(
-        //     "[unreachable] undefined resolution for struct declaration",
-        //   );
-        // }
+        if (structResolution === undefined) {
+          throw new Error(
+            "[unreachable] undefined resolution for struct declaration",
+          );
+        }
 
-        // const properties: t.ObjectProperty[] = [];
+        const properties: t.ObjectProperty[] = [];
 
-        // let spreadIdentifier: t.Identifier | undefined;
-        // for (const declarationField of resolution.declaration.fields) {
-        //   const structLitField = src.fields.find(
-        //     (f) => f.field.name === declarationField.name,
-        //   );
+        let spreadIdentifier: t.Identifier | undefined;
+        for (const declarationField of structResolution.fields) {
+          const structLitField = src.fields.find(
+            (f) => f.field.name === declarationField.name,
+          );
 
-        //   if (structLitField !== undefined) {
-        //     properties.push({
-        //       type: "ObjectProperty",
-        //       key: { type: "Identifier", name: structLitField.field.name },
-        //       value: this.compileExprAsJsExpr(structLitField.value, undefined),
-        //       shorthand: true,
-        //       computed: false,
-        //     });
-        //   } else if (src.spread === undefined) {
-        //     throw new Error("[unreachable] missing fields");
-        //   } else {
-        //     if (spreadIdentifier === undefined) {
-        //       spreadIdentifier = this.precomputeValue(src.spread);
-        //     }
+          if (structLitField !== undefined) {
+            properties.push({
+              type: "ObjectProperty",
+              key: { type: "Identifier", name: structLitField.field.name },
+              value: this.compileExprAsJsExpr(structLitField.value, undefined),
+              shorthand: true,
+              computed: false,
+            });
+          } else if (src.spread === undefined) {
+            throw new Error("[unreachable] missing fields");
+          } else {
+            if (spreadIdentifier === undefined) {
+              spreadIdentifier = this.precomputeValue(src.spread);
+            }
 
-        //     properties.push({
-        //       type: "ObjectProperty",
-        //       key: { type: "Identifier", name: declarationField.name },
-        //       value: {
-        //         type: "MemberExpression",
-        //         object: spreadIdentifier,
-        //         property: { type: "Identifier", name: declarationField.name },
-        //         computed: false,
-        //       },
-        //       shorthand: true,
-        //       computed: false,
-        //     });
-        //   }
-        // }
+            properties.push({
+              type: "ObjectProperty",
+              key: { type: "Identifier", name: declarationField.name },
+              value: {
+                type: "MemberExpression",
+                object: spreadIdentifier,
+                property: { type: "Identifier", name: declarationField.name },
+                computed: false,
+              },
+              shorthand: true,
+              computed: false,
+            });
+          }
+        }
 
-        return { type: "ObjectExpression", properties: [] };
+        return { type: "ObjectExpression", properties };
       }
 
       case "field-access":
