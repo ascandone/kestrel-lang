@@ -9,6 +9,7 @@ import {
   DuplicateDeclaration,
   DuplicateTypeDeclaration,
   ErrorInfo,
+  NonExistingImport,
   UnboundType,
   UnboundVariable,
   UnusedVariable,
@@ -189,7 +190,11 @@ export class ResolutionAnalysis {
         const declarationLookup =
           analysis.resolution.locallyDefinedDeclarations.get(exposedValue.name);
         if (declarationLookup === undefined || !declarationLookup.pub) {
-          throw new Error("TODO imported value not found");
+          this.emitError({
+            description: new NonExistingImport(exposedValue.name),
+            range: exposedValue.range,
+          });
+          return;
         }
 
         this.importedValues.set(exposedValue.name, {
@@ -208,7 +213,11 @@ export class ResolutionAnalysis {
           declarationLookup === undefined ||
           declarationLookup.pub === false
         ) {
-          throw new Error("TODO imported value not found");
+          this.emitError({
+            description: new NonExistingImport(exposedValue.name),
+            range: exposedValue.range,
+          });
+          return;
         }
 
         this.importedTypes.set(declarationLookup.name, [
@@ -435,16 +444,41 @@ export class ResolutionAnalysis {
       return;
     }
 
-    this.identifiersResolutions.set(expr, resolution);
     switch (resolution.type) {
       case "local-variable":
         this.unusedBindings.delete(resolution.binding);
+        this.identifiersResolutions.set(expr, resolution);
         break;
 
       case "global-variable":
         this.unusedBindings.delete(resolution.declaration.binding);
+        if (
+          resolution.namespace.type === "self" ||
+          resolution.declaration.pub
+        ) {
+          this.identifiersResolutions.set(expr, resolution);
+        } else {
+          this.emitError({
+            description: new NonExistingImport(
+              resolution.declaration.binding.name,
+            ),
+            range: expr.range,
+          });
+        }
         break;
+
       case "constructor":
+        if (
+          resolution.namespace.type === "self" ||
+          resolution.declaration.pub === ".."
+        ) {
+          this.identifiersResolutions.set(expr, resolution);
+        } else {
+          this.emitError({
+            description: new NonExistingImport(resolution.variant.name),
+            range: expr.range,
+          });
+        }
         break;
     }
   }

@@ -204,10 +204,10 @@ describe("globals resolution", () => {
 });
 
 describe("modules", () => {
-  test.todo("imports cannot shadow values");
-  test.todo("imports cannot shadow types");
-  test.todo("imports cannot shadow constructors");
-  test.todo("imports cannot shadow fields");
+  test.skip("imports cannot shadow values");
+  test.skip("imports cannot shadow types");
+  test.skip("imports cannot shadow constructors");
+  test.skip("imports cannot shadow fields");
 
   test("implicitly imports values of the modules in the prelude", () => {
     const [A] = performAnalysis(
@@ -452,46 +452,61 @@ describe("modules", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(UnboundModule);
   });
 
-  test.todo("error when importing a non-existing type", () => {
+  test("error when importing a non-existing type", () => {
     const [Mod] = performAnalysis(``, { namespace: "Mod" });
-    const [a] = performAnalysis(`import Mod.{NotFound}`, {
+    const [a, utils] = performAnalysis(`import Mod.{NotFound}`, {
       dependencies: { Mod },
     });
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new NonExistingImport("NotFound"),
+        range: utils.rangeOf("NotFound"),
+      },
+    ]);
   });
 
-  test.todo("error when importing a type the is not pub", () => {
+  test("error when importing a type the is not pub", () => {
     const [Mod] = performAnalysis(`type PrivateType {}`, { namespace: "Mod" });
-    const [a] = performAnalysis(`import Mod.{PrivateType}`, {
+    const [a, utils] = performAnalysis(`import Mod.{PrivateType}`, {
       dependencies: { Mod },
     });
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new NonExistingImport("PrivateType"),
+        range: utils.rangeOf("PrivateType"),
+      },
+    ]);
   });
 
-  test.todo("error when importing a non-existing value", () => {
+  test("error when importing a non-existing value", () => {
     const [Mod] = performAnalysis(``, { namespace: "Mod" });
-    const [a] = performAnalysis(`import Mod.{not_found}`, {
+    const [a, utils] = performAnalysis(`import Mod.{not_found}`, {
       dependencies: { Mod },
     });
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new NonExistingImport("not_found"),
+        range: utils.rangeOf("not_found"),
+      },
+    ]);
   });
 
-  test.todo("error when importing a private value", () => {
+  test("error when importing a private value", () => {
     const [Mod] = performAnalysis(`let not_found = 42`, { namespace: "Mod" });
-    const [a] = performAnalysis(`import Mod.{not_found}`, {
+    const [a, utils] = performAnalysis(`import Mod.{not_found}`, {
       dependencies: { Mod },
     });
-    expect(
-      a.errors.some((e) => e.description instanceof NonExistingImport),
-    ).toBeTruthy();
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new NonExistingImport("not_found"),
+        range: utils.rangeOf("not_found"),
+      },
+    ]);
   });
 
-  test.todo("qualified imports should not work on priv functions", () => {
+  test("qualified imports should not work on priv functions", () => {
     const [Mod] = performAnalysis(`let not_found = 42`, { namespace: "Mod" });
-    const [a] = performAnalysis(
+    const [a, utils] = performAnalysis(
       `
       import Mod
       pub let v = Mod.not_found
@@ -499,22 +514,29 @@ describe("modules", () => {
       { dependencies: { Mod } },
     );
 
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new NonExistingImport("not_found"),
+        range: utils.rangeOf("Mod.not_found"),
+      },
+    ]);
   });
 
-  test.todo("qualified imports should not work on priv constructors", () => {
+  test("qualified imports should not work on priv constructors", () => {
     const [Mod] = performAnalysis(`pub type T { A }`, { namespace: "Mod" });
-    const [a] = performAnalysis(
+    const [a, utils] = performAnalysis(
       `
       import Mod
       pub let v = Mod.A
     `,
       { dependencies: { Mod } },
     );
-
-    expect(a.errors).toHaveLength(1);
-    expect(a.errors[0]?.description).toBeInstanceOf(NonExistingImport);
+    expect(a.errors).toEqual<ErrorInfo[]>([
+      {
+        description: new NonExistingImport("A"),
+        range: utils.rangeOf("Mod.A"),
+      },
+    ]);
   });
 
   test("qualified imports should not work on priv types", () => {
