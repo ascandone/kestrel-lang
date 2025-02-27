@@ -2676,7 +2676,7 @@ describe("derive Eq instance for structs", () => {
     `);
   });
 
-  test.todo("recursive data structures", () => {
+  test("recursive data structures", () => {
     const out = compileSrc(
       `
       type Struct<a> struct {
@@ -3066,7 +3066,7 @@ describe("Derive Show instance for structs", () => {
     `);
   });
 
-  test.todo("recursive data structures", () => {
+  test("recursive data structures", () => {
     const out = compileSrc(
       `
       type Str<a> struct {

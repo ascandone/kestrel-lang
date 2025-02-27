@@ -206,7 +206,7 @@ export class TypeAstsHydration {
 
     // Register recursive type
     this.traitsRegistry.registerTrait(
-      this.ns,
+      trait,
       typeId,
       typeDecl.params.map(() => false),
     );
