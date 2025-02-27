@@ -145,9 +145,6 @@ class Compiler {
     as: CompilationMode,
   ): void {
     switch (src.type) {
-      case "let#":
-        throw new Error("TODO compile stm");
-
       case "syntax-err":
         throw new Error("[unreachable]");
 
@@ -296,6 +293,7 @@ class Compiler {
       // Attention: fallthrough to the next branch for application
 
       case "pipe": // TODO handle tailcall with pipe
+      case "let#": // TODO handle tailcall with let# (the bind operator might be tc)
       case "constant":
       case "list-literal":
       case "struct-literal":
@@ -354,26 +352,131 @@ class Compiler {
     }
   }
 
-  private compileApplicationAsExpr(
-    caller: UntypedExpr,
-    args: UntypedExpr[],
+  private compileFnAsExpr(
+    fnParams: UntypedMatchPattern[],
+    body: UntypedExpr,
   ): t.Expression {
-    if (caller.type === "identifier") {
-      const prefixName = toJsPrefix(caller.name);
-      if (prefixName !== undefined) {
+    const callerBinding = (() => {
+      const curFrame = this.getCurrentFrame();
+      if (curFrame.data.type !== "let") {
+        return undefined;
+      }
+      return curFrame.data.binding;
+    })();
+
+    const wasTailCall = this.tailCallIdent;
+    this.tailCallIdent = undefined;
+
+    this.frames.push(new Frame({ type: "fn" }));
+    const cleanup = () => {
+      this.frames.pop();
+      this.tailCallIdent = wasTailCall;
+    };
+
+    const [{ params }, stms] = this.wrapStatements(() => {
+      const params = fnParams.map((param): t.Identifier => {
+        if (param.type === "identifier") {
+          const name = this.getCurrentFrame().registerLocal(param.name);
+          const ident: t.Identifier = {
+            type: "Identifier",
+            name,
+          };
+          this.bindingsJsName.set(param, ident);
+          return ident;
+        }
+
+        const freshId = this.genFreshId();
+        const ident: t.Identifier = {
+          type: "Identifier",
+          name: freshId,
+        };
+
+        this.compileCheckPatternConditions(param, ident);
+
+        return ident;
+      });
+      this.compileExprAsJsStms(body, callerBinding, {
+        type: "return",
+      });
+      return { params };
+    });
+
+    const bodyStms: t.Expression | t.BlockStatement = (() => {
+      if (this.tailCallIdent !== undefined) {
         return {
-          type: "UnaryExpression",
-          operator: prefixName,
-          argument: this.compileExprAsJsExpr(args[0]!, undefined),
-          prefix: true,
+          type: "BlockStatement",
+          directives: [],
+          body: [
+            {
+              type: "WhileStatement",
+              test: { type: "BooleanLiteral", value: true },
+              body: {
+                type: "BlockStatement",
+                directives: [],
+                body: [
+                  ...params.map(
+                    (id, index): t.Statement => ({
+                      type: "VariableDeclaration",
+                      kind: "const",
+                      declarations: [
+                        {
+                          type: "VariableDeclarator",
+                          id,
+                          init: {
+                            type: "Identifier",
+                            name: `GEN_TC__${index}`,
+                          },
+                        },
+                      ],
+                    }),
+                  ),
+                  ...stms,
+                ],
+              },
+            },
+          ],
         };
       }
-    }
 
+      if (stms.length === 1 && stms[0]!.type === "ReturnStatement") {
+        return stms[0].argument!;
+      }
+
+      return {
+        type: "BlockStatement",
+        directives: [],
+        body: stms,
+      };
+    })();
+
+    const params_ =
+      this.tailCallIdent === undefined
+        ? params
+        : params.map(
+            (_, i): t.Identifier => ({
+              type: "Identifier",
+              name: `GEN_TC__${i}`,
+            }),
+          );
+
+    cleanup();
+    return {
+      type: "ArrowFunctionExpression",
+      async: false,
+      expression: true,
+      params: params_,
+      body: bodyStms,
+    };
+  }
+
+  private compileApplicationAsExpr(
+    caller: UntypedExpr,
+    evaluatedArgs: t.Expression[],
+  ): t.Expression {
     return {
       type: "CallExpression",
       callee: this.compileExprAsJsExpr(caller, undefined),
-      arguments: args.map((arg) => this.compileExprAsJsExpr(arg, undefined)),
+      arguments: evaluatedArgs,
     };
   }
 
@@ -382,11 +485,14 @@ class Compiler {
     tailPosCaller: Binding<unknown> | undefined,
   ): t.Expression {
     switch (src.type) {
-      case "let#":
-        throw new Error("TODO compile");
-
       case "syntax-err":
         throw new Error("[unreachable]");
+
+      case "let#":
+        return this.compileApplicationAsExpr(src.mapper, [
+          this.compileExprAsJsExpr(src.value, undefined),
+          this.compileFnAsExpr([src.pattern], src.body),
+        ]);
 
       case "pipe":
         // static checks guarantee right side is a function call
@@ -396,8 +502,10 @@ class Compiler {
         }
 
         return this.compileApplicationAsExpr(src.right.caller, [
-          src.left,
-          ...src.right.args,
+          this.compileExprAsJsExpr(src.left, undefined),
+          ...src.right.args.map((arg) =>
+            this.compileExprAsJsExpr(arg, undefined),
+          ),
         ]);
 
       case "block":
@@ -470,7 +578,22 @@ class Compiler {
       }
 
       case "application":
-        return this.compileApplicationAsExpr(src.caller, src.args);
+        if (src.caller.type === "identifier") {
+          const prefixName = toJsPrefix(src.caller.name);
+          if (prefixName !== undefined) {
+            return {
+              type: "UnaryExpression",
+              operator: prefixName,
+              argument: this.compileExprAsJsExpr(src.args[0]!, undefined),
+              prefix: true,
+            };
+          }
+        }
+
+        return this.compileApplicationAsExpr(
+          src.caller,
+          src.args.map((arg) => this.compileExprAsJsExpr(arg, undefined)),
+        );
 
       case "identifier": {
         const resolution = this.analysis.resolution.resolveIdentifier(src);
@@ -591,119 +714,8 @@ class Compiler {
         // we could call this.bindingsJsName.delete(src.pattern) here
       }
 
-      case "fn": {
-        const callerBinding = (() => {
-          const curFrame = this.getCurrentFrame();
-          if (curFrame.data.type !== "let") {
-            return undefined;
-          }
-          return curFrame.data.binding;
-        })();
-
-        const wasTailCall = this.tailCallIdent;
-        this.tailCallIdent = undefined;
-
-        this.frames.push(new Frame({ type: "fn" }));
-        const cleanup = () => {
-          this.frames.pop();
-          this.tailCallIdent = wasTailCall;
-        };
-
-        const [{ params }, stms] = this.wrapStatements(() => {
-          const params = src.params.map((param): t.Identifier => {
-            if (param.type === "identifier") {
-              const name = this.getCurrentFrame().registerLocal(param.name);
-              const ident: t.Identifier = {
-                type: "Identifier",
-                name,
-              };
-              this.bindingsJsName.set(param, ident);
-              return ident;
-            }
-
-            const freshId = this.genFreshId();
-            const ident: t.Identifier = {
-              type: "Identifier",
-              name: freshId,
-            };
-
-            this.compileCheckPatternConditions(param, ident);
-
-            return ident;
-          });
-          this.compileExprAsJsStms(src.body, callerBinding, {
-            type: "return",
-          });
-          return { params };
-        });
-
-        const bodyStms: t.Expression | t.BlockStatement = (() => {
-          if (this.tailCallIdent !== undefined) {
-            return {
-              type: "BlockStatement",
-              directives: [],
-              body: [
-                {
-                  type: "WhileStatement",
-                  test: { type: "BooleanLiteral", value: true },
-                  body: {
-                    type: "BlockStatement",
-                    directives: [],
-                    body: [
-                      ...params.map(
-                        (id, index): t.Statement => ({
-                          type: "VariableDeclaration",
-                          kind: "const",
-                          declarations: [
-                            {
-                              type: "VariableDeclarator",
-                              id,
-                              init: {
-                                type: "Identifier",
-                                name: `GEN_TC__${index}`,
-                              },
-                            },
-                          ],
-                        }),
-                      ),
-                      ...stms,
-                    ],
-                  },
-                },
-              ],
-            };
-          }
-
-          if (stms.length === 1 && stms[0]!.type === "ReturnStatement") {
-            return stms[0].argument!;
-          }
-
-          return {
-            type: "BlockStatement",
-            directives: [],
-            body: stms,
-          };
-        })();
-
-        const params_ =
-          this.tailCallIdent === undefined
-            ? params
-            : params.map(
-                (_, i): t.Identifier => ({
-                  type: "Identifier",
-                  name: `GEN_TC__${i}`,
-                }),
-              );
-
-        cleanup();
-        return {
-          type: "ArrowFunctionExpression",
-          async: false,
-          expression: true,
-          params: params_,
-          body: bodyStms,
-        };
-      }
+      case "fn":
+        return this.compileFnAsExpr(src.params, src.body);
 
       case "list-literal":
         return src.values.reduceRight<t.Expression>(

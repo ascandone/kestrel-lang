@@ -646,6 +646,27 @@ describe("syntax sugar", () => {
       `"const Main$out = (f, g) => g(f(1, 2), 3);"`,
     );
   });
+
+  test("let# syntax", () => {
+    const out = compileSrc(`
+
+      // let out = fn f {
+      //   f(0, fn arg {
+      //     arg + 1
+      //   })
+      // }
+
+     let out = fn f {
+        let#f arg = 0;
+        arg + 1 
+      }
+
+    `);
+
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$out = f => f(0, arg => arg + 1);"`,
+    );
+  });
 });
 
 describe("TCO", () => {
