@@ -20,7 +20,8 @@ export function showErrorLine(
     currentLine: number,
     [start, end]: [start: number, end: number],
   ) {
-    const lineDigits = currentLine.toString().length;
+    const lineDigits = (currentLine + 1).toString().length;
+
     const digitsPadding = repeatN(" ", lineDigits);
 
     const errPadding = repeatN(" ", start);
