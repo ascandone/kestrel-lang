@@ -128,6 +128,8 @@ export class TypeAstsHydration {
           const type = this.adtArgToType(field.type_, unifier, bound);
           this.polyTypes.set(field.type_, type);
         }
+        this.structDerive("Eq", declaration);
+        this.structDerive("Show", declaration);
         return;
 
       case "extern":
@@ -181,6 +183,60 @@ export class TypeAstsHydration {
     }
 
     this.traitsRegistry.unregisterTrait(trait, typeId);
+    this.traitsRegistry.registerTrait(
+      trait,
+      typeId,
+      paramsVars.map(({ id }) => neededVarsSet.has(id)),
+    );
+  }
+
+  private structDerive(
+    trait: string,
+    typeDecl: UntypedTypeDeclaration & { type: "struct" },
+  ) {
+    const deps: boolean[] = [];
+
+    const depParams = new Set<string>();
+
+    const typeId: TypeId = {
+      module: this.ns,
+      package: this.package_,
+      name: typeDecl.name,
+    };
+
+    // Register recursive type
+    this.traitsRegistry.registerTrait(
+      this.ns,
+      typeId,
+      typeDecl.params.map(() => false),
+    );
+
+    const paramsVars = this.typeDeclarationScheme.get(typeDecl);
+    if (paramsVars === undefined) {
+      throw new Error("[unreachable] scheme not found");
+    }
+
+    const neededVarsSet = new Set<number>();
+    for (const field of typeDecl.fields) {
+      const neededVars = this.traitsRegistry.getTraitDepsFor(
+        trait,
+        this.getPolyType(field.type_),
+        neededVarsSet,
+      );
+
+      if (neededVars === undefined) {
+        this.traitsRegistry.unregisterTrait(trait, typeId);
+        return;
+      }
+
+      // Empty struct always derive any trait
+    }
+
+    for (const param of typeDecl.params) {
+      deps.push(depParams.has(param.name));
+    }
+
+    this.traitsRegistry.unregisterTrait(this.ns, typeId);
     this.traitsRegistry.registerTrait(
       trait,
       typeId,

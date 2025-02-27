@@ -16,7 +16,6 @@ import {
   MissingRequiredFields,
   NonExhaustiveMatch,
   NonExistingImport,
-  TraitNotSatified,
   TraitNotSatified_REWRITE,
   TypeMismatch_REWRITE,
   TypeParamShadowing,
@@ -2062,7 +2061,7 @@ describe("traits", () => {
     expect(a.errors).toEqual([]);
   });
 
-  describe.todo("auto deriving for struct", () => {
+  describe("auto deriving for struct", () => {
     test("is able to derive Eq in empty structs", () => {
       const [a] = performAnalysis(
         `
@@ -2125,13 +2124,13 @@ describe("traits", () => {
       );
 
       expect(a.errors).toHaveLength(1);
-      expect(a.errors[0]?.description).toBeInstanceOf(TraitNotSatified);
+      expect(a.errors[0]?.description).toBeInstanceOf(TraitNotSatified_REWRITE);
     });
 
     test("requires struct params to be Eq when they appear in struct, for it to be derived", () => {
       const [a] = performAnalysis(
         `
-          extern let take_eq: Fn(a) -> a where a: Eq
+          extern pub let take_eq: Fn(a) -> a where a: Eq
   
           type MyType<a, b> struct {
             x: b,
@@ -2150,7 +2149,7 @@ describe("traits", () => {
       });
     });
 
-    test("derives deps in recursive types", () => {
+    test.todo("derives deps in recursive types", () => {
       // TODO assertion
       const [a] = performAnalysis(
         `
