@@ -2149,7 +2149,8 @@ describe("traits", () => {
       });
     });
 
-    test.todo("derives deps in recursive types", () => {
+    test.skip("derives deps in recursive types", () => {
+      // TODO fix test (MyType does not exist)
       // TODO assertion
       const [a] = performAnalysis(
         `
@@ -2175,11 +2176,9 @@ describe("traits", () => {
     });
   });
 
-  test.todo(
-    "fails to derives in self-recursive types when not derivable (nested)",
-    () => {
-      const [a] = performAnalysis(
-        `
+  test("fails to derives in self-recursive types when not derivable (nested)", () => {
+    const [a] = performAnalysis(
+      `
         type Box<a> { Box(a) }
         extern let take_eq: Fn(a) -> a where a: Eq
 
@@ -2191,11 +2190,11 @@ describe("traits", () => {
 
         pub let example = take_eq(End)
       `,
-      );
+    );
 
-      expect(a.errors).not.toEqual([]);
-    },
-  );
+    expect(a.errors).toHaveLength(1);
+    expect(a.errors[0]?.description).toBeInstanceOf(TraitNotSatified_REWRITE);
+  });
 
   test.todo("forbid ambiguous instantiations", () => {
     const [a] = performAnalysis(
