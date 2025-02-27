@@ -146,8 +146,7 @@ class Compiler {
   ): void {
     switch (src.type) {
       case "let#":
-      case "pipe":
-        throw new Error("TODO compile");
+        throw new Error("TODO compile stm");
 
       case "syntax-err":
         throw new Error("[unreachable]");
@@ -296,6 +295,7 @@ class Compiler {
         }
       // Attention: fallthrough to the next branch for application
 
+      case "pipe": // TODO handle tailcall with pipe
       case "constant":
       case "list-literal":
       case "struct-literal":
@@ -354,17 +354,51 @@ class Compiler {
     }
   }
 
+  private compileApplicationAsExpr(
+    caller: UntypedExpr,
+    args: UntypedExpr[],
+  ): t.Expression {
+    if (caller.type === "identifier") {
+      const prefixName = toJsPrefix(caller.name);
+      if (prefixName !== undefined) {
+        return {
+          type: "UnaryExpression",
+          operator: prefixName,
+          argument: this.compileExprAsJsExpr(args[0]!, undefined),
+          prefix: true,
+        };
+      }
+    }
+
+    return {
+      type: "CallExpression",
+      callee: this.compileExprAsJsExpr(caller, undefined),
+      arguments: args.map((arg) => this.compileExprAsJsExpr(arg, undefined)),
+    };
+  }
+
   private compileExprAsJsExpr(
     src: UntypedExpr,
     tailPosCaller: Binding<unknown> | undefined,
   ): t.Expression {
     switch (src.type) {
       case "let#":
-      case "pipe":
         throw new Error("TODO compile");
 
       case "syntax-err":
         throw new Error("[unreachable]");
+
+      case "pipe":
+        // static checks guarantee right side is a function call
+        // TODO we might want to enforce this in the AST
+        if (src.right.type !== "application") {
+          throw new Error("[unreachable] invalid pipe");
+        }
+
+        return this.compileApplicationAsExpr(src.right.caller, [
+          src.left,
+          ...src.right.args,
+        ]);
 
       case "block":
         return this.compileExprAsJsExpr(src.inner, tailPosCaller);
@@ -435,27 +469,8 @@ class Compiler {
         throw new Error("Invalid infix: " + src.operator);
       }
 
-      case "application": {
-        if (src.caller.type === "identifier") {
-          const prefixName = toJsPrefix(src.caller.name);
-          if (prefixName !== undefined) {
-            return {
-              type: "UnaryExpression",
-              operator: prefixName,
-              argument: this.compileExprAsJsExpr(src.args[0]!, undefined),
-              prefix: true,
-            };
-          }
-        }
-
-        return {
-          type: "CallExpression",
-          callee: this.compileExprAsJsExpr(src.caller, undefined),
-          arguments: src.args.map((arg) =>
-            this.compileExprAsJsExpr(arg, undefined),
-          ),
-        };
-      }
+      case "application":
+        return this.compileApplicationAsExpr(src.caller, src.args);
 
       case "identifier": {
         const resolution = this.analysis.resolution.resolveIdentifier(src);

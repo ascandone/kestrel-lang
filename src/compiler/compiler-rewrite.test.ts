@@ -634,6 +634,20 @@ describe("list literal", () => {
   });
 });
 
+describe("syntax sugar", () => {
+  test("|> operator", () => {
+    const out = compileSrc(`
+
+      let out = fn f, g {
+        1 |> f(2) |> g(3)
+      }
+    `);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$out = (f, g) => g(f(1, 2), 3);"`,
+    );
+  });
+});
+
 describe("TCO", () => {
   test("does not apply inside infix application", () => {
     const out = compileSrc(`
