@@ -63,7 +63,7 @@ describe("datatype representation", () => {
   });
 
   // TODO probably not necessary
-  test.todo("represent Unit as null");
+  test.skip("represent Unit as null");
 });
 
 describe("intrinsics", () => {
@@ -487,7 +487,7 @@ describe("if expressions", () => {
     `);
   });
 
-  test.todo("tail position if");
+  test.skip("tail position if");
 
   test("nested ifs", () => {
     // TODO switch this to if-else syntax
@@ -944,7 +944,7 @@ describe("ADTs", () => {
     `);
   });
 
-  test.todo("unbox newtype repr");
+  test.skip("unbox newtype repr");
 
   test("allow custom types with one arg", () => {
     const out = compileSrc(`type T { X(Int), Y(Bool) }`);
@@ -1553,7 +1553,7 @@ describe("pattern matching", () => {
     `);
   });
 
-  test.todo("pattern matching Unit values");
+  test.skip("pattern matching Unit values");
 
   // TODO better output
   test("toplevel ident in p matching", () => {
@@ -1816,7 +1816,7 @@ describe("pattern matching", () => {
   });
 });
 
-describe.todo("project compilation");
+describe.skip("project compilation");
 
 describe("traits compilation", () => {
   test("non-fn values", () => {
@@ -1833,7 +1833,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.todo("apply dict arg to locals");
+  test.skip("apply dict arg to locals");
 
   test("applying with concrete types", () => {
     const out = compileSrc(
