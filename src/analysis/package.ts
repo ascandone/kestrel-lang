@@ -36,7 +36,7 @@ export function compilePackage(args: CompilePackageOptions): CompiledPackage {
 
 /**
  * TODO perf can be improved: rn this takes O(modules.length)
- * We can reduce this by reducing it to O(staleModules) by
+ * We can reduce this to O(staleModules) by
  * navigating the reverse dependency graph
  */
 export class PackageWatcher {
