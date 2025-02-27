@@ -1074,7 +1074,7 @@ describe("structs", () => {
     `);
   });
 
-  test.skip("struct update", () => {
+  test("struct update", () => {
     const out = compileSrc(`
       extern type Int
       type Point3D struct {
@@ -1100,7 +1100,7 @@ describe("structs", () => {
     `);
   });
 
-  test.skip("struct update when expr is not ident", () => {
+  test("struct update when expr is not ident", () => {
     const out = compileSrc(`
       extern type Int
       type Point3D struct {
@@ -1700,7 +1700,7 @@ describe("pattern matching", () => {
     `);
   });
 
-  test.skip("compiling let match", () => {
+  test("compiling let match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1719,7 +1719,7 @@ describe("pattern matching", () => {
     `);
   });
 
-  test.skip("compiling let within let match", () => {
+  test("compiling let within let match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1742,7 +1742,7 @@ describe("pattern matching", () => {
     `);
   });
 
-  test.skip("compiling nested let match", () => {
+  test("compiling nested let match", () => {
     const out = compileSrc(`
     type Pair { Pair(Int, Int) }
 
