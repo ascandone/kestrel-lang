@@ -2248,12 +2248,12 @@ describe("traits compilation", () => {
   });
 });
 
-describe.todo("Eq trait", () => {
-  test.todo("== performs structural equality when type is unbound");
-  test.todo("== performs structural equality when type is adt");
-  test.todo("== doesn't perform structural equality when type is int");
-  test.todo("== doesn't perform structural equality when type is string");
-  test.todo("== doesn't perform structural equality when type is float");
+describe.skip("Eq trait", () => {
+  test.skip("== performs structural equality when type is unbound");
+  test.skip("== performs structural equality when type is adt");
+  test.skip("== doesn't perform structural equality when type is int");
+  test.skip("== doesn't perform structural equality when type is string");
+  test.skip("== doesn't perform structural equality when type is float");
 });
 
 describe("derive Eq instance for Adt", () => {
@@ -2527,7 +2527,7 @@ describe("derive Eq instance for Adt", () => {
   });
 });
 
-describe.todo("derive Eq instance for structs", () => {
+describe("derive Eq instance for structs", () => {
   test("do not derive underivable types", () => {
     const out = compileSrc(
       `
@@ -2539,7 +2539,7 @@ describe.todo("derive Eq instance for structs", () => {
     expect(out).toMatchInlineSnapshot(`""`);
   });
 
-  test.todo("no fields", () => {
+  test("no fields", () => {
     const out = compileSrc(
       `
       type T struct { }
@@ -2641,7 +2641,7 @@ describe.todo("derive Eq instance for structs", () => {
     `);
   });
 
-  test("recursive data structures", () => {
+  test.todo("recursive data structures", () => {
     const out = compileSrc(
       `
       type Struct<a> struct {
@@ -2919,7 +2919,7 @@ describe("Derive Show instance for Adts", () => {
   });
 });
 
-describe.todo("Derive Show instance for structs", () => {
+describe("Derive Show instance for structs", () => {
   test("do not derive underivable types", () => {
     const out = compileSrc(
       `
@@ -3031,7 +3031,7 @@ describe.todo("Derive Show instance for structs", () => {
     `);
   });
 
-  test("recursive data structures", () => {
+  test.todo("recursive data structures", () => {
     const out = compileSrc(
       `
       type Str<a> struct {
