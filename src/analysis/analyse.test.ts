@@ -1,5 +1,11 @@
 import { test, expect, describe, vi } from "vitest";
-import { AnalyseOptions, Analysis } from "./analyse";
+import {
+  AnalyseOptions,
+  Analysis,
+  IDocument,
+  StringDocument,
+  stringDoc,
+} from "./analyse";
 import {
   AmbiguousTypeVar,
   ArityMismatch,
@@ -605,7 +611,7 @@ describe("modules", () => {
       namespace: "Mod",
     });
 
-    const getDependency = vi.fn((ns: string): Analysis => {
+    const getDependency = vi.fn((ns: string): Analysis<StringDocument> => {
       if (ns === "Mod") {
         return Mod;
       }
@@ -616,7 +622,7 @@ describe("modules", () => {
     const a = new Analysis(
       "core",
       "Main",
-      `
+      stringDoc`
       import Mod
       pub let x1 = Mod.x
       pub let x2 = Mod.x
@@ -3050,7 +3056,7 @@ describe("package compilation", () => {
       exposedModules: new Set(),
       packageDependencies: {},
       packageModules: {
-        Main: `
+        Main: stringDoc`
           pub let x = 42
         `,
       },
@@ -3069,11 +3075,11 @@ describe("package compilation", () => {
       exposedModules: new Set(),
       packageDependencies: {},
       packageModules: {
-        Main: `
+        Main: stringDoc`
           import Dep.{y}
           pub let x = y
         `,
-        Dep: `
+        Dep: stringDoc`
           pub let y = 42
         `,
       },
@@ -3096,11 +3102,11 @@ describe("package compilation", () => {
       exposedModules: new Set(),
       packageDependencies: {},
       packageModules: {
-        A: `
+        A: stringDoc`
           import B.{y}
           pub let x = y
         `,
-        B: `
+        B: stringDoc`
           import A.{x}
           pub let y = x
         `,
@@ -3120,7 +3126,7 @@ describe("package compilation", () => {
       exposedModules: new Set(["Core"]),
       packageDependencies: {},
       packageModules: {
-        Core: `
+        Core: stringDoc`
           pub let y = 0
         `,
       },
@@ -3133,7 +3139,7 @@ describe("package compilation", () => {
         kestrel_core,
       },
       packageModules: {
-        Main: `
+        Main: stringDoc`
           import Core.{y}
           pub let x = y
         `,
@@ -3154,7 +3160,7 @@ test.todo("type error when main has not type Task<Unit>", () => {
   expect(a.errors[0]?.description).toBeInstanceOf(TypeMismatch_REWRITE);
 });
 
-function getTypes(a: Analysis): Record<string, string> {
+function getTypes(a: Analysis<IDocument>): Record<string, string> {
   const kvs = [...a.getPublicDeclarations()].map((decl) => {
     const [mono, getTraits] = a.getPolyType(decl.binding);
     return [decl.binding.name, typeToString(mono, getTraits)];
@@ -3162,12 +3168,10 @@ function getTypes(a: Analysis): Record<string, string> {
   return Object.fromEntries(kvs);
 }
 
-type Deps = Record<string, Analysis>;
-
-type TestAnalyseOptions = {
+type TestAnalyseOptions<Doc extends IDocument> = {
   package_?: string;
   namespace?: string;
-  dependencies?: Deps;
+  dependencies?: Record<string, Analysis<Doc>>;
 } & Omit<AnalyseOptions, "getDependency">;
 
 type AnalysisUtils = {
@@ -3181,14 +3185,19 @@ function performAnalysis(
     namespace = "Main",
     dependencies = {},
     ...opts
-  }: TestAnalyseOptions = {},
-): [analysis: Analysis, utils: AnalysisUtils] {
-  const analysis = new Analysis(package_, namespace, src, {
-    getDependency(ns) {
-      return dependencies[ns];
+  }: TestAnalyseOptions<StringDocument> = {},
+): [analysis: Analysis<StringDocument>, utils: AnalysisUtils] {
+  const analysis = new Analysis<StringDocument>(
+    package_,
+    namespace,
+    new StringDocument(src),
+    {
+      getDependency(ns) {
+        return dependencies[ns];
+      },
+      ...opts,
     },
-    ...opts,
-  });
+  );
   return [
     analysis,
     {

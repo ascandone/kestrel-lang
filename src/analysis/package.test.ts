@@ -1,8 +1,8 @@
 import { expect, test, vi } from "vitest";
 import { CompilePackageOptions, PackageWatcher } from "./package";
-import {} from "../parser";
+import { StringDocument, stringDoc } from "./analyse";
 
-function setup(opts: Partial<CompilePackageOptions> = {}) {
+function setup(opts: Partial<CompilePackageOptions<StringDocument>> = {}) {
   const onVisit = vi.fn();
   const watcher = new PackageWatcher({
     package: "kestrel_core",
@@ -20,10 +20,10 @@ function setup(opts: Partial<CompilePackageOptions> = {}) {
 test("cache HIT initially", () => {
   const [watcher, onVisit] = setup();
 
-  watcher.upsertFile("Dependency", `pub let x = 0`);
-  watcher.upsertFile(
+  watcher.upsertDocument("Dependency", stringDoc`pub let x = 0`);
+  watcher.upsertDocument(
     "Main",
-    `
+    stringDoc`
     import Dependency
     pub let y = Dependency.x
   `,
@@ -41,17 +41,17 @@ test("cache HIT initially", () => {
 test("recompile transitevely when changing a dependency", () => {
   const [watcher, onVisit] = setup();
 
-  watcher.upsertFile("Dependency", `pub let x = 0`);
-  watcher.upsertFile(
+  watcher.upsertDocument("Dependency", stringDoc`pub let x = 0`);
+  watcher.upsertDocument(
     "Main",
-    `
+    stringDoc`
     import Dependency
     pub let y = Dependency.x
   `,
   );
 
   // This will invalide Main's cache
-  watcher.upsertFile("Dependency", `pub let x = "abc"`);
+  watcher.upsertDocument("Dependency", stringDoc`pub let x = "abc"`);
 
   expect(onVisit.mock.calls).toEqual([
     // add("Dependency")
@@ -68,19 +68,19 @@ test("recompile transitevely when changing a dependency", () => {
 test("do not invalidate dependency when not needed", () => {
   const [watcher, onVisit] = setup();
 
-  watcher.upsertFile("Dependency", `pub let x = 0`);
-  watcher.upsertFile(
+  watcher.upsertDocument("Dependency", stringDoc`pub let x = 0`);
+  watcher.upsertDocument(
     "Main",
-    `
+    stringDoc`
     import Dependency
     pub let y = Dependency.x
   `,
   );
 
   // This shouldn't invalide Dependency's cache
-  watcher.upsertFile(
+  watcher.upsertDocument(
     "Main",
-    `
+    stringDoc`
     import Dependency
     pub let y = 42
   `,
@@ -100,11 +100,11 @@ test("do not invalidate dependency when not needed", () => {
 test("analyse the initial modules", () => {
   const [, onVisit] = setup({
     packageModules: {
-      Main: `
+      Main: stringDoc`
     import Dependency
     pub let y = Dependency.x
   `,
-      Dependency: `pub let x = 0`,
+      Dependency: stringDoc`pub let x = 0`,
     },
   });
 
@@ -118,15 +118,15 @@ test("analyse the initial modules", () => {
 test("add a new module to the initial ones", () => {
   const [w, onVisit] = setup({
     packageModules: {
-      Main: `
+      Main: stringDoc`
     import Dependency
     pub let y = Dependency.x
   `,
-      Dependency: `pub let x = 0`,
+      Dependency: stringDoc`pub let x = 0`,
     },
   });
 
-  w.upsertFile("NewMod", `import Main`);
+  w.upsertDocument("NewMod", stringDoc`import Main`);
 
   expect(onVisit.mock.calls).toEqual([
     // Init
@@ -140,15 +140,15 @@ test("add a new module to the initial ones", () => {
 test("override a file in the initial package", () => {
   const [w, onVisit] = setup({
     packageModules: {
-      Main: `
+      Main: stringDoc`
     import Dependency
     pub let y = Dependency.x
   `,
-      Dependency: `pub let x = 0`,
+      Dependency: stringDoc`pub let x = 0`,
     },
   });
 
-  w.upsertFile("Dependency", `let y = 0`);
+  w.upsertDocument("Dependency", stringDoc`let y = 0`);
 
   expect(onVisit.mock.calls).toEqual([
     // Init

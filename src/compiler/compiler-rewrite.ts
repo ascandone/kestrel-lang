@@ -28,7 +28,7 @@ import {
   deriveShowAdt,
   deriveShowStruct,
 } from "./derive-rewrite";
-import { Analysis } from "../analysis";
+import { Analysis, IDocument } from "../analysis";
 import { NamespaceResolution } from "../analysis/resolution";
 import { TraitRegistry } from "../type/traitsRegistry";
 
@@ -36,8 +36,8 @@ export type CompileOptions = {
   allowDeriving?: string[] | undefined;
 };
 
-export function compile(
-  analysis: Analysis,
+export function compile<Doc extends IDocument>(
+  analysis: Analysis<Doc>,
   options: CompileOptions = {
     allowDeriving: ["Eq", "Show"],
   },
@@ -56,7 +56,7 @@ type CompilationMode =
     }
   | { type: "return" };
 
-class Compiler {
+class Compiler<Doc extends IDocument> {
   private statementsBuf: t.Statement[] = [];
   private frames: Frame[] = [];
   private bindingsJsName = new WeakMap<Binding, t.Expression>();
@@ -98,7 +98,7 @@ class Compiler {
   }
 
   constructor(
-    private readonly analysis: Analysis,
+    private readonly analysis: Analysis<Doc>,
     private readonly options: CompileOptions,
   ) {}
 
@@ -1483,8 +1483,8 @@ export type CompileProjectOptions = {
   };
 };
 
-export function compileProject(
-  typedProject: Record<string, Analysis>,
+export function compileProject<Doc extends IDocument>(
+  typedProject: Record<string, Analysis<Doc>>,
   {
     entrypoint = defaultEntryPoint,
     externs = {},

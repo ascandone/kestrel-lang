@@ -13,6 +13,8 @@ import { Config, readConfig } from "./config";
 import { join } from "node:path";
 import { errorInfoToString } from "../analysis/errors";
 import * as paths from "./paths";
+import { CompilePackageOptions, PackageWatcher } from "../analysis/package";
+import { TextDocument } from "vscode-languageserver-textdocument";
 
 export const EXTENSION = "kes";
 
@@ -99,6 +101,16 @@ export async function check(path: string): Promise<TypedProject | undefined> {
   return project;
 }
 
+export async function check_REWRITE(
+  path: string,
+): Promise<TypedProject | undefined> {
+  const [project, hasWarnings] = await checkPackage(path);
+  if (hasWarnings) {
+    return undefined;
+  }
+  return project;
+}
+
 export function parseModule(src: string): UntypedModule {
   const [parsed, errors] = parse(src);
   if (errors.length !== 0) {
@@ -164,6 +176,46 @@ export async function checkProject(
   }
 }
 
+export async function checkPackage(
+  path: string,
+): Promise<[TypedProject | undefined, boolean]> {
+  const pkg = await readPackage(path);
+
+  const res: TypedProject = {};
+  let errorsCount = 0,
+    warningsCount = 0;
+
+  for (const [ns, m] of pkg.modules.entries()) {
+    if (m.errors.length !== 0) {
+      console.log(col.blue.tag`-------- ${ns}.${EXTENSION}\n`);
+    }
+
+    for (const error of m.errors) {
+      if (error.description.severity === "warning") {
+        warningsCount++;
+      } else {
+        errorsCount++;
+      }
+
+      console.log(errorInfoToString(m.document.getText(), error), "\n\n");
+    }
+  }
+
+  const totalIssuesCount = errorsCount + warningsCount;
+  const hasWarnings = warningsCount !== 0;
+
+  if (totalIssuesCount > 0) {
+    const plErr = totalIssuesCount === 1 ? "error" : "errors";
+    console.log(`[Found ${totalIssuesCount} ${plErr}]\n`);
+  }
+
+  if (errorsCount === 0) {
+    return [res, hasWarnings];
+  } else {
+    return [undefined, hasWarnings];
+  }
+}
+
 export async function compilePath(
   path: string,
   entryPointModule?: string,
@@ -201,4 +253,45 @@ export async function compilePath(
     console.error(col.red.tag`Error:`, (e as Error).message);
     exit(1);
   }
+}
+
+export async function readPackage(
+  path: string,
+  config?: Config,
+): Promise<PackageWatcher<TextDocument>> {
+  if (config === undefined) {
+    config = await readConfig(path);
+  }
+
+  const packageModules: CompilePackageOptions<TextDocument>["packageModules"] =
+    {};
+
+  for (const sourceDir of config["source-directories"]) {
+    const files = await readdir(join(path, sourceDir), { recursive: true });
+
+    // TODo is the file relative path?
+    for (const file of files) {
+      const [moduleName, ext] = file.split(".");
+      if (ext !== EXTENSION) {
+        continue;
+      }
+
+      const filePath = join(path, sourceDir, file);
+      const fileBuf = await readFile(filePath);
+
+      packageModules[moduleName!] = TextDocument.create(
+        `file://${filePath}`,
+        "kestrel",
+        1,
+        fileBuf.toString(),
+      );
+    }
+  }
+
+  return new PackageWatcher({
+    exposedModules: new Set(),
+    package: config.type === "package" ? config.name : "",
+    packageDependencies: {},
+    packageModules,
+  });
 }

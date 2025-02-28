@@ -1,7 +1,7 @@
 import { test, expect, describe } from "vitest";
 import { compile } from "./compiler-rewrite";
 import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
-import { Analysis } from "../analysis";
+import { Analysis, IDocument, StringDocument } from "../analysis";
 import { TraitRegistry } from "../type/traitsRegistry";
 
 describe("datatype representation", () => {
@@ -3084,12 +3084,12 @@ describe("Derive Show instance for structs", () => {
   });
 });
 
-type CompileSrcOpts = {
+type CompileSrcOpts<Doc extends IDocument> = {
   ns?: string;
   package_?: string;
   traitImpl?: TraitImpl[];
   allowDeriving?: string[] | undefined;
-  deps?: Record<string, Analysis>;
+  deps?: Record<string, Analysis<Doc>>;
 };
 
 function compileSrc(
@@ -3100,18 +3100,28 @@ function compileSrc(
     traitImpl = [],
     deps = {},
     allowDeriving = [],
-  }: CompileSrcOpts = {},
+  }: CompileSrcOpts<StringDocument> = {},
 ) {
-  const analysis = new Analysis(package_, ns, src, {
-    baseTraitsRegistry: TraitRegistry.from(traitImpl),
-    getDependency(namespace) {
-      return deps[namespace];
+  const analysis = new Analysis<StringDocument>(
+    package_,
+    ns,
+    new StringDocument(src),
+    {
+      baseTraitsRegistry: TraitRegistry.from(traitImpl),
+      getDependency(namespace) {
+        return deps[namespace];
+      },
     },
-  });
+  );
   const out = compile(analysis, { allowDeriving });
   return out;
 }
 
 function typecheckSource(ns: string, src: string) {
-  return new Analysis("kestrel_core", ns, src, {});
+  return new Analysis<StringDocument>(
+    "kestrel_core",
+    ns,
+    new StringDocument(src),
+    {},
+  );
 }

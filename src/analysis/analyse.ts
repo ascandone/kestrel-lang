@@ -38,10 +38,26 @@ import { bool, char, float, int, list, string } from "./coreTypes";
 import { TypeAstsHydration } from "./typesHydration";
 import { defaultMapGet } from "../data/defaultMap";
 import { TraitRegistry } from "../type/traitsRegistry";
+import { TextDocument } from "vscode-languageserver-textdocument";
 
-export type AnalyseOptions = {
+export interface IDocument {
+  getText(): string;
+}
+
+export class StringDocument implements IDocument {
+  constructor(public readonly value: string) {}
+  getText(): string {
+    return this.value;
+  }
+}
+
+export function stringDoc(s: TemplateStringsArray) {
+  return new StringDocument(s.join(""));
+}
+
+export type AnalyseOptions<Doc extends IDocument = TextDocument> = {
   baseTraitsRegistry?: TraitRegistry;
-  getDependency?: (namespace: string) => Analysis | undefined;
+  getDependency?: (namespace: string) => Analysis<Doc> | undefined;
   implicitImports?: UntypedImport[];
   mainType?: Type;
 };
@@ -49,7 +65,7 @@ export type AnalyseOptions = {
 // | UntypedDeclaration // TODO do we also need UntypedDeclaration too instead of just Binding?
 export type TypedNode = Binding | UntypedExpr | UntypedMatchPattern;
 
-export class Analysis {
+export class Analysis<Doc extends IDocument> {
   public readonly errors: ErrorInfo[] = [];
   public readonly module: UntypedModule;
 
@@ -70,10 +86,10 @@ export class Analysis {
   constructor(
     public readonly package_: string,
     public readonly ns: string,
-    public readonly source: string,
-    public readonly options: AnalyseOptions = {},
+    public readonly document: Doc,
+    public readonly options: AnalyseOptions<Doc> = {},
   ) {
-    const [module, parseErrors] = parse(source);
+    const [module, parseErrors] = parse(document.getText());
 
     for (const err of parseErrors) {
       this.errors.push({
@@ -513,7 +529,9 @@ export class Analysis {
     }
   }
 
-  private getDependencyByNs(namespace: NamespaceResolution): Analysis {
+  private getDependencyByNs(
+    namespace: NamespaceResolution,
+  ): Analysis<IDocument> {
     switch (namespace.type) {
       case "self":
         return this;

@@ -3,15 +3,15 @@ import {
   linkedListIncludes,
   linkedListToArray,
 } from "../data/linkedList";
-import { Analysis } from "./analyse";
+import { Analysis, IDocument } from "./analyse";
 import { CyclicModuleDependency, ErrorInfo } from "./errors";
 
-export type CompilePackageOptions = {
+export type CompilePackageOptions<Doc extends IDocument> = {
   package: string;
   exposedModules: Set<string>;
-  packageModules: Record<string, string>;
-  packageDependencies: Record<string, CompiledPackage>;
-  onAnalysis?: (analysis: Analysis) => void;
+  packageModules: Record<string, Doc>;
+  packageDependencies: Record<string, CompiledPackage<Doc>>;
+  onAnalysis?: (analysis: Analysis<Doc>) => void;
 };
 
 export type PackageCompilationError = {
@@ -19,13 +19,15 @@ export type PackageCompilationError = {
   ns: string;
 } & ErrorInfo;
 
-export type CompiledPackage = {
+export type CompiledPackage<Doc extends IDocument> = {
   package: string;
   errors: Array<PackageCompilationError>;
-  modules: Map<string, Analysis>;
+  modules: Map<string, Analysis<Doc>>;
 };
 
-export function compilePackage(args: CompilePackageOptions): CompiledPackage {
+export function compilePackage<Doc extends IDocument>(
+  args: CompilePackageOptions<Doc>,
+): CompiledPackage<Doc> {
   const w = new PackageWatcher(args);
   return {
     errors: w.errors,
@@ -39,26 +41,26 @@ export function compilePackage(args: CompilePackageOptions): CompiledPackage {
  * We can reduce this to O(staleModules) by
  * navigating the reverse dependency graph
  */
-export class PackageWatcher {
+export class PackageWatcher<Doc extends IDocument> {
   public errors: Array<PackageCompilationError> = [];
-  public readonly modules = new Map<string, Analysis>();
+  public readonly modules = new Map<string, Analysis<Doc>>();
 
   /**
    * Map each module to its dependencies.
    */
   private readonly trackedDependencies = new Map<
     string,
-    Map<string, Analysis>
+    Map<string, Analysis<Doc>>
   >();
 
-  constructor(private readonly options: CompilePackageOptions) {
+  constructor(private readonly options: CompilePackageOptions<Doc>) {
     this.reload();
   }
 
-  public upsertFile(ns: string, source: string) {
+  public upsertDocument(ns: string, document: Doc) {
     this.errors = [];
     // TODO avoid mutating input's data
-    this.options.packageModules[ns] = source;
+    this.options.packageModules[ns] = document;
     this.reload();
   }
 
@@ -68,7 +70,7 @@ export class PackageWatcher {
     }
   }
 
-  private getCachedModule(ns: string): Analysis | undefined {
+  private getCachedModule(ns: string): Analysis<Doc> | undefined {
     // Check that each of the tracked dependencies
     // is still the one that we have in the cache
     const isDependencyUpToDate = [
@@ -86,7 +88,8 @@ export class PackageWatcher {
     // as long as the underlying module wasn't updated
     if (
       cachedVersion === undefined ||
-      cachedVersion.source !== this.options.packageModules[ns]
+      cachedVersion.document.getText() !==
+        this.options.packageModules[ns]?.getText()
     ) {
       return undefined;
     }
@@ -98,9 +101,9 @@ export class PackageWatcher {
   private cacheAnalyseModule = (
     analyseModule: (
       ns: string,
-      source: string,
+      document: Doc,
       path?: LinkedList<string>,
-    ) => Analysis,
+    ) => Analysis<Doc>,
   ): typeof analyseModule => {
     return (ns, source, path) => {
       const cacheLookup = this.getCachedModule(ns);
@@ -160,8 +163,8 @@ export class PackageWatcher {
   }
 
   private analyseModule = this.cacheAnalyseModule(
-    (ns, untypedMod, path): Analysis => {
-      return new Analysis(this.options.package, ns, untypedMod, {
+    (ns, document, path): Analysis<Doc> => {
+      return new Analysis<Doc>(this.options.package, ns, document, {
         getDependency: (dependencyNs) => {
           const dep = this.getDependency(
             [dependencyNs, path],

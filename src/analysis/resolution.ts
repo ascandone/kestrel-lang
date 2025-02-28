@@ -30,7 +30,7 @@ import {
   UntypedTypeDeclaration,
   UntypedTypeVariant,
 } from "../parser";
-import type { Analysis } from "./analyse";
+import type { Analysis, IDocument } from "./analyse";
 
 type LocalScope = Record<string, Binding>;
 
@@ -42,7 +42,7 @@ export type TypeResolution = {
 
 export type NamespaceResolution =
   | { type: "self" }
-  | { type: "imported"; analysis: Analysis };
+  | { type: "imported"; analysis: Analysis<IDocument> };
 
 export type IdentifierResolution =
   | {
@@ -116,15 +116,16 @@ export class ResolutionAnalysis {
     TypeResolution
   >();
 
-  private readonly importedModules = new Map<string, Analysis>();
+  private readonly importedModules = new Map<string, Analysis<IDocument>>();
 
   constructor(
     private readonly package_: string,
     private readonly ns: string,
     private readonly module: UntypedModule,
     private readonly emitError: (error: ErrorInfo) => void,
-    getDependency: (namespace: string) => Analysis | undefined = () =>
-      undefined,
+    getDependency: (
+      namespace: string,
+    ) => Analysis<IDocument> | undefined = () => undefined,
     private readonly implicitImports: UntypedImport[] = [],
   ) {
     this.initImportsResolution(getDependency);
@@ -213,7 +214,7 @@ export class ResolutionAnalysis {
   }
 
   private initImportsResolution(
-    getDependency: (namespace: string) => Analysis | undefined,
+    getDependency: (namespace: string) => Analysis<IDocument> | undefined,
   ) {
     for (const import_ of [...this.implicitImports, ...this.module.imports]) {
       const analysis = getDependency(import_.ns);
@@ -244,7 +245,7 @@ export class ResolutionAnalysis {
   }
 
   private registerExposedValue(
-    analysis: Analysis,
+    analysis: Analysis<IDocument>,
     exposedValue: UntypedExposedValue,
   ) {
     switch (exposedValue.type) {
