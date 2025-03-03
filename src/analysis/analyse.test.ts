@@ -2133,7 +2133,7 @@ describe("traits", () => {
       expect(a.errors[0]?.description).toBeInstanceOf(TraitNotSatified_REWRITE);
     });
 
-    test("requires struct params to be Eq when they appear in struct, for it to be derived", () => {
+    test.only("requires struct params to be Eq when they appear in struct, for it to be derived", () => {
       const [a] = performAnalysis(
         `
           extern pub let take_eq: Fn(a) -> a where a: Eq

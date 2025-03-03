@@ -1,4 +1,3 @@
-import { defaultMapGet } from "../data/defaultMap";
 import {
   ErrorInfo,
   InvalidCatchall,
@@ -272,32 +271,26 @@ export class TypeAstsHydration {
     });
   }
 
-  private typeHintToType(typeAst: PolyTypeAst): [Type, TraitsMap] {
+  private typeHintToType(
+    typeAst: PolyTypeAst,
+  ): [Type, Record<string, string[]>] {
     // Same as before: since we are going to instantiate this type later on,
     // we can have a local instance of Unifier
     const unifier = new Unifier();
 
-    const boundTypes = new Map<string, Type>();
-    const boundTraits = new Map<string, string[]>();
-    for (const traitDef of typeAst.where) {
-      boundTraits.set(traitDef.typeVar, traitDef.traits);
-    }
-
-    const outputTraits: TraitsMap = {};
+    const traitsMap: TraitsMap = Object.fromEntries(
+      typeAst.where.map((traitDef) => [traitDef.typeVar, traitDef.traits]),
+    );
 
     const type = this.typeAstToType(typeAst.mono, {
-      boundTraits,
       getFreshVariable: () => unifier.freshVar(),
-      getTypeVariable: (name) =>
-        defaultMapGet(boundTypes, name, () => {
-          const traits = boundTraits.get(name) ?? [];
-          const tvar = unifier.freshVar();
-          outputTraits[tvar.id] = traits;
-          return tvar;
-        }),
+      getTypeVariable: (name) => ({
+        tag: "RigidVar",
+        name,
+      }),
     });
 
-    return [type, outputTraits];
+    return [type, traitsMap];
   }
 
   private typeAstToType(
@@ -306,7 +299,6 @@ export class TypeAstsHydration {
       getTypeVariable: (name: string, range: Range) => Type;
       getFreshVariable: () => Type;
       onCatchall?: (range: Range) => void;
-      boundTraits?: Map<string, string[]>;
     },
   ): Type {
     switch (typeAst.type) {

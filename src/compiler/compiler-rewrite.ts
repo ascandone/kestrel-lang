@@ -1370,6 +1370,10 @@ function applyTraitToType(
       case "Fn":
         throw new Error("TODO bound fn");
 
+      case "RigidVar":
+        throw new Error("TODO RigidVar");
+        return;
+
       case "Var":
         if (!deps.has(type.id)) {
           return undefined;
@@ -1551,6 +1555,7 @@ const KESTREL_CORE = "kestrel_core";
 function isPrimitiveEq(leftArgType: Type): boolean {
   if (
     leftArgType.tag === "Var" ||
+    leftArgType.tag === "RigidVar" ||
     leftArgType.tag === "Fn" ||
     leftArgType.package !== KESTREL_CORE
   ) {

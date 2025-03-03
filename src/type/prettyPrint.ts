@@ -1,16 +1,17 @@
-import { type Type } from "./type";
+import { TraitsMap, type Type } from "./type";
 
 export function typePPrint(
   t: Type,
   getTraits: (id: number) => string[] = () => [],
+  traitsMap: TraitsMap = {},
 ): string {
-  const traitsMap = new Map<string, string[]>();
+  const traitsMap_ = new Map<string, string[]>(Object.entries(traitsMap));
   const str = typePPrintHelper(t, (id, name) => {
     const traits = getTraits(id);
-    traitsMap.set(name, traits);
+    traitsMap_.set(name, traits);
   });
 
-  return `${str}${showTraits(traitsMap)}`;
+  return `${str}${showTraits(traitsMap_)}`;
 }
 
 function showTraits(traitsMap: Map<string, string[]>): string {
@@ -34,6 +35,9 @@ function typePPrintHelper(
   onFoundVar: (id: number, name: string) => void,
 ): string {
   switch (t.tag) {
+    case "RigidVar":
+      return t.name;
+
     case "Var": {
       const id = idToString(t.id);
       onFoundVar(t.id, id);

@@ -77,7 +77,7 @@ export class Analysis<Doc extends IDocument> {
   >();
 
   public readonly resolution: ResolutionAnalysis;
-  private readonly typesHydration: TypeAstsHydration;
+  public readonly typesHydration: TypeAstsHydration;
   private currentDeclarationGroup: UntypedDeclaration[] = [];
 
   private readonly unifier: Unifier;

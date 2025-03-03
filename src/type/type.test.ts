@@ -27,6 +27,22 @@ describe("unify", () => {
     expect(() => u.unify(list(num), list(num))).not.toThrow();
   });
 
+  test("unifing two rigid vars when they match", () => {
+    const u = new Unifier();
+
+    expect(() =>
+      u.unify({ tag: "RigidVar", name: "a" }, { tag: "RigidVar", name: "a" }),
+    ).not.toThrow();
+  });
+
+  test("unifing two rigid vars when they do not match", () => {
+    const u = new Unifier();
+
+    expect(() =>
+      u.unify({ tag: "RigidVar", name: "a" }, { tag: "RigidVar", name: "b" }),
+    ).toThrow(TypeMismatchError);
+  });
+
   test("unifing two fn types when they match", () => {
     const u = new Unifier();
 
@@ -111,6 +127,15 @@ describe("unify", () => {
     u.unify(t0, num);
 
     expect(u.resolve(t0)).toEqual<Type>(num);
+  });
+
+  test("unify a rigid var and a flex var", () => {
+    const u = new Unifier();
+
+    const t0 = u.freshVar();
+    u.unify(t0, { tag: "RigidVar", name: "x" });
+
+    expect(u.resolve(t0)).toEqual<Type>({ tag: "RigidVar", name: "x" });
   });
 
   test("unify a var and a concrete type", () => {

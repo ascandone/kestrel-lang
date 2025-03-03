@@ -80,6 +80,11 @@ test("pretty print vars", () => {
   expect(typePPrint({ tag: "Var", id: 53 })).toBe("b1");
 });
 
+test("pretty print rigid vars", () => {
+  expect(typePPrint({ tag: "RigidVar", name: "a" })).toBe("a");
+  expect(typePPrint({ tag: "RigidVar", name: "varName" })).toBe("varName");
+});
+
 test("print traits when traits are unified with the var", () => {
   const unifier = new Unifier();
 

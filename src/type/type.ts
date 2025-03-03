@@ -10,7 +10,8 @@ export type Type =
       package: string;
     }
   | { tag: "Fn"; args: Type[]; return: Type }
-  | { tag: "Var"; id: number };
+  | { tag: "Var"; id: number }
+  | { tag: "RigidVar"; name: string };
 
 export type TypeVar = Type & { tag: "Var" };
 
@@ -54,6 +55,7 @@ export class Unifier {
     t = this.resolveOnce(t);
 
     switch (t.tag) {
+      case "RigidVar":
       case "Var":
         return t;
 
@@ -79,6 +81,7 @@ export class Unifier {
     switch (t.tag) {
       case "Named":
       case "Fn":
+      case "RigidVar":
         return t;
 
       case "Var": {
@@ -125,6 +128,11 @@ export class Unifier {
 
     // case (Var id, Var id1) where id == id1
     if (t1.tag === "Var" && t2.tag === "Var" && t1.id === t2.id) {
+      return;
+    }
+
+    // case (Rigid a, Rigid b) where a == b
+    if (t1.tag === "RigidVar" && t2.tag === "RigidVar" && t1.name === t2.name) {
       return;
     }
 
@@ -191,6 +199,8 @@ export class Unifier {
     type = this.resolve(type);
 
     switch (type.tag) {
+      // TODO err with RigidVar
+
       case "Var": {
         const newPointerTraits = this.getResolvedTypeTraitsMut(type.id);
 
@@ -244,14 +254,20 @@ export class Unifier {
   }
 }
 
-export type TraitsMap = Record<number, string[]>;
+export type TraitsMap = Record<string, string[]>;
 export class Instantiator {
   constructor(private unifier: Unifier) {}
 
   private readonly instantiated = new Map<number, Type>();
+  private readonly instantiatedRigidVars = new Map<string, Type>();
 
   public instantiate(t: Type, traitsMap: TraitsMap = {}): Type {
     switch (t.tag) {
+      case "RigidVar":
+        return defaultMapGet(this.instantiatedRigidVars, t.name, () =>
+          this.unifier.freshVar(traitsMap[t.name]),
+        );
+
       case "Named":
         return {
           tag: "Named",
@@ -271,12 +287,11 @@ export class Instantiator {
       case "Var":
         return defaultMapGet(this.instantiated, t.id, () => {
           return this.unifier.freshVar([
-            ...(traitsMap[t.id] ?? []),
-
+            // ...this.unifier.getResolvedTypeTraits(t.id),
+            // ...(traitsMap[t.id] ?? []),
             // it looks like removing this line doesn't break any test
             // TODO investigate
-
-            ...this.unifier.getResolvedTypeTraits(t.id),
+            // ...this.unifier.getResolvedTypeTraits(t.id),
           ]);
         });
     }
