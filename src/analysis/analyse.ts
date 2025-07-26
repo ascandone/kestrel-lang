@@ -520,7 +520,7 @@ export class Analysis<Doc extends IDocument> {
 
           this.unifyNode(
             nestedPattern,
-            instantiator.instantiate(this.typesHydration.getPolyType(arg)),
+            instantiator.instantiate(analysis.typesHydration.getPolyType(arg)),
           );
           this.typecheckPattern(nestedPattern, forceExhaustive);
         }

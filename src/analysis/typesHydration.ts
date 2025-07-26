@@ -26,7 +26,7 @@ export class TypeAstsHydration {
   public getPolyType(node: PolytypeNode): Type {
     const t = this.polyTypes.get(node);
     if (t === undefined) {
-      throw new Error("[unreachable] polytype not set");
+      throw new Error("[unreachable] polytype not set (1)");
     }
     return t;
   }
@@ -34,12 +34,12 @@ export class TypeAstsHydration {
   public getAstPolytype(node: PolyTypeAst): [Type, TraitsMap] {
     const t = this.polyTypes.get(node);
     if (t === undefined) {
-      throw new Error("[unreachable] polytype not set");
+      throw new Error("[unreachable] polytype not set (2)");
     }
 
     const traitsMap = this.traitsMaps.get(node);
     if (traitsMap === undefined) {
-      throw new Error("[unreachable] polytype not set");
+      throw new Error("[unreachable] polytype not set (3)");
     }
 
     return [t, traitsMap];

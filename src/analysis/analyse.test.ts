@@ -1550,6 +1550,31 @@ describe("pattern matching", () => {
     });
   });
 
+  test("allows externally defined types", () => {
+    const [Boxed] = performAnalysis(
+      `
+      pub(..) type Boxed<a> { Boxed(a) }
+    `,
+      { namespace: "Boxed" },
+    );
+
+    const [a] = performAnalysis(
+      `
+      import Boxed.{Boxed(..)}
+
+      pub let x = match Boxed(42) {
+        Boxed(a) => a
+      }
+    `,
+      { dependencies: { Boxed } },
+    );
+
+    expect(a.errors).toEqual([]);
+    expect(getTypes(a)).toEqual({
+      x: "Int",
+    });
+  });
+
   test("return error on wrong matched type", () => {
     const [a] = performAnalysis(
       `type X { X }
