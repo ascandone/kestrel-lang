@@ -3115,7 +3115,35 @@ describe("package compilation", () => {
 
     expect(core.errors).toEqual([
       expect.objectContaining({
-        description: new CyclicModuleDependency(["A", "B"]),
+        description: new CyclicModuleDependency(["B", "A"]),
+      }),
+    ]);
+  });
+
+  test("forbids cyclic deps (nested)", () => {
+    const core = compilePackage({
+      package: "kestrel_core",
+      exposedModules: new Set(),
+      packageDependencies: {},
+      packageModules: {
+        A: stringDoc`
+          import B.{b}
+          pub let a = b
+        `,
+        B: stringDoc`
+          import C.{c}
+          pub let b = c
+        `,
+        C: stringDoc`
+          import A.{a}
+          pub let c = a
+        `,
+      },
+    });
+
+    expect(core.errors).toEqual([
+      expect.objectContaining({
+        description: new CyclicModuleDependency(["C", "B", "A"]),
       }),
     ]);
   });

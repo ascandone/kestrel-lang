@@ -134,15 +134,11 @@ export class PackageWatcher<Doc extends IDocument> {
     return undefined;
   }
 
-  private getDependency(
-    path: LinkedList<string>,
-    ns: string,
-    dependencyNs: string,
-  ) {
+  private getDependency(path: LinkedList<string>, dependencyNs: string) {
     // If this is a local package, visit recursively
     const untypedMod = this.options.packageModules[dependencyNs];
     if (untypedMod !== undefined) {
-      if (linkedListIncludes(path, ns)) {
+      if (linkedListIncludes(path, dependencyNs)) {
         // TODO emit actual range
         this.errors.push({
           description: new CyclicModuleDependency(linkedListToArray(path)),
@@ -166,11 +162,7 @@ export class PackageWatcher<Doc extends IDocument> {
     (ns, document, path): Analysis<Doc> => {
       return new Analysis<Doc>(this.options.package, ns, document, {
         getDependency: (dependencyNs) => {
-          const dep = this.getDependency(
-            [dependencyNs, path],
-            ns,
-            dependencyNs,
-          );
+          const dep = this.getDependency([ns, path], dependencyNs);
 
           if (dep !== undefined) {
             this.trackedDependencies.get(ns)!.set(dependencyNs, dep);
