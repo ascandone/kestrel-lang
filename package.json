@@ -1,6 +1,6 @@
 {
   "name": "kestrel-lang",
-  "version": "0.0.27",
+  "version": "0.0.28",
   "description": "A pure, strongly typed functional language that compiles to js",
   "license": "MIT",
   "main": "dist/index.js",
