@@ -2362,6 +2362,44 @@ describe("traits", () => {
     expect(a.errors[0]?.description).toBeInstanceOf(UnboundVariable);
   });
 
+  test.todo("repro", () => {
+    // resetTraitsRegistry([
+    //   { trait: "Default", moduleName: "Main", typeName: "X" },
+    // ]);
+
+    // const [Int] = performAnalysis(
+    //   `
+    //     extern pub type Int
+    // `,
+    //   {
+    //     package_: "kestrel_core",
+    //     namespace: "Int",
+    //   },
+    // );
+
+    const [Bool] = performAnalysis(
+      `
+        extern pub let (<=): Fn(a, a) -> Bool where a: Ord
+    `,
+      {
+        package_: "kestrel_core",
+        namespace: "Bool",
+      },
+    );
+
+    const [a] = performAnalysis(
+      `
+      import Bool.{(<=)}
+
+      
+        pub let x = 10 <= 20
+`,
+      { dependencies: { Bool } },
+    );
+
+    expect(a.errors).toEqual([]);
+  });
+
   // TODO Skip until type sigs are fixed
   test.skip("forbid ambiguous instantiations within args", () => {
     // resetTraitsRegistry([
