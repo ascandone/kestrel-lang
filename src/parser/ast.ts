@@ -81,199 +81,75 @@ export type SyntaxSugar =
       inner: UntypedExpr;
     };
 
-export type UntypedExpr = Expr<unknown, unknown, unknown, unknown, SyntaxSugar>;
+export type UntypedExpr = Expr;
 
-export type StructField<
-  TypeMeta,
-  IdentifierResolutionMeta,
-  StructResolutionMeta,
-  FieldResolutionMeta,
-  SyntaxSugar,
-> = RangeMeta & {
-  field: { name: string } & RangeMeta & FieldResolutionMeta;
-  value: Expr<
-    TypeMeta,
-    IdentifierResolutionMeta,
-    StructResolutionMeta,
-    FieldResolutionMeta,
-    SyntaxSugar
-  >;
+export type StructField = RangeMeta & {
+  field: { name: string } & RangeMeta;
+  value: Expr;
 };
 
-export type Expr<
-  TypeMeta,
-  IdentifierResolutionMeta,
-  StructResolutionMeta,
-  FieldResolutionMeta,
-  SyntaxSugar,
-> = (
-  | SyntaxSugar
-  | {
-      type: "syntax-err";
-    }
-  | {
-      type: "list-literal";
-      values: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >[];
-    }
-  | {
-      type: "struct-literal";
-      struct: { name: string } & RangeMeta & StructResolutionMeta;
-      fields: StructField<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >[];
-      spread:
-        | Expr<
-            TypeMeta,
-            IdentifierResolutionMeta,
-            StructResolutionMeta,
-            FieldResolutionMeta,
-            SyntaxSugar
-          >
-        | undefined;
-    }
-  | {
-      type: "constant";
-      value: ConstLiteral;
-    }
-  | ({
-      type: "identifier";
-      namespace?: string;
-      name: string;
-    } & IdentifierResolutionMeta)
-  | {
-      type: "fn";
-      params: MatchPattern[];
-      body: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >;
-    }
-  | {
-      type: "application";
-      caller: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >;
-      args: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >[];
-      isPipe?: boolean;
-    }
-  | ({
-      type: "field-access";
-      struct: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >;
-      field: { name: string; structName?: string } & RangeMeta;
-    } & FieldResolutionMeta)
-  | {
-      type: "let";
-      pattern: MatchPattern;
-      value: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >;
-      body: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >;
-    }
-  | {
-      type: "if";
-      condition: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >;
-      then: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >;
-      else: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >;
-    }
-  | {
-      type: "match";
-      expr: Expr<
-        TypeMeta,
-        IdentifierResolutionMeta,
-        StructResolutionMeta,
-        FieldResolutionMeta,
-        SyntaxSugar
-      >;
-      clauses: Array<
-        [
-          MatchPattern,
-          Expr<
-            TypeMeta,
-            IdentifierResolutionMeta,
-            StructResolutionMeta,
-            FieldResolutionMeta,
-            SyntaxSugar
-          >,
-        ]
-      >;
-    }
-) &
-  TypeMeta &
-  RangeMeta;
+export type Expr = RangeMeta &
+  (
+    | SyntaxSugar
+    | {
+        type: "syntax-err";
+      }
+    | {
+        type: "list-literal";
+        values: Expr[];
+      }
+    | {
+        type: "struct-literal";
+        struct: { name: string } & RangeMeta;
+        fields: StructField[];
+        spread: Expr | undefined;
+      }
+    | {
+        type: "constant";
+        value: ConstLiteral;
+      }
+    | {
+        type: "identifier";
+        namespace?: string;
+        name: string;
+      }
+    | {
+        type: "fn";
+        params: MatchPattern[];
+        body: Expr;
+      }
+    | {
+        type: "application";
+        caller: Expr;
+        args: Expr[];
+        isPipe?: boolean;
+      }
+    | {
+        type: "field-access";
+        struct: Expr;
+        field: { name: string; structName?: string } & RangeMeta;
+      }
+    | {
+        type: "let";
+        pattern: MatchPattern;
+        value: Expr;
+        body: Expr;
+      }
+    | {
+        type: "if";
+        condition: Expr;
+        then: Expr;
+        else: Expr;
+      }
+    | {
+        type: "match";
+        expr: Expr;
+        clauses: Array<[MatchPattern, Expr]>;
+      }
+  );
 
-export type UntypedDeclaration = Declaration<
-  unknown,
-  unknown,
-  unknown,
-  unknown,
-  unknown,
-  SyntaxSugar
->;
-export type Declaration<
-  TypeMeta,
-  IdentifierResolutionMeta,
-  _TypeResolutionMeta,
-  StructResolutionMeta,
-  FieldResolutionMeta,
-  SyntaxSugar,
-> = RangeMeta & {
+export type UntypedDeclaration = Declaration<SyntaxSugar>;
+export type Declaration<_TypeResolutionMeta> = RangeMeta & {
   pub: boolean;
   binding: Binding;
   docComment?: string;
@@ -282,13 +158,7 @@ export type Declaration<
         inline: boolean;
         extern: false;
         typeHint?: PolyTypeAst & RangeMeta;
-        value: Expr<
-          TypeMeta,
-          IdentifierResolutionMeta,
-          StructResolutionMeta,
-          FieldResolutionMeta,
-          SyntaxSugar
-        >;
+        value: Expr;
       }
     | {
         extern: true;
