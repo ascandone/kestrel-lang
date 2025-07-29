@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { Position, Range, UntypedImport, unsafeParse } from "../parser";
+import { Position, Range, Import, unsafeParse } from "../parser";
 import {
   Deps,
   resetTraitsRegistry,
@@ -2673,7 +2673,7 @@ function tcProgram(
   ns: string,
   src: string,
   deps: Deps = {},
-  prelude: UntypedImport[] = [],
+  prelude: Import[] = [],
   traitImpls: TraitImpl[] = [],
 ) {
   const parsedProgram = unsafeParse(src);
@@ -2684,7 +2684,7 @@ function tcProgram(
 function tc(
   src: string,
   deps: Deps = {},
-  prelude: UntypedImport[] = [],
+  prelude: Import[] = [],
   traitImpls: TraitImpl[] = [],
 ) {
   const [typed, errors] = tcProgram("Main", src, deps, prelude, traitImpls);

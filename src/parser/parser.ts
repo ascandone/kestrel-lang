@@ -59,9 +59,9 @@ import {
   TypeAst,
   UntypedExposedValue,
   Expr,
-  UntypedImport,
+  Import,
   UntypedModule,
-  UntypedTypeDeclaration,
+  TypeDeclaration,
 } from "./ast";
 
 const COMMENTS_CHANNEL = 1;
@@ -466,7 +466,7 @@ class ExpressionVisitor extends Visitor<Expr> {
 
 type DeclarationType =
   | { type: "value"; decl: Declaration }
-  | { type: "type"; decl: UntypedTypeDeclaration }
+  | { type: "type"; decl: TypeDeclaration }
   | { type: "syntax-err" };
 
 class ExposingVisitor extends Visitor<UntypedExposedValue> {
@@ -786,7 +786,7 @@ export function parse(input: string): ParseResult {
   const parsed: UntypedModule = {
     lineComments,
     ...(docs === "" ? {} : { moduleDoc: docs }),
-    imports: declCtx.import__list().map((i): UntypedImport => {
+    imports: declCtx.import__list().map((i): Import => {
       return {
         ns: i.moduleNamespace().getText(),
         exposing: i

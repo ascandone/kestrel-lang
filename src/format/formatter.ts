@@ -7,10 +7,10 @@ import {
   TypeAst,
   Declaration,
   Expr,
-  UntypedImport,
+  Import,
   UntypedModule,
-  UntypedTypeDeclaration,
-  UntypedTypeVariant,
+  TypeDeclaration,
+  TypeVariant,
 } from "../parser";
 import {
   Doc,
@@ -581,7 +581,7 @@ function declToDoc(ast: Declaration): Doc {
   );
 }
 
-function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
+function typeDeclToDoc(tDecl: TypeDeclaration): Doc {
   const params =
     tDecl.params.length === 0
       ? nil
@@ -653,7 +653,7 @@ function typeDeclToDoc(tDecl: UntypedTypeDeclaration): Doc {
   }
 }
 
-function variantToDoc(variant: UntypedTypeVariant): Doc {
+function variantToDoc(variant: TypeVariant): Doc {
   const args =
     variant.args.length === 0
       ? []
@@ -666,7 +666,7 @@ function variantToDoc(variant: UntypedTypeVariant): Doc {
   return concat(text(variant.name), ...args);
 }
 
-function importToDoc(import_: UntypedImport): Doc {
+function importToDoc(import_: Import): Doc {
   return concat(
     text("import ", import_.ns),
     import_.exposing.length === 0
@@ -691,7 +691,7 @@ function importToDoc(import_: UntypedImport): Doc {
 
 type Statement =
   | { type: "decl"; decl: Declaration }
-  | { type: "type"; decl: UntypedTypeDeclaration };
+  | { type: "type"; decl: TypeDeclaration };
 
 export function format(ast: UntypedModule): string {
   currentLineComments = [...(ast.lineComments ?? [])];

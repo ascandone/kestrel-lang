@@ -4,9 +4,9 @@ import {
   RangeMeta,
   TypeAst,
   Expr,
-  UntypedImport,
+  Import,
   UntypedModule,
-  UntypedTypeDeclaration,
+  TypeDeclaration,
   Declaration,
 } from "../parser";
 import {
@@ -54,7 +54,7 @@ export function castAst(
   ns: string,
   module: UntypedModule,
   deps: Deps = {},
-  implicitImports: UntypedImport[] = defaultImports,
+  implicitImports: Import[] = defaultImports,
 ): [TypedModule, ErrorInfo[]] {
   return new ResolutionStep(ns, deps).run(module, implicitImports);
 }
@@ -84,7 +84,7 @@ class ResolutionStep {
 
   run(
     module: UntypedModule,
-    implicitImports: UntypedImport[] = defaultImports,
+    implicitImports: Import[] = defaultImports,
   ): [TypedModule, ErrorInfo[]] {
     TVar.resetId();
 
@@ -327,7 +327,7 @@ class ResolutionStep {
   }
 
   private annotateTypeDeclaration(
-    typeDecl: UntypedTypeDeclaration,
+    typeDecl: TypeDeclaration,
   ): TypedTypeDeclaration {
     const usedParams = new Set();
     for (const param of typeDecl.params) {
@@ -417,7 +417,7 @@ class ResolutionStep {
     }
   }
 
-  private annotateImports(imports: UntypedImport[]): TypedImport[] {
+  private annotateImports(imports: Import[]): TypedImport[] {
     return imports.flatMap((import_) => {
       const importedModule = this.deps[import_.ns];
       if (importedModule === undefined) {
@@ -987,7 +987,7 @@ class ResolutionStep {
   }
 
   private annotateImport(
-    import_: UntypedImport,
+    import_: Import,
     importedModule: TypedModule,
   ): TypedImport {
     return {

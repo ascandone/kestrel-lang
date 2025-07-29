@@ -1,9 +1,9 @@
 import {
   ConstLiteral,
   RangeMeta,
-  UntypedImport,
+  Import,
   UntypedModule,
-  UntypedTypeDeclaration,
+  TypeDeclaration,
 } from "../parser";
 import {
   FieldResolution,
@@ -73,7 +73,7 @@ export function typecheck(
   ns: string,
   module: UntypedModule,
   deps: Deps = {},
-  implicitImports: UntypedImport[] = defaultImports,
+  implicitImports: Import[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
 ): [TypedModule, ErrorInfo[]] {
   return new Typechecker(ns, mainType).run(module, deps, implicitImports);
@@ -211,7 +211,7 @@ class Typechecker {
   run(
     module: UntypedModule,
     deps: Deps,
-    implicitImports: UntypedImport[] = defaultImports,
+    implicitImports: Import[] = defaultImports,
   ): [TypedModule, ErrorInfo[]] {
     TVar.resetId();
 
@@ -302,7 +302,7 @@ class Typechecker {
   }
 
   private makeVariantType(
-    typeDecl: UntypedTypeDeclaration & { type: "adt" },
+    typeDecl: TypeDeclaration & { type: "adt" },
     variant: TypedTypeVariant,
   ): PolyType {
     const generics: [string, TVar, number][] = typeDecl.params.map((param) => [
@@ -942,7 +942,7 @@ const CORE_PACKAGE = "kestrel_core";
 
 function topSortedModules(
   project: UntypedProject,
-  implicitImports: UntypedImport[] = defaultImports,
+  implicitImports: Import[] = defaultImports,
 ): string[] {
   const implNsImports = implicitImports.map((i) => i.ns);
 
@@ -973,7 +973,7 @@ export type UntypedProject = Record<
 
 export function typecheckProject(
   project: UntypedProject,
-  implicitImports: UntypedImport[] = defaultImports,
+  implicitImports: Import[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
 ): ProjectTypeCheckResult {
   resetTraitsRegistry();

@@ -168,14 +168,12 @@ export type TypeVariant = RangeMeta & {
   args: TypeAst[];
 };
 
-export type StructDeclarationField<TypeMeta> = (TypeMeta & RangeMeta) & {
+export type StructDeclarationField = RangeMeta & {
   name: string;
   type_: TypeAst;
 };
 
-export type UntypedTypeVariant = TypeVariant;
-export type UntypedTypeDeclaration = TypeDeclaration<unknown>;
-export type TypeDeclaration<TypeMeta> = RangeMeta & {
+export type TypeDeclaration = RangeMeta & {
   name: string;
   params: Array<{ name: string } & RangeMeta>;
   docComment?: string;
@@ -185,11 +183,11 @@ export type TypeDeclaration<TypeMeta> = RangeMeta & {
         variants: TypeVariant[];
         pub: boolean | "..";
       }
-    | ({
+    | {
         type: "struct";
-        fields: StructDeclarationField<TypeMeta>[];
+        fields: StructDeclarationField[];
         pub: boolean | "..";
-      } & TypeMeta)
+      }
     | { type: "extern"; pub: boolean }
   );
 
@@ -206,17 +204,16 @@ export type UntypedExposedValue = RangeMeta &
       }
   );
 
-export type UntypedImport = Import<UntypedExposedValue>;
-export type Import<Exposing> = RangeMeta & {
+export type Import = RangeMeta & {
   ns: string;
-  exposing: Exposing[];
+  exposing: UntypedExposedValue[];
 };
 
 export type LineComment = { comment: string } & RangeMeta;
 export type UntypedModule = {
   moduleDoc?: string;
-  imports: UntypedImport[];
-  typeDeclarations: UntypedTypeDeclaration[];
+  imports: Import[];
+  typeDeclarations: TypeDeclaration[];
   declarations: Declaration[];
   lineComments?: LineComment[];
 };
