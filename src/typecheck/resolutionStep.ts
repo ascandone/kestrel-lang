@@ -3,11 +3,11 @@ import {
   Range,
   RangeMeta,
   TypeAst,
-  UntypedDeclaration,
   UntypedExpr,
   UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
+  Declaration,
 } from "../parser";
 import {
   FieldResolution,
@@ -158,9 +158,7 @@ class ResolutionStep {
     return [typedModule, this.errors];
   }
 
-  private annotateDeclarations(
-    declrs: UntypedDeclaration[],
-  ): TypedDeclaration[] {
+  private annotateDeclarations(declrs: Declaration[]): TypedDeclaration[] {
     return declrs.map<TypedDeclaration>((decl) => {
       const binding: TypedBinding = {
         ...decl.binding,

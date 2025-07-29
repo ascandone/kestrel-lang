@@ -148,8 +148,7 @@ export type Expr = RangeMeta &
       }
   );
 
-export type UntypedDeclaration = Declaration<SyntaxSugar>;
-export type Declaration<_TypeResolutionMeta> = RangeMeta & {
+export type Declaration = RangeMeta & {
   pub: boolean;
   binding: Binding;
   docComment?: string;
@@ -166,8 +165,7 @@ export type Declaration<_TypeResolutionMeta> = RangeMeta & {
       }
   );
 
-export type TypeVariant<TypeMeta, _TypeResolutionMeta = unknown> = (TypeMeta &
-  RangeMeta) & {
+export type TypeVariant = RangeMeta & {
   name: string;
   args: TypeAst[];
 };
@@ -177,7 +175,7 @@ export type StructDeclarationField<TypeMeta> = (TypeMeta & RangeMeta) & {
   type_: TypeAst;
 };
 
-export type UntypedTypeVariant = TypeVariant<unknown>;
+export type UntypedTypeVariant = TypeVariant;
 export type UntypedTypeDeclaration = TypeDeclaration<unknown>;
 export type TypeDeclaration<TypeMeta> = RangeMeta & {
   name: string;
@@ -186,9 +184,7 @@ export type TypeDeclaration<TypeMeta> = RangeMeta & {
 } & (
     | {
         type: "adt";
-        // TODO remove any
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        variants: TypeVariant<TypeMeta, any>[];
+        variants: TypeVariant[];
         pub: boolean | "..";
       }
     | ({
@@ -223,7 +219,7 @@ export type UntypedModule = {
   moduleDoc?: string;
   imports: UntypedImport[];
   typeDeclarations: UntypedTypeDeclaration[];
-  declarations: UntypedDeclaration[];
+  declarations: Declaration[];
   lineComments?: LineComment[];
 };
 

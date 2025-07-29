@@ -51,12 +51,12 @@ import Parser, {
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import {
+  Declaration,
   LineComment,
   MatchPattern,
   Position,
   Range,
   TypeAst,
-  UntypedDeclaration,
   UntypedExposedValue,
   UntypedExpr,
   UntypedImport,
@@ -468,7 +468,7 @@ class ExpressionVisitor extends Visitor<UntypedExpr> {
 }
 
 type DeclarationType =
-  | { type: "value"; decl: UntypedDeclaration }
+  | { type: "value"; decl: Declaration }
   | { type: "type"; decl: UntypedTypeDeclaration }
   | { type: "syntax-err" };
 

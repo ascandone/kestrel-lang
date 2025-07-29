@@ -5,7 +5,7 @@ import {
   PolyTypeAst,
   RangeMeta,
   TypeAst,
-  UntypedDeclaration,
+  Declaration,
   UntypedExpr,
   UntypedImport,
   UntypedModule,
@@ -562,7 +562,7 @@ function declarationValueToDoc(expr: UntypedExpr): Doc {
   }
 }
 
-function declToDoc(ast: UntypedDeclaration): Doc {
+function declToDoc(ast: Declaration): Doc {
   const name =
     isInfix(ast.binding.name) || isPrefix(ast.binding.name)
       ? `(${ast.binding.name})`
@@ -690,7 +690,7 @@ function importToDoc(import_: UntypedImport): Doc {
 }
 
 type Statement =
-  | { type: "decl"; decl: UntypedDeclaration }
+  | { type: "decl"; decl: Declaration }
   | { type: "type"; decl: UntypedTypeDeclaration };
 
 export function format(ast: UntypedModule): string {
