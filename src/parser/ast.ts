@@ -1,5 +1,3 @@
-import { TypeResolutionMeta } from "../typecheck";
-
 export type ConstLiteral =
   | { type: "int"; value: number }
   | { type: "float"; value: number }
@@ -11,12 +9,12 @@ export type TraitDef = {
   traits: string[];
 };
 
-export type PolyTypeAst<TypeResolutionMeta = unknown> = {
-  mono: TypeAst<TypeResolutionMeta>;
+export type PolyTypeAst = {
+  mono: TypeAst;
   where: TraitDef[];
 };
 
-export type TypeAst<TypeResolutionMeta = unknown> = RangeMeta &
+export type TypeAst = RangeMeta &
   (
     | {
         type: "var";
@@ -24,25 +22,22 @@ export type TypeAst<TypeResolutionMeta = unknown> = RangeMeta &
       }
     | {
         type: "fn";
-        args: TypeAst<TypeResolutionMeta>[];
-        return: TypeAst<TypeResolutionMeta>;
+        args: TypeAst[];
+        return: TypeAst;
       }
-    | ({
+    | {
         type: "named";
         namespace?: string;
         name: string;
-        args: TypeAst<TypeResolutionMeta>[];
-      } & TypeResolutionMeta)
+        args: TypeAst[];
+      }
     // This should only be used for type annotations, not type declarations
-    | { type: "any" }
+    | {
+        type: "any";
+      }
   );
 
-export type UntypedMatchPattern = MatchPattern;
-
-export type MatchPattern<
-  TypeMeta = unknown,
-  IdentifierResolutionMeta = unknown,
-> = (TypeMeta & RangeMeta) &
+export type MatchPattern = RangeMeta &
   (
     | {
         type: "identifier";
@@ -52,16 +47,15 @@ export type MatchPattern<
         type: "lit";
         literal: ConstLiteral;
       }
-    | ({
+    | {
         type: "constructor";
         name: string;
-        args: MatchPattern<TypeMeta, IdentifierResolutionMeta>[];
+        args: MatchPattern[];
         namespace?: string;
-      } & IdentifierResolutionMeta)
+      }
   );
 
-export type Binding<TypeMeta = unknown> = { name: string } & TypeMeta &
-  RangeMeta;
+export type Binding = { name: string } & RangeMeta;
 
 export type SyntaxSugar =
   | {
@@ -158,7 +152,7 @@ export type Expr<
     } & IdentifierResolutionMeta)
   | {
       type: "fn";
-      params: MatchPattern<TypeMeta, IdentifierResolutionMeta>[];
+      params: MatchPattern[];
       body: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
@@ -198,7 +192,7 @@ export type Expr<
     } & FieldResolutionMeta)
   | {
       type: "let";
-      pattern: MatchPattern<TypeMeta, IdentifierResolutionMeta>;
+      pattern: MatchPattern;
       value: Expr<
         TypeMeta,
         IdentifierResolutionMeta,
@@ -249,7 +243,7 @@ export type Expr<
       >;
       clauses: Array<
         [
-          MatchPattern<TypeMeta, IdentifierResolutionMeta>,
+          MatchPattern,
           Expr<
             TypeMeta,
             IdentifierResolutionMeta,
@@ -275,19 +269,19 @@ export type UntypedDeclaration = Declaration<
 export type Declaration<
   TypeMeta,
   IdentifierResolutionMeta,
-  TypeResolutionMeta,
+  _TypeResolutionMeta,
   StructResolutionMeta,
   FieldResolutionMeta,
   SyntaxSugar,
 > = RangeMeta & {
   pub: boolean;
-  binding: Binding<TypeMeta>;
+  binding: Binding;
   docComment?: string;
 } & (
     | {
         inline: boolean;
         extern: false;
-        typeHint?: PolyTypeAst<TypeResolutionMeta> & RangeMeta;
+        typeHint?: PolyTypeAst & RangeMeta;
         value: Expr<
           TypeMeta,
           IdentifierResolutionMeta,
@@ -298,19 +292,19 @@ export type Declaration<
       }
     | {
         extern: true;
-        typeHint: PolyTypeAst<TypeResolutionMeta> & RangeMeta;
+        typeHint: PolyTypeAst & RangeMeta;
       }
   );
 
-export type TypeVariant<TypeMeta, TypeResolutionMeta = unknown> = (TypeMeta &
+export type TypeVariant<TypeMeta, _TypeResolutionMeta = unknown> = (TypeMeta &
   RangeMeta) & {
   name: string;
-  args: TypeAst<TypeResolutionMeta>[];
+  args: TypeAst[];
 };
 
 export type StructDeclarationField<TypeMeta> = (TypeMeta & RangeMeta) & {
   name: string;
-  type_: TypeAst<TypeResolutionMeta>;
+  type_: TypeAst;
 };
 
 export type UntypedTypeVariant = TypeVariant<unknown>;

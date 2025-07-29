@@ -52,6 +52,7 @@ import Parser, {
 import Visitor from "./antlr/KestrelVisitor";
 import {
   LineComment,
+  MatchPattern,
   Position,
   Range,
   TypeAst,
@@ -59,7 +60,6 @@ import {
   UntypedExposedValue,
   UntypedExpr,
   UntypedImport,
-  UntypedMatchPattern,
   UntypedModule,
   UntypedTypeDeclaration,
 } from "./ast";
@@ -137,14 +137,14 @@ class TypeVisitor extends Visitor<TypeAst> {
   };
 }
 
-class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
-  visitMatchIdent = (ctx: MatchIdentContext): UntypedMatchPattern => ({
+class MatchPatternVisitor extends Visitor<MatchPattern> {
+  visitMatchIdent = (ctx: MatchIdentContext): MatchPattern => ({
     type: "identifier",
     range: rangeOfCtx(ctx),
     name: ctx.ID().getText(),
   });
 
-  visitConstructor = (ctx: ConstructorContext): UntypedMatchPattern => ({
+  visitConstructor = (ctx: ConstructorContext): MatchPattern => ({
     type: "constructor",
     range: rangeOfCtx(ctx),
     name: ctx._name.text,
@@ -152,7 +152,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
     args: ctx.matchPattern_list().map((p) => this.visit(p)),
   });
 
-  visitIntPattern = (ctx: IntPatternContext): UntypedMatchPattern => ({
+  visitIntPattern = (ctx: IntPatternContext): MatchPattern => ({
     type: "lit",
     range: rangeOfCtx(ctx),
     literal: {
@@ -161,7 +161,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
     },
   });
 
-  visitFloatPattern = (ctx: FloatPatternContext): UntypedMatchPattern => ({
+  visitFloatPattern = (ctx: FloatPatternContext): MatchPattern => ({
     type: "lit",
     range: rangeOfCtx(ctx),
     literal: {
@@ -170,7 +170,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
     },
   });
 
-  visitStringPattern = (ctx: StringPatternContext): UntypedMatchPattern => ({
+  visitStringPattern = (ctx: StringPatternContext): MatchPattern => ({
     type: "lit",
     range: rangeOfCtx(ctx),
     literal: {
@@ -179,7 +179,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
     },
   });
 
-  visitCharPattern = (ctx: CharPatternContext): UntypedMatchPattern => ({
+  visitCharPattern = (ctx: CharPatternContext): MatchPattern => ({
     type: "lit",
     range: rangeOfCtx(ctx),
     literal: {
@@ -188,7 +188,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
     },
   });
 
-  visitTuplePattern = (ctx: TuplePatternContext): UntypedMatchPattern => {
+  visitTuplePattern = (ctx: TuplePatternContext): MatchPattern => {
     const args = ctx.matchPattern_list();
     return {
       type: "constructor",
@@ -199,7 +199,7 @@ class MatchPatternVisitor extends Visitor<UntypedMatchPattern> {
     };
   };
 
-  visitConsPattern = (ctx: ConsPatternContext): UntypedMatchPattern => {
+  visitConsPattern = (ctx: ConsPatternContext): MatchPattern => {
     return {
       type: "constructor",
       range: rangeOfCtx(ctx),
