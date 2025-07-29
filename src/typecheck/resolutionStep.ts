@@ -293,7 +293,7 @@ class ResolutionStep {
             ast.name === recursiveBinding.name &&
             (ast.namespace === undefined || ast.namespace === this.ns);
 
-          const ret: TypedTypeAst = {
+          const ret: TypedTypeAst & { type: "named" } = {
             ...ast,
             args: ast.args.map(recur),
             // This must be filled with this function's return type
@@ -995,7 +995,7 @@ class ResolutionStep {
   ): TypedImport {
     return {
       ...import_,
-      exposing: import_.exposing.map((exposing) => {
+      exposing: import_.exposing.map((exposing): TypedExposedValue => {
         switch (exposing.type) {
           case "type": {
             const resolved = importedModule.typeDeclarations.find(
@@ -1007,7 +1007,11 @@ class ResolutionStep {
                 range: exposing.range,
                 description: new NonExistingImport(exposing.name),
               });
-              return exposing;
+
+              return {
+                ...exposing,
+                $resolution: undefined,
+              };
             }
 
             if (exposing.exposeImpl) {
@@ -1040,7 +1044,7 @@ class ResolutionStep {
 
             return {
               ...exposing,
-              resolved,
+              $resolution: resolved,
             };
           }
 

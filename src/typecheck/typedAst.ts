@@ -55,7 +55,7 @@ export type TypedMatchPattern = (TypeMeta & ast.RangeMeta) &
         name: string;
         args: TypedMatchPattern[];
         namespace?: string;
-        $resolution?: IdentifierResolution;
+        $resolution: IdentifierResolution | undefined;
       }
   );
 
@@ -152,7 +152,7 @@ export type TypedExposedValue = ast.RangeMeta &
         type: "type";
         name: string;
         exposeImpl: boolean;
-        $resolution?: TypedTypeDeclaration | undefined;
+        $resolution: TypedTypeDeclaration | undefined;
       }
     | {
         type: "value";
