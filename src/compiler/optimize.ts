@@ -1,6 +1,6 @@
-import { Binding, ConstLiteral } from "../parser";
+import { ConstLiteral } from "../parser";
 import {
-  TypeMeta,
+  TypedBinding,
   TypedExpr,
   TypedMatchPattern,
   TypedModule,
@@ -259,10 +259,7 @@ export function optimizeModule(src: TypedModule): TypedModule {
   };
 }
 
-function countBindingUsages(
-  binding: Binding<TypeMeta>,
-  src: TypedExpr,
-): number {
+function countBindingUsages(binding: TypedBinding, src: TypedExpr): number {
   return foldTree(src, 0, (src, acc) => {
     switch (src.type) {
       case "identifier":
@@ -281,7 +278,7 @@ function countBindingUsages(
 }
 
 function substituteBinding(
-  binding: Binding<TypeMeta>,
+  binding: TypedBinding,
   with_: TypedExpr,
   src: TypedExpr,
 ): TypedExpr {

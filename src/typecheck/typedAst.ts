@@ -1,5 +1,4 @@
 import {
-  Binding,
   Declaration,
   Expr,
   Import,
@@ -10,8 +9,7 @@ import {
   TypeDeclaration,
   TypeVariant,
 } from "../parser";
-import { TypeMeta } from "./typecheck";
-import { TypeScheme } from "./type";
+import { TVar, TypeScheme } from "./type";
 export * from "./typedAst/findReferences";
 export * from "./typedAst/gotoDefinition";
 export * from "./typedAst/inlayHint";
@@ -19,10 +17,12 @@ export * from "./typedAst/hoverOn";
 export * from "./typedAst/signatureHint";
 export { foldTree } from "./typedAst/common";
 
+export type TypeMeta = { $: TVar };
+
 export type IdentifierResolution =
   | {
       type: "local-variable";
-      binding: Binding<TypeMeta>;
+      binding: TypedBinding;
     }
   | {
       type: "global-variable";

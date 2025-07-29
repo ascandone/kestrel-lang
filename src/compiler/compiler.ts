@@ -61,7 +61,7 @@ class Compiler {
 
   private isTailCall(
     src: TypedExpr & { type: "application" },
-    tailPosBinding: Binding<unknown> | undefined,
+    tailPosBinding: Binding | undefined,
   ): boolean {
     if (tailPosBinding === undefined) {
       return false;
@@ -135,7 +135,7 @@ class Compiler {
 
   private compileExprAsJsStms(
     src: TypedExpr,
-    tailPosCaller: Binding<unknown> | undefined,
+    tailPosCaller: Binding | undefined,
     as: CompilationMode,
   ): void {
     switch (src.type) {
@@ -343,7 +343,7 @@ class Compiler {
 
   private compileExprAsJsExpr(
     src: TypedExpr,
-    tailPosCaller: Binding<unknown> | undefined,
+    tailPosCaller: Binding | undefined,
   ): t.Expression {
     switch (src.type) {
       case "syntax-err":

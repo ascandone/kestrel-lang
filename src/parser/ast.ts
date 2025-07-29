@@ -335,18 +335,17 @@ export type TypeDeclaration<TypeMeta> = RangeMeta & {
     | { type: "extern"; pub: boolean }
   );
 
-export type UntypedExposedValue = ExposedValue<unknown, unknown>;
-export type ExposedValue<ResolvedTypeMeta, ResolvedValueMeta> = RangeMeta &
+export type UntypedExposedValue = RangeMeta &
   (
-    | ({
+    | {
         type: "type";
         name: string;
         exposeImpl: boolean;
-      } & ResolvedTypeMeta)
-    | ({
+      }
+    | {
         type: "value";
         name: string;
-      } & ResolvedValueMeta)
+      }
   );
 
 export type UntypedImport = Import<UntypedExposedValue>;

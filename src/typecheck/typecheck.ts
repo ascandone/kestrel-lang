@@ -9,6 +9,7 @@ import {
   FieldResolution,
   IdentifierResolution,
   StructResolution,
+  TypeMeta,
   TypedDeclaration,
   TypedExpr,
   TypedMatchPattern,
@@ -49,8 +50,6 @@ import {
 } from "../errors";
 import { castAst, findFieldInModule } from "./resolutionStep";
 import { topologicalSort } from "../utils/topsort";
-
-export type TypeMeta = { $: TVar };
 
 // Record from namespace (e.g. "A.B.C" ) to the module
 
