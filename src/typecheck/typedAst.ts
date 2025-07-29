@@ -1,7 +1,6 @@
 import {
   Binding,
   Declaration,
-  ExposedValue,
   Expr,
   Import,
   MatchPattern,
@@ -88,12 +87,22 @@ export type TypedExpr = Expr<
   never
 >;
 
-export type TypedExposing = ExposedValue<
-  { resolved?: TypedTypeDeclaration },
-  { declaration?: TypedDeclaration }
->;
+type ResolvedTypeMeta = { resolved?: TypedTypeDeclaration };
+type ResolvedValueMeta = { declaration?: TypedDeclaration };
+export type TypedExposedValue = RangeMeta &
+  (
+    | ({
+        type: "type";
+        name: string;
+        exposeImpl: boolean;
+      } & ResolvedTypeMeta)
+    | ({
+        type: "value";
+        name: string;
+      } & ResolvedValueMeta)
+  );
 
-export type TypedImport = Import<TypedExposing>;
+export type TypedImport = Import<TypedExposedValue>;
 
 export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
 export type TypedTypeVariant = TypeVariant<PolyTypeMeta, TypeResolutionMeta>;

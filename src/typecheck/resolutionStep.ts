@@ -16,7 +16,7 @@ import {
   TypeResolution,
   TypedBinding,
   TypedDeclaration,
-  TypedExposing,
+  TypedExposedValue,
   TypedExpr,
   TypedImport,
   TypedMatchPattern,
@@ -72,7 +72,7 @@ class ResolutionStep {
   private typeDeclarations: TypedTypeDeclaration[] = [];
   private unusedVariables = new WeakSet<TypedBinding>();
   private unusedImports = new WeakSet<TypedImport>();
-  private unusedExposing = new WeakSet<TypedExposing>();
+  private unusedExposing = new WeakSet<TypedExposedValue>();
   private framesStack = new FramesStack<TypedBinding, TypedDeclaration>();
 
   private patternBindings: TypedBinding[] = [];
@@ -514,7 +514,7 @@ class ResolutionStep {
   }
 
   private *exportedStructs(): Generator<
-    [TypedTypeDeclaration & { type: "struct" }, TypedImport, TypedExposing]
+    [TypedTypeDeclaration & { type: "struct" }, TypedImport, TypedExposedValue]
   > {
     for (const import_ of this.imports) {
       for (const exposed of import_.exposing) {
@@ -1060,7 +1060,7 @@ class ResolutionStep {
             return {
               ...exposing,
               declaration: declaration,
-            } as TypedExposing;
+            } as TypedExposedValue;
           }
         }
       }),
