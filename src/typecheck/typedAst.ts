@@ -90,65 +90,64 @@ export type TypedMatchPattern = (TypeMeta & RangeMeta) &
       } & IdentifierResolutionMeta)
   );
 
-export type TypedExpr = (
-  | {
-      type: "syntax-err";
-    }
-  | {
-      type: "list-literal";
-      values: TypedExpr[];
-    }
-  | {
-      type: "struct-literal";
-      struct: { name: string } & RangeMeta & StructResolutionMeta;
-      fields: TypedStructField[];
-      spread: TypedExpr | undefined;
-    }
-  | {
-      type: "constant";
-      value: ConstLiteral;
-    }
-  | ({
-      type: "identifier";
-      namespace?: string;
-      name: string;
-    } & IdentifierResolutionMeta)
-  | {
-      type: "fn";
-      params: TypedMatchPattern[];
-      body: TypedExpr;
-    }
-  | {
-      type: "application";
-      caller: TypedExpr;
-      args: TypedExpr[];
-      isPipe?: boolean;
-    }
-  | ({
-      type: "field-access";
-      struct: TypedExpr;
-      field: { name: string; structName?: string } & RangeMeta;
-    } & FieldResolutionMeta)
-  | {
-      type: "let";
-      pattern: TypedMatchPattern;
-      value: TypedExpr;
-      body: TypedExpr;
-    }
-  | {
-      type: "if";
-      condition: TypedExpr;
-      then: TypedExpr;
-      else: TypedExpr;
-    }
-  | {
-      type: "match";
-      expr: TypedExpr;
-      clauses: Array<[TypedMatchPattern, TypedExpr]>;
-    }
-) &
-  TypeMeta &
-  RangeMeta;
+export type TypedExpr = (TypeMeta & RangeMeta) &
+  (
+    | {
+        type: "syntax-err";
+      }
+    | {
+        type: "list-literal";
+        values: TypedExpr[];
+      }
+    | {
+        type: "struct-literal";
+        struct: { name: string } & RangeMeta & StructResolutionMeta;
+        fields: TypedStructField[];
+        spread: TypedExpr | undefined;
+      }
+    | {
+        type: "constant";
+        value: ConstLiteral;
+      }
+    | ({
+        type: "identifier";
+        namespace?: string;
+        name: string;
+      } & IdentifierResolutionMeta)
+    | {
+        type: "fn";
+        params: TypedMatchPattern[];
+        body: TypedExpr;
+      }
+    | {
+        type: "application";
+        caller: TypedExpr;
+        args: TypedExpr[];
+        isPipe?: boolean;
+      }
+    | ({
+        type: "field-access";
+        struct: TypedExpr;
+        field: { name: string; structName?: string } & RangeMeta;
+      } & FieldResolutionMeta)
+    | {
+        type: "let";
+        pattern: TypedMatchPattern;
+        value: TypedExpr;
+        body: TypedExpr;
+      }
+    | {
+        type: "if";
+        condition: TypedExpr;
+        then: TypedExpr;
+        else: TypedExpr;
+      }
+    | {
+        type: "match";
+        expr: TypedExpr;
+        clauses: Array<[TypedMatchPattern, TypedExpr]>;
+      }
+  );
 
 type ResolvedTypeMeta = { resolved?: TypedTypeDeclaration };
 type ResolvedValueMeta = { declaration?: TypedDeclaration };
