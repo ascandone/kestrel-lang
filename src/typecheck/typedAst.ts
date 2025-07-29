@@ -1,4 +1,5 @@
 import {
+  ConstLiteral,
   Declaration,
   Expr,
   MatchPattern,
@@ -72,10 +73,24 @@ export type FieldResolutionMeta = {
   resolution: FieldResolution | undefined;
 };
 
-export type TypedMatchPattern = MatchPattern<
-  TypeMeta,
-  IdentifierResolutionMeta
->;
+export type TypedMatchPattern = (TypeMeta & RangeMeta) &
+  (
+    | {
+        type: "identifier";
+        name: string;
+      }
+    | {
+        type: "lit";
+        literal: ConstLiteral;
+      }
+    | ({
+        type: "constructor";
+        name: string;
+        args: MatchPattern<TypeMeta, IdentifierResolutionMeta>[];
+        namespace?: string;
+      } & IdentifierResolutionMeta)
+  );
+
 export type TypedExpr = Expr<
   TypeMeta,
   IdentifierResolutionMeta,
