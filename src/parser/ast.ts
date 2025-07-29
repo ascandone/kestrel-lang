@@ -320,7 +320,13 @@ export type TypeDeclaration<TypeMeta> = RangeMeta & {
   params: Array<{ name: string } & RangeMeta>;
   docComment?: string;
 } & (
-    | { type: "adt"; variants: TypeVariant<TypeMeta>[]; pub: boolean | ".." }
+    | {
+        type: "adt";
+        // TODO remove any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        variants: TypeVariant<TypeMeta, any>[];
+        pub: boolean | "..";
+      }
     | ({
         type: "struct";
         fields: StructDeclarationField<TypeMeta>[];

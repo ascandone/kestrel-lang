@@ -8,7 +8,6 @@ import {
   RangeMeta,
   StructDeclarationField,
   StructField,
-  TypeAst,
   TypeDeclaration,
   TypeVariant,
 } from "../parser";
@@ -100,7 +99,26 @@ export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
 export type TypedTypeVariant = TypeVariant<PolyTypeMeta, TypeResolutionMeta>;
 export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 
-export type TypedTypeAst = TypeAst<TypeResolutionMeta>;
+export type TypedTypeAst = RangeMeta &
+  (
+    | {
+        type: "var";
+        ident: string;
+      }
+    | {
+        type: "fn";
+        args: TypedTypeAst[];
+        return: TypedTypeAst;
+      }
+    | ({
+        type: "named";
+        namespace?: string;
+        name: string;
+        args: TypedTypeAst[];
+      } & TypeResolutionMeta)
+    | { type: "any" }
+  );
+
 export type TypedDeclaration = { scheme: TypeScheme } & Declaration<
   TypeMeta,
   IdentifierResolutionMeta,

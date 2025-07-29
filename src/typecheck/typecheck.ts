@@ -4,7 +4,6 @@ import {
   UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
-  UntypedTypeVariant,
 } from "../parser";
 import {
   FieldResolution,
@@ -16,6 +15,7 @@ import {
   TypedModule,
   TypedTypeAst,
   TypedTypeDeclaration,
+  TypedTypeVariant,
 } from "./typedAst";
 import { TraitImpl, defaultImports, defaultTraitImpls } from "./defaultImports";
 import {
@@ -304,7 +304,7 @@ class Typechecker {
 
   private makeVariantType(
     typeDecl: UntypedTypeDeclaration & { type: "adt" },
-    variant: UntypedTypeVariant,
+    variant: TypedTypeVariant,
   ): PolyType {
     const generics: [string, TVar, number][] = typeDecl.params.map((param) => [
       param.name,
