@@ -1,7 +1,6 @@
 import {
   Declaration,
   Expr,
-  Import,
   MatchPattern,
   RangeMeta,
   StructDeclarationField,
@@ -101,7 +100,10 @@ export type TypedExposedValue = RangeMeta &
       } & ResolvedValueMeta)
   );
 
-export type TypedImport = Import<TypedExposedValue>;
+export type TypedImport = RangeMeta & {
+  ns: string;
+  exposing: TypedExposedValue[];
+};
 
 export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
 
