@@ -60,28 +60,26 @@ export type Binding = { name: string } & RangeMeta;
 export type SyntaxSugar =
   | {
       type: "pipe";
-      left: UntypedExpr;
-      right: UntypedExpr;
+      left: Expr;
+      right: Expr;
     }
   | {
       type: "let#";
       mapper: RangeMeta & { namespace?: string; name: string };
       pattern: MatchPattern;
-      value: UntypedExpr;
-      body: UntypedExpr;
+      value: Expr;
+      body: Expr;
     }
   | {
       type: "infix";
       operator: string;
-      left: UntypedExpr;
-      right: UntypedExpr;
+      left: Expr;
+      right: Expr;
     }
   | {
       type: "block";
-      inner: UntypedExpr;
+      inner: Expr;
     };
-
-export type UntypedExpr = Expr;
 
 export type StructField = RangeMeta & {
   field: { name: string } & RangeMeta;

@@ -3,7 +3,7 @@ import {
   Range,
   RangeMeta,
   TypeAst,
-  UntypedExpr,
+  Expr,
   UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
@@ -691,7 +691,7 @@ class ResolutionStep {
     }
   }
 
-  private annotateExpr(ast: UntypedExpr): TypedExpr {
+  private annotateExpr(ast: Expr): TypedExpr {
     switch (ast.type) {
       // syntax sugar
       case "block":

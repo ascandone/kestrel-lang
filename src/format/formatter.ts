@@ -6,7 +6,7 @@ import {
   RangeMeta,
   TypeAst,
   Declaration,
-  UntypedExpr,
+  Expr,
   UntypedImport,
   UntypedModule,
   UntypedTypeDeclaration,
@@ -79,7 +79,7 @@ function getBindingPower(name: string): number | undefined {
   return index;
 }
 
-function hasLowerPrec(bindingPower: number, other: UntypedExpr): boolean {
+function hasLowerPrec(bindingPower: number, other: Expr): boolean {
   switch (other.type) {
     case "block":
       return hasLowerPrec(bindingPower, other.inner);
@@ -178,11 +178,11 @@ function asBlockOpt(isBlock: boolean, docs: Doc[]): Doc {
   return blockOpt_(...docs);
 }
 
-function exprToDocWithComments(ast: UntypedExpr, block: boolean): Doc {
+function exprToDocWithComments(ast: Expr, block: boolean): Doc {
   return concat(...popComments(ast), exprToDoc(ast, block));
 }
 
-function exprToDoc(ast: UntypedExpr, block: boolean): Doc {
+function exprToDoc(ast: Expr, block: boolean): Doc {
   switch (ast.type) {
     /* v8 ignore next 2 */
     case "syntax-err":
@@ -536,7 +536,7 @@ function handleDocComment(content: string, init = "///") {
   );
 }
 
-function declarationValueToDoc(expr: UntypedExpr): Doc {
+function declarationValueToDoc(expr: Expr): Doc {
   const exprDoc = exprToDoc(expr, false);
 
   switch (expr.type) {
@@ -745,7 +745,7 @@ function isTupleN(namespace: string | undefined, name: string): boolean {
   return namespace === "Tuple" && /Tuple[0-9]+/.test(name);
 }
 
-function autoParens(infixIndex: number, expr: UntypedExpr) {
+function autoParens(infixIndex: number, expr: Expr) {
   const needsParens = hasLowerPrec(infixIndex, expr);
   return needsParens
     ? concat(text("("), exprToDoc(expr, false), text(")"))
@@ -754,7 +754,7 @@ function autoParens(infixIndex: number, expr: UntypedExpr) {
 
 const DOT_ACCESS_BINDING_POWER = 0;
 
-function linesBetweenLet(ast: UntypedExpr & { type: "let" | "let#" }) {
+function linesBetweenLet(ast: Expr & { type: "let" | "let#" }) {
   const linesDiff = Math.min(
     Math.max(ast.body.range.start.line - ast.value.range.end.line - 1, 0),
     1,
