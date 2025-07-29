@@ -5,7 +5,6 @@ import {
   RangeMeta,
   StructDeclarationField,
   StructField,
-  TypeDeclaration,
 } from "../parser";
 import { TVar, TypeScheme } from "./type";
 export * from "./typedAst/findReferences";
@@ -112,7 +111,26 @@ export type TypedTypeVariant = (PolyTypeMeta & RangeMeta) & {
   args: TypedTypeAst[];
 };
 
-export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
+export type TypedTypeDeclaration = RangeMeta & {
+  name: string;
+  params: Array<{ name: string } & RangeMeta>;
+  docComment?: string;
+} & (
+    | {
+        type: "adt";
+        variants: TypedTypeVariant[];
+        pub: boolean | "..";
+      }
+    | ({
+        type: "struct";
+        fields: StructDeclarationField<PolyTypeMeta>[];
+        pub: boolean | "..";
+      } & PolyTypeMeta)
+    | {
+        type: "extern";
+        pub: boolean;
+      }
+  );
 
 export type TypedTypeAst = RangeMeta &
   (
