@@ -5,7 +5,6 @@ import {
   MatchPattern,
   RangeMeta,
   StructDeclarationField,
-  StructField,
 } from "../parser";
 import { TVar, TypeScheme } from "./type";
 export * from "./typedAst/findReferences";
@@ -53,13 +52,10 @@ export type StructResolution = {
   namespace: string;
 };
 
-export type TypedStructField = StructField<
-  TypeMeta,
-  IdentifierResolutionMeta,
-  StructResolutionMeta,
-  FieldResolutionMeta,
-  never
->;
+export type TypedStructField = RangeMeta & {
+  field: { name: string } & RangeMeta & FieldResolutionMeta;
+  value: TypedExpr;
+};
 
 export type FieldResolution = StructResolution & {
   field: StructDeclarationField<PolyTypeMeta>;
