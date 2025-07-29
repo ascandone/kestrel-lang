@@ -1,4 +1,4 @@
-import { ConstLiteral, RangeMeta, TraitDef } from "../parser";
+import * as ast from "../parser";
 import { TVar, TypeScheme } from "./type";
 export * from "./typedAst/findReferences";
 export * from "./typedAst/gotoDefinition";
@@ -7,11 +7,11 @@ export * from "./typedAst/hoverOn";
 export * from "./typedAst/signatureHint";
 export { foldTree } from "./typedAst/common";
 
-export type TypeMeta = { $: TVar };
+function assertSubtype<T1, _T2 extends T1>() {}
 
-export type TypedPolyTypeAst = {
-  mono: TypedTypeAst;
-  where: TraitDef[];
+export type TypeResolution = {
+  declaration: TypedTypeDeclaration;
+  namespace: string;
 };
 
 export type IdentifierResolution =
@@ -31,31 +31,79 @@ export type IdentifierResolution =
       namespace: string;
     };
 
-export type TypedBinding = { name: string } & TypeMeta & RangeMeta;
-
-export type TypeResolution = {
-  declaration: TypedTypeDeclaration;
-  namespace: string;
-};
-
-export type IdentifierResolutionMeta = {
-  resolution: IdentifierResolution | undefined;
-};
-export type TypeResolutionMeta = {
-  resolution: TypeResolution | undefined;
-};
-
 export type StructResolution = {
   declaration: TypedTypeDeclaration & { type: "struct" };
   namespace: string;
 };
 
-export type TypedStructField = RangeMeta & {
-  field: { name: string } & RangeMeta & FieldResolutionMeta;
+export type TypeMeta = { $: TVar };
+
+// -- Common
+
+assertSubtype<ast.PolyTypeAst, TypedPolyTypeAst>;
+export type TypedPolyTypeAst = {
+  mono: TypedTypeAst;
+  where: ast.TraitDef[];
+};
+
+assertSubtype<ast.TypeAst, TypedTypeAst>;
+export type TypedTypeAst = ast.RangeMeta &
+  (
+    | {
+        type: "var";
+        ident: string;
+      }
+    | {
+        type: "fn";
+        args: TypedTypeAst[];
+        return: TypedTypeAst;
+      }
+    | {
+        type: "named";
+        namespace?: string;
+        name: string;
+        args: TypedTypeAst[];
+
+        // typedAst
+        resolution: TypeResolution | undefined;
+      }
+    | {
+        type: "any";
+      }
+  );
+
+assertSubtype<ast.MatchPattern, TypedMatchPattern>;
+export type TypedMatchPattern = (TypeMeta & ast.RangeMeta) &
+  (
+    | {
+        type: "identifier";
+        name: string;
+      }
+    | {
+        type: "lit";
+        literal: ast.ConstLiteral;
+      }
+    | {
+        type: "constructor";
+        name: string;
+        args: TypedMatchPattern[];
+        namespace?: string;
+
+        // typedAst
+        resolution?: IdentifierResolution;
+      }
+  );
+
+assertSubtype<ast.Binding, TypedBinding>;
+export type TypedBinding = { name: string } & TypeMeta & ast.RangeMeta;
+
+assertSubtype<ast.StructField, TypedStructField>;
+export type TypedStructField = ast.RangeMeta & {
+  field: { name: string } & ast.RangeMeta & FieldResolutionMeta;
   value: TypedExpr;
 };
 
-export type TypedStructDeclarationField = (PolyTypeMeta & RangeMeta) & {
+export type TypedStructDeclarationField = (PolyTypeMeta & ast.RangeMeta) & {
   name: string;
   type_: TypedTypeAst;
 };
@@ -64,33 +112,11 @@ export type FieldResolution = StructResolution & {
   field: TypedStructDeclarationField;
 };
 
-export type StructResolutionMeta = {
-  resolution: StructResolution | undefined;
-};
-
 export type FieldResolutionMeta = {
   resolution: FieldResolution | undefined;
 };
 
-export type TypedMatchPattern = (TypeMeta & RangeMeta) &
-  (
-    | {
-        type: "identifier";
-        name: string;
-      }
-    | {
-        type: "lit";
-        literal: ConstLiteral;
-      }
-    | ({
-        type: "constructor";
-        name: string;
-        args: TypedMatchPattern[];
-        namespace?: string;
-      } & IdentifierResolutionMeta)
-  );
-
-export type TypedExpr = (TypeMeta & RangeMeta) &
+export type TypedExpr = (TypeMeta & ast.RangeMeta) &
   (
     | {
         type: "syntax-err";
@@ -101,19 +127,27 @@ export type TypedExpr = (TypeMeta & RangeMeta) &
       }
     | {
         type: "struct-literal";
-        struct: { name: string } & RangeMeta & StructResolutionMeta;
+        struct: ast.RangeMeta & {
+          name: string;
+
+          // typedAst
+          resolution: StructResolution | undefined;
+        };
         fields: TypedStructField[];
         spread: TypedExpr | undefined;
       }
     | {
         type: "constant";
-        value: ConstLiteral;
+        value: ast.ConstLiteral;
       }
-    | ({
+    | {
         type: "identifier";
         namespace?: string;
         name: string;
-      } & IdentifierResolutionMeta)
+
+        // typedAst
+        resolution: IdentifierResolution | undefined;
+      }
     | {
         type: "fn";
         params: TypedMatchPattern[];
@@ -128,7 +162,7 @@ export type TypedExpr = (TypeMeta & RangeMeta) &
     | ({
         type: "field-access";
         struct: TypedExpr;
-        field: { name: string; structName?: string } & RangeMeta;
+        field: { name: string; structName?: string } & ast.RangeMeta;
       } & FieldResolutionMeta)
     | {
         type: "let";
@@ -151,7 +185,7 @@ export type TypedExpr = (TypeMeta & RangeMeta) &
 
 type ResolvedTypeMeta = { resolved?: TypedTypeDeclaration };
 type ResolvedValueMeta = { declaration?: TypedDeclaration };
-export type TypedExposedValue = RangeMeta &
+export type TypedExposedValue = ast.RangeMeta &
   (
     | ({
         type: "type";
@@ -164,21 +198,21 @@ export type TypedExposedValue = RangeMeta &
       } & ResolvedValueMeta)
   );
 
-export type TypedImport = RangeMeta & {
+export type TypedImport = ast.RangeMeta & {
   ns: string;
   exposing: TypedExposedValue[];
 };
 
 export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
 
-export type TypedTypeVariant = (PolyTypeMeta & RangeMeta) & {
+export type TypedTypeVariant = (PolyTypeMeta & ast.RangeMeta) & {
   name: string;
   args: TypedTypeAst[];
 };
 
-export type TypedTypeDeclaration = RangeMeta & {
+export type TypedTypeDeclaration = ast.RangeMeta & {
   name: string;
-  params: Array<{ name: string } & RangeMeta>;
+  params: Array<{ name: string } & ast.RangeMeta>;
   docComment?: string;
 } & (
     | {
@@ -197,29 +231,9 @@ export type TypedTypeDeclaration = RangeMeta & {
       }
   );
 
-export type TypedTypeAst = RangeMeta &
-  (
-    | {
-        type: "var";
-        ident: string;
-      }
-    | {
-        type: "fn";
-        args: TypedTypeAst[];
-        return: TypedTypeAst;
-      }
-    | ({
-        type: "named";
-        namespace?: string;
-        name: string;
-        args: TypedTypeAst[];
-      } & TypeResolutionMeta)
-    | { type: "any" }
-  );
-
 export type TypedDeclaration = {
   scheme: TypeScheme;
-} & RangeMeta & {
+} & ast.RangeMeta & {
     pub: boolean;
     binding: TypedBinding;
     docComment?: string;
@@ -227,12 +241,12 @@ export type TypedDeclaration = {
     | {
         inline: boolean;
         extern: false;
-        typeHint?: TypedPolyTypeAst & RangeMeta;
+        typeHint?: TypedPolyTypeAst & ast.RangeMeta;
         value: TypedExpr;
       }
     | {
         extern: true;
-        typeHint: TypedPolyTypeAst & RangeMeta;
+        typeHint: TypedPolyTypeAst & ast.RangeMeta;
       }
   );
 
@@ -243,6 +257,6 @@ export type TypedModule = {
   declarations: TypedDeclaration[];
 };
 
-export type Node = TypeMeta & RangeMeta;
+export type Node = TypeMeta & ast.RangeMeta;
 
 export type Identifier = TypedExpr & { type: "identifier" };

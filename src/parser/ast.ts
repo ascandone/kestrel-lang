@@ -1,3 +1,12 @@
+export type Position = {
+  line: number;
+  character: number;
+};
+export type Range = {
+  start: Position;
+  end: Position;
+};
+
 export type ConstLiteral =
   | { type: "int"; value: number }
   | { type: "float"; value: number }
@@ -8,6 +17,34 @@ export type TraitDef = {
   typeVar: string;
   traits: string[];
 };
+
+export type SyntaxSugar =
+  | {
+      type: "pipe";
+      left: Expr;
+      right: Expr;
+    }
+  | {
+      type: "let#";
+      mapper: RangeMeta & { namespace?: string; name: string };
+      pattern: MatchPattern;
+      value: Expr;
+      body: Expr;
+    }
+  | {
+      type: "infix";
+      operator: string;
+      left: Expr;
+      right: Expr;
+    }
+  | {
+      type: "block";
+      inner: Expr;
+    };
+
+export type RangeMeta = { range: Range };
+
+// -- Common
 
 export type PolyTypeAst = {
   mono: TypeAst;
@@ -57,30 +94,6 @@ export type MatchPattern = RangeMeta &
 
 export type Binding = { name: string } & RangeMeta;
 
-export type SyntaxSugar =
-  | {
-      type: "pipe";
-      left: Expr;
-      right: Expr;
-    }
-  | {
-      type: "let#";
-      mapper: RangeMeta & { namespace?: string; name: string };
-      pattern: MatchPattern;
-      value: Expr;
-      body: Expr;
-    }
-  | {
-      type: "infix";
-      operator: string;
-      left: Expr;
-      right: Expr;
-    }
-  | {
-      type: "block";
-      inner: Expr;
-    };
-
 export type StructField = RangeMeta & {
   field: { name: string } & RangeMeta;
   value: Expr;
@@ -98,7 +111,9 @@ export type Expr = RangeMeta &
       }
     | {
         type: "struct-literal";
-        struct: { name: string } & RangeMeta;
+        struct: RangeMeta & {
+          name: string;
+        };
         fields: StructField[];
         spread: Expr | undefined;
       }
@@ -217,14 +232,3 @@ export type UntypedModule = {
   declarations: Declaration[];
   lineComments?: LineComment[];
 };
-
-export type Position = {
-  line: number;
-  character: number;
-};
-export type Range = {
-  start: Position;
-  end: Position;
-};
-
-export type RangeMeta = { range: Range };
