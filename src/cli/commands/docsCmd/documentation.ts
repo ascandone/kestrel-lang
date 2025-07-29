@@ -64,7 +64,7 @@ export function makeModuleDoc(
     const item: Item = {
       type: "value",
       name: decl.binding.name,
-      signature: typeToString(decl.binding.$.asType()),
+      signature: typeToString(decl.binding.$type.asType()),
     };
 
     if (decl.docComment !== undefined) {

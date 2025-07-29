@@ -42,7 +42,7 @@ export function hoverOn(
 
       const d = hoverOnDecl(namespace, statement.declaration, position);
       if (d !== undefined) {
-        return [statement.declaration.scheme, d];
+        return [statement.declaration.$scheme, d];
       }
       return undefined;
     }
@@ -106,7 +106,7 @@ export function hoverOnTypeAst(
     case "any":
       return undefined;
     case "named": {
-      if (typeAst.resolution === undefined) {
+      if (typeAst.$resolution === undefined) {
         return undefined;
       }
 
@@ -121,8 +121,8 @@ export function hoverOnTypeAst(
           range: typeAst.range,
           hovered: {
             type: "type",
-            typeDecl: typeAst.resolution.declaration,
-            namespace: typeAst.resolution.namespace,
+            typeDecl: typeAst.$resolution.declaration,
+            namespace: typeAst.$resolution.namespace,
           },
         },
       ];
@@ -158,7 +158,7 @@ type ${hovered.typeDecl.name}
 ${hovered.typeDecl.docComment ?? ""}
       `;
     case "local-variable": {
-      const tpp = typeToString(hovered.binding.$.asType(), scheme);
+      const tpp = typeToString(hovered.binding.$type.asType(), scheme);
       return `\`\`\`
 ${hovered.binding.name}: ${tpp}
 \`\`\`
@@ -168,8 +168,8 @@ local declaration
 
     case "global-variable": {
       const tpp = typeToString(
-        hovered.declaration.binding.$.asType(),
-        hovered.declaration.scheme,
+        hovered.declaration.binding.$type.asType(),
+        hovered.declaration.$scheme,
       );
       return `\`\`\`
 ${hovered.declaration.binding.name}: ${tpp}
@@ -180,7 +180,7 @@ ${hovered.declaration.docComment ?? ""}
 
     case "constructor": {
       const tpp = typeToString(
-        hovered.variant.$.asType(),
+        hovered.variant.$type.asType(),
         hovered.variant.scheme,
       );
       return `\`\`\`
@@ -229,12 +229,12 @@ function hoverOnExpr(expr: TypedExpr, position: Position): Hovered | undefined {
       return firstBy(expr.values, (v) => hoverOnExpr(v, position));
 
     case "identifier":
-      if (expr.resolution === undefined) {
+      if (expr.$resolution === undefined) {
         return undefined;
       }
       return {
         range: expr.range,
-        hovered: expr.resolution,
+        hovered: expr.$resolution,
       };
 
     case "fn":
@@ -251,14 +251,14 @@ function hoverOnExpr(expr: TypedExpr, position: Position): Hovered | undefined {
 
     case "field-access":
       if (contains(expr.field, position)) {
-        if (expr.resolution === undefined) {
+        if (expr.$resolution === undefined) {
           return;
         }
 
         return {
           hovered: {
             type: "field",
-            type_: typeToString(expr.$.asType()),
+            type_: typeToString(expr.$type.asType()),
           },
           range: expr.field.range,
         };

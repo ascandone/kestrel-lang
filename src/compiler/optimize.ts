@@ -22,7 +22,7 @@ function foldInfix(
     type: "constant",
     value: fold(left.value, right.value),
     range: src.range,
-    $: src.$,
+    $type: src.$type,
   };
 }
 
@@ -94,7 +94,7 @@ const iifFolding: Optimization = (src) => {
     (acc, [pattern, arg]): TypedExpr => ({
       type: "let",
       range: src.range,
-      $: src.$,
+      $type: src.$type,
       pattern,
       body: acc,
       value: arg,
@@ -131,12 +131,12 @@ const inlineGlobals: Optimization = (src) => {
   switch (src.type) {
     case "identifier": {
       if (
-        src.resolution !== undefined &&
-        src.resolution.type === "global-variable" &&
-        !src.resolution.declaration.extern &&
-        src.resolution.declaration.inline
+        src.$resolution !== undefined &&
+        src.$resolution.type === "global-variable" &&
+        !src.$resolution.declaration.extern &&
+        src.$resolution.declaration.inline
       ) {
-        return src.resolution.declaration.value;
+        return src.$resolution.declaration.value;
       }
 
       return undefined;
@@ -264,9 +264,9 @@ function countBindingUsages(binding: TypedBinding, src: TypedExpr): number {
     switch (src.type) {
       case "identifier":
         if (
-          src.resolution !== undefined &&
-          src.resolution.type === "local-variable" &&
-          src.resolution.binding === binding
+          src.$resolution !== undefined &&
+          src.$resolution.type === "local-variable" &&
+          src.$resolution.binding === binding
         ) {
           return acc + 1;
         }
@@ -287,11 +287,11 @@ function substituteBinding(
       throw new Error("[unreachable]");
 
     case "identifier":
-      if (src.resolution === undefined) {
+      if (src.$resolution === undefined) {
         return src;
-      } else if (src.resolution.type !== "local-variable") {
+      } else if (src.$resolution.type !== "local-variable") {
         return src;
-      } else if (src.resolution.binding !== binding) {
+      } else if (src.$resolution.binding !== binding) {
         return src;
       } else {
         return with_;

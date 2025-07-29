@@ -71,16 +71,16 @@ class Compiler {
       return false;
     }
 
-    if (src.caller.resolution === undefined) {
+    if (src.caller.$resolution === undefined) {
       // This should be unreachable
       return false;
     }
 
-    switch (src.caller.resolution.type) {
+    switch (src.caller.$resolution.type) {
       case "local-variable":
-        return src.caller.resolution.binding === tailPosBinding;
+        return src.caller.$resolution.binding === tailPosBinding;
       case "global-variable":
-        return src.caller.resolution.declaration.binding === tailPosBinding;
+        return src.caller.$resolution.declaration.binding === tailPosBinding;
       case "constructor":
         return false;
     }
@@ -432,17 +432,17 @@ class Compiler {
       }
 
       case "identifier": {
-        if (src.resolution === undefined) {
+        if (src.$resolution === undefined) {
           throw new Error("[unreachable] undefined resolution");
         }
 
-        switch (src.resolution.type) {
+        switch (src.$resolution.type) {
           case "constructor":
             if (
-              src.resolution.declaration.name === "Bool" &&
-              src.resolution.namespace === "Bool"
+              src.$resolution.declaration.name === "Bool" &&
+              src.$resolution.namespace === "Bool"
             ) {
-              switch (src.resolution.variant.name) {
+              switch (src.$resolution.variant.name) {
                 case "True":
                   return { type: "BooleanLiteral", value: true };
                 case "False":
@@ -453,16 +453,16 @@ class Compiler {
               }
             }
             return makeGlobalIdentifier(
-              src.resolution.namespace,
-              src.resolution.variant.name,
+              src.$resolution.namespace,
+              src.$resolution.variant.name,
             );
 
           case "local-variable": {
-            const res = this.bindingsJsName.get(src.resolution.binding);
+            const res = this.bindingsJsName.get(src.$resolution.binding);
             if (res === undefined) {
               throw new Error(
                 "[unreachable] undefined resolution for: " +
-                  src.resolution.binding.name,
+                  src.$resolution.binding.name,
               );
             }
             return res;
@@ -470,19 +470,19 @@ class Compiler {
 
           case "global-variable": {
             let ident: t.Identifier;
-            if (src.resolution.declaration.binding.name === "==") {
+            if (src.$resolution.declaration.binding.name === "==") {
               ident = EQ_IDENTIFIER;
             } else {
               ident = makeGlobalIdentifier(
-                src.resolution.namespace,
-                src.resolution.declaration.binding.name,
+                src.$resolution.namespace,
+                src.$resolution.declaration.binding.name,
               );
             }
 
             // TODO what about let exprs?
             const traitArgs = resolvePassedDicts(
-              src.resolution.declaration.binding.$,
-              src.$,
+              src.$resolution.declaration.binding.$type,
+              src.$type,
             );
 
             if (traitArgs.length === 0) {
@@ -672,7 +672,7 @@ class Compiler {
         );
 
       case "struct-literal": {
-        const resolution = src.struct.resolution;
+        const resolution = src.struct.$resolution;
         if (resolution === undefined) {
           throw new Error(
             "[unreachable] undefined resolution for struct declaration",
@@ -750,18 +750,18 @@ class Compiler {
 
       case "constructor": {
         if (
-          pattern.resolution === undefined ||
-          pattern.resolution.type !== "constructor"
+          pattern.$resolution === undefined ||
+          pattern.$resolution.type !== "constructor"
         ) {
           throw new Error("[unreachable] invalid pattern resolution");
         }
 
         if (
-          pattern.resolution.namespace === "Bool" &&
-          pattern.resolution.declaration.name === "Bool"
+          pattern.$resolution.namespace === "Bool" &&
+          pattern.$resolution.declaration.name === "Bool"
         ) {
           return [
-            pattern.resolution.variant.name === "True"
+            pattern.$resolution.variant.name === "True"
               ? matchedExpr
               : {
                   type: "UnaryExpression",
@@ -772,15 +772,15 @@ class Compiler {
           ];
         }
 
-        const variantName = pattern.resolution.variant.name;
-        const index = pattern.resolution.declaration.variants.findIndex(
+        const variantName = pattern.$resolution.variant.name;
+        const index = pattern.$resolution.declaration.variants.findIndex(
           (variant) => variant.name === variantName,
         );
         if (index === -1) {
           throw new Error("[unreachable] variant not found in declaration");
         }
 
-        const repr = getAdtReprType(pattern.resolution.declaration);
+        const repr = getAdtReprType(pattern.$resolution.declaration);
         const eqLeftSide: t.Expression = (() => {
           switch (repr) {
             case "enum":
@@ -798,7 +798,7 @@ class Compiler {
         })();
 
         const singleVariantDeclaration =
-          pattern.resolution.declaration.variants.length === 1;
+          pattern.$resolution.declaration.variants.length === 1;
 
         return [
           ...(singleVariantDeclaration
@@ -899,7 +899,7 @@ class Compiler {
       type: "assign_var",
       declare: true,
       ident: makeGlobalIdentifier(this.ns, decl.binding.name),
-      dictParams: findDeclarationDictsParams(decl.binding.$.asType()),
+      dictParams: findDeclarationDictsParams(decl.binding.$type.asType()),
     });
     this.frames.pop();
 
@@ -1540,7 +1540,7 @@ function doNotDeclare(as: CompilationMode): CompilationMode {
 }
 
 function isPrimitiveEq(args: TypedExpr[]): boolean {
-  const resolvedType = args[0]!.$.resolve();
+  const resolvedType = args[0]!.$type.resolve();
 
   if (resolvedType.type === "unbound" || resolvedType.value.type === "fn") {
     return false;

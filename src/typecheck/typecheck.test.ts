@@ -2694,7 +2694,7 @@ function tc(
 function programTypes(typed: TypedModule): Record<string, string> {
   const kvs = typed.declarations.map((decl) => [
     decl.binding.name,
-    typeToString(decl.binding.$.asType()),
+    typeToString(decl.binding.$type.asType()),
   ]);
 
   return Object.fromEntries(kvs);

@@ -21,6 +21,7 @@ import {
   TypedImport,
   TypedMatchPattern,
   TypedModule,
+  TypedStructDeclarationField,
   TypedStructField,
   TypedTypeAst,
   TypedTypeDeclaration,
@@ -97,12 +98,12 @@ class ResolutionStep {
       }
 
       for (const exposing of import_.exposing) {
-        if (exposing.type === "value" && exposing.declaration !== undefined) {
+        if (exposing.type === "value" && exposing.$declaration !== undefined) {
           this.unusedExposing.add(exposing);
         } else if (
           exposing.type === "type" &&
           !exposing.exposeImpl &&
-          exposing.resolved !== undefined
+          exposing.$resolution !== undefined
         ) {
           this.unusedExposing.add(exposing);
         }
@@ -162,21 +163,21 @@ class ResolutionStep {
     return declrs.map<TypedDeclaration>((decl) => {
       const binding: TypedBinding = {
         ...decl.binding,
-        $: TVar.fresh(),
+        $type: TVar.fresh(),
       };
 
       let tDecl: TypedDeclaration;
       if (decl.extern) {
         tDecl = {
           ...decl,
-          scheme: {},
+          $scheme: {},
           binding,
           typeHint: undefined!,
         };
       } else {
         tDecl = {
           ...decl,
-          scheme: {},
+          $scheme: {},
           binding,
           typeHint: undefined!,
           value: undefined!,
@@ -254,10 +255,10 @@ class ResolutionStep {
 
     for (const import_ of this.imports) {
       for (const exposed of import_.exposing) {
-        if (exposed.type === "type" && exposed.resolved?.name === typeName) {
+        if (exposed.type === "type" && exposed.$resolution?.name === typeName) {
           this.unusedExposing.delete(exposed);
           return {
-            declaration: exposed.resolved,
+            declaration: exposed.$resolution,
             namespace: import_.ns,
           };
         }
@@ -296,12 +297,12 @@ class ResolutionStep {
             ...ast,
             args: ast.args.map(recur),
             // This must be filled with this function's return type
-            resolution: undefined,
+            $resolution: undefined,
           };
 
           if (isRecursive) {
             recursiveBinding.holes.push((declaration) => {
-              ret.resolution = {
+              ret.$resolution = {
                 declaration,
                 namespace: this.ns,
               };
@@ -317,7 +318,7 @@ class ResolutionStep {
               description: new UnboundType(ast.name),
             });
           }
-          ret.resolution = resolution;
+          ret.$resolution = resolution;
           return ret;
         }
       }
@@ -355,7 +356,7 @@ class ResolutionStep {
             const typedVariant: TypedTypeVariant = {
               ...variant,
               scheme: {},
-              $: TVar.fresh(),
+              $type: TVar.fresh(),
               args: variant.args.map((arg) =>
                 this.annotateTypeAst(arg, {
                   holes,
@@ -395,17 +396,19 @@ class ResolutionStep {
           ...typeDecl,
 
           scheme: {},
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
 
-          fields: typeDecl.fields.map((untypedField) => ({
-            ...untypedField,
-            $: TVar.fresh(),
-            scheme: {},
-            type_: this.annotateTypeAst(untypedField.type_, {
-              holes,
-              name: typeDecl.name,
+          fields: typeDecl.fields.map(
+            (untypedField): TypedStructDeclarationField => ({
+              ...untypedField,
+              $type: TVar.fresh(),
+              scheme: {},
+              typeAst: this.annotateTypeAst(untypedField.typeAst, {
+                holes,
+                name: typeDecl.name,
+              }),
             }),
-          })),
+          ),
         };
 
         for (const hole of holes) {
@@ -487,14 +490,14 @@ class ResolutionStep {
         // Found!
         switch (exposed.type) {
           case "value":
-            if (exposed.declaration === undefined) {
+            if (exposed.$declaration === undefined) {
               return;
             }
 
             return {
               type: "global-variable",
               namespace: ast.namespace,
-              declaration: exposed.declaration,
+              declaration: exposed.$declaration,
             };
 
           case "type":
@@ -518,13 +521,13 @@ class ResolutionStep {
       for (const exposed of import_.exposing) {
         if (
           exposed.type !== "type" ||
-          exposed.resolved === undefined ||
-          exposed.resolved.type !== "struct"
+          exposed.$resolution === undefined ||
+          exposed.$resolution.type !== "struct"
         ) {
           continue;
         }
 
-        yield [exposed.resolved, import_, exposed];
+        yield [exposed.$resolution, import_, exposed];
       }
     }
   }
@@ -599,15 +602,15 @@ class ResolutionStep {
       for (const exposed of import_.exposing) {
         if (
           exposed.type !== "type" ||
-          exposed.resolved === undefined ||
-          exposed.resolved.type !== "struct" ||
+          exposed.$resolution === undefined ||
+          exposed.$resolution.type !== "struct" ||
           !exposed.exposeImpl
         ) {
           continue;
         }
 
         const lookup = findFieldInTypeDecl(
-          exposed.resolved,
+          exposed.$resolution,
           fieldName,
           import_.ns,
         );
@@ -739,7 +742,7 @@ class ResolutionStep {
 
       case "syntax-err":
       case "constant":
-        return { ...ast, $: TVar.fresh() };
+        return { ...ast, $type: TVar.fresh() };
 
       case "struct-literal": {
         const typeDecl = this.resolveStruct(ast.struct.name);
@@ -772,20 +775,20 @@ class ResolutionStep {
               ...field,
               field: {
                 ...field.field,
-                resolution: fieldResolution,
+                $resolution: fieldResolution,
               },
               value: this.annotateExpr(field.value),
             };
           }),
           struct: {
             ...ast.struct,
-            resolution: typeDecl,
+            $resolution: typeDecl,
           },
           spread:
             ast.spread === undefined
               ? undefined
               : this.annotateExpr(ast.spread),
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
         };
       }
 
@@ -793,15 +796,15 @@ class ResolutionStep {
         return {
           ...ast,
           values: ast.values.map((v) => this.annotateExpr(v)),
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
         };
       }
 
       case "identifier":
         return {
           ...ast,
-          resolution: this.resolveIdentifier(ast),
-          $: TVar.fresh(),
+          $resolution: this.resolveIdentifier(ast),
+          $type: TVar.fresh(),
         };
 
       case "fn": {
@@ -834,7 +837,7 @@ class ResolutionStep {
 
         return {
           ...ast,
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
           body,
           params,
         };
@@ -851,7 +854,7 @@ class ResolutionStep {
       case "application":
         return {
           ...ast,
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
           caller: this.annotateExpr(ast.caller),
           args: ast.args.map((arg) => this.annotateExpr(arg)),
         };
@@ -860,14 +863,14 @@ class ResolutionStep {
         return {
           ...ast,
           struct: this.annotateExpr(ast.struct),
-          resolution: this.resolveField(ast.field),
-          $: TVar.fresh(),
+          $resolution: this.resolveField(ast.field),
+          $type: TVar.fresh(),
         };
 
       case "if":
         return {
           ...ast,
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
           condition: this.annotateExpr(ast.condition),
           then: this.annotateExpr(ast.then),
           else: this.annotateExpr(ast.else),
@@ -879,7 +882,7 @@ class ResolutionStep {
         if (ast.pattern.type === "identifier") {
           const binding: TypedMatchPattern = {
             ...ast.pattern,
-            $: TVar.fresh(),
+            $type: TVar.fresh(),
           };
           pattern = binding;
 
@@ -911,7 +914,7 @@ class ResolutionStep {
 
         const node: TypedExpr = {
           ...ast,
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
           pattern,
           value,
           body,
@@ -931,7 +934,7 @@ class ResolutionStep {
       case "match": {
         return {
           ...ast,
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
           expr: this.annotateExpr(ast.expr),
           clauses: ast.clauses.map(([pattern, expr]) => {
             this.patternBindings = [];
@@ -971,12 +974,12 @@ class ResolutionStep {
       for (const exposed of import_.exposing) {
         if (
           exposed.type === "type" &&
-          exposed.resolved !== undefined &&
-          exposed.resolved.name === structName &&
-          exposed.resolved.type === "struct"
+          exposed.$resolution !== undefined &&
+          exposed.$resolution.name === structName &&
+          exposed.$resolution.type === "struct"
         ) {
           return {
-            declaration: exposed.resolved,
+            declaration: exposed.$resolution,
             namespace: import_.ns,
           };
         }
@@ -1057,7 +1060,7 @@ class ResolutionStep {
 
             return {
               ...exposing,
-              declaration: declaration,
+              $declaration: declaration,
             } as TypedExposedValue;
           }
         }
@@ -1073,13 +1076,13 @@ class ResolutionStep {
       case "lit":
         return {
           ...ast,
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
         };
 
       case "identifier": {
         const typedBinding = {
           ...ast,
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
         };
         if (!ast.name.startsWith("_")) {
           if (defineLocal) {
@@ -1100,11 +1103,11 @@ class ResolutionStep {
         );
         return {
           ...ast,
-          resolution,
+          $resolution: resolution,
           args: ast.args.map((arg) =>
             this.annotateMatchPattern(arg, defineLocal),
           ),
-          $: TVar.fresh(),
+          $type: TVar.fresh(),
         };
       }
     }

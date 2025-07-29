@@ -74,7 +74,7 @@ test("hovering with scheme", () => {
   if (hoverable.hovered.type !== "local-variable") {
     throw new Error("fail");
   }
-  const resolved = hoverable.hovered.binding.$.resolve();
+  const resolved = hoverable.hovered.binding.$type.resolve();
   if (resolved.type !== "unbound") {
     throw new Error("fail");
   }

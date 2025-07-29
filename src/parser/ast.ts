@@ -57,7 +57,7 @@ export type StructField = RangeMeta & {
 
 export type StructDeclarationField = RangeMeta & {
   name: string;
-  type_: TypeAst;
+  typeAst: TypeAst;
 };
 
 export type Expr = RangeMeta &

@@ -512,13 +512,15 @@ export async function lspCmd() {
       return;
     }
 
-    return module.typed.declarations.map(({ range, binding, scheme }) => {
-      const tpp = typeToString(binding.$.asType(), scheme);
-      return {
-        command: { title: tpp, command: "noop" },
-        range,
-      };
-    });
+    return module.typed.declarations.map(
+      ({ range, binding, $scheme: scheme }) => {
+        const tpp = typeToString(binding.$type.asType(), scheme);
+        return {
+          command: { title: tpp, command: "noop" },
+          range,
+        };
+      },
+    );
   });
 
   connection.onExecuteCommand(() => {});

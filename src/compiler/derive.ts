@@ -153,13 +153,13 @@ class DeriveTraitArgs {
         throw new Error("[unreachable] cannot derive fns");
 
       case "named": {
-        if (arg.resolution === undefined) {
+        if (arg.$resolution === undefined) {
           throw new Error(
             "[unreachable] undefined resolution for type: " + arg.name,
           );
         }
 
-        const ns = sanitizeNamespace(arg.resolution.namespace);
+        const ns = sanitizeNamespace(arg.$resolution.namespace);
 
         // We assume this type impls the trait
         const ident: t.Identifier = {
@@ -305,7 +305,7 @@ export function deriveEqStruct(
       typedDeclaration.fields.map(
         (field): t.Expression => ({
           type: "CallExpression",
-          callee: deriveEqArs.run(field.type_),
+          callee: deriveEqArs.run(field.typeAst),
           arguments: params.map(
             (param): t.Expression => ({
               type: "MemberExpression",
@@ -364,7 +364,7 @@ export function deriveShowStruct(
       expressions: typedDeclaration.fields.map(
         (field): t.Expression => ({
           type: "CallExpression",
-          callee: deriveArg.run(field.type_),
+          callee: deriveArg.run(field.typeAst),
           arguments: [
             {
               type: "MemberExpression",

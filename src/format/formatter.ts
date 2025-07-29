@@ -634,7 +634,7 @@ function typeDeclToDoc(tDecl: TypeDeclaration): Doc {
           return concat(
             //
             text(`${field.name}: `),
-            typeAstToDoc(field.type_),
+            typeAstToDoc(field.typeAst),
             text(`,`),
           );
         }),

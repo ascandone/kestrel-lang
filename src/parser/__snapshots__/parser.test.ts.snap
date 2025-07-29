@@ -8282,7 +8282,7 @@ exports[`structs > field 1`] = `
               "line": 0,
             },
           },
-          "type_": {
+          "typeAst": {
             "args": [],
             "name": "Int",
             "range": {
@@ -8418,7 +8418,7 @@ exports[`structs > many fields 1`] = `
               "line": 2,
             },
           },
-          "type_": {
+          "typeAst": {
             "ident": "a",
             "range": {
               "end": {
@@ -8445,7 +8445,7 @@ exports[`structs > many fields 1`] = `
               "line": 3,
             },
           },
-          "type_": {
+          "typeAst": {
             "ident": "b",
             "range": {
               "end": {

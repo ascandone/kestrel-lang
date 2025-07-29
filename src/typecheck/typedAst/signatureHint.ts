@@ -51,34 +51,34 @@ function functionSignatureHintExpr(
       // if inner is undefined, we are the closest wrapping expr
       if (
         expr.caller.type !== "identifier" ||
-        expr.caller.resolution === undefined
+        expr.caller.$resolution === undefined
       ) {
         return;
       }
 
-      switch (expr.caller.resolution.type) {
+      switch (expr.caller.$resolution.type) {
         case "global-variable": {
-          const { declaration } = expr.caller.resolution;
+          const { declaration } = expr.caller.$resolution;
           return {
             name: declaration.binding.name,
-            type: declaration.binding.$.asType(),
+            type: declaration.binding.$type.asType(),
             docComment: declaration.docComment,
           };
         }
 
         case "local-variable": {
-          const { binding } = expr.caller.resolution;
+          const { binding } = expr.caller.$resolution;
           return {
             name: binding.name,
-            type: binding.$.asType(),
+            type: binding.$type.asType(),
           };
         }
 
         case "constructor": {
-          const { variant } = expr.caller.resolution;
+          const { variant } = expr.caller.$resolution;
           return {
             name: variant.name,
-            type: variant.$.asType(),
+            type: variant.$type.asType(),
             scheme: variant.scheme,
           };
         }

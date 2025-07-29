@@ -68,23 +68,23 @@ export function goToDefinitionOf(
 
         switch (exposing.type) {
           case "type":
-            if (exposing.resolved === undefined) {
+            if (exposing.$resolution === undefined) {
               return undefined;
             }
 
             return {
               namespace: statement.import.ns,
-              range: exposing.resolved.range,
+              range: exposing.$resolution.range,
             };
 
           case "value":
-            if (exposing.declaration === undefined) {
+            if (exposing.$declaration === undefined) {
               return undefined;
             }
 
             return {
               namespace: statement.import.ns,
-              range: exposing.declaration.range,
+              range: exposing.$declaration.range,
             };
         }
       }
@@ -113,13 +113,13 @@ function goToDefinitionOfTypeAst(
         return ret;
       }
 
-      if (t.resolution === undefined) {
+      if (t.$resolution === undefined) {
         return undefined;
       }
 
       return {
-        range: t.resolution.declaration.range,
-        namespace: t.resolution.namespace,
+        range: t.$resolution.declaration.range,
+        namespace: t.$resolution.namespace,
       };
     }
 
@@ -145,10 +145,10 @@ function goToDefinitionOfExpr(
       return undefined;
 
     case "identifier":
-      if (ast.resolution === undefined) {
+      if (ast.$resolution === undefined) {
         return undefined;
       }
-      return resolutionToLocation(ast.resolution);
+      return resolutionToLocation(ast.$resolution);
 
     case "fn":
       return goToDefinitionOfExpr(ast.body, position);
@@ -226,11 +226,11 @@ function goToDefinitionOfPattern(
         }
       }
 
-      if (pattern.resolution === undefined) {
+      if (pattern.$resolution === undefined) {
         return undefined;
       }
 
-      return resolutionToLocation(pattern.resolution);
+      return resolutionToLocation(pattern.$resolution);
   }
 }
 

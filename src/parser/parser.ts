@@ -639,8 +639,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
             .map((v) => ({
               name: v.ID().getText(),
               range: rangeOfCtx(v),
-              // args: v.type__list().map((t) => new TypeVisitor().visit(t)),
-              type_: new TypeVisitor().visit(v.type_()),
+              typeAst: new TypeVisitor().visit(v.type_()),
             })) ?? [],
 
         params:

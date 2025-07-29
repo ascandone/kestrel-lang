@@ -32,9 +32,7 @@ export type TypedTypeAst = ast.RangeMeta &
         namespace?: string;
         name: string;
         args: TypedTypeAst[];
-
-        // typedAst
-        resolution: TypeResolution | undefined;
+        $resolution: TypeResolution | undefined;
       }
     | {
         type: "any";
@@ -57,9 +55,7 @@ export type TypedMatchPattern = (TypeMeta & ast.RangeMeta) &
         name: string;
         args: TypedMatchPattern[];
         namespace?: string;
-
-        // typedAst
-        resolution?: IdentifierResolution;
+        $resolution?: IdentifierResolution;
       }
   );
 
@@ -70,9 +66,7 @@ assertSubtype<ast.StructField, TypedStructField>;
 export type TypedStructField = ast.RangeMeta & {
   field: ast.RangeMeta & {
     name: string;
-
-    // typeAst
-    resolution: FieldResolution | undefined;
+    $resolution: FieldResolution | undefined;
   };
   value: TypedExpr;
 };
@@ -80,7 +74,7 @@ export type TypedStructField = ast.RangeMeta & {
 assertSubtype<ast.StructDeclarationField, TypedStructDeclarationField>;
 export type TypedStructDeclarationField = (PolyTypeMeta & ast.RangeMeta) & {
   name: string;
-  type_: TypedTypeAst;
+  typeAst: TypedTypeAst;
 };
 
 assertSubtype<ast.Expr, TypedExpr>;
@@ -97,9 +91,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         type: "struct-literal";
         struct: ast.RangeMeta & {
           name: string;
-
-          // typedAst
-          resolution: StructResolution | undefined;
+          $resolution: StructResolution | undefined;
         };
         fields: TypedStructField[];
         spread: TypedExpr | undefined;
@@ -112,9 +104,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         type: "identifier";
         namespace?: string;
         name: string;
-
-        // typedAst
-        resolution: IdentifierResolution | undefined;
+        $resolution: IdentifierResolution | undefined;
       }
     | {
         type: "fn";
@@ -134,9 +124,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
           name: string;
           structName?: string;
         };
-
-        // typedAst
-        resolution: FieldResolution | undefined;
+        $resolution: FieldResolution | undefined;
       }
     | {
         type: "let";
@@ -164,16 +152,12 @@ export type TypedExposedValue = ast.RangeMeta &
         type: "type";
         name: string;
         exposeImpl: boolean;
-
-        // typedAst
-        resolved?: TypedTypeDeclaration;
+        $resolution?: TypedTypeDeclaration | undefined;
       }
     | {
         type: "value";
         name: string;
-
-        // typedAst
-        declaration?: TypedDeclaration;
+        $declaration: TypedDeclaration | undefined;
       }
   );
 
@@ -194,9 +178,7 @@ export type TypedDeclaration = ast.RangeMeta & {
   pub: boolean;
   binding: TypedBinding;
   docComment?: string;
-
-  // typedAst
-  scheme: TypeScheme;
+  $scheme: TypeScheme;
 } & (
     | {
         inline: boolean;
@@ -272,7 +254,7 @@ export type StructResolution = {
   namespace: string;
 };
 
-export type TypeMeta = { $: TVar };
+export type TypeMeta = { $type: TVar };
 
 export type FieldResolution = StructResolution & {
   field: TypedStructDeclarationField;

@@ -21,7 +21,7 @@ class InlayHintBuf {
         return;
 
       case "application": {
-        const resolved = ast.caller.$.resolve();
+        const resolved = ast.caller.$type.resolve();
         if (ast.isPipe) {
           if (resolved.type !== "bound" || resolved.value.type !== "fn") {
             // invalid pipe
@@ -40,7 +40,7 @@ class InlayHintBuf {
           if (isArgOnNewline) {
             if (!argWasPipe) {
               this.inlayHints.push({
-                label: typeToString(arg.$.asType(), this.scheme),
+                label: typeToString(arg.$type.asType(), this.scheme),
                 positition: arg.range.end,
                 paddingLeft: true,
               });
@@ -96,7 +96,7 @@ export function getInlayHints(module: TypedModule): InlayHint[] {
     if (d.extern) {
       return [];
     }
-    const buf = new InlayHintBuf(d.scheme);
+    const buf = new InlayHintBuf(d.$scheme);
 
     buf.inlayHintsOfExpr(d.value);
     return buf.inlayHints;

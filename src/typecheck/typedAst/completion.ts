@@ -70,7 +70,7 @@ class ExprCompletion {
 
       case "field-access":
         if (expr.field.name === "") {
-          return this.fieldCompletion(expr.struct.$);
+          return this.fieldCompletion(expr.struct.$type);
         }
 
         return this.exprCompletion(expr.struct, position);
@@ -127,7 +127,7 @@ class ExprCompletion {
           return d.fields.map((f) => ({
             label: f.name,
             kind: CompletionItemKind.Field,
-            detail: typeToString(f.$.asType(), f.scheme),
+            detail: typeToString(f.$type.asType(), f.scheme),
           }));
         });
 

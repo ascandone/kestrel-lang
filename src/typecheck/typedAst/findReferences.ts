@@ -86,9 +86,9 @@ function findReferencesOfDeclarationInModule(
       switch (expr.type) {
         case "identifier":
           if (
-            expr.resolution !== undefined &&
-            expr.resolution.type === "global-variable" &&
-            expr.resolution.declaration === declaration
+            expr.$resolution !== undefined &&
+            expr.$resolution.type === "global-variable" &&
+            expr.$resolution.declaration === declaration
           ) {
             return acc.concat(expr);
           }
