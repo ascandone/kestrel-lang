@@ -7,7 +7,6 @@ import {
   StructDeclarationField,
   StructField,
   TypeDeclaration,
-  TypeVariant,
 } from "../parser";
 import { TVar, TypeScheme } from "./type";
 export * from "./typedAst/findReferences";
@@ -105,7 +104,12 @@ export type TypedExposedValue = RangeMeta &
 export type TypedImport = Import<TypedExposedValue>;
 
 export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
-export type TypedTypeVariant = TypeVariant<PolyTypeMeta, TypeResolutionMeta>;
+
+export type TypedTypeVariant = (PolyTypeMeta & RangeMeta) & {
+  name: string;
+  args: TypedTypeAst[];
+};
+
 export type TypedTypeDeclaration = TypeDeclaration<PolyTypeMeta>;
 
 export type TypedTypeAst = RangeMeta &
