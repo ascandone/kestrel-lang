@@ -1,4 +1,4 @@
-import { ConstLiteral, Declaration, Expr, RangeMeta } from "../parser";
+import { ConstLiteral, Expr, RangeMeta, TraitDef } from "../parser";
 import { TVar, TypeScheme } from "./type";
 export * from "./typedAst/findReferences";
 export * from "./typedAst/gotoDefinition";
@@ -8,6 +8,11 @@ export * from "./typedAst/signatureHint";
 export { foldTree } from "./typedAst/common";
 
 export type TypeMeta = { $: TVar };
+
+export type TypedPolyTypeAst = {
+  mono: TypedTypeAst;
+  where: TraitDef[];
+};
 
 export type IdentifierResolution =
   | {
@@ -161,14 +166,24 @@ export type TypedTypeAst = RangeMeta &
     | { type: "any" }
   );
 
-export type TypedDeclaration = { scheme: TypeScheme } & Declaration<
-  TypeMeta,
-  IdentifierResolutionMeta,
-  TypeResolutionMeta,
-  StructResolutionMeta,
-  FieldResolutionMeta,
-  never
->;
+export type TypedDeclaration = {
+  scheme: TypeScheme;
+} & RangeMeta & {
+    pub: boolean;
+    binding: TypedBinding;
+    docComment?: string;
+  } & (
+    | {
+        inline: boolean;
+        extern: false;
+        typeHint?: TypedPolyTypeAst & RangeMeta;
+        value: TypedExpr;
+      }
+    | {
+        extern: true;
+        typeHint: TypedPolyTypeAst & RangeMeta;
+      }
+  );
 
 export type TypedModule = {
   moduleDoc?: string;
