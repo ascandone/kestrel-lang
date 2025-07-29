@@ -1,10 +1,4 @@
-import {
-  ConstLiteral,
-  Declaration,
-  Expr,
-  RangeMeta,
-  StructDeclarationField,
-} from "../parser";
+import { ConstLiteral, Declaration, Expr, RangeMeta } from "../parser";
 import { TVar, TypeScheme } from "./type";
 export * from "./typedAst/findReferences";
 export * from "./typedAst/gotoDefinition";
@@ -56,8 +50,13 @@ export type TypedStructField = RangeMeta & {
   value: TypedExpr;
 };
 
+export type TypedStructDeclarationField = (PolyTypeMeta & RangeMeta) & {
+  name: string;
+  type_: TypedTypeAst;
+};
+
 export type FieldResolution = StructResolution & {
-  field: StructDeclarationField<PolyTypeMeta>;
+  field: TypedStructDeclarationField;
 };
 
 export type StructResolutionMeta = {
@@ -133,7 +132,7 @@ export type TypedTypeDeclaration = RangeMeta & {
       }
     | ({
         type: "struct";
-        fields: StructDeclarationField<PolyTypeMeta>[];
+        fields: TypedStructDeclarationField[];
         pub: boolean | "..";
       } & PolyTypeMeta)
     | {
