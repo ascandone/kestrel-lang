@@ -7,47 +7,6 @@ export * from "./typedAst/hoverOn";
 export * from "./typedAst/signatureHint";
 export { foldTree } from "./typedAst/common";
 
-function assertSubtype<T1, _T2 extends T1>() {}
-export type Identifier = TypedExpr & { type: "identifier" };
-export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
-
-export type TypeResolution = {
-  declaration: TypedTypeDeclaration;
-  namespace: string;
-};
-
-export type IdentifierResolution =
-  | {
-      type: "local-variable";
-      binding: TypedBinding;
-    }
-  | {
-      type: "global-variable";
-      declaration: TypedDeclaration;
-      namespace: string;
-    }
-  | {
-      type: "constructor";
-      variant: TypedTypeVariant;
-      declaration: TypedTypeDeclaration & { type: "adt" };
-      namespace: string;
-    };
-
-export type StructResolution = {
-  declaration: TypedTypeDeclaration & { type: "struct" };
-  namespace: string;
-};
-
-export type TypeMeta = { $: TVar };
-
-export type FieldResolution = StructResolution & {
-  field: TypedStructDeclarationField;
-};
-
-export type FieldResolutionMeta = {
-  resolution: FieldResolution | undefined;
-};
-
 // -- Common
 
 assertSubtype<ast.PolyTypeAst, TypedPolyTypeAst>;
@@ -278,4 +237,47 @@ export type TypedModule = {
   imports: TypedImport[];
   typeDeclarations: TypedTypeDeclaration[];
   declarations: TypedDeclaration[];
+};
+
+// -- specific
+
+function assertSubtype<T1, _T2 extends T1>() {}
+export type Identifier = TypedExpr & { type: "identifier" };
+export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
+
+export type TypeResolution = {
+  declaration: TypedTypeDeclaration;
+  namespace: string;
+};
+
+export type IdentifierResolution =
+  | {
+      type: "local-variable";
+      binding: TypedBinding;
+    }
+  | {
+      type: "global-variable";
+      declaration: TypedDeclaration;
+      namespace: string;
+    }
+  | {
+      type: "constructor";
+      variant: TypedTypeVariant;
+      declaration: TypedTypeDeclaration & { type: "adt" };
+      namespace: string;
+    };
+
+export type StructResolution = {
+  declaration: TypedTypeDeclaration & { type: "struct" };
+  namespace: string;
+};
+
+export type TypeMeta = { $: TVar };
+
+export type FieldResolution = StructResolution & {
+  field: TypedStructDeclarationField;
+};
+
+export type FieldResolutionMeta = {
+  resolution: FieldResolution | undefined;
 };

@@ -1,50 +1,3 @@
-export type LineComment = { comment: string } & RangeMeta;
-export type Position = {
-  line: number;
-  character: number;
-};
-export type Range = {
-  start: Position;
-  end: Position;
-};
-
-export type ConstLiteral =
-  | { type: "int"; value: number }
-  | { type: "float"; value: number }
-  | { type: "char"; value: string }
-  | { type: "string"; value: string };
-
-export type TraitDef = {
-  typeVar: string;
-  traits: string[];
-};
-
-export type SyntaxSugar =
-  | {
-      type: "pipe";
-      left: Expr;
-      right: Expr;
-    }
-  | {
-      type: "let#";
-      mapper: RangeMeta & { namespace?: string; name: string };
-      pattern: MatchPattern;
-      value: Expr;
-      body: Expr;
-    }
-  | {
-      type: "infix";
-      operator: string;
-      left: Expr;
-      right: Expr;
-    }
-  | {
-      type: "block";
-      inner: Expr;
-    };
-
-export type RangeMeta = { range: Range };
-
 // -- Common
 
 export type PolyTypeAst = {
@@ -240,3 +193,52 @@ export type UntypedModule = {
   declarations: Declaration[];
   lineComments?: LineComment[];
 };
+
+// -- specific
+
+export type LineComment = { comment: string } & RangeMeta;
+export type Position = {
+  line: number;
+  character: number;
+};
+export type Range = {
+  start: Position;
+  end: Position;
+};
+
+export type ConstLiteral =
+  | { type: "int"; value: number }
+  | { type: "float"; value: number }
+  | { type: "char"; value: string }
+  | { type: "string"; value: string };
+
+export type TraitDef = {
+  typeVar: string;
+  traits: string[];
+};
+
+export type SyntaxSugar =
+  | {
+      type: "pipe";
+      left: Expr;
+      right: Expr;
+    }
+  | {
+      type: "let#";
+      mapper: RangeMeta & { namespace?: string; name: string };
+      pattern: MatchPattern;
+      value: Expr;
+      body: Expr;
+    }
+  | {
+      type: "infix";
+      operator: string;
+      left: Expr;
+      right: Expr;
+    }
+  | {
+      type: "block";
+      inner: Expr;
+    };
+
+export type RangeMeta = { range: Range };
