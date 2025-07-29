@@ -1,3 +1,4 @@
+export type LineComment = { comment: string } & RangeMeta;
 export type Position = {
   line: number;
   character: number;
@@ -95,8 +96,15 @@ export type MatchPattern = RangeMeta &
 export type Binding = { name: string } & RangeMeta;
 
 export type StructField = RangeMeta & {
-  field: { name: string } & RangeMeta;
+  field: RangeMeta & {
+    name: string;
+  };
   value: Expr;
+};
+
+export type StructDeclarationField = RangeMeta & {
+  name: string;
+  type_: TypeAst;
 };
 
 export type Expr = RangeMeta &
@@ -140,7 +148,10 @@ export type Expr = RangeMeta &
     | {
         type: "field-access";
         struct: Expr;
-        field: { name: string; structName?: string } & RangeMeta;
+        field: RangeMeta & {
+          name: string;
+          structName?: string;
+        };
       }
     | {
         type: "let";
@@ -161,6 +172,29 @@ export type Expr = RangeMeta &
       }
   );
 
+export type ExposedValue = RangeMeta &
+  (
+    | {
+        type: "type";
+        name: string;
+        exposeImpl: boolean;
+      }
+    | {
+        type: "value";
+        name: string;
+      }
+  );
+
+export type Import = RangeMeta & {
+  ns: string;
+  exposing: ExposedValue[];
+};
+
+export type TypeVariant = RangeMeta & {
+  name: string;
+  args: TypeAst[];
+};
+
 export type Declaration = RangeMeta & {
   pub: boolean;
   binding: Binding;
@@ -178,16 +212,6 @@ export type Declaration = RangeMeta & {
       }
   );
 
-export type TypeVariant = RangeMeta & {
-  name: string;
-  args: TypeAst[];
-};
-
-export type StructDeclarationField = RangeMeta & {
-  name: string;
-  type_: TypeAst;
-};
-
 export type TypeDeclaration = RangeMeta & {
   name: string;
   params: Array<{ name: string } & RangeMeta>;
@@ -203,28 +227,12 @@ export type TypeDeclaration = RangeMeta & {
         fields: StructDeclarationField[];
         pub: boolean | "..";
       }
-    | { type: "extern"; pub: boolean }
-  );
-
-export type UntypedExposedValue = RangeMeta &
-  (
     | {
-        type: "type";
-        name: string;
-        exposeImpl: boolean;
-      }
-    | {
-        type: "value";
-        name: string;
+        type: "extern";
+        pub: boolean;
       }
   );
 
-export type Import = RangeMeta & {
-  ns: string;
-  exposing: UntypedExposedValue[];
-};
-
-export type LineComment = { comment: string } & RangeMeta;
 export type UntypedModule = {
   moduleDoc?: string;
   imports: Import[];

@@ -57,7 +57,7 @@ import {
   Position,
   Range,
   TypeAst,
-  UntypedExposedValue,
+  ExposedValue,
   Expr,
   Import,
   UntypedModule,
@@ -469,14 +469,14 @@ type DeclarationType =
   | { type: "type"; decl: TypeDeclaration }
   | { type: "syntax-err" };
 
-class ExposingVisitor extends Visitor<UntypedExposedValue> {
-  visitValueExposing = (ctx: ValueExposingContext): UntypedExposedValue => ({
+class ExposingVisitor extends Visitor<ExposedValue> {
+  visitValueExposing = (ctx: ValueExposingContext): ExposedValue => ({
     type: "value",
     name: normalizeInfix(ctx._name.text),
     range: rangeOfCtx(ctx),
   });
 
-  visitTypeExposing = (ctx: TypeExposingContext): UntypedExposedValue => ({
+  visitTypeExposing = (ctx: TypeExposingContext): ExposedValue => ({
     type: "type",
     exposeImpl: ctx.EXPOSING_NESTED() != null,
     name: ctx._name.text,
@@ -791,7 +791,7 @@ export function parse(input: string): ParseResult {
         ns: i.moduleNamespace().getText(),
         exposing: i
           .importExposing_list()
-          .map((e): UntypedExposedValue => new ExposingVisitor().visit(e)),
+          .map((e): ExposedValue => new ExposingVisitor().visit(e)),
         range: rangeOfCtx(i),
       };
     }),
