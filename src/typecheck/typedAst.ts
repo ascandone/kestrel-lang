@@ -2,7 +2,6 @@ import {
   ConstLiteral,
   Declaration,
   Expr,
-  MatchPattern,
   RangeMeta,
   StructDeclarationField,
 } from "../parser";
@@ -82,7 +81,7 @@ export type TypedMatchPattern = (TypeMeta & RangeMeta) &
     | ({
         type: "constructor";
         name: string;
-        args: MatchPattern<TypeMeta, IdentifierResolutionMeta>[];
+        args: TypedMatchPattern[];
         namespace?: string;
       } & IdentifierResolutionMeta)
   );
