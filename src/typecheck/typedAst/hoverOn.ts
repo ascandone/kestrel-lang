@@ -62,7 +62,7 @@ export function hoverOn(
           }
 
           return [
-            variant.scheme,
+            variant.$scheme,
             {
               range: variant.range,
               hovered: {
@@ -181,7 +181,7 @@ ${hovered.declaration.docComment ?? ""}
     case "constructor": {
       const tpp = typeToString(
         hovered.variant.$type.asType(),
-        hovered.variant.scheme,
+        hovered.variant.$scheme,
       );
       return `\`\`\`
 ${hovered.variant.name}: ${tpp}

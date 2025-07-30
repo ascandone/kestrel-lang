@@ -140,7 +140,7 @@ class Typechecker {
             return;
           }
           for (const { id } of impl) {
-            const name = variant.scheme[id];
+            const name = variant.$scheme[id];
             if (name !== undefined) {
               depParams.add(name);
             }
@@ -187,7 +187,7 @@ class Typechecker {
       }
 
       for (const { id } of impl) {
-        const name = field.scheme[id];
+        const name = field.$scheme[id];
         if (name !== undefined) {
           depParams.add(name);
         }
@@ -223,7 +223,7 @@ class Typechecker {
       if (typeDecl.type === "adt") {
         for (const variant of typeDecl.variants) {
           const [scheme, mono] = this.makeVariantType(typeDecl, variant);
-          variant.scheme = scheme;
+          variant.$scheme = scheme;
           const err = unify(variant.$type.asType(), mono);
           if (err !== undefined) {
             throw new Error("[unreachable] adt type should be fresh initially");
@@ -281,7 +281,7 @@ class Typechecker {
 
     unify(typeDecl.$type.asType(), mono);
 
-    typeDecl.scheme = scheme;
+    typeDecl.$scheme = scheme;
 
     for (const field of typeDecl.fields) {
       const bound: Record<string, TVar> = Object.fromEntries(
@@ -297,7 +297,7 @@ class Typechecker {
 
       unify(fieldType, field.$type.asType()); // Do not change args order
 
-      field.scheme = scheme;
+      field.$scheme = scheme;
     }
   }
 
@@ -570,7 +570,7 @@ class Typechecker {
 
         const t = instantiateFromScheme(
           pattern.$resolution.variant.$type.asType(),
-          pattern.$resolution.variant.scheme,
+          pattern.$resolution.variant.$scheme,
         );
 
         if (t.type === "named") {
@@ -1062,7 +1062,7 @@ function resolutionToType(resolution: IdentifierResolution): Type {
     case "constructor":
       return instantiateFromScheme(
         resolution.variant.$type.asType(),
-        resolution.variant.scheme,
+        resolution.variant.$scheme,
       );
 
     // TODO should struct go here?

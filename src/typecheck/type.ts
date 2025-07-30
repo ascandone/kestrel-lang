@@ -419,7 +419,7 @@ export function generalizeAsScheme(
 }
 
 export function instantiatePoly(poly: PolyTypeMeta): Type {
-  return instantiateFromScheme(poly.$type.asType(), poly.scheme);
+  return instantiateFromScheme(poly.$type.asType(), poly.$scheme);
 }
 
 export class Instantiator {
@@ -469,7 +469,7 @@ export class Instantiator {
   }
 
   instantiatePoly(poly: PolyTypeMeta) {
-    return this.instantiateFromScheme(poly.$type.asType(), poly.scheme);
+    return this.instantiateFromScheme(poly.$type.asType(), poly.$scheme);
   }
 }
 

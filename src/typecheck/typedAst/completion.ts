@@ -127,7 +127,7 @@ class ExprCompletion {
           return d.fields.map((f) => ({
             label: f.name,
             kind: CompletionItemKind.Field,
-            detail: typeToString(f.$type.asType(), f.scheme),
+            detail: typeToString(f.$type.asType(), f.$scheme),
           }));
         });
 

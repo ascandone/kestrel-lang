@@ -225,7 +225,7 @@ export type TypedModule = {
 
 function assertSubtype<T1, _T2 extends T1>() {}
 export type Identifier = TypedExpr & { type: "identifier" };
-export type PolyTypeMeta = { scheme: TypeScheme } & TypeMeta;
+export type PolyTypeMeta = { $scheme: TypeScheme } & TypeMeta;
 
 export type TypeResolution = {
   declaration: TypedTypeDeclaration;

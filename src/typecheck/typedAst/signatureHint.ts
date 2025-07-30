@@ -79,7 +79,7 @@ function functionSignatureHintExpr(
           return {
             name: variant.name,
             type: variant.$type.asType(),
-            scheme: variant.scheme,
+            scheme: variant.$scheme,
           };
         }
       }

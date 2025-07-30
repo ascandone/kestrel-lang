@@ -350,7 +350,7 @@ class ResolutionStep {
           variants: typeDecl.variants.map((variant) => {
             const typedVariant: TypedTypeVariant = {
               ...variant,
-              scheme: {},
+              $scheme: {},
               $type: TVar.fresh(),
               args: variant.args.map((arg) => this.annotateTypeAst(arg, true)),
             };
@@ -383,14 +383,14 @@ class ResolutionStep {
         return {
           ...typeDecl,
 
-          scheme: {},
+          $scheme: {},
           $type: TVar.fresh(),
 
           fields: typeDecl.fields.map(
             (untypedField): TypedStructDeclarationField => ({
               ...untypedField,
               $type: TVar.fresh(),
-              scheme: {},
+              $scheme: {},
               typeAst: this.annotateTypeAst(untypedField.typeAst, true),
             }),
           ),
