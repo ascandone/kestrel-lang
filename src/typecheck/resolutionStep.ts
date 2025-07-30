@@ -66,11 +66,16 @@ type Constructors = Record<
 >;
 
 class ResolutionStep {
+  private readonly holes: Record<
+    string,
+    Array<TypedTypeAst & { type: "named" }>
+  > = {};
+
   private constructors: Constructors = {};
 
   private errors: ErrorInfo[] = [];
   private imports: TypedImport[] = [];
-  private typeDeclarations: TypedTypeDeclaration[] = [];
+  private typedTypeDeclarations: TypedTypeDeclaration[] = [];
   private unusedVariables = new WeakSet<TypedBinding>();
   private unusedImports = new WeakSet<TypedImport>();
   private unusedExposing = new WeakSet<TypedExposedValue>();
@@ -96,12 +101,9 @@ class ResolutionStep {
     const annotatedImports = this.annotateImports(module.imports, true);
 
     this.imports = [...annotatedImports, ...annotatedImplicitImports];
-
-    for (const typeDeclaration of module.typeDeclarations) {
-      // Warning: do not use Array.map, as we need to seed results asap
-      const annotated = this.annotateTypeDeclaration(typeDeclaration);
-      this.typeDeclarations.push(annotated);
-    }
+    this.typedTypeDeclarations = this.resolveTypeDeclarations(
+      module.typeDeclarations,
+    );
 
     const annotatedDeclrs = this.annotateDeclarations(module.declarations);
     for (const decl of annotatedDeclrs) {
@@ -118,7 +120,7 @@ class ResolutionStep {
     const typedModule: TypedModule = {
       imports: this.imports,
       declarations: annotatedDeclrs,
-      typeDeclarations: this.typeDeclarations,
+      typeDeclarations: this.typedTypeDeclarations,
     };
 
     if (module.moduleDoc !== undefined) {
@@ -126,6 +128,40 @@ class ResolutionStep {
     }
 
     return [typedModule, this.errors];
+  }
+
+  /**
+   * Fill all the holes, and then looked for ones that aren't filled yet, and emit UnboundType errors for them.
+   * This must be called after each type declaration is resolved
+   * */
+  private resolveTypeDeclarations(typeDeclarations: TypeDeclaration[]) {
+    const annotatedTypeDeclarationsDeclarations = typeDeclarations.map(
+      (typeDeclaration) => this.annotateTypeDeclaration(typeDeclaration),
+    );
+
+    // First, we fill the holes (if any) by registering a named type in this same module
+    for (const decl of annotatedTypeDeclarationsDeclarations) {
+      const holes = this.holes[decl.name] ?? [];
+      for (const hole of holes) {
+        hole.$resolution = {
+          namespace: this.ns,
+          declaration: decl,
+        };
+      }
+      delete this.holes[decl.name];
+    }
+
+    // Then we look for the holes left
+    for (const holes of Object.values(this.holes)) {
+      for (const decl of holes) {
+        this.errors.push({
+          range: decl.range,
+          description: new UnboundType(decl.name),
+        });
+      }
+    }
+
+    return annotatedTypeDeclarationsDeclarations;
   }
 
   private annotateDeclarations(declrs: Declaration[]): TypedDeclaration[] {
@@ -163,7 +199,7 @@ class ResolutionStep {
 
       if (decl.typeHint !== undefined) {
         tDecl.typeHint = {
-          mono: this.annotateTypeAst(decl.typeHint.mono),
+          mono: this.annotateTypeAst(decl.typeHint.mono, false),
           range: decl.typeHint.range,
           where: decl.typeHint.where,
         };
@@ -184,12 +220,18 @@ class ResolutionStep {
     });
   }
 
+  /**
+   * Resolves a type and emits the corresponding errors (or registers the hole)
+   * */
   private resolveType(
-    namespace: string | undefined,
-    typeName: string,
+    ast: TypedTypeAst & { type: "named" },
+    allowHoles: boolean,
   ): TypeResolution | undefined {
-    if (namespace !== undefined) {
-      const import_ = this.imports.find((import_) => import_.ns === namespace);
+    if (ast.namespace !== undefined) {
+      const import_ = this.imports.find(
+        (import_) => import_.ns === ast.namespace,
+      );
+
       if (import_ === undefined) {
         return undefined;
       }
@@ -202,19 +244,27 @@ class ResolutionStep {
       }
 
       for (const typeDecl of dep.typeDeclarations) {
-        if (typeDecl.name === typeName && typeDecl.pub) {
+        if (typeDecl.name === ast.name && typeDecl.pub) {
           return {
-            namespace,
+            namespace: ast.namespace,
             declaration: typeDecl,
           };
         }
       }
 
+      this.errors.push({
+        range: ast.range,
+        description: new UnboundType(ast.name),
+      });
       return undefined;
     }
 
-    for (const typeDecl of this.typeDeclarations) {
-      if (typeDecl.name === typeName) {
+    // Here we should look for local typeDeclarations
+    // however, we won't yet: we'll pretend no such local declaration exists, and fill holes later on,
+    // as we process local types
+
+    for (const typeDecl of this.typedTypeDeclarations) {
+      if (typeDecl.name === ast.name) {
         return {
           declaration: typeDecl,
           namespace: this.ns,
@@ -224,7 +274,7 @@ class ResolutionStep {
 
     for (const import_ of this.imports) {
       for (const exposed of import_.exposing) {
-        if (exposed.type === "type" && exposed.$resolution?.name === typeName) {
+        if (exposed.type === "type" && exposed.$resolution?.name === ast.name) {
           this.unusedExposing.delete(exposed);
           return {
             declaration: exposed.$resolution,
@@ -233,67 +283,43 @@ class ResolutionStep {
         }
       }
     }
+
+    if (allowHoles) {
+      // Register the hole:
+      defaultMapPush(this.holes, ast.name, ast);
+    } else {
+      this.errors.push({
+        range: ast.range,
+        description: new UnboundType(ast.name),
+      });
+    }
+
     return undefined;
   }
 
-  private annotateTypeAst(
-    ast: TypeAst,
-    recursiveBinding?: {
-      name: string;
-      /* mut */ holes: Array<(decl: TypedTypeDeclaration) => void>;
-    },
-  ): TypedTypeAst {
-    const recur = (ast: TypeAst): TypedTypeAst => {
-      switch (ast.type) {
-        case "var":
-        case "any":
-          return ast;
+  private annotateTypeAst(ast: TypeAst, allowHoles: boolean): TypedTypeAst {
+    switch (ast.type) {
+      case "var":
+      case "any":
+        return ast;
 
-        case "fn":
-          return {
-            ...ast,
-            args: ast.args.map(recur),
-            return: recur(ast.return),
-          };
+      case "fn":
+        return {
+          ...ast,
+          args: ast.args.map((a) => this.annotateTypeAst(a, allowHoles)),
+          return: this.annotateTypeAst(ast.return, allowHoles),
+        };
 
-        case "named": {
-          const isRecursive =
-            recursiveBinding !== undefined &&
-            ast.name === recursiveBinding.name &&
-            (ast.namespace === undefined || ast.namespace === this.ns);
-
-          const ret: TypedTypeAst & { type: "named" } = {
-            ...ast,
-            args: ast.args.map(recur),
-            // This must be filled with this function's return type
-            $resolution: undefined,
-          };
-
-          if (isRecursive) {
-            recursiveBinding.holes.push((declaration) => {
-              ret.$resolution = {
-                declaration,
-                namespace: this.ns,
-              };
-            });
-
-            return ret;
-          }
-
-          const resolution = this.resolveType(ast.namespace, ast.name);
-          if (resolution === undefined) {
-            this.errors.push({
-              range: ast.range,
-              description: new UnboundType(ast.name),
-            });
-          }
-          ret.$resolution = resolution;
-          return ret;
-        }
+      case "named": {
+        const typedAst: TypedTypeAst & { type: "named" } = {
+          ...ast,
+          args: ast.args.map((a) => this.annotateTypeAst(a, allowHoles)),
+          $resolution: undefined,
+        };
+        typedAst.$resolution = this.resolveType(typedAst, allowHoles);
+        return typedAst;
       }
-    };
-
-    return recur(ast);
+    }
   }
 
   private annotateTypeDeclaration(
@@ -326,12 +352,7 @@ class ResolutionStep {
               ...variant,
               scheme: {},
               $type: TVar.fresh(),
-              args: variant.args.map((arg) =>
-                this.annotateTypeAst(arg, {
-                  holes,
-                  name: typeDecl.name,
-                }),
-              ),
+              args: variant.args.map((arg) => this.annotateTypeAst(arg, true)),
             };
 
             this.constructors[variant.name] = {
@@ -359,9 +380,7 @@ class ResolutionStep {
       }
 
       case "struct": {
-        const holes: Array<(decl: TypedTypeDeclaration) => void> = [];
-
-        const typedTypeDecl: TypedTypeDeclaration & { type: "struct" } = {
+        return {
           ...typeDecl,
 
           scheme: {},
@@ -372,19 +391,10 @@ class ResolutionStep {
               ...untypedField,
               $type: TVar.fresh(),
               scheme: {},
-              typeAst: this.annotateTypeAst(untypedField.typeAst, {
-                holes,
-                name: typeDecl.name,
-              }),
+              typeAst: this.annotateTypeAst(untypedField.typeAst, true),
             }),
           ),
         };
-
-        for (const hole of holes) {
-          hole(typedTypeDecl);
-        }
-
-        return typedTypeDecl;
       }
     }
   }
@@ -553,7 +563,7 @@ class ResolutionStep {
     const { name: fieldName, structName: qualifiedStructName } = ast;
 
     if (qualifiedStructName !== undefined) {
-      for (const typeDecl of this.typeDeclarations) {
+      for (const typeDecl of this.typedTypeDeclarations) {
         if (typeDecl.name === qualifiedStructName) {
           const fieldLookup = findFieldInTypeDecl(typeDecl, fieldName, this.ns);
 
@@ -569,7 +579,7 @@ class ResolutionStep {
       }
 
       const localFieldLookup = findFieldInModule(
-        this.typeDeclarations,
+        this.typedTypeDeclarations,
         fieldName,
         this.ns,
       );
@@ -607,7 +617,11 @@ class ResolutionStep {
     }
 
     // First check locally
-    const lookup = findFieldInModule(this.typeDeclarations, fieldName, this.ns);
+    const lookup = findFieldInModule(
+      this.typedTypeDeclarations,
+      fieldName,
+      this.ns,
+    );
     if (lookup !== undefined) {
       return lookup;
     }
@@ -976,7 +990,7 @@ class ResolutionStep {
 
   private resolveStruct(structName: string): StructResolution | undefined {
     // TODO handle external ns
-    for (const typeDecl of this.typeDeclarations) {
+    for (const typeDecl of this.typedTypeDeclarations) {
       if (typeDecl.name === structName && typeDecl.type === "struct") {
         return {
           declaration: typeDecl,
@@ -1228,4 +1242,13 @@ function makeStructName(
   const params = structDeclaration.params.map(() => "_").join(", ");
 
   return `${structDeclaration.name}<${params}>`;
+}
+
+function defaultMapPush<T>(m: Record<string, T[]>, key: string, value: T) {
+  const previous = m[key];
+  if (previous === undefined) {
+    m[key] = [value];
+  } else {
+    previous.push(value);
+  }
 }
