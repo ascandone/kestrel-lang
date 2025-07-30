@@ -79,8 +79,8 @@ class ResolutionStep {
   private patternBindings: TypedBinding[] = [];
 
   constructor(
-    private ns: string,
-    private deps: Deps,
+    private readonly ns: string,
+    private readonly deps: Deps,
   ) {}
 
   run(
