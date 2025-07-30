@@ -65,7 +65,7 @@ type Constructors = Record<
 >;
 
 class ResolutionStep {
-  private readonly holes: Record<
+  private readonly typeResolutionHoles: Record<
     string,
     Array<TypedTypeAst & { type: "named" }>
   > = {};
@@ -140,18 +140,18 @@ class ResolutionStep {
 
     // First, we fill the holes (if any) by registering a named type in this same module
     for (const decl of annotatedTypeDeclarationsDeclarations) {
-      const holes = this.holes[decl.name] ?? [];
+      const holes = this.typeResolutionHoles[decl.name] ?? [];
       for (const hole of holes) {
         hole.$resolution = {
           namespace: this.ns,
           declaration: decl,
         };
       }
-      delete this.holes[decl.name];
+      delete this.typeResolutionHoles[decl.name];
     }
 
     // Then we look for the holes left
-    for (const holes of Object.values(this.holes)) {
+    for (const holes of Object.values(this.typeResolutionHoles)) {
       for (const decl of holes) {
         this.errors.push({
           range: decl.range,
@@ -309,7 +309,7 @@ class ResolutionStep {
 
     if (allowHoles) {
       // Register the hole:
-      defaultMapPush(this.holes, ast.name, ast);
+      defaultMapPush(this.typeResolutionHoles, ast.name, ast);
     } else {
       this.errors.push({
         range: ast.range,
