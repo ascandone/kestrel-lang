@@ -50,8 +50,6 @@ import { FramesStack } from "./frame";
 // Record from namespace (e.g. "A.B.C" ) to the module
 export type Deps = Record<string, ModuleInterface>;
 
-export type TypeMeta = { $: TVar };
-
 export function castAst(
   ns: string,
   module: UntypedModule,
