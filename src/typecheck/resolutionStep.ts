@@ -160,7 +160,31 @@ class ResolutionStep {
       }
     }
 
+    // Lastly, we register the local constructors so that we can have a O(1) lookup
+    for (const typedTypeDecl of annotatedTypeDeclarationsDeclarations) {
+      if (typedTypeDecl.type !== "adt") {
+        continue;
+      }
+
+      for (const variant of typedTypeDecl.variants) {
+        this.registerConstructor(variant.name, {
+          type: "constructor",
+          variant,
+          namespace: this.ns,
+          declaration: typedTypeDecl,
+        });
+      }
+    }
+
     return annotatedTypeDeclarationsDeclarations;
+  }
+
+  private registerConstructor(
+    name: string,
+    ctor: IdentifierResolution & { type: "constructor" },
+  ) {
+    this.constructors[name] = ctor;
+    // TODO detect constructor registered twice
   }
 
   private annotateDeclarations(declrs: Declaration[]): TypedDeclaration[] {
@@ -339,8 +363,8 @@ class ResolutionStep {
       case "extern":
         return typeDecl;
 
-      case "adt": {
-        const typedTypeDecl: TypedTypeDeclaration & { type: "adt" } = {
+      case "adt":
+        return {
           ...typeDecl,
           variants: typeDecl.variants.map((variant) => ({
             ...variant,
@@ -350,19 +374,7 @@ class ResolutionStep {
           })),
         };
 
-        for (const variant of typedTypeDecl.variants) {
-          this.constructors[variant.name] = {
-            type: "constructor",
-            variant,
-            namespace: this.ns,
-            declaration: typedTypeDecl,
-          };
-        }
-
-        return typedTypeDecl;
-      }
-
-      case "struct": {
+      case "struct":
         return {
           ...typeDecl,
 
@@ -378,7 +390,6 @@ class ResolutionStep {
             }),
           ),
         };
-      }
     }
   }
 
@@ -1043,12 +1054,12 @@ class ResolutionStep {
                     break;
                   } else {
                     for (const variant of resolved.variants) {
-                      this.constructors[variant.name] = {
+                      this.registerConstructor(variant.name, {
                         type: "constructor",
                         variant,
                         declaration: resolved,
                         namespace: import_.ns,
-                      };
+                      });
                     }
                   }
               }
