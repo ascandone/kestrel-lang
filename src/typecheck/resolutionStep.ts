@@ -12,6 +12,7 @@ import {
 import {
   FieldResolution,
   IdentifierResolution,
+  ModuleInterface,
   StructResolution,
   TypeResolution,
   TypedBinding,
@@ -120,6 +121,11 @@ class ResolutionStep {
       imports: this.imports,
       declarations: annotatedDeclrs,
       typeDeclarations: this.typedTypeDeclarations,
+
+      moduleInterface: makeInterface(
+        this.typedTypeDeclarations,
+        annotatedDeclrs,
+      ),
     };
 
     if (module.moduleDoc !== undefined) {
@@ -250,6 +256,7 @@ class ResolutionStep {
     ast: TypedTypeAst & { type: "named" },
     allowHoles: boolean,
   ): TypeResolution | undefined {
+    // TODO handle ast.namespace === this.ns
     if (ast.namespace !== undefined) {
       const import_ = this.imports.find(
         (import_) => import_.ns === ast.namespace,
@@ -263,16 +270,15 @@ class ResolutionStep {
 
       const dep = this.deps[import_.ns];
       if (dep === undefined) {
-        return undefined;
+        throw new Error("TODO handle dependency not found");
       }
 
-      for (const typeDecl of dep.typeDeclarations) {
-        if (typeDecl.name === ast.name && typeDecl.pub) {
-          return {
-            namespace: ast.namespace,
-            declaration: typeDecl,
-          };
-        }
+      const typeDecl = dep.moduleInterface.publicTypes[ast.name];
+      if (typeDecl !== undefined) {
+        return {
+          namespace: ast.namespace,
+          declaration: typeDecl,
+        };
       }
 
       this.errors.push({
@@ -427,7 +433,10 @@ class ResolutionStep {
         return [];
       }
 
-      const annotatedImport = this.annotateImport(import_, importedModule);
+      const annotatedImport = this.annotateImport(
+        import_,
+        importedModule.moduleInterface,
+      );
 
       if (markUnused) {
         // Track imported values so that we can tell which of them are
@@ -477,10 +486,7 @@ class ResolutionStep {
       return undefined;
     }
 
-    const declaration = dep.declarations.find(
-      (decl) => decl.binding.name === ast.name && decl.pub,
-    );
-
+    const declaration = dep.moduleInterface.publicValues[ast.name];
     if (declaration !== undefined) {
       return {
         type: "global-variable",
@@ -1014,17 +1020,14 @@ class ResolutionStep {
 
   private annotateImport(
     import_: Import,
-    importedModule: TypedModule,
+    importedModule: ModuleInterface,
   ): TypedImport {
     return {
       ...import_,
       exposing: import_.exposing.map((exposing): TypedExposedValue => {
         switch (exposing.type) {
           case "type": {
-            const resolved = importedModule.typeDeclarations.find(
-              (decl) => decl.name === exposing.name,
-            );
-
+            const resolved = importedModule.publicTypes[exposing.name];
             if (resolved === undefined || !resolved.pub) {
               this.errors.push({
                 range: exposing.range,
@@ -1072,10 +1075,7 @@ class ResolutionStep {
           }
 
           case "value": {
-            const declaration = importedModule.declarations.find(
-              (decl) => decl.binding.name === exposing.name,
-            );
-
+            const declaration = importedModule.publicValues[exposing.name];
             if (declaration === undefined || !declaration.pub) {
               this.errors.push({
                 range: exposing.range,
@@ -1167,19 +1167,14 @@ class ResolutionStep {
       return undefined;
     }
 
-    for (const typeDeclaration of module.typeDeclarations) {
-      if (typeDeclaration.type === "adt") {
-        for (const variant of typeDeclaration.variants) {
-          if (variant.name === name) {
-            return {
-              type: "constructor",
-              variant: variant,
-              declaration: typeDeclaration,
-              namespace: namespace,
-            };
-          }
-        }
-      }
+    const variant = module.moduleInterface.publicConstructors[name];
+    if (variant !== undefined) {
+      return {
+        type: "constructor",
+        variant: variant.variant,
+        declaration: variant.declaration,
+        namespace: namespace,
+      };
     }
 
     this.errors.push({
@@ -1245,4 +1240,42 @@ function defaultMapPush<T>(m: Record<string, T[]>, key: string, value: T) {
   } else {
     previous.push(value);
   }
+}
+
+// TODO make this lazy
+function makeInterface(
+  typeDeclarations: TypedModule["typeDeclarations"],
+  declarations: TypedModule["declarations"],
+): ModuleInterface {
+  const publicConstructors: ModuleInterface["publicConstructors"] = {};
+  const publicTypes: ModuleInterface["publicTypes"] = {};
+  for (const typeDeclaration of typeDeclarations) {
+    if (typeDeclaration.pub === false) {
+      continue;
+    }
+
+    publicTypes[typeDeclaration.name] = typeDeclaration;
+    if (typeDeclaration.pub === ".." && typeDeclaration.type === "adt") {
+      for (const ctor of typeDeclaration.variants) {
+        publicConstructors[ctor.name] = {
+          variant: ctor,
+          declaration: typeDeclaration,
+        };
+      }
+    }
+  }
+
+  const publicValues: ModuleInterface["publicValues"] = {};
+  for (const d of declarations) {
+    if (!d.pub) {
+      continue;
+    }
+    publicValues[d.binding.name] = d;
+  }
+
+  return {
+    publicConstructors,
+    publicTypes,
+    publicValues,
+  };
 }

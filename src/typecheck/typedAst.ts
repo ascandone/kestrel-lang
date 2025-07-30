@@ -219,9 +219,24 @@ export type TypedModule = {
   imports: TypedImport[];
   typeDeclarations: TypedTypeDeclaration[];
   declarations: TypedDeclaration[];
+
+  // TODO move it outside of this struct
+  moduleInterface: ModuleInterface;
 };
 
 // -- specific
+
+export type ModuleInterface = {
+  publicTypes: Record<string, TypedTypeDeclaration>;
+  publicConstructors: Record<
+    string,
+    {
+      declaration: TypedTypeDeclaration & { type: "adt" };
+      variant: TypedTypeVariant;
+    }
+  >;
+  publicValues: Record<string, TypedDeclaration>;
+};
 
 function assertSubtype<T1, _T2 extends T1>() {}
 export type Identifier = TypedExpr & { type: "identifier" };
