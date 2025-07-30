@@ -113,23 +113,7 @@ class ResolutionStep {
       }
     }
 
-    for (const import_ of annotatedImports) {
-      if (this.unusedImports.has(import_)) {
-        this.errors.push({
-          description: new UnusedImport(import_.ns),
-          range: import_.range,
-        });
-      }
-
-      for (const exposing of import_.exposing) {
-        if (this.unusedExposing.has(exposing)) {
-          this.errors.push({
-            description: new UnusedExposing(exposing.name),
-            range: exposing.range,
-          });
-        }
-      }
-    }
+    this.detectUnusedImports(annotatedImports);
 
     const typedModule: TypedModule = {
       imports: this.imports,
@@ -401,6 +385,26 @@ class ResolutionStep {
         }
 
         return typedTypeDecl;
+      }
+    }
+  }
+
+  private detectUnusedImports(annotatedImports: TypedImport[]) {
+    for (const import_ of annotatedImports) {
+      if (this.unusedImports.has(import_)) {
+        this.errors.push({
+          description: new UnusedImport(import_.ns),
+          range: import_.range,
+        });
+      }
+
+      for (const exposing of import_.exposing) {
+        if (this.unusedExposing.has(exposing)) {
+          this.errors.push({
+            description: new UnusedExposing(exposing.name),
+            range: exposing.range,
+          });
+        }
       }
     }
   }
