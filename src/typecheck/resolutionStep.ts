@@ -47,7 +47,8 @@ import {
 } from "../errors";
 import { FramesStack } from "./frame";
 
-export type Deps = Record<string, TypedModule>;
+// Record from namespace (e.g. "A.B.C" ) to the module
+export type Deps = Record<string, ModuleInterface>;
 
 export type TypeMeta = { $: TVar };
 
@@ -123,6 +124,7 @@ class ResolutionStep {
       typeDeclarations: this.typedTypeDeclarations,
 
       moduleInterface: makeInterface(
+        this.ns,
         this.typedTypeDeclarations,
         annotatedDeclrs,
       ),
@@ -273,7 +275,7 @@ class ResolutionStep {
         throw new Error("TODO handle dependency not found");
       }
 
-      const typeDecl = dep.moduleInterface.publicTypes[ast.name];
+      const typeDecl = dep.publicTypes[ast.name];
       if (typeDecl !== undefined) {
         return {
           namespace: ast.namespace,
@@ -433,10 +435,7 @@ class ResolutionStep {
         return [];
       }
 
-      const annotatedImport = this.annotateImport(
-        import_,
-        importedModule.moduleInterface,
-      );
+      const annotatedImport = this.annotateImport(import_, importedModule);
 
       if (markUnused) {
         // Track imported values so that we can tell which of them are
@@ -486,7 +485,7 @@ class ResolutionStep {
       return undefined;
     }
 
-    const declaration = dep.moduleInterface.publicValues[ast.name];
+    const declaration = dep.publicValues[ast.name];
     if (declaration !== undefined) {
       return {
         type: "global-variable",
@@ -495,19 +494,14 @@ class ResolutionStep {
       };
     }
 
-    for (const tDecl of dep.typeDeclarations) {
-      if (tDecl.type === "adt" && tDecl.pub === "..") {
-        for (const variant of tDecl.variants) {
-          if (variant.name === ast.name) {
-            return {
-              type: "constructor",
-              variant,
-              declaration: tDecl,
-              namespace: ast.namespace,
-            };
-          }
-        }
-      }
+    const tDecl = dep.publicConstructors[ast.name];
+    if (tDecl !== undefined) {
+      return {
+        type: "constructor",
+        variant: tDecl.variant,
+        declaration: tDecl.declaration,
+        namespace: ast.namespace,
+      };
     }
 
     for (const exposed of import_.exposing) {
@@ -1167,7 +1161,7 @@ class ResolutionStep {
       return undefined;
     }
 
-    const variant = module.moduleInterface.publicConstructors[name];
+    const variant = module.publicConstructors[name];
     if (variant !== undefined) {
       return {
         type: "constructor",
@@ -1244,9 +1238,11 @@ function defaultMapPush<T>(m: Record<string, T[]>, key: string, value: T) {
 
 // TODO make this lazy
 function makeInterface(
+  ns: string,
   typeDeclarations: TypedModule["typeDeclarations"],
   declarations: TypedModule["declarations"],
 ): ModuleInterface {
+  const publicFields: ModuleInterface["publicFields"] = {};
   const publicConstructors: ModuleInterface["publicConstructors"] = {};
   const publicTypes: ModuleInterface["publicTypes"] = {};
   for (const typeDeclaration of typeDeclarations) {
@@ -1258,8 +1254,20 @@ function makeInterface(
     if (typeDeclaration.pub === ".." && typeDeclaration.type === "adt") {
       for (const ctor of typeDeclaration.variants) {
         publicConstructors[ctor.name] = {
+          type: "constructor",
           variant: ctor,
           declaration: typeDeclaration,
+          namespace: ns,
+        };
+      }
+    }
+
+    if (typeDeclaration.pub === ".." && typeDeclaration.type === "struct") {
+      for (const field of typeDeclaration.fields) {
+        publicFields[field.name] = {
+          declaration: typeDeclaration,
+          field: field,
+          namespace: ns,
         };
       }
     }
@@ -1277,5 +1285,6 @@ function makeInterface(
     publicConstructors,
     publicTypes,
     publicValues,
+    publicFields,
   };
 }

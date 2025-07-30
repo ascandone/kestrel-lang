@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { Position, Range, Import, unsafeParse } from "../parser";
 import {
-  Deps,
+  Deps as IDeps,
   resetTraitsRegistry,
   typecheck,
   typecheckProject,
@@ -2669,6 +2669,8 @@ test("type error when main has not type Task<Unit>", () => {
   expect(errors[0]?.description).toBeInstanceOf(TypeMismatch);
 });
 
+type Deps = Record<string, TypedModule>;
+
 function tcProgram(
   ns: string,
   src: string,
@@ -2678,7 +2680,10 @@ function tcProgram(
 ) {
   const parsedProgram = unsafeParse(src);
   resetTraitsRegistry(traitImpls);
-  return typecheck(ns, parsedProgram, deps, prelude);
+  const deps_: IDeps = Object.fromEntries(
+    Object.entries(deps).map(([k, v]) => [k, v.moduleInterface]),
+  );
+  return typecheck(ns, parsedProgram, deps_, prelude);
 }
 
 function tc(

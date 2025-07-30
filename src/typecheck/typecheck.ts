@@ -48,12 +48,9 @@ import {
   TypeMismatch,
   UnboundTypeParam,
 } from "../errors";
-import { castAst, findFieldInModule } from "./resolutionStep";
+import { castAst, Deps } from "./resolutionStep";
 import { topologicalSort } from "../utils/topsort";
-
-// Record from namespace (e.g. "A.B.C" ) to the module
-
-export type Deps = Record<string, TypedModule>;
+export { Deps } from "./resolutionStep";
 
 export function resetTraitsRegistry(
   traitImpls: TraitImpl[] = defaultTraitImpls,
@@ -907,13 +904,8 @@ class Typechecker {
           throw new Error("TODO handle invalid mod");
         }
 
-        const fieldLookup = findFieldInModule(
-          mod.typeDeclarations,
-          fieldAccessAst.field.name,
-          resolved.value.moduleName,
-        );
-
-        if (fieldLookup !== undefined && fieldLookup.declaration.pub === "..") {
+        const fieldLookup = mod.publicFields[fieldAccessAst.field.name];
+        if (fieldLookup !== undefined) {
           // Found the field. Re-run unification
           this.unifyFieldAccess(fieldAccessAst, fieldLookup);
           return;
@@ -1016,7 +1008,7 @@ export function typecheckProject(
       mainType,
     );
     projectResult[ns] = { typedModule, errors, package: m.package };
-    deps[ns] = typedModule;
+    deps[ns] = typedModule.moduleInterface;
   }
 
   return projectResult;

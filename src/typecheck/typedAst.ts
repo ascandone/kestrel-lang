@@ -230,12 +230,10 @@ export type ModuleInterface = {
   publicTypes: Record<string, TypedTypeDeclaration>;
   publicConstructors: Record<
     string,
-    {
-      declaration: TypedTypeDeclaration & { type: "adt" };
-      variant: TypedTypeVariant;
-    }
+    IdentifierResolution & { type: "constructor" }
   >;
   publicValues: Record<string, TypedDeclaration>;
+  publicFields: Record<string, FieldResolution>;
 };
 
 function assertSubtype<T1, _T2 extends T1>() {}

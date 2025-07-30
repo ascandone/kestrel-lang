@@ -3074,15 +3074,19 @@ function compileSrc(
   }: CompileSrcOpts = {},
 ) {
   resetTraitsRegistry(traitImpl);
-  const program = typecheckSource(ns, src, deps);
+  const program = typecheckSource_(ns, src, deps);
   const out = compile(ns, program, { allowDeriving });
   return out;
 }
 
-function typecheckSource(ns: string, src: string, deps: Deps = {}) {
+function typecheckSource_(ns: string, src: string, deps: Deps = {}) {
   const parsed = unsafeParse(src);
   const [program] = typecheck(ns, parsed, deps, []);
   return program;
+}
+
+function typecheckSource(ns: string, src: string, deps: Deps = {}) {
+  return typecheckSource_(ns, src, deps).moduleInterface;
 }
 
 const testEntryPoint: NonNullable<CompileProjectOptions["entrypoint"]> = {
