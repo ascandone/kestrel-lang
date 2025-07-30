@@ -1,5 +1,6 @@
 ## Todos
 
+- refactor: refactor let block as list
 - feat: check cyclic module dependency
 - refactor: add package to named type repr
 - refactor: simplify traits repr
