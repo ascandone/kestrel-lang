@@ -337,13 +337,10 @@ class ResolutionStep {
     }
 
     switch (typeDecl.type) {
-      case "extern": {
+      case "extern":
         return typeDecl;
-      }
 
       case "adt": {
-        const holes: Array<(decl: TypedTypeDeclaration) => void> = [];
-
         const typedTypeDecl: TypedTypeDeclaration & { type: "adt" } = {
           ...typeDecl,
 
@@ -370,10 +367,6 @@ class ResolutionStep {
 
         for (const variant of typedTypeDecl.variants) {
           this.constructors[variant.name]!.declaration = typedTypeDecl;
-        }
-
-        for (const hole of holes) {
-          hole(typedTypeDecl);
         }
 
         return typedTypeDecl;
