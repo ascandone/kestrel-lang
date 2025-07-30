@@ -89,26 +89,11 @@ class ResolutionStep {
   ): [TypedModule, ErrorInfo[]] {
     TVar.resetId();
 
-    const annotatedImplicitImports = this.annotateImports(implicitImports);
-    const annotatedImports = this.annotateImports(module.imports);
-
-    for (const import_ of annotatedImports) {
-      if (import_.exposing.length === 0) {
-        this.unusedImports.add(import_);
-      }
-
-      for (const exposing of import_.exposing) {
-        if (exposing.type === "value" && exposing.$declaration !== undefined) {
-          this.unusedExposing.add(exposing);
-        } else if (
-          exposing.type === "type" &&
-          !exposing.exposeImpl &&
-          exposing.$resolution !== undefined
-        ) {
-          this.unusedExposing.add(exposing);
-        }
-      }
-    }
+    const annotatedImplicitImports = this.annotateImports(
+      implicitImports,
+      false,
+    );
+    const annotatedImports = this.annotateImports(module.imports, true);
 
     this.imports = [...annotatedImports, ...annotatedImplicitImports];
 
@@ -420,7 +405,10 @@ class ResolutionStep {
     }
   }
 
-  private annotateImports(imports: Import[]): TypedImport[] {
+  private annotateImports(
+    imports: Import[],
+    markUnused: boolean,
+  ): TypedImport[] {
     return imports.flatMap((import_) => {
       const importedModule = this.deps[import_.ns];
       if (importedModule === undefined) {
@@ -431,7 +419,30 @@ class ResolutionStep {
         return [];
       }
 
-      return [this.annotateImport(import_, importedModule)];
+      const annotatedImport = this.annotateImport(import_, importedModule);
+
+      if (markUnused) {
+        // Track imported values so that we can tell which of them are
+        if (annotatedImport.exposing.length === 0) {
+          this.unusedImports.add(annotatedImport);
+        }
+        for (const exposing of annotatedImport.exposing) {
+          if (
+            exposing.type === "value" &&
+            exposing.$declaration !== undefined
+          ) {
+            this.unusedExposing.add(exposing);
+          } else if (
+            exposing.type === "type" &&
+            !exposing.exposeImpl &&
+            exposing.$resolution !== undefined
+          ) {
+            this.unusedExposing.add(exposing);
+          }
+        }
+      }
+
+      return [annotatedImport];
     });
   }
 
