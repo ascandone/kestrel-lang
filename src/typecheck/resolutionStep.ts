@@ -25,7 +25,6 @@ import {
   TypedStructField,
   TypedTypeAst,
   TypedTypeDeclaration,
-  TypedTypeVariant,
 } from "./typedAst";
 import { defaultImports } from "./defaultImports";
 import { TVar } from "./type";
@@ -343,30 +342,21 @@ class ResolutionStep {
       case "adt": {
         const typedTypeDecl: TypedTypeDeclaration & { type: "adt" } = {
           ...typeDecl,
-
-          variants: typeDecl.variants.map((variant) => {
-            const typedVariant: TypedTypeVariant = {
-              ...variant,
-              $scheme: {},
-              $type: TVar.fresh(),
-              args: variant.args.map((arg) => this.annotateTypeAst(arg, true)),
-            };
-
-            this.constructors[variant.name] = {
-              type: "constructor",
-              variant: typedVariant,
-              namespace: this.ns,
-
-              // This is unsafe
-              declaration: null as never,
-            };
-
-            return typedVariant;
-          }),
+          variants: typeDecl.variants.map((variant) => ({
+            ...variant,
+            $scheme: {},
+            $type: TVar.fresh(),
+            args: variant.args.map((arg) => this.annotateTypeAst(arg, true)),
+          })),
         };
 
         for (const variant of typedTypeDecl.variants) {
-          this.constructors[variant.name]!.declaration = typedTypeDecl;
+          this.constructors[variant.name] = {
+            type: "constructor",
+            variant,
+            namespace: this.ns,
+            declaration: typedTypeDecl,
+          };
         }
 
         return typedTypeDecl;
