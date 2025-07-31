@@ -32,6 +32,7 @@ import { TVar } from "./type";
 import {
   BadImport,
   DuplicateDeclaration,
+  DuplicateTypeDeclaration,
   ErrorInfo,
   InvalidField,
   InvalidPipe,
@@ -79,6 +80,8 @@ class ResolutionStep {
   private unusedImports = new WeakSet<TypedImport>();
   private unusedExposing = new WeakSet<TypedExposedValue>();
   private framesStack = new FramesStack<TypedBinding, TypedDeclaration>();
+
+  private resolvedTypeDeclaration = new Map<string, TypedTypeDeclaration>();
 
   private patternBindings: TypedBinding[] = [];
 
@@ -137,9 +140,24 @@ class ResolutionStep {
    * This must be called after each type declaration is resolved
    * */
   private resolveTypeDeclarations(typeDeclarations: TypeDeclaration[]) {
-    const annotatedTypeDeclarationsDeclarations = typeDeclarations.map(
-      (typeDeclaration) => this.annotateTypeDeclaration(typeDeclaration),
-    );
+    const annotatedTypeDeclarationsDeclarations: TypedTypeDeclaration[] = [];
+
+    for (const typeDeclaration of typeDeclarations) {
+      const typedDeclaration = this.annotateTypeDeclaration(typeDeclaration);
+
+      if (this.resolvedTypeDeclaration.has(typedDeclaration.name)) {
+        this.errors.push({
+          range: typeDeclaration.range,
+          description: new DuplicateTypeDeclaration(typedDeclaration.name),
+        });
+      } else {
+        this.resolvedTypeDeclaration.set(
+          typedDeclaration.name,
+          typedDeclaration,
+        );
+        annotatedTypeDeclarationsDeclarations.push(typedDeclaration);
+      }
+    }
 
     // First, we fill the holes (if any) by registering a named type in this same module
     for (const decl of annotatedTypeDeclarationsDeclarations) {

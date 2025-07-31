@@ -33,6 +33,8 @@ import {
   UnusedImport,
   UnusedVariable,
   TraitNotSatified,
+  ErrorInfo,
+  DuplicateTypeDeclaration,
 } from "../errors";
 import { TraitImpl } from "./defaultImports";
 
@@ -2087,6 +2089,21 @@ describe("pattern matching", () => {
     expect(types).toEqual({
       f: "Fn(Option<a>) -> Int",
     });
+  });
+
+  test("does not allow a type to be defined twice in the same module", () => {
+    const [, errs] = tc(
+      `
+      type T {}
+      type T {}
+    `,
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new DuplicateTypeDeclaration("T"),
+      }),
+    ]);
   });
 
   test("use pattern matching bound vars", () => {

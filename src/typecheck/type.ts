@@ -94,10 +94,6 @@ export class TVar {
     dependencies: TraitImplDependency[],
   ) {
     const id = getNamedTypeTraitId(moduleName, typeName, trait);
-    if (TVar.namedTypesTraitImpls.has(id)) {
-      throw new Error("Cannot register trait twice for the same type");
-    }
-
     TVar.namedTypesTraitImpls.set(id, dependencies);
   }
 
