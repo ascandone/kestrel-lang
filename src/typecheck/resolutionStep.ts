@@ -29,25 +29,8 @@ import {
 } from "./typedAst";
 import { defaultImports } from "./defaultImports";
 import { TVar } from "./type";
-import {
-  BadImport,
-  DuplicateConstructor,
-  DuplicateDeclaration,
-  DuplicateTypeDeclaration,
-  ErrorInfo,
-  InvalidField,
-  InvalidPipe,
-  NonExistingImport,
-  ShadowingImport,
-  TypeParamShadowing,
-  UnboundModule,
-  UnboundType,
-  UnboundVariable,
-  UnimportedModule,
-  UnusedExposing,
-  UnusedImport,
-  UnusedVariable,
-} from "../errors";
+import { ErrorInfo } from "../errors";
+import * as err from "../errors";
 import { FramesStack } from "./frame";
 
 // Record from namespace (e.g. "A.B.C" ) to the module
@@ -116,7 +99,7 @@ class ResolutionStep {
       if (this.unusedVariables.has(decl.binding)) {
         this.errors.push({
           range: decl.binding.range,
-          description: new UnusedVariable(decl.binding.name, "global"),
+          description: new err.UnusedVariable(decl.binding.name, "global"),
         });
       }
     }
@@ -153,7 +136,7 @@ class ResolutionStep {
       if (this.localTypeDeclarations.has(typedDeclaration.name)) {
         this.errors.push({
           range: typeDeclaration.range,
-          description: new DuplicateTypeDeclaration(typedDeclaration.name),
+          description: new err.DuplicateTypeDeclaration(typedDeclaration.name),
         });
       } else {
         this.localTypeDeclarations.set(typedDeclaration.name, typedDeclaration);
@@ -178,7 +161,7 @@ class ResolutionStep {
       for (const decl of holes) {
         this.errors.push({
           range: decl.range,
-          description: new UnboundType(decl.name),
+          description: new err.UnboundType(decl.name),
         });
       }
     }
@@ -193,12 +176,12 @@ class ResolutionStep {
         if (this.localConstructors.has(variant.name)) {
           this.errors.push({
             range: variant.range,
-            description: new DuplicateConstructor(variant.name),
+            description: new err.DuplicateConstructor(variant.name),
           });
         } else if (this.importedConstructors.has(variant.name)) {
           this.errors.push({
             range: variant.range,
-            description: new ShadowingImport(variant.name),
+            description: new err.ShadowingImport(variant.name),
           });
         } else {
           this.localConstructors.set(variant.name, {
@@ -263,7 +246,7 @@ class ResolutionStep {
       if (!ok) {
         this.errors.push({
           range: decl.binding.range,
-          description: new DuplicateDeclaration(decl.binding.name),
+          description: new err.DuplicateDeclaration(decl.binding.name),
         });
       }
       return tDecl;
@@ -304,7 +287,7 @@ class ResolutionStep {
 
       this.errors.push({
         range: ast.range,
-        description: new UnboundType(ast.name),
+        description: new err.UnboundType(ast.name),
       });
       return undefined;
     }
@@ -338,7 +321,7 @@ class ResolutionStep {
     } else {
       this.errors.push({
         range: ast.range,
-        description: new UnboundType(ast.name),
+        description: new err.UnboundType(ast.name),
       });
     }
 
@@ -378,7 +361,7 @@ class ResolutionStep {
       if (usedParams.has(param.name)) {
         this.errors.push({
           range: param.range,
-          description: new TypeParamShadowing(param.name),
+          description: new err.TypeParamShadowing(param.name),
         });
       }
       usedParams.add(param.name);
@@ -422,7 +405,7 @@ class ResolutionStep {
     for (const import_ of annotatedImports) {
       if (this.unusedImports.has(import_)) {
         this.errors.push({
-          description: new UnusedImport(import_.ns),
+          description: new err.UnusedImport(import_.ns),
           range: import_.range,
         });
       }
@@ -430,7 +413,7 @@ class ResolutionStep {
       for (const exposing of import_.exposing) {
         if (this.unusedExposing.has(exposing)) {
           this.errors.push({
-            description: new UnusedExposing(exposing.name),
+            description: new err.UnusedExposing(exposing.name),
             range: exposing.range,
           });
         }
@@ -447,7 +430,7 @@ class ResolutionStep {
       if (importedModule === undefined) {
         this.errors.push({
           range: import_.range,
-          description: new UnboundModule(import_.ns),
+          description: new err.UnboundModule(import_.ns),
         });
         return [];
       }
@@ -490,7 +473,7 @@ class ResolutionStep {
     if (import_ === undefined) {
       this.errors.push({
         range: ast.range,
-        description: new UnimportedModule(ast.namespace),
+        description: new err.UnimportedModule(ast.namespace),
       });
       return undefined;
     }
@@ -544,7 +527,7 @@ class ResolutionStep {
 
     this.errors.push({
       range: ast.range,
-      description: new NonExistingImport(ast.name),
+      description: new err.NonExistingImport(ast.name),
     });
 
     return;
@@ -580,7 +563,7 @@ class ResolutionStep {
 
         if (fieldLookup === undefined) {
           this.errors.push({
-            description: new InvalidField(typeDecl.name, fieldName),
+            description: new err.InvalidField(typeDecl.name, fieldName),
             range: ast.range,
           });
         }
@@ -608,7 +591,7 @@ class ResolutionStep {
           // TODO emit err: invalid qualifier
 
           this.errors.push({
-            description: new InvalidField(qualifiedStructName, fieldName),
+            description: new err.InvalidField(qualifiedStructName, fieldName),
             range: ast.range,
           });
         }
@@ -619,7 +602,7 @@ class ResolutionStep {
       }
 
       this.errors.push({
-        description: new UnboundType(qualifiedStructName),
+        description: new err.UnboundType(qualifiedStructName),
         range: ast.range,
       });
 
@@ -717,7 +700,7 @@ class ResolutionStep {
 
     this.errors.push({
       range: ast.range,
-      description: new UnboundVariable(ast.name),
+      description: new err.UnboundVariable(ast.name),
     });
 
     return;
@@ -746,7 +729,7 @@ class ResolutionStep {
         if (ast.right.type !== "application") {
           this.errors.push({
             range: ast.right.range,
-            description: new InvalidPipe(),
+            description: new err.InvalidPipe(),
           });
           return this.annotateExpr(ast.left);
         }
@@ -806,7 +789,7 @@ class ResolutionStep {
               // it has access to the inferred type
               this.errors.push({
                 range: field.range,
-                description: new InvalidField(
+                description: new err.InvalidField(
                   makeStructName(typeDecl.declaration),
                   field.field.name,
                 ),
@@ -870,7 +853,7 @@ class ResolutionStep {
           if (this.unusedVariables.has(param)) {
             this.errors.push({
               range: param.range,
-              description: new UnusedVariable(param.name, "local"),
+              description: new err.UnusedVariable(param.name, "local"),
             });
           }
         }
@@ -966,7 +949,7 @@ class ResolutionStep {
           if (this.unusedVariables.has(binding)) {
             this.errors.push({
               range: binding.range,
-              description: new UnusedVariable(binding.name, "local"),
+              description: new err.UnusedVariable(binding.name, "local"),
             });
           }
         }
@@ -988,7 +971,7 @@ class ResolutionStep {
 
               if (this.unusedVariables.has(binding)) {
                 this.errors.push({
-                  description: new UnusedVariable(binding.name, "local"),
+                  description: new err.UnusedVariable(binding.name, "local"),
                   range: binding.range,
                 });
               }
@@ -1043,7 +1026,7 @@ class ResolutionStep {
             if (resolved === undefined || !resolved.pub) {
               this.errors.push({
                 range: exposing.range,
-                description: new NonExistingImport(exposing.name),
+                description: new err.NonExistingImport(exposing.name),
               });
 
               return {
@@ -1057,14 +1040,14 @@ class ResolutionStep {
                 case "extern":
                   this.errors.push({
                     range: exposing.range,
-                    description: new BadImport(),
+                    description: new err.BadImport(),
                   });
                   break;
                 case "adt":
                   if (resolved.pub !== "..") {
                     this.errors.push({
                       range: exposing.range,
-                      description: new BadImport(),
+                      description: new err.BadImport(),
                     });
                     break;
                   } else {
@@ -1072,7 +1055,7 @@ class ResolutionStep {
                       if (this.importedConstructors.has(variant.name)) {
                         this.errors.push({
                           range: variant.range,
-                          description: new ShadowingImport(variant.name),
+                          description: new err.ShadowingImport(variant.name),
                         });
                       } else {
                         this.importedConstructors.set(variant.name, {
@@ -1098,7 +1081,7 @@ class ResolutionStep {
             if (declaration === undefined || !declaration.pub) {
               this.errors.push({
                 range: exposing.range,
-                description: new NonExistingImport(exposing.name),
+                description: new err.NonExistingImport(exposing.name),
               });
             } else {
               this.framesStack.defineGlobal(declaration, import_.ns);
@@ -1175,7 +1158,7 @@ class ResolutionStep {
 
       if (constructor === undefined) {
         this.errors.push({
-          description: new UnboundVariable(name),
+          description: new err.UnboundVariable(name),
           range,
         });
         return undefined;
@@ -1186,7 +1169,7 @@ class ResolutionStep {
     const module = this.deps[namespace];
     if (module === undefined) {
       this.errors.push({
-        description: new UnimportedModule(namespace),
+        description: new err.UnimportedModule(namespace),
         range,
       });
       return undefined;
@@ -1203,7 +1186,7 @@ class ResolutionStep {
     }
 
     this.errors.push({
-      description: new UnboundVariable(name),
+      description: new err.UnboundVariable(name),
       range,
     });
 
