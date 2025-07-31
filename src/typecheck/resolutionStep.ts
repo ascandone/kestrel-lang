@@ -63,10 +63,10 @@ export function castAst(
 }
 
 class ResolutionStep {
-  private readonly typeResolutionHoles: Record<
+  private readonly typeResolutionHoles = new Map<
     string,
     Array<TypedTypeAst & { type: "named" }>
-  > = {};
+  >();
 
   private errors: ErrorInfo[] = [];
   private imports: TypedImport[] = [];
@@ -163,18 +163,18 @@ class ResolutionStep {
 
     // First, we fill the holes (if any) by registering a named type in this same module
     for (const decl of annotatedTypeDeclarationsDeclarations) {
-      const holes = this.typeResolutionHoles[decl.name] ?? [];
+      const holes = this.typeResolutionHoles.get(decl.name) ?? [];
       for (const hole of holes) {
         hole.$resolution = {
           namespace: this.ns,
           declaration: decl,
         };
       }
-      delete this.typeResolutionHoles[decl.name];
+      this.typeResolutionHoles.delete(decl.name);
     }
 
     // Then we look for the holes left
-    for (const holes of Object.values(this.typeResolutionHoles)) {
+    for (const holes of this.typeResolutionHoles.values()) {
       for (const decl of holes) {
         this.errors.push({
           range: decl.range,
@@ -1258,10 +1258,10 @@ function makeStructName(
   return `${structDeclaration.name}<${params}>`;
 }
 
-function defaultMapPush<T>(m: Record<string, T[]>, key: string, value: T) {
-  const previous = m[key];
+function defaultMapPush<T>(m: Map<string, T[]>, key: string, value: T) {
+  const previous = m.get(key);
   if (previous === undefined) {
-    m[key] = [value];
+    m.set(key, [value]);
   } else {
     previous.push(value);
   }
