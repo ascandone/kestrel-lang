@@ -71,19 +71,19 @@ class ResolutionStep {
     Array<TypedTypeAst & { type: "named" }>
   > = {};
 
-  private constructors: Constructors = {};
-
   private errors: ErrorInfo[] = [];
   private imports: TypedImport[] = [];
-  private typedTypeDeclarations: TypedTypeDeclaration[] = [];
+  private framesStack = new FramesStack<TypedBinding, TypedDeclaration>();
+  private patternBindings: TypedBinding[] = [];
+
+  // fast lookups
+  private visibleConstructors: Constructors = {};
+  private localTypeDeclarations = new Map<string, TypedTypeDeclaration>();
+
+  // unused checks
   private unusedVariables = new WeakSet<TypedBinding>();
   private unusedImports = new WeakSet<TypedImport>();
   private unusedExposing = new WeakSet<TypedExposedValue>();
-  private framesStack = new FramesStack<TypedBinding, TypedDeclaration>();
-
-  private resolvedTypeDeclaration = new Map<string, TypedTypeDeclaration>();
-
-  private patternBindings: TypedBinding[] = [];
 
   constructor(
     private readonly ns: string,
@@ -103,7 +103,7 @@ class ResolutionStep {
     const annotatedImports = this.annotateImports(module.imports, true);
 
     this.imports = [...annotatedImports, ...annotatedImplicitImports];
-    this.typedTypeDeclarations = this.resolveTypeDeclarations(
+    const typedTypeDeclarations = this.resolveTypeDeclarations(
       module.typeDeclarations,
     );
 
@@ -122,12 +122,12 @@ class ResolutionStep {
     const typedModule: TypedModule = {
       imports: this.imports,
       declarations: annotatedDeclrs,
-      typeDeclarations: this.typedTypeDeclarations,
+      typeDeclarations: typedTypeDeclarations,
       moduleDoc: module.moduleDoc,
 
       moduleInterface: makeInterface(
         this.ns,
-        this.typedTypeDeclarations,
+        typedTypeDeclarations,
         annotatedDeclrs,
       ),
     };
@@ -145,16 +145,14 @@ class ResolutionStep {
     for (const typeDeclaration of typeDeclarations) {
       const typedDeclaration = this.annotateTypeDeclaration(typeDeclaration);
 
-      if (this.resolvedTypeDeclaration.has(typedDeclaration.name)) {
+      // TODO check imports as well
+      if (this.localTypeDeclarations.has(typedDeclaration.name)) {
         this.errors.push({
           range: typeDeclaration.range,
           description: new DuplicateTypeDeclaration(typedDeclaration.name),
         });
       } else {
-        this.resolvedTypeDeclaration.set(
-          typedDeclaration.name,
-          typedDeclaration,
-        );
+        this.localTypeDeclarations.set(typedDeclaration.name, typedDeclaration);
         annotatedTypeDeclarationsDeclarations.push(typedDeclaration);
       }
     }
@@ -204,7 +202,7 @@ class ResolutionStep {
     name: string,
     ctor: IdentifierResolution & { type: "constructor" },
   ) {
-    this.constructors[name] = ctor;
+    this.visibleConstructors[name] = ctor;
     // TODO detect constructor registered twice
   }
 
@@ -306,14 +304,12 @@ class ResolutionStep {
     // Here we should look for local typeDeclarations
     // however, we won't yet: we'll pretend no such local declaration exists, and fill holes later on,
     // as we process local types
-
-    for (const typeDecl of this.typedTypeDeclarations) {
-      if (typeDecl.name === ast.name) {
-        return {
-          declaration: typeDecl,
-          namespace: this.ns,
-        };
-      }
+    const typeDecl = this.localTypeDeclarations.get(ast.name);
+    if (typeDecl !== undefined) {
+      return {
+        declaration: typeDecl,
+        namespace: this.ns,
+      };
     }
 
     for (const import_ of this.imports) {
@@ -570,23 +566,22 @@ class ResolutionStep {
     const { name: fieldName, structName: qualifiedStructName } = ast;
 
     if (qualifiedStructName !== undefined) {
-      for (const typeDecl of this.typedTypeDeclarations) {
-        if (typeDecl.name === qualifiedStructName) {
-          const fieldLookup = findFieldInTypeDecl(typeDecl, fieldName, this.ns);
+      const typeDecl = this.localTypeDeclarations.get(qualifiedStructName);
+      if (typeDecl !== undefined) {
+        const fieldLookup = findFieldInTypeDecl(typeDecl, fieldName, this.ns);
 
-          if (fieldLookup === undefined) {
-            this.errors.push({
-              description: new InvalidField(typeDecl.name, fieldName),
-              range: ast.range,
-            });
-          }
-
-          return fieldLookup;
+        if (fieldLookup === undefined) {
+          this.errors.push({
+            description: new InvalidField(typeDecl.name, fieldName),
+            range: ast.range,
+          });
         }
+
+        return fieldLookup;
       }
 
       const localFieldLookup = findFieldInModule(
-        this.typedTypeDeclarations,
+        this.localTypeDeclarations,
         fieldName,
         this.ns,
       );
@@ -625,7 +620,7 @@ class ResolutionStep {
 
     // First check locally
     const lookup = findFieldInModule(
-      this.typedTypeDeclarations,
+      this.localTypeDeclarations,
       fieldName,
       this.ns,
     );
@@ -704,7 +699,7 @@ class ResolutionStep {
       }
     }
 
-    const global = this.constructors[ast.name];
+    const global = this.visibleConstructors[ast.name];
     if (global !== undefined) {
       return global;
     }
@@ -997,13 +992,12 @@ class ResolutionStep {
 
   private resolveStruct(structName: string): StructResolution | undefined {
     // TODO handle external ns
-    for (const typeDecl of this.typedTypeDeclarations) {
-      if (typeDecl.name === structName && typeDecl.type === "struct") {
-        return {
-          declaration: typeDecl,
-          namespace: this.ns,
-        };
-      }
+    const typeDecl = this.localTypeDeclarations.get(structName);
+    if (typeDecl !== undefined && typeDecl.type === "struct") {
+      return {
+        declaration: typeDecl,
+        namespace: this.ns,
+      };
     }
 
     for (const import_ of this.imports) {
@@ -1154,7 +1148,7 @@ class ResolutionStep {
   ): IdentifierResolution | undefined {
     namespace = namespace ?? this.ns;
     if (namespace === this.ns) {
-      const constructor = this.constructors[name];
+      const constructor = this.visibleConstructors[name];
       if (constructor === undefined) {
         this.errors.push({
           description: new UnboundVariable(name),
@@ -1194,11 +1188,11 @@ class ResolutionStep {
 }
 
 export function findFieldInModule(
-  typeDeclarations: TypedTypeDeclaration[],
+  typeDeclarations: ResolutionStep["localTypeDeclarations"],
   fieldName: string,
   namespace: string,
 ): FieldResolution | undefined {
-  for (const typeDecl of typeDeclarations) {
+  for (const typeDecl of typeDeclarations.values()) {
     const lookup = findFieldInTypeDecl(typeDecl, fieldName, namespace);
     if (lookup !== undefined) {
       return lookup;
