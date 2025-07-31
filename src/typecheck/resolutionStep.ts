@@ -120,6 +120,7 @@ class ResolutionStep {
       imports: this.imports,
       declarations: annotatedDeclrs,
       typeDeclarations: this.typedTypeDeclarations,
+      moduleDoc: module.moduleDoc,
 
       moduleInterface: makeInterface(
         this.ns,
@@ -127,10 +128,6 @@ class ResolutionStep {
         annotatedDeclrs,
       ),
     };
-
-    if (module.moduleDoc !== undefined) {
-      typedModule.moduleDoc = module.moduleDoc;
-    }
 
     return [typedModule, this.errors];
   }
