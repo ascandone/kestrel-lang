@@ -52,6 +52,24 @@ export class DuplicateTypeDeclaration implements ErrorDescription {
   }
 }
 
+export class DuplicateConstructor implements ErrorDescription {
+  constructor(public ident: string) {}
+  severity: Severity = "error";
+  errorName = "Duplicate constructor";
+  shortDescription() {
+    return `"${this.ident}" was already defined`;
+  }
+}
+
+export class ShadowingImport implements ErrorDescription {
+  constructor(public ident: string) {}
+  severity: Severity = "error";
+  errorName = "Shadowing import";
+  shortDescription() {
+    return `"${this.ident}" was already imported`;
+  }
+}
+
 export class UnboundVariable implements ErrorDescription {
   constructor(public ident: string) {}
   severity: Severity = "error";

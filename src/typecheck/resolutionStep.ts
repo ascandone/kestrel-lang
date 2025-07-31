@@ -31,12 +31,14 @@ import { defaultImports } from "./defaultImports";
 import { TVar } from "./type";
 import {
   BadImport,
+  DuplicateConstructor,
   DuplicateDeclaration,
   DuplicateTypeDeclaration,
   ErrorInfo,
   InvalidField,
   InvalidPipe,
   NonExistingImport,
+  ShadowingImport,
   TypeParamShadowing,
   UnboundModule,
   UnboundType,
@@ -60,11 +62,6 @@ export function castAst(
   return new ResolutionStep(ns, deps).run(module, implicitImports);
 }
 
-type Constructors = Record<
-  string,
-  IdentifierResolution & { type: "constructor" }
->;
-
 class ResolutionStep {
   private readonly typeResolutionHoles: Record<
     string,
@@ -77,7 +74,14 @@ class ResolutionStep {
   private patternBindings: TypedBinding[] = [];
 
   // fast lookups
-  private visibleConstructors: Constructors = {};
+  private importedConstructors = new Map<
+    string,
+    IdentifierResolution & { type: "constructor" }
+  >();
+  private localConstructors = new Map<
+    string,
+    IdentifierResolution & { type: "constructor" }
+  >();
   private localTypeDeclarations = new Map<string, TypedTypeDeclaration>();
 
   // unused checks
@@ -186,24 +190,28 @@ class ResolutionStep {
       }
 
       for (const variant of typedTypeDecl.variants) {
-        this.registerConstructor(variant.name, {
-          type: "constructor",
-          variant,
-          namespace: this.ns,
-          declaration: typedTypeDecl,
-        });
+        if (this.localConstructors.has(variant.name)) {
+          this.errors.push({
+            range: variant.range,
+            description: new DuplicateConstructor(variant.name),
+          });
+        } else if (this.importedConstructors.has(variant.name)) {
+          this.errors.push({
+            range: variant.range,
+            description: new ShadowingImport(variant.name),
+          });
+        } else {
+          this.localConstructors.set(variant.name, {
+            type: "constructor",
+            variant,
+            namespace: this.ns,
+            declaration: typedTypeDecl,
+          });
+        }
       }
     }
 
     return annotatedTypeDeclarationsDeclarations;
-  }
-
-  private registerConstructor(
-    name: string,
-    ctor: IdentifierResolution & { type: "constructor" },
-  ) {
-    this.visibleConstructors[name] = ctor;
-    // TODO detect constructor registered twice
   }
 
   private annotateDeclarations(declrs: Declaration[]): TypedDeclaration[] {
@@ -699,9 +707,12 @@ class ResolutionStep {
       }
     }
 
-    const global = this.visibleConstructors[ast.name];
-    if (global !== undefined) {
-      return global;
+    let constructor = this.localConstructors.get(ast.name);
+    if (constructor === undefined && ast.namespace === undefined) {
+      constructor = this.importedConstructors.get(ast.name);
+    }
+    if (constructor !== undefined) {
+      return constructor;
     }
 
     this.errors.push({
@@ -1058,12 +1069,19 @@ class ResolutionStep {
                     break;
                   } else {
                     for (const variant of resolved.variants) {
-                      this.registerConstructor(variant.name, {
-                        type: "constructor",
-                        variant,
-                        declaration: resolved,
-                        namespace: import_.ns,
-                      });
+                      if (this.importedConstructors.has(variant.name)) {
+                        this.errors.push({
+                          range: variant.range,
+                          description: new ShadowingImport(variant.name),
+                        });
+                      } else {
+                        this.importedConstructors.set(variant.name, {
+                          type: "constructor",
+                          variant,
+                          declaration: resolved,
+                          namespace: import_.ns,
+                        });
+                      }
                     }
                   }
               }
@@ -1142,13 +1160,19 @@ class ResolutionStep {
   }
 
   private resolveConstructor(
-    namespace: string | undefined,
+    namespace_: string | undefined,
     name: string,
     range: Range,
   ): IdentifierResolution | undefined {
-    namespace = namespace ?? this.ns;
+    // TODO ugly code, simplify a bit
+    const namespace = namespace_ ?? this.ns;
+
     if (namespace === this.ns) {
-      const constructor = this.visibleConstructors[name];
+      let constructor = this.localConstructors.get(name);
+      if (constructor === undefined && namespace_ === undefined) {
+        constructor = this.importedConstructors.get(name);
+      }
+
       if (constructor === undefined) {
         this.errors.push({
           description: new UnboundVariable(name),

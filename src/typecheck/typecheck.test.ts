@@ -35,6 +35,8 @@ import {
   TraitNotSatified,
   ErrorInfo,
   DuplicateTypeDeclaration,
+  DuplicateConstructor,
+  ShadowingImport,
 } from "../errors";
 import { TraitImpl } from "./defaultImports";
 
@@ -440,6 +442,29 @@ test("closures with resursive bindings", () => {
 
   expect(errs).toHaveLength(1);
   expect(errs[0]?.description).toBeInstanceOf(OccursCheck);
+});
+
+test("does not refer to imported values when qualifying", () => {
+  const [T1] = typecheck(
+    "T1",
+    unsafeParse(`
+        pub(..) type T1 { X }
+      `),
+  );
+
+  const [, errs] = tc(
+    `
+      import T1.{T1(..)}
+      pub let a = Main.X
+    `,
+    { T1 },
+  );
+
+  expect(errs).toEqual<ErrorInfo[]>([
+    expect.objectContaining({
+      description: new UnboundVariable("X"),
+    }),
+  ]);
 });
 
 describe("list literal", () => {
@@ -2102,6 +2127,71 @@ describe("pattern matching", () => {
     expect(errs).toEqual<ErrorInfo[]>([
       expect.objectContaining({
         description: new DuplicateTypeDeclaration("T"),
+      }),
+    ]);
+  });
+
+  test("does not allow duplicate constructor", () => {
+    const [, errs] = tc(
+      `
+      type T1 { X }
+      type T2 { X }
+    `,
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new DuplicateConstructor("X"),
+      }),
+    ]);
+  });
+
+  test("does not allow duplicate constructor", () => {
+    const [T1] = typecheck(
+      "T1",
+      unsafeParse(`
+        pub(..) type T1 { X }
+      `),
+    );
+
+    const [, errs] = tc(
+      `
+      import T1.{T1(..)}
+      type T2 { X }
+    `,
+      { T1 },
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new ShadowingImport("X"),
+      }),
+    ]);
+  });
+
+  test("Does not access imported module when qualifying", () => {
+    const [T1] = typecheck(
+      "T1",
+      unsafeParse(`
+        pub(..) type T1 { X }
+      `),
+    );
+
+    const [, errs] = tc(
+      `
+      import T1.{T1(..)}
+      pub let a = fn arg {
+        match arg {
+          Main.X => 0,
+        }
+      }
+    `,
+      { T1 },
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new UnboundVariable("X"),
       }),
     ]);
   });
