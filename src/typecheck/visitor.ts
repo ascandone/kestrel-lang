@@ -1,141 +1,127 @@
 import { TypedExpr, TypedMatchPattern, TypedTypeAst } from "./typedAst";
 
-export abstract class Visitor {
-  protected onNamedType?(ast: TypedTypeAst & { type: "named" }): void;
+type VisitOptions = {
+  // TypedAst
+  onNamedType?(ast: TypedTypeAst & { type: "named" }): void;
 
-  protected visitTypeAst(ast: TypedTypeAst): void {
-    switch (ast.type) {
-      case "var":
-      case "any":
-        // TODO any has to be handled
-        return;
-
-      case "fn":
-        for (const arg of ast.args) {
-          this.visitTypeAst(arg);
-        }
-        this.visitTypeAst(ast.return);
-        return;
-
-      case "named":
-        this.onNamedType?.(ast);
-        for (const arg of ast.args) {
-          this.visitTypeAst(arg);
-        }
-        return;
-    }
-  }
-
-  // TODO statically make sure all switch are taken care of
-  protected visitExpr(expr: TypedExpr): void {
-    switch (expr.type) {
-      case "syntax-err":
-        return;
-
-      case "constant":
-        return;
-
-      case "identifier":
-        this.onIdentifier?.(expr);
-        return;
-
-      case "if":
-        this.visitIf(expr);
-        return;
-
-      case "let":
-        this.visitLet(expr);
-        return;
-
-      case "application":
-        this.visitApplication(expr);
-        return;
-
-      case "fn":
-        this.visitFn(expr);
-        return;
-
-      case "match":
-        this.visitMatch(expr);
-        return;
-
-      case "list-literal":
-        for (const subExpr of expr.values) {
-          this.visitExpr(subExpr);
-        }
-        return;
-
-      case "field-access":
-      case "struct-literal":
-        throw new Error("TODO unimplemented");
-    }
-  }
-
-  protected onPatternIdentifier?(
-    expr: TypedMatchPattern & { type: "identifier" },
-  ): void;
-  protected onPatternConstructor?(
+  // MatchPattern
+  onMatchClause?(pattern: TypedMatchPattern, then: TypedExpr): void;
+  onPatternIdentifier?(expr: TypedMatchPattern & { type: "identifier" }): void;
+  onPatternConstructor?(
     expr: TypedMatchPattern & { type: "constructor" },
   ): void;
 
-  private visitPattern(expr: TypedMatchPattern): void {
-    switch (expr.type) {
-      case "lit":
-        return;
+  // Expr
+  onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
+  onLet?(expr: TypedExpr & { type: "let" }): VoidFunction | undefined;
+  onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
+  onLet?(expr: TypedExpr & { type: "let" }): VoidFunction | undefined;
+  onFn?(expr: TypedExpr & { type: "fn" }): VoidFunction | undefined;
+};
 
-      case "identifier":
-        this.onPatternIdentifier?.(expr);
-        return;
+export function visitTypeAst(ast: TypedTypeAst, opts: VisitOptions) {
+  switch (ast.type) {
+    case "var":
+    case "any":
+      // TODO any has to be handled
+      return;
 
-      case "constructor":
-        for (const arg of expr.args) {
-          this.visitPattern(arg);
-        }
+    case "fn":
+      for (const arg of ast.args) {
+        visitTypeAst(arg, opts);
+      }
+      visitTypeAst(ast.return, opts);
+      return;
+
+    case "named":
+      opts.onNamedType?.(ast);
+      for (const arg of ast.args) {
+        visitTypeAst(arg, opts);
+      }
+      return;
+  }
+}
+
+export function visitPattern(
+  expr: TypedMatchPattern,
+  opts: VisitOptions,
+): void {
+  switch (expr.type) {
+    case "lit":
+      return;
+
+    case "identifier":
+      opts.onPatternIdentifier?.(expr);
+      return;
+
+    case "constructor":
+      for (const arg of expr.args) {
+        visitPattern(arg, opts);
+      }
+  }
+}
+
+// TODO statically make sure all switch are taken care of
+
+export function visitExpr(expr: TypedExpr, opts: VisitOptions) {
+  switch (expr.type) {
+    case "syntax-err":
+    case "constant":
+      return;
+
+    case "identifier":
+      opts.onIdentifier?.(expr);
+      return;
+
+    case "if":
+      visitExpr(expr.condition, opts);
+      visitExpr(expr.then, opts);
+      visitExpr(expr.else, opts);
+      return;
+
+    case "let": {
+      const onExit = opts.onLet?.(expr);
+      visitPattern(expr.pattern, opts);
+      visitExpr(expr.body, opts);
+      visitExpr(expr.value, opts);
+      onExit?.();
+      return;
     }
-  }
 
-  protected onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
+    case "application":
+      visitExpr(expr.caller, opts);
+      for (const arg of expr.args) {
+        visitExpr(arg, opts);
+      }
+      return;
 
-  protected onLet?(expr: TypedExpr & { type: "let" }): VoidFunction | undefined;
-  private visitLet(expr: TypedExpr & { type: "let" }) {
-    const onExit = this.onLet?.(expr);
-    this.visitPattern?.(expr.pattern);
-    this.visitExpr(expr.body);
-    this.visitExpr(expr.value);
-    onExit?.();
-  }
-
-  private visitIf(expr: TypedExpr & { type: "if" }) {
-    this.visitExpr(expr.condition);
-    this.visitExpr(expr.then);
-    this.visitExpr(expr.else);
-  }
-
-  private visitApplication(expr: TypedExpr & { type: "application" }) {
-    this.visitExpr(expr.caller);
-    for (const arg of expr.args) {
-      this.visitExpr(arg);
+    case "fn": {
+      const onExit = opts.onFn?.(expr);
+      for (const param of expr.params) {
+        visitPattern?.(param, opts);
+      }
+      visitExpr(expr.body, opts);
+      onExit?.();
+      return;
     }
-  }
 
-  protected onFn?(expr: TypedExpr & { type: "fn" }): VoidFunction | undefined;
-  private visitFn(expr: TypedExpr & { type: "fn" }) {
-    const onExit = this.onFn?.(expr);
-    for (const param of expr.params) {
-      this.visitPattern?.(param);
-    }
-    this.visitExpr(expr.body);
-    onExit?.();
-  }
+    case "match":
+      visitExpr(expr.expr, opts);
+      for (const [pattern, then] of expr.clauses) {
+        opts.onMatchClause?.(pattern, then);
+        visitPattern(pattern, opts);
+        visitExpr(then, opts);
+      }
+      return;
 
-  protected onMatchClause?(pattern: TypedMatchPattern, then: TypedExpr): void;
+    case "list-literal":
+      for (const subExpr of expr.values) {
+        visitExpr(subExpr, opts);
+      }
+      return;
 
-  private visitMatch(expr: TypedExpr & { type: "match" }) {
-    this.visitExpr(expr.expr);
-    for (const [pattern, then] of expr.clauses) {
-      this.onMatchClause?.(pattern, then);
-      this.visitPattern(pattern);
-      this.visitExpr(then);
-    }
+    case "field-access":
+    case "struct-literal":
+      throw new Error("TODO unimplemented");
   }
 }

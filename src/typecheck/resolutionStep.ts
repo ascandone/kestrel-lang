@@ -33,7 +33,7 @@ import { ErrorInfo } from "../errors";
 import * as err from "../errors";
 import { FramesStack } from "./frame";
 import { Annotator } from "./Annotator";
-import { Visitor } from "./visitor";
+import * as visitor from "./visitor";
 
 // Record from namespace (e.g. "A.B.C" ) to the module
 export type Deps = Record<string, ModuleInterface>;
@@ -92,7 +92,7 @@ class LocalFrames {
 // TODO remove this err
 class UnimplementedErr extends Error {}
 
-class ResolutionStep__refactor extends Visitor {
+class ResolutionStep__refactor {
   private errors: ErrorInfo[] = [];
 
   // scope
@@ -119,9 +119,7 @@ class ResolutionStep__refactor extends Visitor {
   constructor(
     private readonly ns: string,
     private readonly deps: Deps,
-  ) {
-    super();
-  }
+  ) {}
 
   private loadTypeImport(
     moduleInterface: ModuleInterface,
@@ -223,6 +221,92 @@ class ResolutionStep__refactor extends Visitor {
     }
   }
 
+  private resolveTypeAst(arg: TypedTypeAst) {
+    visitor.visitTypeAst(arg, {
+      onNamedType: (ast) => {
+        if (ast.namespace !== undefined) {
+          throw new UnimplementedErr("unqualified type");
+        }
+
+        ast.$resolution =
+          this.importedTypes.get(ast.name) ?? this.moduleTypes.get(ast.name);
+
+        if (ast.$resolution === undefined) {
+          this.errors.push({
+            description: new err.UnboundType(ast.name),
+            range: ast.range,
+          });
+        }
+      },
+    });
+  }
+
+  private onResolveIdentifier(expr: TypedExpr & { type: "identifier" }) {
+    if (expr.namespace === undefined) {
+      expr.$resolution =
+        this.localValues.get(expr.name) ??
+        this.moduleValues.get(expr.name) ??
+        this.importedValues.get(expr.name);
+    } else {
+      expr.$resolution = this.moduleValues.get(expr.name);
+    }
+
+    if (expr.$resolution === undefined) {
+      this.errors.push({
+        description: new err.UnboundVariable(expr.name),
+        range: expr.range,
+      });
+    } else {
+      switch (expr.$resolution.type) {
+        case "constructor":
+          // TODO unused constructors
+          break;
+
+        case "local-variable":
+          this.unusedLocals.delete(expr.$resolution.binding);
+          break;
+
+        case "global-variable":
+          this.unusedGlobals.delete(expr.$resolution.declaration);
+          break;
+      }
+    }
+  }
+
+  private resolveExpression(expr: TypedExpr) {
+    visitor.visitExpr(expr, {
+      onPatternIdentifier: (ident) => {
+        this.localFrames.register(ident);
+        if (!validUnusedBinding(ident)) {
+          this.unusedLocals.add(ident);
+        }
+      },
+
+      onIdentifier: this.onResolveIdentifier.bind(this),
+
+      onMatchClause: () => {
+        const onExit = this.localFrames.enter();
+        return () => {
+          onExit();
+        };
+      },
+
+      onFn: () => {
+        const onExit = this.localFrames.enter();
+        return () => {
+          onExit();
+        };
+      },
+
+      onLet: () => {
+        const onExit = this.localFrames.enter();
+        return () => {
+          onExit();
+        };
+      },
+    });
+  }
+
   /** add global type declarations (and constructors and fields) to scope and mark them as unused */
   private loadTypeDeclarations(typeDeclarations: TypedTypeDeclaration[]) {
     for (const declaration of typeDeclarations) {
@@ -253,7 +337,7 @@ class ResolutionStep__refactor extends Visitor {
             });
 
             for (const arg of variant.args) {
-              this.visitTypeAst(arg);
+              this.resolveTypeAst(arg);
             }
           }
           break;
@@ -286,28 +370,12 @@ class ResolutionStep__refactor extends Visitor {
       });
 
       if (declaration.typeHint !== undefined) {
-        this.visitTypeAst(declaration.typeHint.mono);
+        this.resolveTypeAst(declaration.typeHint.mono);
       }
 
       if (!declaration.pub) {
         this.unusedGlobals.add(declaration);
       }
-    }
-  }
-
-  protected override onNamedType(ast: TypedTypeAst & { type: "named" }) {
-    if (ast.namespace !== undefined) {
-      throw new UnimplementedErr("unqualified type");
-    }
-
-    ast.$resolution =
-      this.importedTypes.get(ast.name) ?? this.moduleTypes.get(ast.name);
-
-    if (ast.$resolution === undefined) {
-      this.errors.push({
-        description: new err.UnboundType(ast.name),
-        range: ast.range,
-      });
     }
   }
 
@@ -332,77 +400,6 @@ class ResolutionStep__refactor extends Visitor {
     this.unusedGlobals = new Set();
   }
 
-  protected override onMatchClause() {
-    const onExit = this.localFrames.enter();
-
-    return () => {
-      onExit();
-    };
-  }
-
-  protected override onFn(_expr: TypedExpr & { type: "fn" }) {
-    const onExit = this.localFrames.enter();
-
-    return () => {
-      onExit();
-    };
-  }
-
-  protected override onLet(_expr: TypedExpr & { type: "let" }) {
-    const onExit = this.localFrames.enter();
-
-    return () => {
-      onExit();
-    };
-  }
-
-  protected override onPatternConstructor() {
-    throw new UnimplementedErr("resolve pattern constructor");
-  }
-
-  protected override onPatternIdentifier(
-    ident: TypedExpr & { type: "identifier" },
-  ) {
-    this.localFrames.register(ident);
-    if (!validUnusedBinding(ident)) {
-      this.unusedLocals.add(ident);
-    }
-  }
-
-  protected override onIdentifier(
-    expr: TypedExpr & { type: "identifier" },
-  ): void {
-    if (expr.namespace === undefined) {
-      expr.$resolution =
-        this.localValues.get(expr.name) ??
-        this.moduleValues.get(expr.name) ??
-        this.importedValues.get(expr.name);
-    } else {
-      expr.$resolution = this.moduleValues.get(expr.name);
-    }
-
-    if (expr.$resolution === undefined) {
-      this.errors.push({
-        description: new err.UnboundVariable(expr.name),
-        range: expr.range,
-      });
-    } else {
-      switch (expr.$resolution.type) {
-        case "constructor":
-          // TODO unused constructors
-          break;
-
-        case "local-variable":
-          this.unusedLocals.delete(expr.$resolution.binding);
-          break;
-
-        case "global-variable":
-          this.unusedGlobals.delete(expr.$resolution.declaration);
-          break;
-      }
-    }
-  }
-
   run(
     module: UntypedModule,
     implicitImports: Import[] = defaultImports,
@@ -424,7 +421,7 @@ class ResolutionStep__refactor extends Visitor {
     // Now that global vars are into scope, we visit each (non-extern) declaration
     for (const decl of annotatedModule.declarations) {
       if (!decl.extern) {
-        this.visitExpr(decl.value);
+        this.resolveExpression(decl.value);
       }
 
       this.emitUnusedLocalsErrors();
