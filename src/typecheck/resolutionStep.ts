@@ -353,7 +353,7 @@ class ResolutionStep__refactor {
    * add global declarations to scope and mark them as unused
    * runs type ast resolution (but no expressions resolution yet)
    */
-  private loadDeclarations(declarations: TypedDeclaration[]) {
+  private loadValueDeclarations(declarations: TypedDeclaration[]) {
     for (const declaration of declarations) {
       if (this.moduleValues.has(declaration.binding.name)) {
         this.errors.push({
@@ -416,7 +416,7 @@ class ResolutionStep__refactor {
     this.loadImplicitImports(implicitImports);
     this.loadImports(annotatedModule.imports);
     this.loadTypeDeclarations(annotatedModule.typeDeclarations);
-    this.loadDeclarations(annotatedModule.declarations);
+    this.loadValueDeclarations(annotatedModule.declarations);
 
     // Now that global vars are into scope, we visit each (non-extern) declaration
     for (const decl of annotatedModule.declarations) {
