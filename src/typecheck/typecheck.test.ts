@@ -2715,7 +2715,7 @@ describe.todo("modules", () => {
   });
 });
 
-describe.todo("typecheck project", () => {
+describe("typecheck project", () => {
   test("single import", () => {
     const project = typecheckProject(
       {
