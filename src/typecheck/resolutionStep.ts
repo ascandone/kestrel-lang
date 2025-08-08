@@ -1,19 +1,8 @@
-import {
-  MatchPattern,
-  Range,
-  RangeMeta,
-  TypeAst,
-  Expr,
-  Import,
-  UntypedModule,
-  TypeDeclaration,
-  Declaration,
-} from "../parser";
+import { Import, UntypedModule } from "../parser";
 import {
   FieldResolution,
   IdentifierResolution,
   ModuleInterface,
-  StructResolution,
   TypeResolution,
   TypedBinding,
   TypedDeclaration,
@@ -22,8 +11,6 @@ import {
   TypedImport,
   TypedMatchPattern,
   TypedModule,
-  TypedStructDeclarationField,
-  TypedStructField,
   TypedTypeAst,
   TypedTypeDeclaration,
 } from "./typedAst";
@@ -31,7 +18,6 @@ import { defaultImports } from "./defaultImports";
 import { TVar } from "./type";
 import { ErrorInfo } from "../errors";
 import * as err from "../errors";
-import { FramesStack } from "./frame";
 import { Annotator } from "./Annotator";
 import * as visitor from "./visitor";
 
@@ -44,7 +30,7 @@ export function castAst(
   deps: Deps = {},
   implicitImports: Import[] = defaultImports,
 ): [TypedModule, ErrorInfo[]] {
-  return new ResolutionStep__refactor(ns, deps).run(module, implicitImports);
+  return new ResolutionStep(ns, deps).run(module, implicitImports);
 }
 
 class LocalFrames {
@@ -92,7 +78,7 @@ class LocalFrames {
 // TODO remove this err
 class UnimplementedErr extends Error {}
 
-class ResolutionStep__refactor {
+class ResolutionStep {
   private errors: ErrorInfo[] = [];
 
   // scope
@@ -627,27 +613,6 @@ export function findFieldInTypeDecl(
   }
 
   return undefined;
-}
-
-function makeStructName(
-  structDeclaration: TypedTypeDeclaration & { type: "struct" },
-): string {
-  if (structDeclaration.params.length === 0) {
-    return structDeclaration.name;
-  }
-
-  const params = structDeclaration.params.map(() => "_").join(", ");
-
-  return `${structDeclaration.name}<${params}>`;
-}
-
-function defaultMapPush<T>(m: Map<string, T[]>, key: string, value: T) {
-  const previous = m.get(key);
-  if (previous === undefined) {
-    m.set(key, [value]);
-  } else {
-    previous.push(value);
-  }
 }
 
 // TODO make this lazy
