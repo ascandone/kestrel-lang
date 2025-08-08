@@ -308,8 +308,16 @@ class ResolutionStep__refactor extends Visitor {
           this.importedTypes.get(ast.name) ?? this.moduleTypes.get(ast.name);
 
         if (ast.$resolution === undefined) {
-          throw new UnimplementedErr("no resolution for type");
+          this.errors.push({
+            description: new err.UnboundType(ast.name),
+            range: ast.range,
+          });
         }
+
+        for (const arg of ast.args) {
+          this.resolveTypeAst(arg);
+        }
+        return;
       }
     }
   }

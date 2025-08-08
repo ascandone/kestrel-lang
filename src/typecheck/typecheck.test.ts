@@ -468,7 +468,7 @@ test("does not refer to imported types when qualifying", () => {
   ]);
 });
 
-describe.todo("list literal", () => {
+describe("list literal", () => {
   test("typecheck empty list", () => {
     const [types, errs] = tc(`pub let lst = []`);
 
@@ -507,7 +507,7 @@ describe.todo("list literal", () => {
   });
 });
 
-describe.todo("type hints", () => {
+describe("type hints", () => {
   test("type hints are used by typechecker", () => {
     const [types, errs] = tc(
       `
