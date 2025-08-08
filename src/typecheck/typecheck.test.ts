@@ -850,7 +850,7 @@ describe("traits", () => {
     expect(errs).toEqual([]);
   });
 
-  describe.todo("auto deriving for struct", () => {
+  describe("auto deriving for struct", () => {
     test("is able to derive Eq in empty structs", () => {
       const [, errs] = tc(
         `
@@ -951,8 +951,8 @@ describe("traits", () => {
           }
 
           pub let example = {
-            take_eq(MyType {
-              field: Some(MyType {
+            take_eq(Rec {
+              field: Some(Rec {
                 field: None
               })
             })
