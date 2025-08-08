@@ -1353,7 +1353,7 @@ describe("custom types", () => {
   });
 });
 
-describe.todo("struct", () => {
+describe("struct", () => {
   test("allow creating types", () => {
     const [, errs] = tc(`
       type Person struct { }
@@ -1388,7 +1388,7 @@ describe.todo("struct", () => {
       pub let p_name = p.name
     `);
 
-    expect(errs).toHaveLength(0);
+    expect(errs).toEqual([]);
     expect(types).toEqual({
       p: "Person",
       p_name: "String",
@@ -1544,52 +1544,58 @@ describe.todo("struct", () => {
     });
   });
 
-  test("emit err when field accessed with qualified syntax is invalid", () => {
-    const [, errs] = tc(
-      `
+  test.todo(
+    "emit err when field accessed with qualified syntax is invalid",
+    () => {
+      const [, errs] = tc(
+        `
         type Person struct { }
 
         pub let name = fn p {
           p.Person#invalid_field
         }
     `,
-    );
+      );
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toEqual(
-      new err.InvalidField("Person", "invalid_field"),
-    );
-  });
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toEqual(
+        new err.InvalidField("Person", "invalid_field"),
+      );
+    },
+  );
 
-  test("allow accessing fields in other modules with qualified field syntax", () => {
-    const [Person] = tcProgram(
-      "Person",
-      `
+  test.todo(
+    "allow accessing fields in other modules with qualified field syntax",
+    () => {
+      const [Person] = tcProgram(
+        "Person",
+        `
       extern type String
       pub(..) type Person struct {
         name: String
       }
     `,
-    );
+      );
 
-    const [types, errs] = tc(
-      `
+      const [types, errs] = tc(
+        `
       import Person.{Person}
 
       pub let name = fn p {
         p.Person#name
       }
     `,
-      { Person },
-    );
+        { Person },
+      );
 
-    expect(errs).toHaveLength(0);
-    expect(types).toEqual({
-      name: "Fn(Person) -> String",
-    });
-  });
+      expect(errs).toHaveLength(0);
+      expect(types).toEqual({
+        name: "Fn(Person) -> String",
+      });
+    },
+  );
 
-  test("emit error when struct of qualified field does not exist", () => {
+  test.todo("emit error when struct of qualified field does not exist", () => {
     const [, errs] = tc(
       `
       pub let name = fn p {
@@ -1602,7 +1608,7 @@ describe.todo("struct", () => {
     expect(errs[0]?.description).toEqual(new err.UnboundType("InvalidType"));
   });
 
-  test("emit error when qualified field does not exist", () => {
+  test.todo("emit error when qualified field does not exist", () => {
     const [Person] = tcProgram(
       "Person",
       `
@@ -1626,7 +1632,7 @@ describe.todo("struct", () => {
     );
   });
 
-  test("emit error when qualified field is private", () => {
+  test.todo("emit error when qualified field is private", () => {
     const [Person] = tcProgram(
       "Person",
       `

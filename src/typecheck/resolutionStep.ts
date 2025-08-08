@@ -109,6 +109,8 @@ class ResolutionStep__refactor {
     string,
     IdentifierResolution & { type: "constructor" | "global-variable" }
   >();
+  private importedFields = new Map<string, FieldResolution>();
+  private moduleFields = new Map<string, FieldResolution>();
   private localValues = new Map<
     string,
     IdentifierResolution & { type: "local-variable" }
@@ -172,7 +174,13 @@ class ResolutionStep__refactor {
         break;
 
       case "struct":
-        throw new UnimplementedErr("impl resolve struct");
+        for (const field of typeDeclaration.fields) {
+          this.importedFields.set(field.name, {
+            declaration: typeDeclaration,
+            field,
+            namespace: moduleInterface.ns,
+          });
+        }
         break;
     }
   }
@@ -334,6 +342,54 @@ class ResolutionStep__refactor {
       onPatternConstructor: this.onResolvePatternConstructor.bind(this),
       onIdentifier: this.onResolveIdentifier.bind(this),
 
+      onFieldAccess: (expr) => {
+        expr.$resolution =
+          this.moduleFields.get(expr.field.name) ??
+          this.importedFields.get(expr.field.name);
+      },
+
+      onStructLiteral: (expr) => {
+        // TODO handle namespaced struct
+        const resolution =
+          this.moduleTypes.get(expr.struct.name) ??
+          this.importedTypes.get(expr.struct.name);
+
+        if (resolution === undefined) {
+          throw new UnimplementedErr("undefined struct resolution");
+        }
+
+        if (resolution.declaration.type !== "struct") {
+          throw new UnimplementedErr("bad resolution for struct");
+        }
+
+        expr.struct.$resolution = {
+          declaration: resolution.declaration,
+          namespace: this.ns,
+        };
+
+        for (const field of expr.fields) {
+          const fieldDefinition = resolution.declaration.fields.find(
+            (fieldDefinition) => fieldDefinition.name === field.field.name,
+          );
+
+          if (fieldDefinition === undefined) {
+            this.errors.push({
+              description: new err.InvalidField(
+                resolution.declaration.name,
+                field.field.name,
+              ),
+              range: field.range,
+            });
+          } else {
+            field.field.$resolution = {
+              declaration: resolution.declaration,
+              field: fieldDefinition,
+              namespace: this.ns,
+            };
+          }
+        }
+      },
+
       onMatchClause: () => {
         const onExit = this.localFrames.enter();
         return () => {
@@ -428,7 +484,14 @@ class ResolutionStep__refactor {
           break;
 
         case "struct":
-          throw new UnimplementedErr("impl resolve struct");
+          for (const field of declaration.fields) {
+            this.resolveTypeAst(field.typeAst);
+            this.moduleFields.set(field.name, {
+              declaration,
+              field,
+              namespace: this.ns,
+            });
+          }
           break;
       }
     }

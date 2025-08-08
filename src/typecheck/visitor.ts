@@ -13,8 +13,8 @@ type VisitOptions = {
 
   // Expr
   onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
-  onLet?(expr: TypedExpr & { type: "let" }): VoidFunction | undefined;
-  onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
+  onFieldAccess?(expr: TypedExpr & { type: "field-access" }): void;
+  onStructLiteral?(expr: TypedExpr & { type: "struct-literal" }): void;
   onLet?(expr: TypedExpr & { type: "let" }): VoidFunction | undefined;
   onFn?(expr: TypedExpr & { type: "fn" }): VoidFunction | undefined;
 };
@@ -122,7 +122,18 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions) {
       return;
 
     case "field-access":
+      opts.onFieldAccess?.(expr);
+      visitExpr(expr.struct, opts);
+      return;
+
     case "struct-literal":
-      throw new Error("TODO unimplemented");
+      opts.onStructLiteral?.(expr);
+      for (const field of expr.fields) {
+        visitExpr(field.value, opts);
+      }
+      if (expr.spread !== undefined) {
+        visitExpr(expr.spread, opts);
+      }
+      return;
   }
 }
