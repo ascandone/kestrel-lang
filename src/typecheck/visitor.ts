@@ -2,7 +2,7 @@ import { TypedExpr, TypedMatchPattern } from "./typedAst";
 
 export abstract class Visitor {
   // TODO statically make sure all switch are taken care of
-  public visit(expr: TypedExpr): void {
+  public visitExpr(expr: TypedExpr): void {
     switch (expr.type) {
       case "syntax-err":
         return;
@@ -36,7 +36,7 @@ export abstract class Visitor {
 
       case "list-literal":
         for (const subExpr of expr.values) {
-          this.visit(subExpr);
+          this.visitExpr(subExpr);
         }
         return;
 
@@ -51,20 +51,20 @@ export abstract class Visitor {
 
   protected visitLet(expr: TypedExpr & { type: "let" }) {
     this.visitPattern?.(expr.pattern);
-    this.visit(expr.body);
-    this.visit(expr.value);
+    this.visitExpr(expr.body);
+    this.visitExpr(expr.value);
   }
 
   protected visitIf(expr: TypedExpr & { type: "if" }) {
-    this.visit(expr.condition);
-    this.visit(expr.then);
-    this.visit(expr.else);
+    this.visitExpr(expr.condition);
+    this.visitExpr(expr.then);
+    this.visitExpr(expr.else);
   }
 
   protected visitApplication(expr: TypedExpr & { type: "application" }) {
-    this.visit(expr.caller);
+    this.visitExpr(expr.caller);
     for (const arg of expr.args) {
-      this.visit(arg);
+      this.visitExpr(arg);
     }
   }
 
@@ -72,14 +72,14 @@ export abstract class Visitor {
     for (const param of expr.params) {
       this.visitPattern?.(param);
     }
-    this.visit(expr.body);
+    this.visitExpr(expr.body);
   }
 
   protected visitMatch(expr: TypedExpr & { type: "match" }) {
-    this.visit(expr.expr);
+    this.visitExpr(expr.expr);
     for (const [pattern, then] of expr.clauses) {
       this.visitPattern?.(pattern);
-      this.visit(then);
+      this.visitExpr(then);
     }
   }
 }
