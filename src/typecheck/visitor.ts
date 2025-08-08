@@ -55,6 +55,7 @@ export function visitPattern(
       return;
 
     case "constructor":
+      opts.onPatternConstructor?.(expr);
       for (const arg of expr.args) {
         visitPattern(arg, opts);
       }

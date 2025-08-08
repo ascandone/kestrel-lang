@@ -96,6 +96,8 @@ class ResolutionStep__refactor {
   private errors: ErrorInfo[] = [];
 
   // scope
+  private importedModules = new Map<string, TypedImport>();
+
   private importedTypes = new Map<string, TypeResolution>();
   private moduleTypes = new Map<string, TypeResolution>();
 
@@ -107,7 +109,10 @@ class ResolutionStep__refactor {
     string,
     IdentifierResolution & { type: "constructor" | "global-variable" }
   >();
-  private localValues = new Map<string, IdentifierResolution>();
+  private localValues = new Map<
+    string,
+    IdentifierResolution & { type: "local-variable" }
+  >();
   private localFrames = new LocalFrames(this.localValues);
 
   // unused checks
@@ -200,6 +205,8 @@ class ResolutionStep__refactor {
   /** add imports to scope and mark them as unused */
   private loadImports(imports: TypedImport[]) {
     for (const import_ of imports) {
+      this.importedModules.set(import_.ns, import_);
+
       const dep = this.deps[import_.ns];
       if (dep === undefined) {
         throw new UnimplementedErr("module not found");
@@ -241,6 +248,37 @@ class ResolutionStep__refactor {
     });
   }
 
+  private onResolvePatternConstructor(
+    ctor: TypedMatchPattern & { type: "constructor" },
+  ) {
+    if (ctor.namespace === undefined) {
+      ctor.$resolution =
+        this.moduleValues.get(ctor.name) ?? this.importedValues.get(ctor.name);
+    } else if (ctor.namespace === this.ns) {
+      ctor.$resolution = this.moduleValues.get(ctor.name);
+    } else {
+      const import_ = this.importedModules.get(ctor.namespace);
+      if (import_ === undefined) {
+        throw new UnimplementedErr("unimpoorted qualifier");
+      }
+
+      const dep = this.deps[import_.ns];
+      if (dep === undefined) {
+        // we probably already emitted this
+        throw new UnimplementedErr("qualify to not existing module");
+      }
+
+      ctor.$resolution = dep.publicConstructors[ctor.name];
+    }
+
+    if (ctor.$resolution === undefined) {
+      this.errors.push({
+        description: new err.UnboundVariable(ctor.name),
+        range: ctor.range,
+      });
+    }
+  }
+
   private onResolveIdentifier(expr: TypedExpr & { type: "identifier" }) {
     if (expr.namespace === undefined) {
       expr.$resolution =
@@ -248,7 +286,9 @@ class ResolutionStep__refactor {
         this.moduleValues.get(expr.name) ??
         this.importedValues.get(expr.name);
     } else {
-      expr.$resolution = this.moduleValues.get(expr.name);
+      expr.$resolution = undefined;
+      // throw new UnimplementedErr("qualified expr");
+      // TODO qualified expr
     }
 
     if (expr.$resolution === undefined) {
@@ -282,6 +322,7 @@ class ResolutionStep__refactor {
         }
       },
 
+      onPatternConstructor: this.onResolvePatternConstructor.bind(this),
       onIdentifier: this.onResolveIdentifier.bind(this),
 
       onMatchClause: () => {
@@ -325,12 +366,19 @@ class ResolutionStep__refactor {
   private loadTypeDeclarations(typeDeclarations: TypedTypeDeclaration[]) {
     for (const declaration of typeDeclarations) {
       if (this.importedTypes.has(declaration.name)) {
-        throw new UnimplementedErr("duplicate type");
+        throw new UnimplementedErr("duplicate type (import)");
+        this.errors.push({
+          description: new err.DuplicateTypeDeclaration(declaration.name),
+          range: declaration.range,
+        });
         continue;
       }
 
       if (this.moduleTypes.has(declaration.name)) {
-        throw new UnimplementedErr("duplicate type");
+        this.errors.push({
+          description: new err.DuplicateTypeDeclaration(declaration.name),
+          range: declaration.range,
+        });
         continue;
       }
 
@@ -345,12 +393,24 @@ class ResolutionStep__refactor {
       switch (declaration.type) {
         case "adt":
           for (const variant of declaration.variants) {
-            this.localValues.set(variant.name, {
-              type: "constructor",
-              declaration: declaration,
-              variant: variant,
-              namespace: this.ns,
-            });
+            if (this.moduleValues.has(variant.name)) {
+              this.errors.push({
+                description: new err.DuplicateConstructor(variant.name),
+                range: variant.range,
+              });
+            } else if (this.importedValues.has(variant.name)) {
+              this.errors.push({
+                description: new err.ShadowingImport(variant.name),
+                range: variant.range,
+              });
+            } else {
+              this.moduleValues.set(variant.name, {
+                type: "constructor",
+                declaration: declaration,
+                variant: variant,
+                namespace: this.ns,
+              });
+            }
 
             for (const arg of variant.args) {
               this.resolveTypeAst(arg);

@@ -1938,7 +1938,7 @@ describe.todo("struct", () => {
   test.todo("namespaced struct names");
 });
 
-describe.todo("pattern matching", () => {
+describe("pattern matching", () => {
   test("typechecks matched expressions", () => {
     const [, errs] = tc(`pub let v = match unbound { }`);
     expect(errs).toHaveLength(1);
@@ -2156,6 +2156,8 @@ describe.todo("pattern matching", () => {
       unsafeParse(`
         pub(..) type T1 { X }
       `),
+      {},
+      [],
     );
 
     const [, errs] = tc(
@@ -2179,6 +2181,8 @@ describe.todo("pattern matching", () => {
       unsafeParse(`
         pub(..) type T1 { X }
       `),
+      {},
+      [],
     );
 
     const [, errs] = tc(
