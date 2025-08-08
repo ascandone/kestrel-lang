@@ -1,17 +1,157 @@
 import { ErrorInfo } from "../errors";
-import { Expr, MatchPattern } from "../parser";
+import {
+  Declaration,
+  Expr,
+  Import,
+  MatchPattern,
+  TypeAst,
+  TypeDeclaration,
+  UntypedModule,
+} from "../parser";
 import { TVar } from "./type";
-import { TypedExpr, TypedMatchPattern, TypedStructField } from "./typedAst";
+import {
+  TypedBinding,
+  TypedDeclaration,
+  TypedExposedValue,
+  TypedExpr,
+  TypedImport,
+  TypedMatchPattern,
+  TypedModule,
+  TypedStructDeclarationField,
+  TypedStructField,
+  TypedTypeAst,
+  TypedTypeDeclaration,
+} from "./typedAst";
 import * as err from "../errors";
+
+// TODO instead of traversing tree, mark fields as optional in the raw tree and use structuredClone to mutate freely
 
 /**
  * TODO:
  * * resolveIdentifiers
  * * resolveField
  * * resolveConstructor
+ * * typedAst.$resolution
  */
 export class Annotator {
   constructor(private readonly errors: ErrorInfo[]) {}
+
+  public annotateModule(
+    module: UntypedModule,
+  ): Omit<TypedModule, "moduleInterface"> {
+    return {
+      moduleDoc: module.moduleDoc,
+      declarations: module.declarations.map((d) => this.annotateDeclaration(d)),
+      imports: module.imports.map((i) => this.annotateImport(i)),
+      typeDeclarations: module.typeDeclarations.map((td) =>
+        this.annotateTypeDeclaration(td),
+      ),
+    };
+  }
+
+  private annotateTypeDeclaration(
+    typeDecl: TypeDeclaration,
+  ): TypedTypeDeclaration {
+    switch (typeDecl.type) {
+      case "extern":
+        return typeDecl;
+
+      case "adt":
+        return {
+          ...typeDecl,
+          variants: typeDecl.variants.map((variant) => ({
+            ...variant,
+            $scheme: {},
+            $type: TVar.fresh(),
+            args: variant.args.map((arg) => this.annotateTypeAst(arg)),
+          })),
+        };
+
+      case "struct":
+        return {
+          ...typeDecl,
+          $scheme: {},
+          $type: TVar.fresh(),
+          fields: typeDecl.fields.map(
+            (untypedField): TypedStructDeclarationField => ({
+              ...untypedField,
+              $type: TVar.fresh(),
+              $scheme: {},
+              typeAst: this.annotateTypeAst(untypedField.typeAst),
+            }),
+          ),
+        };
+    }
+  }
+
+  private annotateTypeAst(ast: TypeAst): TypedTypeAst {
+    switch (ast.type) {
+      case "var":
+      case "any":
+        return ast;
+
+      case "fn":
+        return {
+          ...ast,
+          args: ast.args.map((a) => this.annotateTypeAst(a)),
+          return: this.annotateTypeAst(ast.return),
+        };
+
+      case "named":
+        return {
+          ...ast,
+          args: ast.args.map((a) => this.annotateTypeAst(a)),
+          $resolution: undefined,
+        };
+    }
+  }
+
+  private annotateImport(import_: Import): TypedImport {
+    return {
+      ...import_,
+      exposing: import_.exposing.map(
+        (exposing): TypedExposedValue => ({
+          ...exposing,
+          $resolution: undefined,
+        }),
+      ),
+    };
+  }
+
+  private annotateDeclaration(decl: Declaration): TypedDeclaration {
+    const binding: TypedBinding = {
+      ...decl.binding,
+      $type: TVar.fresh(),
+    };
+
+    let tDecl: TypedDeclaration;
+    if (decl.extern) {
+      tDecl = {
+        ...decl,
+        $scheme: {},
+        binding,
+        typeHint: undefined!,
+      };
+    } else {
+      tDecl = {
+        ...decl,
+        $scheme: {},
+        binding,
+        typeHint: undefined!,
+        value: this.annotateExpr(decl.value),
+      };
+    }
+
+    if (decl.typeHint !== undefined) {
+      tDecl.typeHint = {
+        mono: this.annotateTypeAst(decl.typeHint.mono),
+        range: decl.typeHint.range,
+        where: decl.typeHint.where,
+      };
+    }
+
+    return tDecl;
+  }
 
   private annotateMatchPattern(ast: MatchPattern): TypedMatchPattern {
     switch (ast.type) {
@@ -36,7 +176,7 @@ export class Annotator {
     switch (ast.type) {
       // Syntax sugar
       case "block":
-        return this.annotateExpr(ast);
+        return this.annotateExpr(ast.inner);
 
       case "pipe":
         if (ast.right.type !== "application") {
