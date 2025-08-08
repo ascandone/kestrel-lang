@@ -96,7 +96,7 @@ class ResolutionStep__refactor {
   private errors: ErrorInfo[] = [];
 
   // scope
-  private importedModules = new Map<string, TypedImport>();
+  private importedModules = new Set<string>();
 
   private importedTypes = new Map<string, TypeResolution>();
   private moduleTypes = new Map<string, TypeResolution>();
@@ -132,7 +132,7 @@ class ResolutionStep__refactor {
   ) {
     const typeDeclaration = moduleInterface.publicTypes[exposing.name];
     if (typeDeclaration === undefined) {
-      throw new UnimplementedErr("imported type not found");
+      throw new UnimplementedErr("imported type not found: " + exposing.name);
     }
 
     exposing.$resolution = typeDeclaration;
@@ -151,7 +151,10 @@ class ResolutionStep__refactor {
     }
 
     if (typeDeclaration.pub !== "..") {
-      throw new UnimplementedErr("bad exposing (private constructors)");
+      this.errors.push({
+        description: new err.BadImport(),
+        range: exposing.range,
+      });
     }
 
     // TODO add to unused exports
@@ -195,17 +198,10 @@ class ResolutionStep__refactor {
     // TODO add to unused exports
   }
 
-  /** resolve and add implicit imports to scope */
-  private loadImplicitImports(imports: Import[]) {
-    for (const _import_ of imports) {
-      throw new UnimplementedErr("load implicit imports");
-    }
-  }
-
   /** add imports to scope and mark them as unused */
-  private loadImports(imports: TypedImport[]) {
+  private loadImports(imports: TypedImport[], _markUnused: boolean) {
     for (const import_ of imports) {
-      this.importedModules.set(import_.ns, import_);
+      this.importedModules.add(import_.ns);
 
       const dep = this.deps[import_.ns];
       if (dep === undefined) {
@@ -257,12 +253,11 @@ class ResolutionStep__refactor {
     } else if (ctor.namespace === this.ns) {
       ctor.$resolution = this.moduleValues.get(ctor.name);
     } else {
-      const import_ = this.importedModules.get(ctor.namespace);
-      if (import_ === undefined) {
+      if (!this.importedModules.has(ctor.namespace)) {
         throw new UnimplementedErr("unimpoorted qualifier");
       }
 
-      const dep = this.deps[import_.ns];
+      const dep = this.deps[ctor.namespace];
       if (dep === undefined) {
         // we probably already emitted this
         throw new UnimplementedErr("qualify to not existing module");
@@ -285,10 +280,24 @@ class ResolutionStep__refactor {
         this.localValues.get(expr.name) ??
         this.moduleValues.get(expr.name) ??
         this.importedValues.get(expr.name);
+    } else if (expr.namespace === this.ns) {
+      expr.$resolution = this.moduleValues.get(expr.name);
     } else {
-      expr.$resolution = undefined;
-      // throw new UnimplementedErr("qualified expr");
-      // TODO qualified expr
+      const dep = this.deps[expr.namespace];
+      if (dep === undefined) {
+        throw new UnimplementedErr("qualified mod not found");
+      }
+
+      const valueLookup = dep.publicValues[expr.name];
+      if (valueLookup !== undefined) {
+        expr.$resolution = {
+          type: "global-variable",
+          declaration: valueLookup,
+          namespace: expr.namespace,
+        };
+      } else {
+        expr.$resolution = dep.publicConstructors[expr.name];
+      }
     }
 
     if (expr.$resolution === undefined) {
@@ -489,8 +498,11 @@ class ResolutionStep__refactor {
      * We global values into scope
      * Make sure the order of "load*" calls isn't changed
      * */
-    this.loadImplicitImports(implicitImports);
-    this.loadImports(annotatedModule.imports);
+    this.loadImports(
+      implicitImports.map((import_) => annotator.annotateImport(import_)),
+      false,
+    );
+    this.loadImports(annotatedModule.imports, true);
     this.loadTypeDeclarations(annotatedModule.typeDeclarations);
     this.loadValueDeclarations(annotatedModule.declarations);
 

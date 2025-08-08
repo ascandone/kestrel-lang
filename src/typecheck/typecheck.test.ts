@@ -2322,7 +2322,7 @@ describe("pattern matching", () => {
   });
 });
 
-describe.todo("prelude", () => {
+describe("prelude", () => {
   test("intrinsics' types are not visible by default", () => {
     const [, errs] = tc(`
      pub let x : Int = 0
@@ -2394,7 +2394,7 @@ describe.todo("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      type MyType {}
+      pub type MyType {}
     `,
     );
 

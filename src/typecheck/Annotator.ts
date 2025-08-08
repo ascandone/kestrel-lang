@@ -106,7 +106,7 @@ export class Annotator {
     }
   }
 
-  private annotateImport(import_: Import): TypedImport {
+  public annotateImport(import_: Import): TypedImport {
     return {
       ...import_,
       exposing: import_.exposing.map(
