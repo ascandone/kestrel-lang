@@ -2,7 +2,7 @@ import { TypedExpr, TypedMatchPattern } from "./typedAst";
 
 export abstract class Visitor {
   // TODO statically make sure all switch are taken care of
-  public visitExpr(expr: TypedExpr): void {
+  protected visitExpr(expr: TypedExpr): void {
     switch (expr.type) {
       case "syntax-err":
         return;
@@ -11,7 +11,7 @@ export abstract class Visitor {
         return;
 
       case "identifier":
-        this.visitIdentifier?.(expr);
+        this.onIdentifier?.(expr);
         return;
 
       case "if":
@@ -46,39 +46,70 @@ export abstract class Visitor {
     }
   }
 
-  protected visitPattern?(expr: TypedMatchPattern): void;
-  protected visitIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
+  protected onPatternIdentifier?(
+    expr: TypedMatchPattern & { type: "identifier" },
+  ): void;
+  protected onPatternConstructor?(
+    expr: TypedMatchPattern & { type: "constructor" },
+  ): void;
 
-  protected visitLet(expr: TypedExpr & { type: "let" }) {
+  private visitPattern(expr: TypedMatchPattern): void {
+    switch (expr.type) {
+      case "lit":
+        return;
+
+      case "identifier":
+        this.onPatternIdentifier?.(expr);
+        return;
+
+      case "constructor":
+        for (const arg of expr.args) {
+          this.visitPattern(arg);
+        }
+    }
+  }
+
+  protected onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
+
+  protected onLet?(expr: TypedExpr & { type: "let" }): VoidFunction | undefined;
+  private visitLet(expr: TypedExpr & { type: "let" }) {
+    const onExit = this.onLet?.(expr);
     this.visitPattern?.(expr.pattern);
     this.visitExpr(expr.body);
     this.visitExpr(expr.value);
+    onExit?.();
   }
 
-  protected visitIf(expr: TypedExpr & { type: "if" }) {
+  private visitIf(expr: TypedExpr & { type: "if" }) {
     this.visitExpr(expr.condition);
     this.visitExpr(expr.then);
     this.visitExpr(expr.else);
   }
 
-  protected visitApplication(expr: TypedExpr & { type: "application" }) {
+  private visitApplication(expr: TypedExpr & { type: "application" }) {
     this.visitExpr(expr.caller);
     for (const arg of expr.args) {
       this.visitExpr(arg);
     }
   }
 
-  protected visitFn(expr: TypedExpr & { type: "fn" }) {
+  protected onFn?(expr: TypedExpr & { type: "fn" }): VoidFunction | undefined;
+  private visitFn(expr: TypedExpr & { type: "fn" }) {
+    const onExit = this.onFn?.(expr);
     for (const param of expr.params) {
       this.visitPattern?.(param);
     }
     this.visitExpr(expr.body);
+    onExit?.();
   }
 
-  protected visitMatch(expr: TypedExpr & { type: "match" }) {
+  protected onMatchClause?(pattern: TypedMatchPattern, then: TypedExpr): void;
+
+  private visitMatch(expr: TypedExpr & { type: "match" }) {
     this.visitExpr(expr.expr);
     for (const [pattern, then] of expr.clauses) {
-      this.visitPattern?.(pattern);
+      this.onMatchClause?.(pattern, then);
+      this.visitPattern(pattern);
       this.visitExpr(then);
     }
   }

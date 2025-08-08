@@ -32,6 +32,8 @@ import { TVar } from "./type";
 import { ErrorInfo } from "../errors";
 import * as err from "../errors";
 import { FramesStack } from "./frame";
+import { Annotator } from "./Annotator";
+import { Visitor } from "./visitor";
 
 // Record from namespace (e.g. "A.B.C" ) to the module
 export type Deps = Record<string, ModuleInterface>;
@@ -42,7 +44,409 @@ export function castAst(
   deps: Deps = {},
   implicitImports: Import[] = defaultImports,
 ): [TypedModule, ErrorInfo[]] {
-  return new ResolutionStep(ns, deps).run(module, implicitImports);
+  return new ResolutionStep__refactor(ns, deps).run(module, implicitImports);
+}
+
+class LocalFrames {
+  // TODO remove stack, use single map instead
+
+  /** The previous values */
+  private readonly stack: Array<Map<string, IdentifierResolution | undefined>> =
+    [];
+
+  constructor(
+    private readonly valuesResolution: Map<string, IdentifierResolution>,
+  ) {}
+
+  public enter() {
+    const previous = new Map<string, IdentifierResolution>();
+    this.stack.push(previous);
+
+    return () => {
+      for (const [key, previousValue] of previous.entries()) {
+        if (previousValue === undefined) {
+          this.valuesResolution.delete(key);
+        } else {
+          this.valuesResolution.set(key, previousValue);
+        }
+      }
+    };
+  }
+
+  public register(binding: TypedBinding) {
+    const currentScope = this.stack.at(-1);
+    if (currentScope === undefined) {
+      throw new Error("[unreachable] empty stack");
+    }
+
+    const previousValue = this.valuesResolution.get(binding.name);
+    currentScope.set(binding.name, previousValue);
+
+    this.valuesResolution.set(binding.name, {
+      type: "local-variable",
+      binding,
+    });
+  }
+}
+
+// TODO remove this err
+class UnimplementedErr extends Error {}
+
+class ResolutionStep__refactor extends Visitor {
+  private errors: ErrorInfo[] = [];
+
+  // scope
+  private importedTypes = new Map<string, TypeResolution>();
+  private moduleTypes = new Map<string, TypeResolution>();
+
+  private importedValues = new Map<
+    string,
+    IdentifierResolution & { type: "constructor" | "global-variable" }
+  >();
+  private moduleValues = new Map<
+    string,
+    IdentifierResolution & { type: "constructor" | "global-variable" }
+  >();
+  private localValues = new Map<string, IdentifierResolution>();
+  private localFrames = new LocalFrames(this.localValues);
+
+  // unused checks
+  private unusedLocals = new Set<TypedBinding>();
+  private unusedGlobals = new Set<TypedDeclaration>();
+  // private unusedImports = new Set<TypedImport>();
+  // private unusedExposing = new Set<TypedExposedValue>();
+
+  constructor(
+    private readonly ns: string,
+    private readonly deps: Deps,
+  ) {
+    super();
+  }
+
+  private loadOpenTypeDeclaration(
+    typeDeclaration: TypedTypeDeclaration,
+    namespace: string,
+  ) {
+    switch (typeDeclaration.type) {
+      case "adt":
+        for (const variant of typeDeclaration.variants) {
+          this.importedValues.set(variant.name, {
+            type: "constructor",
+            declaration: typeDeclaration,
+            variant: variant,
+            namespace,
+          });
+        }
+        break;
+
+      case "struct":
+        throw new UnimplementedErr("impl resolve struct");
+        break;
+    }
+  }
+
+  private loadTypeImport(
+    moduleInterface: ModuleInterface,
+    exposing: TypedExposedValue & { type: "type" },
+  ) {
+    const typeDeclaration = moduleInterface.publicTypes[exposing.name];
+    if (typeDeclaration === undefined) {
+      throw new UnimplementedErr("imported type not found");
+    }
+
+    exposing.$resolution = typeDeclaration;
+
+    if (this.importedTypes.has(typeDeclaration.name)) {
+      throw new UnimplementedErr("duplicate name import");
+    }
+    this.importedTypes.set(typeDeclaration.name, {
+      declaration: typeDeclaration,
+      namespace: moduleInterface.ns,
+    });
+
+    // -- Open import
+    if (!exposing.exposeImpl) {
+      return;
+    }
+
+    if (typeDeclaration.pub !== "..") {
+      throw new UnimplementedErr("bad exposing (private constructors)");
+    }
+
+    // TODO add to unused exports
+
+    this.loadOpenTypeDeclaration(typeDeclaration, moduleInterface.ns);
+  }
+
+  private loadValueImport(
+    moduleInterface: ModuleInterface,
+    exposing: TypedExposedValue & { type: "value" },
+  ) {
+    const declaration = moduleInterface.publicValues[exposing.name];
+    if (declaration === undefined) {
+      throw new UnimplementedErr("bad exposing (private value)");
+    }
+
+    if (this.importedValues.has(declaration.binding.name)) {
+      throw new UnimplementedErr("duplicate name value import");
+    }
+    this.importedValues.set(exposing.name, {
+      type: "global-variable",
+      declaration,
+      namespace: moduleInterface.ns,
+    });
+
+    // TODO add to unused exports
+  }
+
+  /** resolve and add implicit imports to scope */
+  private loadImplicitImports(imports: Import[]) {
+    for (const _import_ of imports) {
+      throw new UnimplementedErr("load implicit imports");
+    }
+  }
+
+  /** add imports to scope and mark them as unused */
+  private loadImports(imports: TypedImport[]) {
+    for (const import_ of imports) {
+      const dep = this.deps[import_.ns];
+      if (dep === undefined) {
+        throw new UnimplementedErr("module not found");
+      }
+
+      // TODO add to unused imports
+
+      for (const exposing of import_.exposing) {
+        switch (exposing.type) {
+          case "type":
+            this.loadTypeImport(dep, exposing);
+            break;
+
+          case "value":
+            this.loadValueImport(dep, exposing);
+            break;
+        }
+      }
+    }
+  }
+
+  /** add global type declarations (and constructors and fields) to scope and mark them as unused */
+  private loadTypeDeclarations(typeDeclarations: TypedTypeDeclaration[]) {
+    for (const declaration of typeDeclarations) {
+      if (this.importedTypes.has(declaration.name)) {
+        throw new UnimplementedErr("duplicate type");
+        continue;
+      }
+
+      if (this.moduleTypes.has(declaration.name)) {
+        throw new UnimplementedErr("duplicate type");
+        continue;
+      }
+
+      this.moduleTypes.set(declaration.name, {
+        declaration,
+        namespace: this.ns,
+      });
+
+      // TODO add to unused types
+
+      this.loadOpenTypeDeclaration(declaration, this.ns);
+    }
+  }
+
+  /**
+   * add global declarations to scope and mark them as unused
+   * runs type ast resolution (but no expressions resolution yet)
+   */
+  private loadDeclarations(declarations: TypedDeclaration[]) {
+    for (const declaration of declarations) {
+      if (this.moduleValues.has(declaration.binding.name)) {
+        this.errors.push({
+          description: new err.DuplicateDeclaration(declaration.binding.name),
+          range: declaration.binding.range,
+        });
+        continue;
+      }
+
+      this.moduleValues.set(declaration.binding.name, {
+        type: "global-variable",
+        declaration,
+        namespace: this.ns,
+      });
+
+      if (declaration.typeHint !== undefined) {
+        this.resolveTypeAst(declaration.typeHint.mono);
+      }
+
+      if (!declaration.pub) {
+        this.unusedGlobals.add(declaration);
+      }
+    }
+  }
+
+  // TODO we might want to move this to Visitor
+  private resolveTypeAst(ast: TypedTypeAst) {
+    switch (ast.type) {
+      case "var":
+      case "any":
+        // TODO any has to be handled
+        return;
+
+      case "fn":
+        for (const arg of ast.args) {
+          this.resolveTypeAst(arg);
+        }
+        this.resolveTypeAst(ast.return);
+        return;
+
+      case "named": {
+        if (ast.namespace !== undefined) {
+          throw new UnimplementedErr("unqualified type");
+        }
+
+        ast.$resolution =
+          this.importedTypes.get(ast.name) ?? this.moduleTypes.get(ast.name);
+
+        if (ast.$resolution === undefined) {
+          throw new UnimplementedErr("no resolution for type");
+        }
+      }
+    }
+  }
+
+  private emitUnusedLocalsErrors() {
+    for (const declaration of this.unusedLocals) {
+      this.errors.push({
+        range: declaration.range,
+        description: new err.UnusedVariable(declaration.name, "local"),
+      });
+    }
+
+    this.unusedLocals = new Set();
+  }
+
+  private emitUnusedGlobalsErrors() {
+    for (const declaration of this.unusedGlobals) {
+      this.errors.push({
+        range: declaration.binding.range,
+        description: new err.UnusedVariable(declaration.binding.name, "global"),
+      });
+    }
+    this.unusedGlobals = new Set();
+  }
+
+  protected override onMatchClause() {
+    const onExit = this.localFrames.enter();
+
+    return () => {
+      onExit();
+    };
+  }
+
+  protected override onFn(_expr: TypedExpr & { type: "fn" }) {
+    const onExit = this.localFrames.enter();
+
+    return () => {
+      onExit();
+    };
+  }
+
+  protected override onLet(_expr: TypedExpr & { type: "let" }) {
+    const onExit = this.localFrames.enter();
+
+    return () => {
+      onExit();
+    };
+  }
+
+  protected override onPatternConstructor() {
+    throw new UnimplementedErr("resolve pattern constructor");
+  }
+
+  protected override onPatternIdentifier(
+    ident: TypedExpr & { type: "identifier" },
+  ) {
+    this.localFrames.register(ident);
+    if (!validUnusedBinding(ident)) {
+      this.unusedLocals.add(ident);
+    }
+  }
+
+  protected override onIdentifier(
+    expr: TypedExpr & { type: "identifier" },
+  ): void {
+    if (expr.namespace === undefined) {
+      expr.$resolution =
+        this.localValues.get(expr.name) ??
+        this.moduleValues.get(expr.name) ??
+        this.importedValues.get(expr.name);
+    } else {
+      expr.$resolution = this.moduleValues.get(expr.name);
+    }
+
+    if (expr.$resolution === undefined) {
+      this.errors.push({
+        description: new err.UnboundVariable(expr.name),
+        range: expr.range,
+      });
+    } else {
+      switch (expr.$resolution.type) {
+        case "constructor":
+          // TODO unused constructors
+          break;
+
+        case "local-variable":
+          this.unusedLocals.delete(expr.$resolution.binding);
+          break;
+
+        case "global-variable":
+          this.unusedGlobals.delete(expr.$resolution.declaration);
+          break;
+      }
+    }
+  }
+
+  run(
+    module: UntypedModule,
+    implicitImports: Import[] = defaultImports,
+  ): [TypedModule, ErrorInfo[]] {
+    TVar.resetId();
+
+    const annotator = new Annotator(this.errors);
+    const annotatedModule = annotator.annotateModule(module);
+
+    /**
+     * We global values into scope
+     * Make sure the order of "load*" calls isn't changed
+     * */
+    this.loadImplicitImports(implicitImports);
+    this.loadImports(annotatedModule.imports);
+    this.loadTypeDeclarations(annotatedModule.typeDeclarations);
+    this.loadDeclarations(annotatedModule.declarations);
+
+    // Now that global vars are into scope, we visit each (non-extern) declaration
+    for (const decl of annotatedModule.declarations) {
+      if (!decl.extern) {
+        this.visitExpr(decl.value);
+      }
+
+      this.emitUnusedLocalsErrors();
+    }
+
+    this.emitUnusedGlobalsErrors();
+
+    const typedModule: TypedModule = {
+      ...annotatedModule,
+
+      moduleInterface: makeInterface(
+        this.ns,
+        annotatedModule.typeDeclarations,
+        annotatedModule.declarations,
+      ),
+    };
+
+    return [typedModule, this.errors];
+  }
 }
 
 class ResolutionStep {
@@ -1293,9 +1697,14 @@ function makeInterface(
   }
 
   return {
+    ns,
     publicConstructors,
     publicTypes,
     publicValues,
     publicFields,
   };
+}
+
+function validUnusedBinding(b: TypedBinding) {
+  return b.name.startsWith("_");
 }

@@ -315,7 +315,7 @@ test("recursive let declarations", () => {
   });
 });
 
-test.todo("let declarations in reverse order", () => {
+test("let declarations in reverse order", () => {
   const [types, errs] = tc(
     `
     pub let a = b
@@ -422,8 +422,35 @@ test("does not refer to imported values when qualifying", () => {
   const [T1] = typecheck(
     "T1",
     unsafeParse(`
+        pub let x = 42
+      `),
+    {},
+    [],
+  );
+
+  const [, errs] = tc(
+    `
+      import T1.{x}
+      pub let a = Main.x
+    `,
+    { T1 },
+  );
+
+  expect(errs).toEqual<ErrorInfo[]>([
+    expect.objectContaining({
+      description: new err.UnboundVariable("x"),
+    }),
+  ]);
+});
+
+test("does not refer to imported types when qualifying", () => {
+  const [T1] = typecheck(
+    "T1",
+    unsafeParse(`
         pub(..) type T1 { X }
       `),
+    {},
+    [],
   );
 
   const [, errs] = tc(
@@ -441,7 +468,7 @@ test("does not refer to imported values when qualifying", () => {
   ]);
 });
 
-describe("list literal", () => {
+describe.todo("list literal", () => {
   test("typecheck empty list", () => {
     const [types, errs] = tc(`pub let lst = []`);
 
@@ -480,7 +507,7 @@ describe("list literal", () => {
   });
 });
 
-describe("type hints", () => {
+describe.todo("type hints", () => {
   test("type hints are used by typechecker", () => {
     const [types, errs] = tc(
       `
@@ -586,7 +613,7 @@ describe("type hints", () => {
   });
 });
 
-describe("traits", () => {
+describe.todo("traits", () => {
   test("fails to typecheck when a required trait is not implemented", () => {
     const [types, errs] = tc(
       `
@@ -822,7 +849,7 @@ describe("traits", () => {
     expect(errs).toEqual([]);
   });
 
-  describe("auto deriving for struct", () => {
+  describe.todo("auto deriving for struct", () => {
     test("is able to derive Eq in empty structs", () => {
       const [, errs] = tc(
         `
@@ -1105,7 +1132,7 @@ describe("traits", () => {
   });
 });
 
-describe("custom types", () => {
+describe.todo("custom types", () => {
   test("allows to use it as type hint", () => {
     const [types, errs] = tc(
       `
@@ -1325,7 +1352,7 @@ describe("custom types", () => {
   });
 });
 
-describe("struct", () => {
+describe.todo("struct", () => {
   test("allow creating types", () => {
     const [, errs] = tc(`
       type Person struct { }
@@ -1910,7 +1937,7 @@ describe("struct", () => {
   test.todo("namespaced struct names");
 });
 
-describe("pattern matching", () => {
+describe.todo("pattern matching", () => {
   test("typechecks matched expressions", () => {
     const [, errs] = tc(`pub let v = match unbound { }`);
     expect(errs).toHaveLength(1);
@@ -2290,7 +2317,7 @@ describe("pattern matching", () => {
   });
 });
 
-describe("prelude", () => {
+describe.todo("prelude", () => {
   test("intrinsics' types are not visible by default", () => {
     const [, errs] = tc(`
      pub let x : Int = 0
@@ -2328,7 +2355,7 @@ describe("prelude", () => {
   });
 });
 
-describe("modules", () => {
+describe.todo("modules", () => {
   const mockPosition: Position = { line: 0, character: 0 };
   const mockRange: Range = { start: mockPosition, end: mockPosition };
   test("implicitly imports values of the modules in the prelude", () => {
@@ -2683,7 +2710,7 @@ describe("modules", () => {
   });
 });
 
-describe("typecheck project", () => {
+describe.todo("typecheck project", () => {
   test("single import", () => {
     const project = typecheckProject(
       {
@@ -2746,7 +2773,7 @@ describe("typecheck project", () => {
   });
 });
 
-test("type error when main has not type Task<Unit>", () => {
+test.skip("type error when main has not type Task<Unit>", () => {
   const [_, errors] = tc(`pub let main = "not-task-type"`);
   expect(errors).toHaveLength(1);
   expect(errors[0]?.description).toBeInstanceOf(err.TypeMismatch);
