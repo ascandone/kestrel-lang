@@ -1133,7 +1133,7 @@ describe("traits", () => {
   });
 });
 
-describe.todo("custom types", () => {
+describe("custom types", () => {
   test("allows to use it as type hint", () => {
     const [types, errs] = tc(
       `

@@ -307,6 +307,20 @@ class ResolutionStep__refactor {
     });
   }
 
+  private detectDuplicateParams(typeDeclarations: TypedTypeDeclaration) {
+    const params = new Set<string>();
+    for (const param of typeDeclarations.params) {
+      if (params.has(param.name)) {
+        this.errors.push({
+          description: new err.TypeParamShadowing(param.name),
+          range: param.range,
+        });
+      } else {
+        params.add(param.name);
+      }
+    }
+  }
+
   /** add global type declarations (and constructors and fields) to scope and mark them as unused */
   private loadTypeDeclarations(typeDeclarations: TypedTypeDeclaration[]) {
     for (const declaration of typeDeclarations) {
@@ -324,6 +338,8 @@ class ResolutionStep__refactor {
         declaration,
         namespace: this.ns,
       });
+
+      this.detectDuplicateParams(declaration);
 
       // TODO add to unused types
       switch (declaration.type) {
