@@ -123,28 +123,6 @@ class ResolutionStep__refactor extends Visitor {
     super();
   }
 
-  private loadOpenTypeDeclaration(
-    typeDeclaration: TypedTypeDeclaration,
-    namespace: string,
-  ) {
-    switch (typeDeclaration.type) {
-      case "adt":
-        for (const variant of typeDeclaration.variants) {
-          this.importedValues.set(variant.name, {
-            type: "constructor",
-            declaration: typeDeclaration,
-            variant: variant,
-            namespace,
-          });
-        }
-        break;
-
-      case "struct":
-        throw new UnimplementedErr("impl resolve struct");
-        break;
-    }
-  }
-
   private loadTypeImport(
     moduleInterface: ModuleInterface,
     exposing: TypedExposedValue & { type: "type" },
@@ -175,7 +153,22 @@ class ResolutionStep__refactor extends Visitor {
 
     // TODO add to unused exports
 
-    this.loadOpenTypeDeclaration(typeDeclaration, moduleInterface.ns);
+    switch (typeDeclaration.type) {
+      case "adt":
+        for (const variant of typeDeclaration.variants) {
+          this.importedValues.set(variant.name, {
+            type: "constructor",
+            declaration: typeDeclaration,
+            variant: variant,
+            namespace: moduleInterface.ns,
+          });
+        }
+        break;
+
+      case "struct":
+        throw new UnimplementedErr("impl resolve struct");
+        break;
+    }
   }
 
   private loadValueImport(
@@ -249,8 +242,26 @@ class ResolutionStep__refactor extends Visitor {
       });
 
       // TODO add to unused types
+      switch (declaration.type) {
+        case "adt":
+          for (const variant of declaration.variants) {
+            this.localValues.set(variant.name, {
+              type: "constructor",
+              declaration: declaration,
+              variant: variant,
+              namespace: this.ns,
+            });
 
-      this.loadOpenTypeDeclaration(declaration, this.ns);
+            for (const arg of variant.args) {
+              this.visitTypeAst(arg);
+            }
+          }
+          break;
+
+        case "struct":
+          throw new UnimplementedErr("impl resolve struct");
+          break;
+      }
     }
   }
 

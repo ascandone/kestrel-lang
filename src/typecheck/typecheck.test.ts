@@ -613,7 +613,7 @@ describe("type hints", () => {
   });
 });
 
-describe.todo("traits", () => {
+describe("traits", () => {
   test("fails to typecheck when a required trait is not implemented", () => {
     const [types, errs] = tc(
       `
@@ -753,6 +753,7 @@ describe.todo("traits", () => {
     );
 
     expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(err.TraitNotSatified);
   });
 
   test("derives Eq even when constructors have arguments that derive Eq", () => {
