@@ -275,7 +275,7 @@ class ResolutionStep__refactor extends Visitor {
       });
 
       if (declaration.typeHint !== undefined) {
-        this.resolveTypeAst(declaration.typeHint.mono);
+        this.visitTypeAst(declaration.typeHint.mono);
       }
 
       if (!declaration.pub) {
@@ -284,41 +284,19 @@ class ResolutionStep__refactor extends Visitor {
     }
   }
 
-  // TODO we might want to move this to Visitor
-  private resolveTypeAst(ast: TypedTypeAst) {
-    switch (ast.type) {
-      case "var":
-      case "any":
-        // TODO any has to be handled
-        return;
+  protected override onNamedType(ast: TypedTypeAst & { type: "named" }) {
+    if (ast.namespace !== undefined) {
+      throw new UnimplementedErr("unqualified type");
+    }
 
-      case "fn":
-        for (const arg of ast.args) {
-          this.resolveTypeAst(arg);
-        }
-        this.resolveTypeAst(ast.return);
-        return;
+    ast.$resolution =
+      this.importedTypes.get(ast.name) ?? this.moduleTypes.get(ast.name);
 
-      case "named": {
-        if (ast.namespace !== undefined) {
-          throw new UnimplementedErr("unqualified type");
-        }
-
-        ast.$resolution =
-          this.importedTypes.get(ast.name) ?? this.moduleTypes.get(ast.name);
-
-        if (ast.$resolution === undefined) {
-          this.errors.push({
-            description: new err.UnboundType(ast.name),
-            range: ast.range,
-          });
-        }
-
-        for (const arg of ast.args) {
-          this.resolveTypeAst(arg);
-        }
-        return;
-      }
+    if (ast.$resolution === undefined) {
+      this.errors.push({
+        description: new err.UnboundType(ast.name),
+        range: ast.range,
+      });
     }
   }
 

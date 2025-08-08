@@ -1,6 +1,31 @@
-import { TypedExpr, TypedMatchPattern } from "./typedAst";
+import { TypedExpr, TypedMatchPattern, TypedTypeAst } from "./typedAst";
 
 export abstract class Visitor {
+  protected onNamedType?(ast: TypedTypeAst & { type: "named" }): void;
+
+  protected visitTypeAst(ast: TypedTypeAst): void {
+    switch (ast.type) {
+      case "var":
+      case "any":
+        // TODO any has to be handled
+        return;
+
+      case "fn":
+        for (const arg of ast.args) {
+          this.visitTypeAst(arg);
+        }
+        this.visitTypeAst(ast.return);
+        return;
+
+      case "named":
+        this.onNamedType?.(ast);
+        for (const arg of ast.args) {
+          this.visitTypeAst(arg);
+        }
+        return;
+    }
+  }
+
   // TODO statically make sure all switch are taken care of
   protected visitExpr(expr: TypedExpr): void {
     switch (expr.type) {
