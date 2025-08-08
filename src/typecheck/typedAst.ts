@@ -157,7 +157,7 @@ export type TypedExposedValue = ast.RangeMeta &
     | {
         type: "value";
         name: string;
-        $declaration: TypedDeclaration | undefined;
+        $resolution: TypedDeclaration | undefined;
       }
   );
 
@@ -227,6 +227,8 @@ export type TypedModule = {
 // -- specific
 
 export type ModuleInterface = {
+  ns: string;
+
   publicTypes: Record<string, TypedTypeDeclaration>;
   publicConstructors: Record<
     string,

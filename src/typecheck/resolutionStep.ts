@@ -443,10 +443,7 @@ class ResolutionStep {
           this.unusedImports.add(annotatedImport);
         }
         for (const exposing of annotatedImport.exposing) {
-          if (
-            exposing.type === "value" &&
-            exposing.$declaration !== undefined
-          ) {
+          if (exposing.type === "value" && exposing.$resolution !== undefined) {
             this.unusedExposing.add(exposing);
           } else if (
             exposing.type === "type" &&
@@ -509,14 +506,14 @@ class ResolutionStep {
         // Found!
         switch (exposed.type) {
           case "value":
-            if (exposed.$declaration === undefined) {
+            if (exposed.$resolution === undefined) {
               return;
             }
 
             return {
               type: "global-variable",
               namespace: ast.namespace,
-              declaration: exposed.$declaration,
+              declaration: exposed.$resolution,
             };
 
           case "type":
@@ -1089,7 +1086,7 @@ class ResolutionStep {
 
             return {
               ...exposing,
-              $declaration: declaration,
+              $resolution: declaration,
             } as TypedExposedValue;
           }
         }
