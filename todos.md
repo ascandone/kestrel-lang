@@ -11,3 +11,4 @@
 - refactor: store traits dict in type def
   - perf: do not invalidate the whole ast
 - test: test position of type errs
+- refactor: treat constructor and ident as separate nodes
