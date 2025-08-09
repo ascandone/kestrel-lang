@@ -12,136 +12,137 @@ import { ErrorInfo } from "../errors";
 import * as err from "../errors";
 import { TraitImpl } from "./defaultImports";
 
-test("infer int", () => {
-  const [types, errors] = tc(`
+describe("basic constructs inference", () => {
+  test("infer int", () => {
+    const [types, errors] = tc(`
     pub let x = 42
   `);
 
-  expect(errors).toEqual([]);
-  expect(types).toEqual({
-    x: "Int",
+    expect(errors).toEqual([]);
+    expect(types).toEqual({
+      x: "Int",
+    });
   });
-});
 
-test("infer float", () => {
-  const [types, errors] = tc(`
+  test("infer float", () => {
+    const [types, errors] = tc(`
     pub let x = 42.2
   `);
 
-  expect(errors).toEqual([]);
-  expect(types).toEqual({
-    x: "Float",
+    expect(errors).toEqual([]);
+    expect(types).toEqual({
+      x: "Float",
+    });
   });
-});
 
-test("infer a variable present in the context", () => {
-  const [types, errors] = tc(
-    `
+  test("infer a variable present in the context", () => {
+    const [types, errors] = tc(
+      `
     pub let x = 42
     pub let y = x
   `,
-  );
+    );
 
-  expect(errors).toEqual([]);
-  expect(types).toEqual({
-    x: "Int",
-    y: "Int",
+    expect(errors).toEqual([]);
+    expect(types).toEqual({
+      x: "Int",
+      y: "Int",
+    });
   });
-});
 
-test("infer a variable not present in the context", () => {
-  const [types, errors] = tc(
-    `
+  test("infer a variable not present in the context", () => {
+    const [types, errors] = tc(
+      `
     pub let x = unbound_var
   `,
-  );
+    );
 
-  expect(errors).toHaveLength(1);
-  expect(errors[0]?.description).toBeInstanceOf(err.UnboundVariable);
-  expect((errors[0]!.description as err.UnboundVariable).ident).toBe(
-    "unbound_var",
-  );
-  expect(types).toEqual({
-    x: "a",
+    expect(errors).toHaveLength(1);
+    expect(errors[0]?.description).toBeInstanceOf(err.UnboundVariable);
+    expect((errors[0]!.description as err.UnboundVariable).ident).toBe(
+      "unbound_var",
+    );
+    expect(types).toEqual({
+      x: "a",
+    });
   });
-});
 
-test("typechecking previously defined vars", () => {
-  const [types, errors] = tc(`
+  test("typechecking previously defined vars", () => {
+    const [types, errors] = tc(`
     pub let x = 42
     pub let y = x
   `);
 
-  expect(errors).toEqual([]);
-  expect(types).toEqual({
-    x: "Int",
-    y: "Int",
+    expect(errors).toEqual([]);
+    expect(types).toEqual({
+      x: "Int",
+      y: "Int",
+    });
   });
-});
 
-test("forbid duplicate identifiers", () => {
-  const [types, errors] = tc(`
+  test("forbid duplicate identifiers", () => {
+    const [types, errors] = tc(`
     pub let x = 42
     pub let x = "override"
 
     pub let y = x
   `);
 
-  expect(errors).toHaveLength(1);
-  expect(errors[0]?.description).toBeInstanceOf(err.DuplicateDeclaration);
-  expect(types).toEqual(
-    expect.objectContaining({
-      y: "Int",
-    }),
-  );
-});
+    expect(errors).toHaveLength(1);
+    expect(errors[0]?.description).toBeInstanceOf(err.DuplicateDeclaration);
+    expect(types).toEqual(
+      expect.objectContaining({
+        y: "Int",
+      }),
+    );
+  });
 
-test("fn returning a constant", () => {
-  const [types, errors] = tc(`
+  test("fn returning a constant", () => {
+    const [types, errors] = tc(`
     pub let f = fn { 42 }
   `);
 
-  expect(errors).toEqual([]);
-  expect(types).toEqual({
-    f: "Fn() -> Int",
+    expect(errors).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn() -> Int",
+    });
   });
-});
 
-test("application return type", () => {
-  const [types, errors] = tc(
-    `
+  test("application return type", () => {
+    const [types, errors] = tc(
+      `
     extern type Bool
     extern pub let (>): Fn(a, a) -> Bool
     pub let x = 1 > 2
   `,
-  );
+    );
 
-  expect(errors).toEqual([]);
-  expect(types).toEqual(
-    expect.objectContaining({
-      x: "Bool",
-    }),
-  );
-});
+    expect(errors).toEqual([]);
+    expect(types).toEqual(
+      expect.objectContaining({
+        x: "Bool",
+      }),
+    );
+  });
 
-test("application args should be typechecked", () => {
-  const [, errors] = tc(
-    `
+  test("application args should be typechecked", () => {
+    const [, errors] = tc(
+      `
     type T { C }
     type Ret {}
 
     extern pub let f: Fn(T, T) -> Ret
     pub let x = f(42, C)
   `,
-  );
+    );
 
-  expect(errors).toHaveLength(1);
-  expect(errors[0]?.description).toBeInstanceOf(err.TypeMismatch);
-});
+    expect(errors).toHaveLength(1);
+    expect(errors[0]?.description).toBeInstanceOf(err.TypeMismatch);
+  });
 
-test("application (pipe operator)", () => {
-  const [types, errors] = tc(
-    `
+  test("application (pipe operator)", () => {
+    const [types, errors] = tc(
+      `
     type T { C }
     type T1 { C1 }
     type Ret {}
@@ -149,47 +150,47 @@ test("application (pipe operator)", () => {
     extern pub let f: Fn(T, T1) -> Ret
     pub let x = C |> f(C1)
   `,
-  );
+    );
 
-  expect(errors).toEqual([]);
-  expect(types).toEqual(
-    expect.objectContaining({
-      x: "Ret",
-    }),
-  );
-});
+    expect(errors).toEqual([]);
+    expect(types).toEqual(
+      expect.objectContaining({
+        x: "Ret",
+      }),
+    );
+  });
 
-test("invalid pipe operator", () => {
-  const [, errors] = tc(
-    `
+  test("invalid pipe operator", () => {
+    const [, errors] = tc(
+      `
     pub let x = 0 |> 1
   `,
-  );
+    );
 
-  expect(errors).toHaveLength(1);
-  expect(errors[0]?.description).toBeInstanceOf(err.InvalidPipe);
-});
+    expect(errors).toHaveLength(1);
+    expect(errors[0]?.description).toBeInstanceOf(err.InvalidPipe);
+  });
 
-test("typecheck fn args", () => {
-  const [types] = tc(
-    `
+  test("typecheck fn args", () => {
+    const [types] = tc(
+      `
     extern type Int
     extern type Bool
     extern pub let (>): Fn(Int, Int) -> Bool
     pub let f = fn x, y { x > y }
   `,
-  );
+    );
 
-  expect(types).toEqual(
-    expect.objectContaining({
-      f: "Fn(Int, Int) -> Bool",
-    }),
-  );
-});
+    expect(types).toEqual(
+      expect.objectContaining({
+        f: "Fn(Int, Int) -> Bool",
+      }),
+    );
+  });
 
-test("typecheck if ret value", () => {
-  const [types] = tc(
-    `
+  test("typecheck if ret value", () => {
+    const [types] = tc(
+      `
     type Bool { True }
     let f =
       if True {
@@ -198,16 +199,16 @@ test("typecheck if ret value", () => {
         1
       }
   `,
-  );
+    );
 
-  expect(types).toEqual({
-    f: "Int",
+    expect(types).toEqual({
+      f: "Int",
+    });
   });
-});
 
-test("unify if clauses", () => {
-  const [types] = tc(
-    `
+  test("unify if clauses", () => {
+    const [types] = tc(
+      `
     type Bool { True }
     let f = fn x {
       if True {
@@ -217,16 +218,16 @@ test("unify if clauses", () => {
       }
     }
   `,
-  );
+    );
 
-  expect(types).toEqual({
-    f: "Fn(Int) -> Int",
+    expect(types).toEqual({
+      f: "Fn(Int) -> Int",
+    });
   });
-});
 
-test("typecheck if condition", () => {
-  const [types] = tc(
-    `
+  test("typecheck if condition", () => {
+    const [types] = tc(
+      `
     let f = fn x {
       if x {
         0
@@ -235,187 +236,188 @@ test("typecheck if condition", () => {
       }
     }
   `,
-  );
+    );
 
-  expect(types).toEqual({
-    f: "Fn(Bool) -> Int",
+    expect(types).toEqual({
+      f: "Fn(Bool) -> Int",
+    });
   });
-});
 
-test("typecheck let expr", () => {
-  const [types, errs] = tc(
-    `
+  test("typecheck let expr", () => {
+    const [types, errs] = tc(
+      `
     pub let x = {
       let y = 42;
       y
     }
   `,
-  );
+    );
 
-  expect(errs).toEqual([]);
-  expect(types).toEqual({
-    x: "Int",
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      x: "Int",
+    });
   });
-});
 
-test("typecheck generic values", () => {
-  const [types, errs] = tc(
-    `
+  test("typecheck generic values", () => {
+    const [types, errs] = tc(
+      `
     pub let id = fn x { x }
   `,
-  );
+    );
 
-  expect(errs).toEqual([]);
-  expect(types).toEqual({
-    id: "Fn(a) -> a",
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      id: "Fn(a) -> a",
+    });
   });
-});
 
-test("generalize values", () => {
-  const [types, errs] = tc(
-    `
+  test("generalize values", () => {
+    const [types, errs] = tc(
+      `
     pub let id = fn x { x }
     pub let v = id(42)
   `,
-  );
+    );
 
-  expect(errs).toEqual([]);
-  expect(types).toEqual({
-    id: "Fn(a) -> a",
-    v: "Int",
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      id: "Fn(a) -> a",
+      v: "Int",
+    });
   });
-});
 
-test("recursive let exprs", () => {
-  const [types, errs] = tc(
-    `
+  test("recursive let exprs", () => {
+    const [types, errs] = tc(
+      `
     pub let f = {
       let g = fn _ { g(1) };
       g
   }
   `,
-  );
+    );
 
-  expect(errs).toEqual([]);
-  expect(types).toEqual({
-    f: "Fn(Int) -> a",
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(Int) -> a",
+    });
   });
-});
 
-test("recursive let declarations", () => {
-  const [types, errs] = tc(
-    `
+  test("recursive let declarations", () => {
+    const [types, errs] = tc(
+      `
     pub let f = fn _ { f(42) }
   `,
-  );
+    );
 
-  expect(errs).toEqual([]);
-  expect(types).toEqual({
-    f: "Fn(Int) -> a",
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f: "Fn(Int) -> a",
+    });
   });
-});
 
-test("let declarations in reverse order", () => {
-  const [types, errs] = tc(
-    `
+  test("let declarations in reverse order", () => {
+    const [types, errs] = tc(
+      `
     pub let a = b
     pub let b = 42
   `,
-  );
+    );
 
-  expect(errs).toEqual([]);
-  expect(types).toEqual({
-    a: "Int",
-    b: "Int",
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      a: "Int",
+      b: "Int",
+    });
   });
-});
 
-test("dependency cycle between let declarations in reverse order", () => {
-  const [, errs] = tc(
-    `
+  test("dependency cycle between let declarations in reverse order", () => {
+    const [, errs] = tc(
+      `
     pub let a = b
     pub let b = a
   `,
-  );
+    );
 
-  expect(errs).toEqual([
-    expect.objectContaining({
-      description: new err.CyclicDefinition(["a", "b"]),
-    }),
-  ]);
-});
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.CyclicDefinition(["a", "b"]),
+      }),
+    ]);
+  });
 
-test("dependency cycle between let declarations are permitted in thunks", () => {
-  const [, errs] = tc(
-    `
+  test("dependency cycle between let declarations are permitted in thunks", () => {
+    const [, errs] = tc(
+      `
     pub let a = b
     pub let b = fn { a }
   `,
-  );
+    );
 
-  expect(errs).toEqual([]);
-});
+    expect(errs).toEqual([]);
+  });
 
-test("unused locals", () => {
-  const [, errs] = tc(
-    `
+  test("unused locals", () => {
+    const [, errs] = tc(
+      `
     pub let f = {
       let unused_var = 42;
       0
     }
   `,
-  );
+    );
 
-  expect(errs).toHaveLength(1);
-  expect(errs[0]?.description).toBeInstanceOf(err.UnusedVariable);
-});
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(err.UnusedVariable);
+  });
 
-test("unused pattern match locals", () => {
-  const [, errs] = tc(
-    `
+  test("unused pattern match locals", () => {
+    const [, errs] = tc(
+      `
     pub let a = match "something" {
       x => 42,
     }
   `,
-  );
+    );
 
-  expect(errs).toHaveLength(1);
-  expect(errs[0]?.description).toBeInstanceOf(err.UnusedVariable);
-});
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(err.UnusedVariable);
+  });
 
-test("unused globals", () => {
-  const [, errs] = tc(
-    `
+  test("unused globals", () => {
+    const [, errs] = tc(
+      `
     let x = 42
   `,
-  );
+    );
 
-  expect(errs).toHaveLength(1);
-  expect(errs[0]?.description).toBeInstanceOf(err.UnusedVariable);
-});
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(err.UnusedVariable);
+  });
 
-test("unused globals does not trigger when private vars are used", () => {
-  const [, errs] = tc(
-    `
+  test("unused globals does not trigger when private vars are used", () => {
+    const [, errs] = tc(
+      `
     let x = 42
     pub let y = x
   `,
-  );
+    );
 
-  expect(errs).toEqual([]);
-});
+    expect(errs).toEqual([]);
+  });
 
-test("closures with resursive bindings", () => {
-  const [, errs] = tc(
-    `
+  test("closures with resursive bindings", () => {
+    const [, errs] = tc(
+      `
     pub let f = fn {
       fn { f }
     }
   `,
-  );
+    );
 
-  expect(errs).toHaveLength(1);
-  expect(errs[0]?.description).toBeInstanceOf(err.OccursCheck);
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(err.OccursCheck);
+  });
 });
 
 test("does not refer to imported values when qualifying", () => {
