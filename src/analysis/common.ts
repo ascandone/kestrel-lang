@@ -1,11 +1,11 @@
-import { Position, RangeMeta } from "../../parser";
+import { Position, contains } from "../parser";
 import {
   TypedDeclaration,
   TypedExpr,
   TypedImport,
   TypedModule,
   TypedTypeDeclaration,
-} from "../typedAst";
+} from "../typecheck/typedAst";
 
 export function firstBy<T, U>(
   r: T[],
@@ -59,17 +59,6 @@ export function statementByOffset(
   }
 
   return undefined;
-}
-
-export function gtEqPos(p1: Position, p2: Position): boolean {
-  if (p1.line === p2.line) {
-    return p1.character >= p2.character;
-  }
-  return p1.line > p2.line;
-}
-
-export function contains({ range }: RangeMeta, position: Position) {
-  return gtEqPos(position, range.start) && gtEqPos(range.end, position);
 }
 
 export function foldTree<T>(

@@ -1,4 +1,5 @@
 import {
+  gtEqPos,
   ConstLiteral,
   LineComment,
   MatchPattern,
@@ -28,7 +29,6 @@ import {
   nextBreakFits,
   nestOnBreak,
 } from "./pretty";
-import { gtEqPos } from "../typecheck/typedAst/common";
 
 let currentLineComments: LineComment[] = [];
 function popComments(ast: RangeMeta): Doc[] {

@@ -5,7 +5,7 @@ import {
   TypedMatchPattern,
   TypedModule,
 } from "../typecheck";
-import { foldTree } from "../typecheck/typedAst/common";
+import { foldTree } from "../analysis";
 
 type Optimization = (src: TypedExpr) => TypedExpr | undefined;
 

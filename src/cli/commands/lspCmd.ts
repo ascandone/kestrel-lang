@@ -24,20 +24,22 @@ import {
   typecheckProject,
   typeToString,
   TypedModule,
-  goToDefinitionOf,
-  hoverOn,
-  hoverToMarkdown,
   UntypedProject,
-  findReferences,
-  functionSignatureHint,
-  getInlayHints,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
 import { ErrorInfo, Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../format";
 import { Config, readConfig } from "../config";
-import { getCompletionItems } from "../../typecheck/typedAst/completion";
+import {
+  getCompletionItems,
+  findReferences,
+  functionSignatureHint,
+  getInlayHints,
+  goToDefinitionOf,
+  hoverOn,
+  hoverToMarkdown,
+} from "../../analysis";
 
 type Connection = _Connection;
 

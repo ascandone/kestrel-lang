@@ -1,12 +1,21 @@
-import { TypedDeclaration, TypedExpr, TypedModule } from "../typedAst";
-import { contains, firstBy } from "./common";
-import { DependenciesProvider } from ".";
+import {
+  TypedDeclaration,
+  TypedExpr,
+  TypedModule,
+} from "../typecheck/typedAst";
+import { firstBy } from "./common";
 import {
   CompletionItem,
   CompletionItemKind,
   Position,
 } from "vscode-languageserver";
-import { Instantiator, TVar, typeToString, unify } from "../../type";
+import { Instantiator, TVar, typeToString, unify } from "../type";
+import { contains } from "../parser";
+
+// TODO find a decent name
+export type DependenciesProvider = {
+  getModuleByNs(ns: string): TypedModule | undefined;
+};
 
 export function getCompletionItems(
   module: TypedModule,

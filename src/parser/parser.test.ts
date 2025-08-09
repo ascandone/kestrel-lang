@@ -1,7 +1,7 @@
 import { expect, test, describe } from "vitest";
 import { parse, unsafeParse } from "./parser";
 import { UntypedModule } from "./ast";
-import { rangeOf } from "../typecheck/typedAst/__test__/utils";
+import { rangeOf } from "../analysis/__test__/utils";
 
 test("parsing a declaration", () => {
   const src = "let x = 0";

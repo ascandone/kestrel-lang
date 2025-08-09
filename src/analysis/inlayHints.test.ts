@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { getInlayHints, InlayHint } from "./inlayHint";
-import { unsafeParse } from "../../parser";
-import { resetTraitsRegistry, typecheck } from "../typecheck";
+import { unsafeParse } from "../parser";
+import { resetTraitsRegistry, typecheck } from "../typecheck/typecheck";
 import { rangeOf } from "./__test__/utils";
 
 test("no inlay hints on empty program", () => {

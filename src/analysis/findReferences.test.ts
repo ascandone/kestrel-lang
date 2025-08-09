@@ -1,8 +1,9 @@
 import { test, expect } from "vitest";
-import { findReferences, Identifier, TypedModule } from "../typedAst";
-import { Position, unsafeParse } from "../../parser";
-import { UntypedProject, typecheckProject } from "../typecheck";
+import { findReferences } from "./findReferences";
+import { Position, unsafeParse } from "../parser";
+import { UntypedProject, typecheckProject } from "../typecheck/typecheck";
 import { positionOf, rangeOf } from "./__test__/utils";
+import { Identifier, TypedModule } from "../typecheck";
 
 test("glb decl in the same module", () => {
   const Main = `

@@ -1,12 +1,12 @@
-import { Position, Range } from "../../parser";
+import { Position, Range, contains } from "../parser";
 import {
   IdentifierResolution,
   TypedExpr,
   TypedMatchPattern,
   TypedModule,
   TypedTypeAst,
-} from "../typedAst";
-import { contains, firstBy, statementByOffset } from "./common";
+} from "../typecheck/typedAst";
+import { firstBy, statementByOffset } from "./common";
 
 export type Location = {
   namespace?: string;

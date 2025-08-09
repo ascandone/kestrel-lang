@@ -242,3 +242,14 @@ export type SyntaxSugar =
     };
 
 export type RangeMeta = { range: Range };
+
+export function gtEqPos(p1: Position, p2: Position): boolean {
+  if (p1.line === p2.line) {
+    return p1.character >= p2.character;
+  }
+  return p1.line > p2.line;
+}
+
+export function contains({ range }: RangeMeta, position: Position) {
+  return gtEqPos(position, range.start) && gtEqPos(range.end, position);
+}

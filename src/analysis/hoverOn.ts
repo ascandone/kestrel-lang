@@ -1,5 +1,5 @@
-import { Position, RangeMeta } from "../../parser";
-import { TypeScheme, typeToString } from "../../type";
+import { Position, RangeMeta, contains } from "../parser";
+import { TypeScheme, typeToString } from "../type";
 import {
   IdentifierResolution,
   TypedDeclaration,
@@ -8,8 +8,8 @@ import {
   TypedModule,
   TypedTypeAst,
   TypedTypeDeclaration,
-} from "../typedAst";
-import { contains, firstBy, statementByOffset } from "./common";
+} from "../typecheck/typedAst";
+import { firstBy, statementByOffset } from "./common";
 
 export type HoveredInfo =
   | IdentifierResolution

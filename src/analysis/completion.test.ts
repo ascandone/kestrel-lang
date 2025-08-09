@@ -1,10 +1,10 @@
 import { expect, test } from "vitest";
-import { getCompletionItems } from "./completion";
-import { parse } from "../../parser";
-import { typecheck } from "../typecheck";
-import { makeObjectDepedenciesProvider } from "./index";
+import { DependenciesProvider, getCompletionItems } from "./completion";
+import { parse } from "../parser";
+import { typecheck } from "../typecheck/typecheck";
 import { CompletionItem, CompletionItemKind } from "vscode-languageserver";
 import { positionOf } from "./__test__/utils";
+import { TypedModule } from "../typecheck";
 
 test("completion of field access of a struct whose type is resolved", () => {
   const src = `
@@ -87,3 +87,13 @@ let expr = fn p { p. }
     },
   ]);
 });
+
+function makeObjectDepedenciesProvider(
+  o: Record<string, TypedModule>,
+): DependenciesProvider {
+  return {
+    getModuleByNs(ns) {
+      return o[ns];
+    },
+  };
+}

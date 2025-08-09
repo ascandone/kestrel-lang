@@ -1,7 +1,7 @@
 import { test, expect, beforeEach } from "vitest";
-import { goToDefinitionOf, Location } from "../typedAst";
-import { unsafeParse } from "../../parser";
-import { resetTraitsRegistry, typecheck } from "../typecheck";
+import { goToDefinitionOf, Location } from "./gotoDefinition";
+import { unsafeParse } from "../parser";
+import { resetTraitsRegistry, typecheck } from "../typecheck/typecheck";
 import { positionOf, rangeOf } from "./__test__/utils";
 
 test("glb decl", () => {

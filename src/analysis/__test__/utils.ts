@@ -1,4 +1,4 @@
-import { Position, Range } from "../../../parser";
+import { Position, Range } from "../../parser";
 
 export function indexOf(
   src: string,

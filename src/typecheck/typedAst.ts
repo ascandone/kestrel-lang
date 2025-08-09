@@ -1,11 +1,5 @@
 import * as ast from "../parser";
 import { TVar, TypeScheme } from "../type";
-export * from "./typedAst/findReferences";
-export * from "./typedAst/gotoDefinition";
-export * from "./typedAst/inlayHint";
-export * from "./typedAst/hoverOn";
-export * from "./typedAst/signatureHint";
-export { foldTree } from "./typedAst/common";
 
 // -- Common
 

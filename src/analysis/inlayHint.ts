@@ -1,6 +1,6 @@
-import { Position } from "../../parser";
-import { TypeScheme, typeToString } from "../../type";
-import { TypedExpr, TypedModule } from "../typedAst";
+import { Position } from "../parser";
+import { TypeScheme, typeToString } from "../type";
+import { TypedExpr, TypedModule } from "../typecheck/typedAst";
 
 export type InlayHint = {
   label: string;

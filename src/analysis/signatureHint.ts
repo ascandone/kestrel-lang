@@ -1,6 +1,6 @@
-import { Position } from "../../parser";
-import { Type, TypeScheme } from "../../type";
-import { TypedExpr, TypedModule } from "../typedAst";
+import { Position } from "../parser";
+import { Type, TypeScheme } from "../type";
+import { TypedExpr, TypedModule } from "../typecheck/typedAst";
 import { firstBy, statementByOffset } from "./common";
 
 export type FunctionSignatureHint = {

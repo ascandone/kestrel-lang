@@ -4,8 +4,9 @@ import {
   IdentifierResolution,
   TypedDeclaration,
   TypedModule,
-} from "../typedAst";
-import { contains, foldTree, statementByOffset } from "./common";
+} from "../typecheck/typedAst";
+import { foldTree, statementByOffset } from "./common";
+import { contains } from "../parser";
 
 export type References = {
   resolution: IdentifierResolution;
