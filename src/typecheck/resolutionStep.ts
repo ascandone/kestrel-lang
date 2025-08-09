@@ -631,6 +631,16 @@ class ResolutionStep {
     }
   }
 
+  private resolveDeclarations(declarations: TypedDeclaration[]) {
+    for (const decl of declarations) {
+      if (!decl.extern) {
+        this.resolveExpression(decl.value);
+      }
+
+      this.emitUnusedLocalsErrors();
+    }
+  }
+
   run(
     module: UntypedModule,
     implicitImports: Import[] = defaultImports,
@@ -652,14 +662,8 @@ class ResolutionStep {
     this.loadTypeDeclarations(annotatedModule.typeDeclarations);
     this.loadValueDeclarations(annotatedModule.declarations);
 
-    // Now that global vars are into scope, we visit each (non-extern) declaration
-    for (const decl of annotatedModule.declarations) {
-      if (!decl.extern) {
-        this.resolveExpression(decl.value);
-      }
-
-      this.emitUnusedLocalsErrors();
-    }
+    // Now that global vars are into scope, we visit each declaration
+    this.resolveDeclarations(annotatedModule.declarations);
 
     this.emitUnusedGlobalsErrors();
     this.emitUnusedImportsErrors();
