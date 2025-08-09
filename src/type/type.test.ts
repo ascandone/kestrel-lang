@@ -17,7 +17,7 @@ import {
   List,
   Option,
   Tuple,
-} from "../__test__/types";
+} from "./__test__/types";
 
 beforeEach(() => {
   TVar.resetId();
