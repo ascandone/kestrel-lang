@@ -70,7 +70,7 @@ export function resolve(
   module: UntypedModule,
   implicitImports: Import[],
 ) {
-  const resolution = new ResolutionStep(ns, deps);
+  const resolution = new Resolver(ns, deps);
   const out = resolution.run(module, implicitImports);
   return {
     errors: resolution.errors,
@@ -78,7 +78,7 @@ export function resolve(
   };
 }
 
-class ResolutionStep {
+class Resolver {
   public readonly errors: ErrorInfo[] = [];
 
   // --- call graph
