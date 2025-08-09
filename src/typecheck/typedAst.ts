@@ -221,6 +221,7 @@ export type TypedModule = {
 // -- specific
 
 export type ModuleInterface = {
+  package_: string;
   ns: string;
 
   publicTypes: Record<string, TypedTypeDeclaration>;

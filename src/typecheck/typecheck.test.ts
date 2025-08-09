@@ -463,6 +463,7 @@ describe("basic constructs inference", () => {
 
 test("does not refer to imported values when qualifying", () => {
   const [T1] = typecheck(
+    "pkg",
     "T1",
     unsafeParse(`
         pub let x = 42
@@ -490,6 +491,7 @@ test("does not refer to imported values when qualifying", () => {
 
 test("does not refer to imported types when qualifying", () => {
   const [T1] = typecheck(
+    "pkg",
     "T1",
     unsafeParse(`
         pub(..) type T1 { X }
@@ -2210,6 +2212,7 @@ describe("pattern matching", () => {
 
   test("does not allow duplicate constructor", () => {
     const [T1] = typecheck(
+      "pkg",
       "T1",
       unsafeParse(`
         pub(..) type T1 { X }
@@ -2237,6 +2240,7 @@ describe("pattern matching", () => {
 
   test("Does not access imported module when qualifying", () => {
     const [T1] = typecheck(
+      "pkg",
       "T1",
       unsafeParse(`
         pub(..) type T1 { X }
@@ -2914,7 +2918,7 @@ function tcProgram(
   const deps_: IDeps = Object.fromEntries(
     Object.entries(deps).map(([k, v]) => [k, v.moduleInterface]),
   );
-  return typecheck(ns, parsedProgram, deps_, prelude);
+  return typecheck("pkg", ns, parsedProgram, deps_, prelude);
 }
 
 function tc(

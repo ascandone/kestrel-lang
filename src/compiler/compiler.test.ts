@@ -3060,6 +3060,7 @@ beforeEach(() => {
 });
 
 type CompileSrcOpts = {
+  package_?: string;
   ns?: string;
   traitImpl?: TraitImpl[];
   allowDeriving?: string[] | undefined;
@@ -3069,6 +3070,7 @@ type CompileSrcOpts = {
 function compileSrc(
   src: string,
   {
+    package_ = "pkg",
     ns = "Main",
     traitImpl = [],
     deps = {},
@@ -3076,19 +3078,24 @@ function compileSrc(
   }: CompileSrcOpts = {},
 ) {
   resetTraitsRegistry(traitImpl);
-  const program = typecheckSource_(ns, src, deps);
-  const out = compile(ns, program, { allowDeriving });
+  const program = typecheckSource_(package_, ns, src, deps);
+  const out = compile(package_, ns, program, { allowDeriving });
   return out;
 }
 
-function typecheckSource_(ns: string, src: string, deps: Deps = {}) {
+function typecheckSource_(
+  package_: string,
+  ns: string,
+  src: string,
+  deps: Deps = {},
+) {
   const parsed = unsafeParse(src);
-  const [program] = typecheck(ns, parsed, deps, []);
+  const [program] = typecheck(package_, ns, parsed, deps, []);
   return program;
 }
 
 function typecheckSource(ns: string, src: string, deps: Deps = {}) {
-  return typecheckSource_(ns, src, deps).moduleInterface;
+  return typecheckSource_("pkg", ns, src, deps).moduleInterface;
 }
 
 const testEntryPoint: NonNullable<CompileProjectOptions["entrypoint"]> = {

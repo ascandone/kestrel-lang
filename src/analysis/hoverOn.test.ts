@@ -358,7 +358,7 @@ function parseHover(
   }
 
   const parsed = unsafeParse(src);
-  const [typed, _] = typecheck("Main", parsed);
+  const [typed, _] = typecheck("pkg", "Main", parsed);
   const ret = hoverOn("Ns", typed, position);
   if (ret === undefined) {
     throw new Error("Undefined hover");

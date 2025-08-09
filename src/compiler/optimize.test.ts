@@ -349,7 +349,7 @@ declare module "vitest" {
 expect.extend({
   toOptimizeAs(received, expected) {
     const parsedSrc = unsafeParse(received);
-    const [typed] = typecheck("Main", parsedSrc, {}, []);
+    const [typed] = typecheck("pkg", "Main", parsedSrc, {}, []);
 
     const optimized = optimizeModule(typed);
     const optFormatted = format(optimized).trimStart().trimEnd();

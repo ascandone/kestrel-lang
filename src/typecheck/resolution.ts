@@ -65,12 +65,13 @@ class LocalFrames {
 class UnimplementedErr extends Error {}
 
 export function resolve(
+  package_: string,
   ns: string,
   deps: Deps,
   module: UntypedModule,
   implicitImports: Import[],
 ) {
-  const resolution = new Resolver(ns, deps);
+  const resolution = new Resolver(package_, ns, deps);
   const out = resolution.run(module, implicitImports);
   return {
     errors: resolution.errors,
@@ -145,6 +146,7 @@ class Resolver {
   private unusedExposings = new Set<TypedExposedValue>();
 
   constructor(
+    private readonly package_: string,
     private readonly ns: string,
     private readonly deps: Deps,
   ) {}
@@ -763,6 +765,7 @@ class Resolver {
       ...annotatedModule,
 
       moduleInterface: makeInterface(
+        this.package_,
         this.ns,
         annotatedModule.typeDeclarations,
         annotatedModule.declarations,
@@ -778,6 +781,7 @@ class Resolver {
 
 // TODO make this lazy
 function makeInterface(
+  package_: string,
   ns: string,
   typeDeclarations: TypedModule["typeDeclarations"],
   declarations: TypedModule["declarations"],
@@ -822,6 +826,7 @@ function makeInterface(
   }
 
   return {
+    package_,
     ns,
     publicConstructors,
     publicTypes,

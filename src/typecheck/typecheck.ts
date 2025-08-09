@@ -67,13 +67,18 @@ export function resetTraitsRegistry(
 }
 
 export function typecheck(
+  package_: string,
   ns: string,
   module: UntypedModule,
   deps: Deps = {},
   implicitImports: Import[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
 ): [TypedModule, ErrorInfo[]] {
-  return new Typechecker(ns, mainType).run(module, deps, implicitImports);
+  return new Typechecker(package_, ns, mainType).run(
+    module,
+    deps,
+    implicitImports,
+  );
 }
 
 type ScheduledAmbiguousVarCheck = {
@@ -95,6 +100,7 @@ class Typechecker {
   private scheduledAmbiguousVarChecks: ScheduledAmbiguousVarCheck[] = [];
 
   constructor(
+    private readonly package_: string,
     private ns: string,
     private mainType: Type,
   ) {}
@@ -213,6 +219,7 @@ class Typechecker {
     TVar.resetId();
 
     const { typedModule, errors, mutuallyRecursiveBindings } = resolve(
+      this.package_,
       this.ns,
       deps,
       module,
@@ -1009,6 +1016,7 @@ export function typecheckProject(
       continue;
     }
     const [typedModule, errors] = typecheck(
+      "pkg",
       ns,
       m.module,
       deps,

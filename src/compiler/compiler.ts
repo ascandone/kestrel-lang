@@ -34,11 +34,12 @@ export type CompileOptions = {
 };
 
 export function compile(
+  package_: string,
   ns: string,
   ast: TypedModule,
   options: CompileOptions = {},
 ): string {
-  return new Compiler(ns, options).compile(ast);
+  return new Compiler(package_, ns, options).compile(ast);
 }
 
 const EQ_IDENTIFIER: t.Identifier = { type: "Identifier", name: "_eq" };
@@ -92,6 +93,7 @@ class Compiler {
   }
 
   constructor(
+    readonly package_: string,
     private ns: string,
     private options: CompileOptions,
   ) {}
@@ -1522,7 +1524,11 @@ export function compileProject(
       buf.push(extern);
     }
 
-    const out = compile(ns, optimize ? optimizeModule(module) : module);
+    const out = compile(
+      module.moduleInterface.package_,
+      ns,
+      optimize ? optimizeModule(module) : module,
+    );
 
     buf.push(out);
   }
