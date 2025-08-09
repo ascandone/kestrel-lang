@@ -48,7 +48,7 @@ import {
   TypeMismatch,
   UnboundTypeParam,
 } from "../errors";
-import { Deps, ResolutionStep } from "./resolutionStep";
+import { Deps, resolve } from "./resolutionStep";
 import { topologicalSort } from "../utils/topsort";
 export { Deps } from "./resolutionStep";
 
@@ -212,10 +212,16 @@ class Typechecker {
   ): [TypedModule, ErrorInfo[]] {
     TVar.resetId();
 
-    const resolution = new ResolutionStep(this.errors, this.ns, deps);
-    const typedAst = resolution.run(module, implicitImports);
+    const { typedModule, errors } = resolve(
+      this.ns,
+      deps,
+      module,
+      implicitImports,
+    );
 
-    for (const typeDecl of typedAst.typeDeclarations) {
+    this.errors = errors;
+
+    for (const typeDecl of typedModule.typeDeclarations) {
       if (typeDecl.type === "adt") {
         for (const variant of typeDecl.variants) {
           const [scheme, mono] = this.makeVariantType(typeDecl, variant);
@@ -235,7 +241,7 @@ class Typechecker {
       }
     }
 
-    for (const decl of typedAst.declarations) {
+    for (const decl of typedModule.declarations) {
       this.bindingsTypesStack.push(decl.binding.$type.asType());
       this.typecheckAnnotatedDecl(decl);
       this.bindingsTypesStack.pop();
@@ -254,7 +260,7 @@ class Typechecker {
       );
     }
 
-    return [typedAst, this.errors];
+    return [typedModule, this.errors];
   }
 
   private makeStructType(typeDecl: TypedTypeDeclaration & { type: "struct" }) {

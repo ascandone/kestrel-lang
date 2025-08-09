@@ -14,7 +14,6 @@ import {
   TypedTypeAst,
   TypedTypeDeclaration,
 } from "./typedAst";
-import { defaultImports } from "./defaultImports";
 import { TVar } from "./type";
 import { ErrorInfo } from "../errors";
 import * as err from "../errors";
@@ -65,7 +64,23 @@ class LocalFrames {
 // TODO remove this err
 class UnimplementedErr extends Error {}
 
-export class ResolutionStep {
+export function resolve(
+  ns: string,
+  deps: Deps,
+  module: UntypedModule,
+  implicitImports: Import[],
+) {
+  const resolution = new ResolutionStep(ns, deps);
+  const out = resolution.run(module, implicitImports);
+  return {
+    errors: resolution.errors,
+    ...out,
+  };
+}
+
+class ResolutionStep {
+  public readonly errors: ErrorInfo[] = [];
+
   // --- call graph
 
   /**
@@ -130,7 +145,6 @@ export class ResolutionStep {
   private unusedExposings = new Set<TypedExposedValue>();
 
   constructor(
-    public readonly errors: ErrorInfo[] = [],
     private readonly ns: string,
     private readonly deps: Deps,
   ) {}
@@ -704,8 +718,10 @@ export class ResolutionStep {
 
   run(
     module: UntypedModule,
-    implicitImports: Import[] = defaultImports,
-  ): TypedModule {
+    implicitImports: Import[],
+  ): {
+    typedModule: TypedModule;
+  } {
     TVar.resetId();
 
     const annotator = new Annotator(this.errors);
@@ -740,7 +756,9 @@ export class ResolutionStep {
       ),
     };
 
-    return typedModule;
+    return {
+      typedModule,
+    };
   }
 }
 
