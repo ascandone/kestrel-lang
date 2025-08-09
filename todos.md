@@ -16,3 +16,4 @@
 - feat: allow mutually recursive types
 - feat: check cyclic module dependency
 - feat: allow mutually recursive values
+- refactor: add package to named type repr
