@@ -3096,7 +3096,7 @@ const testEntryPoint: NonNullable<CompileProjectOptions["entrypoint"]> = {
   type: {
     type: "named",
     name: "String",
-    moduleName: "String",
+    module: "String",
     args: [],
   },
 };

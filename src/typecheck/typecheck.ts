@@ -279,7 +279,7 @@ class Typechecker {
 
     const mono: Type = {
       type: "named",
-      moduleName: this.ns,
+      module: this.ns,
       name: typeDecl.name,
       args: generics.map(([, tvar]) => tvar.asType()),
     };
@@ -321,7 +321,7 @@ class Typechecker {
 
     const ret: Type = {
       type: "named",
-      moduleName: this.ns,
+      module: this.ns,
       name: typeDecl.name,
       args: generics.map((g) => g[1].asType()),
     };
@@ -438,7 +438,7 @@ class Typechecker {
 
         return {
           type: "named",
-          moduleName: ast.$resolution.namespace,
+          module: ast.$resolution.namespace,
           name: ast.name,
           args: ast.args.map((arg) =>
             this.typeAstToType(arg, opts, bound, traitDefs),
@@ -901,13 +901,13 @@ class Typechecker {
           throw new Error("TODO handle field access to fn");
         }
 
-        if (resolved.value.moduleName === this.ns) {
+        if (resolved.value.module === this.ns) {
           // we already looked up the fields in this module's structs
           emitErr();
           return;
         }
 
-        const mod = deps[resolved.value.moduleName];
+        const mod = deps[resolved.value.module];
         if (mod === undefined) {
           throw new Error("TODO handle invalid mod");
         }
@@ -1072,34 +1072,34 @@ function resolutionToType(resolution: IdentifierResolution): Type {
 // Keep this in sync with core
 const Bool: Type = {
   type: "named",
-  moduleName: "Bool",
+  module: "Bool",
   name: "Bool",
   args: [],
 };
 
 const Int: Type = {
-  moduleName: "Int",
+  module: "Int",
   type: "named",
   name: "Int",
   args: [],
 };
 
 const Float: Type = {
-  moduleName: "Float",
+  module: "Float",
   type: "named",
   name: "Float",
   args: [],
 };
 
 const String: Type = {
-  moduleName: "String",
+  module: "String",
   type: "named",
   name: "String",
   args: [],
 };
 
 const Char: Type = {
-  moduleName: "Char",
+  module: "Char",
   type: "named",
   name: "Char",
   args: [],
@@ -1107,14 +1107,14 @@ const Char: Type = {
 
 const Unit: Type = {
   type: "named",
-  moduleName: "Tuple",
+  module: "Tuple",
   name: "Unit",
   args: [],
 };
 
 const List = (a: Type): Type => ({
   type: "named",
-  moduleName: "List",
+  module: "List",
   name: "List",
   args: [a],
 });
@@ -1122,7 +1122,7 @@ const List = (a: Type): Type => ({
 function Task(arg: Type): Type {
   return {
     type: "named",
-    moduleName: "Task",
+    module: "Task",
     name: "Task",
     args: [arg],
   };

@@ -3,38 +3,38 @@ import { ConcreteType, Type } from "..";
 export const BASICS_MODULE = "Basics";
 
 export const Int: ConcreteType = {
-  moduleName: BASICS_MODULE,
+  module: BASICS_MODULE,
   type: "named",
   name: "Int",
   args: [],
 };
 export const Float: ConcreteType = {
-  moduleName: BASICS_MODULE,
+  module: BASICS_MODULE,
   type: "named",
   name: "Float",
   args: [],
 };
 export const String: ConcreteType = {
-  moduleName: BASICS_MODULE,
+  module: BASICS_MODULE,
   type: "named",
   name: "String",
   args: [],
 };
 export const Bool: ConcreteType = {
-  moduleName: BASICS_MODULE,
+  module: BASICS_MODULE,
   type: "named",
   name: "Bool",
   args: [],
 };
 export const Unit: ConcreteType = {
-  moduleName: BASICS_MODULE,
+  module: BASICS_MODULE,
   type: "named",
   name: "Unit",
   args: [],
 };
 export function List(arg: Type): ConcreteType {
   return {
-    moduleName: BASICS_MODULE,
+    module: BASICS_MODULE,
     type: "named",
     name: "List",
     args: [arg],
@@ -43,7 +43,7 @@ export function List(arg: Type): ConcreteType {
 
 export function Option(arg: Type): ConcreteType {
   return {
-    moduleName: BASICS_MODULE,
+    module: BASICS_MODULE,
     type: "named",
     name: "Option",
     args: [arg],
@@ -57,7 +57,7 @@ export function Tuple(...args: Type[]): ConcreteType {
 
   return {
     type: "named",
-    moduleName: "Tuple",
+    module: "Tuple",
     name: `Tuple${args.length}`,
     args,
   };

@@ -8,7 +8,7 @@ export type ConcreteType =
     }
   | {
       type: "named";
-      moduleName: string;
+      module: string;
       name: string;
       args: Type[];
     };
@@ -119,7 +119,7 @@ export class TVar {
       return undefined;
     }
 
-    const id = getNamedTypeTraitId(t.moduleName, t.name, trait);
+    const id = getNamedTypeTraitId(t.module, t.name, trait);
 
     const lookup = TVar.namedTypesTraitImpls.get(id);
     if (lookup === undefined) {
@@ -242,7 +242,7 @@ export class TVar {
     if (t1.type === "named" && t2.type === "named") {
       if (
         t1.name !== t2.name ||
-        t1.moduleName !== t2.moduleName ||
+        t1.module !== t2.module ||
         t1.args.length !== t2.args.length
       ) {
         return { type: "type-mismatch", left: t1, right: t2 };
@@ -518,7 +518,7 @@ function typeToStringHelper(
         return t.name;
       }
 
-      if (t.moduleName === "Tuple" && /Tuple[0-9]+/.test(t.name)) {
+      if (t.module === "Tuple" && /Tuple[0-9]+/.test(t.name)) {
         const inner = t.args
           .map((arg) => typeToStringHelper(arg, scheme, collectTraits))
           .join(", ");

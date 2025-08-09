@@ -145,7 +145,7 @@ class ExprCompletion {
           return [];
         }
 
-        const typedModule = this.deps.getModuleByNs(resolved.value.moduleName);
+        const typedModule = this.deps.getModuleByNs(resolved.value.module);
         if (typedModule === undefined) {
           return undefined;
         }

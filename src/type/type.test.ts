@@ -33,7 +33,7 @@ describe("unify", () => {
 
   test("do not unify concrete types from different modules", () => {
     expect(
-      unify(Int, { ...Int, moduleName: "AnotherModule" } as any),
+      unify(Int, { ...Int, module: "AnotherModule" } as any),
     ).not.toBeUndefined();
   });
 
@@ -46,12 +46,12 @@ describe("unify", () => {
     expect(
       unify(
         {
-          moduleName: "Mod",
+          module: "Mod",
           type: "named",
           name: "T",
-          args: [{ moduleName: "Mod", type: "named", name: "X", args: [] }],
+          args: [{ module: "Mod", type: "named", name: "X", args: [] }],
         },
-        { moduleName: "Mod", type: "named", name: "T", args: [] },
+        { module: "Mod", type: "named", name: "T", args: [] },
       ),
     ).not.toBeUndefined();
     expect(unify(List(Int), List(Bool))).not.toBeUndefined();

@@ -282,11 +282,11 @@ export class TypeMismatch implements ErrorDescription {
 
     const nsLeft =
       qualify && this.expected.type === "named"
-        ? `${this.expected.moduleName}.`
+        ? `${this.expected.module}.`
         : "";
 
     const nsRight =
-      qualify && this.got.type === "named" ? `${this.got.moduleName}.` : "";
+      qualify && this.got.type === "named" ? `${this.got.module}.` : "";
 
     return `Expected:  ${nsLeft}${expected}
      Got:  ${nsRight}${got}

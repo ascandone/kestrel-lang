@@ -1071,7 +1071,7 @@ class Compiler {
       {
         type: "named",
         name: typedDeclaration.name,
-        moduleName: this.ns,
+        module: this.ns,
         args: typedDeclaration.params.map(() => TVar.fresh().asType()),
       },
       trait,
@@ -1296,7 +1296,7 @@ function traitDepsForNamedType(
   // TODO simplify this workaround
   const genericType: Type = {
     type: "named",
-    moduleName: t.moduleName,
+    module: t.module,
     name: t.name,
     args: freshArgs.map((a) => a.asType()),
   };
@@ -1329,7 +1329,7 @@ function applyTraitToType(type: Type, trait: string): string {
       throw new Error("TODO bound fn");
 
     case "named": {
-      let name = `${trait}_${sanitizeNamespace(resolved.moduleName)}$${resolved.name}`;
+      let name = `${trait}_${sanitizeNamespace(resolved.module)}$${resolved.name}`;
       const deps = traitDepsForNamedType(resolved, trait).map((dep) =>
         applyTraitToType(dep, trait),
       );
@@ -1462,9 +1462,9 @@ export const defaultEntryPoint: NonNullable<
   module: "Main",
   type: {
     type: "named",
-    moduleName: "Task",
+    module: "Task",
     name: "Task",
-    args: [{ type: "named", name: "Unit", moduleName: "Tuple", args: [] }],
+    args: [{ type: "named", name: "Unit", module: "Tuple", args: [] }],
   },
 };
 
@@ -1548,28 +1548,28 @@ function isPrimitiveEq(args: TypedExpr[]): boolean {
 
   if (
     resolvedType.value.name === "Int" &&
-    resolvedType.value.moduleName === "Int"
+    resolvedType.value.module === "Int"
   ) {
     return true;
   }
 
   if (
     resolvedType.value.name === "Float" &&
-    resolvedType.value.moduleName === "Float"
+    resolvedType.value.module === "Float"
   ) {
     return true;
   }
 
   if (
     resolvedType.value.name === "String" &&
-    resolvedType.value.moduleName === "String"
+    resolvedType.value.module === "String"
   ) {
     return true;
   }
 
   if (
     resolvedType.value.name === "Char" &&
-    resolvedType.value.moduleName === "Char"
+    resolvedType.value.module === "Char"
   ) {
     return true;
   }
