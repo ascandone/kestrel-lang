@@ -1,5 +1,5 @@
 import * as ast from "../parser";
-import { TVar, TypeScheme } from "./type";
+import { TVar, TypeScheme } from "../type";
 export * from "./typedAst/findReferences";
 export * from "./typedAst/gotoDefinition";
 export * from "./typedAst/inlayHint";

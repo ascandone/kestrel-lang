@@ -1,5 +1,5 @@
 import { Position, Range, Import } from "../parser";
-import { TraitImplDependency } from "./type";
+import { TraitImplDependency } from "../type";
 
 const dummyPosition: Position = { character: 0, line: 0 };
 const dummyRange: Range = { start: dummyPosition, end: dummyPosition };

@@ -2,7 +2,7 @@ import { test, expect, beforeEach } from "vitest";
 import { Hovered, hoverOn, hoverToMarkdown } from "../typedAst";
 import { unsafeParse } from "../../parser";
 import { resetTraitsRegistry, typecheck } from "../typecheck";
-import { TypeScheme } from "../type";
+import { TypeScheme } from "../../type";
 import { rangeOf } from "./__test__/utils";
 
 test("hover a declaration's binding", () => {

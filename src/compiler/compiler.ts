@@ -7,7 +7,7 @@ import {
   TypedTypeDeclaration,
   TypedTypeVariant,
 } from "../typecheck";
-import { ConcreteType, TVar, Type, resolveType } from "../typecheck/type";
+import { ConcreteType, TVar, Type, resolveType } from "../type";
 import * as t from "@babel/types";
 import generate from "@babel/generator";
 import { Binding, ConstLiteral } from "../parser";

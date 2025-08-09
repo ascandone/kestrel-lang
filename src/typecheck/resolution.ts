@@ -14,7 +14,7 @@ import {
   TypedTypeAst,
   TypedTypeDeclaration,
 } from "./typedAst";
-import { TVar } from "./type";
+import { TVar } from "../type";
 import { ErrorInfo } from "../errors";
 import * as err from "../errors";
 import { Annotator } from "./Annotator";

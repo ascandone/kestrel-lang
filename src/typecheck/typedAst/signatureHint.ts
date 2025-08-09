@@ -1,5 +1,5 @@
 import { Position } from "../../parser";
-import { Type, TypeScheme } from "../type";
+import { Type, TypeScheme } from "../../type";
 import { TypedExpr, TypedModule } from "../typedAst";
 import { firstBy, statementByOffset } from "./common";
 

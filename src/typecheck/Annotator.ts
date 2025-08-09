@@ -8,7 +8,7 @@ import {
   TypeDeclaration,
   UntypedModule,
 } from "../parser";
-import { TVar } from "./type";
+import { TVar } from "../type";
 import {
   TypedBinding,
   TypedDeclaration,

@@ -1,4 +1,4 @@
-import { PolyTypeMeta } from "./typedAst";
+import { PolyTypeMeta } from "../typecheck/typedAst";
 
 export type ConcreteType =
   | {

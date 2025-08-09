@@ -1,5 +1,5 @@
 import { Position } from "../../parser";
-import { TypeScheme, typeToString } from "../type";
+import { TypeScheme, typeToString } from "../../type";
 import { TypedExpr, TypedModule } from "../typedAst";
 
 export type InlayHint = {

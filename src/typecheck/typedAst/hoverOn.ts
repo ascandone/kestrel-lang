@@ -1,5 +1,5 @@
 import { Position, RangeMeta } from "../../parser";
-import { TypeScheme, typeToString } from "../type";
+import { TypeScheme, typeToString } from "../../type";
 import {
   IdentifierResolution,
   TypedDeclaration,

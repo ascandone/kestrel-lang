@@ -1,4 +1,4 @@
-import { ConcreteType, Type } from "../typecheck/type";
+import { ConcreteType, Type } from "../type";
 
 export const BASICS_MODULE = "Basics";
 

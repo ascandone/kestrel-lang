@@ -9,7 +9,7 @@ import {
 } from "../typecheck";
 import { CompileProjectOptions, compile, compileProject } from "./compiler";
 import { TraitImpl, defaultTraitImpls } from "../typecheck/defaultImports";
-import { TVar } from "../typecheck/type";
+import { TVar } from "../type";
 
 describe("datatype representation", () => {
   test("int", () => {

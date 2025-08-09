@@ -6,7 +6,7 @@ import {
   CompletionItemKind,
   Position,
 } from "vscode-languageserver";
-import { Instantiator, TVar, typeToString, unify } from "../type";
+import { Instantiator, TVar, typeToString, unify } from "../../type";
 
 export function getCompletionItems(
   module: TypedModule,

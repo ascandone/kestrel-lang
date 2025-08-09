@@ -33,7 +33,7 @@ import {
   Instantiator,
   typeToString,
   findUnboundTypeVars,
-} from "./type";
+} from "../type";
 import {
   ArityMismatch,
   AmbiguousTypeVar,
