@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { errorInfoToString } from "./errors";
-import { unsafeParse } from "./parser";
+import { unsafeParse } from "../parser";
 import { typecheck } from "./typecheck";
 
 describe(errorInfoToString.name, () => {

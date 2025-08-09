@@ -15,8 +15,8 @@ import {
   TypedTypeDeclaration,
 } from "./typedAst";
 import { TVar } from "../type";
-import { ErrorInfo } from "../errors";
-import * as err from "../errors";
+import { ErrorInfo } from "./errors";
+import * as err from "./errors";
 import { Annotator } from "./Annotator";
 import * as visitor from "./visitor";
 import * as ast from "../parser/ast";

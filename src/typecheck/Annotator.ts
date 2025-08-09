@@ -1,4 +1,4 @@
-import { ErrorInfo } from "../errors";
+import { ErrorInfo } from "./errors";
 import {
   Declaration,
   Expr,
@@ -22,7 +22,7 @@ import {
   TypedTypeAst,
   TypedTypeDeclaration,
 } from "./typedAst";
-import * as err from "../errors";
+import * as err from "./errors";
 
 // TODO instead of traversing tree, mark fields as optional in the raw tree and use structuredClone to mutate freely
 

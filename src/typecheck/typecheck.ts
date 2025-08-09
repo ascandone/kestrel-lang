@@ -47,7 +47,7 @@ import {
   TraitNotSatified,
   TypeMismatch,
   UnboundTypeParam,
-} from "../errors";
+} from "./errors";
 import { Deps, resolve } from "./resolution";
 import { topologicalSort } from "../utils/topsort";
 export { Deps } from "./resolution";

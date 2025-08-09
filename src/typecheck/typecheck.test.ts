@@ -8,8 +8,8 @@ import {
   TypedModule,
   typeToString,
 } from ".";
-import { ErrorInfo } from "../errors";
-import * as err from "../errors";
+import { ErrorInfo } from "./errors";
+import * as err from "./errors";
 import { TraitImpl } from "./defaultImports";
 
 describe("basic constructs inference", () => {

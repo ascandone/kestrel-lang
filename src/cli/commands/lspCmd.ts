@@ -25,9 +25,10 @@ import {
   typeToString,
   TypedModule,
   UntypedProject,
+  ErrorInfo,
+  Severity,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
-import { ErrorInfo, Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../format";
 import { Config, readConfig } from "../config";

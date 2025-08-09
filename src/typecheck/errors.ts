@@ -1,7 +1,7 @@
-import { showErrorLine } from "./utils/showErrorLine";
-import { Range } from "./parser";
-import { Type, typeToString } from "./typecheck";
-import { col, withDisabled } from "./utils/colors";
+import { showErrorLine } from "../utils/showErrorLine";
+import { Range } from "../parser";
+import { Type, typeToString } from ".";
+import { col, withDisabled } from "../utils/colors";
 
 export type Severity = "error" | "warning";
 
