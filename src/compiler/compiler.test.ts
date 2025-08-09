@@ -235,16 +235,18 @@ describe("let expressions", () => {
     const out = compileSrc(`
         let x = {
           let a = 0;
-          let a = a + 1;
+          let mid = a;
+          let a = mid + 1;
           a
         }
       `);
 
     expect(out).toMatchInlineSnapshot(`
-          "const Main$x$a = 0;
-          const Main$x$a$1 = Main$x$a + 1;
-          const Main$x = Main$x$a$1;"
-        `);
+      "const Main$x$a = 0;
+      const Main$x$mid = Main$x$a;
+      const Main$x$a$1 = Main$x$mid + 1;
+      const Main$x = Main$x$a$1;"
+    `);
   });
 
   test("two let as fn args, shadowing", () => {

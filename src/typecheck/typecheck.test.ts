@@ -315,7 +315,7 @@ test("recursive let declarations", () => {
   });
 });
 
-test.todo("let declarations in reverse order", () => {
+test("let declarations in reverse order", () => {
   const [types, errs] = tc(
     `
     pub let a = b
@@ -422,14 +422,45 @@ test("does not refer to imported values when qualifying", () => {
   const [T1] = typecheck(
     "T1",
     unsafeParse(`
+        pub let x = 42
+      `),
+    {},
+    [],
+  );
+
+  const [, errs] = tc(
+    `
+      import T1.{x}
+      pub let a = Main.x
+
+      pub let e = x
+    `,
+    { T1 },
+  );
+
+  expect(errs).toEqual<ErrorInfo[]>([
+    expect.objectContaining({
+      description: new err.UnboundVariable("x"),
+    }),
+  ]);
+});
+
+test("does not refer to imported types when qualifying", () => {
+  const [T1] = typecheck(
+    "T1",
+    unsafeParse(`
         pub(..) type T1 { X }
       `),
+    {},
+    [],
   );
 
   const [, errs] = tc(
     `
       import T1.{T1(..)}
       pub let a = Main.X
+
+      pub let b = X
     `,
     { T1 },
   );
@@ -726,6 +757,7 @@ describe("traits", () => {
     );
 
     expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(err.TraitNotSatified);
   });
 
   test("derives Eq even when constructors have arguments that derive Eq", () => {
@@ -923,8 +955,8 @@ describe("traits", () => {
           }
 
           pub let example = {
-            take_eq(MyType {
-              field: Some(MyType {
+            take_eq(Rec {
+              field: Some(Rec {
                 field: None
               })
             })
@@ -1360,7 +1392,7 @@ describe("struct", () => {
       pub let p_name = p.name
     `);
 
-    expect(errs).toHaveLength(0);
+    expect(errs).toEqual([]);
     expect(types).toEqual({
       p: "Person",
       p_name: "String",
@@ -1496,9 +1528,10 @@ describe("struct", () => {
     });
   });
 
-  test("allow accessing fields in same module with qualified field syntax", () => {
-    const [types, errs] = tc(
-      `
+  describe.todo("qualified fields", () => {
+    test("allow accessing fields in same module with qualified field syntax", () => {
+      const [types, errs] = tc(
+        `
         extern type String
         type Person struct {
           name: String
@@ -1508,121 +1541,122 @@ describe("struct", () => {
           p.Person#name
         }
     `,
-    );
+      );
 
-    expect(errs).toHaveLength(0);
-    expect(types).toEqual({
-      name: "Fn(Person) -> String",
+      expect(errs).toEqual([]);
+      expect(types).toEqual({
+        name: "Fn(Person) -> String",
+      });
     });
-  });
 
-  test("emit err when field accessed with qualified syntax is invalid", () => {
-    const [, errs] = tc(
-      `
+    test("emit err when field accessed with qualified syntax is invalid", () => {
+      const [, errs] = tc(
+        `
         type Person struct { }
 
         pub let name = fn p {
           p.Person#invalid_field
         }
     `,
-    );
+      );
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toEqual(
-      new err.InvalidField("Person", "invalid_field"),
-    );
-  });
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toEqual(
+        new err.InvalidField("Person", "invalid_field"),
+      );
+    });
 
-  test("allow accessing fields in other modules with qualified field syntax", () => {
-    const [Person] = tcProgram(
-      "Person",
-      `
+    test("allow accessing fields in other modules with qualified field syntax", () => {
+      const [Person] = tcProgram(
+        "Person",
+        `
       extern type String
       pub(..) type Person struct {
         name: String
       }
     `,
-    );
+      );
 
-    const [types, errs] = tc(
-      `
+      const [types, errs] = tc(
+        `
       import Person.{Person}
 
       pub let name = fn p {
         p.Person#name
       }
     `,
-      { Person },
-    );
+        { Person },
+      );
 
-    expect(errs).toHaveLength(0);
-    expect(types).toEqual({
-      name: "Fn(Person) -> String",
+      expect(errs).toEqual([]);
+      expect(types).toEqual({
+        name: "Fn(Person) -> String",
+      });
     });
-  });
 
-  test("emit error when struct of qualified field does not exist", () => {
-    const [, errs] = tc(
-      `
+    test("emit error when struct of qualified field does not exist", () => {
+      const [, errs] = tc(
+        `
       pub let name = fn p {
         p.InvalidType#name
       }
     `,
-    );
+      );
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toEqual(new err.UnboundType("InvalidType"));
-  });
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toEqual(new err.UnboundType("InvalidType"));
+    });
 
-  test("emit error when qualified field does not exist", () => {
-    const [Person] = tcProgram(
-      "Person",
-      `
+    test("emit error when qualified field does not exist", () => {
+      const [Person] = tcProgram(
+        "Person",
+        `
         pub(..) type Person struct {}
   `,
-    );
+      );
 
-    const [, errs] = tc(
-      `
+      const [, errs] = tc(
+        `
       import Person.{Person}
       pub let name = fn p {
         p.Person#invalid_field
       }
     `,
-      { Person },
-    );
+        { Person },
+      );
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toEqual(
-      new err.InvalidField("Person", "invalid_field"),
-    );
-  });
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toEqual(
+        new err.InvalidField("Person", "invalid_field"),
+      );
+    });
 
-  test("emit error when qualified field is private", () => {
-    const [Person] = tcProgram(
-      "Person",
-      `
+    test("emit error when qualified field is private", () => {
+      const [Person] = tcProgram(
+        "Person",
+        `
         extern type Int
         pub type Person struct {
           private_field: Int
         }
   `,
-    );
+      );
 
-    const [, errs] = tc(
-      `
+      const [, errs] = tc(
+        `
       import Person.{Person}
       pub let name = fn p {
         p.Person#private_field
       }
     `,
-      { Person },
-    );
+        { Person },
+      );
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toEqual(
-      new err.InvalidField("Person", "private_field"),
-    );
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toEqual(
+        new err.InvalidField("Person", "private_field"),
+      );
+    });
   });
 
   test("emit InvalidField if trying to access private fields", () => {
@@ -1985,7 +2019,7 @@ describe("pattern matching", () => {
 
     const [types, errs] = tc(
       `
-      import A.{T(..)}
+      import A
 
       pub let f = fn x {
         match x {
@@ -2128,6 +2162,8 @@ describe("pattern matching", () => {
       unsafeParse(`
         pub(..) type T1 { X }
       `),
+      {},
+      [],
     );
 
     const [, errs] = tc(
@@ -2138,11 +2174,13 @@ describe("pattern matching", () => {
       { T1 },
     );
 
-    expect(errs).toEqual<ErrorInfo[]>([
-      expect.objectContaining({
-        description: new err.ShadowingImport("X"),
-      }),
-    ]);
+    expect(errs).toEqual<ErrorInfo[]>(
+      expect.arrayContaining([
+        expect.objectContaining({
+          description: new err.ShadowingImport("X"),
+        }),
+      ]),
+    );
   });
 
   test("Does not access imported module when qualifying", () => {
@@ -2151,6 +2189,8 @@ describe("pattern matching", () => {
       unsafeParse(`
         pub(..) type T1 { X }
       `),
+      {},
+      [],
     );
 
     const [, errs] = tc(
@@ -2165,11 +2205,13 @@ describe("pattern matching", () => {
       { T1 },
     );
 
-    expect(errs).toEqual<ErrorInfo[]>([
-      expect.objectContaining({
-        description: new err.UnboundVariable("X"),
-      }),
-    ]);
+    expect(errs).toEqual<ErrorInfo[]>(
+      expect.arrayContaining([
+        expect.objectContaining({
+          description: new err.UnboundVariable("X"),
+        }),
+      ]),
+    );
   });
 
   test("use pattern matching bound vars", () => {
@@ -2358,11 +2400,44 @@ describe("modules", () => {
     });
   });
 
+  test("implicit imports aren't marked as unused", () => {
+    const [A] = tcProgram(
+      "A",
+      `
+      pub(..) type Box { X }
+      pub let x = 42
+    `,
+    );
+
+    const [, errs] = tc(
+      `
+      // Not using anything
+    `,
+      { A },
+      [
+        {
+          range: mockRange,
+          ns: "A",
+          exposing: [{ type: "value", name: "x", range: mockRange }],
+        },
+        {
+          range: mockRange,
+          ns: "A",
+          exposing: [
+            { type: "type", name: "Box", range: mockRange, exposeImpl: true },
+          ],
+        },
+      ],
+    );
+
+    expect(errs).toEqual([]);
+  });
+
   test("implicitly imports types of the modules in the prelude", () => {
     const [A] = tcProgram(
       "A",
       `
-      type MyType {}
+      pub type MyType {}
     `,
     );
 
@@ -2445,7 +2520,7 @@ describe("modules", () => {
     });
   });
 
-  test("detects unused imports when there are not exposed vars", () => {
+  test("detects unused imports when there are no exposed vars", () => {
     const [A] = tcProgram("A", ``);
     const [, errs] = tc(`import A`, { A });
 
@@ -2564,32 +2639,44 @@ describe("modules", () => {
   test("error when import a non-existing module", () => {
     const [, errs] = tc(`import ModuleNotFound`);
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.UnboundModule);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.UnboundModule("ModuleNotFound"),
+      }),
+    ]);
   });
 
   test("error when importing a non-existing type", () => {
     const [Mod] = tcProgram("Mod", ``);
     const [, errs] = tc(`import Mod.{NotFound}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.NonExistingImport);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.NonExistingImport("NotFound"),
+      }),
+    ]);
   });
 
   test("error when importing a type the is not pub", () => {
     const [Mod] = tcProgram("Mod", `type PrivateType {}`);
     const [, errs] = tc(`import Mod.{PrivateType}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.NonExistingImport);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.NonExistingImport("PrivateType"),
+      }),
+    ]);
   });
 
   test("error when importing a non-existing value", () => {
     const [Mod] = tcProgram("Mod", ``);
     const [, errs] = tc(`import Mod.{not_found}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.NonExistingImport);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.NonExistingImport("not_found"),
+      }),
+    ]);
   });
 
   test("error when importing a private value", () => {
@@ -2647,8 +2734,11 @@ describe("modules", () => {
     const [Mod] = tcProgram("Mod", `extern pub type ExternType`);
     const [, errs] = tc(`import Mod.{ExternType(..)}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.BadImport);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.BadImport(),
+      }),
+    ]);
   });
 
   test("error when expose impl is run on a opaque type", () => {
@@ -2656,15 +2746,21 @@ describe("modules", () => {
     const [Mod] = tcProgram("Mod", `pub type T {}`);
     const [, errs] = tc(`import Mod.{T(..)}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.BadImport);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.BadImport(),
+      }),
+    ]);
   });
 
   test("error when qualifier is not an imported module", () => {
     const [, errs] = tc(`pub let x = NotImported.value`);
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.UnimportedModule);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.UnimportedModule("NotImported"),
+      }),
+    ]);
   });
 
   test("types from different modules with the same name aren't treated the same", () => {

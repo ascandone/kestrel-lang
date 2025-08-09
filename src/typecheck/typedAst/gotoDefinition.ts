@@ -78,13 +78,13 @@ export function goToDefinitionOf(
             };
 
           case "value":
-            if (exposing.$declaration === undefined) {
+            if (exposing.$resolution === undefined) {
               return undefined;
             }
 
             return {
               namespace: statement.import.ns,
-              range: exposing.$declaration.range,
+              range: exposing.$resolution.range,
             };
         }
       }

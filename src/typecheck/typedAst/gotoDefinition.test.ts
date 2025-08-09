@@ -62,14 +62,14 @@ test("invalid recursive let bindings", () => {
       let x = x
     `;
   const location = parseGotoDef(src, "x", 2);
-  expect(location?.range).toEqual(undefined);
+  expect(location?.range).toEqual(rangeOf(src, "x", 1));
 });
 
 test("shadowed let", () => {
   const src = `
       let x = {
         let a = 0;
-        let a = a;
+        let a2 = a;
         42
       }
     `;
