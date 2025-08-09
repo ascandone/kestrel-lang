@@ -48,9 +48,9 @@ import {
   TypeMismatch,
   UnboundTypeParam,
 } from "../errors";
-import { Deps, resolve } from "./resolutionStep";
+import { Deps, resolve } from "./resolution";
 import { topologicalSort } from "../utils/topsort";
-export { Deps } from "./resolutionStep";
+export { Deps } from "./resolution";
 
 export function resetTraitsRegistry(
   traitImpls: TraitImpl[] = defaultTraitImpls,
