@@ -391,8 +391,15 @@ class Resolver {
 
         case "global-variable": {
           if (this.isNamespaceLocal(expr.$resolution.namespace)) {
+            if (!this.isThunk) {
+              mapPush(
+                this.directCallGraph,
+                currentDeclaration,
+                expr.$resolution.declaration,
+              );
+            }
             mapPush(
-              this.isThunk ? this.indirectCallGraph : this.directCallGraph,
+              this.indirectCallGraph,
               currentDeclaration,
               expr.$resolution.declaration,
             );
@@ -684,8 +691,9 @@ class Resolver {
     }
   }
 
-  private emitCyclicDependenciesErrors() {
-    const g = buildGraph(this.directCallGraph);
+  private emitCyclicDependenciesErrors(typeDeclarations: TypedDeclaration[]) {
+    const g = buildGraph(this.directCallGraph, typeDeclarations);
+
     const cycle = graph.detectCycles(g);
     if (cycle !== undefined) {
       this.errors.push({
@@ -721,6 +729,7 @@ class Resolver {
     implicitImports: Import[],
   ): {
     typedModule: TypedModule;
+    mutuallyRecursiveBindings: TypedDeclaration[][];
   } {
     TVar.resetId();
 
@@ -744,7 +753,11 @@ class Resolver {
     this.emitUnusedImportsErrors();
     this.emitUnusedExposingsErrors();
 
-    this.emitCyclicDependenciesErrors();
+    this.emitCyclicDependenciesErrors(annotatedModule.declarations);
+
+    const scc = graph.findStronglyConnectedComponents(
+      buildGraph(this.indirectCallGraph, annotatedModule.declarations),
+    );
 
     const typedModule: TypedModule = {
       ...annotatedModule,
@@ -758,6 +771,7 @@ class Resolver {
 
     return {
       typedModule,
+      mutuallyRecursiveBindings: scc,
     };
   }
 }
@@ -831,6 +845,7 @@ function mapPush<K, V>(map: Map<K, V[]>, k: K, v: V) {
 
 function buildGraph(
   repr: Map<TypedDeclaration, TypedDeclaration[]>,
+  nodes: Iterable<TypedDeclaration>,
 ): graph.DirectedGraph<TypedDeclaration> {
   return {
     toKey(node) {
@@ -839,6 +854,6 @@ function buildGraph(
     getNeighbours(node) {
       return repr.get(node) ?? [];
     },
-    getNodes: () => repr.keys(),
+    getNodes: () => nodes,
   };
 }
