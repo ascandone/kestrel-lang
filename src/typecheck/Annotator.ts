@@ -209,6 +209,14 @@ export class Annotator {
           range: ast.range,
         });
 
+      case "infix":
+        return this.annotateExpr({
+          type: "application",
+          caller: { type: "identifier", name: ast.operator, range: ast.range },
+          args: [ast.left, ast.right],
+          range: ast.range,
+        });
+
       // Actual AST
       case "syntax-err":
       case "constant":
@@ -259,14 +267,6 @@ export class Annotator {
           body: this.annotateExpr(ast.body),
           params: ast.params.map((p) => this.annotateMatchPattern(p)),
         };
-
-      case "infix":
-        return this.annotateExpr({
-          type: "application",
-          caller: { type: "identifier", name: ast.operator, range: ast.range },
-          args: [ast.left, ast.right],
-          range: ast.range,
-        });
 
       case "application":
         return {
