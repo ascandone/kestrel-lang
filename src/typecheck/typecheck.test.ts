@@ -330,7 +330,7 @@ test("let declarations in reverse order", () => {
   });
 });
 
-test.todo("dependency cycle between let declarations in reverse order", () => {
+test("dependency cycle between let declarations in reverse order", () => {
   const [, errs] = tc(
     `
     pub let a = b
@@ -338,23 +338,23 @@ test.todo("dependency cycle between let declarations in reverse order", () => {
   `,
   );
 
-  expect(errs).toHaveLength(1);
-  expect(errs[0]?.description).toBeInstanceOf(err.CyclicDefinition);
+  expect(errs).toEqual([
+    expect.objectContaining({
+      description: new err.CyclicDefinition(["a", "b"]),
+    }),
+  ]);
 });
 
-test.todo(
-  "dependency cycle between let declarations are permitted in thunks",
-  () => {
-    const [, errs] = tc(
-      `
+test("dependency cycle between let declarations are permitted in thunks", () => {
+  const [, errs] = tc(
+    `
     pub let a = b
     pub let b = fn { a }
   `,
-    );
+  );
 
-    expect(errs).toEqual([]);
-  },
-);
+  expect(errs).toEqual([]);
+});
 
 test("unused locals", () => {
   const [, errs] = tc(

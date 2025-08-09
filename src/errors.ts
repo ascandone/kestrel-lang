@@ -80,12 +80,12 @@ export class UnboundVariable implements ErrorDescription {
 }
 
 export class CyclicDefinition implements ErrorDescription {
-  constructor(public ident: string) {}
+  constructor(public idents: string[]) {}
   severity: Severity = "error";
   errorName = "Cyclic definition";
   // TODO better error
   shortDescription() {
-    return `Cyclic definition`;
+    return `Cyclic definition: [${this.idents.join(", ")}]`;
   }
 }
 

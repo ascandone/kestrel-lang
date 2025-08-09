@@ -21,6 +21,7 @@ import * as err from "../errors";
 import { Annotator } from "./Annotator";
 import * as visitor from "./visitor";
 import * as ast from "../parser/ast";
+import * as graph from "../data/graph";
 
 // Record from namespace (e.g. "A.B.C" ) to the module
 export type Deps = Record<string, ModuleInterface>;
@@ -76,7 +77,35 @@ class UnimplementedErr extends Error {}
 class ResolutionStep {
   private errors: ErrorInfo[] = [];
 
-  // scope
+  // --- call graph
+
+  /**
+   * the indirect call graph
+   * from example, in the following snippet:
+   *
+   * ```kestrel
+   * let x = 42
+   * let y = call(fn { x })
+   * let z = x
+   * ```
+   *
+   * `x->z` is a direct dependency, whereas `y->x` is an indirect dependency (it's contained in a thunk).
+   *
+   * We shall not allow the direct graph to have circular dependencies, while the indirect call graph can.
+   * However, we'll need to compute the strongly connected components from the indirect call graph so that
+   * we can typecheck a strongly connected set of declarations before generalization
+   */
+  private readonly indirectCallGraph = new Map<
+    TypedDeclaration,
+    TypedDeclaration[]
+  >();
+  private readonly directCallGraph = new Map<
+    TypedDeclaration,
+    TypedDeclaration[]
+  >();
+  private isThunk = false;
+
+  // --- scope
   private importedModules = new Set<string>();
   private importedTypes = new Map<
     string,
@@ -105,7 +134,7 @@ class ResolutionStep {
   >();
   private localFrames = new LocalFrames(this.localValues);
 
-  // unused checks
+  // --- unused checks
   private unusedLocals = new Set<TypedBinding>();
   private unusedGlobals = new Set<TypedDeclaration>();
   private unusedImports = new Map<string, TypedImport>();
@@ -300,7 +329,14 @@ class ResolutionStep {
     }
   }
 
-  private onResolveIdentifier(expr: TypedExpr & { type: "identifier" }) {
+  private isNamespaceLocal(ns: string | undefined) {
+    return ns === undefined || ns === this.ns;
+  }
+
+  private onResolveIdentifier(
+    expr: TypedExpr & { type: "identifier" },
+    currentDeclaration: TypedDeclaration,
+  ) {
     if (expr.namespace === undefined) {
       expr.$resolution =
         this.localValues.get(expr.name) ??
@@ -328,7 +364,7 @@ class ResolutionStep {
 
     if (
       expr.$resolution === undefined &&
-      (expr.namespace ?? this.ns) === this.ns
+      this.isNamespaceLocal(expr.namespace)
     ) {
       this.errors.push({
         description: new err.UnboundVariable(expr.name),
@@ -349,14 +385,26 @@ class ResolutionStep {
           this.unusedLocals.delete(expr.$resolution.binding);
           break;
 
-        case "global-variable":
+        case "global-variable": {
+          if (this.isNamespaceLocal(expr.$resolution.namespace)) {
+            mapPush(
+              this.isThunk ? this.indirectCallGraph : this.directCallGraph,
+              currentDeclaration,
+              expr.$resolution.declaration,
+            );
+          }
+
           this.unusedGlobals.delete(expr.$resolution.declaration);
           break;
+        }
       }
     }
   }
 
-  private resolveExpression(expr: TypedExpr) {
+  private resolveExpression(
+    expr: TypedExpr,
+    currentDeclaration: TypedDeclaration,
+  ) {
     visitor.visitExpr(expr, {
       onPatternIdentifier: (ident) => {
         this.localFrames.register(ident);
@@ -366,7 +414,8 @@ class ResolutionStep {
       },
 
       onPatternConstructor: this.onResolvePatternConstructor.bind(this),
-      onIdentifier: this.onResolveIdentifier.bind(this),
+      onIdentifier: (ident) =>
+        this.onResolveIdentifier(ident, currentDeclaration),
 
       onFieldAccess: (expr) => {
         expr.$resolution =
@@ -375,7 +424,6 @@ class ResolutionStep {
       },
 
       onStructLiteral: (expr) => {
-        // TODO handle namespaced struct
         const resolution =
           this.moduleTypes.get(expr.struct.name) ??
           this.trackUsedExposing(this.importedTypes.get(expr.struct.name));
@@ -425,8 +473,12 @@ class ResolutionStep {
 
       onFn: () => {
         const onExit = this.localFrames.enter();
+        const wasThunk = this.isThunk;
+        this.isThunk = true;
+
         return () => {
           onExit();
+          this.isThunk = wasThunk;
         };
       },
 
@@ -618,12 +670,24 @@ class ResolutionStep {
   }
 
   private resolveValueDeclarations(declarations: TypedDeclaration[]) {
-    for (const decl of declarations) {
-      if (!decl.extern) {
-        this.resolveExpression(decl.value);
+    for (const declaration of declarations) {
+      if (declaration.extern) {
+        continue;
       }
 
+      this.resolveExpression(declaration.value, declaration);
       this.emitUnusedLocalsErrors();
+    }
+  }
+
+  private emitCyclicDependenciesErrors() {
+    const g = buildGraph(this.directCallGraph);
+    const cycle = graph.detectCycles(g);
+    if (cycle !== undefined) {
+      this.errors.push({
+        description: new err.CyclicDefinition(cycle.map((c) => c.binding.name)),
+        range: cycle[0]!.range,
+      });
     }
   }
 
@@ -673,6 +737,8 @@ class ResolutionStep {
     this.emitUnusedGlobalsErrors();
     this.emitUnusedImportsErrors();
     this.emitUnusedExposingsErrors();
+
+    this.emitCyclicDependenciesErrors();
 
     const typedModule: TypedModule = {
       ...annotatedModule,
@@ -744,4 +810,27 @@ function makeInterface(
 
 function validUnusedBinding(b: TypedBinding) {
   return b.name.startsWith("_");
+}
+
+function mapPush<K, V>(map: Map<K, V[]>, k: K, v: V) {
+  const oldValue = map.get(k);
+  if (oldValue === undefined) {
+    map.set(k, [v]);
+  } else {
+    oldValue.push(v);
+  }
+}
+
+function buildGraph(
+  repr: Map<TypedDeclaration, TypedDeclaration[]>,
+): graph.DirectedGraph<TypedDeclaration> {
+  return {
+    toKey(node) {
+      return node.binding.name;
+    },
+    getNeighbours(node) {
+      return repr.get(node) ?? [];
+    },
+    getNodes: () => repr.keys(),
+  };
 }
