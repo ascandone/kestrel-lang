@@ -48,7 +48,7 @@ import {
   TypeMismatch,
   UnboundTypeParam,
 } from "../errors";
-import { castAst, Deps } from "./resolutionStep";
+import { Deps, ResolutionStep } from "./resolutionStep";
 import { topologicalSort } from "../utils/topsort";
 export { Deps } from "./resolutionStep";
 
@@ -212,9 +212,8 @@ class Typechecker {
   ): [TypedModule, ErrorInfo[]] {
     TVar.resetId();
 
-    const [typedAst, errors] = castAst(this.ns, module, deps, implicitImports);
-
-    this.errors = [...errors];
+    const resolution = new ResolutionStep(this.errors, this.ns, deps);
+    const typedAst = resolution.run(module, implicitImports);
 
     for (const typeDecl of typedAst.typeDeclarations) {
       if (typeDecl.type === "adt") {

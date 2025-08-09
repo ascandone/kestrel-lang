@@ -26,15 +26,6 @@ import * as graph from "../data/graph";
 // Record from namespace (e.g. "A.B.C" ) to the module
 export type Deps = Record<string, ModuleInterface>;
 
-export function castAst(
-  ns: string,
-  module: UntypedModule,
-  deps: Deps = {},
-  implicitImports: Import[] = defaultImports,
-): [TypedModule, ErrorInfo[]] {
-  return new ResolutionStep(ns, deps).run(module, implicitImports);
-}
-
 class LocalFrames {
   private currentScope?: Map<string, IdentifierResolution | undefined>;
 
@@ -74,9 +65,7 @@ class LocalFrames {
 // TODO remove this err
 class UnimplementedErr extends Error {}
 
-class ResolutionStep {
-  private errors: ErrorInfo[] = [];
-
+export class ResolutionStep {
   // --- call graph
 
   /**
@@ -141,6 +130,7 @@ class ResolutionStep {
   private unusedExposings = new Set<TypedExposedValue>();
 
   constructor(
+    public readonly errors: ErrorInfo[] = [],
     private readonly ns: string,
     private readonly deps: Deps,
   ) {}
@@ -715,7 +705,7 @@ class ResolutionStep {
   run(
     module: UntypedModule,
     implicitImports: Import[] = defaultImports,
-  ): [TypedModule, ErrorInfo[]] {
+  ): TypedModule {
     TVar.resetId();
 
     const annotator = new Annotator(this.errors);
@@ -750,7 +740,7 @@ class ResolutionStep {
       ),
     };
 
-    return [typedModule, this.errors];
+    return typedModule;
   }
 }
 
