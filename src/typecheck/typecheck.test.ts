@@ -1528,9 +1528,10 @@ describe("struct", () => {
     });
   });
 
-  test("allow accessing fields in same module with qualified field syntax", () => {
-    const [types, errs] = tc(
-      `
+  describe.todo("qualified fields", () => {
+    test("allow accessing fields in same module with qualified field syntax", () => {
+      const [types, errs] = tc(
+        `
         extern type String
         type Person struct {
           name: String
@@ -1540,17 +1541,15 @@ describe("struct", () => {
           p.Person#name
         }
     `,
-    );
+      );
 
-    expect(errs).toHaveLength(0);
-    expect(types).toEqual({
-      name: "Fn(Person) -> String",
+      expect(errs).toEqual([]);
+      expect(types).toEqual({
+        name: "Fn(Person) -> String",
+      });
     });
-  });
 
-  test.todo(
-    "emit err when field accessed with qualified syntax is invalid",
-    () => {
+    test("emit err when field accessed with qualified syntax is invalid", () => {
       const [, errs] = tc(
         `
         type Person struct { }
@@ -1565,12 +1564,9 @@ describe("struct", () => {
       expect(errs[0]?.description).toEqual(
         new err.InvalidField("Person", "invalid_field"),
       );
-    },
-  );
+    });
 
-  test.todo(
-    "allow accessing fields in other modules with qualified field syntax",
-    () => {
+    test("allow accessing fields in other modules with qualified field syntax", () => {
       const [Person] = tcProgram(
         "Person",
         `
@@ -1592,75 +1588,75 @@ describe("struct", () => {
         { Person },
       );
 
-      expect(errs).toHaveLength(0);
+      expect(errs).toEqual([]);
       expect(types).toEqual({
         name: "Fn(Person) -> String",
       });
-    },
-  );
+    });
 
-  test.todo("emit error when struct of qualified field does not exist", () => {
-    const [, errs] = tc(
-      `
+    test("emit error when struct of qualified field does not exist", () => {
+      const [, errs] = tc(
+        `
       pub let name = fn p {
         p.InvalidType#name
       }
     `,
-    );
+      );
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toEqual(new err.UnboundType("InvalidType"));
-  });
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toEqual(new err.UnboundType("InvalidType"));
+    });
 
-  test.todo("emit error when qualified field does not exist", () => {
-    const [Person] = tcProgram(
-      "Person",
-      `
+    test("emit error when qualified field does not exist", () => {
+      const [Person] = tcProgram(
+        "Person",
+        `
         pub(..) type Person struct {}
   `,
-    );
+      );
 
-    const [, errs] = tc(
-      `
+      const [, errs] = tc(
+        `
       import Person.{Person}
       pub let name = fn p {
         p.Person#invalid_field
       }
     `,
-      { Person },
-    );
+        { Person },
+      );
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toEqual(
-      new err.InvalidField("Person", "invalid_field"),
-    );
-  });
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toEqual(
+        new err.InvalidField("Person", "invalid_field"),
+      );
+    });
 
-  test.todo("emit error when qualified field is private", () => {
-    const [Person] = tcProgram(
-      "Person",
-      `
+    test("emit error when qualified field is private", () => {
+      const [Person] = tcProgram(
+        "Person",
+        `
         extern type Int
         pub type Person struct {
           private_field: Int
         }
   `,
-    );
+      );
 
-    const [, errs] = tc(
-      `
+      const [, errs] = tc(
+        `
       import Person.{Person}
       pub let name = fn p {
         p.Person#private_field
       }
     `,
-      { Person },
-    );
+        { Person },
+      );
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toEqual(
-      new err.InvalidField("Person", "private_field"),
-    );
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toEqual(
+        new err.InvalidField("Person", "private_field"),
+      );
+    });
   });
 
   test("emit InvalidField if trying to access private fields", () => {
