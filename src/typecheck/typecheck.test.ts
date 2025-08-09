@@ -1355,6 +1355,17 @@ describe("custom types", () => {
 
     expect(errs).toEqual([]);
   });
+
+  test("allows mutually recursive type", () => {
+    const [, errs] = tc(
+      `
+        type A { A(B) }
+        type B { B(A) }
+      `,
+    );
+
+    expect(errs).toEqual([]);
+  });
 });
 
 describe("struct", () => {

@@ -488,7 +488,6 @@ class ResolutionStep {
 
       this.detectDuplicateParams(declaration);
 
-      // TODO add to unused types
       switch (declaration.type) {
         case "adt":
           for (const variant of declaration.variants) {
@@ -510,16 +509,11 @@ class ResolutionStep {
                 namespace: this.ns,
               });
             }
-
-            for (const arg of variant.args) {
-              this.resolveTypeAst(arg);
-            }
           }
           break;
 
         case "struct":
           for (const field of declaration.fields) {
-            this.resolveTypeAst(field.typeAst);
             this.moduleFields.set(field.name, {
               declaration,
               field,
@@ -631,13 +625,34 @@ class ResolutionStep {
     }
   }
 
-  private resolveDeclarations(declarations: TypedDeclaration[]) {
+  private resolveValueDeclarations(declarations: TypedDeclaration[]) {
     for (const decl of declarations) {
       if (!decl.extern) {
         this.resolveExpression(decl.value);
       }
 
       this.emitUnusedLocalsErrors();
+    }
+  }
+
+  private resolveTypeDeclarations(declarations: TypedTypeDeclaration[]) {
+    for (const declaration of declarations) {
+      switch (declaration.type) {
+        case "extern":
+          break;
+        case "adt":
+          for (const variant of declaration.variants) {
+            for (const arg of variant.args) {
+              this.resolveTypeAst(arg);
+            }
+          }
+          break;
+        case "struct":
+          for (const field of declaration.fields) {
+            this.resolveTypeAst(field.typeAst);
+          }
+          break;
+      }
     }
   }
 
@@ -650,10 +665,7 @@ class ResolutionStep {
     const annotator = new Annotator(this.errors);
     const annotatedModule = annotator.annotateModule(module);
 
-    /**
-     * We global values into scope
-     * Make sure the order of "load*" calls isn't changed
-     * */
+    // First, we load global values into scope
     this.loadImports(
       implicitImports.map((import_) => annotator.annotateImport(import_)),
       false,
@@ -663,7 +675,8 @@ class ResolutionStep {
     this.loadValueDeclarations(annotatedModule.declarations);
 
     // Now that global vars are into scope, we visit each declaration
-    this.resolveDeclarations(annotatedModule.declarations);
+    this.resolveTypeDeclarations(annotatedModule.typeDeclarations);
+    this.resolveValueDeclarations(annotatedModule.declarations);
 
     this.emitUnusedGlobalsErrors();
     this.emitUnusedImportsErrors();
