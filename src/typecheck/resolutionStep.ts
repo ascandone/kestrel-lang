@@ -161,8 +161,6 @@ class ResolutionStep {
       this.unusedExposings.delete(exposing);
     }
 
-    // TODO add to unused exports
-
     switch (exposing.$resolution.type) {
       case "adt":
         for (const variant of exposing.$resolution.variants) {
