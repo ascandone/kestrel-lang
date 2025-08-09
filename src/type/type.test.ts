@@ -38,6 +38,12 @@ describe("unify", () => {
     ).not.toBeUndefined();
   });
 
+  test("do not unify concrete types same different module of different packages", () => {
+    expect(
+      unify(Int, { ...Int, package_: "another_package" } as any),
+    ).not.toBeUndefined();
+  });
+
   test("unify two concrete vars that do not match", () => {
     expect(unify(Int, Bool)).toEqual<UnifyError>({
       type: "type-mismatch",
