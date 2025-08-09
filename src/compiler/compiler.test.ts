@@ -3102,8 +3102,9 @@ const testEntryPoint: NonNullable<CompileProjectOptions["entrypoint"]> = {
   module: "Main",
   type: {
     type: "named",
-    name: "String",
+    package_: "kestrel_core",
     module: "String",
+    name: "String",
     args: [],
   },
 };

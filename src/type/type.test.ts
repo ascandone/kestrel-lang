@@ -18,6 +18,7 @@ import {
   Option,
   Tuple,
 } from "./__test__/types";
+import { CORE_PACKAGE } from "../typecheck";
 
 beforeEach(() => {
   TVar.resetId();
@@ -46,12 +47,27 @@ describe("unify", () => {
     expect(
       unify(
         {
+          package_: CORE_PACKAGE,
           module: "Mod",
           type: "named",
           name: "T",
-          args: [{ module: "Mod", type: "named", name: "X", args: [] }],
+          args: [
+            {
+              package_: CORE_PACKAGE,
+              module: "Mod",
+              type: "named",
+              name: "X",
+              args: [],
+            },
+          ],
         },
-        { module: "Mod", type: "named", name: "T", args: [] },
+        {
+          package_: CORE_PACKAGE,
+          module: "Mod",
+          type: "named",
+          name: "T",
+          args: [],
+        },
       ),
     ).not.toBeUndefined();
     expect(unify(List(Int), List(Bool))).not.toBeUndefined();

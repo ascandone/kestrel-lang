@@ -239,6 +239,7 @@ export type PolyTypeMeta = { $scheme: TypeScheme } & TypeMeta;
 
 export type TypeResolution = {
   declaration: TypedTypeDeclaration;
+  package_: string;
   namespace: string;
 };
 

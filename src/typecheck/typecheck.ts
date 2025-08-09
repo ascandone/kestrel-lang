@@ -33,6 +33,7 @@ import {
   Instantiator,
   typeToString,
   findUnboundTypeVars,
+  ConcreteType,
 } from "../type";
 import {
   ArityMismatch,
@@ -286,6 +287,7 @@ class Typechecker {
 
     const mono: Type = {
       type: "named",
+      package_: this.package_,
       module: this.ns,
       name: typeDecl.name,
       args: generics.map(([, tvar]) => tvar.asType()),
@@ -328,6 +330,7 @@ class Typechecker {
 
     const ret: Type = {
       type: "named",
+      package_: this.package_,
       module: this.ns,
       name: typeDecl.name,
       args: generics.map((g) => g[1].asType()),
@@ -445,6 +448,7 @@ class Typechecker {
 
         return {
           type: "named",
+          package_: ast.$resolution.package_,
           module: ast.$resolution.namespace,
           name: ast.name,
           args: ast.args.map((arg) =>
@@ -965,7 +969,7 @@ type TypeAstConversionType =
       params: string[];
     };
 
-const CORE_PACKAGE = "kestrel_core";
+export const CORE_PACKAGE = "kestrel_core";
 
 function topSortedModules(
   project: UntypedProject,
@@ -1078,58 +1082,66 @@ function resolutionToType(resolution: IdentifierResolution): Type {
 }
 
 // Keep this in sync with core
-const Bool: Type = {
+const Bool: ConcreteType = {
   type: "named",
+  package_: CORE_PACKAGE,
   module: "Bool",
   name: "Bool",
   args: [],
 };
 
-const Int: Type = {
-  module: "Int",
+const Int: ConcreteType = {
   type: "named",
+  package_: CORE_PACKAGE,
+  module: "Int",
   name: "Int",
   args: [],
 };
 
-const Float: Type = {
-  module: "Float",
+const Float: ConcreteType = {
   type: "named",
+  package_: CORE_PACKAGE,
+  module: "Float",
   name: "Float",
   args: [],
 };
 
-const String: Type = {
-  module: "String",
+const String: ConcreteType = {
   type: "named",
+  package_: CORE_PACKAGE,
+  module: "String",
   name: "String",
   args: [],
 };
 
-const Char: Type = {
-  module: "Char",
+const Char: ConcreteType = {
   type: "named",
+  package_: CORE_PACKAGE,
+  module: "Char",
   name: "Char",
   args: [],
 };
 
-const Unit: Type = {
+const Unit: ConcreteType = {
   type: "named",
+  package_: CORE_PACKAGE,
   module: "Tuple",
   name: "Unit",
   args: [],
 };
 
-const List = (a: Type): Type => ({
+const List = (a: Type): ConcreteType => ({
   type: "named",
+  package_: CORE_PACKAGE,
   module: "List",
   name: "List",
   args: [a],
 });
 
-function Task(arg: Type): Type {
+function Task(arg: Type): ConcreteType {
   return {
     type: "named",
+    package_: CORE_PACKAGE,
     module: "Task",
     name: "Task",
     args: [arg],

@@ -172,6 +172,7 @@ class Resolver {
     this.importedTypes.set(exposing.$resolution.name, [
       {
         declaration: exposing.$resolution,
+        package_: moduleInterface.package_,
         namespace: moduleInterface.ns,
       },
       exposing,
@@ -293,13 +294,16 @@ class Resolver {
         } else if (ast.namespace === this.ns) {
           ast.$resolution = this.moduleTypes.get(ast.name);
         } /* if ast.namespace !== undefined */ else {
-          const deps = this.trackedDependencyAccess(ast.namespace, ast.range);
-          const declaration = deps?.publicTypes[ast.name];
-          if (declaration !== undefined) {
-            ast.$resolution = {
-              declaration: declaration,
-              namespace: ast.namespace,
-            };
+          const dep = this.trackedDependencyAccess(ast.namespace, ast.range);
+          if (dep !== undefined) {
+            const declaration = dep.publicTypes[ast.name];
+            if (declaration !== undefined) {
+              ast.$resolution = {
+                declaration: declaration,
+                namespace: dep.ns,
+                package_: dep.package_,
+              };
+            }
           }
         }
 
@@ -540,6 +544,7 @@ class Resolver {
 
       this.moduleTypes.set(declaration.name, {
         declaration,
+        package_: this.package_,
         namespace: this.ns,
       });
 

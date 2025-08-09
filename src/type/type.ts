@@ -8,6 +8,7 @@ export type ConcreteType =
     }
   | {
       type: "named";
+      package_: string;
       module: string;
       name: string;
       args: Type[];
