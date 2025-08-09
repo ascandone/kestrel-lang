@@ -192,7 +192,7 @@ describe("basic constructs inference", () => {
     const [types] = tc(
       `
     type Bool { True }
-    let f =
+    pub let f =
       if True {
         0
       } else {
@@ -210,7 +210,7 @@ describe("basic constructs inference", () => {
     const [types] = tc(
       `
     type Bool { True }
-    let f = fn x {
+    pub let f = fn x {
       if True {
         0
       } else {
@@ -228,7 +228,7 @@ describe("basic constructs inference", () => {
   test("typecheck if condition", () => {
     const [types] = tc(
       `
-    let f = fn x {
+    pub let f = fn x {
       if x {
         0
       } else {
@@ -653,7 +653,7 @@ describe("traits", () => {
     const [types, errs] = tc(
       `
         extern type String
-        extern let show: Fn(a) -> String where a: Show
+        extern pub let show: Fn(a) -> String where a: Show
 
         pub let use_show = fn value {
           show(value)
@@ -709,8 +709,8 @@ describe("traits", () => {
     const [types, errs] = tc(
       `
         extern type Unit
-        extern let show: Fn(a) -> Unit where a: Show
-        extern let eq: Fn(a) -> Unit where a: Eq
+        extern pub let show: Fn(a) -> Unit where a: Show
+        extern pub let eq: Fn(a) -> Unit where a: Eq
 
         pub let f = fn x {
           let _ = show(x);
@@ -925,7 +925,7 @@ describe("traits", () => {
     test("requires struct params to be Eq when they appear in struct, for it to be derived", () => {
       const [types, errs] = tc(
         `
-          extern let take_eq: Fn(a) -> a where a: Eq
+          extern pub let take_eq: Fn(a) -> a where a: Eq
   
           type MyType<a, b> struct {
             x: b,
@@ -1407,7 +1407,6 @@ describe("struct", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      p: "Person",
       p_name: "String",
     });
   });
@@ -1445,7 +1444,6 @@ describe("struct", () => {
       new err.InvalidField("Person", "invalid_field"),
     );
     expect(types).toEqual({
-      p: "Person",
       invalid: "a",
     });
   });
@@ -1742,7 +1740,7 @@ describe("struct", () => {
         }
 
         extern type Int
-        extern let box: Box<Int>
+        extern pub let box: Box<Int>
 
         pub let field = box.field
     `,
@@ -2396,7 +2394,7 @@ describe("modules", () => {
 
     const [moduleB] = tc(
       `
-      let y = x
+      pub let y = x
     `,
       { A },
       [
@@ -2889,10 +2887,12 @@ function tc(
 }
 
 function programTypes(typed: TypedModule): Record<string, string> {
-  const kvs = typed.declarations.map((decl) => [
-    decl.binding.name,
-    typeToString(decl.binding.$type.asType()),
-  ]);
+  const kvs = typed.declarations
+    .filter((t) => t.pub)
+    .map((decl) => [
+      decl.binding.name,
+      typeToString(decl.binding.$type.asType()),
+    ]);
 
   return Object.fromEntries(kvs);
 }
