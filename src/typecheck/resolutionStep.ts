@@ -35,11 +35,7 @@ export function castAst(
 }
 
 class LocalFrames {
-  // TODO remove stack, use single map instead
-
-  /** The previous values */
-  private readonly stack: Array<Map<string, IdentifierResolution | undefined>> =
-    [];
+  private currentScope?: Map<string, IdentifierResolution | undefined>;
 
   constructor(
     private readonly valuesResolution: Map<string, IdentifierResolution>,
@@ -47,8 +43,7 @@ class LocalFrames {
 
   public enter() {
     const previous = new Map<string, IdentifierResolution>();
-    this.stack.push(previous);
-
+    this.currentScope = previous;
     return () => {
       for (const [key, previousValue] of previous.entries()) {
         if (previousValue === undefined) {
@@ -61,13 +56,12 @@ class LocalFrames {
   }
 
   public register(binding: TypedBinding) {
-    const currentScope = this.stack.at(-1);
-    if (currentScope === undefined) {
+    if (this.currentScope === undefined) {
       throw new Error("[unreachable] empty stack");
     }
 
     const previousValue = this.valuesResolution.get(binding.name);
-    currentScope.set(binding.name, previousValue);
+    this.currentScope.set(binding.name, previousValue);
 
     this.valuesResolution.set(binding.name, {
       type: "local-variable",
