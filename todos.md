@@ -1,6 +1,7 @@
 ## Todos
 
 - refactor: refactor let block as list
+  - feat: allow mutually recursive let values
 - refactor: treat constructor and ident as separate nodes
 - feat: add package and module to compilation output
 - refactor: add package to named type repr
