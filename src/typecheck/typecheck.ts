@@ -212,7 +212,7 @@ class Typechecker {
   ): [TypedModule, ErrorInfo[]] {
     TVar.resetId();
 
-    const { typedModule, errors } = resolve(
+    const { typedModule, errors, mutuallyRecursiveBindings } = resolve(
       this.ns,
       deps,
       module,
@@ -241,15 +241,18 @@ class Typechecker {
       }
     }
 
-    for (const decl of typedModule.declarations) {
-      this.bindingsTypesStack.push(decl.binding.$type.asType());
-      this.typecheckAnnotatedDecl(decl);
-      this.bindingsTypesStack.pop();
+    for (const group of mutuallyRecursiveBindings) {
+      // TODO something's not right here (we should generalize the whole group after the typecheck pass)
+      for (const decl of group) {
+        this.bindingsTypesStack.push(decl.binding.$type.asType());
+        this.typecheckAnnotatedDecl(decl);
+        this.bindingsTypesStack.pop();
 
-      for (const check of this.scheduledAmbiguousVarChecks) {
-        this.checkInstantiatedVars(decl.$scheme, check);
+        for (const check of this.scheduledAmbiguousVarChecks) {
+          this.checkInstantiatedVars(decl.$scheme, check);
+        }
+        this.scheduledAmbiguousVarChecks = [];
       }
-      this.scheduledAmbiguousVarChecks = [];
     }
 
     for (const fieldAccessAst of this.scheduledFieldResolutions) {

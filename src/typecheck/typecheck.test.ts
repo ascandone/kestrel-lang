@@ -287,6 +287,47 @@ describe("basic constructs inference", () => {
     });
   });
 
+  test("generalization happens in the topological order", () => {
+    const [types, errs] = tc(
+      `
+      pub let v1 = id(42)
+      pub let v2 = id("x")
+      
+      let id = fn x { x }
+  `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      v1: "Int",
+      v2: "String",
+    });
+  });
+
+  test("generalization of mutually recursive functions happens afterwards", () => {
+    const [types, errs] = tc(
+      `
+      pub let f1 = fn a {
+        f2(a)
+      }
+
+      pub let f2 = fn a {
+        if a {
+          0
+        } else {
+          f1(a)
+        }
+      }
+  `,
+    );
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      f1: "Fn(Bool) -> Int",
+      f2: "Fn(Bool) -> Int",
+    });
+  });
+
   test("recursive let exprs", () => {
     const [types, errs] = tc(
       `
