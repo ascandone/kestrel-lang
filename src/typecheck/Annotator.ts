@@ -26,13 +26,6 @@ import * as err from "../errors";
 
 // TODO instead of traversing tree, mark fields as optional in the raw tree and use structuredClone to mutate freely
 
-/**
- * TODO:
- * * resolveIdentifiers
- * * resolveField
- * * resolveConstructor
- * * typedAst.$resolution
- */
 export class Annotator {
   constructor(private readonly errors: ErrorInfo[]) {}
 
