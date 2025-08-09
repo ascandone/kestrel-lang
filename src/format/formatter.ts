@@ -81,6 +81,10 @@ function getBindingPower(name: string): number | undefined {
 
 function hasLowerPrec(bindingPower: number, other: Expr): boolean {
   switch (other.type) {
+    case "block*":
+      // TODO are we sure?
+      return hasLowerPrec(bindingPower, other.returning);
+
     case "block":
       return hasLowerPrec(bindingPower, other.inner);
 
@@ -190,6 +194,10 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
 
     case "block":
       return exprToDoc(ast.inner, false);
+
+    case "block*":
+      // return exprToDoc(ast.inner, false);
+      throw new Error("TODO implement");
 
     case "list-literal":
       return group(

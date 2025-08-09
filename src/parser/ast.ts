@@ -48,6 +48,21 @@ export type MatchPattern = RangeMeta &
 
 export type Binding = { name: string } & RangeMeta;
 
+export type BlockStatement = RangeMeta &
+  (
+    | {
+        type: "let";
+        pattern: MatchPattern;
+        value: Expr;
+      }
+    | {
+        type: "let#";
+        mapper: RangeMeta & { namespace?: string; name: string };
+        pattern: MatchPattern;
+        value: Expr;
+      }
+  );
+
 export type StructField = RangeMeta & {
   field: RangeMeta & {
     name: string;
@@ -105,6 +120,11 @@ export type Expr = RangeMeta &
           name: string;
           structName?: string;
         };
+      }
+    | {
+        type: "block*";
+        statements: BlockStatement[];
+        returning: Expr;
       }
     | {
         type: "let";

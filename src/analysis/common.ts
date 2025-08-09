@@ -113,5 +113,8 @@ export function foldTree<T>(
         acc = foldTree(src.spread, acc, f);
       }
       return acc;
+
+    case "block*":
+      throw new Error("TODO implemenet");
   }
 }

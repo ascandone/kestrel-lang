@@ -501,6 +501,9 @@ class Compiler {
         }
       }
 
+      case "block*":
+        throw new Error("TODO compile block");
+
       case "let": {
         let jsPatternName: string;
         if (src.pattern.type === "identifier") {

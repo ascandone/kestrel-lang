@@ -290,6 +290,14 @@ function hoverOnExpr(expr: TypedExpr, position: Position): Hovered | undefined {
         hoverOnExpr(expr.else, position)
       );
 
+    case "block*": {
+      return (
+        firstBy(expr.statements, (st) =>
+          hoverOnPattern(st.pattern, position),
+        ) ?? hoverOnExpr(expr.returning, position)
+      );
+    }
+
     case "let": {
       if (contains(expr.pattern, position)) {
         return hoverOnPattern(expr.pattern, position);

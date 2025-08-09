@@ -108,6 +108,13 @@ class ExprCompletion {
           this.exprCompletion(expr.else, position)
         );
 
+      case "block*":
+        return (
+          firstBy(expr.statements, (st) =>
+            this.exprCompletion(st.value, position),
+          ) ?? this.exprCompletion(expr.returning, position)
+        );
+
       case "let":
         return (
           this.exprCompletion(expr.value, position) ??

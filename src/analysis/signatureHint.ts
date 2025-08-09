@@ -119,6 +119,14 @@ function functionSignatureHintExpr(
         functionSignatureHintExpr(expr.else, position)
       );
 
+    case "block*":
+      return (
+        firstBy(
+          expr.statements.map((st) => st.value),
+          (arg) => functionSignatureHintExpr(arg, position),
+        ) ?? functionSignatureHintExpr(expr.returning, position)
+      );
+
     case "let":
       return (
         functionSignatureHintExpr(expr.value, position) ??

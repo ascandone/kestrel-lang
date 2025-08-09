@@ -183,6 +183,14 @@ function goToDefinitionOfExpr(
         goToDefinitionOfExpr(ast.else, position)
       );
 
+    case "block*":
+      return (
+        firstBy(
+          ast.statements.map((st) => st.value),
+          (arg) => goToDefinitionOfExpr(arg, position),
+        ) ?? goToDefinitionOfExpr(ast.returning, position)
+      );
+
     case "let":
       return (
         goToDefinitionOfExpr(ast.value, position) ??

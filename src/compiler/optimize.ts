@@ -201,6 +201,15 @@ class ChangeTracker {
           then: this.runOnce(src.then),
           else: this.runOnce(src.else),
         };
+      case "block*":
+        return {
+          ...src,
+          statements: src.statements.map((st) => ({
+            ...st,
+            value: this.runOnce(st.value),
+          })),
+          returning: this.runOnce(src.returning),
+        };
       case "let":
         return {
           ...src,
@@ -331,6 +340,15 @@ function substituteBinding(
         ...src,
         value: substituteBinding(binding, with_, src.value),
         body: substituteBinding(binding, with_, src.body),
+      };
+    case "block*":
+      return {
+        ...src,
+        statements: src.statements.map((st) => ({
+          ...st,
+          value: substituteBinding(binding, with_, st.value),
+        })),
+        returning: substituteBinding(binding, with_, src.returning),
       };
     case "match":
       return {

@@ -222,6 +222,30 @@ export class Annotator {
       case "constant":
         return { ...ast, $type: TVar.fresh() };
 
+      case "block*":
+        return {
+          ...ast,
+          returning: this.annotateExpr(ast.returning),
+          statements: ast.statements.map((st) => {
+            switch (st.type) {
+              case "let":
+                return {
+                  ...st,
+                  pattern: this.annotateMatchPattern(st.pattern),
+                  value: this.annotateExpr(st.value),
+                };
+
+              case "let#":
+                return {
+                  ...st,
+                  pattern: this.annotateMatchPattern(st.pattern),
+                  value: this.annotateExpr(st.value),
+                };
+            }
+          }),
+          $type: TVar.fresh(),
+        };
+
       case "struct-literal":
         return {
           ...ast,
