@@ -432,6 +432,8 @@ test("does not refer to imported values when qualifying", () => {
     `
       import T1.{x}
       pub let a = Main.x
+
+      pub let e = x
     `,
     { T1 },
   );
@@ -457,6 +459,8 @@ test("does not refer to imported types when qualifying", () => {
     `
       import T1.{T1(..)}
       pub let a = Main.X
+
+      pub let b = X
     `,
     { T1 },
   );
@@ -2019,7 +2023,7 @@ describe("pattern matching", () => {
 
     const [types, errs] = tc(
       `
-      import A.{T(..)}
+      import A
 
       pub let f = fn x {
         match x {
@@ -2174,11 +2178,13 @@ describe("pattern matching", () => {
       { T1 },
     );
 
-    expect(errs).toEqual<ErrorInfo[]>([
-      expect.objectContaining({
-        description: new err.ShadowingImport("X"),
-      }),
-    ]);
+    expect(errs).toEqual<ErrorInfo[]>(
+      expect.arrayContaining([
+        expect.objectContaining({
+          description: new err.ShadowingImport("X"),
+        }),
+      ]),
+    );
   });
 
   test("Does not access imported module when qualifying", () => {
@@ -2203,11 +2209,13 @@ describe("pattern matching", () => {
       { T1 },
     );
 
-    expect(errs).toEqual<ErrorInfo[]>([
-      expect.objectContaining({
-        description: new err.UnboundVariable("X"),
-      }),
-    ]);
+    expect(errs).toEqual<ErrorInfo[]>(
+      expect.arrayContaining([
+        expect.objectContaining({
+          description: new err.UnboundVariable("X"),
+        }),
+      ]),
+    );
   });
 
   test("use pattern matching bound vars", () => {
@@ -2366,7 +2374,7 @@ describe("prelude", () => {
   });
 });
 
-describe.todo("modules", () => {
+describe("modules", () => {
   const mockPosition: Position = { line: 0, character: 0 };
   const mockRange: Range = { start: mockPosition, end: mockPosition };
   test("implicitly imports values of the modules in the prelude", () => {
@@ -2394,6 +2402,39 @@ describe.todo("modules", () => {
     expect(moduleB).toEqual({
       y: "Int",
     });
+  });
+
+  test("implicit imports aren't marked as unused", () => {
+    const [A] = tcProgram(
+      "A",
+      `
+      pub(..) type Box { X }
+      pub let x = 42
+    `,
+    );
+
+    const [, errs] = tc(
+      `
+      // Not using anything
+    `,
+      { A },
+      [
+        {
+          range: mockRange,
+          ns: "A",
+          exposing: [{ type: "value", name: "x", range: mockRange }],
+        },
+        {
+          range: mockRange,
+          ns: "A",
+          exposing: [
+            { type: "type", name: "Box", range: mockRange, exposeImpl: true },
+          ],
+        },
+      ],
+    );
+
+    expect(errs).toEqual([]);
   });
 
   test("implicitly imports types of the modules in the prelude", () => {
@@ -2483,7 +2524,7 @@ describe.todo("modules", () => {
     });
   });
 
-  test("detects unused imports when there are not exposed vars", () => {
+  test("detects unused imports when there are no exposed vars", () => {
     const [A] = tcProgram("A", ``);
     const [, errs] = tc(`import A`, { A });
 
@@ -2602,32 +2643,44 @@ describe.todo("modules", () => {
   test("error when import a non-existing module", () => {
     const [, errs] = tc(`import ModuleNotFound`);
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.UnboundModule);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.UnboundModule("ModuleNotFound"),
+      }),
+    ]);
   });
 
   test("error when importing a non-existing type", () => {
     const [Mod] = tcProgram("Mod", ``);
     const [, errs] = tc(`import Mod.{NotFound}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.NonExistingImport);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.NonExistingImport("NotFound"),
+      }),
+    ]);
   });
 
   test("error when importing a type the is not pub", () => {
     const [Mod] = tcProgram("Mod", `type PrivateType {}`);
     const [, errs] = tc(`import Mod.{PrivateType}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.NonExistingImport);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.NonExistingImport("PrivateType"),
+      }),
+    ]);
   });
 
   test("error when importing a non-existing value", () => {
     const [Mod] = tcProgram("Mod", ``);
     const [, errs] = tc(`import Mod.{not_found}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.NonExistingImport);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.NonExistingImport("not_found"),
+      }),
+    ]);
   });
 
   test("error when importing a private value", () => {
@@ -2685,8 +2738,11 @@ describe.todo("modules", () => {
     const [Mod] = tcProgram("Mod", `extern pub type ExternType`);
     const [, errs] = tc(`import Mod.{ExternType(..)}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.BadImport);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.BadImport(),
+      }),
+    ]);
   });
 
   test("error when expose impl is run on a opaque type", () => {
@@ -2694,15 +2750,21 @@ describe.todo("modules", () => {
     const [Mod] = tcProgram("Mod", `pub type T {}`);
     const [, errs] = tc(`import Mod.{T(..)}`, { Mod });
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.BadImport);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.BadImport(),
+      }),
+    ]);
   });
 
   test("error when qualifier is not an imported module", () => {
     const [, errs] = tc(`pub let x = NotImported.value`);
 
-    expect(errs).toHaveLength(1);
-    expect(errs[0]?.description).toBeInstanceOf(err.UnimportedModule);
+    expect(errs).toEqual([
+      expect.objectContaining({
+        description: new err.UnimportedModule("NotImported"),
+      }),
+    ]);
   });
 
   test("types from different modules with the same name aren't treated the same", () => {
@@ -2784,7 +2846,7 @@ describe("typecheck project", () => {
   });
 });
 
-test.skip("type error when main has not type Task<Unit>", () => {
+test("type error when main has not type Task<Unit>", () => {
   const [_, errors] = tc(`pub let main = "not-task-type"`);
   expect(errors).toHaveLength(1);
   expect(errors[0]?.description).toBeInstanceOf(err.TypeMismatch);

@@ -20,6 +20,7 @@ import { ErrorInfo } from "../errors";
 import * as err from "../errors";
 import { Annotator } from "./Annotator";
 import * as visitor from "./visitor";
+import * as ast from "../parser/ast";
 
 // Record from namespace (e.g. "A.B.C" ) to the module
 export type Deps = Record<string, ModuleInterface>;
@@ -83,19 +84,26 @@ class ResolutionStep {
 
   // scope
   private importedModules = new Set<string>();
-
-  private importedTypes = new Map<string, TypeResolution>();
+  private importedTypes = new Map<
+    string,
+    [TypeResolution, TypedExposedValue & { type: "type" }]
+  >();
   private moduleTypes = new Map<string, TypeResolution>();
-
   private importedValues = new Map<
     string,
-    IdentifierResolution & { type: "constructor" | "global-variable" }
+    [
+      IdentifierResolution & { type: "constructor" | "global-variable" },
+      TypedExposedValue,
+    ]
   >();
   private moduleValues = new Map<
     string,
     IdentifierResolution & { type: "constructor" | "global-variable" }
   >();
-  private importedFields = new Map<string, FieldResolution>();
+  private importedFields = new Map<
+    string,
+    [FieldResolution, TypedExposedValue]
+  >();
   private moduleFields = new Map<string, FieldResolution>();
   private localValues = new Map<
     string,
@@ -106,8 +114,8 @@ class ResolutionStep {
   // unused checks
   private unusedLocals = new Set<TypedBinding>();
   private unusedGlobals = new Set<TypedDeclaration>();
-  // private unusedImports = new Set<TypedImport>();
-  // private unusedExposing = new Set<TypedExposedValue>();
+  private unusedImports = new Map<string, TypedImport>();
+  private unusedExposings = new Set<TypedExposedValue>();
 
   constructor(
     private readonly ns: string,
@@ -118,54 +126,68 @@ class ResolutionStep {
     moduleInterface: ModuleInterface,
     exposing: TypedExposedValue & { type: "type" },
   ) {
-    const typeDeclaration = moduleInterface.publicTypes[exposing.name];
-    if (typeDeclaration === undefined) {
-      throw new UnimplementedErr("imported type not found: " + exposing.name);
+    exposing.$resolution = moduleInterface.publicTypes[exposing.name];
+    if (exposing.$resolution === undefined) {
+      this.errors.push({
+        description: new err.NonExistingImport(exposing.name),
+        range: exposing.range,
+      });
+      // we remove the unused exposing so that we don't show an error twice
+      this.unusedExposings.delete(exposing);
+      return;
     }
 
-    exposing.$resolution = typeDeclaration;
-
-    if (this.importedTypes.has(typeDeclaration.name)) {
+    if (this.importedTypes.has(exposing.$resolution.name)) {
       throw new UnimplementedErr("duplicate name import");
     }
-    this.importedTypes.set(typeDeclaration.name, {
-      declaration: typeDeclaration,
-      namespace: moduleInterface.ns,
-    });
+    this.importedTypes.set(exposing.$resolution.name, [
+      {
+        declaration: exposing.$resolution,
+        namespace: moduleInterface.ns,
+      },
+      exposing,
+    ]);
 
     // -- Open import
     if (!exposing.exposeImpl) {
       return;
     }
 
-    if (typeDeclaration.pub !== "..") {
+    if (exposing.$resolution.pub !== "..") {
       this.errors.push({
         description: new err.BadImport(),
         range: exposing.range,
       });
+      this.unusedExposings.delete(exposing);
     }
 
     // TODO add to unused exports
 
-    switch (typeDeclaration.type) {
+    switch (exposing.$resolution.type) {
       case "adt":
-        for (const variant of typeDeclaration.variants) {
-          this.importedValues.set(variant.name, {
-            type: "constructor",
-            declaration: typeDeclaration,
-            variant: variant,
-            namespace: moduleInterface.ns,
-          });
+        for (const variant of exposing.$resolution.variants) {
+          this.importedValues.set(variant.name, [
+            {
+              type: "constructor",
+              declaration: exposing.$resolution,
+              variant: variant,
+              namespace: moduleInterface.ns,
+            },
+            exposing,
+          ]);
         }
         break;
 
       case "struct":
-        for (const field of typeDeclaration.fields) {
-          this.importedFields.set(field.name, {
-            declaration: typeDeclaration,
-            field,
-            namespace: moduleInterface.ns,
-          });
+        for (const field of exposing.$resolution.fields) {
+          this.importedFields.set(field.name, [
+            {
+              declaration: exposing.$resolution,
+              field,
+              namespace: moduleInterface.ns,
+            },
+            exposing,
+          ]);
         }
         break;
     }
@@ -175,36 +197,52 @@ class ResolutionStep {
     moduleInterface: ModuleInterface,
     exposing: TypedExposedValue & { type: "value" },
   ) {
-    const declaration = moduleInterface.publicValues[exposing.name];
-    if (declaration === undefined) {
-      throw new UnimplementedErr("bad exposing (private value)");
+    exposing.$resolution = moduleInterface.publicValues[exposing.name];
+    if (exposing.$resolution === undefined) {
+      this.errors.push({
+        range: exposing.range,
+        description: new err.NonExistingImport(exposing.name),
+      });
+      this.unusedExposings.delete(exposing);
+      return;
     }
 
-    if (this.importedValues.has(declaration.binding.name)) {
+    if (this.importedValues.has(exposing.$resolution.binding.name)) {
       throw new UnimplementedErr("duplicate name value import");
     }
-    this.importedValues.set(exposing.name, {
-      type: "global-variable",
-      declaration,
-      namespace: moduleInterface.ns,
-    });
-
-    // TODO add to unused exports
+    this.importedValues.set(exposing.name, [
+      {
+        type: "global-variable",
+        declaration: exposing.$resolution,
+        namespace: moduleInterface.ns,
+      },
+      exposing,
+    ]);
   }
 
   /** add imports to scope and mark them as unused */
-  private loadImports(imports: TypedImport[], _markUnused: boolean) {
+  private loadImports(imports: TypedImport[], markUnused: boolean) {
     for (const import_ of imports) {
       this.importedModules.add(import_.ns);
 
       const dep = this.deps[import_.ns];
       if (dep === undefined) {
-        throw new UnimplementedErr("module not found");
+        this.errors.push({
+          description: new err.UnboundModule(import_.ns),
+          range: import_.range,
+        });
+        continue;
       }
 
-      // TODO add to unused imports
+      if (markUnused && import_.exposing.length === 0) {
+        this.unusedImports.set(import_.ns, import_);
+      }
 
       for (const exposing of import_.exposing) {
+        if (markUnused) {
+          this.unusedExposings.add(exposing);
+        }
+
         switch (exposing.type) {
           case "type":
             this.loadTypeImport(dep, exposing);
@@ -221,12 +259,22 @@ class ResolutionStep {
   private resolveTypeAst(arg: TypedTypeAst) {
     visitor.visitTypeAst(arg, {
       onNamedType: (ast) => {
-        if (ast.namespace !== undefined) {
-          throw new UnimplementedErr("unqualified type");
+        if (ast.namespace === undefined) {
+          ast.$resolution =
+            this.trackUsedExposing(this.importedTypes.get(ast.name)) ??
+            this.moduleTypes.get(ast.name);
+        } else if (ast.namespace === this.ns) {
+          ast.$resolution = this.moduleTypes.get(ast.name);
+        } /* if ast.namespace !== undefined */ else {
+          const deps = this.trackedDependencyAccess(ast.namespace, ast.range);
+          const declaration = deps?.publicTypes[ast.name];
+          if (declaration !== undefined) {
+            ast.$resolution = {
+              declaration: declaration,
+              namespace: ast.namespace,
+            };
+          }
         }
-
-        ast.$resolution =
-          this.importedTypes.get(ast.name) ?? this.moduleTypes.get(ast.name);
 
         if (ast.$resolution === undefined) {
           this.errors.push({
@@ -243,21 +291,13 @@ class ResolutionStep {
   ) {
     if (ctor.namespace === undefined) {
       ctor.$resolution =
-        this.moduleValues.get(ctor.name) ?? this.importedValues.get(ctor.name);
+        this.moduleValues.get(ctor.name) ??
+        this.trackUsedExposing(this.importedValues.get(ctor.name));
     } else if (ctor.namespace === this.ns) {
       ctor.$resolution = this.moduleValues.get(ctor.name);
     } else {
-      if (!this.importedModules.has(ctor.namespace)) {
-        throw new UnimplementedErr("unimpoorted qualifier");
-      }
-
-      const dep = this.deps[ctor.namespace];
-      if (dep === undefined) {
-        // we probably already emitted this
-        throw new UnimplementedErr("qualify to not existing module");
-      }
-
-      ctor.$resolution = dep.publicConstructors[ctor.name];
+      const dep = this.trackedDependencyAccess(ctor.namespace, ctor.range);
+      ctor.$resolution = dep?.publicConstructors[ctor.name];
     }
 
     if (ctor.$resolution === undefined) {
@@ -273,16 +313,16 @@ class ResolutionStep {
       expr.$resolution =
         this.localValues.get(expr.name) ??
         this.moduleValues.get(expr.name) ??
-        this.importedValues.get(expr.name);
+        this.trackUsedExposing(this.importedValues.get(expr.name));
     } else if (expr.namespace === this.ns) {
       expr.$resolution = this.moduleValues.get(expr.name);
     } else {
-      const dep = this.deps[expr.namespace];
+      const dep = this.trackedDependencyAccess(expr.namespace, expr.range);
       if (dep === undefined) {
-        throw new UnimplementedErr("qualified mod not found");
+        return;
       }
 
-      const valueLookup = dep.publicValues[expr.name];
+      const valueLookup = dep?.publicValues[expr.name];
       if (valueLookup !== undefined) {
         expr.$resolution = {
           type: "global-variable",
@@ -290,13 +330,21 @@ class ResolutionStep {
           namespace: expr.namespace,
         };
       } else {
-        expr.$resolution = dep.publicConstructors[expr.name];
+        expr.$resolution = dep?.publicConstructors[expr.name];
       }
     }
 
-    if (expr.$resolution === undefined) {
+    if (
+      expr.$resolution === undefined &&
+      (expr.namespace ?? this.ns) === this.ns
+    ) {
       this.errors.push({
         description: new err.UnboundVariable(expr.name),
+        range: expr.range,
+      });
+    } else if (expr.$resolution === undefined) {
+      this.errors.push({
+        description: new err.NonExistingImport(expr.name),
         range: expr.range,
       });
     } else {
@@ -331,14 +379,14 @@ class ResolutionStep {
       onFieldAccess: (expr) => {
         expr.$resolution =
           this.moduleFields.get(expr.field.name) ??
-          this.importedFields.get(expr.field.name);
+          this.trackUsedExposing(this.importedFields.get(expr.field.name));
       },
 
       onStructLiteral: (expr) => {
         // TODO handle namespaced struct
         const resolution =
           this.moduleTypes.get(expr.struct.name) ??
-          this.importedTypes.get(expr.struct.name);
+          this.trackUsedExposing(this.importedTypes.get(expr.struct.name));
 
         if (resolution === undefined) {
           throw new UnimplementedErr("undefined struct resolution");
@@ -531,7 +579,56 @@ class ResolutionStep {
         description: new err.UnusedVariable(declaration.binding.name, "global"),
       });
     }
-    this.unusedGlobals = new Set();
+  }
+
+  private trackUsedExposing<T>(
+    pair: [lookup: T, exposing: TypedExposedValue] | undefined,
+  ): T | undefined {
+    if (pair === undefined) {
+      return undefined;
+    }
+    const [resolution, exposing] = pair;
+    this.unusedExposings.delete(exposing);
+    return resolution;
+  }
+
+  private trackedDependencyAccess(ns: string, range: ast.Range) {
+    if (!this.importedModules.has(ns)) {
+      this.errors.push({
+        range,
+        description: new err.UnimportedModule(ns),
+      });
+
+      return undefined;
+    }
+
+    this.unusedImports.delete(ns);
+
+    const dep = this.deps[ns];
+    if (dep === undefined) {
+      // The error was already emitted
+      return undefined;
+    }
+
+    return dep;
+  }
+
+  private emitUnusedImportsErrors() {
+    for (const import_ of this.unusedImports.values()) {
+      this.errors.push({
+        range: import_.range,
+        description: new err.UnusedImport(import_.ns),
+      });
+    }
+  }
+
+  private emitUnusedExposingsErrors() {
+    for (const exposing of this.unusedExposings) {
+      this.errors.push({
+        range: exposing.range,
+        description: new err.UnusedExposing(exposing.name),
+      });
+    }
   }
 
   run(
@@ -565,6 +662,8 @@ class ResolutionStep {
     }
 
     this.emitUnusedGlobalsErrors();
+    this.emitUnusedImportsErrors();
+    this.emitUnusedExposingsErrors();
 
     const typedModule: TypedModule = {
       ...annotatedModule,
@@ -578,41 +677,6 @@ class ResolutionStep {
 
     return [typedModule, this.errors];
   }
-}
-
-export function findFieldInModule(
-  typeDeclarations: Map<string, TypedTypeDeclaration>,
-  fieldName: string,
-  namespace: string,
-): FieldResolution | undefined {
-  for (const typeDecl of typeDeclarations.values()) {
-    const lookup = findFieldInTypeDecl(typeDecl, fieldName, namespace);
-    if (lookup !== undefined) {
-      return lookup;
-    }
-  }
-
-  return undefined;
-}
-
-export function findFieldInTypeDecl(
-  declaration: TypedTypeDeclaration,
-  fieldName: string,
-  namespace: string,
-): FieldResolution | undefined {
-  if (declaration.type !== "struct") {
-    return undefined;
-  }
-
-  for (const field of declaration.fields) {
-    if (field.name !== fieldName) {
-      continue;
-    }
-
-    return { declaration, field, namespace };
-  }
-
-  return undefined;
 }
 
 // TODO make this lazy
