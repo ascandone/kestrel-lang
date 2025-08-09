@@ -65,12 +65,13 @@ class LocalFrames {
 class UnimplementedErr extends Error {}
 
 export function resolve(
+  package_: string,
   ns: string,
   deps: Deps,
   module: UntypedModule,
   implicitImports: Import[],
 ) {
-  const resolution = new Resolver(ns, deps);
+  const resolution = new Resolver(package_, ns, deps);
   const out = resolution.run(module, implicitImports);
   return {
     errors: resolution.errors,
@@ -145,6 +146,7 @@ class Resolver {
   private unusedExposings = new Set<TypedExposedValue>();
 
   constructor(
+    private readonly package_: string,
     private readonly ns: string,
     private readonly deps: Deps,
   ) {}
@@ -170,6 +172,7 @@ class Resolver {
     this.importedTypes.set(exposing.$resolution.name, [
       {
         declaration: exposing.$resolution,
+        package_: moduleInterface.package_,
         namespace: moduleInterface.ns,
       },
       exposing,
@@ -291,13 +294,16 @@ class Resolver {
         } else if (ast.namespace === this.ns) {
           ast.$resolution = this.moduleTypes.get(ast.name);
         } /* if ast.namespace !== undefined */ else {
-          const deps = this.trackedDependencyAccess(ast.namespace, ast.range);
-          const declaration = deps?.publicTypes[ast.name];
-          if (declaration !== undefined) {
-            ast.$resolution = {
-              declaration: declaration,
-              namespace: ast.namespace,
-            };
+          const dep = this.trackedDependencyAccess(ast.namespace, ast.range);
+          if (dep !== undefined) {
+            const declaration = dep.publicTypes[ast.name];
+            if (declaration !== undefined) {
+              ast.$resolution = {
+                declaration: declaration,
+                namespace: dep.ns,
+                package_: dep.package_,
+              };
+            }
           }
         }
 
@@ -538,6 +544,7 @@ class Resolver {
 
       this.moduleTypes.set(declaration.name, {
         declaration,
+        package_: this.package_,
         namespace: this.ns,
       });
 
@@ -763,6 +770,7 @@ class Resolver {
       ...annotatedModule,
 
       moduleInterface: makeInterface(
+        this.package_,
         this.ns,
         annotatedModule.typeDeclarations,
         annotatedModule.declarations,
@@ -778,6 +786,7 @@ class Resolver {
 
 // TODO make this lazy
 function makeInterface(
+  package_: string,
   ns: string,
   typeDeclarations: TypedModule["typeDeclarations"],
   declarations: TypedModule["declarations"],
@@ -822,6 +831,7 @@ function makeInterface(
   }
 
   return {
+    package_,
     ns,
     publicConstructors,
     publicTypes,

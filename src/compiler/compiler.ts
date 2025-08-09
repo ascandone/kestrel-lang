@@ -1,4 +1,5 @@
 import {
+  DEFAULT_MAIN_TYPE,
   TypedBinding,
   TypedDeclaration,
   TypedExpr,
@@ -34,11 +35,12 @@ export type CompileOptions = {
 };
 
 export function compile(
+  package_: string,
   ns: string,
   ast: TypedModule,
   options: CompileOptions = {},
 ): string {
-  return new Compiler(ns, options).compile(ast);
+  return new Compiler(package_, ns, options).compile(ast);
 }
 
 const EQ_IDENTIFIER: t.Identifier = { type: "Identifier", name: "_eq" };
@@ -92,6 +94,7 @@ class Compiler {
   }
 
   constructor(
+    readonly package_: string,
     private ns: string,
     private options: CompileOptions,
   ) {}
@@ -1070,8 +1073,9 @@ class Compiler {
     const deps = TVar.typeImplementsTrait(
       {
         type: "named",
-        name: typedDeclaration.name,
+        package_: this.package_,
         module: this.ns,
+        name: typedDeclaration.name,
         args: typedDeclaration.params.map(() => TVar.fresh().asType()),
       },
       trait,
@@ -1296,6 +1300,7 @@ function traitDepsForNamedType(
   // TODO simplify this workaround
   const genericType: Type = {
     type: "named",
+    package_: t.package_,
     module: t.module,
     name: t.name,
     args: freshArgs.map((a) => a.asType()),
@@ -1460,12 +1465,7 @@ export const defaultEntryPoint: NonNullable<
   CompileProjectOptions["entrypoint"]
 > = {
   module: "Main",
-  type: {
-    type: "named",
-    module: "Task",
-    name: "Task",
-    args: [{ type: "named", name: "Unit", module: "Tuple", args: [] }],
-  },
+  type: DEFAULT_MAIN_TYPE,
 };
 
 export type CompileProjectOptions = {
@@ -1522,7 +1522,11 @@ export function compileProject(
       buf.push(extern);
     }
 
-    const out = compile(ns, optimize ? optimizeModule(module) : module);
+    const out = compile(
+      module.moduleInterface.package_,
+      ns,
+      optimize ? optimizeModule(module) : module,
+    );
 
     buf.push(out);
   }

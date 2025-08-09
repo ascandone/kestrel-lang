@@ -26,7 +26,7 @@ let expr = p.
 
   const parsed = parse(src);
 
-  const [typed, _] = typecheck("Main", parsed.parsed);
+  const [typed, _] = typecheck("pkg", "Main", parsed.parsed);
 
   const ret = getCompletionItems(
     typed,
@@ -66,7 +66,7 @@ let expr = fn p { p. }
 
   const parsed = parse(src);
 
-  const [typed, _] = typecheck("Main", parsed.parsed);
+  const [typed, _] = typecheck("pkg", "Main", parsed.parsed);
 
   const ret = getCompletionItems(
     typed,

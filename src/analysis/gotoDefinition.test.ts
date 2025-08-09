@@ -123,7 +123,7 @@ function parseGotoDef(
     throw new Error("Invalid position");
   }
   const parsed = unsafeParse(src);
-  const [typed, _] = typecheck("Main", parsed);
+  const [typed, _] = typecheck("pkg", "Main", parsed);
   return goToDefinitionOf(typed, position);
 }
 

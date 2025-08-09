@@ -8,6 +8,7 @@ export type ConcreteType =
     }
   | {
       type: "named";
+      package_: string;
       module: string;
       name: string;
       args: Type[];
@@ -243,6 +244,7 @@ export class TVar {
       if (
         t1.name !== t2.name ||
         t1.module !== t2.module ||
+        t1.package_ !== t2.package_ ||
         t1.args.length !== t2.args.length
       ) {
         return { type: "type-mismatch", left: t1, right: t2 };

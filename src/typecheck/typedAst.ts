@@ -221,6 +221,7 @@ export type TypedModule = {
 // -- specific
 
 export type ModuleInterface = {
+  package_: string;
   ns: string;
 
   publicTypes: Record<string, TypedTypeDeclaration>;
@@ -238,6 +239,7 @@ export type PolyTypeMeta = { $scheme: TypeScheme } & TypeMeta;
 
 export type TypeResolution = {
   declaration: TypedTypeDeclaration;
+  package_: string;
   namespace: string;
 };
 

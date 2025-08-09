@@ -18,6 +18,7 @@ import {
   Option,
   Tuple,
 } from "./__test__/types";
+import { CORE_PACKAGE } from "../typecheck";
 
 beforeEach(() => {
   TVar.resetId();
@@ -37,6 +38,12 @@ describe("unify", () => {
     ).not.toBeUndefined();
   });
 
+  test("do not unify concrete types same different module of different packages", () => {
+    expect(
+      unify(Int, { ...Int, package_: "another_package" } as any),
+    ).not.toBeUndefined();
+  });
+
   test("unify two concrete vars that do not match", () => {
     expect(unify(Int, Bool)).toEqual<UnifyError>({
       type: "type-mismatch",
@@ -46,12 +53,27 @@ describe("unify", () => {
     expect(
       unify(
         {
+          package_: CORE_PACKAGE,
           module: "Mod",
           type: "named",
           name: "T",
-          args: [{ module: "Mod", type: "named", name: "X", args: [] }],
+          args: [
+            {
+              package_: CORE_PACKAGE,
+              module: "Mod",
+              type: "named",
+              name: "X",
+              args: [],
+            },
+          ],
         },
-        { module: "Mod", type: "named", name: "T", args: [] },
+        {
+          package_: CORE_PACKAGE,
+          module: "Mod",
+          type: "named",
+          name: "T",
+          args: [],
+        },
       ),
     ).not.toBeUndefined();
     expect(unify(List(Int), List(Bool))).not.toBeUndefined();
