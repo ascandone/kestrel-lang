@@ -255,6 +255,26 @@ test("struct creation and access", () => {
   `);
 });
 
+test("constructor", () => {
+  const ir = toSexpr(`
+    type Option<a> {
+      None,
+      Some(a),
+    }
+
+    pub let none = None
+    pub let some = Some(0)
+  `);
+
+  expect(ir).toMatchInlineSnapshot(`
+    "(:def none
+        None)
+
+    (:def some
+        (Some 0))"
+  `);
+});
+
 function getIR(src: string) {
   const untypedMod = unsafeParse(src);
   const [tc, errors] = typecheck("pkg", "Main", untypedMod, {}, []);

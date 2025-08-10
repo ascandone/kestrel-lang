@@ -119,6 +119,25 @@ class ExprPrinter {
   }
 
   /**
+   * e.g. `pkg:Main.Box`
+   *
+   * package is not shown if the current package is the same as the package's, e.g. `Main.Box`
+   *
+   * module is not shown if the current module is the same as the module's, e.g. `Box`
+   */
+  private ctor(ident: ir.Ident & { type: "constructor" }): string {
+    if (ident.name.package_ !== this.package_) {
+      return `${ident.name.package_}:${ident.name.namespace}.${ident.name.name}`;
+    }
+
+    if (ident.name.namespace !== this.module) {
+      return `${ident.name.namespace}.${ident.name.name}`;
+    }
+
+    return ident.name.name;
+  }
+
+  /**
    * e.g. `pkg:Main.glb:x#0`
    *
    * package is not shown if the curret package is the same as the package's, e.g. `Main.glb:x#0`
@@ -149,7 +168,7 @@ class ExprPrinter {
   private identifier(ident: ir.Ident): string {
     switch (ident.type) {
       case "constructor":
-        throw new Error("TODO constructor");
+        return this.ctor(ident);
 
       case "global":
         return this.glbIdent(ident);
