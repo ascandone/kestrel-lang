@@ -683,10 +683,14 @@ class Typechecker {
     }
   }
 
-  private typecheckAnnotatedBlockStatement(stm: TypedBlockStatement) {
+  private typecheckAnnotatedBlockStatement(
+    stm: TypedBlockStatement,
+    bodyType: Type,
+  ) {
     switch (stm.type) {
       case "let":
         this.typecheckPattern(stm.pattern, true);
+        this.unifyNode(stm, stm.$type.asType(), bodyType);
         this.unifyNode(
           stm,
           stm.pattern.$type.asType(),
@@ -698,7 +702,21 @@ class Typechecker {
         break;
 
       case "let#":
-        throw new Error("TODO let# typecheck");
+        this.unifyNode(stm, stm.mapper.$type.asType(), {
+          type: "fn",
+          args: [
+            stm.value.$type.asType(),
+            {
+              type: "fn",
+              args: [stm.pattern.$type.asType()],
+              return: bodyType,
+            },
+          ],
+          return: stm.$type.asType(),
+        });
+        this.typecheckAnnotatedExpr(stm.mapper);
+        this.typecheckAnnotatedExpr(stm.value);
+        this.typecheckPattern(stm.pattern, true);
         break;
 
       default:
@@ -849,11 +867,24 @@ class Typechecker {
         return;
 
       case "block":
-        for (const stm of ast.statements) {
-          this.typecheckAnnotatedBlockStatement(stm);
+        // TODO(nitpick) it feels like I made it more complex than it'd need to
+
+        const firstStatement = ast.statements[0];
+        if (firstStatement === undefined) {
+          this.unifyExpr(ast, ast.$type.asType(), ast.returning.$type.asType());
+          this.typecheckAnnotatedExpr(ast.returning);
+          return;
         }
+
+        ast.statements.forEach((stm, index) => {
+          const nextType =
+            ast.statements[index + 1]?.$type.asType() ??
+            ast.returning.$type.asType();
+          this.typecheckAnnotatedBlockStatement(stm, nextType);
+        });
+
         this.typecheckAnnotatedExpr(ast.returning);
-        this.unifyExpr(ast, ast.$type.asType(), ast.returning.$type.asType());
+        this.unifyExpr(ast, ast.$type.asType(), firstStatement.$type.asType());
         return;
 
       default:

@@ -464,24 +464,29 @@ describe("basic constructs inference", () => {
 describe("let# sugar", () => {
   test("infer int", () => {
     const [correctTypes, correctErrors] = tc(`
-    pub let f = fn mapper, value {
+    pub let f = fn mapper, value, g {
       mapper(value, fn x {
-        x
+        g(x)
       })
     }
   `);
 
+    // ... -> d"
+    // mapper: (value: a, g: (b) -> c) -> d
+    // value : a
+    // g     : (b) -> c
+
     expect(correctErrors).toEqual([]);
     expect(correctTypes).toMatchInlineSnapshot(`
       {
-        "f": "Fn(Fn(a, Fn(b) -> b) -> c, a) -> c",
+        "f": "Fn(Fn(a, Fn(b) -> c) -> d, a, Fn(b) -> c) -> d",
       }
     `);
 
     const [types, errors] = tc(`
-    pub let expr = fn mapper, value {
+    pub let f = fn mapper, value, g {
       let#mapper x = value;
-      x
+      g(x)
     }
   `);
     expect(errors).toEqual([]);

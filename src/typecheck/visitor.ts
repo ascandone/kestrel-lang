@@ -26,15 +26,15 @@ export type VisitOptions = {
   ): VoidFunction | void;
   onBlockStatementLetHash?(
     stmt: TypedBlockStatement & { type: "let#" },
-  ): VoidFunction | undefined;
+  ): VoidFunction | void;
 
   // Expr
-  onBlock?(expr: TypedExpr & { type: "block" }): VoidFunction | undefined;
+  onBlock?(expr: TypedExpr & { type: "block" }): VoidFunction | void;
   onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
   onApplication?(expr: TypedExpr & { type: "application" }): void;
   onFieldAccess?(expr: TypedExpr & { type: "field-access" }): void;
   onStructLiteral?(expr: TypedExpr & { type: "struct-literal" }): void;
-  onFn?(expr: TypedExpr & { type: "fn" }): VoidFunction | undefined;
+  onFn?(expr: TypedExpr & { type: "fn" }): VoidFunction | void;
 };
 
 export function visitTypeAst(ast: TypedTypeAst, opts: VisitOptions) {
@@ -94,9 +94,11 @@ export function visitBlockStatementLetClause(
       break;
     }
     case "let#": {
+      // Make sure pattern is visited *after* the expression (unlike normal let)
       const onExit = opts.onBlockStatementLetHash?.(expr);
-      visitPattern(expr.pattern, opts);
+      visitExpr(expr.mapper, opts);
       visitExpr(expr.value, opts);
+      visitPattern(expr.pattern, opts);
       onExit?.();
       break;
     }
