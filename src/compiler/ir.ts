@@ -3,12 +3,12 @@ import { ConstLiteral } from "../parser/ast";
 export class QualifiedIdentifier {
   constructor(
     public readonly package_: string,
-    public readonly module: string,
+    public readonly namespace: string,
     public readonly name: string,
   ) {}
 
   public toJSON() {
-    return `${this.package_}:${this.module}:${this.name}`;
+    return `${this.package_}:${this.namespace}:${this.name}`;
   }
 }
 
@@ -53,7 +53,7 @@ export type Expr =
     }
   | {
       type: "let";
-      binding: Expr;
+      binding: Ident & { type: "local" };
       value: Expr;
       body: Expr;
     }

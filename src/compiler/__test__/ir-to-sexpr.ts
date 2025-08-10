@@ -53,7 +53,10 @@ class ExprPrinter {
       case "let":
         return [
           sym`:let`,
-          [this.toSexpr(expr.binding), this.toSexpr(expr.value)],
+          [
+            { type: "symbol", value: this.localIdent(expr.binding) },
+            this.toSexpr(expr.value),
+          ],
           this.toSexpr(expr.body),
         ];
 
@@ -74,11 +77,11 @@ class ExprPrinter {
    */
   private glbIdent(ident: ir.Ident & { type: "global" }): string {
     if (ident.name.package_ !== this.package_) {
-      return `${ident.name.package_}:${ident.name.name}.${ident.name.name}`;
+      return `${ident.name.package_}:${ident.name.namespace}.${ident.name.name}`;
     }
 
-    if (ident.name.module !== this.module) {
-      return `${ident.name.name}.${ident.name.name}`;
+    if (ident.name.namespace !== this.module) {
+      return `${ident.name.namespace}.${ident.name.name}`;
     }
 
     return ident.name.name;
@@ -103,7 +106,7 @@ class ExprPrinter {
 
     if (
       ident.declaration.package_ !== this.package_ ||
-      ident.declaration.module !== this.module ||
+      ident.declaration.namespace !== this.module ||
       ident.declaration.name !== this.declaration
     ) {
       return `${qualifier}:${local}`;

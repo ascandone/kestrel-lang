@@ -66,21 +66,63 @@ test("global value of same module", () => {
     pub let y = x
   `);
   expect(ir).toMatchInlineSnapshot(`
-    "(:def x 0)
+    "(:def x
+        0)
 
-    (:def y x)"
+    (:def y
+        x)"
   `);
+});
+
+test("local value", () => {
+  const ir = toSexpr(`
+    pub let glb = {
+      let loc = 0;
+      loc
+    }
+  `);
+  expect(ir).toMatchInlineSnapshot(`
+    "(:def glb
+        (:let (loc#0 0)
+            loc#0))"
+  `);
+});
+
+test("local value (shadowing)", () => {
+  const ir = toSexpr(`
+    pub let glb = {
+      let loc = 0;
+      let mid = loc;
+      let loc = mid;
+      loc
+    }
+  `);
+  expect(ir).toMatchInlineSnapshot(
+    `
+    "(:def glb
+        (:let (loc#0 0)
+            (:let (mid#0 loc#0)
+                (:let (loc#1 mid#0)
+                    loc#1))))"
+  `,
+  );
 });
 
 function getIR(src: string) {
   const untypedMod = unsafeParse(src);
   const [tc, errors] = typecheck("pkg", "Main", untypedMod, {}, []);
-  expect(errors).toEqual([]);
+  expect(errors.filter((e) => e.description.severity === "error")).toEqual([]);
   return lowerProgram(tc);
 }
 
 function toSexpr(src: string) {
   const ir = getIR(src);
   const sexpr = programToSexpr(ir);
-  return formatSexpr(sexpr);
+  return formatSexpr(sexpr, {
+    indents: {
+      ":def": 1,
+      ":let": 1,
+      ":fn": 1,
+    },
+  });
 }

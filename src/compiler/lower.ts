@@ -1,73 +1,122 @@
 import * as typed from "../typecheck";
 import * as ir from "./ir";
 
-function lowerIdent(resolution: typed.IdentifierResolution): ir.Ident {
-  switch (resolution.type) {
-    case "local-variable":
-      return {
-        type: "local",
-        name: resolution.binding.name,
-        // TODO pkg, module
-        declaration: new ir.QualifiedIdentifier(
-          "pkg",
-          "Main",
-          resolution.binding.name,
-        ),
-        unique: 0,
-      };
+class ExprEmitter {
+  constructor(private readonly currentDecl: ir.QualifiedIdentifier) {}
 
-    case "constructor":
-      return {
-        type: "constructor",
-        // TODO pkg
-        name: new ir.QualifiedIdentifier(
-          "pkg",
-          resolution.namespace,
-          resolution.variant.name,
-        ),
-        typeName: resolution.declaration.name,
-      };
-
-    case "global-variable":
-      return {
-        type: "global",
-        // TODO pkg
-        name: new ir.QualifiedIdentifier(
-          "pkg",
-          resolution.namespace,
-          resolution.declaration.binding.name,
-        ),
-      };
+  private readonly uniques = new Map<string, number>();
+  public getFreshUnique(name: string) {
+    const unique = this.uniques.get(name) ?? 0;
+    this.uniques.set(name, unique + 1);
+    return unique;
   }
-}
 
-function lowerExpr(expr: typed.TypedExpr): ir.Expr {
-  switch (expr.type) {
-    case "syntax-err":
-      throw new CompilationError("syntax error");
+  private readonly loweredIdents = new Map<
+    typed.TypedBinding,
+    ir.Ident & { type: "local" }
+  >();
 
-    case "constant":
-      return {
-        type: "constant",
-        value: expr.value,
-      };
-
-    case "identifier": {
-      return {
-        type: "identifier",
-        ident: lowerIdent(getResolution(expr)),
-      };
+  private lowerBlock(
+    statements: typed.TypedBlockStatement[],
+    returning: typed.TypedExpr,
+  ): ir.Expr {
+    // TODO make this more efficient with loops
+    const [stmt, ...statementsLeft] = statements;
+    if (stmt === undefined) {
+      return this.lowerExpr(returning);
     }
 
-    case "list-literal":
-    case "struct-literal":
-    case "fn":
-    case "application":
-    case "field-access":
-    case "block":
-    case "if":
-    case "match":
-      throw new Error("TODO impl");
+    switch (stmt.type) {
+      case "let#":
+        throw new Error("TODO let#");
+
+      case "let":
+        if (stmt.pattern.type !== "identifier") {
+          throw new Error("TODO pattern matching in let");
+        }
+
+        const ident: ir.Ident & { type: "local" } = {
+          type: "local",
+          name: stmt.pattern.name,
+          declaration: this.currentDecl,
+          unique: this.getFreshUnique(stmt.pattern.name),
+        };
+
+        this.loweredIdents.set(stmt.pattern, ident);
+
+        return {
+          type: "let",
+          binding: ident,
+          value: this.lowerExpr(stmt.value),
+          body: this.lowerBlock(statementsLeft, returning),
+        };
+    }
+  }
+
+  public lowerExpr(expr: typed.TypedExpr): ir.Expr {
+    switch (expr.type) {
+      case "syntax-err":
+        throw new CompilationError("syntax error");
+
+      case "constant":
+        return {
+          type: "constant",
+          value: expr.value,
+        };
+
+      case "identifier": {
+        return {
+          type: "identifier",
+          ident: this.resolutionToIdent(getResolution(expr)),
+        };
+      }
+
+      case "block":
+        return this.lowerBlock(expr.statements, expr.returning);
+
+      case "list-literal":
+      case "struct-literal":
+      case "fn":
+      case "application":
+      case "field-access":
+      case "if":
+      case "match":
+        throw new Error("TODO impl");
+    }
+  }
+
+  private resolutionToIdent(resolution: typed.IdentifierResolution): ir.Ident {
+    switch (resolution.type) {
+      case "local-variable": {
+        const lookup = this.loweredIdents.get(resolution.binding);
+        if (lookup === undefined) {
+          throw new CompilationError("can't find binding");
+        }
+
+        return lookup;
+      }
+
+      case "constructor":
+        return {
+          type: "constructor",
+          name: new ir.QualifiedIdentifier(
+            resolution.package_,
+            resolution.namespace,
+            resolution.variant.name,
+          ),
+          typeName: resolution.declaration.name,
+        };
+
+      case "global-variable":
+        return {
+          type: "global",
+          name: new ir.QualifiedIdentifier(
+            resolution.package_,
+            resolution.namespace,
+            resolution.declaration.binding.name,
+          ),
+        };
+    }
   }
 }
 
@@ -81,10 +130,18 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
         return [];
       }
 
+      const currentDecl = new ir.QualifiedIdentifier(
+        module.moduleInterface.package_,
+        module.moduleInterface.ns,
+        decl.binding.name,
+      );
+
+      const emitter = new ExprEmitter(currentDecl);
+
       return [
         {
           name: decl.binding.name,
-          value: lowerExpr(decl.value),
+          value: emitter.lowerExpr(decl.value),
         },
       ];
     }),
