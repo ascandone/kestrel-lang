@@ -461,62 +461,6 @@ describe("basic constructs inference", () => {
   });
 });
 
-test("does not refer to imported values when qualifying", () => {
-  const [T1] = typecheck(
-    "pkg",
-    "T1",
-    unsafeParse(`
-        pub let x = 42
-      `),
-    {},
-    [],
-  );
-
-  const [, errs] = tc(
-    `
-      import T1.{x}
-      pub let a = Main.x
-
-      pub let e = x
-    `,
-    { T1 },
-  );
-
-  expect(errs).toEqual<ErrorInfo[]>([
-    expect.objectContaining({
-      description: new err.UnboundVariable("x"),
-    }),
-  ]);
-});
-
-test("does not refer to imported types when qualifying", () => {
-  const [T1] = typecheck(
-    "pkg",
-    "T1",
-    unsafeParse(`
-        pub(..) type T1 { X }
-      `),
-    {},
-    [],
-  );
-
-  const [, errs] = tc(
-    `
-      import T1.{T1(..)}
-      pub let a = Main.X
-
-      pub let b = X
-    `,
-    { T1 },
-  );
-
-  expect(errs).toEqual<ErrorInfo[]>([
-    expect.objectContaining({
-      description: new err.UnboundVariable("X"),
-    }),
-  ]);
-});
-
 describe("list literal", () => {
   test("typecheck empty list", () => {
     const [types, errs] = tc(`pub let lst = []`);
@@ -2429,6 +2373,63 @@ describe("prelude", () => {
 describe("modules", () => {
   const mockPosition: Position = { line: 0, character: 0 };
   const mockRange: Range = { start: mockPosition, end: mockPosition };
+
+  test("does not refer to imported values when qualifying", () => {
+    const [T1] = typecheck(
+      "pkg",
+      "T1",
+      unsafeParse(`
+        pub let x = 42
+      `),
+      {},
+      [],
+    );
+
+    const [, errs] = tc(
+      `
+      import T1.{x}
+      pub let a = Main.x
+
+      pub let e = x
+    `,
+      { T1 },
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new err.UnboundVariable("x"),
+      }),
+    ]);
+  });
+
+  test("does not refer to imported types when qualifying", () => {
+    const [T1] = typecheck(
+      "pkg",
+      "T1",
+      unsafeParse(`
+        pub(..) type T1 { X }
+      `),
+      {},
+      [],
+    );
+
+    const [, errs] = tc(
+      `
+      import T1.{T1(..)}
+      pub let a = Main.X
+
+      pub let b = X
+    `,
+      { T1 },
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new err.UnboundVariable("X"),
+      }),
+    ]);
+  });
+
   test("implicitly imports values of the modules in the prelude", () => {
     const [A] = tcProgram(
       "A",
