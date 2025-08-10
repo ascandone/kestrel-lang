@@ -512,6 +512,10 @@ class Compiler {
 
       case "block*": {
         for (const stm of src.statements) {
+          if (stm.type === "let#") {
+            throw new Error("TODO implement let#");
+          }
+
           let jsPatternName: string;
           if (stm.pattern.type === "identifier") {
             jsPatternName = this.getCurrentFrame().registerLocal(
