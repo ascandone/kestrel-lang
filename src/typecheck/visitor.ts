@@ -1,4 +1,9 @@
-import { TypedExpr, TypedMatchPattern, TypedTypeAst } from "./typedAst";
+import {
+  TypedBlockStatement,
+  TypedExpr,
+  TypedMatchPattern,
+  TypedTypeAst,
+} from "./typedAst";
 
 type VisitOptions = {
   // TypedAst
@@ -10,6 +15,9 @@ type VisitOptions = {
   onPatternConstructor?(
     expr: TypedMatchPattern & { type: "constructor" },
   ): void;
+
+  // Block
+  onBlockStatement?(expr: TypedBlockStatement): void;
 
   // Expr
   onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
@@ -62,9 +70,7 @@ export function visitPattern(
   }
 }
 
-// TODO statically make sure all switch are taken care of
-
-export function visitExpr(expr: TypedExpr, opts: VisitOptions) {
+export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
   switch (expr.type) {
     case "syntax-err":
     case "constant":
@@ -72,6 +78,15 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions) {
 
     case "identifier":
       opts.onIdentifier?.(expr);
+      return;
+
+    case "block*":
+      for (const st of expr.statements) {
+        opts.onBlockStatement?.(st);
+        visitPattern(st.pattern, opts);
+        visitExpr(st.value, opts);
+      }
+      visitExpr(expr.returning, opts);
       return;
 
     case "if":
@@ -135,5 +150,8 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions) {
         visitExpr(expr.spread, opts);
       }
       return;
+
+    default:
+      return expr;
   }
 }
