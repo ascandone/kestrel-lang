@@ -866,7 +866,7 @@ class Typechecker {
         }
         return;
 
-      case "block":
+      case "block": {
         // TODO(nitpick) it feels like I made it more complex than it'd need to
 
         const firstStatement = ast.statements[0];
@@ -886,6 +886,7 @@ class Typechecker {
         this.typecheckAnnotatedExpr(ast.returning);
         this.unifyExpr(ast, ast.$type.asType(), firstStatement.$type.asType());
         return;
+      }
 
       default:
         return ast satisfies never;
