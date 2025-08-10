@@ -13,9 +13,21 @@ export class QualifiedIdentifier {
 }
 
 export type Ident =
-  | { type: "global"; name: QualifiedIdentifier }
-  | { type: "local"; declarationName: string; name: string; unique: number }
-  | { type: "constructor"; name: QualifiedIdentifier; typeName: string };
+  | {
+      type: "global";
+      name: QualifiedIdentifier;
+    }
+  | {
+      type: "local";
+      declaration: QualifiedIdentifier;
+      name: string;
+      unique: number;
+    }
+  | {
+      type: "constructor";
+      name: QualifiedIdentifier;
+      typeName: string;
+    };
 
 export type Expr =
   | {

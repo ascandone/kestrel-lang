@@ -7,7 +7,12 @@ function lowerIdent(resolution: typed.IdentifierResolution): ir.Ident {
       return {
         type: "local",
         name: resolution.binding.name,
-        declarationName: "TODO delc",
+        // TODO pkg, module
+        declaration: new ir.QualifiedIdentifier(
+          "pkg",
+          "Main",
+          resolution.binding.name,
+        ),
         unique: 0,
       };
 
