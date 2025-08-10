@@ -66,7 +66,7 @@ export type TypedBlockStatement = ast.RangeMeta &
       }
     | {
         type: "let#";
-        mapper: ast.RangeMeta & { namespace?: string; name: string };
+        mapper: TypedExpr & { type: "identifier" };
         pattern: TypedMatchPattern;
         value: TypedExpr;
       }

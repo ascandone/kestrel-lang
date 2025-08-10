@@ -214,6 +214,11 @@ export class Annotator {
               case "let#":
                 return {
                   ...st,
+                  mapper: {
+                    ...st.mapper,
+                    $resolution: undefined,
+                    $type: TVar.fresh(),
+                  },
                   pattern: this.annotateMatchPattern(st.pattern),
                   value: this.annotateExpr(st.value),
                 };

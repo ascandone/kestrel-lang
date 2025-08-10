@@ -57,7 +57,7 @@ export type BlockStatement = RangeMeta &
       }
     | {
         type: "let#";
-        mapper: RangeMeta & { namespace?: string; name: string };
+        mapper: Expr & { type: "identifier" };
         pattern: MatchPattern;
         value: Expr;
       }

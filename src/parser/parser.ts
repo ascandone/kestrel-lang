@@ -216,6 +216,7 @@ class BlockStatementVisitor extends Visitor<BlockStatement> {
       type: "let#",
       range: rangeOfCtx(ctx),
       mapper: {
+        type: "identifier",
         name: ctx._mapper._name.text,
         range: rangeOfCtx(ctx.qualifiedId()),
         namespace: ctx.qualifiedId().moduleNamespace()?.getText(),
