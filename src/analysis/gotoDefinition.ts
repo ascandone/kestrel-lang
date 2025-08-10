@@ -1,8 +1,8 @@
 import { Position, Range, contains } from "../parser";
+import { Finder } from "../typecheck/astLookup";
 import {
   IdentifierResolution,
   TypedExpr,
-  TypedMatchPattern,
   TypedModule,
   TypedTypeAst,
 } from "../typecheck/typedAst";
@@ -132,117 +132,43 @@ function goToDefinitionOfTypeAst(
   }
 }
 
+function resolutionFinder(position: Position) {
+  return new Finder<IdentifierResolution>(position, {
+    onMatchPattern(expr, next) {
+      switch (expr.type) {
+        case "constructor":
+          if (expr.$resolution !== undefined) {
+            return expr.$resolution;
+          }
+
+        default:
+          return next();
+      }
+    },
+
+    onExpression(expr, next) {
+      switch (expr.type) {
+        case "identifier":
+          if (expr.$resolution !== undefined) {
+            return expr.$resolution;
+          }
+
+        default:
+          return next();
+      }
+    },
+  });
+}
+
 function goToDefinitionOfExpr(
   ast: TypedExpr,
   position: Position,
 ): Location | undefined {
-  if (!contains(ast, position)) {
+  const resolution = resolutionFinder(position).visitExpr(ast);
+  if (resolution === undefined) {
     return undefined;
   }
 
-  switch (ast.type) {
-    case "constant":
-      return undefined;
-
-    case "identifier":
-      if (ast.$resolution === undefined) {
-        return undefined;
-      }
-      return resolutionToLocation(ast.$resolution);
-
-    case "fn":
-      return goToDefinitionOfExpr(ast.body, position);
-
-    case "application":
-      return (
-        firstBy(ast.args, (arg) => goToDefinitionOfExpr(arg, position)) ??
-        goToDefinitionOfExpr(ast.caller, position)
-      );
-
-    case "list-literal":
-      return firstBy(ast.values, (arg) => goToDefinitionOfExpr(arg, position));
-
-    case "field-access":
-      return goToDefinitionOfExpr(ast.struct, position);
-
-    case "struct-literal":
-      return (
-        firstBy(
-          ast.fields.map((f) => f.value),
-          (arg) => goToDefinitionOfExpr(arg, position),
-        ) ??
-        (ast.spread === undefined
-          ? undefined
-          : goToDefinitionOfExpr(ast.spread, position))
-      );
-
-    case "if":
-      return (
-        goToDefinitionOfExpr(ast.condition, position) ??
-        goToDefinitionOfExpr(ast.then, position) ??
-        goToDefinitionOfExpr(ast.else, position)
-      );
-
-    case "block*":
-      return (
-        firstBy(
-          ast.statements.map((st) => st.value),
-          (arg) => goToDefinitionOfExpr(arg, position),
-        ) ?? goToDefinitionOfExpr(ast.returning, position)
-      );
-
-    case "let":
-      return (
-        goToDefinitionOfExpr(ast.value, position) ??
-        goToDefinitionOfExpr(ast.body, position)
-      );
-
-    case "match":
-      return (
-        goToDefinitionOfExpr(ast.expr, position) ??
-        firstBy(
-          ast.clauses,
-          ([pattern, expr]) =>
-            goToDefinitionOfPattern(pattern, position) ??
-            goToDefinitionOfExpr(expr, position),
-        )
-      );
-
-    case "syntax-err":
-      return;
-  }
-}
-
-function goToDefinitionOfPattern(
-  pattern: TypedMatchPattern,
-  position: Position,
-): Location | undefined {
-  if (!contains(pattern, position)) {
-    return;
-  }
-
-  switch (pattern.type) {
-    case "lit":
-    case "identifier":
-      return;
-
-    case "constructor":
-      for (const arg of pattern.args) {
-        const res = goToDefinitionOfPattern(arg, position);
-        if (res !== undefined) {
-          return res;
-        }
-      }
-
-      if (pattern.$resolution === undefined) {
-        return undefined;
-      }
-
-      return resolutionToLocation(pattern.$resolution);
-  }
-}
-
-function resolutionToLocation(resolution: IdentifierResolution): Location {
   switch (resolution.type) {
     case "local-variable":
       return { namespace: undefined, range: resolution.binding.range };

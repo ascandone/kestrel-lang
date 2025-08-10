@@ -1,16 +1,11 @@
-import {
-  TypedDeclaration,
-  TypedExpr,
-  TypedModule,
-} from "../typecheck/typedAst";
-import { firstBy } from "./common";
+import { TypedDeclaration, TypedModule } from "../typecheck/typedAst";
 import {
   CompletionItem,
   CompletionItemKind,
   Position,
 } from "vscode-languageserver";
 import { Instantiator, TVar, typeToString, unify } from "../type";
-import { contains } from "../parser";
+import { Finder } from "../typecheck/astLookup";
 
 // TODO find a decent name
 export type DependenciesProvider = {
@@ -46,89 +41,18 @@ class ExprCompletion {
       return undefined;
     }
 
-    return this.exprCompletion(declaration.value, position);
-  }
-
-  private exprCompletion(
-    expr: TypedExpr,
-    position: Position,
-  ): CompletionItem[] | undefined {
-    if (!contains(expr, position)) {
-      return undefined;
-    }
-
-    switch (expr.type) {
-      case "syntax-err":
-        // TODO this is a faulty expression
-        // we probably want to emit suggestions here
-        return undefined;
-
-      case "constant":
-        return undefined;
-
-      case "identifier":
-        return undefined;
-
-      case "fn":
-        return this.exprCompletion(expr.body, position);
-
-      case "list-literal":
-        return firstBy(expr.values, (arg) =>
-          this.exprCompletion(arg, position),
-        );
-
-      case "field-access":
-        if (expr.field.name === "") {
-          return this.fieldCompletion(expr.struct.$type);
+    return new Finder<CompletionItem[]>(position, {
+      onExpression: (expr, next) => {
+        switch (expr.type) {
+          case "field-access":
+            if (expr.field.name === "") {
+              return this.fieldCompletion(expr.struct.$type);
+            }
         }
 
-        return this.exprCompletion(expr.struct, position);
-
-      case "struct-literal":
-        return (
-          firstBy(
-            expr.fields.map((f) => f.value),
-            (arg) => this.exprCompletion(arg, position),
-          ) ??
-          (expr.spread === undefined
-            ? undefined
-            : this.exprCompletion(expr.spread, position))
-        );
-
-      case "application":
-        return (
-          firstBy(expr.args, (arg) => this.exprCompletion(arg, position)) ??
-          this.exprCompletion(expr.caller, position)
-        );
-
-      case "if":
-        return (
-          this.exprCompletion(expr.condition, position) ??
-          this.exprCompletion(expr.then, position) ??
-          this.exprCompletion(expr.else, position)
-        );
-
-      case "block*":
-        return (
-          firstBy(expr.statements, (st) =>
-            this.exprCompletion(st.value, position),
-          ) ?? this.exprCompletion(expr.returning, position)
-        );
-
-      case "let":
-        return (
-          this.exprCompletion(expr.value, position) ??
-          this.exprCompletion(expr.body, position)
-        );
-
-      case "match":
-        return (
-          this.exprCompletion(expr.expr, position) ??
-          firstBy(expr.clauses, ([_pattern, expr]) =>
-            this.exprCompletion(expr, position),
-          )
-        );
-    }
+        return next();
+      },
+    }).visitExpr(declaration.value);
   }
 
   private fieldCompletion(structType: TVar) {

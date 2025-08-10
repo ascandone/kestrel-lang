@@ -1,10 +1,9 @@
 import { Position, RangeMeta, contains } from "../parser";
 import { TypeScheme, typeToString } from "../type";
+import { Finder } from "../typecheck/astLookup";
 import {
   IdentifierResolution,
   TypedDeclaration,
-  TypedExpr,
-  TypedMatchPattern,
   TypedModule,
   TypedTypeAst,
   TypedTypeDeclaration,
@@ -209,138 +208,57 @@ function hoverOnDecl(
   }
 
   if (!declaration.extern && contains(declaration.value, position)) {
-    return hoverOnExpr(declaration.value, position);
+    return hoveredFinder(position).visitExpr(declaration.value);
   }
 
   return undefined;
 }
 
-function hoverOnExpr(expr: TypedExpr, position: Position): Hovered | undefined {
-  if (!contains(expr, position)) {
-    return undefined;
-  }
+function hoveredFinder(position: Position) {
+  return new Finder<Hovered>(position, {
+    onMatchPattern(pattern, next) {
+      switch (pattern.type) {
+        case "identifier":
+          return {
+            range: pattern.range,
+            hovered: { type: "local-variable", binding: pattern },
+          };
 
-  switch (expr.type) {
-    case "syntax-err":
-    case "constant":
-      return undefined;
-
-    case "list-literal":
-      return firstBy(expr.values, (v) => hoverOnExpr(v, position));
-
-    case "identifier":
-      if (expr.$resolution === undefined) {
-        return undefined;
+        default:
+          return next();
       }
-      return {
-        range: expr.range,
-        hovered: expr.$resolution,
-      };
+    },
 
-    case "fn":
-      return (
-        hoverOnExpr(expr.body, position) ??
-        firstBy(expr.params, (param): Hovered | undefined => {
-          if (!contains(param, position)) {
-            return undefined;
+    onExpression(expr, next) {
+      switch (expr.type) {
+        case "field-access":
+          if (
+            !contains(expr.field, position) ||
+            expr.$resolution === undefined
+          ) {
+            break;
           }
 
-          return hoverOnPattern(param, position);
-        })
-      );
+          return {
+            hovered: {
+              type: "field",
+              type_: typeToString(expr.$type.asType()),
+            },
+            range: expr.field.range,
+          };
 
-    case "field-access":
-      if (contains(expr.field, position)) {
-        if (expr.$resolution === undefined) {
-          return;
-        }
+        case "identifier":
+          if (expr.$resolution === undefined) {
+            break;
+          }
 
-        return {
-          hovered: {
-            type: "field",
-            type_: typeToString(expr.$type.asType()),
-          },
-          range: expr.field.range,
-        };
+          return {
+            range: expr.range,
+            hovered: expr.$resolution,
+          };
       }
 
-      return hoverOnExpr(expr.struct, position);
-
-    case "struct-literal":
-      return (
-        firstBy(
-          expr.fields.map((f) => f.value),
-          (arg) => hoverOnExpr(arg, position),
-        ) ??
-        (expr.spread === undefined
-          ? undefined
-          : hoverOnExpr(expr.spread, position))
-      );
-
-    case "application":
-      return (
-        firstBy(expr.args, (arg) => hoverOnExpr(arg, position)) ??
-        hoverOnExpr(expr.caller, position)
-      );
-
-    case "if":
-      return (
-        hoverOnExpr(expr.condition, position) ??
-        hoverOnExpr(expr.then, position) ??
-        hoverOnExpr(expr.else, position)
-      );
-
-    case "block*": {
-      return (
-        firstBy(expr.statements, (st) =>
-          hoverOnPattern(st.pattern, position),
-        ) ?? hoverOnExpr(expr.returning, position)
-      );
-    }
-
-    case "let": {
-      if (contains(expr.pattern, position)) {
-        return hoverOnPattern(expr.pattern, position);
-      }
-
-      return (
-        hoverOnExpr(expr.value, position) ?? hoverOnExpr(expr.body, position)
-      );
-    }
-
-    case "match":
-      return (
-        hoverOnExpr(expr.expr, position) ??
-        firstBy(
-          expr.clauses,
-          ([pattern, expr]) =>
-            hoverOnPattern(pattern, position) ?? hoverOnExpr(expr, position),
-        )
-      );
-  }
-}
-
-function hoverOnPattern(
-  pattern: TypedMatchPattern,
-  position: Position,
-): Hovered | undefined {
-  if (!contains(pattern, position)) {
-    return undefined;
-  }
-
-  switch (pattern.type) {
-    case "identifier":
-      return {
-        range: pattern.range,
-        hovered: { type: "local-variable", binding: pattern },
-      };
-
-    case "constructor":
-      return firstBy(pattern.args, (argPattern) =>
-        hoverOnPattern(argPattern, position),
-      );
-
-    case "lit":
-      return undefined;
-  }
+      return next();
+    },
+  });
 }
