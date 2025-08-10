@@ -103,10 +103,17 @@ class ExprEmitter {
           args: expr.args.map((arg) => this.lowerExpr(arg)),
         };
 
+      case "if":
+        return {
+          type: "if",
+          condition: this.lowerExpr(expr.condition),
+          then: this.lowerExpr(expr.then),
+          else: this.lowerExpr(expr.else),
+        };
+
       case "list-literal":
       case "struct-literal":
       case "field-access":
-      case "if":
       case "match":
         throw new Error("TODO impl");
     }

@@ -168,6 +168,28 @@ test("proper counting", () => {
   );
 });
 
+test("if expr", () => {
+  const ir = toSexpr(`
+    let f = fn b, x, y {
+      if b {
+        x
+      } else {
+        y
+      }
+    }
+  `);
+
+  expect(ir).toMatchInlineSnapshot(
+    `
+    "(:def f
+        (:fn (b#0 x#0 y#0)
+            (:if b#0
+                x#0
+                y#0)))"
+  `,
+  );
+});
+
 function getIR(src: string) {
   const untypedMod = unsafeParse(src);
   const [tc, errors] = typecheck("pkg", "Main", untypedMod, {}, []);
@@ -183,6 +205,7 @@ function toSexpr(src: string) {
       ":def": 1,
       ":let": 1,
       ":fn": 1,
+      ":if": 1,
     },
   });
 }

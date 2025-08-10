@@ -61,6 +61,13 @@ class ExprPrinter {
         ];
 
       case "if":
+        return [
+          sym`:if`,
+          this.toSexpr(expr.condition),
+          this.toSexpr(expr.then),
+          this.toSexpr(expr.else),
+        ];
+
       case "match":
       case "struct-literal":
       case "field-access":
