@@ -343,13 +343,7 @@ class ExpressionVisitor extends Visitor<Expr> {
     range: rangeOfCtx(ctx),
   });
 
-  visitBlockExpr = (ctx: BlockExprContext): Expr => {
-    return {
-      type: "block",
-      range: rangeOfCtx(ctx),
-      inner: this.visit(ctx.block()),
-    };
-  };
+  visitBlockExpr = (ctx: BlockExprContext): Expr => this.visit(ctx.block());
 
   visitBlock = (ctx: BlockContext): Expr => ({
     type: "block*",
