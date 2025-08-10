@@ -461,6 +461,34 @@ describe("basic constructs inference", () => {
   });
 });
 
+describe("let# sugar", () => {
+  test("infer int", () => {
+    const [correctTypes, correctErrors] = tc(`
+    pub let f = fn mapper, value {
+      mapper(value, fn x {
+        x
+      })
+    }
+  `);
+
+    expect(correctErrors).toEqual([]);
+    expect(correctTypes).toMatchInlineSnapshot(`
+      {
+        "f": "Fn(Fn(a, Fn(b) -> b) -> c, a) -> c",
+      }
+    `);
+
+    const [types, errors] = tc(`
+    pub let expr = fn mapper, value {
+      let#mapper x = value;
+      x
+    }
+  `);
+    expect(errors).toEqual([]);
+    expect(types).toEqual(correctTypes);
+  });
+});
+
 describe("list literal", () => {
   test("typecheck empty list", () => {
     const [types, errs] = tc(`pub let lst = []`);
