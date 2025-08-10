@@ -126,6 +126,30 @@ test("fn and application", () => {
   );
 });
 
+test("let# sugar", () => {
+  // mapper(value, fn x {
+  //   g(x)
+  // })
+
+  const ir = toSexpr(`
+    let f = fn mapper, value, g {
+      let#mapper x = value;
+      g(x)
+    }
+  `);
+
+  expect(ir).toMatchInlineSnapshot(
+    `
+    "(:def f
+        (:fn (mapper#0 value#0 g#0)
+            (mapper#0
+                value#0
+                (:fn (x#0)
+                    (g#0 x#0)))))"
+  `,
+  );
+});
+
 test("shadowed fn args", () => {
   const ir = toSexpr(`
     let f = {

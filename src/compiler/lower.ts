@@ -40,10 +40,28 @@ class ExprEmitter {
     }
 
     switch (stmt.type) {
-      case "let#":
-        throw new Error("TODO let#");
+      case "let#": {
+        if (stmt.pattern.type !== "identifier") {
+          throw new Error("TODO pattern matching in let");
+        }
 
-      case "let":
+        const ident = this.mkIdent(stmt.pattern);
+
+        return {
+          type: "application",
+          caller: this.lowerExpr(stmt.mapper),
+          args: [
+            this.lowerExpr(stmt.value),
+            {
+              type: "fn",
+              bindings: [ident],
+              body: this.lowerBlock(statementsLeft, returning),
+            },
+          ],
+        };
+      }
+
+      case "let": {
         if (stmt.pattern.type !== "identifier") {
           throw new Error("TODO pattern matching in let");
         }
@@ -56,6 +74,7 @@ class ExprEmitter {
           value: this.lowerExpr(stmt.value),
           body: this.lowerBlock(statementsLeft, returning),
         };
+      }
     }
   }
 
