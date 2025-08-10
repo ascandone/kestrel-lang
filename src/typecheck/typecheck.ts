@@ -1074,7 +1074,7 @@ export function typecheckProject(
       continue;
     }
     const [typedModule, errors] = typecheck(
-      "pkg",
+      m.package,
       ns,
       m.module,
       deps,
