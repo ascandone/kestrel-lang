@@ -265,6 +265,12 @@ class Compiler {
         return;
       }
 
+      case "block*":
+        if (src.statements.length === 0) {
+          return this.compileExprAsJsStms(src.returning, tailPosCaller, as);
+        }
+        break;
+
       case "application":
         if (this.isTailCall(src, tailPosCaller)) {
           const tailCallIdent = this.makeFreshIdent();
@@ -284,6 +290,9 @@ class Compiler {
           }
           return;
         }
+
+        break;
+
       // Attention: fallthrough to the next branch for application
 
       case "constant":
@@ -292,55 +301,55 @@ class Compiler {
       case "identifier":
       case "fn":
       case "field-access":
-      case "let":
-      default: {
-        const expr = this.compileExprAsJsExpr(src, tailPosCaller);
-        switch (as.type) {
-          case "assign_var":
-            if (as.declare) {
-              const exprsWithDictParams: t.Expression =
-                as.dictParams.length === 0
-                  ? expr
-                  : {
-                      type: "ArrowFunctionExpression",
-                      async: false,
-                      params: as.dictParams,
-                      body: expr,
-                      expression: true,
-                    };
+      default:
+        src as never;
+    }
 
-              this.statementsBuf.push({
-                type: "VariableDeclaration",
-                kind: "const",
-                declarations: [
-                  {
-                    type: "VariableDeclarator",
-                    id: as.ident,
-                    init: exprsWithDictParams,
-                  },
-                ],
-              });
-            } else {
-              this.statementsBuf.push({
-                type: "ExpressionStatement",
-                expression: {
-                  type: "AssignmentExpression",
-                  operator: "=",
-                  left: as.ident,
-                  right: expr,
-                },
-              });
-            }
-            break;
+    const expr = this.compileExprAsJsExpr(src, tailPosCaller);
+    switch (as.type) {
+      case "assign_var":
+        if (as.declare) {
+          const exprsWithDictParams: t.Expression =
+            as.dictParams.length === 0
+              ? expr
+              : {
+                  type: "ArrowFunctionExpression",
+                  async: false,
+                  params: as.dictParams,
+                  body: expr,
+                  expression: true,
+                };
 
-          case "return":
-            this.statementsBuf.push({
-              type: "ReturnStatement",
-              argument: expr,
-            });
-            break;
+          this.statementsBuf.push({
+            type: "VariableDeclaration",
+            kind: "const",
+            declarations: [
+              {
+                type: "VariableDeclarator",
+                id: as.ident,
+                init: exprsWithDictParams,
+              },
+            ],
+          });
+        } else {
+          this.statementsBuf.push({
+            type: "ExpressionStatement",
+            expression: {
+              type: "AssignmentExpression",
+              operator: "=",
+              left: as.ident,
+              right: expr,
+            },
+          });
         }
-      }
+        break;
+
+      case "return":
+        this.statementsBuf.push({
+          type: "ReturnStatement",
+          argument: expr,
+        });
+        break;
     }
   }
 
@@ -501,51 +510,51 @@ class Compiler {
         }
       }
 
-      case "block*":
-        throw new Error("TODO compile block");
-
-      case "let": {
-        let jsPatternName: string;
-        if (src.pattern.type === "identifier") {
-          jsPatternName = this.getCurrentFrame().registerLocal(
-            src.pattern.name,
+      case "block*": {
+        for (const stm of src.statements) {
+          let jsPatternName: string;
+          if (stm.pattern.type === "identifier") {
+            jsPatternName = this.getCurrentFrame().registerLocal(
+              stm.pattern.name,
+            );
+          } else {
+            jsPatternName = this.genFreshId();
+          }
+          this.frames.push(
+            new Frame({
+              type: "let",
+              jsPatternName,
+              binding:
+                stm.pattern.type === "identifier" ? stm.pattern : undefined,
+            }),
           );
-        } else {
-          jsPatternName = this.genFreshId();
+
+          const freshIdent: t.Identifier = {
+            type: "Identifier",
+            name: this.makeJsLetPathName(),
+          };
+          if (stm.pattern.type === "identifier") {
+            this.bindingsJsName.set(stm.pattern, freshIdent);
+          }
+          const value = this.compileExprAsJsExpr(stm.value, undefined);
+
+          this.statementsBuf.push({
+            type: "VariableDeclaration",
+            kind: "const",
+            declarations: [
+              {
+                type: "VariableDeclarator",
+                id: freshIdent,
+                init: value,
+              },
+            ],
+          });
+          this.compileCheckPatternConditions(stm.pattern, freshIdent);
+
+          this.frames.pop();
         }
-        this.frames.push(
-          new Frame({
-            type: "let",
-            jsPatternName,
-            binding:
-              src.pattern.type === "identifier" ? src.pattern : undefined,
-          }),
-        );
 
-        const freshIdent: t.Identifier = {
-          type: "Identifier",
-          name: this.makeJsLetPathName(),
-        };
-        if (src.pattern.type === "identifier") {
-          this.bindingsJsName.set(src.pattern, freshIdent);
-        }
-        const value = this.compileExprAsJsExpr(src.value, undefined);
-        this.statementsBuf.push({
-          type: "VariableDeclaration",
-          kind: "const",
-          declarations: [
-            {
-              type: "VariableDeclarator",
-              id: freshIdent,
-              init: value,
-            },
-          ],
-        });
-        this.compileCheckPatternConditions(src.pattern, freshIdent);
-
-        this.frames.pop();
-
-        return this.compileExprAsJsExpr(src.body, tailPosCaller);
+        return this.compileExprAsJsExpr(src.returning, tailPosCaller);
 
         // we could call this.bindingsJsName.delete(src.pattern) here
       }

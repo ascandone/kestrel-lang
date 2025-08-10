@@ -493,6 +493,30 @@ describe("if expressions", () => {
 
   test.todo("tail position if");
 
+  test("if within fn", () => {
+    // TODO switch this to if-else syntax
+    const out = compileSrc(`
+    extern let (==): Fn(a, a) -> Bool
+    let is_zero = fn n {
+      if n == 0 {
+        "zero"
+      } else {
+        "other"
+      }
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$is_zero = n => {
+        if (n === 0) {
+          return \`zero\`;
+        } else {
+          return \`other\`;
+        }
+      };"
+    `);
+  });
+
   test("nested ifs", () => {
     // TODO switch this to if-else syntax
     const out = compileSrc(`
@@ -1997,7 +2021,7 @@ describe("traits compilation", () => {
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$f = Show_9 => x => Main$show(Show_9)(x);"
+      "const Main$f = Show_10 => x => Main$show(Show_10)(x);"
     `);
   });
 
@@ -2056,11 +2080,11 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$equal = (Eq_17, Show_17) => (x, y) => {
-        if (Main$eq(Eq_17)(x, y)) {
+      "const Main$equal = (Eq_20, Show_20) => (x, y) => {
+        if (Main$eq(Eq_20)(x, y)) {
           return \`ok\`;
         } else {
-          return Main$inspect(Show_17)(x);
+          return Main$inspect(Show_20)(x);
         }
       };"
     `);
@@ -2106,7 +2130,7 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(
-      `"const Main$f = Show_11 => arg => Main$show2(Show_11, Show_String$String)(arg, \`hello\`);"`,
+      `"const Main$f = Show_12 => arg => Main$show2(Show_12, Show_String$String)(arg, \`hello\`);"`,
     );
   });
 
@@ -2216,7 +2240,7 @@ describe("traits compilation", () => {
       const Main$None = {
         $: 1
       };
-      const Main$f = Show_16 => x => Main$show(Show_Main$Option(Show_16))(Main$Some(x));"
+      const Main$f = Show_17 => x => Main$show(Show_Main$Option(Show_17))(Main$Some(x));"
     `);
   });
 
@@ -2229,7 +2253,7 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-    "const Main$f = Eq_11 => (x, y) => _eq(Eq_11)(x, y);"
+    "const Main$f = Eq_12 => (x, y) => _eq(Eq_12)(x, y);"
   `);
   });
 
