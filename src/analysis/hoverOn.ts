@@ -18,6 +18,7 @@ export type HoveredInfo =
 export type Hovered = RangeMeta & { hovered: HoveredInfo };
 
 export function hoverOn(
+  package_: string,
   namespace: string,
   module: TypedModule,
   position: Position,
@@ -39,7 +40,12 @@ export function hoverOn(
         }
       }
 
-      const d = hoverOnDecl(namespace, statement.declaration, position);
+      const d = hoverOnDecl(
+        package_,
+        namespace,
+        statement.declaration,
+        position,
+      );
       if (d !== undefined) {
         return [statement.declaration.$scheme, d];
       }
@@ -68,6 +74,7 @@ export function hoverOn(
                 type: "constructor",
                 variant,
                 declaration: statement.typeDeclaration,
+                package_,
                 namespace,
               },
             },
@@ -192,6 +199,7 @@ type constructor
 }
 
 function hoverOnDecl(
+  package_: string,
   namespace: string,
   declaration: TypedDeclaration,
   position: Position,
@@ -201,6 +209,7 @@ function hoverOnDecl(
       range: declaration.binding.range,
       hovered: {
         type: "global-variable",
+        package_,
         declaration,
         namespace,
       },

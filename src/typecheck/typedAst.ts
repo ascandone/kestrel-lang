@@ -266,17 +266,20 @@ export type IdentifierResolution =
   | {
       type: "global-variable";
       declaration: TypedDeclaration;
+      package_: string;
       namespace: string;
     }
   | {
       type: "constructor";
       variant: TypedTypeVariant;
       declaration: TypedTypeDeclaration & { type: "adt" };
+      package_: string;
       namespace: string;
     };
 
 export type StructResolution = {
   declaration: TypedTypeDeclaration & { type: "struct" };
+  package_: string;
   namespace: string;
 };
 

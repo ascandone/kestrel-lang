@@ -12,6 +12,7 @@ test("glb decl in the same module", () => {
     `;
 
   const refs = findReferences(
+    "",
     "Main",
     positionOf(Main, "glb", 1),
     typecheckRaw({ Main }),
@@ -73,6 +74,6 @@ function parseFindReferences(
   position: Position,
   typedProject: Record<string, TypedModule> = {},
 ): [string, Identifier][] {
-  return findReferences(hoveringOnNamespace, position, typedProject)!
+  return findReferences("", hoveringOnNamespace, position, typedProject)!
     .references;
 }

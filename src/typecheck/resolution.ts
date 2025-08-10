@@ -199,6 +199,7 @@ class Resolver {
               type: "constructor",
               declaration: exposing.$resolution,
               variant: variant,
+              package_: moduleInterface.package_,
               namespace: moduleInterface.ns,
             },
             exposing,
@@ -212,6 +213,7 @@ class Resolver {
             {
               declaration: exposing.$resolution,
               field,
+              package_: moduleInterface.package_,
               namespace: moduleInterface.ns,
             },
             exposing,
@@ -242,6 +244,7 @@ class Resolver {
       {
         type: "global-variable",
         declaration: exposing.$resolution,
+        package_: moduleInterface.package_,
         namespace: moduleInterface.ns,
       },
       exposing,
@@ -365,7 +368,8 @@ class Resolver {
         expr.$resolution = {
           type: "global-variable",
           declaration: valueLookup,
-          namespace: expr.namespace,
+          package_: dep.package_,
+          namespace: dep.ns,
         };
       } else {
         expr.$resolution = dep?.publicConstructors[expr.name];
@@ -455,6 +459,7 @@ class Resolver {
 
         expr.struct.$resolution = {
           declaration: resolution.declaration,
+          package_: this.package_,
           namespace: this.ns,
         };
 
@@ -475,6 +480,7 @@ class Resolver {
             field.field.$resolution = {
               declaration: resolution.declaration,
               field: fieldDefinition,
+              package_: this.package_,
               namespace: this.ns,
             };
           }
@@ -570,6 +576,7 @@ class Resolver {
                 type: "constructor",
                 declaration: declaration,
                 variant: variant,
+                package_: this.package_,
                 namespace: this.ns,
               });
             }
@@ -581,6 +588,7 @@ class Resolver {
             this.moduleFields.set(field.name, {
               declaration,
               field,
+              package_: this.package_,
               namespace: this.ns,
             });
           }
@@ -606,6 +614,7 @@ class Resolver {
       this.moduleValues.set(declaration.binding.name, {
         type: "global-variable",
         declaration,
+        package_: this.package_,
         namespace: this.ns,
       });
 
@@ -808,6 +817,7 @@ function makeInterface(
           type: "constructor",
           variant: ctor,
           declaration: typeDeclaration,
+          package_,
           namespace: ns,
         };
       }
@@ -818,6 +828,7 @@ function makeInterface(
         publicFields[field.name] = {
           declaration: typeDeclaration,
           field: field,
+          package_: package_,
           namespace: ns,
         };
       }

@@ -16,6 +16,7 @@ export type References = {
 
 // TODO also rename exposed imports
 export function findReferences(
+  package_: string,
   namespace: string,
   position: Position,
   typedProject: Record<string, TypedModule>,
@@ -40,6 +41,7 @@ export function findReferences(
         resolution: {
           type: "global-variable",
           declaration: statement.declaration,
+          package_,
           namespace,
         },
         references: findReferencesOfDeclaration(

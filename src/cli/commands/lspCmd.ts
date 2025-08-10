@@ -385,7 +385,8 @@ export async function lspCmd() {
     }
 
     const refs =
-      findReferences(ns, position, state.getTypedProject())?.references ?? [];
+      findReferences(module.package_, ns, position, state.getTypedProject())
+        ?.references ?? [];
 
     return refs.map(([referenceNs, referenceExpr]) => {
       const referenceModule = state.moduleByNs(referenceNs)!;
@@ -412,7 +413,12 @@ export async function lspCmd() {
       return;
     }
 
-    const refs = findReferences(ns, position, state.getTypedProject());
+    const refs = findReferences(
+      module.package_,
+      ns,
+      position,
+      state.getTypedProject(),
+    );
 
     if (refs === undefined) {
       return;
@@ -556,7 +562,12 @@ export async function lspCmd() {
       return;
     }
 
-    const hoverData = hoverOn(module.ns, module.typed, position);
+    const hoverData = hoverOn(
+      module.package_,
+      module.ns,
+      module.typed,
+      position,
+    );
     if (hoverData === undefined) {
       return undefined;
     }
