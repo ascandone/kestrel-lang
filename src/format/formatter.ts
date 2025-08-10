@@ -1,5 +1,6 @@
 import {
   gtEqPos,
+  BlockStatement,
   ConstLiteral,
   LineComment,
   MatchPattern,
@@ -181,6 +182,34 @@ function exprToDocWithComments(ast: Expr, block: boolean): Doc {
   return concat(...popComments(ast), exprToDoc(ast, block));
 }
 
+function blockStatementToDoc(stm: BlockStatement, succ: RangeMeta): Doc {
+  switch (stm.type) {
+    case "let":
+      return concat(
+        text("let "),
+        patternToDoc(stm.pattern),
+        text(" ="),
+        declarationValueToDoc(stm.value),
+        text(";"),
+        linesBetweenLet(stm, succ),
+      );
+
+    case "let#": {
+      const ns =
+        stm.mapper.namespace === undefined ? "" : `${stm.mapper.namespace}.`;
+
+      return concat(
+        text(`let#${ns}${stm.mapper.name} `),
+        patternToDoc(stm.pattern),
+        text(` =`),
+        declarationValueToDoc(stm.value),
+        text(";"),
+        linesBetweenLet(stm, succ),
+      );
+    }
+  }
+}
+
 function exprToDoc(ast: Expr, block: boolean): Doc {
   switch (ast.type) {
     /* v8 ignore next 2 */
@@ -188,8 +217,12 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
       throw new Error("[unreachable]");
 
     case "block":
-      // return exprToDoc(ast.inner, false);
-      throw new Error("TODO implement");
+      return block_(
+        ...ast.statements.map((stm, index, arr) =>
+          blockStatementToDoc(stm, arr[index + 1] ?? ast.returning),
+        ),
+        exprToDoc(ast.returning, true),
+      );
 
     case "list-literal":
       return group(
@@ -353,7 +386,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         text("fn"),
         sepByString(",", params),
         text(" "),
-        block_(exprToDocWithComments(ast.body, true)),
+        exprToDocWithComments(ast.body, true),
       );
     }
 
@@ -362,50 +395,10 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         text("if "),
         exprToDoc(ast.condition, false),
         text(" "),
-        block_(exprToDocWithComments(ast.then, true)),
-
+        exprToDocWithComments(ast.then, true),
         text(" else "),
-        block_(exprToDocWithComments(ast.else, true)),
+        exprToDocWithComments(ast.else, true),
       );
-
-    // case "let#": {
-    //   const ns =
-    //     ast.mapper.namespace === undefined ? "" : `${ast.mapper.namespace}.`;
-
-    //   const inner = concat(
-    //     text(`let#${ns}${ast.mapper.name} `),
-    //     patternToDoc(ast.pattern),
-    //     text(` =`),
-    //     declarationValueToDoc(ast.value),
-    //     text(";"),
-    //     linesBetweenLet(ast),
-    //     exprToDoc(ast.body, true),
-    //   );
-
-    //   if (block) {
-    //     return inner;
-    //   }
-
-    //   return block_(inner);
-    // }
-
-    // case "let": {
-    //   const inner = concat(
-    //     text("let "),
-    //     patternToDoc(ast.pattern),
-    //     text(" ="),
-    //     declarationValueToDoc(ast.value),
-    //     text(";"),
-    //     linesBetweenLet(ast),
-    //     exprToDoc(ast.body, true),
-    //   );
-
-    //   if (block) {
-    //     return inner;
-    //   }
-
-    //   return block_(inner);
-    // }
 
     case "match": {
       const clauses = ast.clauses.map(([pattern, expr]) =>
@@ -751,11 +744,14 @@ function autoParens(infixIndex: number, expr: Expr) {
 
 const DOT_ACCESS_BINDING_POWER = 0;
 
-// function linesBetweenLet(ast: Expr & { type: "let" | "let#" }) {
-//   const linesDiff = Math.min(
-//     Math.max(ast.body.range.start.line - ast.value.range.end.line - 1, 0),
-//     1,
-//   );
+function linesBetweenLet(node: RangeMeta, succ: RangeMeta | undefined) {
+  const linesDiff =
+    succ === undefined
+      ? 0
+      : Math.min(
+          Math.max(succ.range.start.line - node.range.end.line - 1, 0),
+          1,
+        );
 
-//   return lines(linesDiff);
-// }
+  return lines(linesDiff);
+}
