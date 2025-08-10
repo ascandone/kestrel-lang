@@ -13,7 +13,6 @@ import * as t from "@babel/types";
 import generate from "@babel/generator";
 import { Binding, ConstLiteral } from "../parser";
 import { BinaryExpression } from "@babel/types";
-import { optimizeModule } from "./optimize";
 import { exit } from "node:process";
 import { col } from "../utils/colors";
 import {
@@ -1495,11 +1494,7 @@ export type CompileProjectOptions = {
 
 export function compileProject(
   typedProject: Record<string, TypedModule>,
-  {
-    entrypoint = defaultEntryPoint,
-    externs = {},
-    optimize = false,
-  }: CompileProjectOptions = {},
+  { entrypoint = defaultEntryPoint, externs = {} }: CompileProjectOptions = {},
 ): string {
   const entry = typedProject[entrypoint.module];
   if (entry === undefined) {
@@ -1538,11 +1533,7 @@ export function compileProject(
       buf.push(extern);
     }
 
-    const out = compile(
-      module.moduleInterface.package_,
-      ns,
-      optimize ? optimizeModule(module) : module,
-    );
+    const out = compile(module.moduleInterface.package_, ns, module);
 
     buf.push(out);
   }
