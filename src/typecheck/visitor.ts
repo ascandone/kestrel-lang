@@ -1,22 +1,40 @@
-import { TypedExpr, TypedMatchPattern, TypedTypeAst } from "./typedAst";
+import {
+  TypedBlockStatement,
+  TypedExpr,
+  TypedMatchPattern,
+  TypedTypeAst,
+} from "./typedAst";
 
-type VisitOptions = {
+export type VisitOptions = {
   // TypedAst
   onNamedType?(ast: TypedTypeAst & { type: "named" }): void;
 
   // MatchPattern
   onMatchClause?(pattern: TypedMatchPattern, then: TypedExpr): void;
-  onPatternIdentifier?(expr: TypedMatchPattern & { type: "identifier" }): void;
+
+  onPatternIdentifier?(
+    pattern: TypedMatchPattern & { type: "identifier" },
+  ): void;
   onPatternConstructor?(
-    expr: TypedMatchPattern & { type: "constructor" },
+    pattern: TypedMatchPattern & { type: "constructor" },
   ): void;
 
+  // Block
+  onBlockStatement?(expr: TypedBlockStatement): void;
+  onBlockStatementLet?(
+    stmt: TypedBlockStatement & { type: "let" },
+  ): VoidFunction | void;
+  onBlockStatementLetHash?(
+    stmt: TypedBlockStatement & { type: "let#" },
+  ): VoidFunction | void;
+
   // Expr
+  onBlock?(expr: TypedExpr & { type: "block" }): VoidFunction | void;
   onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
+  onApplication?(expr: TypedExpr & { type: "application" }): void;
   onFieldAccess?(expr: TypedExpr & { type: "field-access" }): void;
   onStructLiteral?(expr: TypedExpr & { type: "struct-literal" }): void;
-  onLet?(expr: TypedExpr & { type: "let" }): VoidFunction | undefined;
-  onFn?(expr: TypedExpr & { type: "fn" }): VoidFunction | undefined;
+  onFn?(expr: TypedExpr & { type: "fn" }): VoidFunction | void;
 };
 
 export function visitTypeAst(ast: TypedTypeAst, opts: VisitOptions) {
@@ -62,9 +80,32 @@ export function visitPattern(
   }
 }
 
-// TODO statically make sure all switch are taken care of
+export function visitBlockStatementLetClause(
+  expr: TypedBlockStatement,
+  opts: VisitOptions,
+): void {
+  opts.onBlockStatement?.(expr);
+  switch (expr.type) {
+    case "let": {
+      const onExit = opts.onBlockStatementLet?.(expr);
+      visitPattern(expr.pattern, opts);
+      visitExpr(expr.value, opts);
+      onExit?.();
+      break;
+    }
+    case "let#": {
+      // Make sure pattern is visited *after* the expression (unlike normal let)
+      const onExit = opts.onBlockStatementLetHash?.(expr);
+      visitExpr(expr.mapper, opts);
+      visitExpr(expr.value, opts);
+      visitPattern(expr.pattern, opts);
+      onExit?.();
+      break;
+    }
+  }
+}
 
-export function visitExpr(expr: TypedExpr, opts: VisitOptions) {
+export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
   switch (expr.type) {
     case "syntax-err":
     case "constant":
@@ -74,22 +115,24 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions) {
       opts.onIdentifier?.(expr);
       return;
 
+    case "block": {
+      const onExit = opts.onBlock?.(expr);
+      for (const st of expr.statements) {
+        visitBlockStatementLetClause(st, opts);
+      }
+      visitExpr(expr.returning, opts);
+      onExit?.();
+      return;
+    }
+
     case "if":
       visitExpr(expr.condition, opts);
       visitExpr(expr.then, opts);
       visitExpr(expr.else, opts);
       return;
 
-    case "let": {
-      const onExit = opts.onLet?.(expr);
-      visitPattern(expr.pattern, opts);
-      visitExpr(expr.body, opts);
-      visitExpr(expr.value, opts);
-      onExit?.();
-      return;
-    }
-
     case "application":
+      opts.onApplication?.(expr);
       visitExpr(expr.caller, opts);
       for (const arg of expr.args) {
         visitExpr(arg, opts);
@@ -99,7 +142,7 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions) {
     case "fn": {
       const onExit = opts.onFn?.(expr);
       for (const param of expr.params) {
-        visitPattern?.(param, opts);
+        visitPattern(param, opts);
       }
       visitExpr(expr.body, opts);
       onExit?.();
@@ -135,5 +178,8 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions) {
         visitExpr(expr.spread, opts);
       }
       return;
+
+    default:
+      return expr;
   }
 }

@@ -461,60 +461,32 @@ describe("basic constructs inference", () => {
   });
 });
 
-test("does not refer to imported values when qualifying", () => {
-  const [T1] = typecheck(
-    "pkg",
-    "T1",
-    unsafeParse(`
-        pub let x = 42
-      `),
-    {},
-    [],
-  );
+describe("let# sugar", () => {
+  test("infer int", () => {
+    const [correctTypes, correctErrors] = tc(`
+    pub let f = fn mapper, value, g {
+      mapper(value, fn x {
+        g(x)
+      })
+    }
+  `);
 
-  const [, errs] = tc(
-    `
-      import T1.{x}
-      pub let a = Main.x
+    expect(correctErrors).toEqual([]);
+    expect(correctTypes).toMatchInlineSnapshot(`
+      {
+        "f": "Fn(Fn(a, Fn(b) -> c) -> d, a, Fn(b) -> c) -> d",
+      }
+    `);
 
-      pub let e = x
-    `,
-    { T1 },
-  );
-
-  expect(errs).toEqual<ErrorInfo[]>([
-    expect.objectContaining({
-      description: new err.UnboundVariable("x"),
-    }),
-  ]);
-});
-
-test("does not refer to imported types when qualifying", () => {
-  const [T1] = typecheck(
-    "pkg",
-    "T1",
-    unsafeParse(`
-        pub(..) type T1 { X }
-      `),
-    {},
-    [],
-  );
-
-  const [, errs] = tc(
-    `
-      import T1.{T1(..)}
-      pub let a = Main.X
-
-      pub let b = X
-    `,
-    { T1 },
-  );
-
-  expect(errs).toEqual<ErrorInfo[]>([
-    expect.objectContaining({
-      description: new err.UnboundVariable("X"),
-    }),
-  ]);
+    const [types, errors] = tc(`
+    pub let f = fn mapper, value, g {
+      let#mapper x = value;
+      g(x)
+    }
+  `);
+    expect(errors).toEqual([]);
+    expect(types).toEqual(correctTypes);
+  });
 });
 
 describe("list literal", () => {
@@ -1115,7 +1087,7 @@ describe("traits", () => {
     `,
     );
 
-    expect(errs).toHaveLength(0);
+    expect(errs).toEqual([]);
   });
 
   test("do not leak allowed instantiated vars when preventing ambiguous vars", () => {
@@ -2429,6 +2401,63 @@ describe("prelude", () => {
 describe("modules", () => {
   const mockPosition: Position = { line: 0, character: 0 };
   const mockRange: Range = { start: mockPosition, end: mockPosition };
+
+  test("does not refer to imported values when qualifying", () => {
+    const [T1] = typecheck(
+      "pkg",
+      "T1",
+      unsafeParse(`
+        pub let x = 42
+      `),
+      {},
+      [],
+    );
+
+    const [, errs] = tc(
+      `
+      import T1.{x}
+      pub let a = Main.x
+
+      pub let e = x
+    `,
+      { T1 },
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new err.UnboundVariable("x"),
+      }),
+    ]);
+  });
+
+  test("does not refer to imported types when qualifying", () => {
+    const [T1] = typecheck(
+      "pkg",
+      "T1",
+      unsafeParse(`
+        pub(..) type T1 { X }
+      `),
+      {},
+      [],
+    );
+
+    const [, errs] = tc(
+      `
+      import T1.{T1(..)}
+      pub let a = Main.X
+
+      pub let b = X
+    `,
+      { T1 },
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new err.UnboundVariable("X"),
+      }),
+    ]);
+  });
+
   test("implicitly imports values of the modules in the prelude", () => {
     const [A] = tcProgram(
       "A",

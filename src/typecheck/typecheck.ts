@@ -10,6 +10,7 @@ import {
   IdentifierResolution,
   StructResolution,
   TypeMeta,
+  TypedBlockStatement,
   TypedDeclaration,
   TypedExpr,
   TypedMatchPattern,
@@ -682,8 +683,52 @@ class Typechecker {
     }
   }
 
-  private typecheckAnnotatedExpr(ast: TypedExpr) {
+  private typecheckAnnotatedBlockStatement(
+    stm: TypedBlockStatement,
+    bodyType: Type,
+  ) {
+    switch (stm.type) {
+      case "let":
+        this.typecheckPattern(stm.pattern, true);
+        this.unifyNode(stm, stm.$type.asType(), bodyType);
+        this.unifyNode(
+          stm,
+          stm.pattern.$type.asType(),
+          stm.value.$type.asType(),
+        );
+        this.bindingsTypesStack.push(stm.pattern.$type.asType());
+        this.typecheckAnnotatedExpr(stm.value);
+        this.bindingsTypesStack.pop();
+        break;
+
+      case "let#":
+        this.unifyNode(stm, stm.mapper.$type.asType(), {
+          type: "fn",
+          args: [
+            stm.value.$type.asType(),
+            {
+              type: "fn",
+              args: [stm.pattern.$type.asType()],
+              return: bodyType,
+            },
+          ],
+          return: stm.$type.asType(),
+        });
+        this.typecheckAnnotatedExpr(stm.mapper);
+        this.typecheckAnnotatedExpr(stm.value);
+        this.typecheckPattern(stm.pattern, true);
+        break;
+
+      default:
+        stm satisfies never;
+    }
+  }
+
+  private typecheckAnnotatedExpr(ast: TypedExpr): void {
     switch (ast.type) {
+      case "syntax-err":
+        return;
+
       case "constant": {
         const t = inferConstant(ast.value);
         this.unifyExpr(ast, ast.$type.asType(), t);
@@ -802,23 +847,6 @@ class Typechecker {
         return;
       }
 
-      case "let":
-        this.typecheckPattern(ast.pattern, true);
-        this.unifyExpr(
-          ast,
-          ast.pattern.$type.asType(),
-          ast.value.$type.asType(),
-        );
-        this.unifyExpr(ast, ast.$type.asType(), ast.body.$type.asType());
-
-        this.bindingsTypesStack.push(ast.pattern.$type.asType());
-        this.typecheckAnnotatedExpr(ast.value);
-        this.bindingsTypesStack.pop();
-
-        this.typecheckAnnotatedExpr(ast.body);
-
-        return;
-
       case "if":
         this.unifyExpr(ast, ast.condition.$type.asType(), Bool);
         this.unifyExpr(ast, ast.$type.asType(), ast.then.$type.asType());
@@ -836,6 +864,32 @@ class Typechecker {
           this.unifyExpr(ast, ast.$type.asType(), expr.$type.asType());
           this.typecheckAnnotatedExpr(expr);
         }
+        return;
+
+      case "block": {
+        // TODO(nitpick) it feels like I made it more complex than it'd need to
+
+        const firstStatement = ast.statements[0];
+        if (firstStatement === undefined) {
+          this.unifyExpr(ast, ast.$type.asType(), ast.returning.$type.asType());
+          this.typecheckAnnotatedExpr(ast.returning);
+          return;
+        }
+
+        ast.statements.forEach((stm, index) => {
+          const nextType =
+            ast.statements[index + 1]?.$type.asType() ??
+            ast.returning.$type.asType();
+          this.typecheckAnnotatedBlockStatement(stm, nextType);
+        });
+
+        this.typecheckAnnotatedExpr(ast.returning);
+        this.unifyExpr(ast, ast.$type.asType(), firstStatement.$type.asType());
+        return;
+      }
+
+      default:
+        return ast satisfies never;
     }
   }
 

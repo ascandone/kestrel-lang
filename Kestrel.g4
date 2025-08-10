@@ -125,13 +125,12 @@ expr:
 
 matchClause: matchPattern '=>' expr;
 
-block: '{' blockContent '}';
+blockStatement
+	: 'let#' mapper = qualifiedId pattern = matchPattern '=' value = expr ';'	#blockLetHash
+	| 'let' pattern = matchPattern '=' value = expr ';' # blockLet
+	;
 
-blockContent:
-	expr																							# blockContentExpr
-	| 'let#' mapper = qualifiedId pattern = matchPattern '=' value = expr ';' body = blockContent	#
-		blockContentLetHashExpr
-	| 'let' pattern = matchPattern '=' value = expr ';' body = blockContent # blockContentLetExpr;
+block: '{' blockStatement* expr '}';
 
 // Pattern matching syntax
 matchPattern:

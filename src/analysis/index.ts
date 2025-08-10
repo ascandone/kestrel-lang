@@ -4,4 +4,3 @@ export * from "./inlayHint";
 export * from "./hoverOn";
 export * from "./signatureHint";
 export * from "./completion";
-export { foldTree } from "./common";

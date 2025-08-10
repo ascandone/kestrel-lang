@@ -6,11 +6,10 @@ import antlr4, {
 } from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
 import Parser, {
-  BlockContentExprContext,
-  BlockContentLetExprContext,
-  BlockContentLetHashExprContext,
   BlockContext,
   BlockExprContext,
+  BlockLetContext,
+  BlockLetHashContext,
   BoolNotContext,
   CallContext,
   CharContext,
@@ -62,6 +61,7 @@ import {
   Import,
   UntypedModule,
   TypeDeclaration,
+  BlockStatement,
 } from "./ast";
 
 const COMMENTS_CHANNEL = 1;
@@ -210,6 +210,32 @@ class MatchPatternVisitor extends Visitor<MatchPattern> {
   };
 }
 
+class BlockStatementVisitor extends Visitor<BlockStatement> {
+  visitBlockLetHash = (ctx: BlockLetHashContext): BlockStatement => {
+    return {
+      type: "let#",
+      range: rangeOfCtx(ctx),
+      mapper: {
+        type: "identifier",
+        name: ctx._mapper._name.text,
+        range: rangeOfCtx(ctx.qualifiedId()),
+        namespace: ctx.qualifiedId().moduleNamespace()?.getText(),
+      },
+      pattern: new MatchPatternVisitor().visit(ctx._pattern),
+      value: new ExpressionVisitor().visit(ctx._value),
+    };
+  };
+
+  visitBlockLet = (ctx: BlockLetContext): BlockStatement => {
+    return {
+      type: "let",
+      range: rangeOfCtx(ctx),
+      pattern: new MatchPatternVisitor().visit(ctx._pattern),
+      value: new ExpressionVisitor().visit(ctx._value),
+    };
+  };
+}
+
 class ExpressionVisitor extends Visitor<Expr> {
   visit(expr: ExprContext): Expr {
     if (expr.exception !== null) {
@@ -318,41 +344,16 @@ class ExpressionVisitor extends Visitor<Expr> {
     range: rangeOfCtx(ctx),
   });
 
-  visitBlockExpr = (ctx: BlockExprContext): Expr => {
-    return {
-      type: "block",
-      range: rangeOfCtx(ctx),
-      inner: this.visit(ctx.block()),
-    };
-  };
+  visitBlockExpr = (ctx: BlockExprContext): Expr => this.visit(ctx.block());
 
-  visitBlockContentExpr = (ctx: BlockContentExprContext): Expr =>
-    this.visit(ctx.expr());
-
-  visitBlockContentLetExpr = (ctx: BlockContentLetExprContext): Expr => ({
-    type: "let",
+  visitBlock = (ctx: BlockContext): Expr => ({
+    type: "block",
     range: rangeOfCtx(ctx),
-    pattern: new MatchPatternVisitor().visit(ctx._pattern),
-    value: this.visit(ctx._value),
-    body: this.visit(ctx._body),
+    statements: ctx
+      .blockStatement_list()
+      .map((st) => new BlockStatementVisitor().visit(st)),
+    returning: this.visit(ctx.expr()),
   });
-
-  visitBlockContentLetHashExpr = (
-    ctx: BlockContentLetHashExprContext,
-  ): Expr => ({
-    type: "let#",
-    range: rangeOfCtx(ctx),
-    pattern: new MatchPatternVisitor().visit(ctx._pattern),
-    mapper: {
-      name: ctx._mapper._name.text,
-      range: rangeOfCtx(ctx.qualifiedId()),
-      namespace: ctx.qualifiedId().moduleNamespace()?.getText(),
-    },
-    value: this.visit(ctx._value),
-    body: this.visit(ctx._body),
-  });
-
-  visitBlock = (ctx: BlockContext): Expr => this.visit(ctx.blockContent());
 
   visitFn = (ctx: FnContext): Expr => ({
     type: "fn",

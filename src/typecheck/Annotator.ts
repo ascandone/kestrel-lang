@@ -168,9 +168,6 @@ export class Annotator {
   private annotateExpr(ast: Expr): TypedExpr {
     switch (ast.type) {
       // Syntax sugar
-      case "block":
-        return this.annotateExpr(ast.inner);
-
       case "pipe":
         if (ast.right.type !== "application") {
           this.errors.push({
@@ -188,27 +185,6 @@ export class Annotator {
           args: [ast.left, ...ast.right.args],
         });
 
-      case "let#":
-        return this.annotateExpr({
-          type: "application",
-          caller: {
-            type: "identifier",
-            namespace: ast.mapper.namespace,
-            name: ast.mapper.name,
-            range: ast.mapper.range,
-          },
-          args: [
-            ast.value,
-            {
-              type: "fn",
-              params: [ast.pattern],
-              body: ast.body,
-              range: ast.range,
-            },
-          ],
-          range: ast.range,
-        });
-
       case "infix":
         return this.annotateExpr({
           type: "application",
@@ -221,6 +197,37 @@ export class Annotator {
       case "syntax-err":
       case "constant":
         return { ...ast, $type: TVar.fresh() };
+
+      case "block":
+        return {
+          ...ast,
+          returning: this.annotateExpr(ast.returning),
+          statements: ast.statements.map((st) => {
+            switch (st.type) {
+              case "let":
+                return {
+                  ...st,
+                  $type: TVar.fresh(),
+                  pattern: this.annotateMatchPattern(st.pattern),
+                  value: this.annotateExpr(st.value),
+                };
+
+              case "let#":
+                return {
+                  ...st,
+                  mapper: {
+                    ...st.mapper,
+                    $resolution: undefined,
+                    $type: TVar.fresh(),
+                  },
+                  $type: TVar.fresh(),
+                  pattern: this.annotateMatchPattern(st.pattern),
+                  value: this.annotateExpr(st.value),
+                };
+            }
+          }),
+          $type: TVar.fresh(),
+        };
 
       case "struct-literal":
         return {
@@ -291,15 +298,6 @@ export class Annotator {
           then: this.annotateExpr(ast.then),
           else: this.annotateExpr(ast.else),
           $type: TVar.fresh(),
-        };
-
-      case "let":
-        return {
-          ...ast,
-          $type: TVar.fresh(),
-          pattern: this.annotateMatchPattern(ast.pattern),
-          value: this.annotateExpr(ast.value),
-          body: this.annotateExpr(ast.body),
         };
 
       case "match":

@@ -56,6 +56,22 @@ export type TypedMatchPattern = (TypeMeta & ast.RangeMeta) &
 assertSubtype<ast.Binding, TypedBinding>;
 export type TypedBinding = { name: string } & TypeMeta & ast.RangeMeta;
 
+assertSubtype<ast.BlockStatement, TypedBlockStatement>;
+export type TypedBlockStatement = (TypeMeta & ast.RangeMeta) &
+  (
+    | {
+        type: "let";
+        pattern: TypedMatchPattern;
+        value: TypedExpr;
+      }
+    | {
+        type: "let#";
+        mapper: TypedExpr & { type: "identifier" };
+        pattern: TypedMatchPattern;
+        value: TypedExpr;
+      }
+  );
+
 assertSubtype<ast.StructField, TypedStructField>;
 export type TypedStructField = ast.RangeMeta & {
   field: ast.RangeMeta & {
@@ -121,10 +137,9 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         $resolution: FieldResolution | undefined;
       }
     | {
-        type: "let";
-        pattern: TypedMatchPattern;
-        value: TypedExpr;
-        body: TypedExpr;
+        type: "block";
+        statements: TypedBlockStatement[];
+        returning: TypedExpr;
       }
     | {
         type: "if";

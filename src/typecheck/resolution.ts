@@ -499,12 +499,14 @@ class Resolver {
         };
       },
 
-      onLet: () => {
+      onBlock: () => {
         const onExit = this.localFrames.enter();
         return () => {
           onExit();
         };
       },
+
+      onBlockStatementLetHash: (_expr) => {},
     });
   }
 
