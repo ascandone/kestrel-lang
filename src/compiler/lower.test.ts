@@ -126,7 +126,24 @@ test("fn and application", () => {
   );
 });
 
-test.todo("proper counting", () => {
+test("shadowed fn args", () => {
+  const ir = toSexpr(`
+    let f = {
+      let a = 0;
+      fn a { a }
+    }
+  `);
+  expect(ir).toMatchInlineSnapshot(
+    `
+    "(:def f
+        (:let (a#0 0)
+            (:fn (a#1)
+                a#1)))"
+  `,
+  );
+});
+
+test("proper counting", () => {
   const ir = toSexpr(`
     let f = fn a, b { a }
 
@@ -137,11 +154,16 @@ test.todo("proper counting", () => {
   `);
   expect(ir).toMatchInlineSnapshot(
     `
-    "(:def glb
-        (:let (loc#0 0)
-            (:let (mid#0 loc#0)
-                (:let (loc#1 mid#0)
-                    loc#1))))"
+    "(:def f
+        (:fn (a#0 b#0)
+            a#0))
+
+    (:def glb
+        (f
+            (:let (x#0 0)
+                x#0)
+            (:let (x#1 0)
+                x#1)))"
   `,
   );
 });
