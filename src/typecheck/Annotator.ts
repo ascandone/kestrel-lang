@@ -168,9 +168,6 @@ export class Annotator {
   private annotateExpr(ast: Expr): TypedExpr {
     switch (ast.type) {
       // Syntax sugar
-      case "block":
-        return this.annotateExpr(ast.inner);
-
       case "pipe":
         if (ast.right.type !== "application") {
           this.errors.push({
@@ -186,27 +183,6 @@ export class Annotator {
           range: ast.range,
           caller: ast.right.caller,
           args: [ast.left, ...ast.right.args],
-        });
-
-      case "let#":
-        return this.annotateExpr({
-          type: "application",
-          caller: {
-            type: "identifier",
-            namespace: ast.mapper.namespace,
-            name: ast.mapper.name,
-            range: ast.mapper.range,
-          },
-          args: [
-            ast.value,
-            {
-              type: "fn",
-              params: [ast.pattern],
-              body: ast.body,
-              range: ast.range,
-            },
-          ],
-          range: ast.range,
         });
 
       case "infix":
@@ -315,15 +291,6 @@ export class Annotator {
           then: this.annotateExpr(ast.then),
           else: this.annotateExpr(ast.else),
           $type: TVar.fresh(),
-        };
-
-      case "let":
-        return {
-          ...ast,
-          $type: TVar.fresh(),
-          pattern: this.annotateMatchPattern(ast.pattern),
-          value: this.annotateExpr(ast.value),
-          body: this.annotateExpr(ast.body),
         };
 
       case "match":

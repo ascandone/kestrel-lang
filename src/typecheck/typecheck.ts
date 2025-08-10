@@ -10,6 +10,7 @@ import {
   IdentifierResolution,
   StructResolution,
   TypeMeta,
+  TypedBlockStatement,
   TypedDeclaration,
   TypedExpr,
   TypedMatchPattern,
@@ -682,8 +683,34 @@ class Typechecker {
     }
   }
 
-  private typecheckAnnotatedExpr(ast: TypedExpr) {
+  private typecheckAnnotatedBlockStatement(stm: TypedBlockStatement) {
+    switch (stm.type) {
+      case "let":
+        this.typecheckPattern(stm.pattern, true);
+        this.unifyNode(
+          stm,
+          stm.pattern.$type.asType(),
+          stm.value.$type.asType(),
+        );
+        this.bindingsTypesStack.push(stm.pattern.$type.asType());
+        this.typecheckAnnotatedExpr(stm.value);
+        this.bindingsTypesStack.pop();
+        break;
+
+      case "let#":
+        throw new Error("TODO let# typecheck");
+        break;
+
+      default:
+        stm satisfies never;
+    }
+  }
+
+  private typecheckAnnotatedExpr(ast: TypedExpr): void {
     switch (ast.type) {
+      case "syntax-err":
+        return;
+
       case "constant": {
         const t = inferConstant(ast.value);
         this.unifyExpr(ast, ast.$type.asType(), t);
@@ -802,23 +829,6 @@ class Typechecker {
         return;
       }
 
-      case "let":
-        this.typecheckPattern(ast.pattern, true);
-        this.unifyExpr(
-          ast,
-          ast.pattern.$type.asType(),
-          ast.value.$type.asType(),
-        );
-        this.unifyExpr(ast, ast.$type.asType(), ast.body.$type.asType());
-
-        this.bindingsTypesStack.push(ast.pattern.$type.asType());
-        this.typecheckAnnotatedExpr(ast.value);
-        this.bindingsTypesStack.pop();
-
-        this.typecheckAnnotatedExpr(ast.body);
-
-        return;
-
       case "if":
         this.unifyExpr(ast, ast.condition.$type.asType(), Bool);
         this.unifyExpr(ast, ast.$type.asType(), ast.then.$type.asType());
@@ -836,6 +846,18 @@ class Typechecker {
           this.unifyExpr(ast, ast.$type.asType(), expr.$type.asType());
           this.typecheckAnnotatedExpr(expr);
         }
+        return;
+
+      case "block*":
+        for (const stm of ast.statements) {
+          this.typecheckAnnotatedBlockStatement(stm);
+        }
+        this.typecheckAnnotatedExpr(ast.returning);
+        this.unifyExpr(ast, ast.$type.asType(), ast.returning.$type.asType());
+        return;
+
+      default:
+        return ast satisfies never;
     }
   }
 

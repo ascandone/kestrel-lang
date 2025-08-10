@@ -46,8 +46,10 @@ export class Finder<T> {
 
       case "block*":
         return (
-          firstBy(expr.statements, (st) => this.visitExpr(st.value)) ??
-          this.visitExpr(expr.returning)
+          firstBy(
+            expr.statements,
+            (st) => this.visitPattern(st.pattern) ?? this.visitExpr(st.value),
+          ) ?? this.visitExpr(expr.returning)
         );
 
       case "if":
@@ -55,13 +57,6 @@ export class Finder<T> {
           this.visitExpr(expr.condition) ??
           this.visitExpr(expr.then) ??
           this.visitExpr(expr.else)
-        );
-
-      case "let":
-        return (
-          this.visitPattern(expr.pattern) ??
-          this.visitExpr(expr.body) ??
-          this.visitExpr(expr.value)
         );
 
       case "application":

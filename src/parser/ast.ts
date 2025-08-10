@@ -127,12 +127,6 @@ export type Expr = RangeMeta &
         returning: Expr;
       }
     | {
-        type: "let";
-        pattern: MatchPattern;
-        value: Expr;
-        body: Expr;
-      }
-    | {
         type: "if";
         condition: Expr;
         then: Expr;
@@ -244,21 +238,10 @@ export type SyntaxSugar =
       right: Expr;
     }
   | {
-      type: "let#";
-      mapper: RangeMeta & { namespace?: string; name: string };
-      pattern: MatchPattern;
-      value: Expr;
-      body: Expr;
-    }
-  | {
       type: "infix";
       operator: string;
       left: Expr;
       right: Expr;
-    }
-  | {
-      type: "block";
-      inner: Expr;
     };
 
 export type RangeMeta = { range: Range };

@@ -1115,7 +1115,7 @@ describe("traits", () => {
     `,
     );
 
-    expect(errs).toHaveLength(0);
+    expect(errs).toEqual([]);
   });
 
   test("do not leak allowed instantiated vars when preventing ambiguous vars", () => {

@@ -499,11 +499,17 @@ class Resolver {
         };
       },
 
-      onLet: () => {
+      onBlock: () => {
         const onExit = this.localFrames.enter();
         return () => {
           onExit();
         };
+      },
+
+      // onBlockStatementLet: () => {},
+
+      onBlockStatementLetHash: () => {
+        throw new UnimplementedErr("let# resolution");
       },
     });
   }

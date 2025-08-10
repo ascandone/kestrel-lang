@@ -11,20 +11,29 @@ export type VisitOptions = {
 
   // MatchPattern
   onMatchClause?(pattern: TypedMatchPattern, then: TypedExpr): void;
-  onPatternIdentifier?(expr: TypedMatchPattern & { type: "identifier" }): void;
+
+  onPatternIdentifier?(
+    pattern: TypedMatchPattern & { type: "identifier" },
+  ): void;
   onPatternConstructor?(
-    expr: TypedMatchPattern & { type: "constructor" },
+    pattern: TypedMatchPattern & { type: "constructor" },
   ): void;
 
   // Block
   onBlockStatement?(expr: TypedBlockStatement): void;
+  onBlockStatementLet?(
+    stmt: TypedBlockStatement & { type: "let" },
+  ): VoidFunction | void;
+  onBlockStatementLetHash?(
+    stmt: TypedBlockStatement & { type: "let#" },
+  ): VoidFunction | undefined;
 
   // Expr
+  onBlock?(expr: TypedExpr & { type: "block*" }): VoidFunction | undefined;
   onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
   onApplication?(expr: TypedExpr & { type: "application" }): void;
   onFieldAccess?(expr: TypedExpr & { type: "field-access" }): void;
   onStructLiteral?(expr: TypedExpr & { type: "struct-literal" }): void;
-  onLet?(expr: TypedExpr & { type: "let" }): VoidFunction | undefined;
   onFn?(expr: TypedExpr & { type: "fn" }): VoidFunction | undefined;
 };
 
@@ -71,6 +80,29 @@ export function visitPattern(
   }
 }
 
+export function visitBlockStatementLetClause(
+  expr: TypedBlockStatement,
+  opts: VisitOptions,
+): void {
+  opts.onBlockStatement?.(expr);
+  switch (expr.type) {
+    case "let": {
+      const onExit = opts.onBlockStatementLet?.(expr);
+      visitPattern(expr.pattern, opts);
+      visitExpr(expr.value, opts);
+      onExit?.();
+      break;
+    }
+    case "let#": {
+      const onExit = opts.onBlockStatementLetHash?.(expr);
+      visitPattern(expr.pattern, opts);
+      visitExpr(expr.value, opts);
+      onExit?.();
+      break;
+    }
+  }
+}
+
 export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
   switch (expr.type) {
     case "syntax-err":
@@ -81,14 +113,15 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
       opts.onIdentifier?.(expr);
       return;
 
-    case "block*":
+    case "block*": {
+      const onExit = opts.onBlock?.(expr);
       for (const st of expr.statements) {
-        opts.onBlockStatement?.(st);
-        visitPattern(st.pattern, opts);
-        visitExpr(st.value, opts);
+        visitBlockStatementLetClause(st, opts);
       }
       visitExpr(expr.returning, opts);
+      onExit?.();
       return;
+    }
 
     case "if":
       visitExpr(expr.condition, opts);
@@ -96,14 +129,14 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
       visitExpr(expr.else, opts);
       return;
 
-    case "let": {
-      const onExit = opts.onLet?.(expr);
-      visitPattern(expr.pattern, opts);
-      visitExpr(expr.body, opts);
-      visitExpr(expr.value, opts);
-      onExit?.();
-      return;
-    }
+    // case "let": {
+    //   const onExit = opts.onLet?.(expr);
+    //   visitPattern(expr.pattern, opts);
+    //   visitExpr(expr.body, opts);
+    //   visitExpr(expr.value, opts);
+    //   onExit?.();
+    //   return;
+    // }
 
     case "application":
       opts.onApplication?.(expr);
@@ -116,7 +149,7 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
     case "fn": {
       const onExit = opts.onFn?.(expr);
       for (const param of expr.params) {
-        visitPattern?.(param, opts);
+        visitPattern(param, opts);
       }
       visitExpr(expr.body, opts);
       onExit?.();

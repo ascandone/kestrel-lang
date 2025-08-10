@@ -85,9 +85,6 @@ function hasLowerPrec(bindingPower: number, other: Expr): boolean {
       // TODO are we sure?
       return hasLowerPrec(bindingPower, other.returning);
 
-    case "block":
-      return hasLowerPrec(bindingPower, other.inner);
-
     case "infix": {
       const selfBindingPower = getBindingPower(other.operator);
 
@@ -113,11 +110,9 @@ function hasLowerPrec(bindingPower: number, other: Expr): boolean {
     case "syntax-err":
     case "list-literal":
     case "pipe":
-    case "let#":
     case "constant":
     case "identifier":
     case "fn":
-    case "let":
     case "if":
     case "match":
       return false;
@@ -192,9 +187,6 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
     case "syntax-err":
       throw new Error("[unreachable]");
 
-    case "block":
-      return exprToDoc(ast.inner, false);
-
     case "block*":
       // return exprToDoc(ast.inner, false);
       throw new Error("TODO implement");
@@ -208,10 +200,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
             sepBy(
               concat(text(","), break_()),
               ast.values.map((expr) =>
-                exprToDocWithComments(
-                  expr,
-                  expr.type !== "let" && expr.type !== "let#",
-                ),
+                exprToDocWithComments(expr, expr.type !== "block*"),
               ),
             ),
           ],
@@ -379,44 +368,44 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         block_(exprToDocWithComments(ast.else, true)),
       );
 
-    case "let#": {
-      const ns =
-        ast.mapper.namespace === undefined ? "" : `${ast.mapper.namespace}.`;
+    // case "let#": {
+    //   const ns =
+    //     ast.mapper.namespace === undefined ? "" : `${ast.mapper.namespace}.`;
 
-      const inner = concat(
-        text(`let#${ns}${ast.mapper.name} `),
-        patternToDoc(ast.pattern),
-        text(` =`),
-        declarationValueToDoc(ast.value),
-        text(";"),
-        linesBetweenLet(ast),
-        exprToDoc(ast.body, true),
-      );
+    //   const inner = concat(
+    //     text(`let#${ns}${ast.mapper.name} `),
+    //     patternToDoc(ast.pattern),
+    //     text(` =`),
+    //     declarationValueToDoc(ast.value),
+    //     text(";"),
+    //     linesBetweenLet(ast),
+    //     exprToDoc(ast.body, true),
+    //   );
 
-      if (block) {
-        return inner;
-      }
+    //   if (block) {
+    //     return inner;
+    //   }
 
-      return block_(inner);
-    }
+    //   return block_(inner);
+    // }
 
-    case "let": {
-      const inner = concat(
-        text("let "),
-        patternToDoc(ast.pattern),
-        text(" ="),
-        declarationValueToDoc(ast.value),
-        text(";"),
-        linesBetweenLet(ast),
-        exprToDoc(ast.body, true),
-      );
+    // case "let": {
+    //   const inner = concat(
+    //     text("let "),
+    //     patternToDoc(ast.pattern),
+    //     text(" ="),
+    //     declarationValueToDoc(ast.value),
+    //     text(";"),
+    //     linesBetweenLet(ast),
+    //     exprToDoc(ast.body, true),
+    //   );
 
-      if (block) {
-        return inner;
-      }
+    //   if (block) {
+    //     return inner;
+    //   }
 
-      return block_(inner);
-    }
+    //   return block_(inner);
+    // }
 
     case "match": {
       const clauses = ast.clauses.map(([pattern, expr]) =>
@@ -762,11 +751,11 @@ function autoParens(infixIndex: number, expr: Expr) {
 
 const DOT_ACCESS_BINDING_POWER = 0;
 
-function linesBetweenLet(ast: Expr & { type: "let" | "let#" }) {
-  const linesDiff = Math.min(
-    Math.max(ast.body.range.start.line - ast.value.range.end.line - 1, 0),
-    1,
-  );
+// function linesBetweenLet(ast: Expr & { type: "let" | "let#" }) {
+//   const linesDiff = Math.min(
+//     Math.max(ast.body.range.start.line - ast.value.range.end.line - 1, 0),
+//     1,
+//   );
 
-  return lines(linesDiff);
-}
+//   return lines(linesDiff);
+// }

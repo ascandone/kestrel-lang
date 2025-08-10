@@ -1,7 +1,8 @@
 import { Position } from "../parser";
 import { Type, TypeScheme } from "../type";
+import { Finder } from "../typecheck/astLookup";
 import { TypedExpr, TypedModule } from "../typecheck/typedAst";
-import { firstBy, statementByOffset } from "./common";
+import { statementByOffset } from "./common";
 
 export type FunctionSignatureHint = {
   name: string;
@@ -25,7 +26,7 @@ export function functionSignatureHint(
         return undefined;
       }
 
-      return functionSignatureHintExpr(statement.declaration.value, position);
+      return hoveredFinder(position).visitExpr(statement.declaration.value);
 
     case "type-declaration":
       return undefined;
@@ -34,111 +35,61 @@ export function functionSignatureHint(
   }
 }
 
-function functionSignatureHintExpr(
-  expr: TypedExpr,
-  position: Position,
+function getSignature(
+  expr: TypedExpr & { type: "application" },
 ): FunctionSignatureHint | undefined {
-  switch (expr.type) {
-    case "application": {
-      const inner =
-        functionSignatureHintExpr(expr.caller, position) ??
-        firstBy(expr.args, (arg) => functionSignatureHintExpr(arg, position));
+  if (
+    expr.caller.type !== "identifier" ||
+    expr.caller.$resolution === undefined
+  ) {
+    return;
+  }
 
-      if (inner !== undefined) {
-        return inner;
-      }
-
-      // if inner is undefined, we are the closest wrapping expr
-      if (
-        expr.caller.type !== "identifier" ||
-        expr.caller.$resolution === undefined
-      ) {
-        return;
-      }
-
-      switch (expr.caller.$resolution.type) {
-        case "global-variable": {
-          const { declaration } = expr.caller.$resolution;
-          return {
-            name: declaration.binding.name,
-            type: declaration.binding.$type.asType(),
-            docComment: declaration.docComment,
-          };
-        }
-
-        case "local-variable": {
-          const { binding } = expr.caller.$resolution;
-          return {
-            name: binding.name,
-            type: binding.$type.asType(),
-          };
-        }
-
-        case "constructor": {
-          const { variant } = expr.caller.$resolution;
-          return {
-            name: variant.name,
-            type: variant.$type.asType(),
-            scheme: variant.$scheme,
-          };
-        }
-      }
+  switch (expr.caller.$resolution.type) {
+    case "global-variable": {
+      const { declaration } = expr.caller.$resolution;
+      return {
+        name: declaration.binding.name,
+        type: declaration.binding.$type.asType(),
+        docComment: declaration.docComment,
+      };
     }
 
-    case "syntax-err":
-    case "identifier":
-    case "constant":
-      return undefined;
+    case "local-variable": {
+      const { binding } = expr.caller.$resolution;
+      return {
+        name: binding.name,
+        type: binding.$type.asType(),
+      };
+    }
 
-    case "list-literal":
-      return firstBy(expr.values, (arg) =>
-        functionSignatureHintExpr(arg, position),
-      );
-
-    case "field-access":
-      return functionSignatureHintExpr(expr.struct, position);
-
-    case "struct-literal":
-      return (
-        firstBy(
-          expr.fields.map((f) => f.value),
-          (arg) => functionSignatureHintExpr(arg, position),
-        ) ??
-        (expr.spread === undefined
-          ? undefined
-          : functionSignatureHintExpr(expr.spread, position))
-      );
-
-    case "fn":
-      return functionSignatureHintExpr(expr.body, position);
-
-    case "if":
-      return (
-        functionSignatureHintExpr(expr.condition, position) ??
-        functionSignatureHintExpr(expr.then, position) ??
-        functionSignatureHintExpr(expr.else, position)
-      );
-
-    case "block*":
-      return (
-        firstBy(
-          expr.statements.map((st) => st.value),
-          (arg) => functionSignatureHintExpr(arg, position),
-        ) ?? functionSignatureHintExpr(expr.returning, position)
-      );
-
-    case "let":
-      return (
-        functionSignatureHintExpr(expr.value, position) ??
-        functionSignatureHintExpr(expr.body, position)
-      );
-
-    case "match":
-      return (
-        functionSignatureHintExpr(expr.expr, position) ??
-        firstBy(expr.clauses, ([_pattern, expr]) =>
-          functionSignatureHintExpr(expr, position),
-        )
-      );
+    case "constructor": {
+      const { variant } = expr.caller.$resolution;
+      return {
+        name: variant.name,
+        type: variant.$type.asType(),
+        scheme: variant.$scheme,
+      };
+    }
   }
+}
+
+function hoveredFinder(position: Position) {
+  return new Finder<FunctionSignatureHint>(position, {
+    onExpression(expr, next) {
+      switch (expr.type) {
+        case "application": {
+          const inner = next();
+          if (inner !== undefined) {
+            return inner;
+          }
+
+          // if inner is undefined, we are the closest wrapping expr
+          return getSignature(expr);
+        }
+      }
+
+      return next();
+    },
+  });
 }

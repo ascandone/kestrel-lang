@@ -142,12 +142,6 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         returning: TypedExpr;
       }
     | {
-        type: "let";
-        pattern: TypedMatchPattern;
-        value: TypedExpr;
-        body: TypedExpr;
-      }
-    | {
         type: "if";
         condition: TypedExpr;
         then: TypedExpr;
