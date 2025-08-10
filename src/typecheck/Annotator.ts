@@ -207,6 +207,7 @@ export class Annotator {
               case "let":
                 return {
                   ...st,
+                  $type: TVar.fresh(),
                   pattern: this.annotateMatchPattern(st.pattern),
                   value: this.annotateExpr(st.value),
                 };
@@ -219,6 +220,7 @@ export class Annotator {
                     $resolution: undefined,
                     $type: TVar.fresh(),
                   },
+                  $type: TVar.fresh(),
                   pattern: this.annotateMatchPattern(st.pattern),
                   value: this.annotateExpr(st.value),
                 };

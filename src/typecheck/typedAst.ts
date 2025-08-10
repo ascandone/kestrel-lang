@@ -57,7 +57,7 @@ assertSubtype<ast.Binding, TypedBinding>;
 export type TypedBinding = { name: string } & TypeMeta & ast.RangeMeta;
 
 assertSubtype<ast.BlockStatement, TypedBlockStatement>;
-export type TypedBlockStatement = ast.RangeMeta &
+export type TypedBlockStatement = (TypeMeta & ast.RangeMeta) &
   (
     | {
         type: "let";
