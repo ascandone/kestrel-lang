@@ -471,11 +471,6 @@ describe("let# sugar", () => {
     }
   `);
 
-    // ... -> d"
-    // mapper: (value: a, g: (b) -> c) -> d
-    // value : a
-    // g     : (b) -> c
-
     expect(correctErrors).toEqual([]);
     expect(correctTypes).toMatchInlineSnapshot(`
       {
