@@ -131,15 +131,6 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
       visitExpr(expr.else, opts);
       return;
 
-    // case "let": {
-    //   const onExit = opts.onLet?.(expr);
-    //   visitPattern(expr.pattern, opts);
-    //   visitExpr(expr.body, opts);
-    //   visitExpr(expr.value, opts);
-    //   onExit?.();
-    //   return;
-    // }
-
     case "application":
       opts.onApplication?.(expr);
       visitExpr(expr.caller, opts);
