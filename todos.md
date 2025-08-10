@@ -1,7 +1,9 @@
 ## Todos
 
-- refactor: refactor let block as list
-  - feat: allow mutually recursive let values
+- refactor: use IR
+  - refactor: add syntax sugar in both AST
+    - remove annotator and typedAst (and deep clone AST instead)
+- test: test self-recursive let exprs (and prevent binding pollution)
 - refactor: treat constructor and ident as separate nodes
 - feat: add package and module to compilation output
 - refactor: simplify traits repr
@@ -13,6 +15,7 @@
 
 ### Done
 
+- refactor: refactor let block as list
 - feat: allow mutually recursive types
 - feat: check cyclic module dependency
 - feat: allow mutually recursive values
