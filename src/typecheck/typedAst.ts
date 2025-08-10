@@ -137,7 +137,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         $resolution: FieldResolution | undefined;
       }
     | {
-        type: "block*";
+        type: "block";
         statements: TypedBlockStatement[];
         returning: TypedExpr;
       }

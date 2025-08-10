@@ -265,7 +265,7 @@ class Compiler {
         return;
       }
 
-      case "block*":
+      case "block":
         if (src.statements.length === 0) {
           return this.compileExprAsJsStms(src.returning, tailPosCaller, as);
         }
@@ -510,7 +510,7 @@ class Compiler {
         }
       }
 
-      case "block*": {
+      case "block": {
         for (const stm of src.statements) {
           if (stm.type === "let#") {
             throw new Error("TODO implement let#");

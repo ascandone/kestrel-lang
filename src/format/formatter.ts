@@ -81,7 +81,7 @@ function getBindingPower(name: string): number | undefined {
 
 function hasLowerPrec(bindingPower: number, other: Expr): boolean {
   switch (other.type) {
-    case "block*":
+    case "block":
       // TODO are we sure?
       return hasLowerPrec(bindingPower, other.returning);
 
@@ -187,7 +187,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
     case "syntax-err":
       throw new Error("[unreachable]");
 
-    case "block*":
+    case "block":
       // return exprToDoc(ast.inner, false);
       throw new Error("TODO implement");
 
@@ -200,7 +200,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
             sepBy(
               concat(text(","), break_()),
               ast.values.map((expr) =>
-                exprToDocWithComments(expr, expr.type !== "block*"),
+                exprToDocWithComments(expr, expr.type !== "block"),
               ),
             ),
           ],

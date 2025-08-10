@@ -346,7 +346,7 @@ class ExpressionVisitor extends Visitor<Expr> {
   visitBlockExpr = (ctx: BlockExprContext): Expr => this.visit(ctx.block());
 
   visitBlock = (ctx: BlockContext): Expr => ({
-    type: "block*",
+    type: "block",
     range: rangeOfCtx(ctx),
     statements: ctx
       .blockStatement_list()

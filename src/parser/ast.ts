@@ -122,7 +122,7 @@ export type Expr = RangeMeta &
         };
       }
     | {
-        type: "block*";
+        type: "block";
         statements: BlockStatement[];
         returning: Expr;
       }

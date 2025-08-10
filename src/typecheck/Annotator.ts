@@ -198,7 +198,7 @@ export class Annotator {
       case "constant":
         return { ...ast, $type: TVar.fresh() };
 
-      case "block*":
+      case "block":
         return {
           ...ast,
           returning: this.annotateExpr(ast.returning),

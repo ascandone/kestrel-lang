@@ -44,7 +44,7 @@ export class Finder<T> {
       case "identifier":
         return;
 
-      case "block*":
+      case "block":
         return (
           firstBy(
             expr.statements,

@@ -2005,7 +2005,7 @@ exports[`monadic let syntax sugar 1`] = `
             },
           },
         ],
-        "type": "block*",
+        "type": "block",
       },
     },
   ],
@@ -2129,7 +2129,7 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
             },
           },
         ],
-        "type": "block*",
+        "type": "block",
       },
     },
   ],
@@ -3449,7 +3449,7 @@ exports[`parse block with no let 1`] = `
           },
         },
         "statements": [],
-        "type": "block*",
+        "type": "block",
       },
     },
   ],
@@ -3977,7 +3977,7 @@ exports[`parse fn with 1 arg 1`] = `
             },
           },
           "statements": [],
-          "type": "block*",
+          "type": "block",
         },
         "params": [
           {
@@ -4075,7 +4075,7 @@ exports[`parse fn with 2 args 1`] = `
             },
           },
           "statements": [],
-          "type": "block*",
+          "type": "block",
         },
         "params": [
           {
@@ -4232,7 +4232,7 @@ exports[`parse fn with let 1`] = `
               },
             },
           ],
-          "type": "block*",
+          "type": "block",
         },
         "params": [],
         "range": {
@@ -4315,7 +4315,7 @@ exports[`parse fn with no args 1`] = `
             },
           },
           "statements": [],
-          "type": "block*",
+          "type": "block",
         },
         "params": [],
         "range": {
@@ -4466,7 +4466,7 @@ exports[`parse if expr 1`] = `
             },
           },
           "statements": [],
-          "type": "block*",
+          "type": "block",
         },
         "range": {
           "end": {
@@ -4507,7 +4507,7 @@ exports[`parse if expr 1`] = `
             },
           },
           "statements": [],
-          "type": "block*",
+          "type": "block",
         },
         "type": "if",
       },
@@ -4594,7 +4594,7 @@ exports[`parse if expr with a let expr 1`] = `
             },
           },
           "statements": [],
-          "type": "block*",
+          "type": "block",
         },
         "range": {
           "end": {
@@ -4678,7 +4678,7 @@ exports[`parse if expr with a let expr 1`] = `
               },
             },
           ],
-          "type": "block*",
+          "type": "block",
         },
         "type": "if",
       },
@@ -4794,7 +4794,7 @@ exports[`parse let block with one let 1`] = `
             },
           },
         ],
-        "type": "block*",
+        "type": "block",
       },
     },
   ],
@@ -4952,7 +4952,7 @@ exports[`parse let block with two let stmts 1`] = `
             },
           },
         ],
-        "type": "block*",
+        "type": "block",
       },
     },
   ],
@@ -6950,7 +6950,7 @@ exports[`pattern matching > matching pattern in fn param 1`] = `
             },
           },
           "statements": [],
-          "type": "block*",
+          "type": "block",
         },
         "params": [
           {
@@ -7181,7 +7181,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
             },
           },
         ],
-        "type": "block*",
+        "type": "block",
       },
     },
   ],
@@ -7367,7 +7367,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
             },
           },
         ],
-        "type": "block*",
+        "type": "block",
       },
     },
   ],

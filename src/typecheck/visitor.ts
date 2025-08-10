@@ -29,7 +29,7 @@ export type VisitOptions = {
   ): VoidFunction | undefined;
 
   // Expr
-  onBlock?(expr: TypedExpr & { type: "block*" }): VoidFunction | undefined;
+  onBlock?(expr: TypedExpr & { type: "block" }): VoidFunction | undefined;
   onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
   onApplication?(expr: TypedExpr & { type: "application" }): void;
   onFieldAccess?(expr: TypedExpr & { type: "field-access" }): void;
@@ -113,7 +113,7 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
       opts.onIdentifier?.(expr);
       return;
 
-    case "block*": {
+    case "block": {
       const onExit = opts.onBlock?.(expr);
       for (const st of expr.statements) {
         visitBlockStatementLetClause(st, opts);

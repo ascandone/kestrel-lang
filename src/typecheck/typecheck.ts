@@ -848,7 +848,7 @@ class Typechecker {
         }
         return;
 
-      case "block*":
+      case "block":
         for (const stm of ast.statements) {
           this.typecheckAnnotatedBlockStatement(stm);
         }
