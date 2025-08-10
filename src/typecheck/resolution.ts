@@ -506,8 +506,6 @@ class Resolver {
         };
       },
 
-      // onBlockStatementLet: () => {},
-
       onBlockStatementLetHash: () => {
         throw new UnimplementedErr("let# resolution");
       },
