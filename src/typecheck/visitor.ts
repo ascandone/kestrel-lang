@@ -5,7 +5,7 @@ import {
   TypedTypeAst,
 } from "./typedAst";
 
-type VisitOptions = {
+export type VisitOptions = {
   // TypedAst
   onNamedType?(ast: TypedTypeAst & { type: "named" }): void;
 
@@ -21,6 +21,7 @@ type VisitOptions = {
 
   // Expr
   onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
+  onApplication?(expr: TypedExpr & { type: "application" }): void;
   onFieldAccess?(expr: TypedExpr & { type: "field-access" }): void;
   onStructLiteral?(expr: TypedExpr & { type: "struct-literal" }): void;
   onLet?(expr: TypedExpr & { type: "let" }): VoidFunction | undefined;
@@ -105,6 +106,7 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
     }
 
     case "application":
+      opts.onApplication?.(expr);
       visitExpr(expr.caller, opts);
       for (const arg of expr.args) {
         visitExpr(arg, opts);
