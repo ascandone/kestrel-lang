@@ -186,6 +186,7 @@ function blockStatementToDoc(stm: BlockStatement): Doc {
   switch (stm.type) {
     case "let":
       return concat(
+        ...popComments(stm.value),
         text("let "),
         patternToDoc(stm.pattern),
         text(" ="),
@@ -222,7 +223,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
             linesBetweenLet(stm, arr[index + 1] ?? ast.returning),
           ),
         ),
-        exprToDoc(ast.returning, true),
+        exprToDocWithComments(ast.returning, true),
       );
 
     case "list-literal":
@@ -387,7 +388,7 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         text("fn"),
         sepByString(",", params),
         text(" "),
-        exprToDocWithComments(ast.body, true),
+        exprToDoc(ast.body, false),
       );
     }
 
@@ -396,9 +397,9 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
         text("if "),
         exprToDoc(ast.condition, false),
         text(" "),
-        exprToDocWithComments(ast.then, true),
+        exprToDoc(ast.then, true),
         text(" else "),
-        exprToDocWithComments(ast.else, true),
+        exprToDoc(ast.else, true),
       );
 
     case "match": {

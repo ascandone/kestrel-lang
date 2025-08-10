@@ -521,6 +521,21 @@ test("order between type declrs and declrs", () => {
 });
 
 describe("comments", () => {
+  test("doc comments on block", () => {
+    expect(`let f = {
+  // first comment
+  // first comment, second line
+  let x1 = 0;
+
+  // second comment
+  let x2 = 0;
+
+  // third
+  42
+}
+`).toBeFormatted();
+  });
+
   test("doc comments on declrs", () => {
     expect(`let f =
       // c1
