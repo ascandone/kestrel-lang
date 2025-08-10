@@ -5,8 +5,9 @@ import {
   TypedDeclaration,
   TypedModule,
 } from "../typecheck/typedAst";
-import { foldTree, statementByOffset } from "./common";
+import { statementByOffset } from "./common";
 import { contains } from "../parser";
+import * as visitor from "../typecheck/visitor";
 
 export type References = {
   resolution: IdentifierResolution;
@@ -83,23 +84,17 @@ function findReferencesOfDeclarationInModule(
       continue;
     }
 
-    const res_ = foldTree<Identifier[]>(decl.value, [], (expr, acc) => {
-      switch (expr.type) {
-        case "identifier":
-          if (
-            expr.$resolution !== undefined &&
-            expr.$resolution.type === "global-variable" &&
-            expr.$resolution.declaration === declaration
-          ) {
-            return acc.concat(expr);
-          }
-
-        default:
-          return acc;
-      }
+    visitor.visitExpr(decl.value, {
+      onIdentifier(expr) {
+        if (
+          expr.$resolution !== undefined &&
+          expr.$resolution.type === "global-variable" &&
+          expr.$resolution.declaration === declaration
+        ) {
+          res.push(expr);
+        }
+      },
     });
-
-    res.push(...res_);
   }
 
   return res;
