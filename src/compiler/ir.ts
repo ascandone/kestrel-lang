@@ -40,23 +40,26 @@ export type Expr =
     }
   | {
       type: "fn";
-      traits: string[];
-      bindings: string[];
+      // traits: string[];
+      bindings: (Ident & { type: "local" })[];
       body: Expr;
     }
   // TODO recur() for TCO
   | {
       type: "application";
       caller: Expr;
-      traits: string[];
+      // TODO traits
+      // traits: string[];
       args: Expr[];
     }
+  // TODO can we use match instead of let?
   | {
       type: "let";
       binding: Ident & { type: "local" };
       value: Expr;
       body: Expr;
     }
+  // TODO remove if and use match instead
   | {
       type: "if";
       condition: Expr;

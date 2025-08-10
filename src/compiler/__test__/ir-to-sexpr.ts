@@ -44,7 +44,7 @@ class ExprPrinter {
           expr.bindings.map(
             (value): SymbolAtom => ({
               type: "symbol",
-              value,
+              value: this.identifier(value),
             }),
           ),
           this.toSexpr(expr.body),

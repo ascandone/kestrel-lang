@@ -16,6 +16,19 @@ class ExprEmitter {
     ir.Ident & { type: "local" }
   >();
 
+  private mkIdent(pattern: typed.TypedBinding) {
+    const ident: ir.Ident & { type: "local" } = {
+      type: "local",
+      name: pattern.name,
+      declaration: this.currentDecl,
+      unique: this.getFreshUnique(pattern.name),
+    };
+
+    this.loweredIdents.set(pattern, ident);
+
+    return ident;
+  }
+
   private lowerBlock(
     statements: typed.TypedBlockStatement[],
     returning: typed.TypedExpr,
@@ -35,14 +48,7 @@ class ExprEmitter {
           throw new Error("TODO pattern matching in let");
         }
 
-        const ident: ir.Ident & { type: "local" } = {
-          type: "local",
-          name: stmt.pattern.name,
-          declaration: this.currentDecl,
-          unique: this.getFreshUnique(stmt.pattern.name),
-        };
-
-        this.loweredIdents.set(stmt.pattern, ident);
+        const ident = this.mkIdent(stmt.pattern);
 
         return {
           type: "let",
@@ -74,10 +80,31 @@ class ExprEmitter {
       case "block":
         return this.lowerBlock(expr.statements, expr.returning);
 
+      case "fn": {
+        const bindings = expr.params.map((param) => {
+          if (param.type !== "identifier") {
+            throw new Error("TODO complex pattern identifiers");
+          }
+
+          return this.mkIdent(param);
+        });
+
+        return {
+          type: "fn",
+          bindings,
+          body: this.lowerExpr(expr.body),
+        };
+      }
+
+      case "application":
+        return {
+          type: "application",
+          caller: this.lowerExpr(expr.caller),
+          args: expr.args.map((arg) => this.lowerExpr(arg)),
+        };
+
       case "list-literal":
       case "struct-literal":
-      case "fn":
-      case "application":
       case "field-access":
       case "if":
       case "match":

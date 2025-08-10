@@ -108,6 +108,44 @@ test("local value (shadowing)", () => {
   );
 });
 
+test("fn and application", () => {
+  const ir = toSexpr(`
+    let f = fn a, b { a }
+
+    pub let out = f(1, 2)
+  `);
+  expect(ir).toMatchInlineSnapshot(
+    `
+    "(:def f
+        (:fn (a#0 b#0)
+            a#0))
+
+    (:def out
+        (f 1 2))"
+  `,
+  );
+});
+
+test.todo("proper counting", () => {
+  const ir = toSexpr(`
+    let f = fn a, b { a }
+
+    pub let glb = f(
+      { let x = 0; x },
+      { let x = 0; x },
+    )
+  `);
+  expect(ir).toMatchInlineSnapshot(
+    `
+    "(:def glb
+        (:let (loc#0 0)
+            (:let (mid#0 loc#0)
+                (:let (loc#1 mid#0)
+                    loc#1))))"
+  `,
+  );
+});
+
 function getIR(src: string) {
   const untypedMod = unsafeParse(src);
   const [tc, errors] = typecheck("pkg", "Main", untypedMod, {}, []);
