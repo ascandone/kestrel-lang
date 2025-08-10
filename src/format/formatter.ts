@@ -182,7 +182,7 @@ function exprToDocWithComments(ast: Expr, block: boolean): Doc {
   return concat(...popComments(ast), exprToDoc(ast, block));
 }
 
-function blockStatementToDoc(stm: BlockStatement, succ: RangeMeta): Doc {
+function blockStatementToDoc(stm: BlockStatement): Doc {
   switch (stm.type) {
     case "let":
       return concat(
@@ -191,7 +191,6 @@ function blockStatementToDoc(stm: BlockStatement, succ: RangeMeta): Doc {
         text(" ="),
         declarationValueToDoc(stm.value),
         text(";"),
-        linesBetweenLet(stm, succ),
       );
 
     case "let#": {
@@ -204,7 +203,6 @@ function blockStatementToDoc(stm: BlockStatement, succ: RangeMeta): Doc {
         text(` =`),
         declarationValueToDoc(stm.value),
         text(";"),
-        linesBetweenLet(stm, succ),
       );
     }
   }
@@ -219,7 +217,10 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
     case "block":
       return block_(
         ...ast.statements.map((stm, index, arr) =>
-          blockStatementToDoc(stm, arr[index + 1] ?? ast.returning),
+          concat(
+            blockStatementToDoc(stm),
+            linesBetweenLet(stm, arr[index + 1] ?? ast.returning),
+          ),
         ),
         exprToDoc(ast.returning, true),
       );
