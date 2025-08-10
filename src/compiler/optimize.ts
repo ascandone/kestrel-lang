@@ -5,7 +5,7 @@ import {
   TypedMatchPattern,
   TypedModule,
 } from "../typecheck";
-import { foldTree } from "../analysis";
+import * as visitor from "../typecheck/visitor";
 
 type Optimization = (src: TypedExpr) => TypedExpr | undefined;
 
@@ -269,21 +269,19 @@ export function optimizeModule(src: TypedModule): TypedModule {
 }
 
 function countBindingUsages(binding: TypedBinding, src: TypedExpr): number {
-  return foldTree(src, 0, (src, acc) => {
-    switch (src.type) {
-      case "identifier":
-        if (
-          src.$resolution !== undefined &&
-          src.$resolution.type === "local-variable" &&
-          src.$resolution.binding === binding
-        ) {
-          return acc + 1;
-        }
-
-      default:
-        return acc;
-    }
+  let count = 0;
+  visitor.visitExpr(src, {
+    onIdentifier(src) {
+      if (
+        src.$resolution !== undefined &&
+        src.$resolution.type === "local-variable" &&
+        src.$resolution.binding === binding
+      ) {
+        count++;
+      }
+    },
   });
+  return count;
 }
 
 function substituteBinding(

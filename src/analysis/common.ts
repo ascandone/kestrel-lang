@@ -1,7 +1,6 @@
 import { Position, contains } from "../parser";
 import {
   TypedDeclaration,
-  TypedExpr,
   TypedImport,
   TypedModule,
   TypedTypeDeclaration,
@@ -59,62 +58,4 @@ export function statementByOffset(
   }
 
   return undefined;
-}
-
-export function foldTree<T>(
-  src: TypedExpr,
-  acc: T,
-  f: (src: TypedExpr, acc: T) => T,
-): T {
-  switch (src.type) {
-    case "syntax-err":
-    case "identifier":
-    case "constant":
-      return f(src, acc);
-
-    case "list-literal":
-      return src.values.reduce((acc, x) => f(x, acc), acc);
-
-    case "application":
-      acc = foldTree(src.caller, acc, f);
-      for (const arg of src.args) {
-        acc = foldTree(arg, acc, f);
-      }
-      return acc;
-
-    case "let":
-      acc = foldTree(src.value, acc, f);
-      acc = foldTree(src.body, acc, f);
-      return acc;
-
-    case "fn":
-      return foldTree(src.body, acc, f);
-
-    case "match":
-      acc = foldTree(src.expr, acc, f);
-      for (const [, expr] of src.clauses) {
-        acc = foldTree(expr, acc, f);
-      }
-      return acc;
-    case "if":
-      acc = foldTree(src.condition, acc, f);
-      acc = foldTree(src.then, acc, f);
-      acc = foldTree(src.else, acc, f);
-      return acc;
-
-    case "field-access":
-      return foldTree(src.struct, acc, f);
-
-    case "struct-literal":
-      for (const field of src.fields) {
-        acc = foldTree(field.value, acc, f);
-      }
-      if (src.spread !== undefined) {
-        acc = foldTree(src.spread, acc, f);
-      }
-      return acc;
-
-    case "block*":
-      throw new Error("TODO implemenet");
-  }
 }
