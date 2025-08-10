@@ -68,9 +68,33 @@ class ExprPrinter {
           this.toSexpr(expr.else),
         ];
 
-      case "match":
       case "struct-literal":
+        return [
+          sym`:struct`,
+          {
+            type: "symbol",
+            value: this.glbIdent({ type: "global", name: expr.struct }),
+          },
+          ...expr.fields.map((field): SExpr[] => [
+            { type: "symbol", value: field.name },
+            this.toSexpr(field.expr),
+          ]),
+
+          ...(expr.spread === undefined
+            ? []
+            : [[sym`:spread`, this.toSexpr(expr.spread)]]),
+        ];
+
       case "field-access":
+        return [
+          {
+            type: "symbol",
+            value: "." + expr.field.name,
+          },
+          this.toSexpr(expr.struct),
+        ];
+
+      case "match":
         throw new Error("TODO toSexpr of " + expr.type);
     }
   }

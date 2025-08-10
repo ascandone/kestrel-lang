@@ -130,9 +130,48 @@ class ExprEmitter {
           else: this.lowerExpr(expr.else),
         };
 
+      case "struct-literal": {
+        const resolution = getResolution(expr.struct);
+
+        const qualifiedIdent = new ir.QualifiedIdentifier(
+          resolution.package_,
+          resolution.namespace,
+          resolution.declaration.name,
+        );
+
+        // TODO enumerate fields in the same order they appear in the struct
+        return {
+          type: "struct-literal",
+          fields: expr.fields.map((field) => ({
+            name: field.field.name,
+            expr: this.lowerExpr(field.value),
+          })),
+          struct: qualifiedIdent,
+          spread:
+            expr.spread === undefined ? undefined : this.lowerExpr(expr.spread),
+        };
+      }
+
+      case "field-access": {
+        const resolution = getResolution(expr);
+
+        const qualifiedIdent = new ir.QualifiedIdentifier(
+          resolution.package_,
+          resolution.namespace,
+          resolution.declaration.name,
+        );
+
+        return {
+          type: "field-access",
+          field: {
+            name: expr.field.name,
+            struct: qualifiedIdent,
+          },
+          struct: this.lowerExpr(expr.struct),
+        };
+      }
+
       case "list-literal":
-      case "struct-literal":
-      case "field-access":
       case "match":
         throw new Error("TODO impl");
     }

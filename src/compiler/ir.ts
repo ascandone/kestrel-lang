@@ -82,8 +82,8 @@ export type Expr =
   | {
       type: "struct-literal";
       struct: QualifiedIdentifier;
-      fields: Record<string, Expr>;
-      spread?: Expr;
+      fields: { name: string; expr: Expr }[];
+      spread: Expr | undefined;
     };
 
 export type Value = {

@@ -214,6 +214,47 @@ test("if expr", () => {
   );
 });
 
+test("struct creation and access", () => {
+  const ir = toSexpr(`
+    extern type String
+    extern let n: String
+    type User struct {
+      name: String,
+      age: String,
+    }
+
+    pub let u = User {
+      name: n,
+      age: n,
+    }
+
+    pub let u2 = fn age {
+      User {
+        age: age,
+        ..u
+      }
+    }
+
+    pub let acc = u.name
+  `);
+
+  expect(ir).toMatchInlineSnapshot(`
+    "(:def u
+        (:struct User
+            (name n)
+            (age n)))
+
+    (:def u2
+        (:fn (age#0)
+            (:struct User
+                (age age#0)
+                (:spread u))))
+
+    (:def acc
+        (.name u))"
+  `);
+});
+
 function getIR(src: string) {
   const untypedMod = unsafeParse(src);
   const [tc, errors] = typecheck("pkg", "Main", untypedMod, {}, []);
@@ -230,6 +271,7 @@ function toSexpr(src: string) {
       ":let": 1,
       ":fn": 1,
       ":if": 1,
+      ":struct": 1,
     },
   });
 }
