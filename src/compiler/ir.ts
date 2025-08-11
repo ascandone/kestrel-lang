@@ -1,4 +1,5 @@
 import { ConstLiteral } from "../parser/ast";
+export { ConstLiteral } from "../parser/ast";
 
 export class QualifiedIdentifier {
   constructor(
@@ -44,7 +45,6 @@ export type Expr =
       bindings: (Ident & { type: "local" })[];
       body: Expr;
     }
-  // TODO recur() for TCO
   | {
       type: "application";
       caller: Expr;
@@ -115,5 +115,6 @@ export type MatchPattern =
       type: "constructor";
       name: string;
       typeName: QualifiedIdentifier;
+      // TODO we want the pattern to be already compiled in the decision tree
       args: MatchPattern[];
     };

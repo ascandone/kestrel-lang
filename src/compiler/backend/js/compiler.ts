@@ -2,7 +2,6 @@ import * as t from "@babel/types";
 import generate from "@babel/generator";
 
 import * as ir from "../../ir";
-import { ConstLiteral } from "../../../parser";
 import { CORE_PACKAGE } from "../../../typecheck";
 import { CompilationError } from "../../lower";
 
@@ -607,7 +606,7 @@ class Compiler {
   }
 }
 
-function compileConst(ast: ConstLiteral): t.Expression {
+function compileConst(ast: ir.ConstLiteral): t.Expression {
   switch (ast.type) {
     case "int":
     case "float":
