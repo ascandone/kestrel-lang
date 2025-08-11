@@ -198,7 +198,7 @@ describe("intrinsics", () => {
   });
 });
 
-describe.skip("let expressions", () => {
+describe("let expressions", () => {
   test("let expressions (simple)", () => {
     const out = compileSrc(`
       let x = {
@@ -216,8 +216,6 @@ describe.skip("let expressions", () => {
   test("let expressions", () => {
     const out = compileSrc(
       `
-      import Int.{(+)}
-
       let x = {
           let local = 0;
           local + 1
@@ -233,8 +231,6 @@ describe.skip("let expressions", () => {
 
   test("let expressions with multiple vars", () => {
     const out = compileSrc(`
-        import Int.{(+)}
-
         let x = {
           let local1 = 0;
           let local2 = 1;
@@ -251,8 +247,6 @@ describe.skip("let expressions", () => {
 
   test("nested let exprs", () => {
     const out = compileSrc(`
-        import Int.{(+)}
-
         let x = {
           let local = {
             let nested = 0;
@@ -271,8 +265,6 @@ describe.skip("let expressions", () => {
 
   test("shadowed let exprs", () => {
     const out = compileSrc(`
-        import Int.{(+)}
-
         let x = {
           let a = 0;
           let mid = a;
@@ -315,12 +307,12 @@ describe.skip("let expressions", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-    "const Main$f = () => {
-      const x = 0;
-      const y = 1;
-      return x;
-    };"
-  `);
+      "const Main$f = () => {
+        const Main$f$x = 0;
+        const Main$f$y = 1;
+        return Main$f$x;
+      };"
+    `);
   });
 
   test("let inside arg of a function", () => {
