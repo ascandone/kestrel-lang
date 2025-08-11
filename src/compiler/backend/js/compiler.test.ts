@@ -1,7 +1,6 @@
 import { test, expect, describe, beforeEach } from "vitest";
-
-import { Deps, resetTraitsRegistry } from "../../../typecheck";
-import { compile } from "./compiler";
+import { CORE_PACKAGE, Deps, resetTraitsRegistry } from "../../../typecheck";
+import { Compiler, compile } from "./compiler";
 import {
   TraitImpl,
   defaultTraitImpls,
@@ -1038,55 +1037,132 @@ describe("ADTs", () => {
     `);
   });
 
-  // TODO inline constructor call?
-  test("allow custom types with zero args", () => {
-    const mod = typecheckSource(
-      "pkg",
-      "Mod",
-      "pub(..) type MyType { Variant(Int) }",
-    );
+  test("inline ctor call with default repr", () => {
     const out = compileSrc(
       `
-      import Mod.{MyType(..)}
+      type Pair<a, b> {
+        First,
+        Pair(a, b),
+      }
+
+      pub let ctor = Pair("a", "b")
+    `,
+    );
+
+    expect(out).toMatchInlineSnapshot(
+      `
+      "const Main$First = {
+        $: 0
+      };
+      const Main$Pair = (_0, _1) => ({
+        $: 1,
+        _0,
+        _1
+      });
+      const Main$ctor = {
+        $: 1,
+        _0: \`a\`,
+        _1: \`b\`
+      };"
+    `,
+    );
+  });
+
+  test("allow custom types with zero args", () => {
+    const out = compileSrc(
+      `
+       pub(..) type MyType { Variant(Int) }
   
       let x = Variant(42)
     `,
-      { deps: { Mod: mod } },
     );
-
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x = Mod$Variant(42);"
+      "const Main$Variant = _0 => _0;
+      const Main$x = 42;"
+    `);
+  });
+
+  test("enum repr", () => {
+    const out = compileSrc(
+      `
+       pub(..) type MyType {
+          T0,
+          T1,
+        }
+  
+      let x = T0
+    `,
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$T0 = 0;
+      const Main$T1 = 1;
+      const Main$x = Main$T0;"
     `);
   });
 });
 
 describe("list literal", () => {
+  function compile(src: string) {
+    const c = new ProjectCompiler();
+    c.compile(
+      CORE_PACKAGE,
+      "List",
+      `
+        pub type List<a> {
+          Nil,
+          Cons(a, List<a>),
+        }
+    `,
+    );
+    return c.compile("pkg", "Main", src);
+  }
+
   test("compile empty list", () => {
-    const out = compileSrc(`let x = []`);
+    const out = compile(`let x = []`);
     expect(out).toMatchInlineSnapshot(`
       "const Main$x = List$Nil;"
     `);
   });
 
   test("compile singleton list", () => {
-    const out = compileSrc(`let x = [42]`);
+    const out = compile(`let x = [42]`);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x = List$Cons(42, List$Nil);"
+      "const Main$x = {
+        $: 1,
+        _0: 42,
+        _1: List$Nil
+      };"
     `);
   });
 
   test("compile list with many elements", () => {
-    const out = compileSrc(`let x = [0, 1, 2]`);
+    const out = compile(`let x = [0, 1, 2]`);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x = List$Cons(0, List$Cons(1, List$Cons(2, List$Nil)));"
+      "const Main$x = {
+        $: 1,
+        _0: 0,
+        _1: {
+          $: 1,
+          _0: 1,
+          _1: {
+            $: 1,
+            _0: 2,
+            _1: List$Nil
+          }
+        }
+      };"
     `);
   });
 
   test("compile list that wraps statements", () => {
-    const out = compileSrc(`let x = [{ let loc = 42; loc }]`);
+    const out = compile(`let x = [{ let loc = 42; loc }]`);
     expect(out).toMatchInlineSnapshot(`
       "const Main$x$loc = 42;
-      const Main$x = List$Cons(Main$x$loc, List$Nil);"
+      const Main$x = {
+        $: 1,
+        _0: Main$x$loc,
+        _1: List$Nil
+      };"
     `);
   });
 });
@@ -3092,4 +3168,18 @@ function compileSrc(
     allowDeriving,
   });
   return out;
+}
+
+class ProjectCompiler {
+  private readonly compiler = new Compiler();
+
+  private readonly deps: Deps = {};
+
+  compile(package_: string, ns: string, src: string) {
+    const program = typecheckSource_(package_, ns, src, this.deps);
+    this.deps[ns] = program.moduleInterface;
+    const ir = lowerProgram(program);
+    this.compiler.compile(ir);
+    return this.compiler.generate();
+  }
 }

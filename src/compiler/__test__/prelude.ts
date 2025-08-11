@@ -52,30 +52,6 @@ export const DEFAULT_IMPLICIT_IMPORTS: parser.Import[] = [
       { type: "value", name: "++", range: dummyRange },
     ],
   },
-  // {
-  //   range: dummyRange,
-  //   ns: "Tuple",
-  //   exposing: [
-  //     { type: "type", name: "Unit", exposeImpl: true, range: dummyRange },
-  //     { type: "type", name: "Tuple2", exposeImpl: true, range: dummyRange },
-  //     { type: "type", name: "Tuple3", exposeImpl: true, range: dummyRange },
-  //     { type: "type", name: "Tuple4", exposeImpl: true, range: dummyRange },
-  //   ],
-  // },
-  // {
-  //   range: dummyRange,
-  //   ns: "List",
-  //   exposing: [
-  //     { type: "type", name: "List", exposeImpl: true, range: dummyRange },
-  //   ],
-  // },
-  // {
-  //   range: dummyRange,
-  //   ns: "Task",
-  //   exposing: [
-  //     { type: "type", name: "Task", exposeImpl: false, range: dummyRange },
-  //   ],
-  // },
 ];
 
 const Int = typecheckSourceRaw(

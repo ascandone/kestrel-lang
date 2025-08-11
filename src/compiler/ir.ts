@@ -8,8 +8,12 @@ export class QualifiedIdentifier {
     public readonly name: string,
   ) {}
 
-  public toJSON() {
+  public toString() {
     return `${this.package_}:${this.namespace}:${this.name}`;
+  }
+
+  public toJSON() {
+    return this.toString();
   }
 }
 

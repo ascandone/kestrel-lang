@@ -34,7 +34,14 @@ export class Compiler {
    */
   private currentCompilerId = 0;
 
-  constructor(readonly options: CompileOptions) {}
+  constructor(readonly options: CompileOptions = {}) {}
+
+  /**
+   * Maps an adt's qualified name to its ir.
+   * Must be kept cross-modules.
+   * TODO Not sure it's a good idea to mix data related to the compilation unit and cross-module/cross-project data
+   */
+  private knownAdts = new Map<string, ir.Adt>();
 
   /**
    * It feels like I'll regret having a compiler class which is not dependency-aware
@@ -43,9 +50,11 @@ export class Compiler {
    * so that we know which module(s) to invalidate, and we'll want a single compilation unit per module)
    * */
   public generate(): string {
+    const buf = this.statementsBuf;
+    this.statementsBuf = [];
     return generate({
       type: "Program",
-      body: this.statementsBuf,
+      body: buf,
       directives: [],
       sourceType: "script",
     }).code;
@@ -53,6 +62,7 @@ export class Compiler {
 
   public compile(program: ir.Program) {
     for (const adt of program.adts) {
+      this.knownAdts.set(adt.name.toString(), adt);
       const out = compileAdt(adt);
       this.statementsBuf.push(...out);
     }
@@ -125,9 +135,6 @@ export class Compiler {
         if (!isTailcall) {
           break;
         }
-
-        // TODO we probably want to detect that in the IR
-
         //     if (this.isTailCall(src, tailPosCaller)) {
         //       const tailCallIdent = this.makeFreshIdent();
         //       this.tailCallIdent = tailCallIdent;
@@ -145,7 +152,6 @@ export class Compiler {
         //       }
         //       return;
         //     }
-
         throw new Error("TODO compile tailcall");
       }
 
@@ -522,6 +528,13 @@ export class Compiler {
       return inlined;
     }
 
+    if (
+      src.caller.type === "identifier" &&
+      src.caller.ident.type === "constructor"
+    ) {
+      return this.compileInlinedCtor(src.caller.ident, src.args);
+    }
+
     if (src.caller.type === "identifier") {
       return {
         type: "CallExpression",
@@ -531,6 +544,35 @@ export class Compiler {
     }
 
     throw new Error("TODO complex appli");
+  }
+
+  private compileInlinedCtor(
+    ctor: ir.Ident & { type: "constructor" },
+    args: ir.Expr[],
+  ): t.Expression {
+    const adtDef = this.knownAdts.get(ctor.typeName.toString());
+    if (adtDef === undefined) {
+      throw new CompilationError("Can't find adt repr");
+    }
+    const repr = getAdtReprType(adtDef);
+
+    const tagIndex = adtDef.constructors.findIndex(
+      (c) => c.name.name === ctor.name,
+    );
+
+    switch (repr) {
+      // this is actually unreachable by enum repr
+      // if there are only singletons, it can never be an application
+      case "enum":
+      case "default":
+        return buildCtorCall(
+          tagIndex,
+          args.map((arg) => this.compileExprAsJsExpr(arg)),
+        );
+
+      case "unboxed":
+        return this.compileExprAsJsExpr(args[0]!);
+    }
   }
 
   private compileIfAsExpr(src: ir.Expr & { type: "if" }): t.Expression {
@@ -724,29 +766,7 @@ function makeVariantBody(
   );
 
   const ret: t.Expression =
-    repr === "unboxed"
-      ? params[0]!
-      : {
-          type: "ObjectExpression",
-          properties: [
-            {
-              type: "ObjectProperty",
-              key: TAG_FIELD,
-              value: { type: "NumericLiteral", value: index },
-              computed: false,
-              shorthand: false,
-            },
-            ...params.map(
-              (p): t.ObjectProperty => ({
-                type: "ObjectProperty",
-                key: p,
-                value: p,
-                computed: false,
-                shorthand: true,
-              }),
-            ),
-          ],
-        };
+    repr === "unboxed" ? params[0]! : buildCtorCall(index, params);
 
   if (argsNumber === 0) {
     return ret;
@@ -762,6 +782,7 @@ function makeVariantBody(
 }
 
 type AdtReprType = "default" | "enum" | "unboxed";
+// TODO(perf) cache this using weakmap
 function getAdtReprType(decl: ir.Adt): AdtReprType {
   if (decl.constructors.length === 1 && decl.constructors[0]!.arity === 1) {
     return "unboxed";
@@ -773,4 +794,28 @@ function getAdtReprType(decl: ir.Adt): AdtReprType {
   }
 
   return "default";
+}
+
+function buildCtorCall(tagIndex: number, args: t.Expression[]): t.Expression {
+  return {
+    type: "ObjectExpression",
+    properties: [
+      {
+        type: "ObjectProperty",
+        key: TAG_FIELD,
+        value: { type: "NumericLiteral", value: tagIndex },
+        computed: false,
+        shorthand: false,
+      },
+      ...args.map(
+        (p, index): t.ObjectProperty => ({
+          type: "ObjectProperty",
+          key: { type: "Identifier", name: `_${index}` },
+          value: p,
+          computed: false,
+          shorthand: true,
+        }),
+      ),
+    ],
+  };
 }
