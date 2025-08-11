@@ -488,7 +488,7 @@ describe("fn", () => {
   });
 });
 
-describe.skip("if expressions", () => {
+describe("if expressions", () => {
   test("if expression", () => {
     const out = compileSrc(`
   let x =
@@ -534,9 +534,9 @@ describe.skip("if expressions", () => {
   test("if within fn", () => {
     // TODO switch this to if-else syntax
     const out = compileSrc(`
-    extern let (==): Fn(a, a) -> Bool
+    extern let eq: Fn(a, a) -> Bool
     let is_zero = fn n {
-      if n == 0 {
+      if eq(n, 0) {
         "zero"
       } else {
         "other"
@@ -545,8 +545,8 @@ describe.skip("if expressions", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$is_zero = n => {
-        if (n === 0) {
+      "const Main$is_zero = Main$is_zero$n => {
+        if (Main$eq(Main$is_zero$n, 0)) {
           return \`zero\`;
         } else {
           return \`other\`;
@@ -558,12 +558,12 @@ describe.skip("if expressions", () => {
   test("nested ifs", () => {
     // TODO switch this to if-else syntax
     const out = compileSrc(`
-    extern let (==): Fn(a, a) -> Bool
+    extern let eq: Fn(a, a) -> Bool
     let is_zero = fn n {
-      if n == 0 {
+      if eq(n, 0) {
         "zero"
       } else {
-        if n == 1 {
+        if eq(n, 1) {
           "one"
         } else {
           "other"
@@ -573,11 +573,11 @@ describe.skip("if expressions", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$is_zero = n => {
-        if (n === 0) {
+      "const Main$is_zero = Main$is_zero$n => {
+        if (Main$eq(Main$is_zero$n, 0)) {
           return \`zero\`;
         } else {
-          if (n === 1) {
+          if (Main$eq(Main$is_zero$n, 1)) {
             return \`one\`;
           } else {
             return \`other\`;
@@ -589,7 +589,9 @@ describe.skip("if expressions", () => {
 
   test("let expr inside if condition", () => {
     const out = compileSrc(`
-    let x = if { let a = 0; a == 1 } {
+    extern let is_zero: Fn(a) -> Bool
+
+    pub let x = if { let a = 42; is_zero(a) } {
         "a"
       } else {
         "b"
@@ -598,8 +600,8 @@ describe.skip("if expressions", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const Main$x$a = 0;
-      if (Main$x$a === 1) {
+      const Main$x$a = 42;
+      if (Main$is_zero(Main$x$a)) {
         Main$x = \`a\`;
       } else {
         Main$x = \`b\`;
@@ -628,9 +630,9 @@ describe.skip("if expressions", () => {
     `);
   });
 
-  test("eval if", () => {
+  test.skip("eval if", () => {
     const out = compileSrc(`
-      extern let (==): Fn(a, a) -> Bool
+      extern let eq: Fn(a, a) -> Bool
       let is_zero = fn n {
         if n == 0 {
           "yes"
@@ -646,11 +648,13 @@ describe.skip("if expressions", () => {
     expect(isZero(42)).toEqual("nope");
   });
 
-  test("ifs as expr", () => {
+  test.skip("ifs as expr", () => {
     const out = compileSrc(`
+    extern let eq: Fn(a, a) -> Bool
     extern let f: Fn(a) -> a
+
     let x = f(
-      if 0 == 1 {
+      if eq(0, 1) {
         "a" 
       } else {
         "b"

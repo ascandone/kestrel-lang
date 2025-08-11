@@ -218,40 +218,37 @@ class Compiler {
         //   }
         throw new Error("TODO implement (stm) : " + src.type);
 
-      case "if":
-        //   {
-        //     if (as.type === "assign_var" && as.declare) {
-        //       this.statementsBuf.push({
-        //         type: "VariableDeclaration",
-        //         kind: "let",
-        //         declarations: [{ type: "VariableDeclarator", id: as.ident }],
-        //       });
-        //     }
-        //     const test = this.compileExprAsJsExpr(src.condition, undefined);
-        //     const [, thenBranchStmts] = this.wrapStatements(() =>
-        //       this.compileExprAsJsStms(src.then, tailPosCaller, doNotDeclare(as)),
-        //     );
-        //     const [, elseBranchStmts] = this.wrapStatements(() =>
-        //       this.compileExprAsJsStms(src.else, tailPosCaller, doNotDeclare(as)),
-        //     );
-        //     this.statementsBuf.push({
-        //       type: "IfStatement",
-        //       test: test,
-        //       consequent: {
-        //         type: "BlockStatement",
-        //         directives: [],
-        //         body: thenBranchStmts,
-        //       },
-        //       alternate: {
-        //         type: "BlockStatement",
-        //         directives: [],
-        //         body: elseBranchStmts,
-        //       },
-        //     });
-        //     return;
-        //   }
-
-        throw new Error("TODO implement (stm) : " + src.type);
+      case "if": {
+        if (as.type === "assign_var" && as.declare) {
+          this.statementsBuf.push({
+            type: "VariableDeclaration",
+            kind: "let",
+            declarations: [{ type: "VariableDeclarator", id: as.ident }],
+          });
+        }
+        const test = this.compileExprAsJsExpr(src.condition);
+        const [, thenBranchStmts] = this.wrapStatements(() =>
+          this.compileExprAsJsStms(src.then, doNotDeclare(as)),
+        );
+        const [, elseBranchStmts] = this.wrapStatements(() =>
+          this.compileExprAsJsStms(src.else, doNotDeclare(as)),
+        );
+        this.statementsBuf.push({
+          type: "IfStatement",
+          test: test,
+          consequent: {
+            type: "BlockStatement",
+            directives: [],
+            body: thenBranchStmts,
+          },
+          alternate: {
+            type: "BlockStatement",
+            directives: [],
+            body: elseBranchStmts,
+          },
+        });
+        return;
+      }
 
       /*
         the following nodes can always be compiled as expression, thus we
@@ -367,7 +364,19 @@ class Compiler {
         };
       }
 
-      case "if":
+      case "if": {
+        throw new Error("TODO statement if");
+        // const ident = this.makeFreshIdent();
+        // this.compileExprAsJsStms(src,  {
+        //   type: "assign_var",
+        //   ident,
+        //   declare: true,
+        //   dictParams: [],
+        // });
+        // return ident;
+        break;
+      }
+
       case "match":
       case "field-access":
       case "struct-literal":
@@ -377,75 +386,6 @@ class Compiler {
     // switch (src.type) {
     //   // The following branches rely on statement mode compilation
     //   case "match":
-    //   case "if": {
-    //     const ident = this.makeFreshIdent();
-    //     this.compileExprAsJsStms(src, undefined, {
-    //       type: "assign_var",
-    //       ident,
-    //       declare: true,
-    //       dictParams: [],
-    //     });
-    //     return ident;
-    //   }
-    //   case "identifier": {
-    //     if (src.$resolution === undefined) {
-    //       throw new Error("[unreachable] undefined resolution");
-    //     }
-    //     switch (src.$resolution.type) {
-    //       case "constructor":
-    //         if (
-    //           src.$resolution.declaration.name === "Bool" &&
-    //           src.$resolution.namespace === "Bool"
-    //         ) {
-    //           switch (src.$resolution.variant.name) {
-    //             case "True":
-    //               return { type: "BooleanLiteral", value: true };
-    //             case "False":
-    //               return { type: "BooleanLiteral", value: false };
-    //             default:
-    //               throw new Error("[unreachable] invalid boolean constructor");
-    //           }
-    //         }
-    //         return makeGlobalIdentifier(
-    //           src.$resolution.namespace,
-    //           src.$resolution.variant.name,
-    //         );
-    //       case "local-variable": {
-    //         const res = this.bindingsJsName.get(src.$resolution.binding);
-    //         if (res === undefined) {
-    //           throw new Error(
-    //             "[unreachable] undefined resolution for: " +
-    //               src.$resolution.binding.name,
-    //           );
-    //         }
-    //         return res;
-    //       }
-    //       case "global-variable": {
-    //         let ident: t.Identifier;
-    //         if (src.$resolution.declaration.binding.name === "==") {
-    //           ident = EQ_IDENTIFIER;
-    //         } else {
-    //           ident = makeGlobalIdentifier(
-    //             src.$resolution.namespace,
-    //             src.$resolution.declaration.binding.name,
-    //           );
-    //         }
-    //         // TODO what about let exprs?
-    //         const traitArgs = resolvePassedDicts(
-    //           src.$resolution.declaration.binding.$type,
-    //           src.$type,
-    //         );
-    //         if (traitArgs.length === 0) {
-    //           return ident;
-    //         }
-    //         return {
-    //           type: "CallExpression",
-    //           callee: ident,
-    //           arguments: traitArgs,
-    //         };
-    //       }
-    //     }
-    //   }
     //   case "struct-literal": {
     //     const resolution = src.struct.$resolution;
     //     if (resolution === undefined) {
@@ -722,4 +662,8 @@ function compileLocalIdent(
 function mkGlbIdent(qualified: ir.QualifiedIdentifier): string {
   const santizedNs = qualified.namespace.replace(/\//g, "$");
   return `${santizedNs}$${qualified.name}`;
+}
+
+function doNotDeclare(as: CompilationMode): CompilationMode {
+  return as.type === "assign_var" ? { ...as, declare: false } : as;
 }
