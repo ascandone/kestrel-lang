@@ -8,6 +8,10 @@
   - refactor: add syntax sugar in both AST
     - remove annotator and typedAst (and deep clone AST instead)
     - refactor: simplify IR (let,if,struct-literal -> match)
+  - perf: ir optimizations
+    - inline let (inline values used once; inline consts)
+    - inline globals
+    - constant folding
 - test: test self-recursive let exprs (and prevent binding pollution)
 - refactor: treat constructor and ident as separate nodes
 - feat: add package and module to compilation output
