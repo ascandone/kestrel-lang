@@ -503,7 +503,7 @@ class Compiler {
           }
         }
 
-        throw new Error("TODO compile constructor");
+        return compileGlobalIdent(src.ident.typeName);
       }
     }
   }

@@ -102,6 +102,32 @@ describe("global identifiers", () => {
   });
 });
 
+describe("constructor identifiers", () => {
+  test("reference ctor identifier", () => {
+    const Dependency = typecheckeSource_(
+      "pkg",
+      "Dependency",
+      `
+        pub(..) type Pair<a, b> {
+          Pair(a, b),
+        }
+    `,
+    ).moduleInterface;
+
+    const out = compileSrc(
+      `
+      import Dependency
+      pub let ctor = Dependency.Pair
+    `,
+      { deps: { Dependency } },
+    );
+
+    expect(out).toMatchInlineSnapshot(`"const Main$ctor = Dependency$Pair;"`);
+  });
+
+  test.todo("ctor unboxing");
+});
+
 describe("function application", () => {
   test("function calls with no args", () => {
     const out = compileSrc(`
