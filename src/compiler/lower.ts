@@ -160,18 +160,37 @@ class ExprEmitter {
         return this.lowerBlock(expr.statements, expr.returning);
 
       case "fn": {
-        const bindings = expr.params.map((param) => {
-          if (param.type !== "identifier") {
-            throw new Error("TODO complex pattern identifiers");
-          }
+        type BindingType = {
+          param: typed.TypedMatchPattern;
+          ident: ir.Ident & { type: "local" };
+        };
 
-          return this.mkIdent(param);
-        });
+        const bindings = expr.params.map(
+          (param): BindingType => ({
+            param,
+            ident:
+              param.type === "identifier"
+                ? this.mkIdent(param)
+                : this.genIdent(),
+          }),
+        );
+
+        const getBody = bindings
+          .filter((b) => b.ident.name === "")
+          .reduceRight(
+            (getExpr, { ident, param }) =>
+              (): ir.Expr => ({
+                type: "match",
+                expr: { type: "identifier", ident },
+                clauses: [[this.lowerPattern(param), getExpr()]],
+              }),
+            () => this.lowerExpr(expr.body),
+          );
 
         return {
           type: "fn",
-          bindings,
-          body: this.lowerExpr(expr.body),
+          bindings: bindings.map((b) => b.ident),
+          body: getBody(),
         };
       }
 

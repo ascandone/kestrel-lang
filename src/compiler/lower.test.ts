@@ -382,7 +382,7 @@ test.todo("pattern matching in let#", () => {
   `);
 });
 
-test.todo("pattern matching in fn", () => {
+test("pattern matching in fn", () => {
   const ir = toSexpr(`
     type Box<a> {
       Box(a),
@@ -397,7 +397,28 @@ test.todo("pattern matching in fn", () => {
     "(:def m
         (:fn (#0)
             (:match #0
-                (Box x#0) x#0)))"
+                ((Box x#0) x#0))))"
+  `);
+});
+
+test("pattern matching in fn with many args", () => {
+  const ir = toSexpr(`
+    type Box<a> {
+      Box(a),
+    }
+    
+    pub let m = fn Box(x), z, Box(y) {
+      y
+    }
+  `);
+
+  expect(ir).toMatchInlineSnapshot(`
+    "(:def m
+        (:fn (#0 z#0 #1)
+            (:match #0
+                ((Box x#0)
+                    (:match #1
+                        ((Box y#0) y#0))))))"
   `);
 });
 
