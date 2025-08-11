@@ -1213,7 +1213,7 @@ describe("structs", () => {
     `);
   });
 
-  test.skip("field access", () => {
+  test("field access", () => {
     const out = compileSrc(`
       type Box struct { x: Int }
 
@@ -1230,9 +1230,8 @@ describe("structs", () => {
     `);
   });
 
-  test.skip("field access of struct lit", () => {
+  test("field access of struct lit", () => {
     const out = compileSrc(`
-      extern type Int
       type Box struct { x: Int }
 
       pub let x_f = Box { x: 42 }.x
@@ -1294,17 +1293,6 @@ describe("structs", () => {
         z: $0.z
       };"
     `);
-  });
-
-  // Note: this should never happen, as currently there aren't any
-  // builtin infix ops that yield structs
-  // still, it's better to handle it
-  test.skip("field access of infix expr", () => {
-    const out = compileSrc(`
-      pub let x_f = (1 + 2).x
-    `);
-
-    expect(out).toMatchInlineSnapshot(`"const Main$x_f = (1 + 2).x;"`);
   });
 });
 

@@ -317,22 +317,12 @@ export class Compiler {
       case "struct-literal":
         return this.compileStructLiteralAsExpr(src);
 
-      case "match":
       case "field-access":
+        return this.compileFieldAccessAsExpr(src);
+
+      case "match":
         throw new Error("TODO implement (expr) : " + src.type);
     }
-
-    // switch (src.type) {
-    //   // The following branches rely on statement mode compilation
-    //   case "match":
-    //   case "field-access":
-    //     return {
-    //       type: "MemberExpression",
-    //       object: this.compileExprAsJsExpr(src.struct, undefined),
-    //       property: { type: "Identifier", name: src.field.name },
-    //       computed: false,
-    //     };
-    // }
   }
 
   private makeUnary(
@@ -450,6 +440,17 @@ export class Compiler {
       default:
         return;
     }
+  }
+
+  private compileFieldAccessAsExpr(
+    src: ir.Expr & { type: "field-access" },
+  ): t.Expression {
+    return {
+      type: "MemberExpression",
+      object: this.compileExprAsJsExpr(src.struct),
+      property: { type: "Identifier", name: src.field.name },
+      computed: false,
+    };
   }
 
   private compileIdentifierAsExpr(
