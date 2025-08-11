@@ -576,23 +576,17 @@ class Compiler {
   }
 
   private compileLetAsExpr(src: ir.Expr & { type: "let" }): t.Expression {
-    const id = compileLocalIdent(src.binding);
-    const value = this.compileExprAsJsExpr(src.value);
-
     this.statementsBuf.push({
       type: "VariableDeclaration",
       kind: "const",
       declarations: [
         {
           type: "VariableDeclarator",
-          id: id,
-          init: value,
+          id: compileLocalIdent(src.binding),
+          init: this.compileExprAsJsExpr(src.value),
         },
       ],
     });
-
-    // this.compileCheckPatternConditions(src.pattern, freshIdent);
-
     return this.compileExprAsJsExpr(src.body);
   }
 
