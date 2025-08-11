@@ -1212,7 +1212,7 @@ describe.skip("structs", () => {
   });
 });
 
-describe.skip("modules", () => {
+describe("modules", () => {
   test("variables from modules different than Main are namespaced", () => {
     const out = compileSrc(`let a = 42`, { ns: "ExampleModule" });
     expect(out).toMatchInlineSnapshot(`
@@ -1232,7 +1232,7 @@ describe.skip("modules", () => {
 
   test("extern declarations from modules different than Main are resolved correctly", () => {
     const out = compileSrc(
-      `extern type Int
+      `
       extern let a: Int
       let x = a`,
       { ns: "ExampleModule" },
@@ -1261,7 +1261,7 @@ describe.skip("modules", () => {
     `);
   });
 
-  test("variants from modules different than Main are namespaced", () => {
+  test.skip("variants from modules different than Main are namespaced", () => {
     const out = compileSrc(
       `
       type MyType { C1, C2(Int) }
@@ -1360,7 +1360,7 @@ describe.skip("modules", () => {
     );
   });
 
-  test("constructors imported with unqualfied imports are resolved with the right namespace", () => {
+  test.skip("constructors imported with unqualfied imports are resolved with the right namespace", () => {
     const mod = typecheckSource(
       "pkg",
       "ExampleModule",
@@ -1379,7 +1379,7 @@ describe.skip("modules", () => {
     `);
   });
 
-  test("constructors imported with qualified imports are resolved with the right namespace", () => {
+  test.skip("constructors imported with qualified imports are resolved with the right namespace", () => {
     const mod = typecheckSource(
       "pkg",
       "ExampleModule",
