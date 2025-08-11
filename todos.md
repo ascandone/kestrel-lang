@@ -4,6 +4,7 @@
   - no dummy ranges
   - allow duplicate imports if the first one is the implicit
 - refactor: use IR
+  - refactor: introduce tuples as AST node
   - refactor: add syntax sugar in both AST
     - remove annotator and typedAst (and deep clone AST instead)
 - test: test self-recursive let exprs (and prevent binding pollution)
