@@ -56,14 +56,12 @@ export type Expr =
       // traits: string[];
       args: Expr[];
     }
-  // TODO can we use match instead of let?
   | {
       type: "let";
       binding: Ident & { type: "local" };
       value: Expr;
       body: Expr;
     }
-  // TODO remove if and use match instead
   | {
       type: "if";
       condition: Expr;
@@ -90,9 +88,11 @@ export type Expr =
       spread: Expr | undefined;
     };
 
-export type Value = {
+export type ValueDeclaration = {
   name: QualifiedIdentifier;
   value: Expr;
+
+  inline: boolean;
 };
 
 export type AdtConstructor = {
@@ -119,7 +119,7 @@ export type Program = {
   adts: Adt[];
   structs: Struct[];
 
-  values: Value[];
+  values: ValueDeclaration[];
 };
 
 export type MatchPattern =

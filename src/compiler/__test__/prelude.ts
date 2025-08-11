@@ -115,7 +115,7 @@ function typecheckSourceRaw(
   return program;
 }
 
-export function typecheckeSource_(
+export function typecheckSource_(
   package_: string,
   ns: string,
   src: string,
@@ -139,5 +139,5 @@ export function typecheckSource(
   src: string,
   deps: Deps = {},
 ) {
-  return typecheckeSource_(package_, ns, src, deps).moduleInterface;
+  return typecheckSource_(package_, ns, src, deps).moduleInterface;
 }

@@ -370,7 +370,7 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
       ];
     }),
 
-    values: module.declarations.flatMap((decl): ir.Value[] => {
+    values: module.declarations.flatMap((decl): ir.ValueDeclaration[] => {
       if (decl.extern) {
         return [];
       }
@@ -382,6 +382,7 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
         {
           name: mkIdent(decl.binding.name),
           value: emitter.lowerExpr(decl.value),
+          inline: decl.inline,
         },
       ];
     }),

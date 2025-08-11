@@ -1,7 +1,9 @@
 import { describe, expect, test } from "vitest";
 import * as ir from "./ir";
-import { foldIIF } from "./optimize";
-import { formatIRExpr } from "./__test__/ir-to-sexpr";
+import * as optimize from "./optimize";
+import { formatIR, formatIRExpr } from "./__test__/ir-to-sexpr";
+import { typecheckSource_ } from "./__test__/prelude";
+import { lowerProgram } from "./lower";
 
 describe("fold iif", () => {
   test("fold iif with no args", () => {
@@ -16,15 +18,18 @@ describe("fold iif", () => {
      * "value"
      * ```
      */
-    const optimized = foldIIF({
-      type: "application",
-      caller: {
-        type: "fn",
-        bindings: [],
-        body: strConst("value"),
+    const optimized = optimize.foldIIF(
+      {
+        type: "application",
+        caller: {
+          type: "fn",
+          bindings: [],
+          body: strConst("value"),
+        },
+        args: [],
       },
-      args: [],
-    });
+      undefined,
+    );
 
     expect(formatIRExpr(optimized)).toEqual(formatIRExpr(strConst("value")));
   });
@@ -43,15 +48,18 @@ describe("fold iif", () => {
      * "value"
      * ```
      */
-    const optimized = foldIIF({
-      type: "application",
-      caller: {
-        type: "fn",
-        bindings: [mkIdent("a"), mkIdent("b")],
-        body: strConst("value"),
+    const optimized = optimize.foldIIF(
+      {
+        type: "application",
+        caller: {
+          type: "fn",
+          bindings: [mkIdent("a"), mkIdent("b")],
+          body: strConst("value"),
+        },
+        args: [strConst("a"), strConst("b")],
       },
-      args: [strConst("a"), strConst("b")],
-    });
+      undefined,
+    );
 
     expect(formatIRExpr(optimized)).toEqual(
       formatIRExpr({
@@ -68,20 +76,69 @@ describe("fold iif", () => {
     );
   });
 
-  function strConst(value: string): ir.Expr {
-    return {
-      type: "constant",
-      value: { type: "string", value },
-    };
-  }
+  test("apply recursively", () => {
+    const out = applyRule(
+      optimize.foldIIF,
+      `
+        let id = fn a { a }
+        let x =  id((fn { "value" })())
+    `,
+    );
+    expect(out).toMatchInlineSnapshot(`
+      "(:def id
+          (:fn (a#0)
+              a#0))
 
-  const mkIdent = (
-    name: string,
-    opts = { unique: 0, decl: "glb" },
-  ): ir.Ident & { type: "local" } => ({
-    type: "local",
-    declaration: new ir.QualifiedIdentifier("pkg", "Main", opts.decl),
-    name,
-    unique: opts.unique,
+      (:def x
+          (id "value"))"
+    `);
   });
 });
+
+describe("mixed rules", () => {
+  test.todo("apply recursively twice", () => {
+    const out = applyRule(
+      optimize.allOptimizations,
+      `
+        let x = 
+          fn x { x }
+            (
+              fn y { y } ( 42 )
+            )
+          
+    `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "(:def x
+          (:let (x#0
+                  (:let (y#0 42)
+                      y#0))
+              x#0))"
+    `);
+  });
+});
+
+function strConst(value: string): ir.Expr {
+  return {
+    type: "constant",
+    value: { type: "string", value },
+  };
+}
+
+const mkIdent = (
+  name: string,
+  opts = { unique: 0, decl: "glb" },
+): ir.Ident & { type: "local" } => ({
+  type: "local",
+  declaration: new ir.QualifiedIdentifier("pkg", "Main", opts.decl),
+  name,
+  unique: opts.unique,
+});
+
+function applyRule(rule: optimize.Rule, src: string) {
+  const out = typecheckSource_("pkg", "Main", src);
+  const irProgram = lowerProgram(out);
+  const newProgram = optimize.applyRule(rule, irProgram);
+  return formatIR(newProgram);
+}

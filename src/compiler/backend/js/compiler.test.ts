@@ -9,7 +9,7 @@ import { TVar } from "../../../type";
 import { lowerProgram } from "../../lower";
 import {
   typecheckSource,
-  typecheckeSource_ as typecheckSource_,
+  typecheckSource_ as typecheckSource_,
 } from "../../__test__/prelude";
 
 describe("datatype representation", () => {

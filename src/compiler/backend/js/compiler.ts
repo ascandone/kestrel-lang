@@ -83,7 +83,7 @@ export class Compiler {
     }
   }
 
-  private compileDeclaration(decl: ir.Value): t.Statement[] {
+  private compileDeclaration(decl: ir.ValueDeclaration): t.Statement[] {
     this.compileExprAsJsStms(decl.value, {
       type: "assign_var",
       declare: true,
