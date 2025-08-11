@@ -1364,7 +1364,7 @@ describe("modules", () => {
     `);
   });
 
-  test.skip("variants from modules different than Main are namespaced", () => {
+  test("variants from modules different than Main are namespaced", () => {
     const out = compileSrc(
       `
       type MyType { C1, C2(Int) }
@@ -1381,7 +1381,10 @@ describe("modules", () => {
         $: 1,
         _0
       });
-      const MyModule$c2_example = MyModule$C2(42);"
+      const MyModule$c2_example = {
+        $: 1,
+        _0: 42
+      };"
     `);
   });
 
@@ -1463,7 +1466,7 @@ describe("modules", () => {
     );
   });
 
-  test.skip("constructors imported with unqualfied imports are resolved with the right namespace", () => {
+  test("constructors imported with unqualfied imports are resolved with the right namespace", () => {
     const mod = typecheckSource(
       "pkg",
       "ExampleModule",
@@ -1482,7 +1485,7 @@ describe("modules", () => {
     `);
   });
 
-  test.skip("constructors imported with qualified imports are resolved with the right namespace", () => {
+  test("constructors imported with qualified imports are resolved with the right namespace", () => {
     const mod = typecheckSource(
       "pkg",
       "ExampleModule",
