@@ -5,7 +5,7 @@ class ExprEmitter {
   constructor(private readonly currentDecl: ir.QualifiedIdentifier) {}
 
   private readonly uniques = new Map<string, number>();
-  public getFreshUnique(name: string) {
+  private getFreshUnique(name: string) {
     const unique = this.uniques.get(name) ?? 0;
     this.uniques.set(name, unique + 1);
     return unique;
@@ -16,7 +16,7 @@ class ExprEmitter {
     ir.Ident & { type: "local" }
   >();
 
-  private mkIdent(pattern: typed.TypedBinding) {
+  private mkIdent(pattern: typed.TypedBinding): ir.Ident & { type: "local" } {
     const ident: ir.Ident & { type: "local" } = {
       type: "local",
       name: pattern.name,
@@ -73,6 +73,41 @@ class ExprEmitter {
           binding: ident,
           value: this.lowerExpr(stmt.value),
           body: this.lowerBlock(statementsLeft, returning),
+        };
+      }
+    }
+  }
+
+  private lowerPattern(expr: typed.TypedMatchPattern): ir.MatchPattern {
+    switch (expr.type) {
+      case "lit":
+        return {
+          type: "lit",
+          literal: expr.literal,
+        };
+
+      case "identifier":
+        return {
+          type: "identifier",
+          ident: this.mkIdent(expr),
+        };
+
+      case "constructor": {
+        const resolution = getResolution(expr);
+        if (resolution.type !== "constructor") {
+          throw new CompilationError("wrong resolution for constructor");
+        }
+
+        const qualifiedIdent = new ir.QualifiedIdentifier(
+          resolution.package_,
+          resolution.namespace,
+          resolution.variant.name,
+        );
+
+        return {
+          type: "constructor",
+          args: expr.args.map((arg) => this.lowerPattern(arg)),
+          name: qualifiedIdent,
         };
       }
     }
@@ -178,7 +213,14 @@ class ExprEmitter {
         );
 
       case "match":
-        throw new Error("TODO impl");
+        return {
+          type: "match",
+          expr: this.lowerExpr(expr.expr),
+          clauses: expr.clauses.map(
+            ([pat, then_]) =>
+              [this.lowerPattern(pat), this.lowerExpr(then_)] as const,
+          ),
+        };
     }
   }
 
@@ -187,7 +229,9 @@ class ExprEmitter {
       case "local-variable": {
         const lookup = this.loweredIdents.get(resolution.binding);
         if (lookup === undefined) {
-          throw new CompilationError("can't find binding");
+          throw new CompilationError(
+            "can't find binding for: " + resolution.binding.name,
+          );
         }
 
         return lookup;

@@ -107,6 +107,7 @@ export type MatchPattern =
       ident: Ident & { type: "local" }; // TODO simplify
     }
   | {
+      // TODO we should call this "constant"
       type: "lit";
       literal: ConstLiteral;
     }

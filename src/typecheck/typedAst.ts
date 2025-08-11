@@ -49,6 +49,7 @@ export type TypedMatchPattern = (TypeMeta & ast.RangeMeta) &
         name: string;
         args: TypedMatchPattern[];
         namespace?: string;
+        // TODO can we force this statically to be a constructor?
         $resolution: IdentifierResolution | undefined;
       }
   );

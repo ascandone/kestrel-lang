@@ -20,17 +20,35 @@ class ExprPrinter {
     private readonly declaration: string,
   ) {}
 
+  private patternToSexpr(expr: ir.MatchPattern): SExpr {
+    switch (expr.type) {
+      case "lit":
+        return expr.literal;
+
+      case "identifier":
+        return {
+          type: "symbol",
+          value: this.identifier(expr.ident),
+        };
+
+      case "constructor":
+        return [
+          { type: "symbol", value: this.identifier(expr) },
+          ...expr.args.map((arg) => this.patternToSexpr(arg)),
+        ];
+    }
+  }
+
   public toSexpr(expr: ir.Expr): SExpr {
     switch (expr.type) {
       case "constant":
         return expr.value;
 
-      case "identifier": {
+      case "identifier":
         return {
           type: "symbol",
           value: this.identifier(expr.ident),
         };
-      }
 
       case "application":
         return [
@@ -95,7 +113,14 @@ class ExprPrinter {
         ];
 
       case "match":
-        throw new Error("TODO toSexpr of " + expr.type);
+        return [
+          sym`:match`,
+          this.toSexpr(expr.expr),
+          ...expr.clauses.map(([pat, then_]) => [
+            this.patternToSexpr(pat),
+            this.toSexpr(then_),
+          ]),
+        ];
     }
   }
 

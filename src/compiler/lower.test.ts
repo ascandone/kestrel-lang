@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
 import { typecheck } from "../typecheck";
 import { lowerProgram } from "./lower";
@@ -290,6 +290,34 @@ test("list literal", () => {
   `);
 });
 
+describe("pattern matching", () => {
+  test("simple", () => {
+    const ir = toSexpr(`
+    type Option<a> {
+      None,
+      Some(a),
+    }
+    
+    pub let m = fn x, f {
+      match f(x) {
+        None => 0,
+        Some(0) => x,
+        Some(x) => x,
+      }
+    }
+  `);
+
+    expect(ir).toMatchInlineSnapshot(`
+      "(:def m
+          (:fn (x#0 f#0)
+              (:match (f#0 x#0)
+                  ((None) 0)
+                  ((Some 0) x#0)
+                  ((Some x#1) x#1))))"
+    `);
+  });
+});
+
 function getIR(src: string) {
   const untypedMod = unsafeParse(src);
   const [tc, errors] = typecheck("pkg", "Main", untypedMod, {}, []);
@@ -307,6 +335,7 @@ function toSexpr(src: string) {
       ":fn": 1,
       ":if": 1,
       ":struct": 1,
+      ":match": 1,
     },
   });
 }
