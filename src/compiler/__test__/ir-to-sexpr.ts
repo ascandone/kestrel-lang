@@ -1,9 +1,9 @@
 import * as ir from "../ir";
-import { SExpr, SymbolAtom, formatSexpr, sym } from "./sexpr";
+import { SExpr, SymbolAtom, sym } from "./sexpr";
+import * as sexp from "./sexpr";
 
-export function formatIR(program: ir.Program): string {
-  const sexpr = programToSexpr(program);
-  return formatSexpr(sexpr, {
+function formatSexpr(sexprs: sexp.SExpr[]) {
+  return sexp.formatSexpr(sexprs, {
     indents: {
       ":def": 1,
       ":let": 1,
@@ -13,6 +13,16 @@ export function formatIR(program: ir.Program): string {
       ":match": 1,
     },
   });
+}
+
+export function formatIR(program: ir.Program): string {
+  const sexpr = programToSexpr(program);
+  return formatSexpr(sexpr);
+}
+
+export function formatIRExpr(expr: ir.Expr): string {
+  const sexpr = new ExprPrinter("pkg", "Main", "glb").toSexpr(expr);
+  return formatSexpr([sexpr]);
 }
 
 export function programToSexpr(program: ir.Program): SExpr[] {
