@@ -379,6 +379,34 @@ describe("pattern matching", () => {
     `);
   });
 
+  test("nested", () => {
+    const ir = toSexpr(`
+    type Option<a> {
+      None,
+      Some(a),
+    }
+    
+    let opt = Some(Some(0))
+
+    pub let m = 
+      match opt {
+        Some(Some(x)) => x,
+        _ => 0,
+      }
+
+  `);
+
+    expect(ir).toMatchInlineSnapshot(`
+      "(:def opt
+          (Some (Some 0)))
+
+      (:def m
+          (:match opt
+              ((Some (Some x#0)) x#0)
+              (_#0 0)))"
+    `);
+  });
+
   test("pattern matching in let", () => {
     const ir = toSexpr(`
     type Box<a> {
