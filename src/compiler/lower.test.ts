@@ -6,10 +6,34 @@ import { formatIR } from "./__test__/ir-to-sexpr";
 
 test("module (raw)", () => {
   const ir = getIR(`
+    type Example<a, b, c> {
+      Singleton,
+      Unary(a),
+      Three(a, c, a),
+    }
     pub let x = 0
   `);
   expect(ir).toMatchInlineSnapshot(`
     {
+      "adts": [
+        {
+          "constructors": [
+            {
+              "arity": 0,
+              "name": "pkg:Main:Singleton",
+            },
+            {
+              "arity": 1,
+              "name": "pkg:Main:Unary",
+            },
+            {
+              "arity": 3,
+              "name": "pkg:Main:Three",
+            },
+          ],
+          "name": "pkg:Main:Example",
+        },
+      ],
       "namespace": "Main",
       "package_": "pkg",
       "values": [

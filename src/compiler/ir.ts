@@ -91,11 +91,24 @@ export type Value = {
   value: Expr;
 };
 
+export type AdtConstructor = {
+  name: QualifiedIdentifier;
+  /**
+   * Just storing the arity instead of the type is a bit simplistic and won't be enough
+   * for e.g. a wasm backend. But as we long as we only have a js backend, that'll be just fine
+   */
+  arity: number;
+};
+export type Adt = {
+  name: QualifiedIdentifier;
+  constructors: AdtConstructor[];
+};
+
 export type Program = {
   package_: string;
   namespace: string;
 
-  // adts: Record<string, Adt>;
+  adts: Adt[];
   // structs: Record<string, Adt>;
 
   values: Value[];

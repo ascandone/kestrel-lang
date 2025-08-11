@@ -330,29 +330,44 @@ class ExprEmitter {
 
 // TODO we need to know the strongly connected components
 export function lowerProgram(module: typed.TypedModule): ir.Program {
+  const namespace = module.moduleInterface.ns;
+  const package_ = module.moduleInterface.package_;
+
+  const mkIdent = (name: string) =>
+    new ir.QualifiedIdentifier(package_, namespace, name);
+
   return {
-    namespace: module.moduleInterface.ns,
-    package_: module.moduleInterface.package_,
+    namespace,
+    package_,
+    adts: module.typeDeclarations.flatMap((decl): ir.Adt[] => {
+      if (decl.type !== "adt") {
+        return [];
+      }
+
+      return [
+        {
+          name: mkIdent(decl.name),
+          constructors: decl.variants.map(
+            (ctor): ir.AdtConstructor => ({
+              name: mkIdent(ctor.name),
+              arity: ctor.args.length,
+            }),
+          ),
+        },
+      ];
+    }),
+
     values: module.declarations.flatMap((decl): ir.Value[] => {
       if (decl.extern) {
         return [];
       }
 
-      const currentDecl = new ir.QualifiedIdentifier(
-        module.moduleInterface.package_,
-        module.moduleInterface.ns,
-        decl.binding.name,
-      );
-
+      const currentDecl = mkIdent(decl.binding.name);
       const emitter = new ExprEmitter(currentDecl);
 
       return [
         {
-          name: new ir.QualifiedIdentifier(
-            module.moduleInterface.package_,
-            module.moduleInterface.ns,
-            decl.binding.name,
-          ),
+          name: mkIdent(decl.binding.name),
           value: emitter.lowerExpr(decl.value),
         },
       ];
