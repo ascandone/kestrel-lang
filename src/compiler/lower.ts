@@ -16,6 +16,17 @@ class ExprEmitter {
     ir.Ident & { type: "local" }
   >();
 
+  private genIdent(): ir.Ident & { type: "local" } {
+    const name = "";
+
+    return {
+      type: "local",
+      name,
+      declaration: this.currentDecl,
+      unique: this.getFreshUnique(name),
+    };
+  }
+
   private mkIdent(pattern: typed.TypedBinding): ir.Ident & { type: "local" } {
     const ident: ir.Ident & { type: "local" } = {
       type: "local",
@@ -62,17 +73,31 @@ class ExprEmitter {
       }
 
       case "let": {
-        if (stmt.pattern.type !== "identifier") {
-          throw new Error("TODO pattern matching in let");
+        if (stmt.pattern.type === "identifier") {
+          return {
+            type: "let",
+            binding: this.mkIdent(stmt.pattern),
+            value: this.lowerExpr(stmt.value),
+            body: this.lowerBlock(statementsLeft, returning),
+          };
         }
 
-        const ident = this.mkIdent(stmt.pattern);
+        const ident = this.genIdent();
 
         return {
           type: "let",
           binding: ident,
           value: this.lowerExpr(stmt.value),
-          body: this.lowerBlock(statementsLeft, returning),
+          body: {
+            type: "match",
+            expr: { type: "identifier", ident },
+            clauses: [
+              [
+                this.lowerPattern(stmt.pattern),
+                this.lowerBlock(statementsLeft, returning),
+              ],
+            ],
+          },
         };
       }
     }

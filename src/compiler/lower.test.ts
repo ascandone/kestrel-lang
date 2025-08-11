@@ -88,6 +88,29 @@ test("local value", () => {
   `);
 });
 
+test("local value count resets on new declrs", () => {
+  const ir = toSexpr(`
+    pub let glb1 = {
+      let loc = 0;
+      loc
+    }
+
+    pub let glb2 = {
+      let loc = 0;
+      loc
+    }
+  `);
+  expect(ir).toMatchInlineSnapshot(`
+    "(:def glb1
+        (:let (loc#0 0)
+            loc#0))
+
+    (:def glb2
+        (:let (loc#0 0)
+            loc#0))"
+  `);
+});
+
 test("local value (shadowing)", () => {
   const ir = toSexpr(`
     pub let glb = {
@@ -314,6 +337,45 @@ test("pattern matching", () => {
                   ((Some 0) x#0)
                   ((Some x#1) x#1))))"
     `);
+});
+
+test("pattern matching in let", () => {
+  const ir = toSexpr(`
+    type Box<a> {
+      Box(a),
+    }
+
+    pub let m = {
+      let Box(x) = Box(42);
+      x
+    }
+  `);
+
+  expect(ir).toMatchInlineSnapshot(`
+    "(:def m
+        (:let (#0 (Box 42))
+            (:match #0
+                ((Box x#0) x#0))))"
+  `);
+});
+
+test.todo("pattern matching in fn", () => {
+  const ir = toSexpr(`
+    type Box<a> {
+      Box(a),
+    }
+    
+    pub let m = fn Box(x) {
+      x
+    }
+  `);
+
+  expect(ir).toMatchInlineSnapshot(`
+    "(:def m
+        (:fn (#0)
+            (:match #0
+                (Box x#0) x#0)))"
+  `);
 });
 
 function getIR(src: string) {
