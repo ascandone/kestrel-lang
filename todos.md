@@ -7,6 +7,7 @@
   - refactor: introduce tuples as AST node
   - refactor: add syntax sugar in both AST
     - remove annotator and typedAst (and deep clone AST instead)
+    - refactor: simplify IR (let,if,struct-literal -> match)
 - test: test self-recursive let exprs (and prevent binding pollution)
 - refactor: treat constructor and ident as separate nodes
 - feat: add package and module to compilation output
