@@ -74,6 +74,22 @@ test("global value of same module", () => {
   `);
 });
 
+test("intrinsics", () => {
+  const ir = toSexpr(`
+    extern type Int
+    extern let (+): Fn(Int, Int) -> Int
+
+    pub let y = fn a, b {
+      a + b
+    }
+  `);
+  expect(ir).toMatchInlineSnapshot(`
+    "(:def y
+        (:fn (a#0 b#0)
+            (+ a#0 b#0)))"
+  `);
+});
+
 test("local value", () => {
   const ir = toSexpr(`
     pub let glb = {
