@@ -102,6 +102,26 @@ describe("global identifiers", () => {
   });
 });
 
+describe("function application", () => {
+  test("function calls with no args", () => {
+    const out = compileSrc(`
+      extern let f: Fn() -> a
+      let y = f()
+    `);
+
+    expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f();"`);
+  });
+
+  test("function calls with args", () => {
+    const out = compileSrc(`
+      extern let f: Fn(a, a) -> a
+      let y = f(1, 2)
+    `);
+
+    expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f(1, 2);"`);
+  });
+});
+
 describe("intrinsics", () => {
   test("compile + of ints", () => {
     const out = compileSrc(`pub let x = 1 + 2`);
@@ -175,26 +195,6 @@ describe("intrinsics", () => {
 
     const evaluated = new Function(`${compiled}; return Main$x`);
     expect(evaluated()).toEqual(2 * 3 + 4);
-  });
-});
-
-describe.todo("function application", () => {
-  test("function calls with no args", () => {
-    const out = compileSrc(`
-      extern let f: Fn() -> a
-      let y = f()
-    `);
-
-    expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f();"`);
-  });
-
-  test("function calls with args", () => {
-    const out = compileSrc(`
-      extern let f: Fn(a, a) -> a
-      let y = f(1, 2)
-    `);
-
-    expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f(1, 2);"`);
   });
 });
 
