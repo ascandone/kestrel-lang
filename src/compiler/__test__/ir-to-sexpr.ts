@@ -1,5 +1,19 @@
 import * as ir from "../ir";
-import { SExpr, SymbolAtom, sym } from "./sexpr";
+import { SExpr, SymbolAtom, formatSexpr, sym } from "./sexpr";
+
+export function formatIR(program: ir.Program): string {
+  const sexpr = programToSexpr(program);
+  return formatSexpr(sexpr, {
+    indents: {
+      ":def": 1,
+      ":let": 1,
+      ":fn": 1,
+      ":if": 1,
+      ":struct": 1,
+      ":match": 1,
+    },
+  });
+}
 
 export function programToSexpr(program: ir.Program): SExpr[] {
   // TODO also show other values (types, etc)

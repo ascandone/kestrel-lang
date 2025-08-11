@@ -2,8 +2,7 @@ import { expect, test } from "vitest";
 import { unsafeParse } from "../parser";
 import { typecheck } from "../typecheck";
 import { lowerProgram } from "./lower";
-import { programToSexpr } from "./__test__/ir-to-sexpr";
-import { formatSexpr } from "./__test__/sexpr";
+import { formatIR } from "./__test__/ir-to-sexpr";
 
 test("module (raw)", () => {
   const ir = getIR(`
@@ -447,15 +446,5 @@ function getIR(src: string) {
 
 function toSexpr(src: string) {
   const ir = getIR(src);
-  const sexpr = programToSexpr(ir);
-  return formatSexpr(sexpr, {
-    indents: {
-      ":def": 1,
-      ":let": 1,
-      ":fn": 1,
-      ":if": 1,
-      ":struct": 1,
-      ":match": 1,
-    },
-  });
+  return formatIR(ir);
 }
