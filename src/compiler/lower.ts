@@ -172,6 +172,11 @@ class ExprEmitter {
       }
 
       case "list-literal":
+        return expr.values.reduceRight(
+          (acc, expr): ir.Expr => CONS(this.lowerExpr(expr), acc),
+          NIL,
+        );
+
       case "match":
         throw new Error("TODO impl");
     }
@@ -196,7 +201,7 @@ class ExprEmitter {
             resolution.namespace,
             resolution.variant.name,
           ),
-          typeName: resolution.declaration.name,
+          // typeName: resolution.declaration.name,
         };
 
       case "global-variable":
@@ -248,3 +253,25 @@ function getResolution<T>(node: { $resolution?: T | undefined }): T {
   }
   return node.$resolution;
 }
+
+const NIL: ir.Expr = {
+  type: "identifier",
+  ident: {
+    type: "constructor",
+    // typeName: "List",
+    name: new ir.QualifiedIdentifier(typed.CORE_PACKAGE, "List", "Nil"),
+  },
+};
+
+const CONS = (hd: ir.Expr, tl: ir.Expr): ir.Expr => ({
+  type: "application",
+  args: [hd, tl],
+  caller: {
+    type: "identifier",
+    ident: {
+      type: "constructor",
+      // typeName: "List",
+      name: new ir.QualifiedIdentifier(typed.CORE_PACKAGE, "List", "Cons"),
+    },
+  },
+});

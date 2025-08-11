@@ -26,7 +26,7 @@ export type Ident =
   | {
       type: "constructor";
       name: QualifiedIdentifier;
-      typeName: string;
+      // typeName: string;
     };
 
 export type Expr =

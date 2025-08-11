@@ -275,6 +275,21 @@ test("constructor", () => {
   `);
 });
 
+test("list literal", () => {
+  const ir = toSexpr(`
+    pub let lst = [1, 2, 3]
+  `);
+
+  expect(ir).toMatchInlineSnapshot(`
+    "(:def lst
+        (kestrel_core:List.Cons
+            1
+            (kestrel_core:List.Cons
+                2
+                (kestrel_core:List.Cons 3 kestrel_core:List.Nil))))"
+  `);
+});
+
 function getIR(src: string) {
   const untypedMod = unsafeParse(src);
   const [tc, errors] = typecheck("pkg", "Main", untypedMod, {}, []);
