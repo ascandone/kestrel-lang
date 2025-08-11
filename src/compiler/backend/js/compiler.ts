@@ -329,10 +329,44 @@ class Compiler {
                   throw new CompilationError("Invalid constructor");
               }
             }
+
+            throw new Error("TODO compile constructor");
           }
         }
 
-      case "fn":
+      case "fn": {
+        // TODO TCO
+        // TODO would it be possible to have a simplier repr for fn params? it probably shoudn't involve the IR lowering
+        // maybe by keeping a scope with the locals defined as params? and converting to simple names
+        const [{ params }, stms] = this.wrapStatements(() => {
+          const params = src.bindings.map(
+            (param): t.Identifier => compileLocalIdent(param),
+          );
+          this.compileExprAsJsStms(src.body, {
+            type: "return",
+          });
+          return { params };
+        });
+        const bodyStms: t.Expression | t.BlockStatement = (() => {
+          if (stms.length === 1 && stms[0]!.type === "ReturnStatement") {
+            return stms[0].argument!;
+          }
+          return {
+            type: "BlockStatement",
+            directives: [],
+            body: stms,
+          };
+        })();
+
+        return {
+          type: "ArrowFunctionExpression",
+          async: false,
+          expression: true,
+          params,
+          body: bodyStms,
+        };
+      }
+
       case "if":
       case "match":
       case "field-access":
@@ -353,7 +387,6 @@ class Compiler {
     //     });
     //     return ident;
     //   }
-
     //   case "identifier": {
     //     if (src.$resolution === undefined) {
     //       throw new Error("[unreachable] undefined resolution");
@@ -413,166 +446,6 @@ class Compiler {
     //       }
     //     }
     //   }
-    //   case "block": {
-    //     for (const stm of src.statements) {
-    //       if (stm.type === "let#") {
-    //         throw new Error("TODO implement let#");
-    //       }
-    //       let jsPatternName: string;
-    //       if (stm.pattern.type === "identifier") {
-    //         jsPatternName = this.getCurrentFrame().registerLocal(
-    //           stm.pattern.name,
-    //         );
-    //       } else {
-    //         jsPatternName = this.genFreshId();
-    //       }
-    //       this.frames.push(
-    //         new Frame({
-    //           type: "let",
-    //           jsPatternName,
-    //           binding:
-    //             stm.pattern.type === "identifier" ? stm.pattern : undefined,
-    //         }),
-    //       );
-    //       const freshIdent: t.Identifier = {
-    //         type: "Identifier",
-    //         name: this.makeJsLetPathName(),
-    //       };
-    //       if (stm.pattern.type === "identifier") {
-    //         this.bindingsJsName.set(stm.pattern, freshIdent);
-    //       }
-    //       const value = this.compileExprAsJsExpr(stm.value, undefined);
-    //       this.statementsBuf.push({
-    //         type: "VariableDeclaration",
-    //         kind: "const",
-    //         declarations: [
-    //           {
-    //             type: "VariableDeclarator",
-    //             id: freshIdent,
-    //             init: value,
-    //           },
-    //         ],
-    //       });
-    //       this.compileCheckPatternConditions(stm.pattern, freshIdent);
-    //       this.frames.pop();
-    //     }
-    //     return this.compileExprAsJsExpr(src.returning, tailPosCaller);
-    //     // we could call this.bindingsJsName.delete(src.pattern) here
-    //   }
-    //   case "fn": {
-    //     const callerBinding = (() => {
-    //       const curFrame = this.getCurrentFrame();
-    //       if (curFrame.data.type !== "let") {
-    //         return undefined;
-    //       }
-    //       return curFrame.data.binding;
-    //     })();
-    //     const wasTailCall = this.tailCallIdent;
-    //     this.tailCallIdent = undefined;
-    //     this.frames.push(new Frame({ type: "fn" }));
-    //     const cleanup = () => {
-    //       this.frames.pop();
-    //       this.tailCallIdent = wasTailCall;
-    //     };
-    //     const [{ params }, stms] = this.wrapStatements(() => {
-    //       const params = src.params.map((param): t.Identifier => {
-    //         if (param.type === "identifier") {
-    //           const name = this.getCurrentFrame().registerLocal(param.name);
-    //           const ident: t.Identifier = {
-    //             type: "Identifier",
-    //             name,
-    //           };
-    //           this.bindingsJsName.set(param, ident);
-    //           return ident;
-    //         }
-    //         const freshId = this.genFreshId();
-    //         const ident: t.Identifier = {
-    //           type: "Identifier",
-    //           name: freshId,
-    //         };
-    //         this.compileCheckPatternConditions(param, ident);
-    //         return ident;
-    //       });
-    //       this.compileExprAsJsStms(src.body, callerBinding, {
-    //         type: "return",
-    //       });
-    //       return { params };
-    //     });
-    //     const bodyStms: t.Expression | t.BlockStatement = (() => {
-    //       if (this.tailCallIdent !== undefined) {
-    //         return {
-    //           type: "BlockStatement",
-    //           directives: [],
-    //           body: [
-    //             {
-    //               type: "WhileStatement",
-    //               test: { type: "BooleanLiteral", value: true },
-    //               body: {
-    //                 type: "BlockStatement",
-    //                 directives: [],
-    //                 body: [
-    //                   ...params.map(
-    //                     (id, index): t.Statement => ({
-    //                       type: "VariableDeclaration",
-    //                       kind: "const",
-    //                       declarations: [
-    //                         {
-    //                           type: "VariableDeclarator",
-    //                           id,
-    //                           init: {
-    //                             type: "Identifier",
-    //                             name: `GEN_TC__${index}`,
-    //                           },
-    //                         },
-    //                       ],
-    //                     }),
-    //                   ),
-    //                   ...stms,
-    //                 ],
-    //               },
-    //             },
-    //           ],
-    //         };
-    //       }
-    //       if (stms.length === 1 && stms[0]!.type === "ReturnStatement") {
-    //         return stms[0].argument!;
-    //       }
-    //       return {
-    //         type: "BlockStatement",
-    //         directives: [],
-    //         body: stms,
-    //       };
-    //     })();
-    //     const params_ =
-    //       this.tailCallIdent === undefined
-    //         ? params
-    //         : params.map(
-    //             (_, i): t.Identifier => ({
-    //               type: "Identifier",
-    //               name: `GEN_TC__${i}`,
-    //             }),
-    //           );
-    //     cleanup();
-    //     return {
-    //       type: "ArrowFunctionExpression",
-    //       async: false,
-    //       expression: true,
-    //       params: params_,
-    //       body: bodyStms,
-    //     };
-    //   }
-    //   case "list-literal":
-    //     return src.values.reduceRight<t.Expression>(
-    //       (prev, src): t.Expression => {
-    //         const compiledExpr = this.compileExprAsJsExpr(src, undefined);
-    //         return {
-    //           type: "CallExpression",
-    //           callee: { type: "Identifier", name: "List$Cons" },
-    //           arguments: [compiledExpr, prev],
-    //         };
-    //       },
-    //       { type: "Identifier", name: "List$Nil" },
-    //     );
     //   case "struct-literal": {
     //     const resolution = src.struct.$resolution;
     //     if (resolution === undefined) {
@@ -781,6 +654,15 @@ class Compiler {
     // this.compileCheckPatternConditions(src.pattern, freshIdent);
 
     return this.compileExprAsJsExpr(src.body);
+  }
+
+  private wrapStatements<T>(f: () => T): [T, t.Statement[]] {
+    const buf = this.statementsBuf;
+    this.statementsBuf = [];
+    const e = f();
+    const stms = this.statementsBuf;
+    this.statementsBuf = buf;
+    return [e, stms];
   }
 }
 

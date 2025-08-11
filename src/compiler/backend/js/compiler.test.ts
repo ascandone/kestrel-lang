@@ -365,7 +365,7 @@ describe.skip("let expressions", () => {
   });
 });
 
-describe.skip("fn", () => {
+describe("fn", () => {
   test("toplevel fn without params", () => {
     const out = compileSrc(`
     let f = fn { 42 }
@@ -379,7 +379,9 @@ describe.skip("fn", () => {
     let f = fn x, y { y }
   `);
 
-    expect(out).toMatchInlineSnapshot(`"const Main$f = (x, y) => y;"`);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$f = (Main$f$x, Main$f$y) => Main$f$y;"`,
+    );
   });
 
   test("shadowing fn params", () => {
@@ -387,7 +389,9 @@ describe.skip("fn", () => {
       let f = fn a, a { a }
     `);
 
-    expect(out).toMatchInlineSnapshot(`"const Main$f = (a, a$1) => a$1;"`);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$f = (Main$f$a, Main$f$a$1) => Main$f$a$1;"`,
+    );
   });
 
   test("higher order fn", () => {
@@ -395,7 +399,9 @@ describe.skip("fn", () => {
     let f = fn x { fn x { x } }
   `);
 
-    expect(out).toMatchInlineSnapshot(`"const Main$f = x => x => x;"`);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$f = Main$f$x => Main$f$x$1 => Main$f$x$1;"`,
+    );
   });
 
   test("fn as expr", () => {
@@ -409,7 +415,7 @@ describe.skip("fn", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$x = Main$f(() => 1);"`);
   });
 
-  test("iifs", () => {
+  test.skip("iifs", () => {
     // TODO should I fix grammar?
     const out = compileSrc(`
       let a = fn { 42 } ()
@@ -474,7 +480,7 @@ describe.skip("fn", () => {
     );
   });
 
-  test("do not let GEN values be shadowed", () => {
+  test.skip("do not let GEN values be shadowed", () => {
     const out = compileSrc(`
       type Box<a> { Box(a) }
       let x = fn Box(a) {
