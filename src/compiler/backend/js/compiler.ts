@@ -693,11 +693,21 @@ class Compiler {
     switch (`${qualifiedName.namespace}.${qualifiedName.name}`) {
       // TODO! add other intrinsics
       case "Int.+":
+      case "Float.+.":
+      case "String.++":
         return this.makeBinaryMath("+", src.args);
+
+      case "Int.-":
+      case "Float.-.":
+        return this.makeBinaryMath("-", src.args);
+
       case "Int.*":
+      case "Float.*.":
         return this.makeBinaryMath("*", src.args);
+
       case "Int.%":
         return this.makeBinaryMath("%", src.args);
+
       case "Int./":
         return {
           type: "CallExpression",
@@ -709,8 +719,10 @@ class Compiler {
           },
           arguments: [this.makeBinaryMath("/", src.args)],
         };
-      case "String.++":
-        return this.makeBinaryMath("+", src.args);
+
+      case "Float./.":
+        this.makeBinaryMath("/", src.args);
+
       case "Bool.!":
         return this.makeUnary("!", src.args);
       case "Bool.&&":
@@ -719,7 +731,12 @@ class Compiler {
         return this.makeBinaryLogical("||", src.args);
 
       case "Bool.==":
-        throw new Error("TODO monomorphic equality");
+      case "Bool.!=":
+      case "Bool.<=":
+      case "Bool.<":
+      case "Bool.>=":
+      case "Bool.>":
+        throw new Error("TODO monomorphic comparision");
 
       default:
         return;
@@ -788,39 +805,6 @@ function compileConst(ast: ConstLiteral): t.Expression {
       };
   }
 }
-
-// function toJsInfix(
-//   kestrelCaller: string,
-// ): t.BinaryExpression["operator"] | undefined {
-//   switch (kestrelCaller) {
-//     case "+":
-//     case "+.":
-//     case "++":
-//       return "+";
-
-//     case "*":
-//     case "*.":
-//       return "*";
-
-//     case "-":
-//     case "-.":
-//       return "-";
-
-//     case "/":
-//     case "/.":
-//       return "/";
-
-//     case "<=":
-//     case "<":
-//     case ">=":
-//     case ">":
-//     case "%":
-//       return kestrelCaller;
-
-//     default:
-//       return undefined;
-//   }
-// }
 
 /**
  * compile a local identifier as `pkg$My$Nested$Mod$glb`
