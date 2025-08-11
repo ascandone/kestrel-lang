@@ -26,7 +26,7 @@ export type Ident =
     }
   | {
       type: "constructor";
-      name: string;
+      name: string; // TODO consider  using a QualifiedIdentifier instead
       typeName: QualifiedIdentifier;
     };
 

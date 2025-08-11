@@ -49,6 +49,11 @@ class Compiler {
   compile(src: ir.Program): string {
     const body: t.Statement[] = [];
 
+    for (const adt of src.adts) {
+      const out = compileAdt(adt);
+      body.push(...out);
+    }
+
     for (const decl of src.values) {
       const out = this.compileDeclaration(decl);
       body.push(...out);
@@ -502,7 +507,13 @@ class Compiler {
           }
         }
 
-        return compileGlobalIdent(src.ident.typeName);
+        return compileGlobalIdent(
+          new ir.QualifiedIdentifier(
+            src.ident.typeName.package_,
+            src.ident.typeName.namespace,
+            src.ident.name,
+          ),
+        );
       }
     }
   }
@@ -654,10 +665,116 @@ function compileLocalIdent(
 }
 
 function mkGlbIdent(qualified: ir.QualifiedIdentifier): string {
-  const santizedNs = qualified.namespace.replace(/\//g, "$");
-  return `${santizedNs}$${qualified.name}`;
+  const sanitized = qualified.namespace.replace(/\//g, "$");
+  return `${sanitized}$${qualified.name}`;
 }
 
 function doNotDeclare(as: CompilationMode): CompilationMode {
   return as.type === "assign_var" ? { ...as, declare: false } : as;
+}
+
+function compileAdt(decl: ir.Adt): t.Statement[] {
+  const buf: t.Statement[] = [];
+
+  const skipRepresentation =
+    decl.name.package_ === CORE_PACKAGE && decl.name.name === "Bool";
+
+  if (!skipRepresentation) {
+    const repr = getAdtReprType(decl);
+    decl.constructors.forEach((ctor, index) => {
+      const out = compileConstructor(ctor, index, repr);
+      buf.push(out);
+    });
+  }
+
+  return buf;
+}
+
+function compileConstructor(
+  variant: ir.AdtConstructor,
+  index: number,
+  repr: AdtReprType,
+): t.Statement {
+  return {
+    type: "VariableDeclaration",
+    kind: "const",
+    declarations: [
+      {
+        type: "VariableDeclarator",
+        id: compileGlobalIdent(variant.name),
+        init: makeVariantBody(index, variant.arity, repr),
+      },
+    ],
+  };
+}
+
+export const TAG_FIELD: t.Identifier = { type: "Identifier", name: "$" };
+
+function makeVariantBody(
+  index: number,
+  argsNumber: number,
+  repr: AdtReprType,
+): t.Expression {
+  if (repr === "enum") {
+    return { type: "NumericLiteral", value: index };
+  }
+
+  const params = Array.from(
+    { length: argsNumber },
+    (_, i): t.Identifier => ({
+      type: "Identifier",
+      name: `_${i}`,
+    }),
+  );
+
+  const ret: t.Expression =
+    repr === "unboxed"
+      ? params[0]!
+      : {
+          type: "ObjectExpression",
+          properties: [
+            {
+              type: "ObjectProperty",
+              key: TAG_FIELD,
+              value: { type: "NumericLiteral", value: index },
+              computed: false,
+              shorthand: false,
+            },
+            ...params.map(
+              (p): t.ObjectProperty => ({
+                type: "ObjectProperty",
+                key: p,
+                value: p,
+                computed: false,
+                shorthand: true,
+              }),
+            ),
+          ],
+        };
+
+  if (argsNumber === 0) {
+    return ret;
+  }
+
+  return {
+    type: "ArrowFunctionExpression",
+    params,
+    async: false,
+    expression: true,
+    body: ret,
+  };
+}
+
+type AdtReprType = "default" | "enum" | "unboxed";
+function getAdtReprType(decl: ir.Adt): AdtReprType {
+  if (decl.constructors.length === 1 && decl.constructors[0]!.arity === 1) {
+    return "unboxed";
+  }
+
+  const isEnum = decl.constructors.every((v) => v.arity === 0);
+  if (isEnum) {
+    return "enum";
+  }
+
+  return "default";
 }

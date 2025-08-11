@@ -961,8 +961,8 @@ describe.skip("TCO", () => {
   });
 });
 
-describe.skip("ADTs", () => {
-  test("do not emit Bool repr", () => {
+describe("ADTs", () => {
+  test.skip("do not emit Bool repr", () => {
     const out = compileSrc(
       `
       type Bool { True, False }
@@ -985,7 +985,6 @@ describe.skip("ADTs", () => {
 
   test("create unboxed ADTs when there is exactly one variant with exactly one arg", () => {
     const out = compileSrc(`
-      extern type Int
       type T { X(Int) }
     `);
 
@@ -996,7 +995,6 @@ describe.skip("ADTs", () => {
 
   test("create ADTs when at least a variant has one arg", () => {
     const out = compileSrc(`
-        extern type Int
         type T { X, Y(Int) }
     `);
 
