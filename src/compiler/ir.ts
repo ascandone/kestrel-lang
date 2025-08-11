@@ -25,8 +25,8 @@ export type Ident =
     }
   | {
       type: "constructor";
-      name: QualifiedIdentifier;
-      // typeName: string;
+      name: string;
+      typeName: QualifiedIdentifier;
     };
 
 export type Expr =
@@ -113,6 +113,7 @@ export type MatchPattern =
     }
   | {
       type: "constructor";
-      name: QualifiedIdentifier;
+      name: string;
+      typeName: QualifiedIdentifier;
       args: MatchPattern[];
     };

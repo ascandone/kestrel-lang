@@ -175,15 +175,15 @@ class ExprPrinter {
    * module is not shown if the current module is the same as the module's, e.g. `Box`
    */
   private ctor(ident: ir.Ident & { type: "constructor" }): string {
-    if (ident.name.package_ !== this.package_) {
-      return `${ident.name.package_}:${ident.name.namespace}.${ident.name.name}`;
+    if (ident.typeName.package_ !== this.package_) {
+      return `${ident.typeName.package_}:${ident.typeName.namespace}.${ident.name}`;
     }
 
-    if (ident.name.namespace !== this.module) {
-      return `${ident.name.namespace}.${ident.name.name}`;
+    if (ident.typeName.namespace !== this.module) {
+      return `${ident.typeName.namespace}.${ident.name}`;
     }
 
-    return ident.name.name;
+    return ident.name;
   }
 
   /**

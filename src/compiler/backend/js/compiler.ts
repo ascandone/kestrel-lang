@@ -5,6 +5,7 @@ import * as ir from "../../ir";
 import { sanitizeNamespace } from "../../utils";
 import { ConstLiteral } from "../../../parser";
 import { CORE_PACKAGE } from "../../../typecheck";
+import { CompilationError } from "../../lower";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -311,8 +312,24 @@ class Compiler {
           case "local":
             return compileLocalIdent(src.ident);
 
+          case "constructor": {
+            const qualifiedTypeName = src.ident.typeName;
+            if (
+              qualifiedTypeName.package_ === CORE_PACKAGE &&
+              qualifiedTypeName.name === "Bool"
+            ) {
+              switch (src.ident.name) {
+                case "True":
+                  return { type: "BooleanLiteral", value: true };
+                case "False":
+                  return { type: "BooleanLiteral", value: false };
+                default:
+                  throw new CompilationError("Invalid constructor");
+              }
+            }
+          }
+
           case "global":
-          case "constructor":
             throw new Error("TODO ident of type: " + src.ident.type);
         }
 
@@ -708,6 +725,8 @@ class Compiler {
         return this.makeUnary("!", src.args);
       case "Bool.&&":
         return this.makeBinaryLogical("&&", src.args);
+      case "Bool.||":
+        return this.makeBinaryLogical("||", src.args);
 
       case "Bool.==":
         throw new Error("TODO monomorphic equality");

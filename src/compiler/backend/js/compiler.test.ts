@@ -46,22 +46,12 @@ describe("datatype representation", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$x = \`a\`;"`);
   });
 
-  test.skip("represent Bool with booleans", () => {
-    const boolModule = typecheckSource(
-      "pkg",
-      "Bool",
-      `pub(..) type Bool { True, False }`,
-    );
-
+  test("represent Bool with booleans", () => {
     const out = compileSrc(
       `
-      import Bool.{Bool(..)}
       let t = True
       let f = False
     `,
-      {
-        deps: { Bool: boolModule },
-      },
     );
     expect(out).toMatchInlineSnapshot(`
       "const Main$t = true;
@@ -124,29 +114,29 @@ describe("intrinsics", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$x = \`a\` + \`b\`;"`);
   });
 
-  test.skip("boolean negation", () => {
-    const out = compileSrc(`let x = fn b { !b }`);
+  test("boolean negation", () => {
+    const out = compileSrc(`let x = !True`);
 
-    expect(out).toMatchInlineSnapshot(`"const Main$x = b => !b;"`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = !true;"`);
   });
 
-  test.skip("infix &&", () => {
-    const out = compileSrc(`let x = fn a, b { a && b }`);
+  test("infix &&", () => {
+    const out = compileSrc(`let x = True && False`);
 
-    expect(out).toMatchInlineSnapshot(`"const Main$x = (a, b) => a && b;"`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = true && false;"`);
   });
 
-  test.skip("infix ||", () => {
-    const out = compileSrc(`let x = fn a, b { a || b }`);
+  test("infix ||", () => {
+    const out = compileSrc(`let x = False || False`);
 
-    expect(out).toMatchInlineSnapshot(`"const Main$x = (a, b) => a || b;"`);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = false || false;"`);
   });
 
-  test.skip("boolean negation and && prec", () => {
-    const out = compileSrc(`let x = fn t, f { !(t && f)}`);
+  test("boolean negation and && prec", () => {
+    const out = compileSrc(`let x = !(True && False)`);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x = (t, f) => !(t && f);"
+      "const Main$x = !(true && false);"
     `);
   });
 
@@ -183,6 +173,7 @@ describe("intrinsics", () => {
     expect(evaluated()).toEqual(2 * 3 + 4);
   });
 });
+
 describe.skip("let expressions", () => {
   test("let expressions (simple)", () => {
     const out = compileSrc(`

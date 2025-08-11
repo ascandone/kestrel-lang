@@ -148,13 +148,14 @@ class ExprEmitter {
         const qualifiedIdent = new ir.QualifiedIdentifier(
           resolution.package_,
           resolution.namespace,
-          resolution.variant.name,
+          resolution.declaration.name,
         );
 
         return {
           type: "constructor",
           args: expr.args.map((arg) => this.lowerPattern(arg)),
-          name: qualifiedIdent,
+          name: resolution.variant.name,
+          typeName: qualifiedIdent,
         };
       }
     }
@@ -306,12 +307,12 @@ class ExprEmitter {
       case "constructor":
         return {
           type: "constructor",
-          name: new ir.QualifiedIdentifier(
+          typeName: new ir.QualifiedIdentifier(
             resolution.package_,
             resolution.namespace,
-            resolution.variant.name,
+            resolution.declaration.name,
           ),
-          // typeName: resolution.declaration.name,
+          name: resolution.variant.name,
         };
 
       case "global-variable":
@@ -364,12 +365,18 @@ function getResolution<T>(node: { $resolution?: T | undefined }): T {
   return node.$resolution;
 }
 
+const listQualifiedName = new ir.QualifiedIdentifier(
+  typed.CORE_PACKAGE,
+  "List",
+  "List",
+);
+
 const NIL: ir.Expr = {
   type: "identifier",
   ident: {
     type: "constructor",
-    // typeName: "List",
-    name: new ir.QualifiedIdentifier(typed.CORE_PACKAGE, "List", "Nil"),
+    typeName: listQualifiedName,
+    name: "Nil",
   },
 };
 
@@ -380,8 +387,8 @@ const CONS = (hd: ir.Expr, tl: ir.Expr): ir.Expr => ({
     type: "identifier",
     ident: {
       type: "constructor",
-      // typeName: "List",
-      name: new ir.QualifiedIdentifier(typed.CORE_PACKAGE, "List", "Cons"),
+      name: "Cons",
+      typeName: listQualifiedName,
     },
   },
 });
