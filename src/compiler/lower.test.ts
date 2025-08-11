@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { expect, test } from "vitest";
 import { unsafeParse } from "../parser";
 import { typecheck } from "../typecheck";
 import { lowerProgram } from "./lower";
@@ -290,9 +290,8 @@ test("list literal", () => {
   `);
 });
 
-describe("pattern matching", () => {
-  test("simple", () => {
-    const ir = toSexpr(`
+test("pattern matching", () => {
+  const ir = toSexpr(`
     type Option<a> {
       None,
       Some(a),
@@ -307,7 +306,7 @@ describe("pattern matching", () => {
     }
   `);
 
-    expect(ir).toMatchInlineSnapshot(`
+  expect(ir).toMatchInlineSnapshot(`
       "(:def m
           (:fn (x#0 f#0)
               (:match (f#0 x#0)
@@ -315,7 +314,6 @@ describe("pattern matching", () => {
                   ((Some 0) x#0)
                   ((Some x#1) x#1))))"
     `);
-  });
 });
 
 function getIR(src: string) {
