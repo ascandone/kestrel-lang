@@ -276,27 +276,6 @@ class Compiler {
     }
 
     return this.castExprToStmt(src, as);
-
-    // switch (src.type) {
-
-    //   case "block":
-    //     if (src.statements.length === 0) {
-    //       return this.compileExprAsJsStms(src.returning, tailPosCaller, as);
-    //     }
-    //     break;
-    //   case "application":
-
-    //     break;
-    //   // Attention: fallthrough to the next branch for application
-    //   case "constant":
-    //   case "list-literal":
-    //   case "struct-literal":
-    //   case "identifier":
-    //   case "fn":
-    //   case "field-access":
-    //   default:
-    //     src as never;
-    // }
   }
 
   private compileExprAsJsExpr(src: ir.Expr): t.Expression {
@@ -304,88 +283,20 @@ class Compiler {
       case "constant":
         return compileConst(src.value);
 
+      case "identifier":
+        return this.compileIdentifierAsExpr(src);
+
       case "application":
         return this.compileApplicationAsExpr(src);
 
       case "let":
         return this.compileLetAsExpr(src);
 
-      case "identifier":
-        switch (src.ident.type) {
-          case "global":
-            return compileGlobalIdent(src.ident.name);
+      case "fn":
+        return this.compileFnAsExpr(src);
 
-          case "local":
-            return compileLocalIdent(src.ident);
-
-          case "constructor": {
-            const qualifiedTypeName = src.ident.typeName;
-            if (
-              qualifiedTypeName.package_ === CORE_PACKAGE &&
-              qualifiedTypeName.name === "Bool"
-            ) {
-              switch (src.ident.name) {
-                case "True":
-                  return { type: "BooleanLiteral", value: true };
-                case "False":
-                  return { type: "BooleanLiteral", value: false };
-                default:
-                  throw new CompilationError("Invalid constructor");
-              }
-            }
-
-            throw new Error("TODO compile constructor");
-          }
-        }
-
-      case "fn": {
-        // TODO TCO
-        // TODO would it be possible to have a simplier repr for fn params? it probably shoudn't involve the IR lowering
-        // maybe by keeping a scope with the locals defined as params? and converting to simple names
-        const [{ params }, stms] = this.wrapStatements(() => {
-          const params = src.bindings.map(
-            (param): t.Identifier => compileLocalIdent(param),
-          );
-          this.compileExprAsJsStms(src.body, {
-            type: "return",
-          });
-          return { params };
-        });
-        const bodyStms: t.Expression | t.BlockStatement = (() => {
-          if (stms.length === 1 && stms[0]!.type === "ReturnStatement") {
-            return stms[0].argument!;
-          }
-          return {
-            type: "BlockStatement",
-            directives: [],
-            body: stms,
-          };
-        })();
-
-        return {
-          type: "ArrowFunctionExpression",
-          async: false,
-          expression: true,
-          params,
-          body: bodyStms,
-        };
-      }
-
-      case "if": {
-        const ident: t.Identifier = {
-          type: "Identifier",
-          name: `$${this.currentCompilerId++}`,
-        };
-
-        this.compileExprAsJsStms(src, {
-          type: "assign_var",
-          ident,
-          declare: true,
-          // dictParams: [],
-        });
-
-        return ident;
-      }
+      case "if":
+        return this.compileIfAsExpr(src);
 
       case "match":
       case "field-access":
@@ -566,6 +477,37 @@ class Compiler {
     }
   }
 
+  private compileIdentifierAsExpr(
+    src: ir.Expr & { type: "identifier" },
+  ): t.Expression {
+    switch (src.ident.type) {
+      case "global":
+        return compileGlobalIdent(src.ident.name);
+
+      case "local":
+        return compileLocalIdent(src.ident);
+
+      case "constructor": {
+        const qualifiedTypeName = src.ident.typeName;
+        if (
+          qualifiedTypeName.package_ === CORE_PACKAGE &&
+          qualifiedTypeName.name === "Bool"
+        ) {
+          switch (src.ident.name) {
+            case "True":
+              return { type: "BooleanLiteral", value: true };
+            case "False":
+              return { type: "BooleanLiteral", value: false };
+            default:
+              throw new CompilationError("Invalid constructor");
+          }
+        }
+
+        throw new Error("TODO compile constructor");
+      }
+    }
+  }
+
   private compileApplicationAsExpr(
     src: ir.Expr & { type: "application" },
   ): t.Expression {
@@ -583,6 +525,55 @@ class Compiler {
     }
 
     throw new Error("TODO complex appli");
+  }
+
+  private compileIfAsExpr(src: ir.Expr & { type: "if" }): t.Expression {
+    const ident: t.Identifier = {
+      type: "Identifier",
+      name: `$${this.currentCompilerId++}`,
+    };
+
+    this.compileExprAsJsStms(src, {
+      type: "assign_var",
+      ident,
+      declare: true,
+      // dictParams: [],
+    });
+
+    return ident;
+  }
+
+  private compileFnAsExpr(src: ir.Expr & { type: "fn" }): t.Expression {
+    // TODO TCO
+    // TODO would it be possible to have a simplier repr for fn params? it probably shoudn't involve the IR lowering
+    // maybe by keeping a scope with the locals defined as params? and converting to simple names
+    const [{ params }, stms] = this.wrapStatements(() => {
+      const params = src.bindings.map(
+        (param): t.Identifier => compileLocalIdent(param),
+      );
+      this.compileExprAsJsStms(src.body, {
+        type: "return",
+      });
+      return { params };
+    });
+    const bodyStms: t.Expression | t.BlockStatement = (() => {
+      if (stms.length === 1 && stms[0]!.type === "ReturnStatement") {
+        return stms[0].argument!;
+      }
+      return {
+        type: "BlockStatement",
+        directives: [],
+        body: stms,
+      };
+    })();
+
+    return {
+      type: "ArrowFunctionExpression",
+      async: false,
+      expression: true,
+      params,
+      body: bodyStms,
+    };
   }
 
   private compileLetAsExpr(src: ir.Expr & { type: "let" }): t.Expression {
