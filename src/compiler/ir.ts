@@ -87,7 +87,7 @@ export type Expr =
     };
 
 export type Value = {
-  name: string;
+  name: QualifiedIdentifier;
   value: Expr;
 };
 

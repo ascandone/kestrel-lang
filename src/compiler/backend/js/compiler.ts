@@ -2,7 +2,6 @@ import * as t from "@babel/types";
 import generate from "@babel/generator";
 
 import * as ir from "../../ir";
-import { sanitizeNamespace } from "../../utils";
 import { ConstLiteral } from "../../../parser";
 import { CORE_PACKAGE } from "../../../typecheck";
 import { CompilationError } from "../../lower";
@@ -31,9 +30,9 @@ type CompilationMode =
 
 class Compiler {
   constructor(
-    // TODO add "private" and use the pkg to compile
+    // TODO add "private" and use the pkg to compile (or remove them)
     readonly package_: string,
-    private readonly ns: string,
+    readonly ns: string,
 
     // TODO add "private"
     readonly options: CompileOptions,
@@ -61,7 +60,7 @@ class Compiler {
     this.compileExprAsJsStms(decl.value, {
       type: "assign_var",
       declare: true,
-      ident: makeGlobalIdentifier(this.ns, decl.name),
+      ident: compileGlobalIdent(decl.name),
       // dictParams: findDeclarationDictsParams(decl.binding.$type.asType()),
     });
 
@@ -309,6 +308,9 @@ class Compiler {
 
       case "identifier":
         switch (src.ident.type) {
+          case "global":
+            return compileGlobalIdent(src.ident.name);
+
           case "local":
             return compileLocalIdent(src.ident);
 
@@ -328,9 +330,6 @@ class Compiler {
               }
             }
           }
-
-          case "global":
-            throw new Error("TODO ident of type: " + src.ident.type);
         }
 
       case "fn":
@@ -354,16 +353,7 @@ class Compiler {
     //     });
     //     return ident;
     //   }
-    //   case "application": {
-    //     if (src.caller.type === "identifier") {
-    //     return {
-    //       type: "CallExpression",
-    //       callee: this.compileExprAsJsExpr(src.caller, undefined),
-    //       arguments: src.args.map((arg) =>
-    //         this.compileExprAsJsExpr(arg, undefined),
-    //       ),
-    //     };
-    //   }
+
     //   case "identifier": {
     //     if (src.$resolution === undefined) {
     //       throw new Error("[unreachable] undefined resolution");
@@ -744,7 +734,15 @@ class Compiler {
       return inlined;
     }
 
-    throw new Error("TODO appl  ");
+    if (src.caller.type === "identifier") {
+      return {
+        type: "CallExpression",
+        callee: this.compileExprAsJsExpr(src.caller),
+        arguments: src.args.map((arg) => this.compileExprAsJsExpr(arg)),
+      };
+    }
+
+    throw new Error("TODO complex appli");
   }
 
   private compileLetAsExpr(src: ir.Expr & { type: "let" }): t.Expression {
@@ -767,13 +765,6 @@ class Compiler {
 
     return this.compileExprAsJsExpr(src.body);
   }
-}
-
-function makeGlobalIdentifier(ns: string, bindingName: string): t.Identifier {
-  return {
-    type: "Identifier",
-    name: `${sanitizeNamespace(ns)}$${bindingName}`,
-  };
 }
 
 function compileConst(ast: ConstLiteral): t.Expression {
@@ -831,6 +822,25 @@ function compileConst(ast: ConstLiteral): t.Expression {
 //   }
 // }
 
+/**
+ * compile a local identifier as `pkg$My$Nested$Mod$glb`
+ *
+ * TODO package scope is not added yet
+ */
+function compileGlobalIdent(qualified: ir.QualifiedIdentifier): t.Identifier {
+  // TODO add binding.declaration.package_ prefix
+  return {
+    type: "Identifier",
+    name: mkGlbIdent(qualified),
+  };
+}
+
+/**
+ * compile a local identifier as `pkg$My$Nested$Mod$glb$name$42`
+ * the unique id is omitted when zero
+ *
+ * TODO package scope is not added yet
+ */
 function compileLocalIdent(
   binding: ir.Ident & { type: "local" },
 ): t.Identifier {
@@ -839,6 +849,11 @@ function compileLocalIdent(
   // TODO add binding.declaration.package_ prefix
   return {
     type: "Identifier",
-    name: `${binding.declaration.namespace}$${binding.declaration.name}$${binding.name}${unique}`,
+    name: `${mkGlbIdent(binding.declaration)}$${binding.name}${unique}`,
   };
+}
+
+function mkGlbIdent(qualified: ir.QualifiedIdentifier): string {
+  const santizedNs = qualified.namespace.replace(/\//g, "$");
+  return `${santizedNs}$${qualified.name}`;
 }

@@ -27,13 +27,13 @@ export function formatIRExpr(expr: ir.Expr): string {
 
 export function programToSexpr(program: ir.Program): SExpr[] {
   // TODO also show other values (types, etc)
-  return program.values.map((decl) => {
+  return program.values.map((decl): SExpr => {
     const e = new ExprPrinter(
       program.package_,
       program.namespace,
-      decl.name,
+      decl.name.name,
     ).toSexpr(decl.value);
-    return [sym`:def`, { type: "symbol", value: decl.name }, e];
+    return [sym`:def`, { type: "symbol", value: decl.name.name }, e];
   });
 }
 

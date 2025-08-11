@@ -14,7 +14,7 @@ test("module (raw)", () => {
       "package_": "pkg",
       "values": [
         {
-          "name": "x",
+          "name": "pkg:Main:x",
           "value": {
             "type": "constant",
             "value": {
@@ -36,7 +36,7 @@ test("global value of same module (raw)", () => {
   expect(ir.values).toMatchInlineSnapshot(`
     [
       {
-        "name": "x",
+        "name": "pkg:Main:x",
         "value": {
           "type": "constant",
           "value": {
@@ -46,7 +46,7 @@ test("global value of same module (raw)", () => {
         },
       },
       {
-        "name": "y",
+        "name": "pkg:Main:y",
         "value": {
           "ident": {
             "name": "pkg:Main:x",

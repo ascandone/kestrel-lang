@@ -348,7 +348,11 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
 
       return [
         {
-          name: decl.binding.name,
+          name: new ir.QualifiedIdentifier(
+            module.moduleInterface.package_,
+            module.moduleInterface.ns,
+            decl.binding.name,
+          ),
           value: emitter.lowerExpr(decl.value),
         },
       ];
