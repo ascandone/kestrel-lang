@@ -359,7 +359,7 @@ test("pattern matching in let", () => {
   `);
 });
 
-test.todo("pattern matching in let#", () => {
+test("pattern matching in let#", () => {
   const ir = toSexpr(`
     type Box<a> {
       Box(a),
@@ -378,7 +378,7 @@ test.todo("pattern matching in let#", () => {
                 0
                 (:fn (#0)
                     (:match #0
-                      ((Box x#0) x#0))))))"
+                        ((Box x#0) x#0))))))"
   `);
 });
 
