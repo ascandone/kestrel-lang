@@ -357,6 +357,19 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
       ];
     }),
 
+    structs: module.typeDeclarations.flatMap((decl): ir.Struct[] => {
+      if (decl.type !== "struct") {
+        return [];
+      }
+
+      return [
+        {
+          name: mkIdent(decl.name),
+          fields: decl.fields.map((f) => f.name),
+        },
+      ];
+    }),
+
     values: module.declarations.flatMap((decl): ir.Value[] => {
       if (decl.extern) {
         return [];

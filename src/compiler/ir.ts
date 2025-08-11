@@ -108,12 +108,16 @@ export type Adt = {
   constructors: AdtConstructor[];
 };
 
+export type Struct = {
+  name: QualifiedIdentifier;
+  fields: string[];
+};
 export type Program = {
   package_: string;
   namespace: string;
 
   adts: Adt[];
-  // structs: Record<string, Adt>;
+  structs: Struct[];
 
   values: Value[];
 };

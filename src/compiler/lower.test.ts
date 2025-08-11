@@ -11,6 +11,10 @@ test("module (raw)", () => {
       Unary(a),
       Three(a, c, a),
     }
+    type Struct<a, b, c> struct {
+      a: a,
+      b: a,
+    }
     pub let x = 0
   `);
   expect(ir).toMatchInlineSnapshot(`
@@ -36,6 +40,15 @@ test("module (raw)", () => {
       ],
       "namespace": "Main",
       "package_": "pkg",
+      "structs": [
+        {
+          "fields": [
+            "a",
+            "b",
+          ],
+          "name": "pkg:Main:Struct",
+        },
+      ],
       "values": [
         {
           "name": "pkg:Main:x",
