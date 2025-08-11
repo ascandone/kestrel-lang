@@ -9,13 +9,10 @@ export type CompileOptions = {
   allowDeriving?: string[] | undefined;
 };
 
-export function compile(
-  package_: string,
-  ns: string,
-  ast: ir.Program,
-  options: CompileOptions = {},
-): string {
-  return new Compiler(package_, ns, options).compile(ast);
+export function compile(ast: ir.Program, options: CompileOptions = {}): string {
+  const compiler = new Compiler(options);
+  compiler.compile(ast);
+  return compiler.generate();
 }
 
 type CompilationMode =
@@ -27,7 +24,7 @@ type CompilationMode =
     }
   | { type: "return" };
 
-class Compiler {
+export class Compiler {
   private statementsBuf: t.Statement[] = [];
 
   /**
@@ -37,34 +34,33 @@ class Compiler {
    */
   private currentCompilerId = 0;
 
-  constructor(
-    // TODO add "private" and use the pkg to compile (or remove them)
-    readonly package_: string,
-    readonly ns: string,
+  constructor(readonly options: CompileOptions) {}
 
-    // TODO add "private"
-    readonly options: CompileOptions,
-  ) {}
-
-  compile(src: ir.Program): string {
-    const body: t.Statement[] = [];
-
-    for (const adt of src.adts) {
-      const out = compileAdt(adt);
-      body.push(...out);
-    }
-
-    for (const decl of src.values) {
-      const out = this.compileDeclaration(decl);
-      body.push(...out);
-    }
-
+  /**
+   * It feels like I'll regret having a compiler class which is not dependency-aware
+   *
+   * we'll have to refactor this in order to implement project watch (we want to keep the inverse dependency graph
+   * so that we know which module(s) to invalidate, and we'll want a single compilation unit per module)
+   * */
+  public generate(): string {
     return generate({
       type: "Program",
-      body,
+      body: this.statementsBuf,
       directives: [],
       sourceType: "script",
     }).code;
+  }
+
+  public compile(program: ir.Program) {
+    for (const adt of program.adts) {
+      const out = compileAdt(adt);
+      this.statementsBuf.push(...out);
+    }
+
+    for (const decl of program.values) {
+      const out = this.compileDeclaration(decl);
+      this.statementsBuf.push(...out);
+    }
   }
 
   private compileDeclaration(decl: ir.Value): t.Statement[] {

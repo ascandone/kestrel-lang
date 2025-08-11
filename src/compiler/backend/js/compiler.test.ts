@@ -3088,7 +3088,7 @@ function compileSrc(
 ) {
   resetTraitsRegistry(traitImpl);
   const program = typecheckSource_(package_, ns, src, deps);
-  const out = compile(package_, ns, lowerProgram(program), {
+  const out = compile(lowerProgram(program), {
     allowDeriving,
   });
   return out;
