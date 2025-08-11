@@ -63,38 +63,10 @@ describe("datatype representation", () => {
   test.todo("represent Unit as null");
 });
 
-describe.skip("misc", () => {
+describe("globals", () => {
   test("nested namespaces", () => {
     const out = compileSrc(`pub let x = 42`, { ns: "Json/Encode" });
     expect(out).toMatchInlineSnapshot(`"const Json$Encode$x = 42;"`);
-  });
-
-  test("refer to previously defined idents", () => {
-    const out = compileSrc(`
-      let x = 0
-      let y = x
-    `);
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$x = 0;
-      const Main$y = Main$x;"
-    `);
-  });
-
-  test("function calls with no args", () => {
-    const out = compileSrc(`
-      extern let f: Fn() -> a
-      let y = f()
-    `);
-    expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f();"`);
-  });
-
-  test("function calls with args", () => {
-    const out = compileSrc(`
-      extern let f: Fn(a, a) -> a
-      let y = f(1, 2)
-    `);
-
-    expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f(1, 2);"`);
   });
 });
 
@@ -205,6 +177,17 @@ describe.skip("let expressions", () => {
           "const Main$x$local = 0;
           const Main$x = Main$x$local + 1;"
       `);
+  });
+
+  test("refer to previously defined idents", () => {
+    const out = compileSrc(`
+      let x = 0
+      let y = x
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = 0;
+      const Main$y = Main$x;"
+    `);
   });
 
   test("let expressions with multiple vars", () => {
@@ -342,6 +325,16 @@ describe.skip("let expressions", () => {
 });
 
 describe.skip("lambda expressions", () => {
+  // TODO do we want an "application" section?
+  test("function calls with args", () => {
+    const out = compileSrc(`
+      extern let f: Fn(a, a) -> a
+      let y = f(1, 2)
+    `);
+
+    expect(out).toMatchInlineSnapshot(`"const Main$y = Main$f(1, 2);"`);
+  });
+
   test("toplevel fn without params", () => {
     const out = compileSrc(`
     let f = fn { 42 }
