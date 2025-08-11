@@ -8,7 +8,10 @@ import {
 } from "../../../typecheck/defaultImports";
 import { TVar } from "../../../type";
 import { lowerProgram } from "../../lower";
-import { typecheckSource, typecheckeSource_ } from "../../__test__/prelude";
+import {
+  typecheckSource,
+  typecheckeSource_ as typecheckSource_,
+} from "../../__test__/prelude";
 
 describe("datatype representation", () => {
   test("int", () => {
@@ -104,7 +107,7 @@ describe("global identifiers", () => {
 
 describe("constructor identifiers", () => {
   test("reference ctor identifier", () => {
-    const Dependency = typecheckeSource_(
+    const Dependency = typecheckSource_(
       "pkg",
       "Dependency",
       `
@@ -3086,7 +3089,7 @@ function compileSrc(
   }: CompileSrcOpts = {},
 ) {
   resetTraitsRegistry(traitImpl);
-  const program = typecheckeSource_(package_, ns, src, deps);
+  const program = typecheckSource_(package_, ns, src, deps);
   const out = compile(package_, ns, lowerProgram(program), {
     allowDeriving,
   });
