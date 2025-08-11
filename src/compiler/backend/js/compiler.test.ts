@@ -648,7 +648,7 @@ describe("if expressions", () => {
     expect(isZero(42)).toEqual("nope");
   });
 
-  test.skip("ifs as expr", () => {
+  test("ifs as expr", () => {
     const out = compileSrc(`
     extern let eq: Fn(a, a) -> Bool
     extern let f: Fn(a) -> a
@@ -662,13 +662,13 @@ describe("if expressions", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "let Main$x$GEN__0;
-      if (0 === 1) {
-        Main$x$GEN__0 = \`a\`;
+      "let $0;
+      if (Main$eq(0, 1)) {
+        $0 = \`a\`;
       } else {
-        Main$x$GEN__0 = \`b\`;
+        $0 = \`b\`;
       }
-      const Main$x = Main$f(Main$x$GEN__0);"
+      const Main$x = Main$f($0);"
     `);
   });
 });

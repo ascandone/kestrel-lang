@@ -29,6 +29,15 @@ type CompilationMode =
   | { type: "return" };
 
 class Compiler {
+  private statementsBuf: t.Statement[] = [];
+
+  /**
+   * the id used to generate the private _compiler_123 fresh identifiers
+   *
+   * TODO make sure this doesn't break project compilation
+   */
+  private currentCompilerId = 0;
+
   constructor(
     // TODO add "private" and use the pkg to compile (or remove them)
     readonly package_: string,
@@ -37,8 +46,6 @@ class Compiler {
     // TODO add "private"
     readonly options: CompileOptions,
   ) {}
-
-  private statementsBuf: t.Statement[] = [];
 
   compile(src: ir.Program): string {
     const body: t.Statement[] = [];
@@ -365,16 +372,19 @@ class Compiler {
       }
 
       case "if": {
-        throw new Error("TODO statement if");
-        // const ident = this.makeFreshIdent();
-        // this.compileExprAsJsStms(src,  {
-        //   type: "assign_var",
-        //   ident,
-        //   declare: true,
-        //   dictParams: [],
-        // });
-        // return ident;
-        break;
+        const ident: t.Identifier = {
+          type: "Identifier",
+          name: `$${this.currentCompilerId++}`,
+        };
+
+        this.compileExprAsJsStms(src, {
+          type: "assign_var",
+          ident,
+          declare: true,
+          // dictParams: [],
+        });
+
+        return ident;
       }
 
       case "match":
