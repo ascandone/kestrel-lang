@@ -1060,7 +1060,7 @@ describe("ADTs", () => {
   });
 });
 
-describe.skip("list literal", () => {
+describe("list literal", () => {
   test("compile empty list", () => {
     const out = compileSrc(`let x = []`);
     expect(out).toMatchInlineSnapshot(`
