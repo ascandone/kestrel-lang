@@ -673,37 +673,6 @@ describe("if expressions", () => {
   });
 });
 
-describe.skip("list literal", () => {
-  test("compile empty list", () => {
-    const out = compileSrc(`let x = []`);
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$x = List$Nil;"
-    `);
-  });
-
-  test("compile singleton list", () => {
-    const out = compileSrc(`let x = [42]`);
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$x = List$Cons(42, List$Nil);"
-    `);
-  });
-
-  test("compile list with many elements", () => {
-    const out = compileSrc(`let x = [0, 1, 2]`);
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$x = List$Cons(0, List$Cons(1, List$Cons(2, List$Nil)));"
-    `);
-  });
-
-  test("compile list that wraps statements", () => {
-    const out = compileSrc(`let x = [{ let loc = 42; loc }]`);
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$x$loc = 42;
-      const Main$x = List$Cons(Main$x$loc, List$Nil);"
-    `);
-  });
-});
-
 describe.skip("TCO", () => {
   test("does not apply inside infix application", () => {
     const out = compileSrc(`
@@ -1060,6 +1029,37 @@ describe.skip("ADTs", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$x = Mod$Variant(42);"
+    `);
+  });
+});
+
+describe.skip("list literal", () => {
+  test("compile empty list", () => {
+    const out = compileSrc(`let x = []`);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = List$Nil;"
+    `);
+  });
+
+  test("compile singleton list", () => {
+    const out = compileSrc(`let x = [42]`);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = List$Cons(42, List$Nil);"
+    `);
+  });
+
+  test("compile list with many elements", () => {
+    const out = compileSrc(`let x = [0, 1, 2]`);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x = List$Cons(0, List$Cons(1, List$Cons(2, List$Nil)));"
+    `);
+  });
+
+  test("compile list that wraps statements", () => {
+    const out = compileSrc(`let x = [{ let loc = 42; loc }]`);
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$x$loc = 42;
+      const Main$x = List$Cons(Main$x$loc, List$Nil);"
     `);
   });
 });
