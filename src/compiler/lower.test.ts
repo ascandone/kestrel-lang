@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
 import { typecheck } from "../typecheck";
 import { lowerProgram } from "./lower";
@@ -352,8 +352,9 @@ test("list literal", () => {
   `);
 });
 
-test("pattern matching", () => {
-  const ir = toSexpr(`
+describe("pattern matching", () => {
+  test("toplevel", () => {
+    const ir = toSexpr(`
     type Option<a> {
       None,
       Some(a),
@@ -368,7 +369,7 @@ test("pattern matching", () => {
     }
   `);
 
-  expect(ir).toMatchInlineSnapshot(`
+    expect(ir).toMatchInlineSnapshot(`
       "(:def m
           (:fn (x#0 f#0)
               (:match (f#0 x#0)
@@ -376,10 +377,10 @@ test("pattern matching", () => {
                   ((Some 0) x#0)
                   ((Some x#1) x#1))))"
     `);
-});
+  });
 
-test("pattern matching in let", () => {
-  const ir = toSexpr(`
+  test("pattern matching in let", () => {
+    const ir = toSexpr(`
     type Box<a> {
       Box(a),
     }
@@ -390,16 +391,16 @@ test("pattern matching in let", () => {
     }
   `);
 
-  expect(ir).toMatchInlineSnapshot(`
+    expect(ir).toMatchInlineSnapshot(`
     "(:def m
         (:let (#0 (Box 42))
             (:match #0
                 ((Box x#0) x#0))))"
   `);
-});
+  });
 
-test("pattern matching in let#", () => {
-  const ir = toSexpr(`
+  test("pattern matching in let#", () => {
+    const ir = toSexpr(`
     type Box<a> {
       Box(a),
     }
@@ -410,7 +411,7 @@ test("pattern matching in let#", () => {
     }
   `);
 
-  expect(ir).toMatchInlineSnapshot(`
+    expect(ir).toMatchInlineSnapshot(`
     "(:def m
         (:fn (mapper#0)
             (mapper#0
@@ -419,10 +420,10 @@ test("pattern matching in let#", () => {
                     (:match #0
                         ((Box x#0) x#0))))))"
   `);
-});
+  });
 
-test("pattern matching in fn", () => {
-  const ir = toSexpr(`
+  test("pattern matching in fn", () => {
+    const ir = toSexpr(`
     type Box<a> {
       Box(a),
     }
@@ -432,16 +433,16 @@ test("pattern matching in fn", () => {
     }
   `);
 
-  expect(ir).toMatchInlineSnapshot(`
+    expect(ir).toMatchInlineSnapshot(`
     "(:def m
         (:fn (#0)
             (:match #0
                 ((Box x#0) x#0))))"
   `);
-});
+  });
 
-test("pattern matching in fn with many args", () => {
-  const ir = toSexpr(`
+  test("pattern matching in fn with many args", () => {
+    const ir = toSexpr(`
     type Box<a> {
       Box(a),
     }
@@ -451,7 +452,7 @@ test("pattern matching in fn with many args", () => {
     }
   `);
 
-  expect(ir).toMatchInlineSnapshot(`
+    expect(ir).toMatchInlineSnapshot(`
     "(:def m
         (:fn (#0 z#0 #1)
             (:match #0
@@ -459,6 +460,7 @@ test("pattern matching in fn with many args", () => {
                     (:match #1
                         ((Box y#0) y#0))))))"
   `);
+  });
 });
 
 function getIR(src: string) {
