@@ -435,7 +435,7 @@ describe("fn", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$x = Main$f(() => 1);"`);
   });
 
-  test.skip("iifs", () => {
+  test("iifs", () => {
     // TODO should I fix grammar?
     const out = compileSrc(`
       let a = fn { 42 } ()

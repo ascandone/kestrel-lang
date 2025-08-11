@@ -535,15 +535,11 @@ export class Compiler {
       return this.compileInlinedCtor(src.caller.ident, src.args);
     }
 
-    if (src.caller.type === "identifier") {
-      return {
-        type: "CallExpression",
-        callee: this.compileExprAsJsExpr(src.caller),
-        arguments: src.args.map((arg) => this.compileExprAsJsExpr(arg)),
-      };
-    }
-
-    throw new Error("TODO complex appli");
+    return {
+      type: "CallExpression",
+      callee: this.compileExprAsJsExpr(src.caller),
+      arguments: src.args.map((arg) => this.compileExprAsJsExpr(arg)),
+    };
   }
 
   private compileInlinedCtor(
