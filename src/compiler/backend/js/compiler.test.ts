@@ -1167,10 +1167,9 @@ describe("list literal", () => {
   });
 });
 
-describe.skip("structs", () => {
+describe("structs", () => {
   test("struct declaration is a noop", () => {
     const out = compileSrc(`
-      extern type String
       type User struct {
           name: String
       }
@@ -1183,7 +1182,6 @@ describe.skip("structs", () => {
 
   test("struct declaration", () => {
     const out = compileSrc(`
-      extern type Int
       type Point struct {
           x: Int,
           y: Int,
@@ -1205,7 +1203,6 @@ describe.skip("structs", () => {
 
   test("empty struct is represented as {}", () => {
     const out = compileSrc(`
-      extern type Int
       type Nil struct { }
 
       pub let nil = Nil { }
@@ -1216,10 +1213,8 @@ describe.skip("structs", () => {
     `);
   });
 
-  test("field access", () => {
+  test.skip("field access", () => {
     const out = compileSrc(`
-      extern type Int
-
       type Box struct { x: Int }
 
       pub let b = Box { x: 42 } 
@@ -1235,7 +1230,7 @@ describe.skip("structs", () => {
     `);
   });
 
-  test("field access of struct lit", () => {
+  test.skip("field access of struct lit", () => {
     const out = compileSrc(`
       extern type Int
       type Box struct { x: Int }
@@ -1252,7 +1247,6 @@ describe.skip("structs", () => {
 
   test("struct update", () => {
     const out = compileSrc(`
-      extern type Int
       type Point3D struct {
         x: Int,
         y: Int,
@@ -1278,7 +1272,6 @@ describe.skip("structs", () => {
 
   test("struct update when expr is not ident", () => {
     const out = compileSrc(`
-      extern type Int
       type Point3D struct {
         x: Int,
         y: Int,
@@ -1294,11 +1287,11 @@ describe.skip("structs", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$update_y$GEN__0 = Main$get_original();
+      "const $0 = Main$get_original();
       const Main$update_y = {
-        x: Main$update_y$GEN__0.x,
+        x: $0.x,
         y: 42,
-        z: Main$update_y$GEN__0.z
+        z: $0.z
       };"
     `);
   });
@@ -1306,7 +1299,7 @@ describe.skip("structs", () => {
   // Note: this should never happen, as currently there aren't any
   // builtin infix ops that yield structs
   // still, it's better to handle it
-  test("field access of infix expr", () => {
+  test.skip("field access of infix expr", () => {
     const out = compileSrc(`
       pub let x_f = (1 + 2).x
     `);

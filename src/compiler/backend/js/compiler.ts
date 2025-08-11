@@ -44,6 +44,12 @@ export class Compiler {
   private knownAdts = new Map<string, ir.Adt>();
 
   /**
+   * Maps an structs's qualified name to its ir.
+   * same caveats of `knownAdts`
+   */
+  private knownStructs = new Map<string, ir.Struct>();
+
+  /**
    * It feels like I'll regret having a compiler class which is not dependency-aware
    *
    * we'll have to refactor this in order to implement project watch (we want to keep the inverse dependency graph
@@ -65,6 +71,10 @@ export class Compiler {
       this.knownAdts.set(adt.name.toString(), adt);
       const out = compileAdt(adt);
       this.statementsBuf.push(...out);
+    }
+
+    for (const struct of program.structs) {
+      this.knownStructs.set(struct.name.toString(), struct);
     }
 
     for (const decl of program.values) {
@@ -304,58 +314,17 @@ export class Compiler {
       case "if":
         return this.compileIfAsExpr(src);
 
+      case "struct-literal":
+        return this.compileStructLiteralAsExpr(src);
+
       case "match":
       case "field-access":
-      case "struct-literal":
         throw new Error("TODO implement (expr) : " + src.type);
     }
 
     // switch (src.type) {
     //   // The following branches rely on statement mode compilation
     //   case "match":
-    //   case "struct-literal": {
-    //     const resolution = src.struct.$resolution;
-    //     if (resolution === undefined) {
-    //       throw new Error(
-    //         "[unreachable] undefined resolution for struct declaration",
-    //       );
-    //     }
-    //     const properties: t.ObjectProperty[] = [];
-    //     let spreadIdentifier: t.Identifier | undefined;
-    //     for (const declarationField of resolution.declaration.fields) {
-    //       const structLitField = src.fields.find(
-    //         (f) => f.field.name === declarationField.name,
-    //       );
-    //       if (structLitField !== undefined) {
-    //         properties.push({
-    //           type: "ObjectProperty",
-    //           key: { type: "Identifier", name: structLitField.field.name },
-    //           value: this.compileExprAsJsExpr(structLitField.value, undefined),
-    //           shorthand: true,
-    //           computed: false,
-    //         });
-    //       } else if (src.spread === undefined) {
-    //         throw new Error("[unreachable] missing fields");
-    //       } else {
-    //         if (spreadIdentifier === undefined) {
-    //           spreadIdentifier = this.precomputeValue(src.spread);
-    //         }
-    //         properties.push({
-    //           type: "ObjectProperty",
-    //           key: { type: "Identifier", name: declarationField.name },
-    //           value: {
-    //             type: "MemberExpression",
-    //             object: spreadIdentifier,
-    //             property: { type: "Identifier", name: declarationField.name },
-    //             computed: false,
-    //           },
-    //           shorthand: true,
-    //           computed: false,
-    //         });
-    //       }
-    //     }
-    //     return { type: "ObjectExpression", properties };
-    //   }
     //   case "field-access":
     //     return {
     //       type: "MemberExpression",
@@ -571,11 +540,15 @@ export class Compiler {
     }
   }
 
-  private compileIfAsExpr(src: ir.Expr & { type: "if" }): t.Expression {
-    const ident: t.Identifier = {
+  private genCompilerIdent(): t.Identifier {
+    return {
       type: "Identifier",
       name: `$${this.currentCompilerId++}`,
     };
+  }
+
+  private compileIfAsExpr(src: ir.Expr & { type: "if" }): t.Expression {
+    const ident = this.genCompilerIdent();
 
     this.compileExprAsJsStms(src, {
       type: "assign_var",
@@ -633,6 +606,75 @@ export class Compiler {
       ],
     });
     return this.compileExprAsJsExpr(src.body);
+  }
+
+  private compileStructLiteralAsExpr(
+    src: ir.Expr & { type: "struct-literal" },
+  ): t.Expression {
+    const struct = this.knownStructs.get(src.struct.toString());
+    if (struct === undefined) {
+      throw new CompilationError("struct repr not found");
+    }
+
+    const properties: t.ObjectProperty[] = [];
+    let spreadIdentifier: t.Identifier | undefined;
+    for (const declarationField of struct.fields) {
+      const structLitField = src.fields.find(
+        (f) => f.name === declarationField,
+      );
+      if (structLitField !== undefined) {
+        properties.push({
+          type: "ObjectProperty",
+          key: { type: "Identifier", name: structLitField.name },
+          value: this.compileExprAsJsExpr(structLitField.expr),
+          shorthand: true,
+          computed: false,
+        });
+      } else if (src.spread === undefined) {
+        throw new Error("[unreachable] missing fields");
+      } else {
+        if (spreadIdentifier === undefined) {
+          spreadIdentifier = this.precomputeValue(src.spread);
+        }
+        properties.push({
+          type: "ObjectProperty",
+          key: { type: "Identifier", name: declarationField },
+          value: {
+            type: "MemberExpression",
+            object: spreadIdentifier,
+            property: { type: "Identifier", name: declarationField },
+            computed: false,
+          },
+          shorthand: true,
+          computed: false,
+        });
+      }
+    }
+    return { type: "ObjectExpression", properties };
+  }
+
+  private precomputeValue(
+    expr: ir.Expr,
+    makeIdent = () => this.genCompilerIdent(),
+  ): t.Identifier {
+    const jsExpr = this.compileExprAsJsExpr(expr);
+    if (jsExpr.type === "Identifier") {
+      return jsExpr;
+    }
+
+    const freshIdent = makeIdent();
+    this.statementsBuf.push({
+      type: "VariableDeclaration",
+      kind: "const",
+      declarations: [
+        {
+          type: "VariableDeclarator",
+          id: freshIdent,
+          init: jsExpr,
+        },
+      ],
+    });
+    return freshIdent;
   }
 
   private wrapStatements<T>(f: () => T): [T, t.Statement[]] {
