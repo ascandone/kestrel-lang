@@ -241,37 +241,8 @@ export class Compiler {
         //   }
         throw new Error("TODO implement (stm) : " + src.type);
 
-      case "if": {
-        if (as.type === "assign_var" && as.declare) {
-          this.statementsBuf.push({
-            type: "VariableDeclaration",
-            kind: "let",
-            declarations: [{ type: "VariableDeclarator", id: as.ident }],
-          });
-        }
-        const test = this.compileExprAsJsExpr(src.condition);
-        const [, thenBranchStmts] = this.wrapStatements(() =>
-          this.compileExprAsJsStms(src.then, doNotDeclare(as)),
-        );
-        const [, elseBranchStmts] = this.wrapStatements(() =>
-          this.compileExprAsJsStms(src.else, doNotDeclare(as)),
-        );
-        this.statementsBuf.push({
-          type: "IfStatement",
-          test: test,
-          consequent: {
-            type: "BlockStatement",
-            directives: [],
-            body: thenBranchStmts,
-          },
-          alternate: {
-            type: "BlockStatement",
-            directives: [],
-            body: elseBranchStmts,
-          },
-        });
-        return;
-      }
+      case "if":
+        return this.compileIfAsStmt(src, as);
 
       /*
         the following nodes can always be compiled as expression, thus we
@@ -546,6 +517,37 @@ export class Compiler {
       type: "Identifier",
       name: `$${this.currentCompilerId++}`,
     };
+  }
+
+  private compileIfAsStmt(src: ir.Expr & { type: "if" }, as: CompilationMode) {
+    if (as.type === "assign_var" && as.declare) {
+      this.statementsBuf.push({
+        type: "VariableDeclaration",
+        kind: "let",
+        declarations: [{ type: "VariableDeclarator", id: as.ident }],
+      });
+    }
+    const test = this.compileExprAsJsExpr(src.condition);
+    const [, thenBranchStmts] = this.wrapStatements(() =>
+      this.compileExprAsJsStms(src.then, doNotDeclare(as)),
+    );
+    const [, elseBranchStmts] = this.wrapStatements(() =>
+      this.compileExprAsJsStms(src.else, doNotDeclare(as)),
+    );
+    this.statementsBuf.push({
+      type: "IfStatement",
+      test: test,
+      consequent: {
+        type: "BlockStatement",
+        directives: [],
+        body: thenBranchStmts,
+      },
+      alternate: {
+        type: "BlockStatement",
+        directives: [],
+        body: elseBranchStmts,
+      },
+    });
   }
 
   private compileIfAsExpr(src: ir.Expr & { type: "if" }): t.Expression {
