@@ -96,11 +96,18 @@ class ExprEmitter {
 
       case "let": {
         if (stmt.pattern.type === "identifier") {
+          // this line must be above the expr lowering
+          const ident = this.mkIdent(stmt.pattern);
+
           return {
-            type: "let",
-            binding: this.mkIdent(stmt.pattern),
-            value: this.lowerExpr(stmt.value),
-            body: this.lowerBlock(statementsLeft, returning),
+            type: "match",
+            expr: this.lowerExpr(stmt.value),
+            clauses: [
+              [
+                { type: "identifier", ident },
+                this.lowerBlock(statementsLeft, returning),
+              ],
+            ],
           };
         }
 

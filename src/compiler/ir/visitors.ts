@@ -22,14 +22,6 @@ export function foldTree(expr: ir.Expr, f: (expr: ir.Expr) => ir.Expr) {
           args: expr.args.map(fold),
         };
 
-      case "let":
-        return {
-          type: "let",
-          binding: expr.binding,
-          value: fold(expr.value),
-          body: fold(expr.body),
-        };
-
       case "if":
         return {
           type: "if",
@@ -91,11 +83,6 @@ export function lazyVisit(
         for (const arg of expr.args) {
           fold(arg);
         }
-        return;
-
-      case "let":
-        fold(expr.value);
-        fold(expr.body);
         return;
 
       case "if":

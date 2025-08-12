@@ -29,12 +29,11 @@ export const foldIIF: Rule = (expr) => {
   return expr.caller.bindings.reduceRight((body, binding, index): ir.Expr => {
     // TODO throw if params do not match
     const matchingArg = expr.args[index]!;
-    return {
-      type: "let",
+    return ir.desugarLet({
       binding,
       value: matchingArg,
       body,
-    };
+    });
   }, expr.caller.body);
 };
 
@@ -74,9 +73,10 @@ export const foldIIF: Rule = (expr) => {
  * in this case, if we were to apply the rewrite rule, we'd prevent the user to cache the value once,
  * and the value would be computed again on every call of my_fn()
  */
-export const inlineLet: Rule = (expr) => {
-  if (expr.type !== "let") {
-    return expr;
+export const inlineLet: Rule = (expr_) => {
+  const expr = ir.mkLetSugar(expr_);
+  if (expr === undefined) {
+    return expr_;
   }
 
   switch (expr.value.type) {
@@ -92,7 +92,7 @@ export const inlineLet: Rule = (expr) => {
   }
 
   // TODO implement rule 2
-  return expr;
+  return expr_;
 };
 
 const bindingAppearsAtMostOnce = (

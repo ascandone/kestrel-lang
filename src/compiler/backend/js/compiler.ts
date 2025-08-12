@@ -111,8 +111,11 @@ export class Compiler {
     return stms;
   }
 
-  private castExprToStmt(src: ir.Expr, as: CompilationMode): void {
-    const expr = this.compileExprAsJsExpr(src);
+  /**
+   * Either assign the statement to a constant or create a return statement with it
+   * (depending on the CompilationMode)
+   */
+  private castExprToStmt(expr: t.Expression, as: CompilationMode): void {
     switch (as.type) {
       case "assign_var":
         if (as.declare) {
@@ -192,7 +195,6 @@ export class Compiler {
         like `const x = <expr>`
         (note the return after the switch case)
        */
-      case "let":
       case "constant":
       case "struct-literal":
       case "identifier":
@@ -204,7 +206,8 @@ export class Compiler {
         src as never;
     }
 
-    return this.castExprToStmt(src, as);
+    const expr = this.compileExprAsJsExpr(src);
+    return this.castExprToStmt(expr, as);
   }
 
   private compileExprAsJsExpr(src: ir.Expr): t.Expression {
@@ -218,9 +221,6 @@ export class Compiler {
       case "application":
         return this.compileApplicationAsExpr(src);
 
-      case "let":
-        return this.compileLetAsExpr(src);
-
       case "fn":
         return this.compileFnAsExpr(src);
 
@@ -231,6 +231,8 @@ export class Compiler {
         return this.compileFieldAccessAsExpr(src);
 
       case "match":
+        return this.compileMatchAsExpr(src);
+
       case "if":
         return this.compileAsDeclaration(src);
 
@@ -567,13 +569,28 @@ export class Compiler {
     }
   }
 
+  private compileMatchAsExpr(src: ir.Expr & { type: "match" }): t.Expression {
+    const letSugar = isMatchLetLike(src);
+    if (letSugar === undefined) {
+      return this.compileAsDeclaration(src);
+    }
+    return this.compileLetAsExpr(letSugar);
+  }
+
   private compileMatchAsStmt(
     src: ir.Expr & { type: "match" },
     as: CompilationMode,
-  ) {
-    const letLikeMatch = isLetLikeMatch(src);
+  ): void {
+    const letSugar = isMatchLetLike(src);
 
-    if (as.type === "assign_var" && as.declare && letLikeMatch === undefined) {
+    // TODO clean it up so that we don't implement let-like match twice
+    // if (letSugar !== undefined) {
+    //   const e = this.compileLetAsExpr(letSugar);
+    //   this.castExprToStmt(e, as);
+    //   return;
+    // }
+
+    if (as.type === "assign_var" && as.declare && letSugar === undefined) {
       this.statementsBuf.push({
         type: "VariableDeclaration",
         kind: "let",
@@ -582,11 +599,11 @@ export class Compiler {
     }
 
     const matchedExpr = this.precomputeValue(src.expr, (): t.Identifier => {
-      if (letLikeMatch === undefined) {
+      if (letSugar === undefined) {
         return this.genCompilerIdent();
       }
 
-      return compileLocalIdent(letLikeMatch);
+      return compileLocalIdent(letSugar.binding);
     });
 
     const checks: [
@@ -596,7 +613,10 @@ export class Compiler {
     for (const [pattern, retExpr] of src.clauses) {
       const exprs = this.compileCheckPatternConditions(pattern, matchedExpr);
       const [, stms] = this.wrapStatements(() => {
-        this.compileExprAsJsStms(retExpr, letLikeMatch ? as : doNotDeclare(as));
+        this.compileExprAsJsStms(
+          retExpr,
+          letSugar === undefined ? doNotDeclare(as) : as,
+        );
       });
       if (exprs.length === 0) {
         checks.push([undefined, stms]);
@@ -725,7 +745,7 @@ export class Compiler {
     };
   }
 
-  private compileLetAsExpr(src: ir.Expr & { type: "let" }): t.Expression {
+  private compileLetAsExpr(src: ir.LetSugar): t.Expression {
     this.statementsBuf.push({
       type: "VariableDeclaration",
       kind: "const",
@@ -790,6 +810,7 @@ export class Compiler {
     makeIdent = () => this.genCompilerIdent(),
   ): t.Identifier {
     const jsExpr = this.compileExprAsJsExpr(expr);
+    // TODO maybe we should avoid this inlining?
     if (jsExpr.type === "Identifier") {
       return jsExpr;
     }
@@ -991,32 +1012,40 @@ function buildCtorCall(tagIndex: number, args: t.Expression[]): t.Expression {
   };
 }
 
-function isLetLikeMatch(
+function isMatchLetLike(
   src: ir.Expr & { type: "match" },
-): (ir.Ident & { type: "local" }) | undefined {
+): ir.LetSugar | undefined {
   if (src.clauses.length !== 1) {
     return undefined;
   }
+  const [pat, body] = src.clauses[0]!;
+  const binding = isUnboxedCtor(pat);
+  if (binding === undefined) {
+    return undefined;
+  }
 
-  // TODO use while
-  function isUnboxedCtor(
-    ctor: ir.MatchPattern,
-  ): (ir.Ident & { type: "local" }) | undefined {
+  return {
+    binding,
+    body,
+    value: src.expr,
+  };
+}
+
+function isUnboxedCtor(
+  ctor: ir.MatchPattern,
+): (ir.Ident & { type: "local" }) | undefined {
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
     switch (ctor.type) {
       case "identifier":
         return ctor.ident;
       case "lit":
         return undefined;
-      case "constructor": {
+      case "constructor":
         if (ctor.args.length !== 1) {
           return undefined;
         }
-
-        return isUnboxedCtor(ctor.args[0]!);
-      }
+        ctor = ctor.args[0]!;
     }
   }
-
-  const [pat] = src.clauses[0]!;
-  return isUnboxedCtor(pat);
 }

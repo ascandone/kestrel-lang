@@ -92,16 +92,6 @@ class ExprPrinter {
           this.toSexpr(expr.body),
         ];
 
-      case "let":
-        return [
-          sym`:let`,
-          [
-            { type: "symbol", value: this.localIdent(expr.binding) },
-            this.toSexpr(expr.value),
-          ],
-          this.toSexpr(expr.body),
-        ];
-
       case "if":
         return [
           sym`:if`,

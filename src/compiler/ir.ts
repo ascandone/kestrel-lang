@@ -65,12 +65,6 @@ export type Expr =
       args: Expr[];
     }
   | {
-      type: "let";
-      binding: Ident & { type: "local" };
-      value: Expr;
-      body: Expr;
-    }
-  | {
       type: "if";
       condition: Expr;
       then: Expr;
@@ -158,4 +152,32 @@ export function localIdentEq(
     x.unique === y.unique &&
     x.declaration.equals(y.declaration)
   );
+}
+
+export type LetSugar = {
+  binding: Ident & { type: "local" };
+  value: Expr;
+  body: Expr;
+};
+export function desugarLet(let_: LetSugar): Expr {
+  return {
+    type: "match",
+    expr: let_.value,
+    clauses: [[{ type: "identifier", ident: let_.binding }, let_.body]],
+  };
+}
+export function mkLetSugar(expr: Expr): LetSugar | undefined {
+  if (expr.type !== "match" || expr.clauses.length !== 1) {
+    return undefined;
+  }
+  const [pat, body] = expr.clauses[0]!;
+  if (pat.type !== "identifier") {
+    return undefined;
+  }
+
+  return {
+    binding: pat.ident,
+    value: expr.expr,
+    body,
+  };
 }

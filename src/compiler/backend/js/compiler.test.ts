@@ -303,8 +303,7 @@ describe("let expressions", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$x$a = 0;
-      const Main$x$mid = Main$x$a;
-      const Main$x$a$1 = Main$x$mid + 1;
+      const Main$x$a$1 = Main$x$a + 1;
       const Main$x = Main$x$a$1;"
     `);
   });
@@ -1808,8 +1807,7 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$x$_ = 42;
-      const $0 = 0;
-      const Main$x = Main$f($0);"
+      const Main$x = Main$f(0);"
     `);
   });
 

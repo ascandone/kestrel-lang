@@ -64,17 +64,17 @@ describe("fold iif", () => {
     );
 
     expect(formatIRExpr(optimized)).toEqual(
-      formatIRExpr({
-        type: "let",
-        binding: mkBinding("a"),
-        value: strConst("a"),
-        body: {
-          type: "let",
-          binding: mkBinding("b"),
-          value: strConst("b"),
-          body: strConst("value"),
-        },
-      }),
+      formatIRExpr(
+        ir.desugarLet({
+          binding: mkBinding("a"),
+          value: strConst("a"),
+          body: ir.desugarLet({
+            binding: mkBinding("b"),
+            value: strConst("b"),
+            body: strConst("value"),
+          }),
+        }),
+      ),
     );
   });
 
@@ -108,8 +108,7 @@ describe("inline let", () => {
      * ```
      */
     const optimized = optimize.inlineLet(
-      {
-        type: "let",
+      ir.desugarLet({
         binding: mkBinding("x"),
         value: strConst("a"),
         body: {
@@ -117,7 +116,7 @@ describe("inline let", () => {
           caller: mkIdent("add"),
           args: [mkIdent("x"), mkIdent("x")],
         },
-      },
+      }),
       baseCtx,
     );
 
@@ -142,8 +141,7 @@ describe("inline let", () => {
      * ```
      */
     const optimized = optimize.inlineLet(
-      {
-        type: "let",
+      ir.desugarLet({
         binding: mkBinding("x"),
         value,
         body: {
@@ -151,7 +149,7 @@ describe("inline let", () => {
           caller: { type: "identifier", ident: mkBinding("x") },
           args: [],
         },
-      },
+      }),
       baseCtx,
     );
 
@@ -165,8 +163,7 @@ describe("inline let", () => {
   });
 
   test("prevent inlining when complex value occurs more than once", () => {
-    const original: ir.Expr = {
-      type: "let",
+    const original: ir.Expr = ir.desugarLet({
       binding: mkBinding("x"),
       value: { type: "fn", bindings: [], body: strConst("str") },
       body: {
@@ -174,7 +171,7 @@ describe("inline let", () => {
         caller: mkIdent("f"),
         args: [mkIdent("x"), mkIdent("x")],
       },
-    };
+    });
 
     /**
      * ```kestrel
@@ -190,8 +187,7 @@ describe("inline let", () => {
   });
 
   test("prevent inlining when complex value occurs within a lambda", () => {
-    const original: ir.Expr = {
-      type: "let",
+    const original: ir.Expr = ir.desugarLet({
       binding: mkBinding("x"),
       value: {
         type: "application",
@@ -203,7 +199,7 @@ describe("inline let", () => {
         bindings: [],
         body: { type: "identifier", ident: mkBinding("x") },
       },
-    };
+    });
 
     /**
      * ```kestrel

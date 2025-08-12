@@ -138,8 +138,8 @@ test("local value", () => {
   `);
   expect(ir).toMatchInlineSnapshot(`
     "(:def glb
-        (:let (loc#0 0)
-            loc#0))"
+        (:match 0
+            (loc#0 loc#0)))"
   `);
 });
 
@@ -157,12 +157,12 @@ test("local value count resets on new declrs", () => {
   `);
   expect(ir).toMatchInlineSnapshot(`
     "(:def glb1
-        (:let (loc#0 0)
-            loc#0))
+        (:match 0
+            (loc#0 loc#0)))
 
     (:def glb2
-        (:let (loc#0 0)
-            loc#0))"
+        (:match 0
+            (loc#0 loc#0)))"
   `);
 });
 
@@ -178,10 +178,12 @@ test("local value (shadowing)", () => {
   expect(ir).toMatchInlineSnapshot(
     `
     "(:def glb
-        (:let (loc#0 0)
-            (:let (mid#0 loc#0)
-                (:let (loc#1 mid#0)
-                    loc#1))))"
+        (:match 0
+            (loc#0
+                (:match loc#0
+                    (mid#0
+                        (:match mid#0
+                            (loc#1 loc#1)))))))"
   `,
   );
 });
@@ -238,9 +240,10 @@ test("shadowed fn args", () => {
   expect(ir).toMatchInlineSnapshot(
     `
     "(:def f
-        (:let (a#0 0)
-            (:fn (a#1)
-                a#1)))"
+        (:match 0
+            (a#0
+                (:fn (a#1)
+                    a#1))))"
   `,
   );
 });
@@ -262,10 +265,10 @@ test("proper counting", () => {
 
     (:def glb
         (f
-            (:let (x#0 0)
-                x#0)
-            (:let (x#1 0)
-                x#1)))"
+            (:match 0
+                (x#0 x#0))
+            (:match 0
+                (x#1 x#1))))"
   `,
   );
 });
