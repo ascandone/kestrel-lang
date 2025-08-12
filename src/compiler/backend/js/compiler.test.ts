@@ -1690,7 +1690,23 @@ describe("pattern matching", () => {
     `);
   });
 
-  test.todo("pattern matching Unit values");
+  test("pattern matching Unit values", () => {
+    const out = compileSrc(
+      `
+
+    type Unit { Unit }
+    let x = match Unit {
+      Unit => 0,
+    }
+  `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Unit = 0;
+      let Main$x;
+      Main$x = 0;"
+    `);
+  });
 
   test("toplevel ident in p matching", () => {
     const out = compileSrc(`
@@ -1850,7 +1866,7 @@ describe("pattern matching", () => {
     `);
   });
 
-  test.skip("compiling let match", () => {
+  test("compiling let match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1866,7 +1882,7 @@ describe("pattern matching", () => {
     `);
   });
 
-  test.skip("compiling let within let match", () => {
+  test("compiling let within let match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1881,15 +1897,14 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Box = _0 => _0;
-      const Main$f = b => {
-        const GEN__0$c = 42;
-        const GEN__0 = GEN__0$c;
-        return GEN__0;
+      const Main$f = Main$f$b => {
+        const Main$f$c = 42;
+        return Main$f$c;
       };"
     `);
   });
 
-  test.skip("compiling nested let match", () => {
+  test("compiling nested let match", () => {
     const out = compileSrc(`
     type Pair { Pair(Int, Int) }
 
@@ -1905,14 +1920,11 @@ describe("pattern matching", () => {
         _0,
         _1
       });
-      const Main$f = Main$f$b => {
-        const $0 = Main$f$b;
-        return $0._1._0;
-      };"
+      const Main$f = Main$f$b => Main$f$b._1._0;"
     `);
   });
 
-  test.skip("compiling fn match", () => {
+  test("compiling fn match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1921,11 +1933,11 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Box = _0 => _0;
-      const Main$f = (Main$f$x, Main$f$_, Main$f$y) => Main$f$_;"
+      const Main$f = (Main$f$x, Main$f$_IR_GEN, Main$f$y) => Main$f$_IR_GEN;"
     `);
   });
 
-  test.skip("statements inside p match", () => {
+  test("statements inside p match", () => {
     const out = compileSrc(`
     type Pair<a, b> { Pair(a, b), None }
 
@@ -1949,11 +1961,11 @@ describe("pattern matching", () => {
       const Main$None = {
         $: 1
       };
-      const Main$f = x => {
-        if (x.$ === 0) {
-          const a = x._0 + x._1;
-          return a + 1;
-        } else if (x.$ === 1) {
+      const Main$f = Main$f$x => {
+        if (Main$f$x.$ === 0) {
+          const Main$f$a = Main$f$x._0 + Main$f$x._1;
+          return Main$f$a + 1;
+        } else if (Main$f$x.$ === 1) {
           return 100;
         } else {
           throw new Error("[non exhaustive match]");
