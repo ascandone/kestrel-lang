@@ -1501,8 +1501,8 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$id = Main$id$a => Main$id$a;
-      const $0 = 0;
-      const Main$v = Main$id($0);"
+      const Main$v$a = 0;
+      const Main$v = Main$id(Main$v$a);"
     `);
   });
 
@@ -1582,8 +1582,8 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$A = _0 => _0;
-      const $0 = 42;
-      const Main$x = $0;"
+      const Main$x$arg = 42;
+      const Main$x = Main$x$arg;"
     `);
   });
 
@@ -1733,8 +1733,8 @@ describe("pattern matching", () => {
   }
 `);
     expect(out).toMatchInlineSnapshot(`
-      "const $0 = 42;
-      const Main$x = $0;"
+      "const Main$x$a = 42;
+      const Main$x = Main$x$a;"
     `);
   });
 
@@ -1772,8 +1772,8 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$f = () => {
-        const $0 = 42;
-        return $0;
+        const Main$f$x = 42;
+        return Main$f$x;
       };"
     `);
   });
@@ -1792,8 +1792,8 @@ describe("pattern matching", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$Box = _0 => _0;
       const Main$f = () => {
-        const $0 = 42;
-        return $0 + 1;
+        const Main$f$x = 42;
+        return Main$f$x + 1;
       };"
     `);
   });
@@ -1807,7 +1807,7 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const $1 = 42;
+      "const Main$x$_ = 42;
       const $0 = 0;
       const Main$x = Main$f($0);"
     `);

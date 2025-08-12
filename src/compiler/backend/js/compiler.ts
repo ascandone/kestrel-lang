@@ -581,11 +581,13 @@ export class Compiler {
       });
     }
 
-    /**
-     * TODO (when exhaustive pat match is impl) if there's at least on pattern with a plain ident, use that one instead
-     * note we can also hardcode the check that prevents many identifier patterns
-     */
-    const matchedExpr = this.precomputeValue(src.expr);
+    const matchedExpr = this.precomputeValue(src.expr, (): t.Identifier => {
+      if (letLikeMatch === undefined) {
+        return this.genCompilerIdent();
+      }
+
+      return compileLocalIdent(letLikeMatch);
+    });
 
     const checks: [
       condition: t.Expression | undefined,
@@ -991,13 +993,15 @@ function buildCtorCall(tagIndex: number, args: t.Expression[]): t.Expression {
 
 function isLetLikeMatch(
   src: ir.Expr & { type: "match" },
-): ir.Ident | undefined {
+): (ir.Ident & { type: "local" }) | undefined {
   if (src.clauses.length !== 1) {
     return undefined;
   }
 
   // TODO use while
-  function isUnboxedCtor(ctor: ir.MatchPattern): ir.Ident | undefined {
+  function isUnboxedCtor(
+    ctor: ir.MatchPattern,
+  ): (ir.Ident & { type: "local" }) | undefined {
     switch (ctor.type) {
       case "identifier":
         return ctor.ident;
