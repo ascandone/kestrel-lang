@@ -71,3 +71,67 @@ export function foldTree(expr: ir.Expr, f: (expr: ir.Expr) => ir.Expr) {
 
   return fold(expr);
 }
+
+export function lazyVisit(
+  expr: ir.Expr,
+  f: (expr: ir.Expr, next: () => void) => void,
+) {
+  function step(expr: ir.Expr): void {
+    switch (expr.type) {
+      case "identifier":
+      case "constant":
+        return;
+
+      case "fn":
+        fold(expr.body);
+        return;
+
+      case "application":
+        fold(expr.caller);
+        for (const arg of expr.args) {
+          fold(arg);
+        }
+        return;
+
+      case "let":
+        fold(expr.value);
+        fold(expr.body);
+        return;
+
+      case "if":
+        fold(expr.condition);
+        fold(expr.then);
+        fold(expr.else);
+        return;
+
+      case "match":
+        fold(expr.expr);
+        for (const [, clause] of expr.clauses) {
+          fold(clause);
+        }
+        return;
+
+      case "field-access":
+        fold(expr.struct);
+        return;
+
+      case "struct-literal":
+        for (const field of expr.fields) {
+          fold(field.expr);
+        }
+        if (expr.spread) {
+          fold(expr.spread);
+        }
+        return;
+
+      default:
+        expr satisfies never;
+    }
+  }
+
+  function fold(expr: ir.Expr) {
+    return f(expr, () => step(expr));
+  }
+
+  return fold(expr);
+}

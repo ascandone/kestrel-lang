@@ -55,7 +55,7 @@ describe("fold iif", () => {
         type: "application",
         caller: {
           type: "fn",
-          bindings: [mkIdent("a"), mkIdent("b")],
+          bindings: [mkBinding("a"), mkBinding("b")],
           body: strConst("value"),
         },
         args: [strConst("a"), strConst("b")],
@@ -66,11 +66,11 @@ describe("fold iif", () => {
     expect(formatIRExpr(optimized)).toEqual(
       formatIRExpr({
         type: "let",
-        binding: mkIdent("a"),
+        binding: mkBinding("a"),
         value: strConst("a"),
         body: {
           type: "let",
-          binding: mkIdent("b"),
+          binding: mkBinding("b"),
           value: strConst("b"),
           body: strConst("value"),
         },
@@ -110,15 +110,12 @@ describe("inline let", () => {
     const optimized = optimize.inlineLet(
       {
         type: "let",
-        binding: mkIdent("x"),
+        binding: mkBinding("x"),
         value: strConst("a"),
         body: {
           type: "application",
-          caller: { type: "identifier", ident: mkIdent("add") },
-          args: [
-            { type: "identifier", ident: mkIdent("x") },
-            { type: "identifier", ident: mkIdent("x") },
-          ],
+          caller: mkIdent("add"),
+          args: [mkIdent("x"), mkIdent("x")],
         },
       },
       baseCtx,
@@ -126,12 +123,99 @@ describe("inline let", () => {
 
     const expected: ir.Expr = {
       type: "application",
-      caller: { type: "identifier", ident: mkIdent("add") },
+      caller: mkIdent("add"),
       args: [strConst("a"), strConst("a")],
     };
 
     expect(formatIRExpr(optimized)).toEqual(formatIRExpr(expected));
   });
+
+  test("inline when value is only used once", () => {
+    const value: ir.Expr = { type: "fn", bindings: [], body: strConst("str") };
+
+    /**
+     * ```kestrel
+     * // src:
+     * { let x = fn { 42 }; x() }
+     * // =>
+     * fn { 42 } ()
+     * ```
+     */
+    const optimized = optimize.inlineLet(
+      {
+        type: "let",
+        binding: mkBinding("x"),
+        value,
+        body: {
+          type: "application",
+          caller: { type: "identifier", ident: mkBinding("x") },
+          args: [],
+        },
+      },
+      baseCtx,
+    );
+
+    const expected: ir.Expr = {
+      type: "application",
+      caller: value,
+      args: [],
+    };
+
+    expect(formatIRExpr(optimized)).toEqual(formatIRExpr(expected));
+  });
+
+  test("prevent inlining when complex value occurs more than once", () => {
+    const original: ir.Expr = {
+      type: "let",
+      binding: mkBinding("x"),
+      value: { type: "fn", bindings: [], body: strConst("str") },
+      body: {
+        type: "application",
+        caller: mkIdent("f"),
+        args: [mkIdent("x"), mkIdent("x")],
+      },
+    };
+
+    /**
+     * ```kestrel
+     * // src:
+     * { let x = fn { 42 }; f(x, x) }
+     * // =>
+     * fn { 42 } ()
+     * ```
+     */
+    const optimized = optimize.inlineLet(original, baseCtx);
+
+    expect(formatIRExpr(optimized)).toEqual(formatIRExpr(original));
+  });
+
+  test("prevent inlining when complex value occurs within a lambda", () => {
+    const original: ir.Expr = {
+      type: "let",
+      binding: mkBinding("x"),
+      value: {
+        type: "application",
+        caller: { type: "identifier", ident: mkBinding("f") },
+        args: [],
+      },
+      body: {
+        type: "fn",
+        bindings: [],
+        body: { type: "identifier", ident: mkBinding("x") },
+      },
+    };
+
+    /**
+     * ```kestrel
+     * { let x = f(); fn { x } }
+     * ```
+     */
+    const optimized = optimize.inlineLet(original, baseCtx);
+
+    expect(formatIRExpr(optimized)).toEqual(formatIRExpr(original));
+  });
+
+  test.todo("prevent previous rule when value is a lambda");
 });
 
 describe("mixed rules", () => {
@@ -165,7 +249,7 @@ function strConst(value: string): ir.Expr {
   };
 }
 
-const mkIdent = (
+const mkBinding = (
   name: string,
   opts = { unique: 0, decl: "glb" },
 ): ir.Ident & { type: "local" } => ({
@@ -173,6 +257,14 @@ const mkIdent = (
   declaration: new ir.QualifiedIdentifier("pkg", "Main", opts.decl),
   name,
   unique: opts.unique,
+});
+
+const mkIdent = (
+  name: string,
+  opts = { unique: 0, decl: "glb" },
+): ir.Expr & { type: "identifier" } => ({
+  type: "identifier",
+  ident: mkBinding(name, opts),
 });
 
 function applyRule(rule: optimize.Rule, src: string) {

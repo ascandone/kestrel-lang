@@ -1,5 +1,5 @@
 import * as ir from "./ir";
-import { foldTree } from "./ir/visitors";
+import { foldTree, lazyVisit } from "./ir/visitors";
 
 export type Ctx = object;
 export type Rule = (expr: ir.Expr, ctx: Ctx) => ir.Expr;
@@ -85,6 +85,12 @@ export const inlineLet: Rule = (expr) => {
       return substitute(expr.body, expr.binding, expr.value);
   }
 
+  // else, check occurrences
+  const isJustOneOcc = bindingAppearsAtMostOnce(expr.body, expr.binding);
+  if (isJustOneOcc) {
+    return substitute(expr.body, expr.binding, expr.value);
+  }
+
   // TODO implement rule 2
   return expr;
 };
@@ -99,6 +105,38 @@ function localIdentEq(
     x.declaration.equals(y.declaration)
   );
 }
+
+const bindingAppearsAtMostOnce = (
+  expr: ir.Expr,
+  binding: ir.Ident & { type: "local" },
+) => {
+  let count = 0;
+  let returnValue = true;
+
+  lazyVisit(expr, (expr, next) => {
+    if (expr.type === "fn") {
+      returnValue = false;
+      return;
+    }
+
+    if (
+      expr.type === "identifier" &&
+      expr.ident.type === "local" &&
+      localIdentEq(expr.ident, binding)
+    ) {
+      count++;
+    }
+
+    if (count > 1) {
+      returnValue = false;
+      return;
+    }
+
+    next();
+  });
+
+  return returnValue;
+};
 
 const substitute = (
   expr: ir.Expr,
