@@ -1,4 +1,5 @@
 import * as ir from "./ir";
+import { foldTree } from "./ir/visitors";
 
 export type Ctx = object;
 export type Rule = (expr: ir.Expr, ctx: Ctx) => ir.Expr;
@@ -99,84 +100,22 @@ function localIdentEq(
   );
 }
 
-function substitute(
+const substitute = (
   expr: ir.Expr,
   binding: ir.Ident & { type: "local" },
   with_: ir.Expr,
-): ir.Expr {
-  const substitute_ = (expr: ir.Expr) => substitute(expr, binding, with_);
+) =>
+  foldTree(expr, (expr, next) => {
+    if (
+      expr.type === "identifier" &&
+      expr.ident.type === "local" &&
+      localIdentEq(expr.ident, binding)
+    ) {
+      return with_;
+    }
 
-  switch (expr.type) {
-    case "identifier":
-      if (expr.ident.type === "local" && localIdentEq(expr.ident, binding)) {
-        return with_;
-      }
-
-    case "constant":
-      return expr;
-
-    case "fn":
-      // Each binding is unique, thus we don't need to worry about shadowing
-      return {
-        type: "fn",
-        bindings: expr.bindings,
-        body: substitute_(expr.body),
-      };
-
-    case "application":
-      return {
-        type: "application",
-        caller: substitute_(expr.caller),
-        args: expr.args.map(substitute_),
-      };
-
-    case "let":
-      return {
-        type: "let",
-        binding: expr.binding,
-        value: substitute_(expr.value),
-        body: substitute_(expr.body),
-      };
-
-    case "if":
-      return {
-        type: "if",
-        condition: substitute_(expr.condition),
-        then: substitute_(expr.then),
-        else: substitute_(expr.else),
-      };
-
-    case "match":
-      return {
-        type: "match",
-        expr: substitute_(expr.expr),
-        clauses: expr.clauses.map(([pat, clause]) => [
-          pat,
-          substitute_(clause),
-        ]),
-      };
-
-    case "field-access":
-      return {
-        type: "field-access",
-        field: expr.field,
-        struct: substitute_(expr.struct),
-      };
-
-    case "struct-literal":
-      return {
-        type: "struct-literal",
-        struct: expr.struct,
-        fields: expr.fields.map((field) => ({
-          name: field.name,
-          expr: substitute_(field.expr),
-        })),
-        spread:
-          expr.spread === undefined ? undefined : substitute_(expr.spread),
-      };
-  }
-  return expr;
-}
+    return next();
+  });
 
 /**
  * Rules composition: evaluates rules one at a time once, over the result of the previous rule
