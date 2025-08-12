@@ -76,16 +76,17 @@ describe("fold iif", () => {
         },
       }),
     );
+  });
 
-    test("apply recursively", () => {
-      const out = applyRule(
-        optimize.foldIIF,
-        `
+  test("apply recursively", () => {
+    const out = applyRule(
+      optimize.foldIIF,
+      `
         let id = fn a { a }
         let x =  id((fn { "value" })())
     `,
-      );
-      expect(out).toMatchInlineSnapshot(`
+    );
+    expect(out).toMatchInlineSnapshot(`
       "(:def id
           (:fn (a#0)
               a#0))
@@ -93,7 +94,6 @@ describe("fold iif", () => {
       (:def x
           (id "value"))"
     `);
-    });
   });
 });
 
