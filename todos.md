@@ -13,6 +13,7 @@
     - inline globals
     - constant folding
     - within lambdas, cache sub-expression that only depend on free values in an outer let
+    - eta reduction
 - test: test self-recursive let exprs (and prevent binding pollution)
 - refactor: treat constructor and ident as separate nodes
 - feat: add package and module to compilation output
