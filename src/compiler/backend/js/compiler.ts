@@ -4,6 +4,7 @@ import generate from "@babel/generator";
 import * as ir from "../../ir";
 import { CORE_PACKAGE } from "../../../typecheck";
 import { CompilationError } from "../../lower";
+import { joinAndExprs } from "../../utils";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -42,6 +43,20 @@ export class Compiler {
    * TODO Not sure it's a good idea to mix data related to the compilation unit and cross-module/cross-project data
    */
   private knownAdts = new Map<string, ir.Adt>();
+  private getAdt(ident: ir.QualifiedIdentifier) {
+    const adt = this.knownAdts.get(ident.toString());
+    if (adt === undefined) {
+      throw new CompilationError("unkown adt");
+    }
+    return adt;
+  }
+
+  /**
+   * substitution from a local ns to a compiled identifier
+   *
+   * TODO will probably want to remove this when pat match exhaustiveness is impl
+   */
+  private substitutedIdents = new Map<string, t.Expression>();
 
   /**
    * Maps an structs's qualified name to its ir.
@@ -166,80 +181,7 @@ export class Compiler {
       }
 
       case "match":
-        //   {
-        //     if (as.type === "assign_var" && as.declare) {
-        //       this.statementsBuf.push({
-        //         type: "VariableDeclaration",
-        //         kind: "let",
-        //         declarations: [{ type: "VariableDeclarator", id: as.ident }],
-        //       });
-        //     }
-        //     const matchedExpr = this.precomputeValue(src.expr);
-        //     const checks: [
-        //       condition: t.Expression | undefined,
-        //       statements: t.Statement[],
-        //     ][] = [];
-        //     for (const [pattern, retExpr] of src.clauses) {
-        //       const exprs = this.compileCheckPatternConditions(
-        //         pattern,
-        //         matchedExpr,
-        //       );
-        //       const [, stms] = this.wrapStatements(() => {
-        //         this.compileExprAsJsStms(retExpr, tailPosCaller, doNotDeclare(as));
-        //       });
-        //       if (exprs.length === 0) {
-        //         checks.push([undefined, stms]);
-        //         break;
-        //       }
-        //       checks.push([joinAndExprs(exprs), stms]);
-        //     }
-        //     const helper = (index: number): t.Statement[] => {
-        //       if (index >= checks.length) {
-        //         return [
-        //           {
-        //             type: "ThrowStatement",
-        //             argument: {
-        //               type: "NewExpression",
-        //               callee: { type: "Identifier", name: "Error" },
-        //               arguments: [
-        //                 {
-        //                   type: "StringLiteral",
-        //                   value: "[non exhaustive match]",
-        //                 },
-        //               ],
-        //             },
-        //           },
-        //         ];
-        //       }
-        //       const [condition, stms] = checks[index]!;
-        //       if (condition === undefined) {
-        //         return stms;
-        //       }
-        //       const next = helper(index + 1);
-        //       const isIfElse = next.length === 1 && next[0]!.type === "IfStatement";
-        //       return [
-        //         {
-        //           type: "IfStatement",
-        //           test: condition,
-        //           consequent: {
-        //             type: "BlockStatement",
-        //             directives: [],
-        //             body: stms,
-        //           },
-        //           alternate: isIfElse
-        //             ? next[0]!
-        //             : {
-        //                 type: "BlockStatement",
-        //                 directives: [],
-        //                 body: next,
-        //               },
-        //         },
-        //       ];
-        //     };
-        //     this.statementsBuf.push(...helper(0));
-        //     return;
-        //   }
-        throw new Error("TODO implement (stm) : " + src.type);
+        return this.compileMatchAsStmt(src, as);
 
       case "if":
         return this.compileIfAsStmt(src, as);
@@ -282,9 +224,6 @@ export class Compiler {
       case "fn":
         return this.compileFnAsExpr(src);
 
-      case "if":
-        return this.compileIfAsExpr(src);
-
       case "struct-literal":
         return this.compileStructLiteralAsExpr(src);
 
@@ -292,7 +231,11 @@ export class Compiler {
         return this.compileFieldAccessAsExpr(src);
 
       case "match":
-        throw new Error("TODO implement (expr) : " + src.type);
+      case "if":
+        return this.compileAsDeclaration(src);
+
+      default:
+        return src satisfies never;
     }
   }
 
@@ -431,8 +374,10 @@ export class Compiler {
       case "global":
         return compileGlobalIdent(src.ident.name);
 
-      case "local":
-        return compileLocalIdent(src.ident);
+      case "local": {
+        const ident = compileLocalIdent(src.ident);
+        return this.substitutedIdents.get(ident.name) ?? ident;
+      }
 
       case "constructor": {
         const qualifiedTypeName = src.ident.typeName;
@@ -487,10 +432,7 @@ export class Compiler {
     ctor: ir.Ident & { type: "constructor" },
     args: ir.Expr[],
   ): t.Expression {
-    const adtDef = this.knownAdts.get(ctor.typeName.toString());
-    if (adtDef === undefined) {
-      throw new CompilationError("Can't find adt repr");
-    }
+    const adtDef = this.getAdt(ctor.typeName);
     const repr = getAdtReprType(adtDef);
 
     const tagIndex = adtDef.constructors.findIndex(
@@ -517,6 +459,191 @@ export class Compiler {
       type: "Identifier",
       name: `$${this.currentCompilerId++}`,
     };
+  }
+
+  /**
+   * compile a pattern to a list of conditions used to test if `matchedExpr` matches the pattern
+   * */
+  private compileCheckPatternConditions(
+    pattern: ir.MatchPattern,
+    matchedExpr: t.Expression,
+  ): t.Expression[] {
+    switch (pattern.type) {
+      case "identifier": {
+        const ident = compileLocalIdent(pattern.ident);
+        this.substitutedIdents.set(ident.name, matchedExpr);
+        return [];
+      }
+
+      case "constructor": {
+        if (
+          pattern.typeName.package_ === CORE_PACKAGE &&
+          pattern.typeName.name === "Bool"
+        ) {
+          return [
+            pattern.name === "True"
+              ? matchedExpr
+              : {
+                  type: "UnaryExpression",
+                  prefix: false,
+                  operator: "!",
+                  argument: matchedExpr,
+                },
+          ];
+        }
+
+        const adtDef = this.getAdt(pattern.typeName);
+
+        const index = adtDef.constructors.findIndex(
+          (variant) => pattern.name === variant.name.name,
+        );
+        if (index === -1) {
+          throw new CompilationError("variant not found in declaration");
+        }
+
+        const repr = getAdtReprType(adtDef);
+        const eqLeftSide: t.Expression = (() => {
+          switch (repr) {
+            case "enum":
+              return matchedExpr;
+
+            case "unboxed":
+            case "default":
+              return {
+                type: "MemberExpression",
+                object: matchedExpr,
+                property: TAG_FIELD,
+                computed: false,
+              };
+          }
+        })();
+
+        const singleVariantDeclaration = adtDef.constructors.length === 1;
+
+        return [
+          ...(singleVariantDeclaration
+            ? []
+            : [
+                {
+                  type: "BinaryExpression",
+                  operator: "===",
+                  left: eqLeftSide,
+                  right: { type: "NumericLiteral", value: index },
+                } as t.Expression,
+              ]),
+          ...pattern.args.flatMap((arg, index) =>
+            this.compileCheckPatternConditions(
+              arg,
+              repr === "unboxed"
+                ? matchedExpr
+                : {
+                    type: "MemberExpression",
+                    object: matchedExpr,
+                    property: { type: "Identifier", name: `_${index}` },
+                    computed: false,
+                  },
+            ),
+          ),
+        ];
+      }
+
+      case "lit":
+        switch (pattern.literal.type) {
+          // As of now, literals are always checked via the === operator
+          // keep the switch to enforce match on future variants
+          case "string":
+          case "int":
+          case "float":
+          case "char":
+            return [
+              {
+                type: "BinaryExpression",
+                operator: "===",
+                left: matchedExpr,
+                right: compileConst(pattern.literal),
+              },
+            ];
+        }
+    }
+  }
+
+  private compileMatchAsStmt(
+    src: ir.Expr & { type: "match" },
+    as: CompilationMode,
+  ) {
+    if (as.type === "assign_var" && as.declare) {
+      this.statementsBuf.push({
+        type: "VariableDeclaration",
+        kind: "let",
+        declarations: [{ type: "VariableDeclarator", id: as.ident }],
+      });
+    }
+
+    /**
+     * TODO (when exhaustive pat match is impl) if there's at least on pattern with a plain ident, use that one instead
+     * note we can also hardcode the check that prevents many identifier patterns
+     */
+    const matchedExpr = this.precomputeValue(src.expr);
+
+    const checks: [
+      condition: t.Expression | undefined,
+      statements: t.Statement[],
+    ][] = [];
+    for (const [pattern, retExpr] of src.clauses) {
+      const exprs = this.compileCheckPatternConditions(pattern, matchedExpr);
+      const [, stms] = this.wrapStatements(() => {
+        this.compileExprAsJsStms(retExpr, doNotDeclare(as));
+      });
+      if (exprs.length === 0) {
+        checks.push([undefined, stms]);
+        break;
+      }
+      checks.push([joinAndExprs(exprs), stms]);
+    }
+    const helper = (index: number): t.Statement[] => {
+      if (index >= checks.length) {
+        return [
+          {
+            type: "ThrowStatement",
+            argument: {
+              type: "NewExpression",
+              callee: { type: "Identifier", name: "Error" },
+              arguments: [
+                {
+                  type: "StringLiteral",
+                  value: "[non exhaustive match]",
+                },
+              ],
+            },
+          },
+        ];
+      }
+      const [condition, stms] = checks[index]!;
+      if (condition === undefined) {
+        return stms;
+      }
+      const next = helper(index + 1);
+      const isIfElse = next.length === 1 && next[0]!.type === "IfStatement";
+      return [
+        {
+          type: "IfStatement",
+          test: condition,
+          consequent: {
+            type: "BlockStatement",
+            directives: [],
+            body: stms,
+          },
+          alternate: isIfElse
+            ? next[0]!
+            : {
+                type: "BlockStatement",
+                directives: [],
+                body: next,
+              },
+        },
+      ];
+    };
+    this.statementsBuf.push(...helper(0));
   }
 
   private compileIfAsStmt(src: ir.Expr & { type: "if" }, as: CompilationMode) {
@@ -550,16 +677,14 @@ export class Compiler {
     });
   }
 
-  private compileIfAsExpr(src: ir.Expr & { type: "if" }): t.Expression {
+  private compileAsDeclaration(src: ir.Expr): t.Expression {
     const ident = this.genCompilerIdent();
-
     this.compileExprAsJsStms(src, {
       type: "assign_var",
       ident,
       declare: true,
       // dictParams: [],
     });
-
     return ident;
   }
 
@@ -733,13 +858,14 @@ function compileGlobalIdent(qualified: ir.QualifiedIdentifier): t.Identifier {
  */
 function compileLocalIdent(
   binding: ir.Ident & { type: "local" },
-): t.Identifier {
+): t.Identifier & { type: "Identifier" } {
   const unique = binding.unique === 0 ? "" : `$${binding.unique}`;
+  const name = binding.name === "" ? "_" : binding.name;
 
   // TODO add binding.declaration.package_ prefix
   return {
     type: "Identifier",
-    name: `${mkGlbIdent(binding.declaration)}$${binding.name}${unique}`,
+    name: `${mkGlbIdent(binding.declaration)}$${name}${unique}`,
   };
 }
 

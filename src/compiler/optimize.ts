@@ -1,5 +1,5 @@
 import * as ir from "./ir";
-import { foldTree, lazyVisit } from "./ir/visitors";
+import { foldTree, lazyVisit, substitute } from "./ir/visitors";
 
 export type Ctx = object;
 export type Rule = (expr: ir.Expr, ctx: Ctx) => ir.Expr;
@@ -95,17 +95,6 @@ export const inlineLet: Rule = (expr) => {
   return expr;
 };
 
-function localIdentEq(
-  x: ir.Ident & { type: "local" },
-  y: ir.Ident & { type: "local" },
-) {
-  return (
-    x.name === y.name &&
-    x.unique === y.unique &&
-    x.declaration.equals(y.declaration)
-  );
-}
-
 const bindingAppearsAtMostOnce = (
   expr: ir.Expr,
   binding: ir.Ident & { type: "local" },
@@ -122,7 +111,7 @@ const bindingAppearsAtMostOnce = (
     if (
       expr.type === "identifier" &&
       expr.ident.type === "local" &&
-      localIdentEq(expr.ident, binding)
+      ir.localIdentEq(expr.ident, binding)
     ) {
       count++;
     }
@@ -137,23 +126,6 @@ const bindingAppearsAtMostOnce = (
 
   return returnValue;
 };
-
-const substitute = (
-  expr: ir.Expr,
-  binding: ir.Ident & { type: "local" },
-  with_: ir.Expr,
-) =>
-  foldTree(expr, (expr) => {
-    if (
-      expr.type === "identifier" &&
-      expr.ident.type === "local" &&
-      localIdentEq(expr.ident, binding)
-    ) {
-      return with_;
-    }
-
-    return expr;
-  });
 
 /**
  * Rules composition: evaluates rules one at a time once, over the result of the previous rule

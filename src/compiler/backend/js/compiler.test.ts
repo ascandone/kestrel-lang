@@ -1486,7 +1486,7 @@ describe("modules", () => {
   });
 });
 
-describe.skip("pattern matching", () => {
+describe("pattern matching", () => {
   test("pattern matching an enum repr", () => {
     const out = compileSrc(`
     type T {
@@ -1536,10 +1536,13 @@ describe.skip("pattern matching", () => {
         _0
       });
       let Main$x;
-      const Main$x$GEN__0 = Main$B(42);
-      if (Main$x$GEN__0.$ === 0) {
+      const $0 = {
+        $: 1,
+        _0: 42
+      };
+      if ($0.$ === 0) {
         Main$x = 0;
-      } else if (Main$x$GEN__0.$ === 1) {
+      } else if ($0.$ === 1) {
         Main$x = 1;
       } else {
         throw new Error("[non exhaustive match]");
@@ -1547,7 +1550,7 @@ describe.skip("pattern matching", () => {
     `);
   });
 
-  test("pattern single variant arg does not check for variant", () => {
+  test("pattern match on unboxed variant", () => {
     const out = compileSrc(`
     type T {
       A(Int),
@@ -1561,8 +1564,8 @@ describe.skip("pattern matching", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$A = _0 => _0;
       let Main$x;
-      const Main$x$GEN__0 = Main$A(42);
-      Main$x = Main$x$GEN__0;"
+      const $0 = 42;
+      Main$x = $0;"
     `);
   });
 
@@ -1578,8 +1581,8 @@ describe.skip("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const Main$x$GEN__0 = 0;
-      if (Main$x$GEN__0 === 0) {
+      const $0 = 0;
+      if ($0 === 0) {
         Main$x = \`0\`;
       } else {
         Main$x = \`any\`;
@@ -1598,33 +1601,14 @@ describe.skip("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const Main$x$GEN__0 = 0;
-      if (Main$x$GEN__0 === 0) {
+      const $0 = 0;
+      if ($0 === 0) {
         Main$x = \`0\`;
-      } else if (Main$x$GEN__0 === 1) {
+      } else if ($0 === 1) {
         Main$x = \`1\`;
       } else {
         Main$x = \`2\`;
       }"
-    `);
-  });
-
-  test("pattern matching an unboxed repr", () => {
-    const out = compileSrc(`
-    type T {
-      A(Int),
-    }
-  
-    let x = match A(42) {
-      A(arg) => arg,
-    }
-  `);
-
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$A = _0 => _0;
-      let Main$x;
-      const Main$x$GEN__0 = Main$A(42);
-      Main$x = Main$x$GEN__0;"
     `);
   });
 
@@ -1647,26 +1631,6 @@ describe.skip("pattern matching", () => {
     `);
   });
 
-  test("pattern matching (ident)", () => {
-    const out = compileSrc(`
-
-  type T {
-    C(Int),
-  }
-
-  let x = match C(42) {
-    C(y) => y,
-  }
-`);
-
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$C = _0 => _0;
-      let Main$x;
-      const Main$x$GEN__0 = Main$C(42);
-      Main$x = Main$x$GEN__0;"
-    `);
-  });
-
   test("pattern matching str literals", () => {
     const out = compileSrc(`
   let x = match "subject" {
@@ -1676,8 +1640,8 @@ describe.skip("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const Main$x$GEN__0 = \`subject\`;
-      if (Main$x$GEN__0 === \`constraint\`) {
+      const $0 = \`subject\`;
+      if ($0 === \`constraint\`) {
         Main$x = 0;
       } else {
         throw new Error("[non exhaustive match]");
@@ -1694,8 +1658,8 @@ describe.skip("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const Main$x$GEN__0 = \`a\`;
-      if (Main$x$GEN__0 === \`x\`) {
+      const $0 = \`a\`;
+      if ($0 === \`x\`) {
         Main$x = 0;
       } else {
         throw new Error("[non exhaustive match]");
@@ -1704,28 +1668,21 @@ describe.skip("pattern matching", () => {
   });
 
   test("pattern matching bool values", () => {
-    const Bool = typecheckSource(
-      "pkg",
-      "Bool",
-      `pub(..) type Bool { True, False }`,
-    );
     const out = compileSrc(
       `
-    import Bool.{Bool(..)}
     let x = match True {
       True => 0,
       False => 1,
     }
   `,
-      { deps: { Bool } },
     );
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const Main$x$GEN__0 = true;
-      if (Main$x$GEN__0) {
+      const $0 = true;
+      if ($0) {
         Main$x = 0;
-      } else if (!Main$x$GEN__0) {
+      } else if (!$0) {
         Main$x = 1;
       } else {
         throw new Error("[non exhaustive match]");
@@ -1735,7 +1692,6 @@ describe.skip("pattern matching", () => {
 
   test.todo("pattern matching Unit values");
 
-  // TODO better output
   test("toplevel ident in p matching", () => {
     const out = compileSrc(`
   let x = match 42 {
@@ -1745,21 +1701,14 @@ describe.skip("pattern matching", () => {
     // TODO whitepace
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const Main$x$GEN__0 = 42;
-      Main$x = Main$x$GEN__0;"
+      const $0 = 42;
+      Main$x = $0;"
     `);
   });
 
   test("pattern matching nested value", () => {
-    const Bool = typecheckSource(
-      "pkg",
-      "Bool",
-      `pub(..) type Bool { True, False }`,
-    );
     const out = compileSrc(
       `
-  import Bool.{Bool(..)}
-
   type T {
     C(Bool),
   }
@@ -1768,15 +1717,14 @@ describe.skip("pattern matching", () => {
     C(True) => 0,
   }
 `,
-      { deps: { Bool } },
     );
 
     // TODO whitepace
     expect(out).toMatchInlineSnapshot(`
       "const Main$C = _0 => _0;
       let Main$x;
-      const Main$x$GEN__0 = Main$C(true);
-      if (Main$x$GEN__0) {
+      const $0 = true;
+      if ($0) {
         Main$x = 0;
       } else {
         throw new Error("[non exhaustive match]");
@@ -1793,8 +1741,8 @@ describe.skip("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$f = () => {
-        const GEN__0 = 42;
-        return GEN__0;
+        const $0 = 42;
+        return $0;
       };"
     `);
   });
@@ -1802,7 +1750,7 @@ describe.skip("pattern matching", () => {
   test("pattern matching in tail position (match constructor)", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
-    extern let (+): Fn(Int, Int) -> Int
+    
     let f = fn {
       match Box(42) {
         Box(x) => x + 1
@@ -1813,8 +1761,8 @@ describe.skip("pattern matching", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$Box = _0 => _0;
       const Main$f = () => {
-        const GEN__0 = Main$Box(42);
-        return GEN__0 + 1;
+        const $0 = 42;
+        return $0 + 1;
       };"
     `);
   });
@@ -1828,10 +1776,10 @@ describe.skip("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "let Main$x$GEN__0;
-      const Main$x$GEN__1 = 42;
-      Main$x$GEN__0 = 0;
-      const Main$x = Main$f(Main$x$GEN__0);"
+      "let $0;
+      const $1 = 42;
+      $0 = 0;
+      const Main$x = Main$f($0);"
     `);
   });
 
@@ -1880,11 +1828,11 @@ describe.skip("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Box = _0 => _0;
-      const Main$f = b => b;"
+      const Main$f = Main$f$b => Main$f$b;"
     `);
   });
 
-  test("compiling let match", () => {
+  test.skip("compiling let match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1896,14 +1844,14 @@ describe.skip("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Box = _0 => _0;
-      const Main$f = b => {
-        const GEN__0 = b;
-        return GEN__0;
+      const Main$f = Main$f$b => {
+        const $0 = Main$f$b;
+        return $0;
       };"
     `);
   });
 
-  test("compiling let within let match", () => {
+  test.skip("compiling let within let match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1926,7 +1874,7 @@ describe.skip("pattern matching", () => {
     `);
   });
 
-  test("compiling nested let match", () => {
+  test.skip("compiling nested let match", () => {
     const out = compileSrc(`
     type Pair { Pair(Int, Int) }
 
@@ -1942,14 +1890,14 @@ describe.skip("pattern matching", () => {
         _0,
         _1
       });
-      const Main$f = b => {
-        const GEN__0 = b;
-        return GEN__0._1._0;
+      const Main$f = Main$f$b => {
+        const $0 = Main$f$b;
+        return $0._1._0;
       };"
     `);
   });
 
-  test("compiling fn match", () => {
+  test.skip("compiling fn match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
 
@@ -1958,11 +1906,11 @@ describe.skip("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Box = _0 => _0;
-      const Main$f = (x, GEN__0, y) => GEN__0;"
+      const Main$f = (Main$f$x, Main$f$_, Main$f$y) => Main$f$_;"
     `);
   });
 
-  test("statements inside p match", () => {
+  test.skip("statements inside p match", () => {
     const out = compileSrc(`
     type Pair<a, b> { Pair(a, b), None }
 

@@ -147,3 +147,15 @@ export type MatchPattern =
       // TODO we want the pattern to be already compiled in the decision tree
       args: MatchPattern[];
     };
+
+// Helpers
+export function localIdentEq(
+  x: Ident & { type: "local" },
+  y: Ident & { type: "local" },
+) {
+  return (
+    x.name === y.name &&
+    x.unique === y.unique &&
+    x.declaration.equals(y.declaration)
+  );
+}

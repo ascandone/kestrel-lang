@@ -135,3 +135,24 @@ export function lazyVisit(
 
   return fold(expr);
 }
+
+/**
+ * Substitute every occurence of the binding with the given expr
+ * */
+export function substitute(
+  expr: ir.Expr,
+  binding: ir.Ident & { type: "local" },
+  with_: ir.Expr,
+) {
+  return foldTree(expr, (expr) => {
+    if (
+      expr.type === "identifier" &&
+      expr.ident.type === "local" &&
+      ir.localIdentEq(expr.ident, binding)
+    ) {
+      return with_;
+    }
+
+    return expr;
+  });
+}
