@@ -860,7 +860,7 @@ function compileLocalIdent(
   binding: ir.Ident & { type: "local" },
 ): t.Identifier & { type: "Identifier" } {
   const unique = binding.unique === 0 ? "" : `$${binding.unique}`;
-  const name = binding.name === "" ? "_" : binding.name;
+  const name = binding.name === "" ? "_IR_GEN" : binding.name;
 
   // TODO add binding.declaration.package_ prefix
   return {
