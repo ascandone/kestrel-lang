@@ -186,9 +186,6 @@ export class Compiler {
       case "match":
         return this.compileMatchAsStmt(src, as);
 
-      case "if":
-        return this.compileIfAsStmt(src, as);
-
       /*
         the following nodes can always be compiled as expression, thus we
         cast them as expression and them emit the corresponding statement,
@@ -232,9 +229,6 @@ export class Compiler {
 
       case "match":
         return this.compileMatchAsExpr(src);
-
-      case "if":
-        return this.compileAsDeclaration(src);
 
       default:
         return src satisfies never;
@@ -581,6 +575,11 @@ export class Compiler {
     src: ir.Expr & { type: "match" },
     as: CompilationMode,
   ): void {
+    const ifSugar = mkIfSugar(src);
+    if (ifSugar !== undefined) {
+      return this.compileIfAsStmt(ifSugar, as);
+    }
+
     const letSugar = isMatchLetLike(src);
 
     // TODO clean it up so that we don't implement let-like match twice
@@ -670,7 +669,7 @@ export class Compiler {
     this.statementsBuf.push(...helper(0));
   }
 
-  private compileIfAsStmt(src: ir.Expr & { type: "if" }, as: CompilationMode) {
+  private compileIfAsStmt(src: IfSugar, as: CompilationMode) {
     if (as.type === "assign_var" && as.declare) {
       this.statementsBuf.push({
         type: "VariableDeclaration",
@@ -1048,4 +1047,52 @@ function isUnboxedCtor(
         ctor = ctor.args[0]!;
     }
   }
+}
+
+type IfSugar = {
+  condition: ir.Expr;
+  then: ir.Expr;
+  else: ir.Expr;
+};
+
+function mkIfSugar(expr: ir.Expr): IfSugar | undefined {
+  if (expr.type !== "match" || expr.clauses.length != 2) {
+    return undefined;
+  }
+
+  // branches could be redundant. We'll ignore the duplicate ones
+
+  let then_: ir.Expr | undefined;
+  let else_: ir.Expr | undefined;
+
+  for (const [pat, ret] of expr.clauses) {
+    if (pat.type !== "constructor") {
+      return;
+    }
+    if (
+      pat.typeName.package_ !== CORE_PACKAGE ||
+      pat.typeName.name !== "Bool"
+    ) {
+      return;
+    }
+
+    switch (pat.name) {
+      case "True":
+        then_ = ret;
+        break;
+      case "False":
+        else_ = ret;
+        break;
+    }
+
+    if (then_ !== undefined && else_ !== undefined) {
+      return {
+        condition: expr.expr,
+        then: then_,
+        else: else_,
+      };
+    }
+  }
+
+  return undefined;
 }

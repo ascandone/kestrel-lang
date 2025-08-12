@@ -92,14 +92,6 @@ class ExprPrinter {
           this.toSexpr(expr.body),
         ];
 
-      case "if":
-        return [
-          sym`:if`,
-          this.toSexpr(expr.condition),
-          this.toSexpr(expr.then),
-          this.toSexpr(expr.else),
-        ];
-
       case "struct-literal":
         return [
           sym`:struct`,

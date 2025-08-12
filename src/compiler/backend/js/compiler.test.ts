@@ -1696,13 +1696,10 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const $0 = true;
-      if ($0) {
+      if (true) {
         Main$x = 0;
-      } else if (!$0) {
-        Main$x = 1;
       } else {
-        throw new Error("[non exhaustive match]");
+        Main$x = 1;
       }"
     `);
   });

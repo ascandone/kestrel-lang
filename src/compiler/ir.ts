@@ -65,12 +65,6 @@ export type Expr =
       args: Expr[];
     }
   | {
-      type: "if";
-      condition: Expr;
-      then: Expr;
-      else: Expr;
-    }
-  | {
       type: "match";
       expr: Expr;
       clauses: Array<[MatchPattern, Expr]>;

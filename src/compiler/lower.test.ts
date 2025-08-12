@@ -288,9 +288,9 @@ test("if expr", () => {
     `
     "(:def f
         (:fn (b#0 x#0 y#0)
-            (:if b#0
-                x#0
-                y#0)))"
+            (:match b#0
+                ((kestrel_core:Bool.True) x#0)
+                ((kestrel_core:Bool.False) y#0))))"
   `,
   );
 });

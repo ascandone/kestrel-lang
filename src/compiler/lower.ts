@@ -224,13 +224,28 @@ class ExprEmitter {
           args: expr.args.map((arg) => this.lowerExpr(arg)),
         };
 
-      case "if":
+      case "if": {
+        const typeName = new ir.QualifiedIdentifier(
+          typed.CORE_PACKAGE,
+          "Bool",
+          "Bool",
+        );
+
         return {
-          type: "if",
-          condition: this.lowerExpr(expr.condition),
-          then: this.lowerExpr(expr.then),
-          else: this.lowerExpr(expr.else),
+          type: "match",
+          expr: this.lowerExpr(expr.condition),
+          clauses: [
+            [
+              { type: "constructor", typeName, name: "True", args: [] },
+              this.lowerExpr(expr.then),
+            ],
+            [
+              { type: "constructor", typeName, name: "False", args: [] },
+              this.lowerExpr(expr.else),
+            ],
+          ],
         };
+      }
 
       case "struct-literal": {
         const resolution = getResolution(expr.struct);
