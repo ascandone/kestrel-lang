@@ -1832,6 +1832,24 @@ describe("pattern matching", () => {
     `);
   });
 
+  test("compiling let match before desugaring", () => {
+    const out = compileSrc(`
+    type Box { Box(Int) }
+
+    let f = fn b {
+      match b {
+        Box(a) => a,
+      }
+    }
+
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Box = _0 => _0;
+      const Main$f = Main$f$b => Main$f$b;"
+    `);
+  });
+
   test.skip("compiling let match", () => {
     const out = compileSrc(`
     type Box { Box(Int) }
@@ -1844,10 +1862,7 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Box = _0 => _0;
-      const Main$f = Main$f$b => {
-        const $0 = Main$f$b;
-        return $0;
-      };"
+      const Main$f = Main$f$b => Main$f$b;"
     `);
   });
 
