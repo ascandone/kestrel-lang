@@ -104,22 +104,15 @@ class ExprEmitter {
           };
         }
 
-        const ident = this.genIdent();
-
         return {
-          type: "let",
-          binding: ident,
-          value: this.lowerExpr(stmt.value),
-          body: {
-            type: "match",
-            expr: { type: "identifier", ident },
-            clauses: [
-              [
-                this.lowerPattern(stmt.pattern),
-                this.lowerBlock(statementsLeft, returning),
-              ],
+          type: "match",
+          expr: this.lowerExpr(stmt.value),
+          clauses: [
+            [
+              this.lowerPattern(stmt.pattern),
+              this.lowerBlock(statementsLeft, returning),
             ],
-          },
+          ],
         };
       }
     }

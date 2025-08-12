@@ -436,11 +436,10 @@ describe("pattern matching", () => {
   `);
 
     expect(ir).toMatchInlineSnapshot(`
-    "(:def m
-        (:let (#0 (Box 42))
-            (:match #0
-                ((Box x#0) x#0))))"
-  `);
+      "(:def m
+          (:match (Box 42)
+              ((Box x#0) x#0)))"
+    `);
   });
 
   test("pattern matching in let#", () => {
