@@ -70,6 +70,7 @@ export type Expr =
       clauses: Array<[MatchPattern, Expr]>;
     }
   | {
+      // TODO We'll want to remove this node and represent it as pattern matching instead, when we'll have the struct match pattern
       type: "field-access";
       struct: Expr;
       field: {
