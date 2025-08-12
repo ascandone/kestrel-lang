@@ -105,7 +105,7 @@ const substitute = (
   binding: ir.Ident & { type: "local" },
   with_: ir.Expr,
 ) =>
-  foldTree(expr, (expr, next) => {
+  foldTree(expr, (expr) => {
     if (
       expr.type === "identifier" &&
       expr.ident.type === "local" &&
@@ -114,7 +114,7 @@ const substitute = (
       return with_;
     }
 
-    return next();
+    return expr;
   });
 
 /**
@@ -178,13 +178,7 @@ class Rewriter {
   }
 
   private traverseOnce(expr: ir.Expr): ir.Expr {
-    return foldTree(expr, (expr, next) => {
-      const newExpr = this.runOnce(expr);
-      if (newExpr !== expr) {
-        return newExpr;
-      }
-      return next();
-    });
+    return foldTree(expr, (expr) => this.runOnce(expr));
   }
 }
 

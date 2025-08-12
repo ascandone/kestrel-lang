@@ -1,9 +1,7 @@
 import * as ir from "../ir";
 
-export function foldTree(
-  expr: ir.Expr,
-  f: (expr: ir.Expr, next: () => ir.Expr) => ir.Expr,
-) {
+/** Strict folding */
+export function foldTree(expr: ir.Expr, f: (expr: ir.Expr) => ir.Expr) {
   function step(expr: ir.Expr): ir.Expr {
     switch (expr.type) {
       case "identifier":
@@ -68,7 +66,7 @@ export function foldTree(
   }
 
   function fold(expr: ir.Expr): ir.Expr {
-    return f(expr, () => step(expr));
+    return step(f(expr));
   }
 
   return fold(expr);
