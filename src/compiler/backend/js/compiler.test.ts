@@ -500,7 +500,7 @@ describe("fn", () => {
     );
   });
 
-  test.skip("do not let GEN values be shadowed", () => {
+  test("do not let GEN values be shadowed", () => {
     const out = compileSrc(`
       type Box<a> { Box(a) }
       let x = fn Box(a) {
@@ -511,7 +511,7 @@ describe("fn", () => {
     `);
     expect(out).toMatchInlineSnapshot(`
       "const Main$Box = _0 => _0;
-      const Main$x = GEN__0 => GEN__1 => GEN__0;"
+      const Main$x = Main$x$_IR_GEN => Main$x$_IR_GEN$1 => Main$x$_IR_GEN;"
     `);
   });
 });
@@ -1487,6 +1487,25 @@ describe("modules", () => {
 });
 
 describe("pattern matching", () => {
+  test("pattern with exactly one ident", () => {
+    const out = compileSrc(`
+    let id = fn a { a }
+    // let v = {
+    //   let a = 0;
+    //   id(a)
+    // }
+    let v = match 0 {
+      a => id(a)
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$id = Main$id$a => Main$id$a;
+      const $0 = 0;
+      const Main$v = Main$id($0);"
+    `);
+  });
+
   test("pattern matching an enum repr", () => {
     const out = compileSrc(`
     type T {
@@ -1563,9 +1582,8 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$A = _0 => _0;
-      let Main$x;
       const $0 = 42;
-      Main$x = $0;"
+      const Main$x = $0;"
     `);
   });
 
@@ -1714,11 +1732,9 @@ describe("pattern matching", () => {
     a => a,
   }
 `);
-    // TODO whitepace
     expect(out).toMatchInlineSnapshot(`
-      "let Main$x;
-      const $0 = 42;
-      Main$x = $0;"
+      "const $0 = 42;
+      const Main$x = $0;"
     `);
   });
 
@@ -1735,7 +1751,6 @@ describe("pattern matching", () => {
 `,
     );
 
-    // TODO whitepace
     expect(out).toMatchInlineSnapshot(`
       "const Main$C = _0 => _0;
       let Main$x;
@@ -1792,9 +1807,8 @@ describe("pattern matching", () => {
   `);
 
     expect(out).toMatchInlineSnapshot(`
-      "let $0;
-      const $1 = 42;
-      $0 = 0;
+      "const $1 = 42;
+      const $0 = 0;
       const Main$x = Main$f($0);"
     `);
   });

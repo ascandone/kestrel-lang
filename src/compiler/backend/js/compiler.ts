@@ -571,7 +571,9 @@ export class Compiler {
     src: ir.Expr & { type: "match" },
     as: CompilationMode,
   ) {
-    if (as.type === "assign_var" && as.declare) {
+    const letLikeMatch = isLetLikeMatch(src);
+
+    if (as.type === "assign_var" && as.declare && letLikeMatch === undefined) {
       this.statementsBuf.push({
         type: "VariableDeclaration",
         kind: "let",
@@ -592,7 +594,7 @@ export class Compiler {
     for (const [pattern, retExpr] of src.clauses) {
       const exprs = this.compileCheckPatternConditions(pattern, matchedExpr);
       const [, stms] = this.wrapStatements(() => {
-        this.compileExprAsJsStms(retExpr, doNotDeclare(as));
+        this.compileExprAsJsStms(retExpr, letLikeMatch ? as : doNotDeclare(as));
       });
       if (exprs.length === 0) {
         checks.push([undefined, stms]);
@@ -985,4 +987,32 @@ function buildCtorCall(tagIndex: number, args: t.Expression[]): t.Expression {
       ),
     ],
   };
+}
+
+function isLetLikeMatch(
+  src: ir.Expr & { type: "match" },
+): ir.Ident | undefined {
+  if (src.clauses.length !== 1) {
+    return undefined;
+  }
+
+  // TODO use while
+  function isUnboxedCtor(ctor: ir.MatchPattern): ir.Ident | undefined {
+    switch (ctor.type) {
+      case "identifier":
+        return ctor.ident;
+      case "lit":
+        return undefined;
+      case "constructor": {
+        if (ctor.args.length !== 1) {
+          return undefined;
+        }
+
+        return isUnboxedCtor(ctor.args[0]!);
+      }
+    }
+  }
+
+  const [pat] = src.clauses[0]!;
+  return isUnboxedCtor(pat);
 }
