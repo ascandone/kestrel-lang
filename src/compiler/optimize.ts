@@ -177,71 +177,14 @@ class Rewriter {
     return expr;
   }
 
-  /**
-   * Traverse the whole expr by applying the rule recursively and track if any changes happenede
-   */
   private traverseOnce(expr: ir.Expr): ir.Expr {
-    const newExpr = this.runOnce(expr);
-    if (newExpr !== expr) {
-      return newExpr;
-    }
-
-    switch (expr.type) {
-      case "constant":
-      case "identifier":
-      case "field-access":
-        return expr;
-
-      case "application":
-        return {
-          type: "application",
-          caller: this.traverseOnce(expr.caller),
-          args: expr.args.map((arg) => this.traverseOnce(arg)),
-        };
-
-      case "struct-literal":
-        return {
-          type: "struct-literal",
-          fields: expr.fields,
-          struct: expr.struct,
-          spread:
-            expr.spread === undefined
-              ? undefined
-              : this.traverseOnce(expr.spread),
-        };
-
-      case "fn":
-        return {
-          type: "fn",
-          bindings: expr.bindings,
-          body: this.traverseOnce(expr.body),
-        };
-
-      case "let":
-        return {
-          type: "let",
-          binding: expr.binding,
-          value: this.traverseOnce(expr.value),
-          body: this.traverseOnce(expr.body),
-        };
-
-      case "if":
-        return {
-          type: "if",
-          condition: this.traverseOnce(expr.condition),
-          then: this.traverseOnce(expr.then),
-          else: this.traverseOnce(expr.else),
-        };
-
-      case "match":
-        return {
-          type: "match",
-          expr: this.traverseOnce(expr.expr),
-          clauses: expr.clauses.map(
-            ([pat, clause]) => [pat, this.traverseOnce(clause)] as const,
-          ),
-        };
-    }
+    return foldTree(expr, (expr, next) => {
+      const newExpr = this.runOnce(expr);
+      if (newExpr !== expr) {
+        return newExpr;
+      }
+      return next();
+    });
   }
 }
 
