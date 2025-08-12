@@ -2398,11 +2398,11 @@ describe.skip("traits compilation", () => {
 });
 
 describe.skip("Eq trait", () => {
-  test.todo("== performs structural equality when type is unbound");
-  test.todo("== performs structural equality when type is adt");
-  test.todo("== doesn't perform structural equality when type is int");
-  test.todo("== doesn't perform structural equality when type is string");
-  test.todo("== doesn't perform structural equality when type is float");
+  test("== performs structural equality when type is unbound");
+  test("== performs structural equality when type is adt");
+  test("== doesn't perform structural equality when type is int");
+  test("== doesn't perform structural equality when type is string");
+  test("== doesn't perform structural equality when type is float");
 });
 
 describe("deriving", () => {
