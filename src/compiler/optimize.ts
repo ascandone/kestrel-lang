@@ -1,6 +1,6 @@
 import * as ir from "./ir";
 
-export type Ctx = undefined;
+export type Ctx = object;
 export type Rule = (expr: ir.Expr, ctx: Ctx) => ir.Expr;
 
 /**
@@ -38,6 +38,147 @@ export const foldIIF: Rule = (expr) => {
 };
 
 /**
+ * inline the let binding if one of the 2 things happen:
+ *
+ * 1. the value is a simple expression: an identifier or a literal
+ * 2. the value only occurs at most once in the body, and it never appears within a lambda
+ *
+ * for example:
+ *
+ * rule 1:
+ * ```kestrel
+ * // before:
+ * { let x = 42; x + x }
+ *
+ * // after:
+ * 42 + 42
+ * ```
+ *
+ * rule 2:
+ * ```kestrel
+ * // from
+ * { let x = complex_expr(); 1 + x }
+ * // to
+ * 1 + complex_expr()
+ * ```
+ *
+ * while evaluating the rule 2, we must make sure we don't cross fn boundaries, in order not to introduce perf regression
+ * for example:
+ * ```kestrel
+ * let my_fn = {
+ *   let cached = expensive_fn();
+ *   fn { cached }
+ * }
+ * ```
+ * in this case, if we were to apply the rewrite rule, we'd prevent the user to cache the value once,
+ * and the value would be computed again on every call of my_fn()
+ */
+export const inlineLet: Rule = (expr) => {
+  if (expr.type !== "let") {
+    return expr;
+  }
+
+  switch (expr.value.type) {
+    case "constant":
+    case "identifier":
+      return substitute(expr.body, expr.binding, expr.value);
+  }
+
+  // TODO implement rule 2
+  return expr;
+};
+
+function localIdentEq(
+  x: ir.Ident & { type: "local" },
+  y: ir.Ident & { type: "local" },
+) {
+  return (
+    x.name === y.name &&
+    x.unique === y.unique &&
+    x.declaration.equals(y.declaration)
+  );
+}
+
+function substitute(
+  expr: ir.Expr,
+  binding: ir.Ident & { type: "local" },
+  with_: ir.Expr,
+): ir.Expr {
+  const substitute_ = (expr: ir.Expr) => substitute(expr, binding, with_);
+
+  switch (expr.type) {
+    case "identifier":
+      if (expr.ident.type === "local" && localIdentEq(expr.ident, binding)) {
+        return with_;
+      }
+
+    case "constant":
+      return expr;
+
+    case "fn":
+      // Each binding is unique, thus we don't need to worry about shadowing
+      return {
+        type: "fn",
+        bindings: expr.bindings,
+        body: substitute_(expr.body),
+      };
+
+    case "application":
+      return {
+        type: "application",
+        caller: substitute_(expr.caller),
+        args: expr.args.map(substitute_),
+      };
+
+    case "let":
+      return {
+        type: "let",
+        binding: expr.binding,
+        value: substitute_(expr.value),
+        body: substitute_(expr.body),
+      };
+
+    case "if":
+      return {
+        type: "if",
+        condition: substitute_(expr.condition),
+        then: substitute_(expr.then),
+        else: substitute_(expr.else),
+      };
+
+    case "match":
+      return {
+        type: "match",
+        expr: substitute_(expr.expr),
+        clauses: expr.clauses.map(([pat, clause]) => [
+          pat,
+          substitute_(clause),
+        ]),
+      };
+
+    case "field-access":
+      return {
+        type: "field-access",
+        field: expr.field,
+        struct: substitute_(expr.struct),
+      };
+
+    case "struct-literal":
+      return {
+        type: "struct-literal",
+        struct: expr.struct,
+        fields: expr.fields.map((field) => ({
+          name: field.name,
+          expr: substitute_(field.expr),
+        })),
+        spread:
+          expr.spread === undefined ? undefined : substitute_(expr.spread),
+      };
+  }
+  return expr;
+}
+
+/**
  * Rules composition: evaluates rules one at a time once, over the result of the previous rule
  * */
 export const composeRules = (rules: Rule[]): Rule =>
@@ -62,7 +203,7 @@ export const findFixedPoint =
   };
 
 class Rewriter {
-  private readonly ctx: Ctx = undefined;
+  private readonly ctx: Ctx = {};
 
   constructor(private readonly rule: Rule) {}
 

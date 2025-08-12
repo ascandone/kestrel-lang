@@ -15,6 +15,14 @@ export class QualifiedIdentifier {
   public toJSON() {
     return this.toString();
   }
+
+  public equals(other: QualifiedIdentifier) {
+    return (
+      this.name === other.name &&
+      this.namespace === other.namespace &&
+      this.package_ === other.package_
+    );
+  }
 }
 
 export type Ident =

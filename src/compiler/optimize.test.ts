@@ -5,6 +5,8 @@ import { formatIR, formatIRExpr } from "./__test__/ir-to-sexpr";
 import { typecheckSource_ } from "./__test__/prelude";
 import { lowerProgram } from "./lower";
 
+const baseCtx: optimize.Ctx = {};
+
 describe("fold iif", () => {
   test("fold iif with no args", () => {
     /**
@@ -28,7 +30,7 @@ describe("fold iif", () => {
         },
         args: [],
       },
-      undefined,
+      baseCtx,
     );
 
     expect(formatIRExpr(optimized)).toEqual(formatIRExpr(strConst("value")));
@@ -58,7 +60,7 @@ describe("fold iif", () => {
         },
         args: [strConst("a"), strConst("b")],
       },
-      undefined,
+      baseCtx,
     );
 
     expect(formatIRExpr(optimized)).toEqual(
@@ -74,17 +76,16 @@ describe("fold iif", () => {
         },
       }),
     );
-  });
 
-  test("apply recursively", () => {
-    const out = applyRule(
-      optimize.foldIIF,
-      `
+    test("apply recursively", () => {
+      const out = applyRule(
+        optimize.foldIIF,
+        `
         let id = fn a { a }
         let x =  id((fn { "value" })())
     `,
-    );
-    expect(out).toMatchInlineSnapshot(`
+      );
+      expect(out).toMatchInlineSnapshot(`
       "(:def id
           (:fn (a#0)
               a#0))
@@ -92,6 +93,44 @@ describe("fold iif", () => {
       (:def x
           (id "value"))"
     `);
+    });
+  });
+});
+
+describe("inline let", () => {
+  test("inline when value is a simple binding", () => {
+    /**
+     * ```kestrel
+     * // src:
+     * { let x = "a"; x ++ x }
+     * // =>
+     * "a" ++ "a"
+     * ```
+     */
+    const optimized = optimize.inlineLet(
+      {
+        type: "let",
+        binding: mkIdent("x"),
+        value: strConst("a"),
+        body: {
+          type: "application",
+          caller: { type: "identifier", ident: mkIdent("add") },
+          args: [
+            { type: "identifier", ident: mkIdent("x") },
+            { type: "identifier", ident: mkIdent("x") },
+          ],
+        },
+      },
+      baseCtx,
+    );
+
+    const expected: ir.Expr = {
+      type: "application",
+      caller: { type: "identifier", ident: mkIdent("add") },
+      args: [strConst("a"), strConst("a")],
+    };
+
+    expect(formatIRExpr(optimized)).toEqual(formatIRExpr(expected));
   });
 });
 
