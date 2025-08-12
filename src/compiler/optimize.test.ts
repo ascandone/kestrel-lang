@@ -7,8 +7,8 @@ import { lowerProgram } from "./lower";
 
 const baseCtx: optimize.Ctx = {};
 
-describe("fold iif", () => {
-  test("fold iif with no args", () => {
+describe("beta reduction", () => {
+  test("with no args", () => {
     /**
      * ```kestrel
      * (fn { "value" })()
@@ -20,7 +20,7 @@ describe("fold iif", () => {
      * "value"
      * ```
      */
-    const optimized = optimize.foldIIF(
+    const optimized = optimize.betaReduction(
       {
         type: "application",
         caller: {
@@ -36,7 +36,7 @@ describe("fold iif", () => {
     expect(formatIRExpr(optimized)).toEqual(formatIRExpr(strConst("value")));
   });
 
-  test("fold iif with many args", () => {
+  test("with many args", () => {
     /**
      * ```kestrel
      * (fn a, b { "value" })("a", "b")
@@ -50,7 +50,7 @@ describe("fold iif", () => {
      * "value"
      * ```
      */
-    const optimized = optimize.foldIIF(
+    const optimized = optimize.betaReduction(
       {
         type: "application",
         caller: {
@@ -80,7 +80,7 @@ describe("fold iif", () => {
 
   test("apply recursively", () => {
     const out = applyRule(
-      optimize.foldIIF,
+      optimize.betaReduction,
       `
         let id = fn a { a }
         let x =  id((fn { "value" })())

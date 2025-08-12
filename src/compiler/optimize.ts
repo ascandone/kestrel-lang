@@ -21,7 +21,7 @@ export type Rule = (expr: ir.Expr, ctx: Ctx) => ir.Expr;
  *
  * It works with 0-n arguments
  */
-export const foldIIF: Rule = (expr) => {
+export const betaReduction: Rule = (expr) => {
   if (expr.type !== "application" || expr.caller.type !== "fn") {
     return expr;
   }
@@ -133,7 +133,7 @@ const bindingAppearsAtMostOnce = (
 export const composeRules = (rules: Rule[]): Rule =>
   rules.reduce((prev, next) => (expr, ctx) => next(prev(expr, ctx), ctx));
 
-export const allOptimizations = composeRules([foldIIF]);
+export const allOptimizations = composeRules([betaReduction]);
 
 /**
  * An higher-order rule that evaluates the given rule until it reaches a fixedpoint
