@@ -1976,8 +1976,6 @@ describe("pattern matching", () => {
   });
 });
 
-describe.skip("project compilation");
-
 describe.skip("traits compilation", () => {
   test("non-fn values", () => {
     const out = compileSrc(`
