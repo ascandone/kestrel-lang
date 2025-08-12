@@ -60,9 +60,6 @@ describe("datatype representation", () => {
       const Main$f = false;"
     `);
   });
-
-  // TODO probably not necessary
-  test.todo("represent Unit as null");
 });
 
 describe("global identifiers", () => {
@@ -102,32 +99,6 @@ describe("global identifiers", () => {
       const Json$Encode$y = Json$Encode$x;"
     `);
   });
-});
-
-describe("constructor identifiers", () => {
-  test("reference ctor identifier", () => {
-    const Dependency = typecheckSource_(
-      "pkg",
-      "Dependency",
-      `
-        pub(..) type Pair<a, b> {
-          Pair(a, b),
-        }
-    `,
-    ).moduleInterface;
-
-    const out = compileSrc(
-      `
-      import Dependency
-      pub let ctor = Dependency.Pair
-    `,
-      { deps: { Dependency } },
-    );
-
-    expect(out).toMatchInlineSnapshot(`"const Main$ctor = Dependency$Pair;"`);
-  });
-
-  test.todo("ctor unboxing");
 });
 
 describe("function application", () => {
@@ -556,8 +527,6 @@ describe("if expressions", () => {
     `);
   });
 
-  test.todo("tail position if");
-
   test("if within fn", () => {
     // TODO switch this to if-else syntax
     const out = compileSrc(`
@@ -960,6 +929,31 @@ describe.skip("TCO", () => {
 });
 
 describe("ADTs", () => {
+  // TODO probably not necessary
+  test.todo("represent Unit as null");
+
+  test("reference ctor identifier", () => {
+    const Dependency = typecheckSource_(
+      "pkg",
+      "Dependency",
+      `
+        pub(..) type Pair<a, b> {
+          Pair(a, b),
+        }
+    `,
+    ).moduleInterface;
+
+    const out = compileSrc(
+      `
+      import Dependency
+      pub let ctor = Dependency.Pair
+    `,
+      { deps: { Dependency } },
+    );
+
+    expect(out).toMatchInlineSnapshot(`"const Main$ctor = Dependency$Pair;"`);
+  });
+
   test.skip("do not emit Bool repr", () => {
     const out = compileSrc(
       `
@@ -1006,8 +1000,6 @@ describe("ADTs", () => {
       });"
     `);
   });
-
-  test.todo("unbox newtype repr");
 
   test("allow custom types with one arg", () => {
     const out = compileSrc(`type T { X(Int), Y(Bool) }`);
