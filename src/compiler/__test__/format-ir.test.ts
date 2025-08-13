@@ -139,7 +139,7 @@ test("struct lit", () => {
   `);
 });
 
-describe.todo("traits", () => {
+describe("traits", () => {
   test("pass traits to value", () => {
     const out = dumpIR(`
       extern let p: a where a: Show
