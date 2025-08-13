@@ -788,7 +788,7 @@ class Typechecker {
         this.unifyExpr(
           ast,
           ast.$type.asType(),
-          resolutionToType(ast.$resolution),
+          resolutionToType(ast, ast.$resolution),
         );
 
         if (this.currentDeclaration === undefined) {
@@ -1107,16 +1107,27 @@ function unifyErr(node: RangeMeta, e: UnifyError): ErrorInfo {
   }
 }
 
-function resolutionToType(resolution: IdentifierResolution): Type {
+function resolutionToType(
+  ast: TypedExpr & { type: "identifier" },
+  resolution: IdentifierResolution,
+): Type {
   switch (resolution.type) {
     case "local-variable":
       return resolution.binding.$type.asType();
 
-    case "global-variable":
-      return instantiateFromScheme(
+    case "global-variable": {
+      const instantiator = new Instantiator();
+
+      const type = instantiator.instantiateFromScheme(
         resolution.declaration.binding.$type.asType(),
         resolution.declaration.$scheme,
       );
+
+      // TODO we should schedule here the ambiguous check
+      ast.$instantiated = instantiator.instantiated;
+
+      return type;
+    }
 
     case "constructor":
       return instantiateFromScheme(

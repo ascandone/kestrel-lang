@@ -512,7 +512,7 @@ describe("pattern matching", () => {
 });
 
 describe("traits", () => {
-  test.skip("pass traits to value", () => {
+  test("pass traits to value", () => {
     const out = dumpIR(`
       extern let p: a where a: Show
 
@@ -522,7 +522,7 @@ describe("traits", () => {
       let x = take_int(p)
     `);
     expect(out).toMatchInlineSnapshot(
-      `"let pkg:Main.x = take_int[Str:Show](p)"`,
+      `"let pkg:Main.x = take_int(p[Str:Show])"`,
     );
   });
 
@@ -568,7 +568,7 @@ describe("traits", () => {
     );
   });
 
-  test.skip("handle multiple traits when applying to concrete args", () => {
+  test("handle multiple traits when applying to concrete args", () => {
     const out = dumpIR(
       `
       extern let show: Fn(a, a) -> String where a: Eq + Show
@@ -582,7 +582,7 @@ describe("traits", () => {
     );
 
     expect(out).toMatchInlineSnapshot(
-      `"let pkg:Main.f = show[Eq:String, Show:String](s, s)"`,
+      `"let pkg:Main.f = show[S:Eq, S:Show](s, s)"`,
     );
   });
 
@@ -590,7 +590,7 @@ describe("traits", () => {
     const out = dumpIR(
       `
       extern let inspect: Fn(a) -> String where a: Show
-      extern let eq: Fn(a, a) -> Bool where a: Eq
+      extern let eq: Fn(z, z) -> Bool where z: Eq
 
       let equal = fn x, y {
         if eq(x, y) {
@@ -604,7 +604,7 @@ describe("traits", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let pkg:Main.equal[a:Eq, a:Show] = fn x#0, y#0 {
-        match eq(x#0, y#0) {
+        match eq[a:Eq](x#0, y#0) {
           True => "ok",
           False => inspect[a:Show](x#0),
         }
@@ -612,7 +612,7 @@ describe("traits", () => {
     `);
   });
 
-  test.skip("do not duplicate when there's only one var to pass", () => {
+  test("do not duplicate when there's only one var to pass", () => {
     const out = dumpIR(
       `
       extern let show2: Fn(a, a) -> String where a: Show
@@ -625,13 +625,13 @@ describe("traits", () => {
     expect(out).toMatchInlineSnapshot(
       `
       "let pkg:Main.f = fn arg#0 {
-        show2[a:Show](arg#0, "hello")
+        show2[String:Show](arg#0, "hello")
       }"
     `,
     );
   });
 
-  test.skip("pass an arg twice if needed", () => {
+  test("pass an arg twice if needed", () => {
     const out = dumpIR(
       `
       extern let show2: Fn(a, b) -> String where a: Show, b: Show
@@ -643,7 +643,7 @@ describe("traits", () => {
     );
   });
 
-  test.skip("partial application", () => {
+  test("partial application", () => {
     const out = dumpIR(
       `
       extern let show2: Fn(a, b) -> String where a: Show, b: Show
@@ -662,7 +662,7 @@ describe("traits", () => {
     );
   });
 
-  test.skip("pass trait dicts for types with params when they do not have deps", () => {
+  test("pass trait dicts for types with params when they do not have deps", () => {
     const out = dumpIR(`
       extern let show: Fn(a) -> String where a: Show
 

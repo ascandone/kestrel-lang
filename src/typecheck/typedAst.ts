@@ -116,6 +116,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         namespace?: string;
         name: string;
         $resolution: IdentifierResolution | undefined;
+        $instantiated: Map<string, TVar>;
       }
     | {
         type: "fn";

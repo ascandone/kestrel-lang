@@ -64,7 +64,7 @@ test("glb ident with implicits", () => {
     ],
   });
 
-  expect(str).toEqual("glb[kestrel_core:Tuple:Unit:Show, t:Eq]");
+  expect(str).toEqual("glb[Unit:Show, t:Eq]");
 });
 
 test("glb ident with higher-order implicits", () => {
@@ -93,9 +93,7 @@ test("glb ident with higher-order implicits", () => {
     ],
   });
 
-  expect(str).toEqual(
-    "glb[kestrel_core:Result:Result:Show(kestrel_core:Int:Int:Show, a:Show)]",
-  );
+  expect(str).toEqual("glb[Result:Show(Int:Show, a:Show)]");
 });
 
 test("glb ident (different pkg/mod)", () => {

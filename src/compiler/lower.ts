@@ -179,7 +179,7 @@ class ExprEmitter {
       case "identifier": {
         return {
           type: "identifier",
-          ident: this.resolutionToIdent(getResolution(expr)),
+          ident: this.lowerIdent(expr),
         };
       }
 
@@ -310,7 +310,9 @@ class ExprEmitter {
     }
   }
 
-  private resolutionToIdent(resolution: typed.IdentifierResolution): ir.Ident {
+  private lowerIdent(expr: typed.TypedExpr & { type: "identifier" }): ir.Ident {
+    const resolution = getResolution(expr);
+
     switch (resolution.type) {
       case "local-variable": {
         const lookup = this.loweredIdents.get(resolution.binding);
@@ -350,10 +352,42 @@ class ExprEmitter {
           type: "global",
           name: id,
 
-          implicitly: implicitArity.map((arity) => {
+          implicitly: implicitArity.map((arity): ir.ImplicitTraitArg => {
             // TODO  we need to check whether arity.id was resolved as a concrete type
+            // TODO this may be a bug: that's the id of the polytype. Try to test this case
+            const instantiated = expr.$instantiated.get(arity.id);
+            if (instantiated === undefined) {
+              // TODO should this be a compiler error? consider moving this check to typecheck
+              return arity;
+            }
 
-            return arity;
+            const resolution = instantiated.resolve();
+            switch (resolution.type) {
+              case "unbound":
+                // TODO should this be a compiler error= consider moving this check to typecheck
+                return arity;
+              case "bound":
+                switch (resolution.value.type) {
+                  case "fn":
+                    // TODO should this not be an error?
+                    throw new CompilationError(
+                      "Invalid implicit param resolution (fn)",
+                    );
+
+                  case "named":
+                    return {
+                      type: "resolved",
+                      // TODO recur for args
+                      args: [],
+                      trait: arity.trait,
+                      typeName: new ir.QualifiedIdentifier(
+                        resolution.value.package_,
+                        resolution.value.module,
+                        resolution.value.name,
+                      ),
+                    };
+                }
+            }
           }),
         };
       }

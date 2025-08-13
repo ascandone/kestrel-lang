@@ -270,7 +270,7 @@ function formatImplicitArgs(arg: ir.ImplicitTraitArg[]) {
 const implicitArgToString = (i: ir.ImplicitTraitArg): string => {
   switch (i.type) {
     case "resolved": {
-      const main = `${i.typeName}:${i.trait}`;
+      const main = `${i.typeName.name}:${i.trait}`;
       if (i.args.length === 0) {
         return main;
       }

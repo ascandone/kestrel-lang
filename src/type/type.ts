@@ -417,7 +417,7 @@ export function generalizeAsScheme(
 }
 
 export class Instantiator {
-  private instantiated = new Map<string, TVar>();
+  public readonly instantiated = new Map<string, TVar>();
 
   instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
     switch (mono.type) {
