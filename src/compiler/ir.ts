@@ -43,6 +43,7 @@ export type Ident =
       typeName: QualifiedIdentifier;
     };
 
+export type ImplicitParam = ImplicitTraitArg & { type: "var" };
 export type ImplicitTraitArg = {
   trait: string;
 } & (

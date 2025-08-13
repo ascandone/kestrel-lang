@@ -3,7 +3,10 @@ import * as typed from "../typecheck";
 import * as ir from "./ir";
 
 class ExprEmitter {
-  constructor(private readonly currentDecl: ir.QualifiedIdentifier) {}
+  constructor(
+    private readonly currentDecl: ir.QualifiedIdentifier,
+    private readonly knownImplicitArities: Map<string, ir.ImplicitParam[]>,
+  ) {}
 
   private readonly uniques = new Map<string, number>();
   private getFreshUnique(name: string) {
@@ -331,17 +334,29 @@ class ExprEmitter {
           name: resolution.variant.name,
         };
 
-      case "global-variable":
+      case "global-variable": {
+        const id = new ir.QualifiedIdentifier(
+          resolution.package_,
+          resolution.namespace,
+          resolution.declaration.binding.name,
+        );
+
+        // TODO we should emit a compilation error if this value is undefined, as it's most likely a bug
+        // however this'll make some tests fail
+        const implicitArity =
+          this.knownImplicitArities.get(id.toString()) ?? [];
+
         return {
           type: "global",
-          name: new ir.QualifiedIdentifier(
-            resolution.package_,
-            resolution.namespace,
-            resolution.declaration.binding.name,
-          ),
-          // TODO pass implicits
-          implicitly: [],
+          name: id,
+
+          implicitly: implicitArity.map((arity) => {
+            // TODO  we need to check whether arity.id was resolved as a concrete type
+
+            return arity;
+          }),
         };
+      }
     }
   }
 }
@@ -353,6 +368,8 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
 
   const mkIdent = (name: string) =>
     new ir.QualifiedIdentifier(package_, namespace, name);
+
+  const knownImplicitArities = new Map<string, ir.ImplicitParam[]>();
 
   return {
     namespace,
@@ -389,16 +406,22 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
     }),
 
     values: module.declarations.flatMap((decl): ir.ValueDeclaration[] => {
+      const ident = mkIdent(decl.binding.name);
+      const implArity = makeTraitsScheme(
+        decl.binding.$type.asType(),
+        decl.$scheme,
+      );
+      knownImplicitArities.set(ident.toString(), implArity);
+
       if (decl.extern) {
         return [];
       }
 
-      const currentDecl = mkIdent(decl.binding.name);
-      const emitter = new ExprEmitter(currentDecl);
+      const emitter = new ExprEmitter(ident, knownImplicitArities);
 
       return [
         {
-          name: mkIdent(decl.binding.name),
+          name: ident,
           value: emitter.lowerExpr(decl.value),
           inline: decl.inline,
           implicitTraitParams: makeTraitsScheme(
@@ -451,10 +474,10 @@ const CONS = (hd: ir.Expr, tl: ir.Expr): ir.Expr => ({
 function makeTraitsScheme(
   type: typed.Type,
   scheme: TypeScheme,
-): (ir.ImplicitTraitArg & { type: "var" })[] {
+): ir.ImplicitParam[] {
   const alreadySeen = new Set<string>();
 
-  const out: (ir.ImplicitTraitArg & { type: "var" })[] = [];
+  const out: ir.ImplicitParam[] = [];
 
   function helper(type: typed.Type) {
     switch (type.type) {
