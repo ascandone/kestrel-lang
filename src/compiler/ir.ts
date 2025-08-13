@@ -45,8 +45,16 @@ export type Ident =
 
 export type ImplicitTraitArg = {
   trait: string;
-  typeName: string;
-};
+} & (
+  | {
+      type: "resolved";
+      typeName: QualifiedIdentifier;
+    }
+  | {
+      type: "var";
+      id: string;
+    }
+);
 
 export type Expr =
   | {

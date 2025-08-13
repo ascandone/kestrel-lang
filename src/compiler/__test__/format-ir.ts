@@ -187,7 +187,14 @@ export class ExprPrinter {
     }
 
     const args = ident.implicitly
-      .map((i) => `${i.typeName}:${i.trait}`)
+      .map((i) => {
+        switch (i.type) {
+          case "resolved":
+            return `${i.typeName}:${i.trait}`;
+          case "var":
+            return `${i.id}:${i.trait}`;
+        }
+      })
       .join(", ");
 
     return `${id}[${args}]`;

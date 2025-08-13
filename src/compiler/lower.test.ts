@@ -563,6 +563,24 @@ describe("traits", () => {
     `);
     expect(out).toMatchInlineSnapshot(`"let pkg:Main.f[a: Eq + Show] = show"`);
   });
+
+  test.skip("handle multiple traits when applying to concrete args", () => {
+    const out = dumpIR(
+      `
+      extern let show: Fn(a, a) -> String where a: Eq + Show
+
+      
+      type S {} // <- it derives both Eq and Show
+      extern let s: S
+      
+      let f = show(s, s)
+    `,
+    );
+
+    expect(out).toMatchInlineSnapshot(
+      `"let pkg:Main.f = show[Eq:String, Show:String](s, s)"`,
+    );
+  });
 });
 
 function getIR(src: string) {

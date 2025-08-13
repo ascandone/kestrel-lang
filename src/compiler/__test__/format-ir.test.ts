@@ -50,12 +50,20 @@ test("glb ident with implicits", () => {
     type: "global",
     name: new QualifiedIdentifier("pkg", "Main", "glb"),
     implicitly: [
-      { typeName: "Int", trait: "Show" },
-      { typeName: "Maybe", trait: "Eq" },
+      {
+        type: "resolved",
+        trait: "Show",
+        typeName: new QualifiedIdentifier("kestrel_core", "Tuple", "Unit"),
+      },
+      {
+        trait: "Eq",
+        type: "var",
+        id: "t",
+      },
     ],
   });
 
-  expect(str).toEqual("glb[Int:Show, Maybe:Eq]");
+  expect(str).toEqual("glb[kestrel_core:Tuple:Unit:Show, t:Eq]");
 });
 
 test("glb ident (different pkg/mod)", () => {
