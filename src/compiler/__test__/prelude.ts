@@ -68,6 +68,18 @@ const Int = typecheckSourceRaw(
   `,
 ).moduleInterface;
 
+const Float = typecheckSourceRaw(
+  CORE_PACKAGE,
+  "Float",
+  `
+    extern pub type Float
+    extern pub let (+.): Fn(Int, Int) -> Int
+    extern pub let (-.): Fn(Int, Int) -> Int
+    extern pub let (*.): Fn(Int, Int) -> Int
+    extern pub let (/.): Fn(Int, Int) -> Int
+  `,
+).moduleInterface;
+
 const String = typecheckSourceRaw(
   CORE_PACKAGE,
   "String",
@@ -101,6 +113,7 @@ const DEFAULT_DEPS: Deps = {
   Int,
   String,
   Bool,
+  Float,
 };
 
 function typecheckSourceRaw(
