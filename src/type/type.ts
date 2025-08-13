@@ -416,10 +416,6 @@ export function generalizeAsScheme(
   return scheme;
 }
 
-export function instantiatePoly(poly: PolyTypeMeta): Type {
-  return instantiateFromScheme(poly.$type.asType(), poly.$scheme);
-}
-
 export class Instantiator {
   private instantiated = new Map<string, TVar>();
 
