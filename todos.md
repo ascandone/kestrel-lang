@@ -25,6 +25,7 @@
   - perf: do not invalidate the whole ast
 - test: test position of type errs
 - refactor: implement infixes as macros for normal extern functions
+- refactor: ditch the ".type" tagging convention, and use .eg. `_tag` instead
 
 ### Done
 
