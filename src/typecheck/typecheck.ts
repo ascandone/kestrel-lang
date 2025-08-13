@@ -84,7 +84,7 @@ export function typecheck(
 }
 
 type ScheduledAmbiguousVarCheck = {
-  bindingsStack: Type[];
+  currentDeclaration: Type;
   instantiatedVarNode: { name: string } & TypeMeta & RangeMeta;
 };
 
@@ -97,7 +97,8 @@ class Typechecker {
   private errorNodesTypeVarIds = new Set<number>();
 
   private ambiguousTypeVarErrorsEmitted = new Set<number>();
-  private bindingsTypesStack: Type[] = [];
+
+  private currentDeclaration: Type | undefined;
 
   private scheduledAmbiguousVarChecks: ScheduledAmbiguousVarCheck[] = [];
 
@@ -253,9 +254,8 @@ class Typechecker {
     for (const group of mutuallyRecursiveBindings) {
       // TODO something's not right here (we should generalize the whole group after the typecheck pass)
       for (const decl of group) {
-        this.bindingsTypesStack.push(decl.binding.$type.asType());
+        this.currentDeclaration = decl.binding.$type.asType();
         this.typecheckAnnotatedDecl(decl);
-        this.bindingsTypesStack.pop();
 
         for (const check of this.scheduledAmbiguousVarChecks) {
           this.checkInstantiatedVars(decl.$scheme, check);
@@ -633,16 +633,10 @@ class Typechecker {
 
   private checkInstantiatedVars(
     scheme: TypeScheme,
-    { instantiatedVarNode, bindingsStack }: ScheduledAmbiguousVarCheck,
+    { instantiatedVarNode, currentDeclaration }: ScheduledAmbiguousVarCheck,
   ) {
-    if (bindingsStack.length === 0) {
-      throw new Error("[unreachable] empty bindings stack");
-    }
-
     const bindingUnboundTypes = new Set<number>(
-      bindingsStack
-        .flatMap((binding) => findUnboundTypeVars(binding))
-        .map((v) => v.id),
+      findUnboundTypeVars(currentDeclaration).map((v) => v.id),
     );
 
     const instantiatedVarUnboundTypes = findUnboundTypeVars(
@@ -696,9 +690,7 @@ class Typechecker {
           stm.pattern.$type.asType(),
           stm.value.$type.asType(),
         );
-        this.bindingsTypesStack.push(stm.pattern.$type.asType());
         this.typecheckAnnotatedExpr(stm.value);
-        this.bindingsTypesStack.pop();
         break;
 
       case "let#":
@@ -799,12 +791,13 @@ class Typechecker {
           resolutionToType(ast.$resolution),
         );
 
-        if (ast.$resolution.type !== "local-variable") {
-          this.scheduledAmbiguousVarChecks.push({
-            instantiatedVarNode: ast,
-            bindingsStack: [...this.bindingsTypesStack],
-          });
+        if (this.currentDeclaration === undefined) {
+          throw new Error("[unreachable] no current declaration");
         }
+        this.scheduledAmbiguousVarChecks.push({
+          instantiatedVarNode: ast,
+          currentDeclaration: this.currentDeclaration,
+        });
 
         return;
       }
