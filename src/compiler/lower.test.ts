@@ -52,9 +52,9 @@ test("module (raw)", () => {
       ],
       "values": [
         {
+          "implicitTraitParams": [],
           "inline": false,
           "name": "pkg:Main:x",
-          "traits": {},
           "value": {
             "type": "constant",
             "value": {
@@ -76,9 +76,9 @@ test("global value of same module (raw)", () => {
   expect(ir.values).toMatchInlineSnapshot(`
     [
       {
+        "implicitTraitParams": [],
         "inline": false,
         "name": "pkg:Main:x",
-        "traits": {},
         "value": {
           "type": "constant",
           "value": {
@@ -88,9 +88,9 @@ test("global value of same module (raw)", () => {
         },
       },
       {
+        "implicitTraitParams": [],
         "inline": false,
         "name": "pkg:Main:y",
-        "traits": {},
         "value": {
           "ident": {
             "implicitly": [],
@@ -529,7 +529,7 @@ describe("traits", () => {
       extern let p: a  where a: Show
       let x = p //: a1 where a1: Show 
     `);
-    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x[a: Show] = p"`);
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x[a:Show] = p"`);
   });
 
   test("pass to fn", () => {
@@ -538,7 +538,7 @@ describe("traits", () => {
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
-      "let pkg:Main.f[a: Show] = fn x#0 {
+      "let pkg:Main.f[a:Show] = fn x#0 {
         show(x#0)
       }"
     `);
@@ -550,7 +550,7 @@ describe("traits", () => {
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
-      "let pkg:Main.f[a: Show] = fn x#0 {
+      "let pkg:Main.f[a:Show] = fn x#0 {
         show(x#0)
       }"
     `);
@@ -561,7 +561,7 @@ describe("traits", () => {
       extern let show: Fn(a, a) -> String where a: Eq + Show
       let f = show
     `);
-    expect(out).toMatchInlineSnapshot(`"let pkg:Main.f[a: Eq + Show] = show"`);
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.f[a:Eq, a:Show] = show"`);
   });
 
   test.skip("handle multiple traits when applying to concrete args", () => {

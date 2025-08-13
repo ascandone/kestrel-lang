@@ -186,17 +186,7 @@ export class ExprPrinter {
       return id;
     }
 
-    const args = ident.implicitly
-      .map((i) => {
-        switch (i.type) {
-          case "resolved":
-            return `${i.typeName}:${i.trait}`;
-          case "var":
-            return `${i.id}:${i.trait}`;
-        }
-      })
-      .join(", ");
-
+    const args = ident.implicitly.map(implicitArgToString).join(", ");
     return `${id}[${args}]`;
   }
 
@@ -265,28 +255,29 @@ export class ExprPrinter {
   }
 }
 
-function formatTraitsScheme(decl: ir.TraitsScheme) {
-  const entries = Object.entries(decl);
-  if (entries.length === 0) {
+function formatImplicitArgs(arg: ir.ImplicitTraitArg[]) {
+  if (arg.length === 0) {
     return nil;
-  }
-
-  function fmtTraits(traits: string[]) {
-    return sepBy(
-      text(" + "),
-      traits.map((t) => text(t)),
-    );
   }
 
   return concat(
     text("["),
-    sepBy(
-      text(", "),
-      entries.map(([id, traits]) => concat(text(id, ": "), fmtTraits(traits))),
+    sepByString(
+      ", ",
+      arg.map((a) => text(implicitArgToString(a))),
     ),
     text("]"),
   );
 }
+
+const implicitArgToString = (i: ir.ImplicitTraitArg): string => {
+  switch (i.type) {
+    case "resolved":
+      return `${i.typeName}:${i.trait}`;
+    case "var":
+      return `${i.id}:${i.trait}`;
+  }
+};
 
 function formatDecl(decl: ir.ValueDeclaration) {
   const exprDoc = new ExprPrinter(
@@ -296,7 +287,7 @@ function formatDecl(decl: ir.ValueDeclaration) {
   ).exprToDoc(decl.value);
   return concat(
     text(`let ${decl.name.package_}:${decl.name.namespace}.${decl.name.name}`),
-    formatTraitsScheme(decl.traits),
+    formatImplicitArgs(decl.implicitTraitParams),
     text(" = "),
 
     exprDoc,

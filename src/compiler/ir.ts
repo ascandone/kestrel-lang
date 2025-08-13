@@ -67,15 +67,12 @@ export type Expr =
     }
   | {
       type: "fn";
-      // traits: string[];
       bindings: (Ident & { type: "local" })[];
       body: Expr;
     }
   | {
       type: "application";
       caller: Expr;
-      // TODO traits
-      // traits: string[];
       args: Expr[];
     }
   | {
@@ -99,15 +96,10 @@ export type Expr =
       spread: Expr | undefined;
     };
 
-export type TraitsScheme = {
-  [id: string]: string[];
-};
-
 export type ValueDeclaration = {
   name: QualifiedIdentifier;
   value: Expr;
-  traits: TraitsScheme;
-
+  implicitTraitParams: (ImplicitTraitArg & { type: "var" })[];
   inline: boolean;
 };
 

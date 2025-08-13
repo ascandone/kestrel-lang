@@ -401,7 +401,10 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
           name: mkIdent(decl.binding.name),
           value: emitter.lowerExpr(decl.value),
           inline: decl.inline,
-          traits: makeTraitsScheme(decl.binding.$type.asType(), decl.$scheme),
+          implicitTraitParams: makeTraitsScheme(
+            decl.binding.$type.asType(),
+            decl.$scheme,
+          ),
         },
       ];
     }),
@@ -448,8 +451,10 @@ const CONS = (hd: ir.Expr, tl: ir.Expr): ir.Expr => ({
 function makeTraitsScheme(
   type: typed.Type,
   scheme: TypeScheme,
-): ir.TraitsScheme {
-  const traitsScheme: ir.TraitsScheme = {};
+): (ir.ImplicitTraitArg & { type: "var" })[] {
+  const alreadySeen = new Set<string>();
+
+  const out: (ir.ImplicitTraitArg & { type: "var" })[] = [];
 
   function helper(type: typed.Type) {
     switch (type.type) {
@@ -475,18 +480,23 @@ function makeTraitsScheme(
             return;
           case "unbound":
             for (const trait of resolved.traits) {
+              const key = `${resolved.id}${trait}`;
+              // This avoids adding duplicate params
+              if (alreadySeen.has(key)) {
+                return;
+              }
+              alreadySeen.add(key);
+
               const id = scheme[resolved.id];
               if (id === undefined) {
                 throw new CompilationError("id not found");
               }
-              const lookup = traitsScheme[id];
-              if (lookup === undefined) {
-                traitsScheme[id] = [trait];
-              } else {
-                if (!lookup.includes(trait)) {
-                  lookup.push(trait);
-                }
-              }
+
+              out.push({
+                type: "var",
+                id,
+                trait,
+              });
             }
             return;
         }
@@ -496,5 +506,5 @@ function makeTraitsScheme(
 
   helper(type);
 
-  return traitsScheme;
+  return out;
 }
