@@ -1,5 +1,6 @@
 ## Todos
 
+- refactor: remove the stupid .asType() thing
 - feat: improve implicit imports repr
   - no dummy ranges
   - allow duplicate imports if the first one is the implicit
