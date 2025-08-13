@@ -239,10 +239,7 @@ export class ExprPrinter {
         }
 
         return concat(
-          text(
-            // pattern.namespace === undefined ? "" : `${pattern.namespace}.`,
-            pattern.name,
-          ),
+          text(pattern.name),
           text("("),
           sepByString(
             ", ",
@@ -272,8 +269,16 @@ function formatImplicitArgs(arg: ir.ImplicitTraitArg[]) {
 
 const implicitArgToString = (i: ir.ImplicitTraitArg): string => {
   switch (i.type) {
-    case "resolved":
-      return `${i.typeName}:${i.trait}`;
+    case "resolved": {
+      const main = `${i.typeName}:${i.trait}`;
+      if (i.args.length === 0) {
+        return main;
+      }
+
+      const args = i.args.map(implicitArgToString).join(", ");
+
+      return `${main}(${args})`;
+    }
     case "var":
       return `${i.id}:${i.trait}`;
   }

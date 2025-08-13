@@ -54,6 +54,7 @@ test("glb ident with implicits", () => {
         type: "resolved",
         trait: "Show",
         typeName: new QualifiedIdentifier("kestrel_core", "Tuple", "Unit"),
+        args: [],
       },
       {
         trait: "Eq",
@@ -64,6 +65,37 @@ test("glb ident with implicits", () => {
   });
 
   expect(str).toEqual("glb[kestrel_core:Tuple:Unit:Show, t:Eq]");
+});
+
+test("glb ident with higher-order implicits", () => {
+  const str = new ExprPrinter("glb", "pkg", "Main").identToString({
+    type: "global",
+    name: new QualifiedIdentifier("pkg", "Main", "glb"),
+    implicitly: [
+      {
+        type: "resolved",
+        trait: "Show",
+        typeName: new QualifiedIdentifier("kestrel_core", "Result", "Result"),
+        args: [
+          {
+            type: "resolved",
+            trait: "Show",
+            typeName: new QualifiedIdentifier("kestrel_core", "Int", "Int"),
+            args: [],
+          },
+          {
+            trait: "Show",
+            type: "var",
+            id: "a",
+          },
+        ],
+      },
+    ],
+  });
+
+  expect(str).toEqual(
+    "glb[kestrel_core:Result:Result:Show(kestrel_core:Int:Int:Show, a:Show)]",
+  );
 });
 
 test("glb ident (different pkg/mod)", () => {

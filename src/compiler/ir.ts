@@ -49,6 +49,7 @@ export type ImplicitTraitArg = {
   | {
       type: "resolved";
       typeName: QualifiedIdentifier;
+      args: ImplicitTraitArg[];
     }
   | {
       type: "var";
