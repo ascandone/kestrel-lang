@@ -555,6 +555,14 @@ describe("traits", () => {
       }"
     `);
   });
+
+  test("handle multiple traits", () => {
+    const out = dumpIR(`
+      extern let show: Fn(a, a) -> String where a: Eq + Show
+      let f = show
+    `);
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.f[a: Eq + Show] = show"`);
+  });
 });
 
 function getIR(src: string) {
