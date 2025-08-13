@@ -21,7 +21,7 @@ type CompilationMode =
       type: "assign_var";
       ident: t.Identifier;
       declare: boolean;
-      // dictParams: t.Identifier[];
+      dictParams: t.Identifier[];
     }
   | { type: "return" };
 
@@ -103,7 +103,7 @@ export class Compiler {
       type: "assign_var",
       declare: true,
       ident: compileGlobalIdent(decl.name),
-      // dictParams: findDeclarationDictsParams(decl.binding.$type.asType()),
+      dictParams: decl.implicitTraitParams.map(makeImplicitParamVarIdent),
     });
 
     const stms = this.statementsBuf;
@@ -120,8 +120,15 @@ export class Compiler {
       case "assign_var":
         if (as.declare) {
           const exprsWithDictParams: t.Expression =
-            // as.dictParams.length === 0
-            expr;
+            as.dictParams.length === 0
+              ? expr
+              : {
+                  type: "ArrowFunctionExpression",
+                  async: false,
+                  params: as.dictParams,
+                  body: expr,
+                  expression: true,
+                };
 
           this.statementsBuf.push({
             type: "VariableDeclaration",
@@ -367,8 +374,17 @@ export class Compiler {
     src: ir.Expr & { type: "identifier" },
   ): t.Expression {
     switch (src.ident.type) {
-      case "global":
-        return compileGlobalIdent(src.ident.name);
+      case "global": {
+        const ident = compileGlobalIdent(src.ident.name);
+        if (src.ident.implicitly.length !== 0) {
+          return {
+            type: "CallExpression",
+            callee: ident,
+            arguments: src.ident.implicitly.map(makeImplicitParamIdentifier),
+          };
+        }
+        return ident;
+      }
 
       case "local": {
         const ident = compileLocalIdent(src.ident);
@@ -706,7 +722,7 @@ export class Compiler {
       type: "assign_var",
       ident,
       declare: true,
-      // dictParams: [],
+      dictParams: [],
     });
     return ident;
   }
@@ -1095,4 +1111,27 @@ function mkIfSugar(expr: ir.Expr): IfSugar | undefined {
   }
 
   return undefined;
+}
+
+function makeImplicitParamVarIdent(
+  arg: ir.ImplicitTraitArg & { type: "var" },
+): t.Identifier {
+  return {
+    type: "Identifier",
+    name: `${arg.trait}_${arg.id}`,
+  };
+}
+
+function makeImplicitParamIdentifier(arg: ir.ImplicitTraitArg): t.Expression {
+  switch (arg.type) {
+    case "resolved":
+      // TODO args for higher order traits
+      return {
+        type: "Identifier",
+        name: `${arg.trait}_${arg.typeName.namespace}$${arg.typeName.name}`,
+      };
+
+    case "var":
+      return makeImplicitParamVarIdent(arg);
+  }
 }
