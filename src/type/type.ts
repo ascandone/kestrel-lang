@@ -230,7 +230,7 @@ export class TVar {
         case "linked":
           return TVar.unify(t1.var.value.to.asType(), t2);
         default:
-          throw new Error("[unreachable]");
+          t1.var.value satisfies never;
       }
     }
 
