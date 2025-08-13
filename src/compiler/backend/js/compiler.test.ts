@@ -2262,7 +2262,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("== handles traits dicts", () => {
+  test("== handles traits dicts", () => {
     const out = compileSrc(
       `
   extern let (==): Fn(a, a) -> Bool where a: Eq
@@ -2271,7 +2271,7 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-    "const Main$f = Eq_a => (x, y) => _eq(Eq_a)(x, y);"
+    "const Main$f = Eq_a => (Main$f$x, Main$f$y) => _eq(Eq_a)(Main$f$x, Main$f$y);"
   `);
   });
 

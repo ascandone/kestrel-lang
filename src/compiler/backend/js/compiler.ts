@@ -288,7 +288,7 @@ export class Compiler {
     };
   }
 
-  private tryCompileIntrinsic(
+  private tryCompileInlinedIntrinsic(
     src: ir.Expr & { type: "application" },
   ): t.Expression | undefined {
     if (src.caller.type !== "identifier") {
@@ -347,7 +347,11 @@ export class Compiler {
         return this.makeBinaryLogical("||", src.args);
 
       case "Bool.==":
+        // TODO monomorphic version
+        return;
+
       case "Bool.!=":
+
       case "Bool.<=":
       case "Bool.<":
       case "Bool.>=":
@@ -421,7 +425,7 @@ export class Compiler {
   private compileApplicationAsExpr(
     src: ir.Expr & { type: "application" },
   ): t.Expression {
-    const inlined = this.tryCompileIntrinsic(src);
+    const inlined = this.tryCompileInlinedIntrinsic(src);
     if (inlined !== undefined) {
       return inlined;
     }
@@ -883,6 +887,10 @@ function compileConst(ast: ir.ConstLiteral): t.Expression {
  * TODO package scope is not added yet
  */
 function compileGlobalIdent(qualified: ir.QualifiedIdentifier): t.Identifier {
+  if (qualified.name === "==") {
+    return { type: "Identifier", name: "_eq" };
+  }
+
   // TODO add binding.declaration.package_ prefix
   return {
     type: "Identifier",
