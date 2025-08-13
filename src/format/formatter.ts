@@ -120,7 +120,7 @@ function hasLowerPrec(bindingPower: number, other: Expr): boolean {
   }
 }
 
-function constToDoc(lit: ConstLiteral): Doc {
+export function constToDoc(lit: ConstLiteral): Doc {
   switch (lit.type) {
     case "int":
       return text(lit.value.toString());

@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
 import { typecheck } from "../typecheck";
 import { lowerProgram } from "./lower";
-import { formatIR } from "./__test__/ir-to-sexpr";
+import { formatIR } from "./__test__/format-ir";
 
 test("module (raw)", () => {
   const ir = getIR(`
@@ -105,11 +105,9 @@ test("global value of same module", () => {
     pub let y = x
   `);
   expect(ir).toMatchInlineSnapshot(`
-    "(:def x
-        0)
+    "let pkg:Main.x = 0
 
-    (:def y
-        x)"
+    let pkg:Main.y = x"
   `);
 });
 
@@ -123,9 +121,9 @@ test("intrinsics", () => {
     }
   `);
   expect(ir).toMatchInlineSnapshot(`
-    "(:def y
-        (:fn (a#0 b#0)
-            (+ a#0 b#0)))"
+    "let pkg:Main.y = fn a#0, b#0 {
+      +(a#0, b#0)
+    }"
   `);
 });
 
@@ -137,9 +135,9 @@ test("local value", () => {
     }
   `);
   expect(ir).toMatchInlineSnapshot(`
-    "(:def glb
-        (:match 0
-            (loc#0 loc#0)))"
+    "let pkg:Main.glb = match 0 {
+      loc#0 => loc#0,
+    }"
   `);
 });
 
@@ -156,13 +154,13 @@ test("local value count resets on new declrs", () => {
     }
   `);
   expect(ir).toMatchInlineSnapshot(`
-    "(:def glb1
-        (:match 0
-            (loc#0 loc#0)))
+    "let pkg:Main.glb1 = match 0 {
+      loc#0 => loc#0,
+    }
 
-    (:def glb2
-        (:match 0
-            (loc#0 loc#0)))"
+    let pkg:Main.glb2 = match 0 {
+      loc#0 => loc#0,
+    }"
   `);
 });
 
@@ -177,13 +175,13 @@ test("local value (shadowing)", () => {
   `);
   expect(ir).toMatchInlineSnapshot(
     `
-    "(:def glb
-        (:match 0
-            (loc#0
-                (:match loc#0
-                    (mid#0
-                        (:match mid#0
-                            (loc#1 loc#1)))))))"
+    "let pkg:Main.glb = match 0 {
+      loc#0 => match loc#0 {
+        mid#0 => match mid#0 {
+          loc#1 => loc#1,
+        },
+      },
+    }"
   `,
   );
 });
@@ -196,12 +194,11 @@ test("fn and application", () => {
   `);
   expect(ir).toMatchInlineSnapshot(
     `
-    "(:def f
-        (:fn (a#0 b#0)
-            a#0))
+    "let pkg:Main.f = fn a#0, b#0 {
+      a#0
+    }
 
-    (:def out
-        (f 1 2))"
+    let pkg:Main.out = f(1, 2)"
   `,
   );
 });
@@ -220,12 +217,11 @@ test("let# sugar", () => {
 
   expect(ir).toMatchInlineSnapshot(
     `
-    "(:def f
-        (:fn (mapper#0 value#0 g#0)
-            (mapper#0
-                value#0
-                (:fn (x#0)
-                    (g#0 x#0)))))"
+    "let pkg:Main.f = fn mapper#0, value#0, g#0 {
+      mapper#0(value#0, fn x#0 {
+        g#0(x#0)
+      })
+    }"
   `,
   );
 });
@@ -239,11 +235,11 @@ test("shadowed fn args", () => {
   `);
   expect(ir).toMatchInlineSnapshot(
     `
-    "(:def f
-        (:match 0
-            (a#0
-                (:fn (a#1)
-                    a#1))))"
+    "let pkg:Main.f = match 0 {
+      a#0 => fn a#1 {
+        a#1
+      },
+    }"
   `,
   );
 });
@@ -259,16 +255,18 @@ test("proper counting", () => {
   `);
   expect(ir).toMatchInlineSnapshot(
     `
-    "(:def f
-        (:fn (a#0 b#0)
-            a#0))
+    "let pkg:Main.f = fn a#0, b#0 {
+      a#0
+    }
 
-    (:def glb
-        (f
-            (:match 0
-                (x#0 x#0))
-            (:match 0
-                (x#1 x#1))))"
+    let pkg:Main.glb = f(
+      match 0 {
+        x#0 => x#0,
+      },
+      match 0 {
+        x#1 => x#1,
+      },
+    )"
   `,
   );
 });
@@ -286,11 +284,12 @@ test("if expr", () => {
 
   expect(ir).toMatchInlineSnapshot(
     `
-    "(:def f
-        (:fn (b#0 x#0 y#0)
-            (:match b#0
-                ((kestrel_core:Bool.True) x#0)
-                ((kestrel_core:Bool.False) y#0))))"
+    "let pkg:Main.f = fn b#0, x#0, y#0 {
+      match b#0 {
+        True => x#0,
+        False => y#0,
+      }
+    }"
   `,
   );
 });
@@ -320,19 +319,19 @@ test("struct creation and access", () => {
   `);
 
   expect(ir).toMatchInlineSnapshot(`
-    "(:def u
-        (:struct User
-            (name n)
-            (age n)))
+    "let pkg:Main.u = User {
+      name: n,
+      age: n,
+    }
 
-    (:def u2
-        (:fn (age#0)
-            (:struct User
-                (age age#0)
-                (:spread u))))
+    let pkg:Main.u2 = fn age#0 {
+      User {
+        age: age#0,
+        ..u
+      }
+    }
 
-    (:def acc
-        (.name u))"
+    let pkg:Main.acc = u.name"
   `);
 });
 
@@ -348,11 +347,9 @@ test("constructor", () => {
   `);
 
   expect(ir).toMatchInlineSnapshot(`
-    "(:def none
-        None)
+    "let pkg:Main.none = None
 
-    (:def some
-        (Some 0))"
+    let pkg:Main.some = Some(0)"
   `);
 });
 
@@ -362,12 +359,10 @@ test("list literal", () => {
   `);
 
   expect(ir).toMatchInlineSnapshot(`
-    "(:def lst
-        (kestrel_core:List.Cons
-            1
-            (kestrel_core:List.Cons
-                2
-                (kestrel_core:List.Cons 3 kestrel_core:List.Nil))))"
+    "let pkg:Main.lst = kestrel_core:List.Cons(
+      1,
+      kestrel_core:List.Cons(2, kestrel_core:List.Cons(3, kestrel_core:List.Nil)),
+    )"
   `);
 });
 
@@ -389,12 +384,13 @@ describe("pattern matching", () => {
   `);
 
     expect(ir).toMatchInlineSnapshot(`
-      "(:def m
-          (:fn (x#0 f#0)
-              (:match (f#0 x#0)
-                  ((None) 0)
-                  ((Some 0) x#0)
-                  ((Some x#1) x#1))))"
+      "let pkg:Main.m = fn x#0, f#0 {
+        match f#0(x#0) {
+          None => 0,
+          Some(0) => x#0,
+          Some(x#1) => x#1,
+        }
+      }"
     `);
   });
 
@@ -416,13 +412,12 @@ describe("pattern matching", () => {
   `);
 
     expect(ir).toMatchInlineSnapshot(`
-      "(:def opt
-          (Some (Some 0)))
+      "let pkg:Main.opt = Some(Some(0))
 
-      (:def m
-          (:match opt
-              ((Some (Some x#0)) x#0)
-              (_#0 0)))"
+      let pkg:Main.m = match opt {
+        Some(Some(x#0)) => x#0,
+        _#0 => 0,
+      }"
     `);
   });
 
@@ -439,9 +434,9 @@ describe("pattern matching", () => {
   `);
 
     expect(ir).toMatchInlineSnapshot(`
-      "(:def m
-          (:match (Box 42)
-              ((Box x#0) x#0)))"
+      "let pkg:Main.m = match Box(42) {
+        Box(x#0) => x#0,
+      }"
     `);
   });
 
@@ -458,14 +453,14 @@ describe("pattern matching", () => {
   `);
 
     expect(ir).toMatchInlineSnapshot(`
-    "(:def m
-        (:fn (mapper#0)
-            (mapper#0
-                0
-                (:fn (#0)
-                    (:match #0
-                        ((Box x#0) x#0))))))"
-  `);
+      "let pkg:Main.m = fn mapper#0 {
+        mapper#0(0, fn #0 {
+          match #0 {
+            Box(x#0) => x#0,
+          }
+        })
+      }"
+    `);
   });
 
   test("pattern matching in fn", () => {
@@ -480,11 +475,12 @@ describe("pattern matching", () => {
   `);
 
     expect(ir).toMatchInlineSnapshot(`
-    "(:def m
-        (:fn (#0)
-            (:match #0
-                ((Box x#0) x#0))))"
-  `);
+      "let pkg:Main.m = fn #0 {
+        match #0 {
+          Box(x#0) => x#0,
+        }
+      }"
+    `);
   });
 
   test("pattern matching in fn with many args", () => {
@@ -499,13 +495,14 @@ describe("pattern matching", () => {
   `);
 
     expect(ir).toMatchInlineSnapshot(`
-    "(:def m
-        (:fn (#0 z#0 #1)
-            (:match #0
-                ((Box x#0)
-                    (:match #1
-                        ((Box y#0) y#0))))))"
-  `);
+      "let pkg:Main.m = fn #0, z#0, #1 {
+        match #0 {
+          Box(x#0) => match #1 {
+            Box(y#0) => y#0,
+          },
+        }
+      }"
+    `);
   });
 });
 

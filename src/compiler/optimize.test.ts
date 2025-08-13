@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
 import * as ir from "./ir";
 import * as optimize from "./optimize";
-import { formatIR, formatIRExpr } from "./__test__/ir-to-sexpr";
 import { typecheckSource_ } from "./__test__/prelude";
 import { lowerProgram } from "./lower";
+import { formatIR, formatIRExpr } from "./__test__/format-ir";
 
 const baseCtx: optimize.Ctx = {};
 
@@ -87,12 +87,11 @@ describe("beta reduction", () => {
     `,
     );
     expect(out).toMatchInlineSnapshot(`
-      "(:def id
-          (:fn (a#0)
-              a#0))
+      "let pkg:Main.id = fn a#0 {
+        a#0
+      }
 
-      (:def x
-          (id "value"))"
+      let pkg:Main.x = id("value")"
     `);
   });
 });
