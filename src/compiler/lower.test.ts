@@ -662,7 +662,7 @@ describe("traits", () => {
     );
   });
 
-  test.skip("pass trait dicts for types with params when they do not have deps", () => {
+  test("pass trait dicts for types with params when they do not have deps", () => {
     const out = dumpIR(`
       extern let show: Fn(a) -> String where a: Show
 
@@ -676,7 +676,7 @@ describe("traits", () => {
     );
   });
 
-  test.skip("pass higher order trait dicts for types with params when they do have deps", () => {
+  test("pass higher order trait dicts for types with params when they do have deps", () => {
     const out = dumpIR(
       `
       extern let show: Fn(a) -> String where a: Show

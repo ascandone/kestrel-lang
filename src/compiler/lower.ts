@@ -352,7 +352,7 @@ class ExprEmitter {
         return {
           type: "global",
           name: glbVarId,
-          implicitly: implicitArity.map((arity): ir.ImplicitTraitArg => {
+          implicitly: implicitArity.flatMap((arity): ir.ImplicitTraitArg[] => {
             // TODO  we need to check whether arity.id was resolved as a concrete type
             // TODO this may be a bug: that's the id of the polytype. Try to test this case
             const instantiated = expr.$instantiated.get(arity.id);
@@ -370,10 +370,14 @@ class ExprEmitter {
   private lowerImplicitArg(
     instantiatedType: typed.Type,
     arity: ir.ImplicitParam,
-  ): ir.ImplicitTraitArg {
+  ): ir.ImplicitTraitArg[] {
     const resolution = resolveType(instantiatedType);
     switch (resolution.type) {
       case "unbound": {
+        if (resolution.traits.length === 0) {
+          return [];
+        }
+
         const id = this.scheme[resolution.id];
         if (id === undefined) {
           // TODO we should prevent this during typecheck, by creating the data containing this info
@@ -381,11 +385,13 @@ class ExprEmitter {
           throw new CompilationError("implicit param not found");
         }
 
-        return {
-          type: "var",
-          id,
-          trait: arity.trait,
-        };
+        return [
+          {
+            type: "var",
+            id,
+            trait: arity.trait,
+          },
+        ];
       }
 
       case "fn":
@@ -393,17 +399,21 @@ class ExprEmitter {
         throw new CompilationError("Invalid implicit param resolution (fn)");
 
       case "named":
-        return {
-          type: "resolved",
-          // TODO recur for args
-          args: resolution.args.map((arg) => this.lowerImplicitArg(arg, arity)),
-          trait: arity.trait,
-          typeName: new ir.QualifiedIdentifier(
-            resolution.package_,
-            resolution.module,
-            resolution.name,
-          ),
-        };
+        return [
+          {
+            type: "resolved",
+            // TODO recur for args
+            args: resolution.args.flatMap((arg) =>
+              this.lowerImplicitArg(arg, arity),
+            ),
+            trait: arity.trait,
+            typeName: new ir.QualifiedIdentifier(
+              resolution.package_,
+              resolution.module,
+              resolution.name,
+            ),
+          },
+        ];
     }
   }
 }
