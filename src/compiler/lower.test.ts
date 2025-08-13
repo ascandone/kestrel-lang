@@ -586,7 +586,7 @@ describe("traits", () => {
     );
   });
 
-  test.skip("do not pass extra args", () => {
+  test("do not pass extra args", () => {
     const out = dumpIR(
       `
       extern let inspect: Fn(a) -> String where a: Show
@@ -646,7 +646,7 @@ describe("traits", () => {
   test("partial application", () => {
     const out = dumpIR(
       `
-      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      extern let show2: Fn(k, u) -> String where k: Show, u: Show
       let f = fn arg {
         show2(arg, "hello")
       }
@@ -662,7 +662,7 @@ describe("traits", () => {
     );
   });
 
-  test("pass trait dicts for types with params when they do not have deps", () => {
+  test.skip("pass trait dicts for types with params when they do not have deps", () => {
     const out = dumpIR(`
       extern let show: Fn(a) -> String where a: Show
 

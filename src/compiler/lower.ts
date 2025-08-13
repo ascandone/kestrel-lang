@@ -1,4 +1,4 @@
-import { TypeScheme } from "../type";
+import { TypeScheme, resolveType } from "../type";
 import * as typed from "../typecheck";
 import * as ir from "./ir";
 
@@ -6,6 +6,7 @@ class ExprEmitter {
   constructor(
     private readonly currentDecl: ir.QualifiedIdentifier,
     private readonly knownImplicitArities: Map<string, ir.ImplicitParam[]>,
+    private readonly scheme: TypeScheme,
   ) {}
 
   private readonly uniques = new Map<string, number>();
@@ -337,7 +338,7 @@ class ExprEmitter {
         };
 
       case "global-variable": {
-        const id = new ir.QualifiedIdentifier(
+        const glbVarId = new ir.QualifiedIdentifier(
           resolution.package_,
           resolution.namespace,
           resolution.declaration.binding.name,
@@ -346,51 +347,63 @@ class ExprEmitter {
         // TODO we should emit a compilation error if this value is undefined, as it's most likely a bug
         // however this'll make some tests fail
         const implicitArity =
-          this.knownImplicitArities.get(id.toString()) ?? [];
+          this.knownImplicitArities.get(glbVarId.toString()) ?? [];
 
         return {
           type: "global",
-          name: id,
-
+          name: glbVarId,
           implicitly: implicitArity.map((arity): ir.ImplicitTraitArg => {
             // TODO  we need to check whether arity.id was resolved as a concrete type
             // TODO this may be a bug: that's the id of the polytype. Try to test this case
             const instantiated = expr.$instantiated.get(arity.id);
             if (instantiated === undefined) {
-              // TODO should this be a compiler error? consider moving this check to typecheck
-              return arity;
+              throw new CompilationError("unkown instantiated");
             }
 
-            const resolution = instantiated.resolve();
-            switch (resolution.type) {
-              case "unbound":
-                // TODO should this be a compiler error= consider moving this check to typecheck
-                return arity;
-              case "bound":
-                switch (resolution.value.type) {
-                  case "fn":
-                    // TODO should this not be an error?
-                    throw new CompilationError(
-                      "Invalid implicit param resolution (fn)",
-                    );
-
-                  case "named":
-                    return {
-                      type: "resolved",
-                      // TODO recur for args
-                      args: [],
-                      trait: arity.trait,
-                      typeName: new ir.QualifiedIdentifier(
-                        resolution.value.package_,
-                        resolution.value.module,
-                        resolution.value.name,
-                      ),
-                    };
-                }
-            }
+            return this.lowerImplicitArg(instantiated.asType(), arity);
           }),
         };
       }
+    }
+  }
+
+  private lowerImplicitArg(
+    instantiatedType: typed.Type,
+    arity: ir.ImplicitParam,
+  ): ir.ImplicitTraitArg {
+    const resolution = resolveType(instantiatedType);
+    switch (resolution.type) {
+      case "unbound": {
+        const id = this.scheme[resolution.id];
+        if (id === undefined) {
+          // TODO we should prevent this during typecheck, by creating the data containing this info
+          // and emitting ambiguous err instead
+          throw new CompilationError("implicit param not found");
+        }
+
+        return {
+          type: "var",
+          id,
+          trait: arity.trait,
+        };
+      }
+
+      case "fn":
+        // TODO is it actually an error?
+        throw new CompilationError("Invalid implicit param resolution (fn)");
+
+      case "named":
+        return {
+          type: "resolved",
+          // TODO recur for args
+          args: resolution.args.map((arg) => this.lowerImplicitArg(arg, arity)),
+          trait: arity.trait,
+          typeName: new ir.QualifiedIdentifier(
+            resolution.package_,
+            resolution.module,
+            resolution.name,
+          ),
+        };
     }
   }
 }
@@ -451,7 +464,11 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
         return [];
       }
 
-      const emitter = new ExprEmitter(ident, knownImplicitArities);
+      const emitter = new ExprEmitter(
+        ident,
+        knownImplicitArities,
+        decl.$scheme,
+      );
 
       return [
         {
