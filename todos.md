@@ -24,6 +24,7 @@
 - refactor: store traits dict in type def
   - perf: do not invalidate the whole ast
 - test: test position of type errs
+- refactor: implement infixes as macros for normal extern functions
 
 ### Done
 
