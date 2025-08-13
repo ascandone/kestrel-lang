@@ -86,7 +86,7 @@ export type Expr =
     };
 
 export type TraitsScheme = {
-  [id: string]: [string, ...string[]];
+  [id: string]: string[];
 };
 
 export type ValueDeclaration = {

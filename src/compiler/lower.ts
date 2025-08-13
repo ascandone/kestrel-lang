@@ -481,7 +481,9 @@ function makeTraitsScheme(
               if (lookup === undefined) {
                 traitsScheme[id] = [trait];
               } else {
-                lookup.push(trait);
+                if (!lookup.includes(trait)) {
+                  lookup.push(trait);
+                }
               }
             }
             return;

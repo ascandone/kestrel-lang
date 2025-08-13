@@ -542,6 +542,18 @@ describe("traits", () => {
       }"
     `);
   });
+
+  test("make sure we don't show duplicates", () => {
+    const out = dumpIR(`
+      extern let show: Fn(a) -> a where a: Show
+      let f = fn x { show(x) }
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.f[a: Show] = fn x#0 {
+        show(x#0)
+      }"
+    `);
+  });
 });
 
 function getIR(src: string) {
