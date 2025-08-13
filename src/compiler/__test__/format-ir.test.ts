@@ -1,8 +1,10 @@
 import { pprint } from "../../format/pretty";
 import { QualifiedIdentifier } from "../ir";
-import { ExprPrinter } from "./format-ir";
-import { test, expect } from "vitest";
+import { ExprPrinter, formatIR } from "./format-ir";
+import { test, expect, describe } from "vitest";
 import * as ir from "../ir";
+import { lowerProgram } from "../lower";
+import { typecheckSource_ } from "./prelude";
 
 test("const lit", () => {
   const doc = new ExprPrinter().exprToDoc({
@@ -137,6 +139,40 @@ test("struct lit", () => {
   `);
 });
 
+describe.todo("traits", () => {
+  test("pass traits to value", () => {
+    const out = dumpIR(`
+      extern let p: a where a: Show
+
+      type Str {}
+      extern let take_int: Fn(Str) -> a
+
+      let x = take_int(p)
+    `);
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x = take_int(p)"`);
+  });
+
+  test("unresolved traits", () => {
+    const out = dumpIR(`
+      extern let p: a  where a: Show
+      let x = p //: a1 where a1: Show 
+    `);
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x = p"`);
+  });
+
+  test("pass to fn", () => {
+    const out = dumpIR(`
+      extern let show: Fn(a) -> String where a: Show
+      let f = fn x { show(x) }
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.f = fn x#0 {
+        show(x#0)
+      }"
+    `);
+  });
+});
+
 // TODO dedup from optimize
 const mkBinding = (
   name: string,
@@ -155,3 +191,11 @@ const mkIdent = (
   type: "identifier",
   ident: mkBinding(name, opts),
 });
+
+function dumpIR(src: string): string {
+  // const untyped = unsafeParse(src);
+  const typed = typecheckSource_("pkg", "Main", src);
+  // expect(errs.filter((e) => e.description.severity === "error")).toEqual([]);
+  const ir = lowerProgram(typed);
+  return formatIR(ir);
+}
