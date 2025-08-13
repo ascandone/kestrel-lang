@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { unsafeParse } from "../parser";
-import { typecheck } from "../typecheck";
+import { resetTraitsRegistry, typecheck } from "../typecheck";
 import { lowerProgram } from "./lower";
 import { formatIR } from "./__test__/format-ir";
 import { typecheckSource_ } from "./__test__/prelude";
@@ -581,6 +581,112 @@ describe("traits", () => {
       `"let pkg:Main.f = show[Eq:String, Show:String](s, s)"`,
     );
   });
+
+  test.skip("do not pass extra args", () => {
+    const out = dumpIR(
+      `
+      extern let inspect: Fn(a) -> String where a: Show
+      extern let eq: Fn(a, a) -> Bool where a: Eq
+
+      let equal = fn x, y {
+        if eq(x, y) {
+          "ok"
+        } else {
+          inspect(x)
+        }
+      }
+    `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.equal[a:Eq, a:Show] = fn x#0, y#0 {
+        match eq(x#0, y#0) {
+          True => "ok",
+          False => inspect[a:Show](x#0),
+        }
+      }"
+    `);
+  });
+
+  test.skip("do not duplicate when there's only one var to pass", () => {
+    const out = dumpIR(
+      `
+      extern let show2: Fn(a, a) -> String where a: Show
+
+      let f = fn arg {
+        show2(arg, "hello")
+      }
+    `,
+    );
+    expect(out).toMatchInlineSnapshot(
+      `
+      "let pkg:Main.f = fn arg#0 {
+        show2[a:Show](arg#0, "hello")
+      }"
+    `,
+    );
+  });
+
+  test.skip("pass an arg twice if needed", () => {
+    const out = dumpIR(
+      `
+      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      let f = show2("a", "b")
+    `,
+    );
+    expect(out).toMatchInlineSnapshot(
+      `"let pkg:Main.f = show2[String:Show, String:Show]("a", "b")"`,
+    );
+  });
+
+  test.skip("partial application", () => {
+    const out = dumpIR(
+      `
+      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      let f = fn arg {
+        show2(arg, "hello")
+      }
+    `,
+    );
+
+    expect(out).toMatchInlineSnapshot(
+      `
+      "let pkg:Main.f[a:Show] = fn arg#0 {
+        show2[a:Show, String:Show](arg#0, "hello")
+      }"
+    `,
+    );
+  });
+
+  test.skip("pass trait dicts for types with params when they do not have deps", () => {
+    const out = dumpIR(`
+      extern let show: Fn(a) -> String where a: Show
+
+      type AlwaysShow<a> { X }
+      
+      let x = show(X)
+    `);
+
+    expect(out).toMatchInlineSnapshot(
+      `"let pkg:Main.x = show[AlwaysShow:Show](X)"`,
+    );
+  });
+
+  test.skip("pass higher order trait dicts for types with params when they do have deps", () => {
+    const out = dumpIR(
+      `
+      extern let show: Fn(a) -> String where a: Show
+
+      type Option<a, b> { Some(b) }
+      
+      let x = show(Some(42))
+    `,
+    );
+
+    expect(out).toMatchInlineSnapshot(
+      `"let pkg:Main.x = show[Option:Show(Int:Show)](Some(42))"`,
+    );
+  });
 });
 
 function getIR(src: string) {
@@ -596,6 +702,7 @@ function toSexpr(src: string) {
 }
 
 function dumpIR(src: string): string {
+  resetTraitsRegistry();
   // const untyped = unsafeParse(src);
   const typed = typecheckSource_("pkg", "Main", src);
   // expect(errs.filter((e) => e.description.severity === "error")).toEqual([]);
