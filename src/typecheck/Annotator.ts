@@ -11,6 +11,7 @@ import {
 import { TVar } from "../type";
 import {
   TypedBinding,
+  TypedBlockStatement,
   TypedDeclaration,
   TypedExposedValue,
   TypedExpr,
@@ -202,7 +203,7 @@ export class Annotator {
         return {
           ...ast,
           returning: this.annotateExpr(ast.returning),
-          statements: ast.statements.map((st) => {
+          statements: ast.statements.map((st): TypedBlockStatement => {
             switch (st.type) {
               case "let":
                 return {
@@ -217,6 +218,7 @@ export class Annotator {
                   ...st,
                   mapper: {
                     ...st.mapper,
+                    $instantiated: new Map(),
                     $resolution: undefined,
                     $type: TVar.fresh(),
                   },
@@ -265,6 +267,7 @@ export class Annotator {
           ...ast,
           $resolution: undefined,
           $type: TVar.fresh(),
+          $instantiated: new Map(),
         };
 
       case "fn":
