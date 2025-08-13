@@ -3,6 +3,7 @@ import { unsafeParse } from "../parser";
 import { typecheck } from "../typecheck";
 import { lowerProgram } from "./lower";
 import { formatIR } from "./__test__/format-ir";
+import { typecheckSource_ } from "./__test__/prelude";
 
 test("module (raw)", () => {
   const ir = getIR(`
@@ -506,6 +507,40 @@ describe("pattern matching", () => {
   });
 });
 
+describe("traits", () => {
+  test("pass traits to value", () => {
+    const out = dumpIR(`
+      extern let p: a where a: Show
+
+      type Str {}
+      extern let take_int: Fn(Str) -> a
+
+      let x = take_int(p)
+    `);
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x = take_int(p)"`);
+  });
+
+  test("unresolved traits", () => {
+    const out = dumpIR(`
+      extern let p: a  where a: Show
+      let x = p //: a1 where a1: Show 
+    `);
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x = p"`);
+  });
+
+  test("pass to fn", () => {
+    const out = dumpIR(`
+      extern let show: Fn(a) -> String where a: Show
+      let f = fn x { show(x) }
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.f = fn x#0 {
+        show(x#0)
+      }"
+    `);
+  });
+});
+
 function getIR(src: string) {
   const untypedMod = unsafeParse(src);
   const [tc, errors] = typecheck("pkg", "Main", untypedMod, {}, []);
@@ -515,5 +550,13 @@ function getIR(src: string) {
 
 function toSexpr(src: string) {
   const ir = getIR(src);
+  return formatIR(ir);
+}
+
+function dumpIR(src: string): string {
+  // const untyped = unsafeParse(src);
+  const typed = typecheckSource_("pkg", "Main", src);
+  // expect(errs.filter((e) => e.description.severity === "error")).toEqual([]);
+  const ir = lowerProgram(typed);
   return formatIR(ir);
 }
