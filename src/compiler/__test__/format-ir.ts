@@ -9,6 +9,7 @@ import {
   nest,
   nestOnBreak,
   nextBreakFits,
+  nil,
   pprint,
   sepBy,
   sepByString,
@@ -247,21 +248,46 @@ export class ExprPrinter {
   }
 }
 
-export function formatIR(program: ir.Program): string {
-  const declrs = program.values.map((decl) => {
-    const exprDoc = new ExprPrinter(
-      decl.name.name,
-      decl.name.package_,
-      decl.name.namespace,
-    ).exprToDoc(decl.value);
-    return concat(
-      text(
-        `let ${decl.name.package_}:${decl.name.namespace}.${decl.name.name} = `,
-      ),
-      exprDoc,
-    );
-  });
+function formatTraitsScheme(decl: ir.TraitsScheme) {
+  const entries = Object.entries(decl);
+  if (entries.length === 0) {
+    return nil;
+  }
 
+  function fmtTraits(traits: string[]) {
+    return sepBy(
+      text(" + "),
+      traits.map((t) => text(t)),
+    );
+  }
+
+  return concat(
+    text("["),
+    sepBy(
+      text(", "),
+      entries.map(([id, traits]) => concat(text(id, ": "), fmtTraits(traits))),
+    ),
+    text("]"),
+  );
+}
+
+function formatDecl(decl: ir.ValueDeclaration) {
+  const exprDoc = new ExprPrinter(
+    decl.name.name,
+    decl.name.package_,
+    decl.name.namespace,
+  ).exprToDoc(decl.value);
+  return concat(
+    text(`let ${decl.name.package_}:${decl.name.namespace}.${decl.name.name}`),
+    formatTraitsScheme(decl.traits),
+    text(" = "),
+
+    exprDoc,
+  );
+}
+
+export function formatIR(program: ir.Program): string {
+  const declrs = program.values.map(formatDecl);
   return pprint(sepBy(lines(1), declrs));
 }
 

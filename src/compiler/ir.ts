@@ -85,9 +85,14 @@ export type Expr =
       spread: Expr | undefined;
     };
 
+export type TraitsScheme = {
+  [id: string]: [string, ...string[]];
+};
+
 export type ValueDeclaration = {
   name: QualifiedIdentifier;
   value: Expr;
+  traits: TraitsScheme;
 
   inline: boolean;
 };

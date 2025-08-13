@@ -1,3 +1,4 @@
+import { TypeScheme } from "../type";
 import * as typed from "../typecheck";
 import * as ir from "./ir";
 
@@ -398,6 +399,7 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
           name: mkIdent(decl.binding.name),
           value: emitter.lowerExpr(decl.value),
           inline: decl.inline,
+          traits: makeTraitsScheme(decl.binding.$type.asType(), decl.$scheme),
         },
       ];
     }),
@@ -440,3 +442,55 @@ const CONS = (hd: ir.Expr, tl: ir.Expr): ir.Expr => ({
     },
   },
 });
+
+function makeTraitsScheme(
+  type: typed.Type,
+  scheme: TypeScheme,
+): ir.TraitsScheme {
+  const traitsScheme: ir.TraitsScheme = {};
+
+  function helper(type: typed.Type) {
+    switch (type.type) {
+      case "fn":
+        for (const arg of type.args) {
+          helper(arg);
+        }
+        helper(type.return);
+        return;
+
+      case "named": {
+        for (const arg of type.args) {
+          helper(arg);
+        }
+        return;
+      }
+
+      case "var": {
+        const resolved = type.var.resolve();
+        switch (resolved.type) {
+          case "bound":
+            helper(resolved.value);
+            return;
+          case "unbound":
+            for (const trait of resolved.traits) {
+              const id = scheme[resolved.id];
+              if (id === undefined) {
+                throw new CompilationError("id not found");
+              }
+              const lookup = traitsScheme[id];
+              if (lookup === undefined) {
+                traitsScheme[id] = [trait];
+              } else {
+                lookup.push(trait);
+              }
+            }
+            return;
+        }
+      }
+    }
+  }
+
+  helper(type);
+
+  return traitsScheme;
+}
