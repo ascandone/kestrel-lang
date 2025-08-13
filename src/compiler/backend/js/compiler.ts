@@ -1124,12 +1124,22 @@ function makeImplicitParamVarIdent(
 
 function makeImplicitParamIdentifier(arg: ir.ImplicitTraitArg): t.Expression {
   switch (arg.type) {
-    case "resolved":
-      // TODO args for higher order traits
-      return {
+    case "resolved": {
+      const ident: t.Identifier = {
         type: "Identifier",
         name: `${arg.trait}_${arg.typeName.namespace}$${arg.typeName.name}`,
       };
+
+      if (arg.args.length === 0) {
+        return ident;
+      }
+
+      return {
+        type: "CallExpression",
+        callee: ident,
+        arguments: arg.args.map(makeImplicitParamIdentifier),
+      };
+    }
 
     case "var":
       return makeImplicitParamVarIdent(arg);

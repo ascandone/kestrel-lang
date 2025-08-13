@@ -2160,7 +2160,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("pass higher order trait dicts for types with params when they do have deps", () => {
+  test("pass higher order trait dicts for types with params when they do have deps", () => {
     const out = compileSrc(
       `
       extern let show: Fn(a) -> String where a: Show
@@ -2175,11 +2175,11 @@ describe("traits compilation", () => {
     // Some(42) : Option<Int>
     expect(out).toMatchInlineSnapshot(`
       "const Main$Some = _0 => _0;
-      const Main$x = Main$show(Show_Main$Option(Show_Int$Int))(Main$Some(42));"
+      const Main$x = Main$show(Show_Main$Option(Show_Int$Int))(42);"
     `);
   });
 
-  test.skip("deeply nested higher order traits", () => {
+  test("deeply nested higher order traits", () => {
     const out = compileSrc(
       `
       extern let show: Fn(a) -> String where a: Show
@@ -2199,7 +2199,11 @@ describe("traits compilation", () => {
         _1
       });
       const Main$Some = _0 => _0;
-      const Main$x = Main$show(Show_Main$Tuple2(Show_Main$Option(Show_Int$Int), Show_Int$Int))(Main$Tuple2(Main$Some(42), 2));"
+      const Main$x = Main$show(Show_Main$Tuple2(Show_Main$Option(Show_Int$Int), Show_Int$Int))({
+        $: 0,
+        _0: 42,
+        _1: 2
+      });"
     `);
   });
 
@@ -2229,7 +2233,7 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("pass higher order trait dicts for types when their deps is in scope", () => {
+  test("pass higher order trait dicts for types when their deps is in scope", () => {
     const out = compileSrc(`
       extern let show: Fn(a) -> String where a: Show
 
@@ -2251,7 +2255,10 @@ describe("traits compilation", () => {
       const Main$None = {
         $: 1
       };
-      const Main$f = Show_a => Main$f$x => Main$show(Show_Main$Option(Show_a))(Main$Some(Main$f$x));"
+      const Main$f = Show_a => Main$f$x => Main$show(Show_Main$Option(Show_a))({
+        $: 0,
+        _0: Main$f$x
+      });"
     `);
   });
 
