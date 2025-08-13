@@ -29,6 +29,7 @@ export type Ident =
   | {
       type: "global";
       name: QualifiedIdentifier;
+      implicitly: ImplicitTraitArg[];
     }
   | {
       type: "local";
@@ -41,6 +42,11 @@ export type Ident =
       name: string; // TODO consider  using a QualifiedIdentifier instead
       typeName: QualifiedIdentifier;
     };
+
+export type ImplicitTraitArg = {
+  trait: string;
+  typeName: string;
+};
 
 export type Expr =
   | {

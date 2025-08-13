@@ -339,6 +339,8 @@ class ExprEmitter {
             resolution.namespace,
             resolution.declaration.binding.name,
           ),
+          // TODO pass implicits
+          implicitly: [],
         };
     }
   }

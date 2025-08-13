@@ -161,6 +161,18 @@ export class ExprPrinter {
     return ident.name;
   }
 
+  private baseIdent(ident: ir.QualifiedIdentifier): string {
+    if (ident.package_ !== this.package_) {
+      return `${ident.package_}:${ident.namespace}.${ident.name}`;
+    }
+
+    if (ident.namespace !== this.module) {
+      return `${ident.namespace}.${ident.name}`;
+    }
+
+    return ident.name;
+  }
+
   /**
    * e.g. `pkg:Main.x`
    *
@@ -169,15 +181,16 @@ export class ExprPrinter {
    * module is not shown if the current module is the same as the module's, e.g. `x`
    */
   private glbIdent(ident: ir.Ident & { type: "global" }): string {
-    if (ident.name.package_ !== this.package_) {
-      return `${ident.name.package_}:${ident.name.namespace}.${ident.name.name}`;
+    const id = this.baseIdent(ident.name);
+    if (ident.implicitly.length === 0) {
+      return id;
     }
 
-    if (ident.name.namespace !== this.module) {
-      return `${ident.name.namespace}.${ident.name.name}`;
-    }
+    const args = ident.implicitly
+      .map((i) => `${i.typeName}:${i.trait}`)
+      .join(", ");
 
-    return ident.name.name;
+    return `${id}[${args}]`;
   }
 
   /**
@@ -190,10 +203,7 @@ export class ExprPrinter {
    * if the variable is withing the it's declaration qualifier, that isn't show either, e.g. `x#0`
    */
   private localIdent(ident: ir.Ident & { type: "local" }): string {
-    const qualifier = this.glbIdent({
-      type: "global",
-      name: ident.declaration,
-    });
+    const qualifier = this.baseIdent(ident.declaration);
 
     const local = `${ident.name}#${ident.unique}`;
 

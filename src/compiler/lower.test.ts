@@ -93,6 +93,7 @@ test("global value of same module (raw)", () => {
         "traits": {},
         "value": {
           "ident": {
+            "implicitly": [],
             "name": "pkg:Main:x",
             "type": "global",
           },

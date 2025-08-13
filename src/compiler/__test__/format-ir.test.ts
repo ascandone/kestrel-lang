@@ -39,15 +39,30 @@ test("glb ident (same pkg)", () => {
   const str = new ExprPrinter("glb", "pkg", "Main").identToString({
     type: "global",
     name: new QualifiedIdentifier("pkg", "Main", "glb"),
+    implicitly: [],
   });
 
   expect(str).toEqual("glb");
+});
+
+test("glb ident with implicits", () => {
+  const str = new ExprPrinter("glb", "pkg", "Main").identToString({
+    type: "global",
+    name: new QualifiedIdentifier("pkg", "Main", "glb"),
+    implicitly: [
+      { typeName: "Int", trait: "Show" },
+      { typeName: "Maybe", trait: "Eq" },
+    ],
+  });
+
+  expect(str).toEqual("glb[Int:Show, Maybe:Eq]");
 });
 
 test("glb ident (different pkg/mod)", () => {
   const str = new ExprPrinter("glb", "another_pkg", "Main").identToString({
     type: "global",
     name: new QualifiedIdentifier("pkg", "Main", "glb"),
+    implicitly: [],
   });
 
   expect(str).toEqual("pkg:Main.glb");
