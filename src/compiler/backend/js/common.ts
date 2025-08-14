@@ -1,10 +1,25 @@
 import * as t from "@babel/types";
-import { TypedTypeDeclaration } from "../typecheck";
+import * as ir from "../../ir";
 
 export const TAG_FIELD: t.Identifier = { type: "Identifier", name: "$" };
 
 export function sanitizeNamespace(ns: string): string {
   return ns?.replace(/\//g, "$");
+}
+
+export type AdtReprType = "default" | "enum" | "unboxed";
+// TODO(perf) cache this using weakmap
+export function getAdtReprType(decl: ir.Adt): AdtReprType {
+  if (decl.constructors.length === 1 && decl.constructors[0]!.arity === 1) {
+    return "unboxed";
+  }
+
+  const isEnum = decl.constructors.every((v) => v.arity === 0);
+  if (isEnum) {
+    return "enum";
+  }
+
+  return "default";
 }
 
 export function joinAndExprs(exprs: t.Expression[]): t.Expression {
@@ -20,21 +35,4 @@ export function joinAndExprs(exprs: t.Expression[]): t.Expression {
       right,
     }),
   );
-}
-
-// TODO utils file was a bad idea
-export type AdtReprType = "default" | "enum" | "unboxed";
-export function getAdtReprType(
-  decl: TypedTypeDeclaration & { type: "adt" },
-): AdtReprType {
-  if (decl.variants.length === 1 && decl.variants[0]!.args.length === 1) {
-    return "unboxed";
-  }
-
-  const isEnum = decl.variants.every((v) => v.args.length === 0);
-  if (isEnum) {
-    return "enum";
-  }
-
-  return "default";
 }

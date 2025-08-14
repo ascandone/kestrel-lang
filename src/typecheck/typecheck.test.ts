@@ -1018,6 +1018,25 @@ describe("traits", () => {
     );
   });
 
+  test("forbid ambiguous instantiations", () => {
+    const [, errs] = tc(`
+      type String {}
+      extern let show: Fn(a) -> String where a: Show
+
+      pub let f = {
+        let _nested = fn x { show(x) };
+        42
+      }
+`);
+
+    expect(errs).not.toEqual([]);
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toEqual(
+      new err.AmbiguousTypeVar("Show", "Fn(a) -> String where a: Show"),
+    );
+  });
+
   test("allow non-ambiguos instantiations", () => {
     const [, errs] = tc(
       `
@@ -1070,24 +1089,6 @@ describe("traits", () => {
 
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(err.AmbiguousTypeVar);
-  });
-
-  test("allow ambiguous type vars in let exprs", () => {
-    const [, errs] = tc(
-      `
-      extern type String
-      extern let show: Fn(a) -> String where a: Show
-
-      pub let e = {
-        let _ = fn s {
-          show(s)
-        };
-        42
-      }
-    `,
-    );
-
-    expect(errs).toEqual([]);
   });
 
   test("do not leak allowed instantiated vars when preventing ambiguous vars", () => {

@@ -1,6 +1,5 @@
 export * from "./parser";
 export * from "./format";
-export * from "./compiler";
 export * from "./typecheck";
 export type {
   Variant,

@@ -230,7 +230,7 @@ export class TVar {
         case "linked":
           return TVar.unify(t1.var.value.to.asType(), t2);
         default:
-          throw new Error("[unreachable]");
+          t1.var.value satisfies never;
       }
     }
 
@@ -416,12 +416,8 @@ export function generalizeAsScheme(
   return scheme;
 }
 
-export function instantiatePoly(poly: PolyTypeMeta): Type {
-  return instantiateFromScheme(poly.$type.asType(), poly.$scheme);
-}
-
 export class Instantiator {
-  private instantiated = new Map<string, TVar>();
+  public readonly instantiated = new Map<string, TVar>();
 
   instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
     switch (mono.type) {

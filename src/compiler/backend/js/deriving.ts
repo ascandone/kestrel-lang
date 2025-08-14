@@ -1,27 +1,46 @@
-import {
-  TypedTypeAst,
-  TypedTypeDeclaration,
-  TypedTypeVariant,
-} from "../typecheck";
 import * as t from "@babel/types";
 import {
-  TAG_FIELD,
-  getAdtReprType,
-  joinAndExprs,
-  sanitizeNamespace,
-} from "./utils";
+  CORE_PACKAGE,
+  TypedTypeAst,
+  TypedTypeDeclaration,
+} from "../../../typecheck";
+import * as common from "./common";
+import * as ir from "../../ir";
+import { TVar } from "../../../type";
 
-export function deriveEqAdt(
-  typedDeclaration: TypedTypeDeclaration & { type: "adt" },
-): t.Expression {
+function shouldDeriveTrait(
+  trait: string,
+  ident: ir.QualifiedIdentifier,
+  params: string[],
+  allowDeriving: string[] | undefined,
+): boolean {
+  if (allowDeriving !== undefined && !allowDeriving.includes(trait)) {
+    return false;
+  }
+
+  const deps = TVar.typeImplementsTrait(
+    {
+      type: "named",
+      package_: ident.package_,
+      module: ident.namespace,
+      name: ident.name,
+      args: params.map(() => TVar.fresh().asType()),
+    },
+    trait,
+  );
+
+  return deps !== undefined;
+}
+
+export function deriveEqAdt(adt: ir.Adt): t.Expression {
   const params: [t.Identifier, t.Identifier] = [
     { type: "Identifier", name: "x" },
     { type: "Identifier", name: "y" },
   ];
   const deriveEqArgs = new DeriveTraitArgs("Eq");
 
-  function variantEq(variant: TypedTypeVariant | undefined): t.Expression {
-    return joinAndExprs(
+  function variantEq(variant: ir.AdtConstructor | undefined): t.Expression {
+    return common.joinAndExprs(
       variant?.args.map(
         (variant, i): t.Expression => ({
           type: "CallExpression",
@@ -41,10 +60,10 @@ export function deriveEqAdt(
       ) ?? [],
     );
   }
-  const repr = getAdtReprType(typedDeclaration);
+  const repr = common.getAdtReprType(adt);
   let body: t.BlockStatement | t.Expression;
-  if (typedDeclaration.variants.length <= 1) {
-    body = variantEq(typedDeclaration.variants[0]);
+  if (adt.constructors.length <= 1) {
+    body = variantEq(adt.constructors[0]);
   } else if (repr === "enum") {
     body = {
       type: "BinaryExpression",
@@ -53,7 +72,7 @@ export function deriveEqAdt(
       right: params[1],
     };
   } else {
-    const cases = typedDeclaration.variants.map(
+    const cases = adt.constructors.map(
       (variant, index): t.SwitchCase => ({
         type: "SwitchCase",
         test: { type: "NumericLiteral", value: index },
@@ -78,13 +97,13 @@ export function deriveEqAdt(
             left: {
               type: "MemberExpression",
               object: params[0],
-              property: TAG_FIELD,
+              property: common.TAG_FIELD,
               computed: false,
             },
             right: {
               type: "MemberExpression",
               object: params[1],
-              property: TAG_FIELD,
+              property: common.TAG_FIELD,
               computed: false,
             },
           },
@@ -104,7 +123,7 @@ export function deriveEqAdt(
           discriminant: {
             type: "MemberExpression",
             object: params[0],
-            property: TAG_FIELD,
+            property: common.TAG_FIELD,
             computed: false,
           },
           cases,
@@ -159,7 +178,7 @@ class DeriveTraitArgs {
           );
         }
 
-        const ns = sanitizeNamespace(arg.$resolution.namespace);
+        const ns = common.sanitizeNamespace(arg.$resolution.namespace);
 
         // We assume this type impls the trait
         const ident: t.Identifier = {
@@ -187,24 +206,24 @@ class DeriveTraitArgs {
   }
 }
 
-export function deriveShowAdt(
-  typedDeclaration: TypedTypeDeclaration & { type: "adt" },
-): t.Expression {
+function deriveShowAdt(adt: ir.Adt): t.Expression {
   const param: t.Identifier = { type: "Identifier", name: "x" };
   const deriveArg = new DeriveTraitArgs("Show");
 
-  const repr = getAdtReprType(typedDeclaration);
+  const repr = common.getAdtReprType(adt);
 
-  const showVariant = (variant: TypedTypeVariant): t.Expression => {
-    if (variant.args.length === 0) {
-      return { type: "StringLiteral", value: variant.name };
+  const showVariant = (ctor: ir.AdtConstructor): t.Expression => {
+    if (ctor.args.length === 0) {
+      return { type: "StringLiteral", value: ctor.name.name };
     }
 
-    const name = /Tuple[0-9]+/.test(variant.name) ? "" : variant.name;
+    const isTuple =
+      ctor.name.package_ == CORE_PACKAGE && /Tuple[0-9]+/.test(ctor.name.name);
+    const name = isTuple ? "" : ctor.name.name;
 
     return {
       type: "TemplateLiteral",
-      expressions: variant.args.map((arg, i) => ({
+      expressions: ctor.args.map((arg, i) => ({
         type: "CallExpression",
         callee: deriveArg.run(arg),
         arguments: [
@@ -224,7 +243,7 @@ export function deriveShowAdt(
           tail: true,
           value: { raw: name + "(" },
         },
-        ...variant.args.slice(1).map(
+        ...ctor.args.slice(1).map(
           (): t.TemplateElement => ({
             type: "TemplateElement",
             tail: true,
@@ -241,13 +260,13 @@ export function deriveShowAdt(
   };
 
   let body: t.Expression | t.BlockStatement;
-  switch (typedDeclaration.variants.length) {
+  switch (adt.constructors.length) {
     case 0:
       body = { type: "StringLiteral", value: "never" };
       break;
 
     case 1: {
-      body = showVariant(typedDeclaration.variants[0]!);
+      body = showVariant(adt.constructors[0]!);
       break;
     }
 
@@ -264,7 +283,7 @@ export function deriveShowAdt(
               object: param,
               property: { type: "Identifier", name: "$" },
             },
-            cases: typedDeclaration.variants.map((v, index) => ({
+            cases: adt.constructors.map((v, index) => ({
               type: "SwitchCase",
               test: { type: "NumericLiteral", value: index },
               consequent: [
@@ -286,7 +305,7 @@ export function deriveShowAdt(
   });
 }
 
-export function deriveEqStruct(
+function deriveEqStruct(
   typedDeclaration: TypedTypeDeclaration & { type: "struct" },
 ): t.Expression {
   const params: t.Identifier[] = [
@@ -301,7 +320,7 @@ export function deriveEqStruct(
     async: false,
     expression: true,
     params,
-    body: joinAndExprs(
+    body: common.joinAndExprs(
       typedDeclaration.fields.map(
         (field): t.Expression => ({
           type: "CallExpression",
@@ -320,7 +339,7 @@ export function deriveEqStruct(
   });
 }
 
-export function deriveShowStruct(
+function deriveShowStruct(
   typedDeclaration: TypedTypeDeclaration & { type: "struct" },
 ): t.Expression {
   const param: t.Identifier = { type: "Identifier", name: "x" };
@@ -377,4 +396,97 @@ export function deriveShowStruct(
       ),
     },
   });
+}
+
+export function deriveAdt(adt: ir.Adt, allowDeriving: string[] | undefined) {
+  const buf: t.Statement[] = [];
+
+  if (
+    // Bool equality is implemented inside core
+    adt.name.name !== "Bool" &&
+    shouldDeriveTrait("Eq", adt.name, adt.params, allowDeriving)
+  ) {
+    buf.push({
+      type: "VariableDeclaration",
+      kind: "const",
+      declarations: [
+        {
+          type: "VariableDeclarator",
+          id: {
+            type: "Identifier",
+            name: `Eq_${common.sanitizeNamespace(adt.name.namespace)}$${adt.name.name}`,
+          },
+          init: deriveEqAdt(adt),
+        },
+      ],
+    });
+
+    if (
+      // Bool and List show are implemented inside core
+      adt.name.name !== "Bool" &&
+      adt.name.name !== "List" &&
+      shouldDeriveTrait("Show", adt.name, adt.params, allowDeriving)
+    ) {
+      buf.push({
+        type: "VariableDeclaration",
+        kind: "const",
+        declarations: [
+          {
+            type: "VariableDeclarator",
+            id: {
+              type: "Identifier",
+              name: `Show_${common.sanitizeNamespace(adt.name.namespace)}$${adt.name.name}`,
+            },
+            init: deriveShowAdt(adt),
+          },
+        ],
+      });
+    }
+  }
+
+  return buf;
+}
+
+export function deriveStruct(
+  decl: ir.Struct,
+  params: string[],
+  allowDeriving: string[] | undefined,
+) {
+  const buf: t.Statement[] = [];
+
+  if (shouldDeriveTrait("Eq", decl.name, params, allowDeriving)) {
+    buf.push({
+      type: "VariableDeclaration",
+      kind: "const",
+      declarations: [
+        {
+          type: "VariableDeclarator",
+          id: {
+            type: "Identifier",
+            name: `Eq_${common.sanitizeNamespace(decl.name.namespace)}$${decl.name.name}`,
+          },
+          init: deriveEqStruct(decl.declaration),
+        },
+      ],
+    });
+  }
+
+  if (shouldDeriveTrait("Show", decl.name, params, allowDeriving)) {
+    buf.push({
+      type: "VariableDeclaration",
+      kind: "const",
+      declarations: [
+        {
+          type: "VariableDeclarator",
+          id: {
+            type: "Identifier",
+            name: `Show_${common.sanitizeNamespace(decl.name.namespace)}$${decl.name.name}`,
+          },
+          init: deriveShowStruct(decl.declaration),
+        },
+      ],
+    });
+  }
+
+  return buf;
 }
