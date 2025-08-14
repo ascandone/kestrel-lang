@@ -4,18 +4,17 @@
 - feat: improve implicit imports repr
   - no dummy ranges
   - allow duplicate imports if the first one is the implicit
-- refactor: use IR
   - refactor: introduce tuples as AST node
   - refactor: add syntax sugar in both AST
     - remove annotator and typedAst (and deep clone AST instead)
-    - refactor: simplify IR (let,if,struct-literal -> match)
+    - refactor: simplify IR (struct-literal -> match)
   - perf: ir optimizations
     - inline let (inline values used once; inline consts)
     - inline globals
     - constant folding
     - within lambdas, cache sub-expression that only depend on free values in an outer let
     - eta reduction
-- test: test self-recursive let exprs (and prevent binding pollution)
+- test: test self-recursive let exprs (and prevent binding pollution and direct dependency)
 - refactor: treat constructor and ident as separate nodes
 - feat: add package and module to compilation output
 - refactor: simplify traits repr
