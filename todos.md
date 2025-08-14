@@ -27,6 +27,8 @@
 - refactor: implement infixes as macros for normal extern functions
 - refactor: ditch the ".type" tagging convention, and use .eg. `_tag` instead
 
+- breaking: use @type annotation for type hints
+
 ### Done
 
 - refactor: refactor let block as list
