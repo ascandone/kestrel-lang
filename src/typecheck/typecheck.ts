@@ -146,12 +146,12 @@ class Typechecker {
             TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
             return;
           }
-          for (const { id } of impl) {
-            const name = variant.$scheme[id];
-            if (name !== undefined) {
-              depParams.add(name);
-            }
-          }
+          // for (const { id } of impl) {
+          //   const name = variant.$scheme[id];
+          //   if (name !== undefined) {
+          //     depParams.add(name);
+          //   }
+          // }
         }
       }
 
@@ -193,12 +193,12 @@ class Typechecker {
         return;
       }
 
-      for (const { id } of impl) {
-        const name = field.$scheme[id];
-        if (name !== undefined) {
-          depParams.add(name);
-        }
-      }
+      // for (const { id } of impl) {
+      //   const name = field.$scheme[id];
+      //   if (name !== undefined) {
+      //     depParams.add(name);
+      //   }
+      // }
 
       // Singleton always derive any trait
     }
@@ -241,7 +241,7 @@ class Typechecker {
         this.adtDerive("Eq", typeDecl);
         this.adtDerive("Show", typeDecl);
       } else if (typeDecl.type === "struct") {
-        this.makeStructType(typeDecl);
+        this.hydrateStruct(typeDecl);
         this.structDerive("Eq", typeDecl);
         this.structDerive("Show", typeDecl);
       }
@@ -271,46 +271,23 @@ class Typechecker {
     return [typedModule, this.errors];
   }
 
-  private makeStructType(typeDecl: TypedTypeDeclaration & { type: "struct" }) {
-    // TODO dedup from makeVariantType
-    const generics: [string, TVar, number][] = typeDecl.params.map((param) => [
-      param.name,
-      ...TVar.freshWithId(),
-    ]);
+  private hydrateStruct(typeDecl: TypedTypeDeclaration & { type: "struct" }) {
+    const params = typeDecl.params.map((p) => p.name);
 
-    const scheme: TypeScheme = Object.fromEntries(
-      generics.map(([param, , id]) => [id, param]),
-    );
-
-    const mono: Type = {
+    typeDecl.$type = {
       type: "named",
       package_: this.package_,
       module: this.ns,
       name: typeDecl.name,
-      args: generics.map(([, tvar]) => tvar.asType()),
+      args: params.map((name) => ({ type: "rigid-var", name })),
     };
 
-    // TODO did I break generalization?
-    unify(typeDecl.$type, mono);
-
-    typeDecl.$scheme = scheme;
-
     for (const field of typeDecl.fields) {
-      const bound: Record<string, TVar> = Object.fromEntries(
-        generics.map(([p, t]) => [p, t]),
-      );
-
-      const fieldType = this.typeAstToType(
-        field.typeAst,
-        { type: "constructor-arg", params: typeDecl.params.map((p) => p.name) }, // TODO params
-        bound,
-        {}, // TODO traits
-      );
-
-      // TODO did I break generalization?
-      unify(fieldType, field.$type); // Do not change args order
-
-      field.$scheme = scheme;
+      const type = this.hydrateTypeAst(field.typeAst, {
+        type: "typedef",
+        params,
+      });
+      field.$type = type;
     }
   }
 
@@ -697,8 +674,8 @@ class Typechecker {
         }
 
         const instantiator = new Instantiator();
-        const type_ = instantiator.instantiatePoly(
-          ast.struct.$resolution.declaration,
+        const type_ = instantiator.instantiate(
+          ast.struct.$resolution.declaration.$type,
         );
 
         for (const field of ast.fields) {
@@ -707,8 +684,8 @@ class Typechecker {
             continue;
           }
 
-          const fieldType = instantiator.instantiatePoly(
-            field.field.$resolution.field,
+          const fieldType = instantiator.instantiate(
+            field.field.$resolution.field.$type,
           );
 
           this.unifyExpr(field.value, field.value.$type.asType(), fieldType);
@@ -853,11 +830,11 @@ class Typechecker {
   ) {
     const instantiator = new Instantiator();
 
-    const structType: Type = instantiator.instantiatePoly(
-      resolution.declaration,
+    const structType: Type = instantiator.instantiate(
+      resolution.declaration.$type,
     );
     this.unifyExpr(ast.struct, ast.struct.$type.asType(), structType);
-    const fieldType = instantiator.instantiatePoly(resolution.field);
+    const fieldType = instantiator.instantiate(resolution.field.$type);
     this.unifyExpr(ast, ast.$type.asType(), fieldType);
   }
 

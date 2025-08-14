@@ -67,7 +67,7 @@ class ExprCompletion {
           return d.fields.map((f) => ({
             label: f.name,
             kind: CompletionItemKind.Field,
-            detail: typeToString(f.$type, f.$scheme),
+            detail: typeToString(f.$type),
           }));
         });
 
@@ -88,8 +88,8 @@ class ExprCompletion {
 
           return d.fields.map<CompletionItem>((f) => {
             const intantiator = new Instantiator();
-            const instantiatedDeclaration = intantiator.instantiatePoly(d);
-            const instantiatedField = intantiator.instantiatePoly(f);
+            const instantiatedDeclaration = intantiator.instantiate(d.$type);
+            const instantiatedField = intantiator.instantiate(f.$type);
             unify(instantiatedDeclaration, structType.asType());
 
             return {

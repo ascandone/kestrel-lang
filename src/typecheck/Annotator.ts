@@ -64,13 +64,11 @@ export class Annotator {
       case "struct":
         return {
           ...typeDecl,
-          $scheme: {},
           $type: TVar.fresh().asType(),
           fields: typeDecl.fields.map(
             (untypedField): TypedStructDeclarationField => ({
               ...untypedField,
               $type: TVar.fresh().asType(),
-              $scheme: {},
               typeAst: this.annotateTypeAst(untypedField.typeAst),
             }),
           ),

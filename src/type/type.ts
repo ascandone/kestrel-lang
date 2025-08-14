@@ -1,5 +1,4 @@
 import { getOrInsertDefault } from "../data/defaultMap";
-import { PolyTypeMeta } from "../typecheck/typedAst";
 
 export type ConcreteType =
   | {
@@ -527,10 +526,6 @@ export class Instantiator {
         }
       }
     }
-  }
-
-  instantiatePoly(poly: PolyTypeMeta) {
-    return this.instantiateFromScheme(poly.$type, poly.$scheme);
   }
 }
 

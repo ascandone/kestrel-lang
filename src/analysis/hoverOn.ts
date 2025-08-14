@@ -1,5 +1,5 @@
 import { Position, RangeMeta, contains } from "../parser";
-import { TypeScheme, typeToString } from "../type";
+import { typeToString } from "../type";
 import { Finder } from "../typecheck/astLookup";
 import {
   IdentifierResolution,
@@ -17,12 +17,24 @@ export type HoveredInfo =
 
 export type Hovered = RangeMeta & { hovered: HoveredInfo };
 
+/**
+ * TODO fix regression:
+ * we need to make sure that here:
+ * ```kestrel
+ * let f: (a) -> a = fn a {
+ *   let id = fn b { b };
+ *   a
+ * }
+ * ```
+ *
+ * we don't show `(a) -> a` when hovering on id
+ */
 export function hoverOn(
   package_: string,
   namespace: string,
   module: TypedModule,
   position: Position,
-): [TypeScheme, Hovered] | undefined {
+): Hovered | undefined {
   const statement = statementByOffset(module, position);
   if (statement === undefined) {
     return undefined;
@@ -47,7 +59,7 @@ export function hoverOn(
         position,
       );
       if (d !== undefined) {
-        return [statement.declaration.$scheme, d];
+        return d;
       }
       return undefined;
     }
@@ -66,33 +78,27 @@ export function hoverOn(
             return res;
           }
 
-          return [
-            variant.$scheme,
-            {
-              range: variant.range,
-              hovered: {
-                type: "constructor",
-                variant,
-                declaration: statement.typeDeclaration,
-                package_,
-                namespace,
-              },
+          return {
+            range: variant.range,
+            hovered: {
+              type: "constructor",
+              variant,
+              declaration: statement.typeDeclaration,
+              package_,
+              namespace,
             },
-          ];
+          };
         }
       }
 
-      return [
-        {},
-        {
-          range: statement.typeDeclaration.range,
-          hovered: {
-            type: "type",
-            namespace,
-            typeDecl: statement.typeDeclaration,
-          },
+      return {
+        range: statement.typeDeclaration.range,
+        hovered: {
+          type: "type",
+          namespace,
+          typeDecl: statement.typeDeclaration,
         },
-      ];
+      };
 
     case "import":
       return undefined;
@@ -102,7 +108,7 @@ export function hoverOn(
 export function hoverOnTypeAst(
   typeAst: TypedTypeAst,
   position: Position,
-): [TypeScheme, Hovered] | undefined {
+): Hovered | undefined {
   if (!contains(typeAst, position)) {
     return;
   }
@@ -121,17 +127,14 @@ export function hoverOnTypeAst(
         return res;
       }
 
-      return [
-        {},
-        {
-          range: typeAst.range,
-          hovered: {
-            type: "type",
-            typeDecl: typeAst.$resolution.declaration,
-            namespace: typeAst.$resolution.namespace,
-          },
+      return {
+        range: typeAst.range,
+        hovered: {
+          type: "type",
+          typeDecl: typeAst.$resolution.declaration,
+          namespace: typeAst.$resolution.namespace,
         },
-      ];
+      };
     }
 
     case "fn": {
@@ -144,7 +147,7 @@ export function hoverOnTypeAst(
 }
 
 export function hoverToMarkdown(
-  scheme: TypeScheme,
+  // scheme: TypeScheme,
   { hovered }: Hovered,
 ): string {
   switch (hovered.type) {
@@ -164,7 +167,7 @@ type ${hovered.typeDecl.name}
 ${hovered.typeDecl.docComment ?? ""}
       `;
     case "local-variable": {
-      const tpp = typeToString(hovered.binding.$type.asType(), scheme);
+      const tpp = typeToString(hovered.binding.$type.asType());
       return `\`\`\`
 ${hovered.binding.name}: ${tpp}
 \`\`\`
@@ -185,7 +188,7 @@ ${hovered.declaration.docComment ?? ""}
     }
 
     case "constructor": {
-      const tpp = typeToString(hovered.variant.$type, hovered.variant.$scheme);
+      const tpp = typeToString(hovered.variant.$type);
       return `\`\`\`
 ${hovered.variant.name}: ${tpp}
 \`\`\`

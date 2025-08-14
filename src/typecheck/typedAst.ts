@@ -83,9 +83,11 @@ export type TypedStructField = ast.RangeMeta & {
 };
 
 assertSubtype<ast.StructDeclarationField, TypedStructDeclarationField>;
-export type TypedStructDeclarationField = (PolyTypeMeta & ast.RangeMeta) & {
+export type TypedStructDeclarationField = ast.RangeMeta & {
   name: string;
   typeAst: TypedTypeAst;
+
+  $type: Type;
 };
 
 assertSubtype<ast.Expr, TypedExpr>;
@@ -179,9 +181,11 @@ export type TypedImport = ast.RangeMeta & {
 };
 
 assertSubtype<ast.TypeVariant, TypedTypeVariant>;
-export type TypedTypeVariant = (PolyTypeMeta & ast.RangeMeta) & {
+export type TypedTypeVariant = ast.RangeMeta & {
   name: string;
   args: TypedTypeAst[];
+
+  $type: Type;
 };
 
 assertSubtype<ast.Declaration, TypedDeclaration>;
@@ -214,11 +218,13 @@ export type TypedTypeDeclaration = ast.RangeMeta & {
         variants: TypedTypeVariant[];
         pub: boolean | "..";
       }
-    | ({
+    | {
         type: "struct";
         fields: TypedStructDeclarationField[];
         pub: boolean | "..";
-      } & PolyTypeMeta)
+
+        $type: Type;
+      }
     | {
         type: "extern";
         pub: boolean;
@@ -252,7 +258,6 @@ export type ModuleInterface = {
 
 function assertSubtype<T1, _T2 extends T1>() {}
 export type Identifier = TypedExpr & { type: "identifier" };
-export type PolyTypeMeta = { $scheme: TypeScheme } & { $type: Type };
 
 export type TypeResolution = {
   declaration: TypedTypeDeclaration;

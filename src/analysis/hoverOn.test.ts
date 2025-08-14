@@ -2,12 +2,11 @@ import { test, expect, beforeEach } from "vitest";
 import { Hovered, hoverOn, hoverToMarkdown } from "./hoverOn";
 import { unsafeParse } from "../parser";
 import { resetTraitsRegistry, typecheck } from "../typecheck/typecheck";
-import { TypeScheme } from "../type";
 import { rangeOf } from "./__test__/utils";
 
 test("hover a declaration's binding", () => {
   const src = `let x = 42`;
-  const [, hoverable] = parseHover(src, "x")!;
+  const hoverable = parseHover(src, "x")!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "x"),
     hovered: expect.objectContaining({
@@ -23,7 +22,7 @@ test("hover a declaration's binding", () => {
 
 test("hover a declaration's binding (2d occurrence)", () => {
   const src = `let x = 42\nlet y = 100`;
-  const [, hoverable] = parseHover(src, "y")!;
+  const hoverable = parseHover(src, "y")!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "y"),
     hovered: expect.objectContaining({
@@ -39,7 +38,7 @@ test("hover a declaration's binding (2d occurrence)", () => {
 
 test("hover fn param", () => {
   const src = `let f = fn x { 0 }`;
-  const [, hoverable] = parseHover(src, "x")!;
+  const hoverable = parseHover(src, "x")!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "x"),
     hovered: expect.objectContaining({
@@ -56,7 +55,7 @@ test("hover let expr binding", () => {
       let x = 42;
       0
     }`;
-  const [, hoverable] = parseHover(src, "x")!;
+  const hoverable = parseHover(src, "x")!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "x"),
     hovered: expect.objectContaining({
@@ -70,7 +69,7 @@ test("hover let expr binding", () => {
 
 test("hovering with scheme", () => {
   const src = `let f = fn x, y { y }`;
-  const [scheme, hoverable] = parseHover(src, "y", 2)!;
+  const hoverable = parseHover(src, "y", 2)!;
   if (hoverable.hovered.type !== "local-variable") {
     throw new Error("fail");
   }
@@ -78,11 +77,11 @@ test("hovering with scheme", () => {
   if (resolved.type !== "unbound") {
     throw new Error("fail");
   }
-  expect(scheme).toEqual(
-    expect.objectContaining({
-      [resolved.id]: "b",
-    }),
-  );
+  // expect(scheme).toEqual(
+  //   expect.objectContaining({
+  //     [resolved.id]: "b",
+  //   }),
+  // );
 });
 
 test("hover a reference to a global binding", () => {
@@ -90,7 +89,7 @@ test("hover a reference to a global binding", () => {
         let x = 42
         let y = x
     `;
-  const [, hoverable] = parseHover(src, "x", 2)!;
+  const hoverable = parseHover(src, "x", 2)!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "x", 2),
     hovered: expect.objectContaining({
@@ -116,7 +115,7 @@ test("hover a reference to a global binding inside a fn, application, if, let", 
             }
         }
     `;
-  const [, hoverable] = parseHover(src, "x", 2)!;
+  const hoverable = parseHover(src, "x", 2)!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "x", 2),
     hovered: expect.objectContaining({
@@ -135,7 +134,7 @@ test("hover within a list", () => {
   let hovered_number = 42
   let expr = [hovered_number]
 `;
-  const [, hoverable] = parseHover(src, "hovered_number", 2)!;
+  const hoverable = parseHover(src, "hovered_number", 2)!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "hovered_number", 2),
     hovered: expect.objectContaining({
@@ -153,7 +152,7 @@ test("hover within a pipe call", () => {
           |> id()
           |> id()
     `;
-  const [, hoverable] = parseHover(src, "hovered_number", 2)!;
+  const hoverable = parseHover(src, "hovered_number", 2)!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "hovered_number", 2),
     hovered: expect.objectContaining({
@@ -168,7 +167,7 @@ test("hover a local binding in a match expr", () => {
           Constr(Nested(_, loc_var)) => 0,
         }
     `;
-  const [, hoverable] = parseHover(src, "loc_var")!;
+  const hoverable = parseHover(src, "loc_var")!;
   expect(hoverable).toEqual<Hovered>(
     expect.objectContaining({
       range: rangeOf(src, "loc_var"),
@@ -183,7 +182,7 @@ test("hover a reference to a local binding in a match expr", () => {
             Constr(x) => x,
         }
     `;
-  const [, hoverable] = parseHover(src, "x", 2)!;
+  const hoverable = parseHover(src, "x", 2)!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "x", 2),
     hovered: expect.objectContaining({
@@ -201,7 +200,7 @@ test("hover a reference to a local binding in a match expr subject", () => {
       let m = match something { }
     `;
 
-  const [, hoverable] = parseHover(src, "something", 2)!;
+  const hoverable = parseHover(src, "something", 2)!;
   expect(hoverable).toEqual<Hovered>(
     expect.objectContaining({
       range: rangeOf(src, "something", 2),
@@ -214,7 +213,7 @@ test("hover a constructor", () => {
         type T { Constr(Int) }
         let t = Constr(42)
     `;
-  const [, hoverable] = parseHover(src, "Constr", 2)!;
+  const hoverable = parseHover(src, "Constr", 2)!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "Constr", 2),
     hovered: expect.objectContaining({
@@ -227,7 +226,7 @@ test("hover a type def", () => {
   const src = `
       type T { }
     `;
-  const [, hoverable] = parseHover(src, "T", 1)!;
+  const hoverable = parseHover(src, "T", 1)!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "type T { }", 1),
     hovered: expect.objectContaining({
@@ -242,7 +241,7 @@ test("hover a type ast", () => {
         type Box<a> { }
         extern let t: Fn() -> Box<T>
     `;
-  const [, hoverable] = parseHover(src, "T", 2)!;
+  const hoverable = parseHover(src, "T", 2)!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "T", 2),
     hovered: expect.objectContaining({
@@ -256,7 +255,7 @@ test("hover a type ast in constructor", () => {
       type X { }
       type T { Constr(X) }
     `;
-  const [, hoverable] = parseHover(src, "X", 2)!;
+  const hoverable = parseHover(src, "X", 2)!;
   expect(hoverable).toEqual<Hovered>({
     range: rangeOf(src, "X", 2),
     hovered: expect.objectContaining({
@@ -275,7 +274,7 @@ test("hover on a field (instantiated)", () => {
 
       pub let hov = x.some_field
     `;
-  const [, hoverable] = parseHover(src, "some_field", 3)!;
+  const hoverable = parseHover(src, "some_field", 3)!;
 
   expect(hoverable.hovered).toEqual({
     type: "field",
@@ -288,7 +287,7 @@ test("hover on a field (tvar)", () => {
       type X<gen> struct { some_field: gen }
       pub let hov = fn x { x.some_field }
     `;
-  const [, hoverable] = parseHover(src, "some_field", 2)!;
+  const hoverable = parseHover(src, "some_field", 2)!;
 
   expect(hoverable.hovered).toEqual({
     type: "field",
@@ -298,14 +297,14 @@ test("hover on a field (tvar)", () => {
 
 test("snapshot when hovering on global fn", () => {
   const src = `let glb = fn x, y { y }`;
-  const [scheme, hoverable] = parseHover(src, "glb")!;
-  expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  const hoverable = parseHover(src, "glb")!;
+  expect(hoverToMarkdown(hoverable)).toMatchSnapshot();
 });
 
 test("snapshot when hovering on an extern type", () => {
   const src = `extern let glb: Fn(x) -> x`;
-  const [scheme, hoverable] = parseHover(src, "glb")!;
-  expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  const hoverable = parseHover(src, "glb")!;
+  expect(hoverToMarkdown(hoverable)).toMatchSnapshot();
 });
 
 test("snapshot when hovering on an extern type reference", () => {
@@ -313,8 +312,8 @@ test("snapshot when hovering on an extern type reference", () => {
       extern let glb: Fn(x) -> x
       let v = glb
     `;
-  const [scheme, hoverable] = parseHover(src, "glb", 2)!;
-  expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  const hoverable = parseHover(src, "glb", 2)!;
+  expect(hoverToMarkdown(hoverable)).toMatchSnapshot();
 });
 
 test("snapshot when hovering on a local fn", () => {
@@ -324,16 +323,16 @@ test("snapshot when hovering on a local fn", () => {
         0
       }
     `;
-  const [scheme, hoverable] = parseHover(src, "closure")!;
-  expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  const hoverable = parseHover(src, "closure")!;
+  expect(hoverToMarkdown(hoverable)).toMatchSnapshot();
 });
 
 test("snapshot when hovering on a constructor", () => {
   const src = `
       type T<content> { X, Constr(content) }
     `;
-  const [scheme, hoverable] = parseHover(src, "Constr")!;
-  expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  const hoverable = parseHover(src, "Constr")!;
+  expect(hoverToMarkdown(hoverable)).toMatchSnapshot();
 });
 
 test("snapshot when hovering on a constructor reference", () => {
@@ -342,15 +341,15 @@ test("snapshot when hovering on a constructor reference", () => {
 
       pub let c = Constr(42)
     `;
-  const [scheme, hoverable] = parseHover(src, "Constr", 2)!;
-  expect(hoverToMarkdown(scheme, hoverable)).toMatchSnapshot();
+  const hoverable = parseHover(src, "Constr", 2)!;
+  expect(hoverToMarkdown(hoverable)).toMatchSnapshot();
 });
 
 function parseHover(
   src: string,
   hovering: string,
   occurrenceNumber = 1,
-): [TypeScheme, Hovered] | undefined {
+): Hovered | undefined {
   const position = rangeOf(src, hovering, occurrenceNumber).start;
 
   if (position === undefined) {

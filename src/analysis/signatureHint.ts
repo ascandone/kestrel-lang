@@ -68,7 +68,6 @@ function getSignature(
       return {
         name: variant.name,
         type: variant.$type,
-        scheme: variant.$scheme,
       };
     }
   }

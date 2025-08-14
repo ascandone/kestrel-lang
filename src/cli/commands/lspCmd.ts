@@ -570,8 +570,8 @@ export async function lspCmd() {
       return undefined;
     }
 
-    const [scheme, hover] = hoverData;
-    const md = hoverToMarkdown(scheme, hover);
+    const hover = hoverData;
+    const md = hoverToMarkdown(hover);
     return {
       range: hover.range,
       contents: {
