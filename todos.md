@@ -35,3 +35,4 @@
 - feat: check cyclic module dependency
 - feat: allow mutually recursive values
 - refactor: add package to named type repr
+- refactor: re-architecture compiler using IR
