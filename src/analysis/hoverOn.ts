@@ -185,10 +185,7 @@ ${hovered.declaration.docComment ?? ""}
     }
 
     case "constructor": {
-      const tpp = typeToString(
-        hovered.variant.$type.asType(),
-        hovered.variant.$scheme,
-      );
+      const tpp = typeToString(hovered.variant.$type, hovered.variant.$scheme);
       return `\`\`\`
 ${hovered.variant.name}: ${tpp}
 \`\`\`

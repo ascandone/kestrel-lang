@@ -126,16 +126,15 @@ describe("basic constructs inference", () => {
   });
 
   test("application args should be typechecked", () => {
-    const [, errors] = tc(
-      `
+    const src = `
     type T { C }
     type Ret {}
 
     extern pub let f: Fn(T, T) -> Ret
     pub let x = f(42, C)
-  `,
-    );
+  `;
 
+    const [, errors] = tc(src);
     expect(errors).toHaveLength(1);
     expect(errors[0]?.description).toBeInstanceOf(err.TypeMismatch);
   });

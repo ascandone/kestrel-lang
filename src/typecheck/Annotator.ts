@@ -56,7 +56,7 @@ export class Annotator {
           variants: typeDecl.variants.map((variant) => ({
             ...variant,
             $scheme: {},
-            $type: TVar.fresh(),
+            $type: TVar.fresh().asType(),
             args: variant.args.map((arg) => this.annotateTypeAst(arg)),
           })),
         };
@@ -65,11 +65,11 @@ export class Annotator {
         return {
           ...typeDecl,
           $scheme: {},
-          $type: TVar.fresh(),
+          $type: TVar.fresh().asType(),
           fields: typeDecl.fields.map(
             (untypedField): TypedStructDeclarationField => ({
               ...untypedField,
-              $type: TVar.fresh(),
+              $type: TVar.fresh().asType(),
               $scheme: {},
               typeAst: this.annotateTypeAst(untypedField.typeAst),
             }),

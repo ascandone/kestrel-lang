@@ -1,3 +1,4 @@
+import { getOrInsertDefault } from "../data/defaultMap";
 import { PolyTypeMeta } from "../typecheck/typedAst";
 
 export type ConcreteType =
@@ -122,7 +123,8 @@ export class TVar {
     }
 
     if (t.type === "rigid-var") {
-      throw new Error("TODO rigid var impl trait");
+      // TODO
+      return undefined;
     }
 
     if (t.type === "fn") {
@@ -436,8 +438,39 @@ export function generalizeAsScheme(
   return scheme;
 }
 
+export function instantiate(mono: Type) {
+  return new Instantiator().instantiate(mono);
+}
+
+// TODO make this class private
 export class Instantiator {
   public readonly instantiated = new Map<string, TVar>();
+
+  public instantiate(mono: Type): Type {
+    switch (mono.type) {
+      case "rigid-var":
+        return getOrInsertDefault(this.instantiated, mono.name, () => {
+          return TVar.fresh();
+        }).asType();
+
+      case "named":
+        return {
+          ...mono,
+          args: mono.args.map((a) => this.instantiate(a)),
+        };
+
+      case "fn":
+        return {
+          type: "fn",
+          args: mono.args.map((a) => this.instantiate(a)),
+          return: this.instantiate(mono.return),
+        };
+
+      case "var":
+        // TODO double check
+        return TVar.fresh().asType();
+    }
+  }
 
   //  TODO remove the scheme after the migration to flexvars
   instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
@@ -497,7 +530,7 @@ export class Instantiator {
   }
 
   instantiatePoly(poly: PolyTypeMeta) {
-    return this.instantiateFromScheme(poly.$type.asType(), poly.$scheme);
+    return this.instantiateFromScheme(poly.$type, poly.$scheme);
   }
 }
 

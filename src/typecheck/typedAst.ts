@@ -1,5 +1,5 @@
 import * as ast from "../parser";
-import { TVar, TypeScheme } from "../type";
+import { TVar, Type, TypeScheme } from "../type";
 
 // -- Common
 
@@ -252,7 +252,7 @@ export type ModuleInterface = {
 
 function assertSubtype<T1, _T2 extends T1>() {}
 export type Identifier = TypedExpr & { type: "identifier" };
-export type PolyTypeMeta = { $scheme: TypeScheme } & TypeMeta;
+export type PolyTypeMeta = { $scheme: TypeScheme } & { $type: Type };
 
 export type TypeResolution = {
   declaration: TypedTypeDeclaration;

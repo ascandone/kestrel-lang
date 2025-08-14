@@ -67,7 +67,7 @@ function getSignature(
       const { variant } = expr.caller.$resolution;
       return {
         name: variant.name,
-        type: variant.$type.asType(),
+        type: variant.$type,
         scheme: variant.$scheme,
       };
     }
