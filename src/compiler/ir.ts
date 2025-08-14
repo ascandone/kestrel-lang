@@ -1,4 +1,5 @@
 import { ConstLiteral } from "../parser/ast";
+import { TypedTypeAst, TypedTypeDeclaration } from "../typecheck";
 export { ConstLiteral } from "../parser/ast";
 
 export class QualifiedIdentifier {
@@ -111,16 +112,22 @@ export type AdtConstructor = {
    * Just storing the arity instead of the type is a bit simplistic and won't be enough
    * for e.g. a wasm backend. But as we long as we only have a js backend, that'll be just fine
    */
+  // TODO remove
   arity: number;
+
+  args: TypedTypeAst[];
 };
 export type Adt = {
   name: QualifiedIdentifier;
   constructors: AdtConstructor[];
+  params: string[];
 };
 
 export type Struct = {
   name: QualifiedIdentifier;
   fields: string[];
+  declaration: TypedTypeDeclaration & { type: "struct" };
+  params: string[];
 };
 export type Program = {
   package_: string;

@@ -439,10 +439,12 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
       return [
         {
           name: mkIdent(decl.name),
+          params: decl.params.map((p) => p.name),
           constructors: decl.variants.map(
             (ctor): ir.AdtConstructor => ({
               name: mkIdent(ctor.name),
               arity: ctor.args.length,
+              args: ctor.args,
             }),
           ),
         },
@@ -457,7 +459,9 @@ export function lowerProgram(module: typed.TypedModule): ir.Program {
       return [
         {
           name: mkIdent(decl.name),
+          declaration: decl,
           fields: decl.fields.map((f) => f.name),
+          params: decl.params.map((p) => p.name),
         },
       ];
     }),

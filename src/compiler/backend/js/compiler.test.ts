@@ -2389,7 +2389,7 @@ describe.skip("Eq trait", () => {
 });
 
 describe("deriving", () => {
-  describe.skip("derive Eq instance for Adt", () => {
+  describe("derive Eq instance for Adt", () => {
     test("do not derive underivable types", () => {
       const out = compileSrc(
         `
@@ -2403,7 +2403,7 @@ describe("deriving", () => {
     `);
     });
 
-    test("no variants", () => {
+    test.skip("no variants", () => {
       const out = compileSrc(
         `
       type T { }
@@ -2413,7 +2413,7 @@ describe("deriving", () => {
       expect(out).toMatchInlineSnapshot(`"const Eq_Main$T = (x, y) => true;"`);
     });
 
-    test("singleton without args", () => {
+    test.skip("singleton without args", () => {
       const out = compileSrc(
         `
       type T { X }
@@ -2426,10 +2426,9 @@ describe("deriving", () => {
     `);
     });
 
-    test("singleton with concrete args", () => {
+    test.skip("singleton with concrete args", () => {
       const out = compileSrc(
         `
-      extern type Int
       type T { X(Int, Int) }
     `,
         {
@@ -2447,7 +2446,7 @@ describe("deriving", () => {
     `);
     });
 
-    test("singleton with newtype repr", () => {
+    test.skip("singleton with newtype repr", () => {
       const out = compileSrc(
         `
       extern type Int
@@ -2480,15 +2479,15 @@ describe("deriving", () => {
     test("singleton with concrete args", () => {
       const out = compileSrc(
         `
-      extern type Int
-      extern type Bool
-      type T { X(Int, Bool) }
+      extern type IntZ
+      extern type BoolZ
+      type T { X(IntZ, BoolZ) }
     `,
         {
           allowDeriving: ["Eq"],
           traitImpl: [
-            { moduleName: "Main", typeName: "Int", trait: "Eq" },
-            { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+            { moduleName: "Main", typeName: "IntZ", trait: "Eq" },
+            { moduleName: "Main", typeName: "BoolZ", trait: "Eq" },
           ],
         },
       );
@@ -2498,7 +2497,7 @@ describe("deriving", () => {
         _0,
         _1
       });
-      const Eq_Main$T = (x, y) => Eq_Main$Int(x._0, y._0) && Eq_Main$Bool(x._1, y._1);"
+      const Eq_Main$T = (x, y) => Eq_Main$IntZ(x._0, y._0) && Eq_Main$BoolZ(x._1, y._1);"
     `);
     });
 
@@ -2520,19 +2519,19 @@ describe("deriving", () => {
     test("type with many variants", () => {
       const out = compileSrc(
         `
-      extern type Int
-      extern type Bool
+      extern type Num
+      extern type Flag
       type T<a> {
-        A(Int),
-        B(a, Int),
+        A(Num),
+        B(a, Num),
         C,
       }
     `,
         {
           allowDeriving: ["Eq"],
           traitImpl: [
-            { moduleName: "Main", typeName: "Int", trait: "Eq" },
-            { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+            { moduleName: "Main", typeName: "Num", trait: "Eq" },
+            { moduleName: "Main", typeName: "Flag", trait: "Eq" },
           ],
         },
       );
@@ -2556,9 +2555,9 @@ describe("deriving", () => {
         }
         switch (x.$) {
           case 0:
-            return Eq_Main$Int(x._0, y._0);
+            return Eq_Main$Num(x._0, y._0);
           case 1:
-            return Eq_a(x._0, y._0) && Eq_Main$Int(x._1, y._1);
+            return Eq_a(x._0, y._0) && Eq_Main$Num(x._1, y._1);
           case 2:
             return true;
         }
@@ -2625,7 +2624,7 @@ describe("deriving", () => {
     });
   });
 
-  describe.skip("derive Eq instance for structs", () => {
+  describe("derive Eq instance for structs", () => {
     test("do not derive underivable types", () => {
       const out = compileSrc(
         `
@@ -2637,7 +2636,7 @@ describe("deriving", () => {
       expect(out).toMatchInlineSnapshot(`""`);
     });
 
-    test("no fields", () => {
+    test.skip("no fields", () => {
       const out = compileSrc(
         `
       type T struct { }
@@ -2652,7 +2651,7 @@ describe("deriving", () => {
     test("single field", () => {
       const out = compileSrc(
         `
-      extern type Int
+      
       type T struct { x: Int }
     `,
         {
@@ -2661,9 +2660,7 @@ describe("deriving", () => {
         },
       );
 
-      expect(out).toMatchInlineSnapshot(`
-      "const Eq_Main$T = (x, y) => Eq_Main$Int(x.x, y.x);"
-    `);
+      expect(out).toMatchInlineSnapshot(`"const Eq_Main$T = (x, y) => Eq_Int$Int(x.x, y.x);"`);
     });
 
     test("single field with var args", () => {
@@ -2681,23 +2678,23 @@ describe("deriving", () => {
     test("many fields with concrete args", () => {
       const out = compileSrc(
         `
-      extern type Int
-      extern type Bool
+      extern type Num
+      extern type Str
       type T struct {
-        int_field: Int,
-        bool_field: Bool,
+        int_field: Num,
+        str_field: Str,
       }
     `,
         {
           allowDeriving: ["Eq"],
           traitImpl: [
-            { moduleName: "Main", typeName: "Int", trait: "Eq" },
-            { moduleName: "Main", typeName: "Bool", trait: "Eq" },
+            { moduleName: "Main", typeName: "Num", trait: "Eq" },
+            { moduleName: "Main", typeName: "Str", trait: "Eq" },
           ],
         },
       );
       expect(out).toMatchInlineSnapshot(`
-      "const Eq_Main$T = (x, y) => Eq_Main$Int(x.int_field, y.int_field) && Eq_Main$Bool(x.bool_field, y.bool_field);"
+      "const Eq_Main$T = (x, y) => Eq_Main$Num(x.int_field, y.int_field) && Eq_Main$Str(x.str_field, y.str_field);"
     `);
     });
 

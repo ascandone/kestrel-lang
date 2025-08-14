@@ -5,6 +5,7 @@ import * as ir from "../../ir";
 import { CORE_PACKAGE } from "../../../typecheck";
 import { CompilationError } from "../../lower";
 import * as common from "./common";
+import * as deriving from "./deriving";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -84,12 +85,18 @@ export class Compiler {
   public compile(program: ir.Program) {
     for (const adt of program.adts) {
       this.knownAdts.set(adt.name.toString(), adt);
-      const out = compileAdt(adt);
-      this.statementsBuf.push(...out);
+      this.compileAdt(adt);
     }
 
     for (const struct of program.structs) {
       this.knownStructs.set(struct.name.toString(), struct);
+      this.statementsBuf.push(
+        ...deriving.deriveStruct(
+          struct,
+          struct.params,
+          this.options.allowDeriving,
+        ),
+      );
     }
 
     for (const decl of program.values) {
@@ -885,6 +892,23 @@ export class Compiler {
     this.statementsBuf = buf;
     return [e, stms];
   }
+
+  private compileAdt(decl: ir.Adt) {
+    const skipRepresentation =
+      decl.name.package_ === CORE_PACKAGE && decl.name.name === "Bool";
+
+    if (!skipRepresentation) {
+      const repr = common.getAdtReprType(decl);
+      decl.constructors.forEach((ctor, index) => {
+        const out = compileConstructor(ctor, index, repr);
+        this.statementsBuf.push(out);
+      });
+    }
+
+    this.statementsBuf.push(
+      ...deriving.deriveAdt(decl, this.options.allowDeriving),
+    );
+  }
 }
 
 function compileConst(ast: ir.ConstLiteral): t.Expression {
@@ -946,29 +970,12 @@ function compileLocalIdent(
 }
 
 function mkGlbIdent(qualified: ir.QualifiedIdentifier): string {
-  const sanitized = qualified.namespace.replace(/\//g, "$");
+  const sanitized = common.sanitizeNamespace(qualified.namespace);
   return `${sanitized}$${qualified.name}`;
 }
 
 function doNotDeclare(as: CompilationMode): CompilationMode {
   return as.type === "assign_var" ? { ...as, declare: false } : as;
-}
-
-function compileAdt(decl: ir.Adt): t.Statement[] {
-  const buf: t.Statement[] = [];
-
-  const skipRepresentation =
-    decl.name.package_ === CORE_PACKAGE && decl.name.name === "Bool";
-
-  if (!skipRepresentation) {
-    const repr = common.getAdtReprType(decl);
-    decl.constructors.forEach((ctor, index) => {
-      const out = compileConstructor(ctor, index, repr);
-      buf.push(out);
-    });
-  }
-
-  return buf;
 }
 
 function compileConstructor(

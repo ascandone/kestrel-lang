@@ -3,6 +3,10 @@ import * as ir from "../../ir";
 
 export const TAG_FIELD: t.Identifier = { type: "Identifier", name: "$" };
 
+export function sanitizeNamespace(ns: string): string {
+  return ns?.replace(/\//g, "$");
+}
+
 export type AdtReprType = "default" | "enum" | "unboxed";
 // TODO(perf) cache this using weakmap
 export function getAdtReprType(decl: ir.Adt): AdtReprType {
