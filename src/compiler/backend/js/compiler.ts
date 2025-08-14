@@ -4,7 +4,7 @@ import generate from "@babel/generator";
 import * as ir from "../../ir";
 import { CORE_PACKAGE } from "../../../typecheck";
 import { CompilationError } from "../../lower";
-import { joinAndExprs } from "../../utils";
+import * as common from "./common";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -477,7 +477,7 @@ export class Compiler {
     args: ir.Expr[],
   ): t.Expression {
     const adtDef = this.getAdt(ctor.typeName);
-    const repr = getAdtReprType(adtDef);
+    const repr = common.getAdtReprType(adtDef);
 
     const tagIndex = adtDef.constructors.findIndex(
       (c) => c.name.name === ctor.name,
@@ -545,7 +545,7 @@ export class Compiler {
           throw new CompilationError("variant not found in declaration");
         }
 
-        const repr = getAdtReprType(adtDef);
+        const repr = common.getAdtReprType(adtDef);
         const eqLeftSide: t.Expression = (() => {
           switch (repr) {
             case "enum":
@@ -556,7 +556,7 @@ export class Compiler {
               return {
                 type: "MemberExpression",
                 object: matchedExpr,
-                property: TAG_FIELD,
+                property: common.TAG_FIELD,
                 computed: false,
               };
           }
@@ -669,7 +669,7 @@ export class Compiler {
         checks.push([undefined, stms]);
         break;
       }
-      checks.push([joinAndExprs(exprs), stms]);
+      checks.push([common.joinAndExprs(exprs), stms]);
     }
     const helper = (index: number): t.Statement[] => {
       if (index >= checks.length) {
@@ -961,7 +961,7 @@ function compileAdt(decl: ir.Adt): t.Statement[] {
     decl.name.package_ === CORE_PACKAGE && decl.name.name === "Bool";
 
   if (!skipRepresentation) {
-    const repr = getAdtReprType(decl);
+    const repr = common.getAdtReprType(decl);
     decl.constructors.forEach((ctor, index) => {
       const out = compileConstructor(ctor, index, repr);
       buf.push(out);
@@ -974,7 +974,7 @@ function compileAdt(decl: ir.Adt): t.Statement[] {
 function compileConstructor(
   variant: ir.AdtConstructor,
   index: number,
-  repr: AdtReprType,
+  repr: common.AdtReprType,
 ): t.Statement {
   return {
     type: "VariableDeclaration",
@@ -989,12 +989,10 @@ function compileConstructor(
   };
 }
 
-export const TAG_FIELD: t.Identifier = { type: "Identifier", name: "$" };
-
 function makeVariantBody(
   index: number,
   argsNumber: number,
-  repr: AdtReprType,
+  repr: common.AdtReprType,
 ): t.Expression {
   if (repr === "enum") {
     return { type: "NumericLiteral", value: index };
@@ -1024,28 +1022,13 @@ function makeVariantBody(
   };
 }
 
-type AdtReprType = "default" | "enum" | "unboxed";
-// TODO(perf) cache this using weakmap
-function getAdtReprType(decl: ir.Adt): AdtReprType {
-  if (decl.constructors.length === 1 && decl.constructors[0]!.arity === 1) {
-    return "unboxed";
-  }
-
-  const isEnum = decl.constructors.every((v) => v.arity === 0);
-  if (isEnum) {
-    return "enum";
-  }
-
-  return "default";
-}
-
 function buildCtorCall(tagIndex: number, args: t.Expression[]): t.Expression {
   return {
     type: "ObjectExpression",
     properties: [
       {
         type: "ObjectProperty",
-        key: TAG_FIELD,
+        key: common.TAG_FIELD,
         value: { type: "NumericLiteral", value: tagIndex },
         computed: false,
         shorthand: false,
