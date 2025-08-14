@@ -427,14 +427,15 @@ class ExprEmitter {
 }
 
 // TODO we need to know the strongly connected components
-export function lowerProgram(module: typed.TypedModule): ir.Program {
+export function lowerProgram(
+  module: typed.TypedModule,
+  knownImplicitArities = new Map<string, ir.ImplicitParam[]>(),
+): ir.Program {
   const namespace = module.moduleInterface.ns;
   const package_ = module.moduleInterface.package_;
 
   const mkIdent = (name: string) =>
     new ir.QualifiedIdentifier(package_, namespace, name);
-
-  const knownImplicitArities = new Map<string, ir.ImplicitParam[]>();
 
   return {
     namespace,
@@ -603,4 +604,32 @@ function makeTraitsScheme(
   helper(type);
 
   return out;
+}
+
+export class ProjectLowering {
+  private readonly visited = new Set<string>();
+  private readonly knownImplicitArities = new Map<string, ir.ImplicitParam[]>();
+
+  constructor(
+    private readonly typedProject: Record<string, typed.TypedModule>,
+  ) {}
+
+  *visit(ns: string): Generator<ir.Program> {
+    if (this.visited.has(ns)) {
+      return;
+    }
+
+    const module = this.typedProject[ns];
+    if (module === undefined) {
+      throw new CompilationError(`Could not find module '${ns}'`);
+    }
+    const lowered = lowerProgram(module, this.knownImplicitArities);
+    this.visited.add(ns);
+
+    for (const import_ of module.imports) {
+      yield* this.visit(import_.ns);
+    }
+
+    yield lowered;
+  }
 }

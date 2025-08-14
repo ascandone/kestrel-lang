@@ -7,11 +7,9 @@ import {
   DEFAULT_MAIN_TYPE,
   TypedModule,
 } from "../../../typecheck";
-import { CompilationError, lowerProgram } from "../../lower";
+import { CompilationError, ProjectLowering } from "../../lower";
 import * as common from "./common";
 import * as deriving from "./deriving";
-import { exit } from "node:process";
-import { col } from "../../../utils/colors";
 import { ConcreteType } from "../../../type";
 
 export type CompileOptions = {
@@ -1195,7 +1193,6 @@ export const defaultEntryPoint: NonNullable<
 
 export type CompileProjectOptions = {
   externs?: Record<string, string>;
-  optimize?: boolean;
   entrypoint?: {
     module: string;
     type: ConcreteType;
@@ -1218,41 +1215,21 @@ export function compileProject(
     throw new Error("Entrypoint needs a value called `main`.");
   }
 
+  const proj = new ProjectLowering(typedProject);
+
   const compiler = new Compiler();
 
-  const visited = new Set<string>();
-
   const buf: string[] = [];
-
-  function visit(ns: string) {
-    if (visited.has(ns)) {
-      return;
-    }
-
-    visited.add(ns);
-    const module = typedProject[ns];
-    if (module === undefined) {
-      console.error(col.red.tag`Error:`, `Could not find module '${ns}'`);
-      exit(1);
-    }
-
-    for (const import_ of module.imports) {
-      visit(import_.ns);
-    }
-
-    const extern = externs[ns];
+  for (const irProgram of proj.visit(entrypoint.module)) {
+    const extern = externs[irProgram.namespace];
     if (extern !== undefined) {
       buf.push(extern);
     }
 
-    const ir = lowerProgram(module);
-    compiler.compile(ir);
+    compiler.compile(irProgram);
+    const out = compiler.generate();
+    buf.push(out);
   }
-
-  visit(entrypoint.module);
-
-  const out = compiler.generate();
-  buf.push(out);
 
   const entryPointMod = common.sanitizeNamespace(entrypoint.module);
   buf.push(`${entryPointMod}$main.exec();\n`);
