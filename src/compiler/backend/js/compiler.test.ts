@@ -163,11 +163,6 @@ describe("intrinsics", () => {
     `);
   });
 
-  test.skip("compile == of ints", () => {
-    const out = compileSrc(`pub let x = 1 == 2`);
-    expect(out).toMatchInlineSnapshot(`"const Main$x = 1 === 2;"`);
-  });
-
   test("compile %", () => {
     const out = compileSrc(`pub let x = 3 % 2`);
     expect(out).toMatchInlineSnapshot(`"const Main$x = 3 % 2;"`);
@@ -2275,24 +2270,24 @@ describe("traits compilation", () => {
   `);
   });
 
-  test.skip("== compares primitives directly", () => {
+  test("== compares primitives directly", () => {
     const out = compileSrc(
       `
-  extern type Bool
   extern let (==): Fn(a, a) -> Bool where a: Eq
   let a = 1 == 2
   let b = 1.0 == 2.0
   let c = "a" == "ab"
   let d = 'x' == 'y'
 `,
-      { traitImpl: defaultTraitImpls },
+      // TODO(test) check why default import isn't working
+      { package_: CORE_PACKAGE, ns: "Bool" },
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$a = 1 === 2;
-      const Main$b = 1 === 2;
-      const Main$c = \`a\` === \`ab\`;
-      const Main$d = \`x\` === \`y\`;"
+      "const Bool$a = 1 === 2;
+      const Bool$b = 1 === 2;
+      const Bool$c = \`a\` === \`ab\`;
+      const Bool$d = \`x\` === \`y\`;"
     `);
   });
 
@@ -2300,16 +2295,18 @@ describe("traits compilation", () => {
     const out = compileSrc(
       `
     
-    extern let eq: Fn(a, a) -> Bool where a: Eq
+    extern let (==): Fn(a, a) -> Bool where a: Eq
+
     type T { C(Int) }
-    let f = eq(C(0), C(1))
+    let f = C(0) == C(1)
 `,
+      { ns: "Bool", package_: CORE_PACKAGE },
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$C = _0 => _0;
+      "const Bool$C = _0 => _0;
       const Eq_Main$T = (x, y) => Eq_Main$Int(x, y);
-      const Main$f = Main$eq(Eq_Main$T)(Main$C(0), Main$C(1));"
+      const Bool$f = _eq(Eq_Bool$T)(0, 1);"
     `);
   });
 
@@ -3111,12 +3108,16 @@ function compileSrc(
   {
     package_ = "pkg",
     ns = "Main",
-    traitImpl = [],
+    traitImpl,
     deps = {},
     allowDeriving = [],
   }: CompileSrcOpts = {},
 ) {
-  resetTraitsRegistry([...defaultTraitImpls, ...traitImpl]);
+  resetTraitsRegistry(
+    traitImpl === undefined
+      ? defaultTraitImpls
+      : [...defaultTraitImpls, ...traitImpl],
+  );
   const program = typecheckSource_(package_, ns, src, deps);
   const out = compile(lowerProgram(program), {
     allowDeriving,

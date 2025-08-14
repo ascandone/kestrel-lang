@@ -346,12 +346,40 @@ export class Compiler {
       case "Bool.||":
         return this.makeBinaryLogical("||", src.args);
 
-      case "Bool.==":
-        // TODO monomorphic version
+      case "Bool.==": {
+        const isMonomorphicEq = src.caller.ident.implicitly.some((i) => {
+          // TODO(nitpicky) remove Eq magic constant
+          if (
+            i.type !== "resolved" ||
+            i.trait !== "Eq" ||
+            i.typeName.package_ !== CORE_PACKAGE
+          ) {
+            return false;
+          }
+
+          // TODO(perf) also for unboxed constructors whose value supports ===
+          // TODO(perf) also for enum-like constructors
+          switch (i.typeName.name) {
+            case "Int":
+            case "Bool":
+            case "Float":
+            case "Char":
+            case "String":
+              return true;
+
+            default:
+              return false;
+          }
+        });
+
+        if (isMonomorphicEq) {
+          return this.makeBinaryMath("===", src.args);
+        }
+
         return;
+      }
 
       case "Bool.!=":
-
       case "Bool.<=":
       case "Bool.<":
       case "Bool.>=":
