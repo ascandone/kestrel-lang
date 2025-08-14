@@ -1,5 +1,5 @@
-import * as ir from "./ir";
-import { foldTree, lazyVisit, substitute } from "./ir/visitors";
+import * as ir from "../ir";
+import { foldTree, lazyVisit, substitute } from "./visitors";
 
 export type Ctx = object;
 export type Rule = (expr: ir.Expr, ctx: Ctx) => ir.Expr;

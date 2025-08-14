@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
-import * as ir from "./ir";
+import * as ir from "../ir";
 import * as optimize from "./optimize";
-import { typecheckSource_ } from "./__test__/prelude";
-import { lowerProgram } from "./lower";
-import { formatIR, formatIRExpr } from "./__test__/format-ir";
+import { typecheckSource_ } from "../__test__/prelude";
+import { lowerProgram } from "../lower";
+import { formatIR, formatIRExpr } from "../__test__/format-ir";
 
 const baseCtx: optimize.Ctx = {};
 
