@@ -396,7 +396,7 @@ describe("unify", () => {
 
   test("unify rigid vars when equal", () => {
     expect(
-      unify({ type: "rigid-var", id: "a" }, { type: "rigid-var", id: "a" }),
+      unify({ type: "rigid-var", name: "a" }, { type: "rigid-var", name: "a" }),
     ).toEqual(undefined);
   });
 
@@ -406,22 +406,22 @@ describe("unify", () => {
     expect(
       unify($a, {
         type: "rigid-var",
-        id: "a",
+        name: "a",
       }),
     ).toBeUndefined();
 
     expect(resolveType($a)).toEqual({
       type: "rigid-var",
-      id: "a",
+      name: "a",
     });
   });
 
   test("dont' unify rigid vars with named types", () => {
-    expect(unify({ type: "rigid-var", id: "a" }, Int)).not.toBeUndefined();
+    expect(unify({ type: "rigid-var", name: "a" }, Int)).not.toBeUndefined();
   });
 
   test("unify rigid vars with tvars", () => {
-    expect(unify({ type: "rigid-var", id: "a" }, Int)).not.toBeUndefined();
+    expect(unify({ type: "rigid-var", name: "a" }, Int)).not.toBeUndefined();
   });
 });
 

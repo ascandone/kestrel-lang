@@ -3,7 +3,7 @@ import { PolyTypeMeta } from "../typecheck/typedAst";
 export type ConcreteType =
   | {
       type: "rigid-var";
-      id: string;
+      name: string;
     }
   | {
       type: "fn";
@@ -284,7 +284,11 @@ export class TVar {
       return TVar.unify(t1.return, t2.return);
     }
 
-    if (t1.type === "rigid-var" && t2.type === "rigid-var" && t1.id === t2.id) {
+    if (
+      t1.type === "rigid-var" &&
+      t2.type === "rigid-var" &&
+      t1.name === t2.name
+    ) {
       return;
     }
 
@@ -439,7 +443,7 @@ export class Instantiator {
   instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
     switch (mono.type) {
       case "rigid-var": {
-        const i = this.instantiated.get(mono.id);
+        const i = this.instantiated.get(mono.name);
         if (i !== undefined) {
           return i.asType();
         }
@@ -447,7 +451,7 @@ export class Instantiator {
         // TODO pass traits
         // [...resolved.traits]
         const t = TVar.fresh();
-        this.instantiated.set(mono.id, t);
+        this.instantiated.set(mono.name, t);
         return t.asType();
       }
 
@@ -508,7 +512,7 @@ function typeToStringHelper(
 ): string {
   switch (t.type) {
     case "rigid-var":
-      return t.id;
+      return t.name;
 
     case "var": {
       const resolved = t.var.resolve();

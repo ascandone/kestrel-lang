@@ -50,6 +50,7 @@ import {
   TypeMismatch,
   UnboundTypeParam,
 } from "./errors";
+import * as err from "./errors";
 import { Deps, resolve } from "./resolution";
 import { topologicalSort } from "../utils/topsort";
 export { Deps } from "./resolution";
@@ -503,30 +504,8 @@ class Typechecker {
 
   private typecheckAnnotatedDecl(decl: TypedDeclaration) {
     if (decl.typeHint !== undefined) {
-      const bound: Record<string, TVar> = {};
-      const traitDefs = decl.typeHint.where.map((d) => [d.typeVar, d.traits]);
-      const th = this.typeAstToType(
-        decl.typeHint.mono,
-        { type: "type-hint" },
-        bound,
-        Object.fromEntries(traitDefs),
-      );
-
-      const scheme: TypeScheme = {};
-      for (const [name, $] of Object.entries(bound)) {
-        const resolved = $.resolve();
-        if (resolved.type !== "unbound") {
-          continue;
-        }
-        scheme[resolved.id] = name;
-      }
-
-      decl.$scheme = scheme;
-      this.unifyNode(
-        decl.typeHint,
-        instantiateFromScheme(th, {}),
-        decl.binding.$type.asType(),
-      );
+      const hint = this.hydrateType(decl.typeHint.mono);
+      this.unifyNode(decl, decl.binding.$type.asType(), hint);
     }
 
     if (decl.binding.name === "main") {
@@ -988,6 +967,46 @@ class Typechecker {
         }
 
         return;
+    }
+  }
+
+  private hydrateType(ast: TypedTypeAst): Type {
+    switch (ast.type) {
+      case "any":
+        return TVar.fresh().asType();
+      case "var":
+        return { type: "rigid-var", name: ast.ident };
+      case "fn":
+        return {
+          type: "fn",
+          args: ast.args.map((a) => this.hydrateType(a)),
+          return: this.hydrateType(ast.return),
+        };
+      case "named": {
+        const resolution = ast.$resolution;
+        if (resolution === undefined) {
+          return TVar.fresh().asType();
+        }
+
+        if (resolution.declaration.params.length !== ast.args.length) {
+          this.errors.push({
+            range: ast.range,
+            description: new err.InvalidTypeArity(
+              resolution.declaration.name,
+              resolution.declaration.params.length,
+              ast.args.length,
+            ),
+          });
+        }
+
+        return {
+          type: "named",
+          module: resolution.namespace,
+          package_: resolution.package_,
+          name: ast.name,
+          args: ast.args.map((a) => this.hydrateType(a)),
+        };
+      }
     }
   }
 }
