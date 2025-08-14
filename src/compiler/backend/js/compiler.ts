@@ -2,10 +2,17 @@ import * as t from "@babel/types";
 import generate from "@babel/generator";
 
 import * as ir from "../../ir";
-import { CORE_PACKAGE } from "../../../typecheck";
-import { CompilationError } from "../../lower";
+import {
+  CORE_PACKAGE,
+  DEFAULT_MAIN_TYPE,
+  TypedModule,
+} from "../../../typecheck";
+import { CompilationError, lowerProgram } from "../../lower";
 import * as common from "./common";
 import * as deriving from "./deriving";
+import { exit } from "node:process";
+import { col } from "../../../utils/colors";
+import { ConcreteType } from "../../../type";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -1170,4 +1177,77 @@ function makeImplicitParamIdentifier(arg: ir.ImplicitTraitArg): t.Expression {
     case "var":
       return makeImplicitParamVarIdent(arg);
   }
+}
+
+// Project compilation
+
+export const defaultEntryPoint: NonNullable<
+  CompileProjectOptions["entrypoint"]
+> = {
+  module: "Main",
+  type: DEFAULT_MAIN_TYPE,
+};
+
+export type CompileProjectOptions = {
+  externs?: Record<string, string>;
+  optimize?: boolean;
+  entrypoint?: {
+    module: string;
+    type: ConcreteType;
+  };
+};
+
+export function compileProject(
+  typedProject: Record<string, TypedModule>,
+  { entrypoint = defaultEntryPoint, externs = {} }: CompileProjectOptions = {},
+): string {
+  const entry = typedProject[entrypoint.module];
+  if (entry === undefined) {
+    throw new Error(`Entrypoint not found: '${entrypoint.module}'`);
+  }
+
+  const mainDecl = entry.declarations.find(
+    (d) => d.binding.name === "main" && d.pub,
+  );
+  if (mainDecl === undefined) {
+    throw new Error("Entrypoint needs a value called `main`.");
+  }
+
+  const visited = new Set<string>();
+
+  const buf: string[] = [];
+
+  function visit(ns: string) {
+    if (visited.has(ns)) {
+      return;
+    }
+
+    visited.add(ns);
+    const module = typedProject[ns];
+    if (module === undefined) {
+      console.error(col.red.tag`Error:`, `Could not find module '${ns}'`);
+      exit(1);
+    }
+
+    for (const import_ of module.imports) {
+      visit(import_.ns);
+    }
+
+    const extern = externs[ns];
+    if (extern !== undefined) {
+      buf.push(extern);
+    }
+
+    const ir = lowerProgram(module);
+    const out = compile(ir);
+
+    buf.push(out);
+  }
+
+  visit(entrypoint.module);
+
+  const entryPointMod = common.sanitizeNamespace(entrypoint.module);
+  buf.push(`${entryPointMod}$main.exec();\n`);
+
+  return buf.join("\n\n");
 }
