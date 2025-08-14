@@ -435,7 +435,7 @@ export function deriveAdt(adt: ir.Adt, allowDeriving: string[] | undefined) {
             type: "VariableDeclarator",
             id: {
               type: "Identifier",
-              name: `Show_${common.sanitizeNamespace(adt.name.namespace)}$${adt.name}`,
+              name: `Show_${common.sanitizeNamespace(adt.name.namespace)}$${adt.name.name}`,
             },
             init: deriveShowAdt(adt),
           },
