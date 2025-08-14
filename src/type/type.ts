@@ -2,6 +2,10 @@ import { PolyTypeMeta } from "../typecheck/typedAst";
 
 export type ConcreteType =
   | {
+      type: "rigid-var";
+      id: string;
+    }
+  | {
       type: "fn";
       args: Type[];
       return: Type;
@@ -33,6 +37,7 @@ export function resolveType(t: Type): TypeResolution {
   switch (t.type) {
     case "fn":
     case "named":
+    case "rigid-var":
       return t;
 
     case "var": {
@@ -114,6 +119,10 @@ export class TVar {
       }
 
       return this.typeImplementsTrait(resolved.value, trait);
+    }
+
+    if (t.type === "rigid-var") {
+      throw new Error("TODO rigid var impl trait");
     }
 
     if (t.type === "fn") {
@@ -230,7 +239,6 @@ export class TVar {
         case "linked":
           return TVar.unify(t1.var.value.to.asType(), t2);
         default:
-          t1.var.value satisfies never;
       }
     }
 
@@ -276,6 +284,10 @@ export class TVar {
       return TVar.unify(t1.return, t2.return);
     }
 
+    if (t1.type === "rigid-var" && t2.type === "rigid-var" && t1.id === t2.id) {
+      return;
+    }
+
     // (_, _)
     return { type: "type-mismatch", left: t1, right: t2 };
   }
@@ -316,6 +328,10 @@ export const unify = TVar.unify;
 
 // Occurs check on monotypes
 function occursCheck(v: TVar, x: Type): boolean {
+  if (x.type === "rigid-var") {
+    return false;
+  }
+
   if (x.type === "named") {
     return x.args.some((a) => occursCheck(v, a));
   }
@@ -419,8 +435,22 @@ export function generalizeAsScheme(
 export class Instantiator {
   public readonly instantiated = new Map<string, TVar>();
 
+  //  TODO remove the scheme after the migration to flexvars
   instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
     switch (mono.type) {
+      case "rigid-var": {
+        const i = this.instantiated.get(mono.id);
+        if (i !== undefined) {
+          return i.asType();
+        }
+
+        // TODO pass traits
+        // [...resolved.traits]
+        const t = TVar.fresh();
+        this.instantiated.set(mono.id, t);
+        return t.asType();
+      }
+
       case "named":
         return {
           ...mono,
@@ -477,6 +507,9 @@ function typeToStringHelper(
   collectTraits: Record<string, Set<string>>,
 ): string {
   switch (t.type) {
+    case "rigid-var":
+      return t.id;
+
     case "var": {
       const resolved = t.var.resolve();
       switch (resolved.type) {

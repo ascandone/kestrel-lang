@@ -416,6 +416,9 @@ class ExprEmitter {
         // TODO is it actually an error?
         throw new CompilationError("Invalid implicit param resolution (fn)");
 
+      case "rigid-var":
+        throw new Error("TODO rigid var to implicit");
+
       case "named":
         return [
           {

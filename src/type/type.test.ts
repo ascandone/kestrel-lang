@@ -7,6 +7,7 @@ import {
   UnifyError,
   generalizeAsScheme,
   instantiateFromScheme,
+  resolveType,
   typeToString,
   unify,
 } from "./type";
@@ -391,6 +392,36 @@ describe("unify", () => {
       left: $a.asType(),
       right: List($b.asType()),
     });
+  });
+
+  test("unify rigid vars when equal", () => {
+    expect(
+      unify({ type: "rigid-var", id: "a" }, { type: "rigid-var", id: "a" }),
+    ).toEqual(undefined);
+  });
+
+  test("don't unify rigid vars when different", () => {
+    const $a = TVar.fresh().asType();
+
+    expect(
+      unify($a, {
+        type: "rigid-var",
+        id: "a",
+      }),
+    ).toBeUndefined();
+
+    expect(resolveType($a)).toEqual({
+      type: "rigid-var",
+      id: "a",
+    });
+  });
+
+  test("dont' unify rigid vars with named types", () => {
+    expect(unify({ type: "rigid-var", id: "a" }, Int)).not.toBeUndefined();
+  });
+
+  test("unify rigid vars with tvars", () => {
+    expect(unify({ type: "rigid-var", id: "a" }, Int)).not.toBeUndefined();
   });
 });
 
