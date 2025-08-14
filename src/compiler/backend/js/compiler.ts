@@ -394,11 +394,16 @@ export class Compiler {
       }
 
       case "Bool.!=":
+        throw new Error("TODO inequality");
+
       case "Bool.<=":
+        return this.makeBinaryMath("<=", src.args);
       case "Bool.<":
+        return this.makeBinaryMath("<", src.args);
       case "Bool.>=":
+        return this.makeBinaryMath(">=", src.args);
       case "Bool.>":
-        throw new Error("TODO monomorphic comparision");
+        return this.makeBinaryMath(">", src.args);
 
       default:
         return;

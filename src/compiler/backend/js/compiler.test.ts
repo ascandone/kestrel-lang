@@ -2660,7 +2660,9 @@ describe("deriving", () => {
         },
       );
 
-      expect(out).toMatchInlineSnapshot(`"const Eq_Main$T = (x, y) => Eq_Int$Int(x.x, y.x);"`);
+      expect(out).toMatchInlineSnapshot(
+        `"const Eq_Main$T = (x, y) => Eq_Int$Int(x.x, y.x);"`,
+      );
     });
 
     test("single field with var args", () => {

@@ -357,7 +357,7 @@ class ExprEmitter {
             // TODO this may be a bug: that's the id of the polytype. Try to test this case
             const instantiated = expr.$instantiated.get(arity.id);
             if (instantiated === undefined) {
-              throw new CompilationError("unkown instantiated");
+              throw new CompilationError("unkown instantiated: " + glbVarId);
             }
 
             return this.lowerImplicitArg(instantiated.asType(), arity);
