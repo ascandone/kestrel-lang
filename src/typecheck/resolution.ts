@@ -166,9 +166,7 @@ class Resolver {
       return;
     }
 
-    if (this.importedTypes.has(exposing.$resolution.name)) {
-      throw new UnimplementedErr("duplicate name import");
-    }
+    // We can shadow existing imports (but they will then be marked as unused)
     this.importedTypes.set(exposing.$resolution.name, [
       {
         declaration: exposing.$resolution,
@@ -237,9 +235,7 @@ class Resolver {
       return;
     }
 
-    if (this.importedValues.has(exposing.$resolution.binding.name)) {
-      throw new UnimplementedErr("duplicate name value import");
-    }
+    // We can shadow existing imports (but they will then be marked as unused)
     this.importedValues.set(exposing.name, [
       {
         type: "global-variable",
@@ -534,7 +530,6 @@ class Resolver {
   private loadTypeDeclarations(typeDeclarations: TypedTypeDeclaration[]) {
     for (const declaration of typeDeclarations) {
       if (this.importedTypes.has(declaration.name)) {
-        throw new UnimplementedErr("duplicate type (import)");
         this.errors.push({
           description: new err.DuplicateTypeDeclaration(declaration.name),
           range: declaration.range,
@@ -603,6 +598,12 @@ class Resolver {
    */
   private loadValueDeclarations(declarations: TypedDeclaration[]) {
     for (const declaration of declarations) {
+      if (this.importedValues.has(declaration.binding.name)) {
+        this.errors.push({
+          description: new err.ShadowingImport(declaration.binding.name),
+          range: declaration.binding.range,
+        });
+      }
       if (this.moduleValues.has(declaration.binding.name)) {
         this.errors.push({
           description: new err.DuplicateDeclaration(declaration.binding.name),

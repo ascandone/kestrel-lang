@@ -2431,6 +2431,62 @@ describe("modules", () => {
     ]);
   });
 
+  test("allows shadowing imports within an import", () => {
+    const [T1] = typecheck(
+      "pkg",
+      "T1",
+      unsafeParse(`
+        pub let x = 42
+      `),
+      {},
+      [],
+    );
+
+    const [, errs] = tc(
+      `
+      import T1.{x, x}
+      pub let x = 42
+    `,
+      { T1 },
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>(
+      expect.arrayContaining([
+        expect.objectContaining({
+          description: new err.UnusedExposing("x"),
+        }),
+      ]),
+    );
+  });
+
+  test("prevents value imports shadowing", () => {
+    const [T1] = typecheck(
+      "pkg",
+      "T1",
+      unsafeParse(`
+        pub let x = 42
+      `),
+      {},
+      [],
+    );
+
+    const [, errs] = tc(
+      `
+      import T1.{x}
+      pub let x = 42
+    `,
+      { T1 },
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>(
+      expect.arrayContaining([
+        expect.objectContaining({
+          description: new err.ShadowingImport("x"),
+        }),
+      ]),
+    );
+  });
+
   test("does not refer to imported types when qualifying", () => {
     const [T1] = typecheck(
       "pkg",
@@ -2455,6 +2511,60 @@ describe("modules", () => {
     expect(errs).toEqual<ErrorInfo[]>([
       expect.objectContaining({
         description: new err.UnboundVariable("X"),
+      }),
+    ]);
+  });
+
+  test("allows types imports shadowing within import", () => {
+    const [T1] = typecheck(
+      "pkg",
+      "T1",
+      unsafeParse(`
+        pub(..) type T1 { X }
+      `),
+      {},
+      [],
+    );
+
+    const [, errs] = tc(
+      `
+      import T1.{T1, T1}
+      extern pub let t: T1
+    `,
+      { T1 },
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new err.UnusedExposing("T1"),
+      }),
+    ]);
+  });
+
+  test("prevents types imports shadowing", () => {
+    const [T1] = typecheck(
+      "pkg",
+      "T1",
+      unsafeParse(`
+        pub(..) type T1 { X }
+      `),
+      {},
+      [],
+    );
+
+    const [, errs] = tc(
+      `
+      import T1.{T1(..)}
+      type T1 {}
+
+      extern pub let t: T1
+    `,
+      { T1 },
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new err.DuplicateTypeDeclaration("T1"),
       }),
     ]);
   });
