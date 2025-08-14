@@ -54,7 +54,7 @@ export class Compiler {
   private getAdt(ident: ir.QualifiedIdentifier) {
     const adt = this.knownAdts.get(ident.toString());
     if (adt === undefined) {
-      throw new CompilationError("unkown adt");
+      throw new CompilationError("unknown adt: " + ident);
     }
     return adt;
   }
@@ -1218,6 +1218,8 @@ export function compileProject(
     throw new Error("Entrypoint needs a value called `main`.");
   }
 
+  const compiler = new Compiler();
+
   const visited = new Set<string>();
 
   const buf: string[] = [];
@@ -1244,12 +1246,13 @@ export function compileProject(
     }
 
     const ir = lowerProgram(module);
-    const out = compile(ir);
-
-    buf.push(out);
+    compiler.compile(ir);
   }
 
   visit(entrypoint.module);
+
+  const out = compiler.generate();
+  buf.push(out);
 
   const entryPointMod = common.sanitizeNamespace(entrypoint.module);
   buf.push(`${entryPointMod}$main.exec();\n`);
