@@ -8,7 +8,7 @@ class ExprEmitter {
     private readonly currentDecl: ir.QualifiedIdentifier,
     private readonly knownImplicitArities: Map<string, ir.ImplicitParam[]>,
     private readonly scheme: TypeScheme,
-    private readonly getDependency: (ns: string) => ir.Program,
+    private readonly getDependency: (ns: string) => undefined | ir.Program,
   ) {}
 
   private readonly uniques = new Map<string, number>();
@@ -441,7 +441,8 @@ export function lowerProgram(
   module: typed.TypedModule,
   /** TODO look up in deps instead */
   knownImplicitArities = new Map<string, ir.ImplicitParam[]>(),
-  getDependency: (ns: string) => ir.Program,
+  /** TODO make getDependency's return not optional */
+  getDependency: (ns: string) => undefined | ir.Program,
 ): ir.Program {
   const namespace = module.moduleInterface.ns;
   const package_ = module.moduleInterface.package_;

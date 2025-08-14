@@ -631,7 +631,7 @@ function getIR(src: string) {
   expect(errors.filter((e) => e.description.severity === "error")).toEqual([]);
   return lowerProgram(tc, new Map(), () => {
     // TODO fix this
-    return undefined!;
+    return undefined;
   });
 }
 
@@ -645,7 +645,7 @@ function dumpIR(src: string): string {
   const typed = typecheckSource_("pkg", "Main", src, {});
   const ir = lowerProgram(typed, new Map(), () => {
     // TODO fix this
-    return undefined!;
+    return undefined;
   });
   return formatIR(ir);
 }

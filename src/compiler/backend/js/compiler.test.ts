@@ -3125,7 +3125,7 @@ function compileSrc(
   const program = typecheckSource_(package_, ns, src, deps);
   const out = compile(
     lowerProgram(program, new Map(), () => {
-      return undefined!;
+      return undefined;
     }),
     {
       allowDeriving,

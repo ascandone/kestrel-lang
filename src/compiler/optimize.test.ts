@@ -264,7 +264,10 @@ const mkIdent = (
 
 function applyRule(rule: optimize.Rule, src: string) {
   const out = typecheckSource_("pkg", "Main", src);
-  const irProgram = lowerProgram(out);
+  const irProgram = lowerProgram(out, new Map(), () => {
+    // TODO fix this
+    return undefined;
+  });
   const newProgram = optimize.applyRule(rule, irProgram);
   return formatIR(newProgram);
 }
