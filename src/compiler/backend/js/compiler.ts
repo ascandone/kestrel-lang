@@ -1216,11 +1216,13 @@ export function compileProject(
   }
 
   const proj = new ProjectLowering(typedProject);
+  proj.visit(entrypoint.module);
 
   const compiler = new Compiler();
 
   const buf: string[] = [];
-  for (const irProgram of proj.visit(entrypoint.module)) {
+
+  for (const irProgram of proj.sortedVisited) {
     const extern = externs[irProgram.namespace];
     if (extern !== undefined) {
       buf.push(extern);

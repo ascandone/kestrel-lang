@@ -1,12 +1,17 @@
 import { test, expect, describe, beforeEach } from "vitest";
-import { CORE_PACKAGE, Deps, resetTraitsRegistry } from "../../../typecheck";
+import {
+  CORE_PACKAGE,
+  Deps,
+  TypedModule,
+  resetTraitsRegistry,
+} from "../../../typecheck";
 import { Compiler, compile } from "./compiler";
 import {
   TraitImpl,
   defaultTraitImpls,
 } from "../../../typecheck/defaultImports";
 import { TVar } from "../../../type";
-import { lowerProgram } from "../../lower";
+import { ProjectLowering, lowerProgram } from "../../lower";
 import {
   typecheckSource,
   typecheckSource_ as typecheckSource_,
@@ -3118,21 +3123,30 @@ function compileSrc(
       : [...defaultTraitImpls, ...traitImpl],
   );
   const program = typecheckSource_(package_, ns, src, deps);
-  const out = compile(lowerProgram(program), {
-    allowDeriving,
-  });
+  const out = compile(
+    lowerProgram(program, new Map(), () => {
+      return undefined!;
+    }),
+    {
+      allowDeriving,
+    },
+  );
   return out;
 }
 
 class ProjectCompiler {
   private readonly compiler = new Compiler();
 
+  private readonly typedProject: Record<string, TypedModule> = {};
   private readonly deps: Deps = {};
+
+  private readonly projectLower = new ProjectLowering(this.typedProject);
 
   compile(package_: string, ns: string, src: string) {
     const program = typecheckSource_(package_, ns, src, this.deps);
+    this.typedProject[ns] = program;
     this.deps[ns] = program.moduleInterface;
-    const ir = lowerProgram(program);
+    const ir = this.projectLower.visit(ns);
     this.compiler.compile(ir);
     return this.compiler.generate();
   }

@@ -4,9 +4,11 @@ import * as ir from "./ir";
 
 class ExprEmitter {
   constructor(
+    private readonly namespace: string,
     private readonly currentDecl: ir.QualifiedIdentifier,
     private readonly knownImplicitArities: Map<string, ir.ImplicitParam[]>,
     private readonly scheme: TypeScheme,
+    private readonly getDependency: (ns: string) => ir.Program,
   ) {}
 
   private readonly uniques = new Map<string, number>();
@@ -327,6 +329,10 @@ class ExprEmitter {
       }
 
       case "constructor":
+        if (resolution.namespace !== this.namespace) {
+          this.getDependency(resolution.namespace);
+        }
+
         return {
           type: "constructor",
           typeName: new ir.QualifiedIdentifier(
@@ -338,6 +344,10 @@ class ExprEmitter {
         };
 
       case "global-variable": {
+        if (resolution.namespace !== this.namespace) {
+          this.getDependency(resolution.namespace);
+        }
+
         const glbVarId = new ir.QualifiedIdentifier(
           resolution.package_,
           resolution.namespace,
@@ -429,7 +439,9 @@ class ExprEmitter {
 // TODO we need to know the strongly connected components
 export function lowerProgram(
   module: typed.TypedModule,
+  /** TODO look up in deps instead */
   knownImplicitArities = new Map<string, ir.ImplicitParam[]>(),
+  getDependency: (ns: string) => ir.Program,
 ): ir.Program {
   const namespace = module.moduleInterface.ns;
   const package_ = module.moduleInterface.package_;
@@ -484,13 +496,20 @@ export function lowerProgram(
       knownImplicitArities.set(ident.toString(), implArity);
 
       if (decl.extern) {
+        visitReferencedTypes(decl.binding.$type.asType(), (ns) => {
+          if (ns !== namespace) {
+            getDependency(ns);
+          }
+        });
         return [];
       }
 
       const emitter = new ExprEmitter(
+        namespace,
         ident,
         knownImplicitArities,
         decl.$scheme,
+        getDependency,
       );
 
       return [
@@ -606,30 +625,58 @@ function makeTraitsScheme(
   return out;
 }
 
+/** we can assume proj modules don't have cycle deps (because of the typechecking phase) */
 export class ProjectLowering {
-  private readonly visited = new Set<string>();
+  public readonly sortedVisited: ir.Program[] = [];
+  private readonly visited = new Map<string, ir.Program>();
   private readonly knownImplicitArities = new Map<string, ir.ImplicitParam[]>();
 
   constructor(
     private readonly typedProject: Record<string, typed.TypedModule>,
   ) {}
 
-  *visit(ns: string): Generator<ir.Program> {
-    if (this.visited.has(ns)) {
-      return;
+  visit(ns: string): ir.Program {
+    const cached = this.visited.get(ns);
+    if (cached !== undefined) {
+      return cached;
     }
 
     const module = this.typedProject[ns];
     if (module === undefined) {
       throw new CompilationError(`Could not find module '${ns}'`);
     }
-    const lowered = lowerProgram(module, this.knownImplicitArities);
-    this.visited.add(ns);
 
-    for (const import_ of module.imports) {
-      yield* this.visit(import_.ns);
-    }
+    const lowered = lowerProgram(
+      module,
+      this.knownImplicitArities,
+      (dependencyNs) => this.visit(dependencyNs),
+    );
 
-    yield lowered;
+    this.sortedVisited.push(lowered);
+    this.visited.set(ns, lowered);
+
+    return lowered;
+  }
+}
+
+function visitReferencedTypes(t: typed.Type, visit: (ns: string) => void) {
+  const r = resolveType(t);
+  switch (r.type) {
+    case "unbound":
+      return;
+
+    case "named":
+      visit(r.module);
+      for (const arg of r.args) {
+        visitReferencedTypes(arg, visit);
+      }
+      return;
+
+    case "fn":
+      for (const arg of r.args) {
+        visitReferencedTypes(arg, visit);
+      }
+      visitReferencedTypes(r.return, visit);
+      return;
   }
 }

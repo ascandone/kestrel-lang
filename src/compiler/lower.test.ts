@@ -629,7 +629,10 @@ function getIR(src: string) {
   const untypedMod = unsafeParse(src);
   const [tc, errors] = typecheck("pkg", "Main", untypedMod, {}, []);
   expect(errors.filter((e) => e.description.severity === "error")).toEqual([]);
-  return lowerProgram(tc);
+  return lowerProgram(tc, new Map(), () => {
+    // TODO fix this
+    return undefined!;
+  });
 }
 
 function toSexpr(src: string) {
@@ -639,9 +642,10 @@ function toSexpr(src: string) {
 
 function dumpIR(src: string): string {
   resetTraitsRegistry();
-  // const untyped = unsafeParse(src);
-  const typed = typecheckSource_("pkg", "Main", src);
-  // expect(errs.filter((e) => e.description.severity === "error")).toEqual([]);
-  const ir = lowerProgram(typed);
+  const typed = typecheckSource_("pkg", "Main", src, {});
+  const ir = lowerProgram(typed, new Map(), () => {
+    // TODO fix this
+    return undefined!;
+  });
   return formatIR(ir);
 }
