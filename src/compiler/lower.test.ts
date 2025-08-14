@@ -447,6 +447,27 @@ describe("traits", () => {
     `);
   });
 
+  test("handles recursive defs", () => {
+    const out = dumpIR(`
+      extern let show: Fn(a) -> String where a: Show
+
+      pub let rec_val = fn unresolved, unresolved2 {
+        let _ = show(unresolved);
+        let _ = show(unresolved2);
+        rec_val(unresolved, unresolved2)
+      }
+    `);
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.rec_val[a:Show, b:Show] = fn unresolved#0, unresolved2#0 {
+        match show[a:Show](unresolved#0) {
+          _#0 => match show[b:Show](unresolved2#0) {
+            _#1 => rec_val[a:Show, b:Show](unresolved#0, unresolved2#0),
+          },
+        }
+      }"
+    `);
+  });
+
   test("make sure we don't show duplicates", () => {
     const out = dumpIR(`
       extern let show: Fn(a) -> a where a: Show

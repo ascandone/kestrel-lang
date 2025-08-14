@@ -353,6 +353,14 @@ class ExprEmitter {
           type: "global",
           name: glbVarId,
           implicitly: implicitArity.flatMap((arity): ir.ImplicitTraitArg[] => {
+            /**
+             * the recursive binding doesn't get instantiated, so we'll treat that differently.
+             * Luckily, we know what the binding's arity is already
+             */
+            if (this.currentDecl.equals(glbVarId)) {
+              return [arity];
+            }
+
             // TODO  we need to check whether arity.id was resolved as a concrete type
             // TODO this may be a bug: that's the id of the polytype. Try to test this case
             const instantiated = expr.$instantiated.get(arity.id);
