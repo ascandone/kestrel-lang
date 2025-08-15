@@ -25,7 +25,6 @@ import {
   Type,
   unify,
   UnifyError,
-  generalizeAsScheme,
   TypeScheme,
   TraitImplDependency,
   TVarResolution,
@@ -99,7 +98,8 @@ class Typechecker {
 
   private ambiguousTypeVarErrorsEmitted = new Set<number>();
 
-  private currentDeclaration: Type | undefined;
+  private currentRecGroup: TypedDeclaration[] = [];
+  private currentDeclarationType?: Type;
 
   private scheduledAmbiguousVarChecks: ScheduledAmbiguousVarCheck[] = [];
 
@@ -248,10 +248,11 @@ class Typechecker {
     }
 
     for (const group of mutuallyRecursiveBindings) {
+      this.currentRecGroup = group;
       // TODO something's not right here (we should generalize the whole group after the typecheck pass)
       for (const decl of group) {
-        this.currentDeclaration = decl.binding.$type.asType();
-        this.typecheckAnnotatedDecl(decl);
+        this.currentDeclarationType = decl.binding.$type.asType();
+        this.typecheckDeclaration(decl);
 
         for (const check of this.scheduledAmbiguousVarChecks) {
           this.checkInstantiatedVars(decl.$scheme, check);
@@ -454,7 +455,7 @@ class Typechecker {
     }
   }
 
-  private typecheckAnnotatedDecl(decl: TypedDeclaration) {
+  private typecheckDeclaration(decl: TypedDeclaration) {
     if (decl.typeHint !== undefined) {
       const hint = this.hydrateTypeAst(decl.typeHint.mono, {
         type: "signature",
@@ -476,8 +477,6 @@ class Typechecker {
       decl.binding.$type.asType(),
       decl.value.$type.asType(),
     );
-
-    decl.$scheme = generalizeAsScheme(decl.value.$type.asType());
   }
 
   private typecheckPattern(
@@ -718,15 +717,12 @@ class Typechecker {
         this.unifyExpr(
           ast,
           ast.$type.asType(),
-          resolutionToType(ast, ast.$resolution),
+          resolutionToType(ast, ast.$resolution, this.currentRecGroup),
         );
 
-        if (this.currentDeclaration === undefined) {
-          throw new Error("[unreachable] no current declaration");
-        }
         this.scheduledAmbiguousVarChecks.push({
           instantiatedVarNode: ast,
-          currentDeclaration: this.currentDeclaration,
+          currentDeclaration: this.currentDeclarationType!,
         });
 
         return;
@@ -1097,6 +1093,7 @@ function unifyErr(node: RangeMeta, e: UnifyError): ErrorInfo {
 function resolutionToType(
   ast: TypedExpr & { type: "identifier" },
   resolution: IdentifierResolution,
+  currentDeclarations: TypedDeclaration[],
 ): Type {
   switch (resolution.type) {
     case "local-variable":
@@ -1105,13 +1102,16 @@ function resolutionToType(
     case "global-variable": {
       const instantiator = new Instantiator();
 
-      const type = instantiator.instantiateFromScheme(
+      if (currentDeclarations.includes(resolution.declaration)) {
+        return resolution.declaration.binding.$type.asType();
+      }
+
+      const type = instantiator.instantiate(
         resolution.declaration.binding.$type.asType(),
-        resolution.declaration.$scheme,
       );
 
       // TODO we should schedule here the ambiguous check
-      ast.$instantiated = instantiator.instantiated;
+      ast.$instantiated = instantiator.instantiatedRigid;
 
       return type;
     }
@@ -1191,3 +1191,78 @@ function Task(arg: Type): ConcreteType {
 }
 
 export const DEFAULT_MAIN_TYPE = Task(Unit);
+
+type TraitDependencies = {
+  rigid: Set<string>;
+  flexible: Set<number>;
+};
+
+/**
+ * e.g.
+ * ```kestrel
+ * impl Show for T<x, y> where y: Show { .. }
+ * ```
+ * is represented as the `Set([1])` set (where the elems are the index of type params)
+ */
+function getTraitDependencies(
+  type: Type,
+  namedDependency: (
+    package_: string,
+    module: string,
+    named: string,
+  ) => Set<number>,
+): TraitDependencies | undefined {
+  let deps: TraitDependencies | undefined = {
+    flexible: new Set(),
+    rigid: new Set(),
+  };
+
+  function recur(type: Type) {
+    if (deps === undefined) {
+      return;
+    }
+
+    const resolved = resolveType(type);
+
+    switch (resolved.type) {
+      case "named": {
+        const deps = namedDependency(
+          resolved.package_,
+          resolved.module,
+          resolved.name,
+        );
+
+        for (const paramIndex of deps) {
+          const dependency = resolved.args[paramIndex];
+          if (dependency === undefined) {
+            throw new Error(
+              "[unreachable] bad index in dependency representation",
+            );
+          }
+
+          recur(dependency);
+        }
+
+        return;
+      }
+
+      case "fn":
+        // Fn never derives
+        deps = undefined;
+        return;
+
+      case "rigid-var":
+        deps.rigid.add(resolved.name);
+        return;
+
+      case "unbound":
+        // TODO maybe we need to check if trait is present here?
+        // resolved.traits;
+        throw new Error("TODO no idea what this means");
+    }
+  }
+
+  recur(type);
+
+  return deps;
+}

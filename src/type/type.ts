@@ -443,12 +443,16 @@ export function instantiate(mono: Type) {
 
 // TODO make this class private
 export class Instantiator {
-  public readonly instantiated = new Map<string, TVar>();
+  // TODO change this to Type instaead
+  public readonly instantiatedRigid = new Map<string, TVar>();
+  public readonly instantiatedFlex = new Map<number, Type>();
 
-  public instantiate(mono: Type): Type {
+  public instantiate(mono_: Type): Type {
+    const mono = resolveType(mono_);
+
     switch (mono.type) {
       case "rigid-var":
-        return getOrInsertDefault(this.instantiated, mono.name, () => {
+        return getOrInsertDefault(this.instantiatedRigid, mono.name, () => {
           return TVar.fresh();
         }).asType();
 
@@ -465,9 +469,11 @@ export class Instantiator {
           return: this.instantiate(mono.return),
         };
 
-      case "var":
+      case "unbound":
         // TODO double check
-        return TVar.fresh().asType();
+        return getOrInsertDefault(this.instantiatedFlex, mono.id, () => {
+          return TVar.fresh().asType();
+        });
     }
   }
 
@@ -475,7 +481,7 @@ export class Instantiator {
   instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
     switch (mono.type) {
       case "rigid-var": {
-        const i = this.instantiated.get(mono.name);
+        const i = this.instantiatedRigid.get(mono.name);
         if (i !== undefined) {
           return i.asType();
         }
@@ -483,7 +489,7 @@ export class Instantiator {
         // TODO pass traits
         // [...resolved.traits]
         const t = TVar.fresh();
-        this.instantiated.set(mono.name, t);
+        this.instantiatedRigid.set(mono.name, t);
         return t.asType();
       }
 
@@ -512,13 +518,13 @@ export class Instantiator {
               return mono;
             }
 
-            const i = this.instantiated.get(boundId);
+            const i = this.instantiatedRigid.get(boundId);
             if (i !== undefined) {
               return i.asType();
             }
 
             const t = TVar.fresh([...resolved.traits]);
-            this.instantiated.set(boundId, t);
+            this.instantiatedRigid.set(boundId, t);
             return t.asType();
           }
           case "bound":

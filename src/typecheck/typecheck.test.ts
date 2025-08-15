@@ -390,7 +390,7 @@ describe("basic constructs inference", () => {
     const [, errs] = tc(
       `
     pub let a = b
-    pub let b = fn { a }
+    pub let b = fn { a() }
   `,
     );
 
