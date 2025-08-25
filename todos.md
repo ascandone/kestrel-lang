@@ -1,6 +1,7 @@
 ## Todos
 
 - refactor: remove the stupid .asType() thing
+- refactor: compare tvars by identity instead of by id
 - feat: improve implicit imports repr
   - no dummy ranges
   - allow duplicate imports if the first one is the implicit
