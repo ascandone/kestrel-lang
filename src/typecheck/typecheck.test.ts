@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { Position, Range, Import, unsafeParse } from "../parser";
 import {
+  DEFAULT_MAIN_TYPE,
   Deps as IDeps,
-  resetTraitsRegistry,
   typecheck,
   typecheckProject,
   TypedModule,
@@ -126,16 +126,15 @@ describe("basic constructs inference", () => {
   });
 
   test("application args should be typechecked", () => {
-    const [, errors] = tc(
-      `
+    const src = `
     type T { C }
     type Ret {}
 
     extern pub let f: Fn(T, T) -> Ret
     pub let x = f(42, C)
-  `,
-    );
+  `;
 
+    const [, errors] = tc(src);
     expect(errors).toHaveLength(1);
     expect(errors[0]?.description).toBeInstanceOf(err.TypeMismatch);
   });
@@ -391,7 +390,7 @@ describe("basic constructs inference", () => {
     const [, errs] = tc(
       `
     pub let a = b
-    pub let b = fn { a }
+    pub let b = fn { a() }
   `,
     );
 
@@ -589,9 +588,12 @@ describe("type hints", () => {
     });
   });
 
-  test.todo("vars type hints should be generalized", () => {
-    const [types, errs] = tc("let x: a = 0");
+  test("vars type hints should be generalized", () => {
+    const [types, errs] = tc("pub let x: a = 0");
+
     expect(errs).toHaveLength(1);
+    expect(errs[0]!.description).toBeInstanceOf(err.TypeMismatch);
+
     expect(types).toEqual({
       x: "a",
     });
@@ -626,7 +628,9 @@ describe("type hints", () => {
 
   test("unknown types are ignored", () => {
     const [types, errs] = tc("pub let x: NotFound = 1");
+
     expect(errs).toHaveLength(1);
+
     expect(errs[0]!.description).toBeInstanceOf(err.UnboundType);
     expect(types).toEqual({
       x: "Int",
@@ -643,11 +647,11 @@ describe("traits", () => {
         pub let x = show(42) // note that 'Int' doesn't implement 'Show' in this test
       `,
     );
-    expect(errs).toHaveLength(1);
     expect(types).toEqual({
       show: "Fn(a) -> String where a: Show",
       x: "String",
     });
+    expect(errs).toHaveLength(1);
   });
 
   test("succeeds to typecheck when a required trait is not implemented", () => {
@@ -1014,7 +1018,7 @@ describe("traits", () => {
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toEqual(
-      new err.AmbiguousTypeVar("Default", "Fn(b) -> a where b: Default"),
+      new err.AmbiguousTypeVar("Default", "Fn(a) -> b where a: Default"),
     );
   });
 
@@ -3054,11 +3058,18 @@ function tcProgram(
   traitImpls: TraitImpl[] = [],
 ) {
   const parsedProgram = unsafeParse(src);
-  resetTraitsRegistry(traitImpls);
   const deps_: IDeps = Object.fromEntries(
     Object.entries(deps).map(([k, v]) => [k, v.moduleInterface]),
   );
-  return typecheck("pkg", ns, parsedProgram, deps_, prelude);
+  return typecheck(
+    "pkg",
+    ns,
+    parsedProgram,
+    deps_,
+    prelude,
+    DEFAULT_MAIN_TYPE,
+    traitImpls,
+  );
 }
 
 function tc(
@@ -3076,7 +3087,7 @@ function programTypes(typed: TypedModule): Record<string, string> {
     .filter((t) => t.pub)
     .map((decl) => [
       decl.binding.name,
-      typeToString(decl.binding.$type.asType()),
+      typeToString(decl.binding.$type.asType(), decl.$traitsConstraints),
     ]);
 
   return Object.fromEntries(kvs);

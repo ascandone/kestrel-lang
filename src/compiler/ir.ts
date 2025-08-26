@@ -121,6 +121,8 @@ export type Adt = {
   name: QualifiedIdentifier;
   constructors: AdtConstructor[];
   params: string[];
+
+  traits: Map<string, Set<string>[]>;
 };
 
 export type Struct = {

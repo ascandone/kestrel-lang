@@ -6,30 +6,17 @@ import {
 } from "../../../typecheck";
 import * as common from "./common";
 import * as ir from "../../ir";
-import { TVar } from "../../../type";
 
 function shouldDeriveTrait(
   trait: string,
-  ident: ir.QualifiedIdentifier,
-  params: string[],
   allowDeriving: string[] | undefined,
+  traits: Map<string, Set<string>[]>,
 ): boolean {
   if (allowDeriving !== undefined && !allowDeriving.includes(trait)) {
     return false;
   }
 
-  const deps = TVar.typeImplementsTrait(
-    {
-      type: "named",
-      package_: ident.package_,
-      module: ident.namespace,
-      name: ident.name,
-      args: params.map(() => TVar.fresh().asType()),
-    },
-    trait,
-  );
-
-  return deps !== undefined;
+  return traits.has(trait);
 }
 
 export function deriveEqAdt(adt: ir.Adt): t.Expression {
@@ -404,7 +391,7 @@ export function deriveAdt(adt: ir.Adt, allowDeriving: string[] | undefined) {
   if (
     // Bool equality is implemented inside core
     adt.name.name !== "Bool" &&
-    shouldDeriveTrait("Eq", adt.name, adt.params, allowDeriving)
+    shouldDeriveTrait("Eq", allowDeriving, adt.traits)
   ) {
     buf.push({
       type: "VariableDeclaration",
@@ -420,28 +407,28 @@ export function deriveAdt(adt: ir.Adt, allowDeriving: string[] | undefined) {
         },
       ],
     });
+  }
 
-    if (
-      // Bool and List show are implemented inside core
-      adt.name.name !== "Bool" &&
-      adt.name.name !== "List" &&
-      shouldDeriveTrait("Show", adt.name, adt.params, allowDeriving)
-    ) {
-      buf.push({
-        type: "VariableDeclaration",
-        kind: "const",
-        declarations: [
-          {
-            type: "VariableDeclarator",
-            id: {
-              type: "Identifier",
-              name: `Show_${common.sanitizeNamespace(adt.name.namespace)}$${adt.name.name}`,
-            },
-            init: deriveShowAdt(adt),
+  if (
+    // Bool and List show are implemented inside core
+    adt.name.name !== "Bool" &&
+    adt.name.name !== "List" &&
+    shouldDeriveTrait("Show", allowDeriving, adt.traits)
+  ) {
+    buf.push({
+      type: "VariableDeclaration",
+      kind: "const",
+      declarations: [
+        {
+          type: "VariableDeclarator",
+          id: {
+            type: "Identifier",
+            name: `Show_${common.sanitizeNamespace(adt.name.namespace)}$${adt.name.name}`,
           },
-        ],
-      });
-    }
+          init: deriveShowAdt(adt),
+        },
+      ],
+    });
   }
 
   return buf;
@@ -449,12 +436,18 @@ export function deriveAdt(adt: ir.Adt, allowDeriving: string[] | undefined) {
 
 export function deriveStruct(
   decl: ir.Struct,
-  params: string[],
   allowDeriving: string[] | undefined,
 ) {
   const buf: t.Statement[] = [];
 
-  if (shouldDeriveTrait("Eq", decl.name, params, allowDeriving)) {
+  if (
+    shouldDeriveTrait(
+      "Eq",
+
+      allowDeriving,
+      decl.declaration.$traits,
+    )
+  ) {
     buf.push({
       type: "VariableDeclaration",
       kind: "const",
@@ -471,7 +464,7 @@ export function deriveStruct(
     });
   }
 
-  if (shouldDeriveTrait("Show", decl.name, params, allowDeriving)) {
+  if (shouldDeriveTrait("Show", allowDeriving, decl.declaration.$traits)) {
     buf.push({
       type: "VariableDeclaration",
       kind: "const",

@@ -48,15 +48,19 @@ export class Annotator {
   ): TypedTypeDeclaration {
     switch (typeDecl.type) {
       case "extern":
-        return typeDecl;
+        return {
+          $traits: new Map(),
+          ...typeDecl,
+        };
 
       case "adt":
         return {
           ...typeDecl,
+          $traits: new Map(),
           variants: typeDecl.variants.map((variant) => ({
             ...variant,
             $scheme: {},
-            $type: TVar.fresh(),
+            $type: TVar.fresh().asType(),
             args: variant.args.map((arg) => this.annotateTypeAst(arg)),
           })),
         };
@@ -64,13 +68,12 @@ export class Annotator {
       case "struct":
         return {
           ...typeDecl,
-          $scheme: {},
-          $type: TVar.fresh(),
+          $traits: new Map(),
+          $type: TVar.fresh().asType(),
           fields: typeDecl.fields.map(
             (untypedField): TypedStructDeclarationField => ({
               ...untypedField,
-              $type: TVar.fresh(),
-              $scheme: {},
+              $type: TVar.fresh().asType(),
               typeAst: this.annotateTypeAst(untypedField.typeAst),
             }),
           ),
@@ -122,14 +125,14 @@ export class Annotator {
     if (decl.extern) {
       tDecl = {
         ...decl,
-        $scheme: {},
+        $traitsConstraints: {},
         binding,
         typeHint: undefined!,
       };
     } else {
       tDecl = {
         ...decl,
-        $scheme: {},
+        $traitsConstraints: {},
         binding,
         typeHint: undefined!,
         value: this.annotateExpr(decl.value),

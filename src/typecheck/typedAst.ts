@@ -1,5 +1,5 @@
 import * as ast from "../parser";
-import { TVar, TypeScheme } from "../type";
+import { TVar, Type, RigidVarsCtx } from "../type";
 
 // -- Common
 
@@ -83,9 +83,11 @@ export type TypedStructField = ast.RangeMeta & {
 };
 
 assertSubtype<ast.StructDeclarationField, TypedStructDeclarationField>;
-export type TypedStructDeclarationField = (PolyTypeMeta & ast.RangeMeta) & {
+export type TypedStructDeclarationField = ast.RangeMeta & {
   name: string;
   typeAst: TypedTypeAst;
+
+  $type: Type;
 };
 
 assertSubtype<ast.Expr, TypedExpr>;
@@ -116,7 +118,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         namespace?: string;
         name: string;
         $resolution: IdentifierResolution | undefined;
-        $instantiated: Map<string, TVar>;
+        $instantiated: Map<string, Type>;
       }
     | {
         type: "fn";
@@ -179,9 +181,11 @@ export type TypedImport = ast.RangeMeta & {
 };
 
 assertSubtype<ast.TypeVariant, TypedTypeVariant>;
-export type TypedTypeVariant = (PolyTypeMeta & ast.RangeMeta) & {
+export type TypedTypeVariant = ast.RangeMeta & {
   name: string;
   args: TypedTypeAst[];
+
+  $type: Type;
 };
 
 assertSubtype<ast.Declaration, TypedDeclaration>;
@@ -189,7 +193,8 @@ export type TypedDeclaration = ast.RangeMeta & {
   pub: boolean;
   binding: TypedBinding;
   docComment?: string;
-  $scheme: TypeScheme;
+
+  $traitsConstraints: RigidVarsCtx;
 } & (
     | {
         inline: boolean;
@@ -208,17 +213,21 @@ export type TypedTypeDeclaration = ast.RangeMeta & {
   name: string;
   params: Array<{ name: string } & ast.RangeMeta>;
   docComment?: string;
+
+  $traits: Map<string, Set<string>[]>;
 } & (
     | {
         type: "adt";
         variants: TypedTypeVariant[];
         pub: boolean | "..";
       }
-    | ({
+    | {
         type: "struct";
         fields: TypedStructDeclarationField[];
         pub: boolean | "..";
-      } & PolyTypeMeta)
+
+        $type: Type;
+      }
     | {
         type: "extern";
         pub: boolean;
@@ -252,7 +261,6 @@ export type ModuleInterface = {
 
 function assertSubtype<T1, _T2 extends T1>() {}
 export type Identifier = TypedExpr & { type: "identifier" };
-export type PolyTypeMeta = { $scheme: TypeScheme } & TypeMeta;
 
 export type TypeResolution = {
   declaration: TypedTypeDeclaration;

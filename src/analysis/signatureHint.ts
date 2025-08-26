@@ -1,5 +1,5 @@
 import { Position } from "../parser";
-import { Type, TypeScheme } from "../type";
+import { Type } from "../type";
 import { Finder } from "../typecheck/astLookup";
 import { TypedExpr, TypedModule } from "../typecheck/typedAst";
 import { statementByOffset } from "./common";
@@ -8,7 +8,6 @@ export type FunctionSignatureHint = {
   name: string;
   type: Type;
   docComment?: string;
-  scheme?: TypeScheme;
 };
 
 export function functionSignatureHint(
@@ -67,8 +66,7 @@ function getSignature(
       const { variant } = expr.caller.$resolution;
       return {
         name: variant.name,
-        type: variant.$type.asType(),
-        scheme: variant.$scheme,
+        type: variant.$type,
       };
     }
   }

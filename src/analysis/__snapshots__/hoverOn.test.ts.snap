@@ -18,7 +18,7 @@ type constructor
 
 exports[`snapshot when hovering on a local fn 1`] = `
 "\`\`\`
-closure: Fn(b) -> a
+closure: Fn(a) -> b
 \`\`\`
 local declaration
 "

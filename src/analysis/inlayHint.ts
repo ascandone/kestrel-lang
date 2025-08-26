@@ -1,5 +1,5 @@
 import { Position, RangeMeta } from "../parser";
-import { TypeScheme, typeToString } from "../type";
+import { RigidVarsCtx, typeToString } from "../type";
 import { TypedExpr, TypedModule } from "../typecheck/typedAst";
 import * as visitor from "../typecheck/visitor";
 
@@ -11,7 +11,7 @@ export type InlayHint = {
 
 class InlayHintBuf implements visitor.VisitOptions {
   public inlayHints: InlayHint[] = [];
-  constructor(private readonly scheme: TypeScheme) {}
+  constructor(private readonly ctx: RigidVarsCtx) {}
 
   onApplication(ast: RangeMeta & TypedExpr & { type: "application" }): void {
     const resolved = ast.caller.$type.resolve();
@@ -33,14 +33,14 @@ class InlayHintBuf implements visitor.VisitOptions {
       if (isArgOnNewline) {
         if (!argWasPipe) {
           this.inlayHints.push({
-            label: typeToString(arg.$type.asType(), this.scheme),
+            label: typeToString(arg.$type.asType(), this.ctx),
             positition: arg.range.end,
             paddingLeft: true,
           });
         }
 
         this.inlayHints.push({
-          label: typeToString(resolved.value.return, this.scheme),
+          label: typeToString(resolved.value.return, this.ctx),
           positition: ast.range.end,
           paddingLeft: true,
         });
@@ -54,7 +54,7 @@ export function getInlayHints(module: TypedModule): InlayHint[] {
     if (d.extern) {
       return [];
     }
-    const buf = new InlayHintBuf(d.$scheme);
+    const buf = new InlayHintBuf({});
     visitor.visitExpr(d.value, buf);
     return buf.inlayHints;
   });

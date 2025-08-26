@@ -1,7 +1,7 @@
-import { describe, test, expect, beforeEach } from "vitest";
+import { describe, test, expect } from "vitest";
 import { getInlayHints, InlayHint } from "./inlayHint";
 import { unsafeParse } from "../parser";
-import { resetTraitsRegistry, typecheck } from "../typecheck/typecheck";
+import { typecheck } from "../typecheck/typecheck";
 import { rangeOf } from "./__test__/utils";
 
 test("no inlay hints on empty program", () => {
@@ -187,12 +187,12 @@ describe("pipe inlay hints", () => {
     expect(hints).toHaveLength(2);
     expect(hints).toEqual<InlayHint[]>([
       {
-        label: "b",
+        label: "a",
         positition: rangeOf(src, "arg2", 2).end,
         paddingLeft: true,
       },
       {
-        label: "b",
+        label: "a",
         positition: rangeOf(src, "|> identity()").end,
         paddingLeft: true,
       },
@@ -206,7 +206,3 @@ function getInlayHintsOf(src: string): InlayHint[] {
 
   return getInlayHints(typed);
 }
-
-beforeEach(() => {
-  resetTraitsRegistry();
-});

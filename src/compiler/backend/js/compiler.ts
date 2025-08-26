@@ -96,11 +96,7 @@ export class Compiler {
     for (const struct of program.structs) {
       this.knownStructs.set(struct.name.toString(), struct);
       this.statementsBuf.push(
-        ...deriving.deriveStruct(
-          struct,
-          struct.params,
-          this.options.allowDeriving,
-        ),
+        ...deriving.deriveStruct(struct, this.options.allowDeriving),
       );
     }
 

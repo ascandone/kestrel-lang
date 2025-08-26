@@ -1,6 +1,10 @@
-import { PolyTypeMeta } from "../typecheck/typedAst";
+import { DefaultMap } from "../data/defaultMap";
 
 export type ConcreteType =
+  | {
+      type: "rigid-var";
+      name: string;
+    }
   | {
       type: "fn";
       args: Type[];
@@ -24,7 +28,7 @@ export type Type =
 export type UnboundType = {
   type: "unbound";
   id: number;
-  traits: string[];
+  traits: Set<string>;
 };
 
 export type TypeResolution = ConcreteType | UnboundType;
@@ -33,6 +37,7 @@ export function resolveType(t: Type): TypeResolution {
   switch (t.type) {
     case "fn":
     case "named":
+    case "rigid-var":
       return t;
 
     case "var": {
@@ -49,7 +54,7 @@ export function resolveType(t: Type): TypeResolution {
 }
 
 export type TVarResolution =
-  | { type: "unbound"; id: number; traits: string[] }
+  | { type: "unbound"; id: number; traits: Set<string> }
   | { type: "bound"; value: ConcreteType };
 
 export type UnifyError =
@@ -57,116 +62,41 @@ export type UnifyError =
   | { type: "occurs-check"; left: Type; right: Type }
   | { type: "missing-trait"; type_: Type; trait: string };
 
-function getNamedTypeTraitId(
-  moduleName: string,
-  typeName: string,
-  trait: string,
-): string {
-  return `${moduleName}.${typeName}:${trait}`;
-}
+export type TraitsStore = {
+  /**
+   * e.g.
+   *
+   * `Result<a, b> impl Ord where b: Ord`
+   *
+   * is represented as:
+   *
+   * `[Set(), Set(["Ord"])]`
+   *
+   */
+  getNamedTypeDependencies: (
+    type_: {
+      package_: string;
+      module: string;
+      name: string;
+    },
+    trait: string,
+  ) => undefined | Set<string>[];
 
-export type TraitImplDependency = string[] | undefined;
+  getRigidVarImpl?(trait: string): boolean;
+};
+
 export class TVar {
   private constructor(
     private value: TVarResolution | { type: "linked"; to: TVar },
   ) {}
 
-  /**
-   * Example:
-   * { "Json/Encode.Json:eq": null }
-   */
-  private static namedTypesTraitImpls = new Map<
-    string,
-    TraitImplDependency[]
-  >();
-
-  /**
-   * E.g.
-   * // impl eq for Int
-   * registerTraitImpl("Basics", "Int", "eq")
-   *
-   * // impl eq for Result<a, b> where a: eq, b: eq
-   * registerTraitImpl("Basics", "Result", "eq", [["eq"], ["eq"]])
-   */
-  static registerTraitImpl(
-    moduleName: string,
-    typeName: string,
-    trait: string,
-    dependencies: TraitImplDependency[],
-  ) {
-    const id = getNamedTypeTraitId(moduleName, typeName, trait);
-    TVar.namedTypesTraitImpls.set(id, dependencies);
-  }
-
-  static removeTraitImpl(moduleName: string, typeName: string, trait: string) {
-    const id = getNamedTypeTraitId(moduleName, typeName, trait);
-    TVar.namedTypesTraitImpls.delete(id);
-  }
-
-  static typeImplementsTrait(
-    t: Type,
-    trait: string,
-  ): Array<{ id: number; traits: string[] }> | undefined {
-    if (t.type === "var") {
-      const resolved = t.var.resolve();
-      if (resolved.type === "unbound") {
-        return [resolved];
-      }
-
-      return this.typeImplementsTrait(resolved.value, trait);
-    }
-
-    if (t.type === "fn") {
-      return undefined;
-    }
-
-    const id = getNamedTypeTraitId(t.module, t.name, trait);
-
-    const lookup = TVar.namedTypesTraitImpls.get(id);
-    if (lookup === undefined) {
-      return undefined;
-    }
-
-    if (lookup.length !== t.args.length) {
-      // this error has been emitted somewhere else
-      return undefined;
-      // throw new Error(
-      //   `[unreachable] invalid number of args or deps (lookup: ${lookup.length}, args: ${t.args.length})`,
-      // );
-    }
-
-    const r: Array<{ id: number; traits: string[] }> = [];
-    for (let i = 0; i < lookup.length; i++) {
-      const deps = lookup[i];
-      if (deps === undefined) {
-        continue;
-      }
-
-      const arg = t.args[i]!;
-
-      const argImplTrait = TVar.typeImplementsTrait(arg, trait);
-      if (argImplTrait === undefined) {
-        return undefined;
-      }
-
-      r.push(...argImplTrait);
-    }
-
-    return r;
-  }
-
-  static resetTraitImpls() {
-    TVar.namedTypesTraitImpls = new Map();
-  }
-
   static fresh(traits: string[] = []): TVar {
-    const [tvar] = TVar.freshWithId(traits);
-    return tvar;
+    const id = TVar.unboundId++;
+    return new TVar({ type: "unbound", id, traits: new Set(traits) });
   }
 
-  static freshWithId(traits: string[] = []): [TVar, number] {
-    const id = TVar.unboundId++;
-    return [new TVar({ type: "unbound", id, traits }), id];
+  static freshType(traits: string[] = []): Type & { type: "var" } {
+    return TVar.fresh(traits).asType();
   }
 
   resolve(): TVarResolution {
@@ -186,10 +116,10 @@ export class TVar {
     return { type: "var", var: this };
   }
 
-  static unify(t1: Type, t2: Type): UnifyError | undefined {
+  static unify(t1: Type, t2: Type, store: TraitsStore): UnifyError | undefined {
     // (Var, Var)
     if (t1.type === "var" && t2.type === "var") {
-      return TVar.unifyVars(t1.var, t2.var);
+      return t1.var.unifyWith(t2.var, store);
     }
 
     // (Var, _)
@@ -205,30 +135,24 @@ export class TVar {
 
       switch (t1.var.value.type) {
         case "bound":
-          return TVar.unify(t1.var.value.value, t2);
+          return TVar.unify(t1.var.value.value, t2, store);
         case "unbound":
           for (const trait of t1.var.value.traits) {
-            const deps = TVar.typeImplementsTrait(t2, trait);
-            // TODO better err: should narrow this error to missing constraint source
-            if (deps === undefined) {
+            const succeed = unifyTypeWithTraits(t2, trait, store);
+
+            if (!succeed) {
               return {
                 type: "missing-trait",
                 type_: t2,
                 trait,
               };
             }
-
-            for (const dep of deps) {
-              if (!dep.traits.includes(trait)) {
-                dep.traits.push(trait);
-              }
-            }
           }
 
           t1.var.value = { type: "bound", value: t2 };
           return;
         case "linked":
-          return TVar.unify(t1.var.value.to.asType(), t2);
+          return TVar.unify(t1.var.value.to.asType(), t2, store);
         default:
           t1.var.value satisfies never;
       }
@@ -236,7 +160,7 @@ export class TVar {
 
     // (_, Var)
     if (t2.type === "var") {
-      return TVar.unify(t2, t1);
+      return TVar.unify(t2, t1, store);
     }
 
     // (Named, Named)
@@ -251,7 +175,7 @@ export class TVar {
       }
 
       for (let i = 0; i < t1.args.length; i++) {
-        const res = TVar.unify(t1.args[i]!, t2.args[i]!);
+        const res = TVar.unify(t1.args[i]!, t2.args[i]!, store);
         if (res !== undefined) {
           return res;
         }
@@ -267,32 +191,40 @@ export class TVar {
       }
 
       for (let i = 0; i < t1.args.length; i++) {
-        const res = TVar.unify(t1.args[i]!, t2.args[i]!);
+        const res = TVar.unify(t1.args[i]!, t2.args[i]!, store);
         if (res !== undefined) {
           return res;
         }
       }
 
-      return TVar.unify(t1.return, t2.return);
+      return TVar.unify(t1.return, t2.return, store);
+    }
+
+    if (
+      t1.type === "rigid-var" &&
+      t2.type === "rigid-var" &&
+      t1.name === t2.name
+    ) {
+      return;
     }
 
     // (_, _)
     return { type: "type-mismatch", left: t1, right: t2 };
   }
 
-  private static unifyVars($1: TVar, $2: TVar): UnifyError | undefined {
-    const r1 = $1.resolve();
+  private unifyWith(other: TVar, store: TraitsStore): UnifyError | undefined {
+    const r1 = this.resolve();
     if (r1.type === "bound") {
-      return TVar.unify($2.asType(), r1.value);
+      return TVar.unify(other.asType(), r1.value, store);
     }
 
-    const r2 = $2.resolve();
+    const r2 = other.resolve();
     if (r2.type === "bound") {
-      return TVar.unify($1.asType(), r2.value);
+      return TVar.unify(this.asType(), r2.value, store);
     }
 
-    if ($2.value.type === "linked") {
-      return TVar.unify($2.value.to.asType(), $1.asType());
+    if (other.value.type === "linked") {
+      return TVar.unify(other.value.to.asType(), this.asType(), store);
     }
 
     if (r1.type === "unbound" && r2.type === "unbound" && r1.id === r2.id) {
@@ -302,12 +234,10 @@ export class TVar {
 
     // Unify traits
     for (const t of r2.traits) {
-      if (!r1.traits.includes(t)) {
-        r1.traits.push(t);
-      }
+      r1.traits.add(t);
     }
 
-    $2.value = { type: "linked", to: $1 };
+    other.value = { type: "linked", to: this };
     return undefined;
   }
 }
@@ -316,6 +246,10 @@ export const unify = TVar.unify;
 
 // Occurs check on monotypes
 function occursCheck(v: TVar, x: Type): boolean {
+  if (x.type === "rigid-var") {
+    return false;
+  }
+
   if (x.type === "named") {
     return x.args.some((a) => occursCheck(v, a));
   }
@@ -341,13 +275,11 @@ function occursCheck(v: TVar, x: Type): boolean {
   return false;
 }
 
-export type Context = Record<string, Type>;
-
 const FIRST_CHAR = "a".charCodeAt(0);
 const LAST_CHAR = "z".charCodeAt(0);
 const TOTAL_CHARS = LAST_CHAR - FIRST_CHAR + 1;
 
-function generalizedName(count: number): string {
+function counterToTypeName(count: number): string {
   const letter = String.fromCharCode(FIRST_CHAR + (count % TOTAL_CHARS));
   const rem = Math.floor(count / TOTAL_CHARS);
 
@@ -358,206 +290,181 @@ function generalizedName(count: number): string {
   return `${letter}${rem}`;
 }
 
-export type TypeScheme = Record<number, string>;
-
-export type PolyType = [TypeScheme, Type];
-
-export function generalizeAsScheme(
-  mono: Type,
-  initialScheme: TypeScheme = {},
-): TypeScheme {
-  const usedNames = new Set(Object.values(initialScheme));
-  let nextId = 0;
-  const scheme: TypeScheme = { ...initialScheme };
-
-  function recur(mono: Type) {
-    switch (mono.type) {
-      case "var": {
-        const res = mono.var.resolve();
-        switch (res.type) {
-          case "unbound": {
-            if (res.id in scheme) {
-              return;
-            }
-
-            // eslint-disable-next-line no-constant-condition
-            while (true) {
-              const name = generalizedName(nextId++);
-              if (!usedNames.has(name)) {
-                scheme[res.id] = name;
-                break;
-              }
-            }
-
-            return;
-          }
-          case "bound":
-            recur(res.value);
-            return;
-        }
-      }
-
-      case "named":
-        for (const arg of mono.args) {
-          recur(arg);
-        }
-        return;
-
-      case "fn":
-        for (const arg of mono.args) {
-          recur(arg);
-        }
-        recur(mono.return);
-        return;
-    }
-  }
-
-  recur(mono);
-  return scheme;
+export function instantiate(mono: Type, rigidVarsCtx: RigidVarsCtx) {
+  return new Instantiator(rigidVarsCtx).instantiate(mono);
 }
 
+// TODO make this class private
 export class Instantiator {
-  public readonly instantiated = new Map<string, TVar>();
+  constructor(private readonly rigidVarsCtx: RigidVarsCtx = {}) {}
 
-  instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
+  // TODO change this to Type instaead
+  public readonly instantiatedRigid = new DefaultMap<string, Type>((name) =>
+    TVar.fresh([...(this.rigidVarsCtx[name] ?? new Set())]).asType(),
+  );
+  public readonly instantiatedFlex = new DefaultMap<number, Type>(() =>
+    TVar.fresh().asType(),
+  );
+
+  public instantiate(mono_: Type): Type {
+    const mono = resolveType(mono_);
+
     switch (mono.type) {
+      case "rigid-var":
+        return this.instantiatedRigid.get(mono.name);
+
       case "named":
         return {
           ...mono,
-          args: mono.args.map((a) => this.instantiateFromScheme(a, scheme)),
+          args: mono.args.map((a) => this.instantiate(a)),
         };
-      case "fn":
-        if (mono.type !== "fn") {
-          throw new Error("Invalid type");
-        }
 
+      case "fn":
         return {
           type: "fn",
-          args: mono.args.map((a) => this.instantiateFromScheme(a, scheme)),
-          return: this.instantiateFromScheme(mono.return, scheme),
+          args: mono.args.map((a) => this.instantiate(a)),
+          return: this.instantiate(mono.return),
         };
 
-      case "var": {
-        const resolved = mono.var.resolve();
-        switch (resolved.type) {
-          case "unbound": {
-            const boundId = scheme[resolved.id];
-            if (boundId === undefined) {
-              return mono;
-            }
-
-            const i = this.instantiated.get(boundId);
-            if (i !== undefined) {
-              return i.asType();
-            }
-
-            const t = TVar.fresh([...resolved.traits]);
-            this.instantiated.set(boundId, t);
-            return t.asType();
-          }
-          case "bound":
-            return this.instantiateFromScheme(resolved.value, scheme);
-        }
-      }
+      case "unbound":
+        // TODO double check
+        return this.instantiatedFlex.get(mono.id);
     }
   }
+}
 
-  instantiatePoly(poly: PolyTypeMeta) {
-    return this.instantiateFromScheme(poly.$type.asType(), poly.$scheme);
+/**
+ * The rigid variables present in the currently enclosing declaration.
+ * They are used to avoid showing the same tvar name for a flex var and a rigid var with the same name
+ * */
+export type RigidVarsCtx = {
+  [flexVar: string]: Set<string>;
+};
+
+function fillRigidVars(type: Type, /* &mut */ ctx: RigidVarsCtx) {
+  const resolved = resolveType(type);
+  switch (resolved.type) {
+    case "unbound":
+      break;
+
+    case "rigid-var":
+      if (!(resolved.name in ctx)) {
+        ctx[resolved.name] = new Set();
+      }
+      break;
+
+    case "fn":
+      for (const arg of resolved.args) {
+        fillRigidVars(arg, ctx);
+      }
+      fillRigidVars(resolved.return, ctx);
+      break;
+
+    case "named":
+      for (const arg of resolved.args) {
+        fillRigidVars(arg, ctx);
+      }
+      break;
+
+    default:
+      return resolved satisfies never;
   }
 }
 
-export function instantiateFromScheme(mono: Type, scheme: TypeScheme): Type {
-  return new Instantiator().instantiateFromScheme(mono, scheme);
-}
-
-function typeToStringHelper(
-  t: Type,
-  scheme: TypeScheme,
-  collectTraits: Record<string, Set<string>>,
+export function typeToString(
+  type: Type,
+  ctx: RigidVarsCtx = {},
+  declarationType?: Type,
 ): string {
-  switch (t.type) {
-    case "var": {
-      const resolved = t.var.resolve();
-      switch (resolved.type) {
-        case "bound":
-          return typeToStringHelper(resolved.value, scheme, collectTraits);
-        case "unbound": {
-          const id = scheme[resolved.id];
-          if (id === undefined) {
-            throw new Error("[unreachable] var not found: " + resolved.id);
-          }
-          if (collectTraits !== undefined) {
-            if (!(id in collectTraits)) {
-              collectTraits[id] = new Set();
-            }
-            const lookup = collectTraits[id]!;
-            for (const trait of resolved.traits) {
-              lookup.add(trait);
-            }
+  ctx = { ...ctx };
 
-            resolved.traits;
-          }
-
-          return id;
-        }
-      }
-    }
-
-    case "fn": {
-      const args = t.args
-        .map((arg) => typeToStringHelper(arg, scheme, collectTraits))
-        .join(", ");
-      return `Fn(${args}) -> ${typeToStringHelper(t.return, scheme, collectTraits)}`;
-    }
-
-    case "named": {
-      if (t.args.length === 0) {
-        return t.name;
-      }
-
-      if (t.module === "Tuple" && /Tuple[0-9]+/.test(t.name)) {
-        const inner = t.args
-          .map((arg) => typeToStringHelper(arg, scheme, collectTraits))
-          .join(", ");
-        return `(${inner})`;
-      }
-
-      const args = t.args
-        .map((arg) => typeToStringHelper(arg, scheme, collectTraits))
-        .join(", ");
-      return `${t.name}<${args}>`;
-    }
+  if (declarationType !== undefined) {
+    fillRigidVars(declarationType, ctx);
   }
+
+  return new TypePrinter(ctx).printWithTraits(type);
 }
 
-export function typeToString(t: Type, scheme?: TypeScheme): string {
-  scheme = generalizeAsScheme(t, scheme);
-  const traits: Record<string, Set<string>> = {};
-  const ret = typeToStringHelper(t, scheme, traits);
+class TypePrinter {
+  private flexVarNames = new Map<number, string>();
+  private currentFlexId = 0;
 
-  const isThereAtLeastATrait = Object.values(traits).some((t) => t.size !== 0);
-  if (!isThereAtLeastATrait) {
-    return ret;
+  constructor(private ctx: RigidVarsCtx) {}
+
+  public printWithTraits(type: Type): string {
+    const type_ = this.typeToString(type);
+    const where = this.getWhereClause();
+
+    if (where.length === 0) {
+      return type_;
+    }
+
+    return `${type_} where ${where.join(", ")}`;
   }
 
-  const sortedTraits = Object.entries(traits)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .flatMap(([k, v]) => {
-      if (v.size === 0) {
-        return [];
+  private getWhereClause(): string[] {
+    return Object.entries(this.ctx)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .flatMap(([k, v]) => {
+        if (v.size === 0) {
+          return [];
+        }
+
+        const sortedTraits = [...v].sort().join(" + ");
+
+        return [`${k}: ${sortedTraits}`];
+      });
+  }
+
+  private getFlexName(): string {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const id = this.currentFlexId++;
+      const name = counterToTypeName(id);
+      if (!(name in this.ctx)) {
+        return name;
+      }
+    }
+  }
+
+  private typeToString(type: Type): string {
+    const t = resolveType(type);
+    switch (t.type) {
+      case "rigid-var":
+        return t.name;
+
+      case "unbound": {
+        const v = this.flexVarNames.get(t.id);
+        if (v !== undefined) {
+          return v;
+        }
+
+        const name = this.getFlexName();
+        this.ctx[name] = new Set(t.traits);
+        this.flexVarNames.set(t.id, name);
+        return name;
       }
 
-      const sortedTraits = [...v].sort().join(" + ");
+      case "fn": {
+        const args = t.args.map((arg) => this.typeToString(arg)).join(", ");
+        return `Fn(${args}) -> ${this.typeToString(t.return)}`;
+      }
 
-      return [`${k}: ${sortedTraits}`];
-    });
+      case "named": {
+        if (t.args.length === 0) {
+          return t.name;
+        }
 
-  if (sortedTraits.length === 0) {
-    return ret;
+        if (t.module === "Tuple" && /Tuple[0-9]+/.test(t.name)) {
+          const inner = t.args.map((arg) => this.typeToString(arg)).join(", ");
+          return `(${inner})`;
+        }
+
+        const args = t.args.map((arg) => this.typeToString(arg)).join(", ");
+        return `${t.name}<${args}>`;
+      }
+    }
   }
-
-  return `${ret} where ${sortedTraits.join(", ")}`;
 }
 
 export function findUnboundTypeVars(t: Type): UnboundType[] {
@@ -590,3 +497,61 @@ export function findUnboundTypeVars(t: Type): UnboundType[] {
 
   return vars;
 }
+
+/**
+ * Add a trait constraint to a type. Fail if any dependency fails.
+ * E.g.
+ * ```
+ * unifyTypeWithTraits("List<a> where a: Ord", "Ord") //=> ok (no changes)
+ * unifyTypeWithTraits("List<'t0>", "Ord") //=> ok (unifies 't0 with "Ord")
+ * unifyTypeWithTraits("NotOrd<'t0>", "Ord") //=> fails
+ * ```
+ * */
+function unifyTypeWithTraits(
+  type: Type,
+  trait: string,
+  store: TraitsStore,
+): boolean {
+  const resolved = resolveType(type);
+  switch (resolved.type) {
+    case "fn":
+      return false;
+
+    case "named": {
+      const deps = store.getNamedTypeDependencies(resolved, trait);
+      if (deps === undefined) {
+        return false;
+      }
+
+      let succeed = true;
+      for (let index = 0; index < resolved.args.length; index++) {
+        // we assume deps correctly match with type's args
+        const arg = resolved.args[index]!;
+        const neededTraits = deps[index]!;
+
+        for (const neededTrait of neededTraits) {
+          // we avoid exiting early to make fault tolerant unification more precise
+          succeed &&= unifyTypeWithTraits(arg, neededTrait, store);
+        }
+      }
+
+      return succeed;
+    }
+
+    case "rigid-var":
+      return store.getRigidVarImpl?.(trait) ?? false;
+
+    case "unbound":
+      resolved.traits.add(trait);
+      return true;
+  }
+}
+
+export const DUMMY_STORE: TraitsStore = {
+  getRigidVarImpl() {
+    return false;
+  },
+  getNamedTypeDependencies() {
+    return undefined;
+  },
+};
