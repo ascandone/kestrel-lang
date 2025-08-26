@@ -1,7 +1,7 @@
-import { test, expect, beforeEach } from "vitest";
+import { test, expect } from "vitest";
 import { Hovered, hoverOn, hoverToMarkdown } from "./hoverOn";
 import { unsafeParse } from "../parser";
-import { resetTraitsRegistry, typecheck } from "../typecheck/typecheck";
+import { typecheck } from "../typecheck/typecheck";
 import { rangeOf } from "./__test__/utils";
 
 test("hover a declaration's binding", () => {
@@ -364,7 +364,3 @@ function parseHover(
   }
   return ret;
 }
-
-beforeEach(() => {
-  resetTraitsRegistry();
-});

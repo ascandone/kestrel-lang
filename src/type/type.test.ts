@@ -1,15 +1,15 @@
 import { test, expect, beforeEach, describe } from "vitest";
 import {
   ConcreteType,
+  DUMMY_STORE,
   TVar,
   TVarResolution,
+  TraitsStore,
   Type,
   UnifyError,
-  generalizeAsScheme,
-  instantiateFromScheme,
   resolveType,
   typeToString,
-  unify,
+  unify as unify_,
 } from "./type";
 import {
   BASICS_MODULE,
@@ -21,9 +21,12 @@ import {
 } from "./__test__/types";
 import { CORE_PACKAGE } from "../typecheck";
 
+function unify(t1: Type, t2: Type, store = DUMMY_STORE) {
+  return unify_(t1, t2, store);
+}
+
 beforeEach(() => {
   TVar.resetId();
-  TVar.resetTraitImpls();
 });
 
 describe("unify", () => {
@@ -90,7 +93,7 @@ describe("unify", () => {
     expect($a.resolve()).toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
-      traits: [],
+      traits: new Set(),
     });
   });
 
@@ -248,7 +251,7 @@ describe("unify", () => {
     expect($a.resolve()).toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
-      traits: [],
+      traits: new Set(),
     });
     expect($a.resolve()).toEqual($b.resolve());
   });
@@ -310,17 +313,17 @@ describe("unify", () => {
     expect($a.resolve(), "a").toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
-      traits: [],
+      traits: new Set(),
     });
     expect($b.resolve(), "b").toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
-      traits: [],
+      traits: new Set(),
     });
     expect($b.resolve(), "c").toEqual<TVarResolution>({
       type: "unbound",
       id: 0,
-      traits: [],
+      traits: new Set(),
     });
 
     unify($a.asType(), Bool);
@@ -425,132 +428,7 @@ describe("unify", () => {
   });
 });
 
-describe("generalization", () => {
-  test("generalize concrete", () => {
-    expect(generalizeAsScheme(Int)).toEqual({});
-  });
-
-  test("generalize var bound to a primitive", () => {
-    const $a = TVar.fresh();
-    unify($a.asType(), Int);
-    expect(generalizeAsScheme($a.asType())).toEqual({});
-  });
-
-  test("generalize single unbound var", () => {
-    const $a = TVar.fresh();
-    expect(generalizeAsScheme($a.asType())).toEqual({ 0: "a" });
-  });
-
-  test("generalize single unbound var when ident is already used", () => {
-    TVar.fresh();
-    const $b = TVar.fresh();
-    expect(generalizeAsScheme($b.asType(), { 0: "a" })).toEqual({
-      0: "a",
-      1: "b",
-    });
-  });
-
-  test("generalize unbound var in fn args", () => {
-    const $a = TVar.fresh();
-    expect(generalizeAsScheme(Fn([$a.asType()], Int))).toEqual({ 0: "a" });
-  });
-
-  test("generalize unbound var in fn return", () => {
-    const $a = TVar.fresh();
-    expect(generalizeAsScheme(Fn([], $a.asType()))).toEqual({ 0: "a" });
-  });
-
-  test("generalize many vars", () => {
-    const $a = TVar.fresh();
-    const $b = TVar.fresh();
-    expect(generalizeAsScheme(Tuple($a.asType(), $b.asType()))).toEqual({
-      0: "a",
-      1: "b",
-    });
-  });
-
-  test("generalize many vars when linked", () => {
-    const $a = TVar.fresh();
-    expect(generalizeAsScheme(Tuple($a.asType(), $a.asType()))).toEqual({
-      0: "a",
-    });
-  });
-
-  test("generalize var bound to a nested type to generalize ", () => {
-    const $a = TVar.fresh();
-    const $b = TVar.fresh();
-    unify($a.asType(), Tuple($b.asType(), $b.asType()));
-    expect(generalizeAsScheme($a.asType())).toEqual({ 1: "a" });
-  });
-
-  test("instantiate concrete type", () => {
-    const m = instantiateFromScheme(Int, {});
-    expect(m).toEqual(Int);
-  });
-
-  test("instantiate fn", () => {
-    const m = instantiateFromScheme(Fn([Int], Bool), {});
-    expect(m).toEqual(Fn([Int], Bool));
-  });
-
-  test("instantiate single var", () => {
-    const ta = TVar.fresh().asType();
-
-    const scheme = generalizeAsScheme(ta);
-    const taI = instantiateFromScheme(ta, scheme);
-
-    if (taI.type !== "var") {
-      throw new Error();
-    }
-
-    expect(taI.var.resolve().type).toBe("unbound");
-    expect(taI.var.resolve()).not.toEqual(ta.var.resolve());
-  });
-
-  test("instantiate two different vars", () => {
-    const ta = TVar.fresh().asType();
-    const tb = TVar.fresh().asType();
-    const t = Tuple(ta, tb);
-    const scheme = generalizeAsScheme(t);
-
-    const m = instantiateFromScheme(t, scheme);
-
-    if (m.type !== "named") {
-      throw new Error("fail");
-    }
-
-    const [$ai, $bi] = m.args;
-
-    expect(($ai as any).var.resolve().type).toEqual("unbound");
-    expect(($bi as any).var.resolve().type).toEqual("unbound");
-    expect(($ai as any).var.resolve().id).not.toEqual(
-      ($bi as any).var.resolve().id,
-    );
-  });
-
-  test("instantiate two same vars", () => {
-    const ta = TVar.fresh().asType();
-
-    const t = Tuple(ta, ta);
-    const scheme = generalizeAsScheme(t);
-
-    const m = instantiateFromScheme(t, scheme);
-
-    if (m.type !== "named") {
-      throw new Error("fail");
-    }
-
-    const [$ai, $bi] = m.args;
-
-    expect(($ai as any).var.resolve().type).toEqual("unbound");
-    expect(($bi as any).var.resolve().type).toEqual("unbound");
-    expect(($ai as any).var.resolve().id).toEqual(
-      ($bi as any).var.resolve().id,
-    );
-  });
-});
-
-describe(typeToString.name, () => {
+describe("typeToString", () => {
   test("0-arity types", () => {
     expect(typeToString(Int)).toBe("Int");
   });
@@ -612,23 +490,46 @@ describe(typeToString.name, () => {
 
   test("handle scheme", () => {
     const f = TVar.fresh().asType();
-    expect(typeToString(f, { 0: "z" })).toBe("z");
+    expect(typeToString(f, { a: new Set() })).toBe("b");
   });
 
   test("closure", () => {
     const a = TVar.fresh().asType();
-    expect(typeToString(a, {})).toBe("a");
+    expect(typeToString(a)).toBe("a");
   });
 
-  test("traits", () => {
-    const a = TVar.fresh(["Ord", "Show"]).asType();
+  test("traits from rigid vars", () => {
+    expect(
+      typeToString(
+        {
+          type: "rigid-var",
+          name: "a",
+        },
+        { a: new Set(["Show"]) },
+      ),
+    ).toBe("a where a: Show");
+  });
+
+  test("traits from flex vars", () => {
+    const $a = TVar.fresh(["Show"]);
+    expect(typeToString($a.asType(), {})).toBe("a where a: Show");
+  });
+
+  test("mixed rigid vars and flex vars traits", () => {
     const b = TVar.fresh().asType();
     const c = TVar.fresh(["Read"]).asType();
-    const f: Type = { type: "fn", args: [a, b], return: c };
+    const f: Type = {
+      type: "fn",
+      args: [{ type: "rigid-var", name: "a" }, b],
+      return: c,
+    };
 
-    expect(typeToString(f, {})).toBe(
-      "Fn(a, b) -> c where a: Ord + Show, c: Read",
-    );
+    expect(
+      typeToString(f, {
+        a: new Set(["Ord", "Show"]),
+        // b: new Set(["Read"]),
+      }),
+    ).toBe("Fn(a, b) -> c where a: Ord + Show, c: Read");
   });
 });
 
@@ -637,7 +538,7 @@ describe("traits", () => {
     expect(TVar.fresh(["ord"]).resolve()).toEqual({
       type: "unbound",
       id: 0,
-      traits: ["ord"],
+      traits: new Set(["ord"]),
     });
   });
 
@@ -649,13 +550,13 @@ describe("traits", () => {
 
     expect($a.resolve()).toEqual<TVarResolution>(
       expect.objectContaining({
-        traits: expect.arrayContaining(["ord", "eq"]),
+        traits: new Set(["ord", "eq"]),
       }),
     );
 
     expect($b.resolve()).toEqual<TVarResolution>(
       expect.objectContaining({
-        traits: expect.arrayContaining(["ord", "eq"]),
+        traits: new Set(["ord", "eq"]),
       }),
     );
   });
@@ -670,13 +571,13 @@ describe("traits", () => {
 
     expect($a.resolve()).toEqual<TVarResolution>(
       expect.objectContaining({
-        traits: expect.arrayContaining(["eq"]),
+        traits: new Set(["eq"]),
       }),
     );
 
     expect($b.resolve()).toEqual<TVarResolution>(
       expect.objectContaining({
-        traits: expect.arrayContaining(["eq"]),
+        traits: new Set(["eq"]),
       }),
     );
   });
@@ -705,15 +606,19 @@ describe("traits", () => {
   });
 
   test("succeed to unify a tvar with a concrete type that implements the trait", () => {
-    TVar.registerTraitImpl(BASICS_MODULE, "Int", "ord", []);
+    const store = mkStore({
+      [`${CORE_PACKAGE}.${BASICS_MODULE}.Int`]: {
+        Ord: [],
+      },
+    });
 
-    const $a = TVar.fresh(["ord"]);
+    const $a = TVar.fresh(["Ord"]);
 
-    expect(unify($a.asType(), Int)).toEqual(undefined);
+    expect(unify($a.asType(), Int, store)).toEqual(undefined);
   });
 
   test("fails to unify a tvar with a concrete type that implements the trait when type vars don't", () => {
-    TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [["Ord"]]);
+    // TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [["Ord"]]);
 
     const $a = TVar.fresh(["Ord"]);
 
@@ -725,12 +630,18 @@ describe("traits", () => {
   });
 
   test("succeeds to unify a tvar with a concrete type that implements the trait (including type args)", () => {
-    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
-    TVar.registerTraitImpl(BASICS_MODULE, "Int", "ord", []);
+    const store = mkStore({
+      [`${CORE_PACKAGE}.${BASICS_MODULE}.List`]: {
+        Ord: [["Ord"]],
+      },
+      [`${CORE_PACKAGE}.${BASICS_MODULE}.Int`]: {
+        Ord: [],
+      },
+    });
 
-    const $a = TVar.fresh(["ord"]);
+    const $a = TVar.fresh(["Ord"]);
 
-    expect(unify($a.asType(), List(Int))).toEqual(undefined);
+    expect(unify($a.asType(), List(Int), store)).toEqual(undefined);
   });
 
   test("traits are unified to type args", () => {
@@ -738,17 +649,21 @@ describe("traits", () => {
     // unify(a: ord, List<b>)
     // => b: ord
 
-    TVar.registerTraitImpl(BASICS_MODULE, "List", "ord", [["ord"]]);
+    const store = mkStore({
+      [`${CORE_PACKAGE}.${BASICS_MODULE}.List`]: {
+        Ord: [["Ord"]],
+      },
+    });
 
-    const $a = TVar.fresh(["ord"]);
+    const $a = TVar.fresh(["Ord"]);
     const $b = TVar.fresh();
 
-    expect(unify($a.asType(), List($b.asType()))).toEqual(undefined);
+    expect(unify($a.asType(), List($b.asType()), store)).toEqual(undefined);
 
     expect($b.resolve()).toEqual({
       type: "unbound",
       id: 1,
-      traits: ["ord"],
+      traits: new Set(["Ord"]),
     });
   });
 
@@ -756,38 +671,46 @@ describe("traits", () => {
     // impl ord for List<a> where a: ord
     // unify(List<a: ord>, List<Int>) => fail
 
-    TVar.registerTraitImpl(BASICS_MODULE, "List", "Ord", [["Ord"]]);
+    const store = mkStore({
+      [`${CORE_PACKAGE}.${BASICS_MODULE}.List`]: {
+        Ord: [["Ord"]],
+      },
+    });
 
     const $a = TVar.fresh(["Ord"]);
 
-    expect(unify(List($a.asType()), List(Int))).toEqual<UnifyError>({
+    expect(unify(List($a.asType()), List(Int), store)).toEqual<UnifyError>({
       type: "missing-trait",
       trait: "Ord",
       type_: Int,
     });
   });
-
-  test("generalization and instantiation preserve traits", () => {
-    const initialTraits = ["ord"];
-    const ta = TVar.fresh(initialTraits).asType();
-
-    const scheme = generalizeAsScheme(ta);
-    const taI = instantiateFromScheme(ta, scheme);
-
-    if (taI.type !== "var") {
-      throw new Error();
-    }
-
-    const resolved = taI.var.resolve();
-
-    if (resolved.type !== "unbound") {
-      throw new Error("Expecting an unbound var");
-    }
-
-    expect(resolved.traits).toEqual(initialTraits);
-  });
 });
 
 function Fn(args: Type[], ret: Type): ConcreteType {
   return { type: "fn", args, return: ret };
+}
+
+/**
+ * intented for tests
+ * e.g.
+ * { "kestrel_core.My.Mod.Int": { Show: [["Show"]] } }
+ * */
+export function mkStore(
+  staticStore: Record<
+    `${string}.${string}.${string}`,
+    Record<string, string[][]>
+  >,
+): TraitsStore {
+  return {
+    getNamedTypeDependencies(type_, trait) {
+      const key = `${type_.package_}.${type_.module}.${type_.name}` as const;
+      const deps = staticStore[key]?.[trait];
+      if (deps === undefined) {
+        return undefined;
+      }
+
+      return deps.map((dep) => new Set(dep));
+    },
+  };
 }

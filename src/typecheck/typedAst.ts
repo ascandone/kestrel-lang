@@ -1,5 +1,5 @@
 import * as ast from "../parser";
-import { TVar, Type, TypeScheme } from "../type";
+import { TVar, Type, RigidVarsCtx } from "../type";
 
 // -- Common
 
@@ -118,7 +118,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         namespace?: string;
         name: string;
         $resolution: IdentifierResolution | undefined;
-        $instantiated: Map<string, TVar>;
+        $instantiated: Map<string, Type>;
       }
     | {
         type: "fn";
@@ -193,7 +193,8 @@ export type TypedDeclaration = ast.RangeMeta & {
   pub: boolean;
   binding: TypedBinding;
   docComment?: string;
-  $scheme: TypeScheme;
+
+  $traitsConstraints: RigidVarsCtx;
 } & (
     | {
         inline: boolean;
@@ -212,6 +213,8 @@ export type TypedTypeDeclaration = ast.RangeMeta & {
   name: string;
   params: Array<{ name: string } & ast.RangeMeta>;
   docComment?: string;
+
+  $traits: Map<string, Set<string>[]>;
 } & (
     | {
         type: "adt";

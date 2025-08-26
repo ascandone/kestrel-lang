@@ -1,14 +1,15 @@
-export function getOrInsertDefault<K, V>(
-  m: Map<K, NonNullable<V>>,
-  k: K,
-  getDefault: () => NonNullable<V>,
-) {
-  const lookup = m.get(k);
-  if (lookup !== undefined) {
-    return lookup;
-  }
+export class DefaultMap<K, V> {
+  public readonly inner = new Map<K, V>();
+  constructor(private readonly init: (k: K) => V) {}
 
-  const def = getDefault();
-  m.set(k, def);
-  return def;
+  public get(k: K): V {
+    const lookup = this.inner.get(k);
+    if (lookup !== undefined) {
+      return lookup;
+    }
+
+    const value = this.init(k);
+    this.inner.set(k, value);
+    return value;
+  }
 }

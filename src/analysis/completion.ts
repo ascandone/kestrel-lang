@@ -4,7 +4,7 @@ import {
   CompletionItemKind,
   Position,
 } from "vscode-languageserver";
-import { Instantiator, TVar, typeToString, unify } from "../type";
+import { DUMMY_STORE, Instantiator, TVar, typeToString, unify } from "../type";
 import { Finder } from "../typecheck/astLookup";
 
 // TODO find a decent name
@@ -90,7 +90,7 @@ class ExprCompletion {
             const intantiator = new Instantiator();
             const instantiatedDeclaration = intantiator.instantiate(d.$type);
             const instantiatedField = intantiator.instantiate(f.$type);
-            unify(instantiatedDeclaration, structType.asType());
+            unify(instantiatedDeclaration, structType.asType(), DUMMY_STORE);
 
             return {
               label: f.name,

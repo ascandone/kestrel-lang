@@ -176,10 +176,7 @@ local declaration
     }
 
     case "global-variable": {
-      const tpp = typeToString(
-        hovered.declaration.binding.$type.asType(),
-        hovered.declaration.$scheme,
-      );
+      const tpp = typeToString(hovered.declaration.binding.$type.asType());
       return `\`\`\`
 ${hovered.declaration.binding.name}: ${tpp}
 \`\`\`

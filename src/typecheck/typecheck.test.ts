@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { Position, Range, Import, unsafeParse } from "../parser";
 import {
+  DEFAULT_MAIN_TYPE,
   Deps as IDeps,
-  resetTraitsRegistry,
   typecheck,
   typecheckProject,
   TypedModule,
@@ -638,7 +638,7 @@ describe("type hints", () => {
   });
 });
 
-describe.skip("traits", () => {
+describe("traits", () => {
   test("fails to typecheck when a required trait is not implemented", () => {
     const [types, errs] = tc(
       `
@@ -647,11 +647,11 @@ describe.skip("traits", () => {
         pub let x = show(42) // note that 'Int' doesn't implement 'Show' in this test
       `,
     );
-    expect(errs).toHaveLength(1);
     expect(types).toEqual({
       show: "Fn(a) -> String where a: Show",
       x: "String",
     });
+    expect(errs).toHaveLength(1);
   });
 
   test("succeeds to typecheck when a required trait is not implemented", () => {
@@ -1018,7 +1018,7 @@ describe.skip("traits", () => {
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toEqual(
-      new err.AmbiguousTypeVar("Default", "Fn(b) -> a where b: Default"),
+      new err.AmbiguousTypeVar("Default", "Fn(a) -> b where a: Default"),
     );
   });
 
@@ -3058,11 +3058,18 @@ function tcProgram(
   traitImpls: TraitImpl[] = [],
 ) {
   const parsedProgram = unsafeParse(src);
-  resetTraitsRegistry(traitImpls);
   const deps_: IDeps = Object.fromEntries(
     Object.entries(deps).map(([k, v]) => [k, v.moduleInterface]),
   );
-  return typecheck("pkg", ns, parsedProgram, deps_, prelude);
+  return typecheck(
+    "pkg",
+    ns,
+    parsedProgram,
+    deps_,
+    prelude,
+    DEFAULT_MAIN_TYPE,
+    traitImpls,
+  );
 }
 
 function tc(
@@ -3080,7 +3087,7 @@ function programTypes(typed: TypedModule): Record<string, string> {
     .filter((t) => t.pub)
     .map((decl) => [
       decl.binding.name,
-      typeToString(decl.binding.$type.asType()),
+      typeToString(decl.binding.$type.asType(), decl.$traitsConstraints),
     ]);
 
   return Object.fromEntries(kvs);

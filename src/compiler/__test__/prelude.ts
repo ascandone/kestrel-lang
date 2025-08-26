@@ -1,5 +1,11 @@
 import * as parser from "../../parser";
-import { CORE_PACKAGE, typecheck, type Deps } from "../../typecheck";
+import {
+  CORE_PACKAGE,
+  typecheck,
+  type Deps,
+  DEFAULT_MAIN_TYPE,
+} from "../../typecheck";
+import { TraitImpl } from "../../typecheck/defaultImports";
 
 const dummyPosition: parser.Position = { line: 0, character: 0 };
 const dummyRange: parser.Range = { start: dummyPosition, end: dummyPosition };
@@ -122,9 +128,19 @@ function typecheckSourceRaw(
   src: string,
   deps: Deps = {},
   implicitImports: parser.Import[] = [],
+  traitImpls: TraitImpl[] = [],
 ) {
   const parsed = parser.unsafeParse(src);
-  const [program] = typecheck(package_, ns, parsed, deps, implicitImports);
+  const [program] = typecheck(
+    package_,
+    ns,
+    parsed,
+    deps,
+    implicitImports,
+    DEFAULT_MAIN_TYPE,
+    traitImpls,
+  );
+
   return program;
 }
 
@@ -133,6 +149,7 @@ export function typecheckSource_(
   ns: string,
   src: string,
   deps: Deps = {},
+  traitImpls: TraitImpl[] = [],
 ) {
   return typecheckSourceRaw(
     package_,
@@ -143,6 +160,7 @@ export function typecheckSource_(
       ...deps,
     },
     DEFAULT_IMPLICIT_IMPORTS,
+    traitImpls,
   );
 }
 

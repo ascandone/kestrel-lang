@@ -1,16 +1,10 @@
-import { test, expect, describe, beforeEach } from "vitest";
-import {
-  CORE_PACKAGE,
-  Deps,
-  TypedModule,
-  resetTraitsRegistry,
-} from "../../../typecheck";
+import { test, expect, describe } from "vitest";
+import { CORE_PACKAGE, Deps, TypedModule } from "../../../typecheck";
 import { Compiler, compile } from "./compiler";
 import {
   TraitImpl,
   defaultTraitImpls,
 } from "../../../typecheck/defaultImports";
-import { TVar } from "../../../type";
 import { ProjectLowering, lowerProgram } from "../../lower";
 import {
   typecheckSource,
@@ -954,12 +948,12 @@ describe("ADTs", () => {
     expect(out).toMatchInlineSnapshot(`"const Main$ctor = Dependency$Pair;"`);
   });
 
-  test.skip("do not emit Bool repr", () => {
+  test("do not emit Bool repr", () => {
     const out = compileSrc(
       `
       type Bool { True, False }
     `,
-      { ns: "Bool" },
+      { ns: "Bool", package_: CORE_PACKAGE },
     );
     expect(out).toMatchInlineSnapshot(`""`);
   });
@@ -2011,7 +2005,7 @@ describe("traits compilation", () => {
       let x = p //: a1 where a1: Show 
     `);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$x = Show_a => Main$p(Show_a);"
+      "const Main$x = Show_0 => Main$p(Show_0);"
     `);
   });
 
@@ -2036,7 +2030,7 @@ describe("traits compilation", () => {
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
-      "const Main$f = Show_a => Main$f$x => Main$show(Show_a)(Main$f$x);"
+      "const Main$f = Show_0 => Main$f$x => Main$show(Show_0)(Main$f$x);"
     `);
   });
 
@@ -2046,7 +2040,7 @@ describe("traits compilation", () => {
       let f = show2
     `);
     expect(out).toMatchInlineSnapshot(
-      `"const Main$f = Show_a => Main$show2(Show_a);"`,
+      `"const Main$f = Show_0 => Main$show2(Show_0);"`,
     );
   });
 
@@ -2056,7 +2050,7 @@ describe("traits compilation", () => {
       let f = show
     `);
     expect(out).toMatchInlineSnapshot(
-      `"const Main$f = (Eq_a, Show_a) => Main$show(Eq_a, Show_a);"`,
+      `"const Main$f = (Eq_0, Show_0) => Main$show(Eq_0, Show_0);"`,
     );
   });
 
@@ -2091,11 +2085,11 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$equal = (Eq_a, Show_a) => (Main$equal$x, Main$equal$y) => {
-        if (Main$eq(Eq_a)(Main$equal$x, Main$equal$y)) {
+      "const Main$equal = (Eq_0, Show_0) => (Main$equal$x, Main$equal$y) => {
+        if (Main$eq(Eq_0)(Main$equal$x, Main$equal$y)) {
           return \`ok\`;
         } else {
-          return Main$inspect(Show_a)(Main$equal$x);
+          return Main$inspect(Show_0)(Main$equal$x);
         }
       };"
     `);
@@ -2141,7 +2135,7 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(
-      `"const Main$f = Show_a => Main$f$arg => Main$show2(Show_a, Show_String$String)(Main$f$arg, \`hello\`);"`,
+      `"const Main$f = Show_0 => Main$f$arg => Main$show2(Show_0, Show_String$String)(Main$f$arg, \`hello\`);"`,
     );
   });
 
@@ -2216,7 +2210,7 @@ describe("traits compilation", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$X = 0;
-      const Main$x = Show_a => Main$s(Show_a);"
+      const Main$x = Show_0 => Main$s(Show_0);"
     `);
   });
 
@@ -2229,7 +2223,7 @@ describe("traits compilation", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Some = _0 => _0;
-      const Main$x = Show_b => Main$s(Show_b);"
+      const Main$x = Show_1 => Main$s(Show_1);"
     `);
   });
 
@@ -2255,7 +2249,7 @@ describe("traits compilation", () => {
       const Main$None = {
         $: 1
       };
-      const Main$f = Show_a => Main$f$x => Main$show(Show_Main$Option(Show_a))({
+      const Main$f = Show_0 => Main$f$x => Main$show(Show_Main$Option(Show_0))({
         $: 0,
         _0: Main$f$x
       });"
@@ -2271,7 +2265,7 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-    "const Main$f = Eq_a => (Main$f$x, Main$f$y) => _eq(Eq_a)(Main$f$x, Main$f$y);"
+    "const Main$f = Eq_0 => (Main$f$x, Main$f$y) => _eq(Eq_0)(Main$f$x, Main$f$y);"
   `);
   });
 
@@ -2380,7 +2374,7 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(
-      `"const Main$called = FromJson_a => Main$from_json(FromJson_a)(Main$json);"`,
+      `"const Main$called = FromJson_0 => Main$from_json(FromJson_0)(Main$json);"`,
     );
   });
 });
@@ -2408,7 +2402,7 @@ describe("deriving", () => {
     `);
     });
 
-    test.skip("no variants", () => {
+    test("no variants", () => {
       const out = compileSrc(
         `
       type T { }
@@ -2418,7 +2412,7 @@ describe("deriving", () => {
       expect(out).toMatchInlineSnapshot(`"const Eq_Main$T = (x, y) => true;"`);
     });
 
-    test.skip("singleton without args", () => {
+    test("singleton without args", () => {
       const out = compileSrc(
         `
       type T { X }
@@ -2431,14 +2425,15 @@ describe("deriving", () => {
     `);
     });
 
-    test.skip("singleton with concrete args", () => {
+    test("singleton with concrete args", () => {
       const out = compileSrc(
         `
-      type T { X(Int, Int) }
+      extern type MyInt
+      type T { X(MyInt, MyInt) }
     `,
         {
           allowDeriving: ["Eq"],
-          traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+          traitImpl: [{ moduleName: "Main", typeName: "MyInt", trait: "Eq" }],
         },
       );
       expect(out).toMatchInlineSnapshot(`
@@ -2447,24 +2442,24 @@ describe("deriving", () => {
         _0,
         _1
       });
-      const Eq_Main$T = (x, y) => Eq_Main$Int(x._0, y._0) && Eq_Main$Int(x._1, y._1);"
+      const Eq_Main$T = (x, y) => Eq_Main$MyInt(x._0, y._0) && Eq_Main$MyInt(x._1, y._1);"
     `);
     });
 
-    test.skip("singleton with newtype repr", () => {
+    test("singleton with newtype repr", () => {
       const out = compileSrc(
         `
-      extern type Int
-      type T { X(Int) }
+      extern type MyInt
+      type T { X(MyInt) }
     `,
         {
           allowDeriving: ["Eq"],
-          traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Eq" }],
+          traitImpl: [{ moduleName: "Main", typeName: "MyInt", trait: "Eq" }],
         },
       );
       expect(out).toMatchInlineSnapshot(`
       "const Main$X = _0 => _0;
-      const Eq_Main$T = (x, y) => Eq_Main$Int(x, y);"
+      const Eq_Main$T = (x, y) => Eq_Main$MyInt(x, y);"
     `);
     });
 
@@ -2641,7 +2636,7 @@ describe("deriving", () => {
       expect(out).toMatchInlineSnapshot(`""`);
     });
 
-    test.skip("no fields", () => {
+    test("no fields", () => {
       const out = compileSrc(
         `
       type T struct { }
@@ -2745,7 +2740,7 @@ describe("deriving", () => {
     });
   });
 
-  describe.skip("Derive Show instance for Adts", () => {
+  describe("Derive Show instance for Adts", () => {
     test("do not derive underivable types", () => {
       const out = compileSrc(
         `
@@ -2782,15 +2777,16 @@ describe("deriving", () => {
     `);
     });
 
-    test("single variant, with concrete argss", () => {
+    test("single variant, with concrete args", () => {
       const out = compileSrc(
         `
-      extern type Int
-      type T { X(Int, Int) }
+      extern type MyInt
+      type T { X(MyInt, MyInt) }
     `,
         {
+          ns: "Main",
           allowDeriving: ["Show"],
-          traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+          traitImpl: [{ moduleName: "Main", typeName: "MyInt", trait: "Show" }],
         },
       );
 
@@ -2800,38 +2796,42 @@ describe("deriving", () => {
         _0,
         _1
       });
-      const Show_Main$T = x => \`X(\${Show_Main$Int(x._0)}, \${Show_Main$Int(x._1)})\`;"
+      const Show_Main$T = x => \`X(\${Show_Main$MyInt(x._0)}, \${Show_Main$MyInt(x._1)})\`;"
     `);
     });
 
     test("single variant (unboxed repr)", () => {
       const out = compileSrc(
         `
-      extern type Int
-      type T { X(Int) }
+      extern type MyInt
+      type T { X(MyInt) }
     `,
         {
           allowDeriving: ["Show"],
-          traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+          traitImpl: [{ moduleName: "Main", typeName: "MyInt", trait: "Show" }],
         },
       );
 
       expect(out).toMatchInlineSnapshot(`
       "const Main$X = _0 => _0;
-      const Show_Main$T = x => \`X(\${Show_Main$Int(x)})\`;"
+      const Show_Main$T = x => \`X(\${Show_Main$MyInt(x)})\`;"
     `);
     });
 
     test("single variant (namespaced)", () => {
       const out = compileSrc(
         `
-      extern type Int
-      type T { X(Int) }
+      extern type MyInt
+      type T { X(MyInt) }
     `,
         {
           allowDeriving: ["Show"],
           traitImpl: [
-            { moduleName: "Example/Namespace", typeName: "Int", trait: "Show" },
+            {
+              moduleName: "Example/Namespace",
+              typeName: "MyInt",
+              trait: "Show",
+            },
           ],
           ns: "Example/Namespace",
         },
@@ -2839,7 +2839,7 @@ describe("deriving", () => {
 
       expect(out).toMatchInlineSnapshot(`
       "const Example$Namespace$X = _0 => _0;
-      const Show_Example$Namespace$T = x => \`X(\${Show_Example$Namespace$Int(x)})\`;"
+      const Show_Example$Namespace$T = x => \`X(\${Show_Example$Namespace$MyInt(x)})\`;"
     `);
     });
 
@@ -2860,16 +2860,16 @@ describe("deriving", () => {
     test("many variants", () => {
       const out = compileSrc(
         `
-      extern type Int
+      extern type MyInt
       type T<a, b> {
         A,
-        B(Int, a),
+        B(MyInt, a),
         C(b),
       }
     `,
         {
           allowDeriving: ["Show"],
-          traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+          traitImpl: [{ moduleName: "Main", typeName: "MyInt", trait: "Show" }],
         },
       );
 
@@ -2891,7 +2891,7 @@ describe("deriving", () => {
           case 0:
             return "A";
           case 1:
-            return \`B(\${Show_Main$Int(x._0)}, \${Show_a(x._1)})\`;
+            return \`B(\${Show_Main$MyInt(x._0)}, \${Show_a(x._1)})\`;
           case 2:
             return \`C(\${Show_b(x._0)})\`;
         }
@@ -2964,6 +2964,7 @@ describe("deriving", () => {
         {
           allowDeriving: ["Show"],
           ns: "Tuple",
+          package_: CORE_PACKAGE,
         },
       );
 
@@ -2978,7 +2979,7 @@ describe("deriving", () => {
     });
   });
 
-  describe.skip("Derive Show instance for structs", () => {
+  describe("Derive Show instance for structs", () => {
     test("do not derive underivable types", () => {
       const out = compileSrc(
         `
@@ -3007,17 +3008,17 @@ describe("deriving", () => {
     test("single field with concrete args", () => {
       const out = compileSrc(
         `
-      extern type Int
-      type T struct { field: Int }
+      extern type MyInt
+      type T struct { field: MyInt }
     `,
         {
           allowDeriving: ["Show"],
-          traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+          traitImpl: [{ moduleName: "Main", typeName: "MyInt", trait: "Show" }],
         },
       );
 
       expect(out).toMatchInlineSnapshot(`
-      "const Show_Main$T = x => \`T { field: \${Show_Main$Int(x.field)} }\`;"
+      "const Show_Main$T = x => \`T { field: \${Show_Main$MyInt(x.field)} }\`;"
     `);
     });
 
@@ -3037,21 +3038,21 @@ describe("deriving", () => {
     test("many fields", () => {
       const out = compileSrc(
         `
-      extern type Int
+      extern type MyInt
       type T<a, b> struct {
-        field_int: Int,
+        field_int: MyInt,
         field_a: a,
         field_b: b,
       }
     `,
         {
           allowDeriving: ["Show"],
-          traitImpl: [{ moduleName: "Main", typeName: "Int", trait: "Show" }],
+          traitImpl: [{ moduleName: "Main", typeName: "MyInt", trait: "Show" }],
         },
       );
 
       expect(out).toMatchInlineSnapshot(`
-      "const Show_Main$T = (Show_a, Show_b) => x => \`T { field_int: \${Show_Main$Int(x.field_int)}, field_a: \${Show_a(x.field_a)}, field_b: \${Show_b(x.field_b)} }\`;"
+      "const Show_Main$T = (Show_a, Show_b) => x => \`T { field_int: \${Show_Main$MyInt(x.field_int)}, field_a: \${Show_a(x.field_a)}, field_b: \${Show_b(x.field_b)} }\`;"
     `);
     });
 
@@ -3095,10 +3096,6 @@ describe("deriving", () => {
   });
 });
 
-beforeEach(() => {
-  TVar.resetTraitImpls();
-});
-
 type CompileSrcOpts = {
   package_?: string;
   ns?: string;
@@ -3117,12 +3114,15 @@ function compileSrc(
     allowDeriving = [],
   }: CompileSrcOpts = {},
 ) {
-  resetTraitsRegistry(
+  const program = typecheckSource_(
+    package_,
+    ns,
+    src,
+    deps,
     traitImpl === undefined
       ? defaultTraitImpls
       : [...defaultTraitImpls, ...traitImpl],
   );
-  const program = typecheckSource_(package_, ns, src, deps);
   const out = compile(
     lowerProgram(program, new Map(), () => {
       return undefined;

@@ -1,4 +1,5 @@
-import { TypeScheme, resolveType } from "../type";
+import { DefaultMap } from "../data/defaultMap";
+import { RigidVarsCtx, resolveType } from "../type";
 import * as typed from "../typecheck";
 import * as ir from "./ir";
 
@@ -7,7 +8,7 @@ class ExprEmitter {
     private readonly namespace: string,
     private readonly currentDecl: ir.QualifiedIdentifier,
     private readonly knownImplicitArities: Map<string, ir.ImplicitParam[]>,
-    private readonly scheme: TypeScheme,
+    private readonly flexVarsStore: DefaultMap<number, number>,
     private readonly getDependency: (ns: string) => undefined | ir.Program,
   ) {}
 
@@ -378,7 +379,7 @@ class ExprEmitter {
               throw new CompilationError("unkown instantiated: " + glbVarId);
             }
 
-            return this.lowerImplicitArg(instantiated.asType(), arity);
+            return this.lowerImplicitArg(instantiated, arity);
           }),
         };
       }
@@ -392,16 +393,11 @@ class ExprEmitter {
     const resolution = resolveType(instantiatedType);
     switch (resolution.type) {
       case "unbound": {
-        if (resolution.traits.length === 0) {
+        if (resolution.traits.size === 0) {
           return [];
         }
 
-        const id = this.scheme[resolution.id];
-        if (id === undefined) {
-          // TODO we should prevent this during typecheck, by creating the data containing this info
-          // and emitting ambiguous err instead
-          throw new CompilationError("implicit param not found");
-        }
+        const id = this.flexVarsStore.get(resolution.id).toString();
 
         return [
           {
@@ -465,6 +461,7 @@ export function lowerProgram(
         {
           name: mkIdent(decl.name),
           params: decl.params.map((p) => p.name),
+          traits: decl.$traits,
           constructors: decl.variants.map(
             (ctor): ir.AdtConstructor => ({
               name: mkIdent(ctor.name),
@@ -493,9 +490,14 @@ export function lowerProgram(
 
     values: module.declarations.flatMap((decl): ir.ValueDeclaration[] => {
       const ident = mkIdent(decl.binding.name);
-      const implArity = makeTraitsScheme(
-        decl.binding.$type.asType(),
-        decl.$scheme,
+
+      let id = 0;
+      const flexVarsStore = new DefaultMap<number, number>(() => id++);
+
+      const implArity = makeImplicitArity(
+        decl,
+        decl.$traitsConstraints,
+        flexVarsStore,
       );
       knownImplicitArities.set(ident.toString(), implArity);
 
@@ -512,7 +514,7 @@ export function lowerProgram(
         namespace,
         ident,
         knownImplicitArities,
-        decl.$scheme,
+        flexVarsStore,
         getDependency,
       );
 
@@ -521,10 +523,7 @@ export function lowerProgram(
           name: ident,
           value: emitter.lowerExpr(decl.value),
           inline: decl.inline,
-          implicitTraitParams: makeTraitsScheme(
-            decl.binding.$type.asType(),
-            decl.$scheme,
-          ),
+          implicitTraitParams: implArity,
         },
       ];
     }),
@@ -568,63 +567,64 @@ const CONS = (hd: ir.Expr, tl: ir.Expr): ir.Expr => ({
   },
 });
 
-function makeTraitsScheme(
-  type: typed.Type,
-  scheme: TypeScheme,
+/**
+ * Traverse the type of a declaration to find the implicit arity (the trait dicts to pass)
+ * */
+function makeImplicitArity(
+  decl: typed.TypedDeclaration,
+  traitsBounds: RigidVarsCtx,
+  freshVarsStore: DefaultMap<number, number>,
 ): ir.ImplicitParam[] {
   const alreadySeen = new Set<string>();
 
   const out: ir.ImplicitParam[] = [];
 
-  function helper(type: typed.Type) {
-    switch (type.type) {
-      case "fn":
-        for (const arg of type.args) {
-          helper(arg);
-        }
-        helper(type.return);
-        return;
-
-      case "named": {
-        for (const arg of type.args) {
-          helper(arg);
-        }
-        return;
-      }
-
-      case "var": {
-        const resolved = type.var.resolve();
-        switch (resolved.type) {
-          case "bound":
-            helper(resolved.value);
-            return;
-          case "unbound":
-            for (const trait of resolved.traits) {
-              const key = `${resolved.id}${trait}`;
-              // This avoids adding duplicate params
-              if (alreadySeen.has(key)) {
-                return;
-              }
-              alreadySeen.add(key);
-
-              const id = scheme[resolved.id];
-              if (id === undefined) {
-                throw new CompilationError("id not found");
-              }
-
-              out.push({
-                type: "var",
-                id,
-                trait,
-              });
-            }
-            return;
-        }
-      }
+  function push(name: string, traits: Iterable<string>) {
+    if (alreadySeen.has(name)) {
+      return;
+    }
+    alreadySeen.add(name);
+    for (const trait of traits) {
+      out.push({
+        type: "var",
+        id: name,
+        trait,
+      });
     }
   }
 
-  helper(type);
+  function helper(type_: typed.Type) {
+    const resolved = resolveType(type_);
+    switch (resolved.type) {
+      case "fn":
+        for (const arg of resolved.args) {
+          helper(arg);
+        }
+        helper(resolved.return);
+        return;
+
+      case "named":
+        for (const arg of resolved.args) {
+          helper(arg);
+        }
+        return;
+
+      case "rigid-var":
+        push(resolved.name, traitsBounds[resolved.name] ?? []);
+        break;
+
+      case "unbound": {
+        const id = freshVarsStore.get(resolved.id);
+        push(id.toString(), resolved.traits);
+        return;
+      }
+
+      default:
+        resolved satisfies never;
+    }
+  }
+
+  helper(decl.binding.$type.asType());
 
   return out;
 }

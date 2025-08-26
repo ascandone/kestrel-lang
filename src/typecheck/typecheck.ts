@@ -19,14 +19,12 @@ import {
   TypedTypeDeclaration,
   TypedTypeVariant,
 } from "./typedAst";
-import { TraitImpl, defaultImports, defaultTraitImpls } from "./defaultImports";
+import { TraitImpl, defaultImports } from "./defaultImports";
 import {
   TVar,
   Type,
   unify,
   UnifyError,
-  TypeScheme,
-  TraitImplDependency,
   TVarResolution,
   Instantiator,
   typeToString,
@@ -34,39 +32,24 @@ import {
   ConcreteType,
   resolveType,
   instantiate,
+  TraitsStore,
 } from "../type";
 import {
   ArityMismatch,
   AmbiguousTypeVar,
   ErrorInfo,
-  InvalidCatchall,
   InvalidField,
-  InvalidTypeArity,
   MissingRequiredFields,
   NonExhaustiveMatch,
   OccursCheck,
   TraitNotSatified,
   TypeMismatch,
-  UnboundTypeParam,
 } from "./errors";
 import * as err from "./errors";
 import { Deps, resolve } from "./resolution";
 import { topologicalSort } from "../utils/topsort";
+import { DefaultMap } from "../data/defaultMap";
 export { Deps } from "./resolution";
-
-export function resetTraitsRegistry(
-  traitImpls: TraitImpl[] = defaultTraitImpls,
-) {
-  TVar.resetTraitImpls();
-  for (const impl of traitImpls) {
-    TVar.registerTraitImpl(
-      impl.moduleName,
-      impl.typeName,
-      impl.trait,
-      impl.deps ?? [],
-    );
-  }
-}
 
 export function typecheck(
   package_: string,
@@ -75,10 +58,10 @@ export function typecheck(
   deps: Deps = {},
   implicitImports: Import[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
+  traitImpls: TraitImpl[] = [],
 ): [TypedModule, ErrorInfo[]] {
-  return new Typechecker(package_, ns, mainType).run(
+  return new Typechecker(package_, ns, mainType, deps, traitImpls).run(
     module,
-    deps,
     implicitImports,
   );
 }
@@ -99,14 +82,20 @@ class Typechecker {
   private ambiguousTypeVarErrorsEmitted = new Set<number>();
 
   private currentRecGroup: TypedDeclaration[] = [];
-  private currentDeclarationType?: Type;
+  private currentDeclaration?: TypedDeclaration;
 
   private scheduledAmbiguousVarChecks: ScheduledAmbiguousVarCheck[] = [];
 
+  /** The `(Type, Trait)` pairs, encoded as `${type}:${trait}`
+   */
+  private localDerives = new Map<string, Set<string>[]>();
+
   constructor(
     private readonly package_: string,
-    private ns: string,
-    private mainType: Type,
+    private readonly ns: string,
+    private readonly mainType: Type,
+    private readonly deps: Deps,
+    private readonly traitImpls: TraitImpl[] = [],
   ) {}
 
   private pushErrorNode(ast: TypeMeta) {
@@ -116,108 +105,118 @@ class Typechecker {
     }
   }
 
+  private store: TraitsStore = {
+    getRigidVarImpl: (trait) => {
+      const impls = this.currentDeclaration?.$traitsConstraints[trait];
+      if (impls === undefined) {
+        return false;
+      }
+      return impls.has(trait);
+    },
+
+    getNamedTypeDependencies: (type_, trait) =>
+      this.getNamedTypeDependencies(type_, trait),
+  };
+
+  private getNamedTypeDependencies: TraitsStore["getNamedTypeDependencies"] = (
+    { package_, module, name },
+    trait,
+  ) => {
+    const implicit = this.traitImpls.find(
+      (v) =>
+        v.moduleName === module && v.typeName === name && v.trait === trait,
+    );
+    if (implicit !== undefined) {
+      return (implicit.deps ?? []).map((dep) => new Set(dep));
+    }
+
+    if (module === this.ns) {
+      return this.localDerives.get(`${name}:${trait}`);
+    }
+
+    const modInt = this.deps[module];
+    if (modInt === undefined) {
+      return undefined;
+    }
+
+    if (modInt.package_ !== package_) {
+      // TODO handle
+      throw new Error("unhandled: deriving from another package");
+    }
+
+    return modInt.publicTypes[name]?.$traits.get(trait);
+  };
+
   private adtDerive(
     trait: string,
     typeDecl: TypedTypeDeclaration & { type: "adt" },
   ) {
-    const deps: TraitImplDependency[] = [];
-
-    const depParams = new Set<string>();
-
-    // Register recursive type
-    TVar.registerTraitImpl(
-      this.ns,
-      typeDecl.name,
-      trait,
-      typeDecl.params.map((_) => undefined),
-    );
+    const out = new DefaultMap<string, Set<string>>(() => new Set());
 
     for (const variant of typeDecl.variants) {
-      const resolved = resolveType(variant.$type);
+      // TODO refactor this so that we have a type per ctor arg
 
-      if (resolved.type === "unbound") {
-        throw new Error("[unreachable]");
-      }
+      const resolved = resolveType(variant.$type);
 
       if (resolved.type === "fn") {
         for (const arg of resolved.args) {
-          const impl = TVar.typeImplementsTrait(arg, trait);
-          if (impl === undefined) {
-            TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
+          const ok = mkDepsFor(
+            out,
+            arg,
+            trait,
+            {
+              // TODO check .bind is needed
+              getNamedTypeDependencies:
+                this.getNamedTypeDependencies.bind(this),
+            },
+            resolved.return,
+          );
+
+          if (!ok) {
             return;
           }
-          // for (const { id } of impl) {
-          //   const name = variant.$scheme[id];
-          //   if (name !== undefined) {
-          //     depParams.add(name);
-          //   }
-          // }
         }
       }
 
       // Singleton always derive any trait
     }
 
-    for (const param of typeDecl.params) {
-      if (depParams.has(param.name)) {
-        deps.push([trait]);
-      } else {
-        deps.push(undefined);
-      }
-    }
-
-    TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
-    TVar.registerTraitImpl(this.ns, typeDecl.name, trait, deps);
+    const params = typeDecl.params.map((param) => out.get(param.name));
+    typeDecl.$traits.set(trait, params);
+    this.localDerives.set(`${typeDecl.name}:${trait}`, params);
   }
 
   private structDerive(
     trait: string,
     typeDecl: TypedTypeDeclaration & { type: "struct" },
   ) {
-    const deps: TraitImplDependency[] = [];
-
-    const depParams = new Set<string>();
-
-    // Register recursive type
-    TVar.registerTraitImpl(
-      this.ns,
-      typeDecl.name,
-      trait,
-      typeDecl.params.map((_) => undefined),
-    );
+    const out = new DefaultMap<string, Set<string>>(() => new Set());
 
     for (const field of typeDecl.fields) {
-      const impl = TVar.typeImplementsTrait(field.$type, trait);
-      if (impl === undefined) {
-        TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
+      const ok = mkDepsFor(
+        out,
+        field.$type,
+        trait,
+        {
+          // TODO check .bind is needed
+          getNamedTypeDependencies: this.getNamedTypeDependencies.bind(this),
+        },
+        typeDecl.$type,
+      );
+      if (!ok) {
         return;
       }
-
-      // for (const { id } of impl) {
-      //   const name = field.$scheme[id];
-      //   if (name !== undefined) {
-      //     depParams.add(name);
-      //   }
-      // }
 
       // Singleton always derive any trait
     }
 
-    for (const param of typeDecl.params) {
-      if (depParams.has(param.name)) {
-        deps.push([trait]);
-      } else {
-        deps.push(undefined);
-      }
-    }
-
-    TVar.removeTraitImpl(this.ns, typeDecl.name, trait);
-    TVar.registerTraitImpl(this.ns, typeDecl.name, trait, deps);
+    const params = typeDecl.params.map((param) => out.get(param.name));
+    typeDecl.$traits.set(trait, params);
+    this.localDerives.set(`${typeDecl.name}:${trait}`, params);
   }
 
   run(
     module: UntypedModule,
-    deps: Deps,
     implicitImports: Import[] = defaultImports,
   ): [TypedModule, ErrorInfo[]] {
     TVar.resetId();
@@ -225,7 +224,7 @@ class Typechecker {
     const { typedModule, errors, mutuallyRecursiveBindings } = resolve(
       this.package_,
       this.ns,
-      deps,
+      this.deps,
       module,
       implicitImports,
     );
@@ -251,11 +250,11 @@ class Typechecker {
       this.currentRecGroup = group;
       // TODO something's not right here (we should generalize the whole group after the typecheck pass)
       for (const decl of group) {
-        this.currentDeclarationType = decl.binding.$type.asType();
+        this.currentDeclaration = decl;
         this.typecheckDeclaration(decl);
 
         for (const check of this.scheduledAmbiguousVarChecks) {
-          this.checkInstantiatedVars(decl.$scheme, check);
+          this.checkInstantiatedVars(check);
         }
         this.scheduledAmbiguousVarChecks = [];
       }
@@ -265,7 +264,7 @@ class Typechecker {
       this.doubleCheckFieldAccess(
         fieldAccessAst,
         fieldAccessAst.struct.$type.resolve(),
-        deps,
+        this.deps,
       );
     }
 
@@ -320,7 +319,7 @@ class Typechecker {
   }
 
   private unifyExpr(ast: TypedExpr, t1: Type, t2: Type) {
-    const e = unify(t1, t2);
+    const e = unify(t1, t2, this.store);
     if (e === undefined) {
       return;
     }
@@ -372,91 +371,17 @@ class Typechecker {
     this.errors.push(unifyErr(ast, e));
   }
 
-  /**
-   * Used to parse args of ADT constructors
-   */
-  private typeAstToType(
-    ast: TypedTypeAst,
-    opts: TypeAstConversionType,
-    /* mut */ bound: Record<string, TVar>,
-    traitDefs: Record<string, string[]>,
-  ): Type {
-    switch (ast.type) {
-      case "named": {
-        if (ast.$resolution === undefined) {
-          return TVar.fresh().asType();
-        }
-
-        const expectedArity = ast.$resolution.declaration.params.length,
-          actualArity = ast.args.length;
-
-        if (expectedArity !== actualArity) {
-          this.errors.push({
-            range: ast.range,
-            description: new InvalidTypeArity(
-              ast.name,
-              expectedArity,
-              actualArity,
-            ),
-          });
-        }
-
-        return {
-          type: "named",
-          package_: ast.$resolution.package_,
-          module: ast.$resolution.namespace,
-          name: ast.name,
-          args: ast.args.map((arg) =>
-            this.typeAstToType(arg, opts, bound, traitDefs),
-          ),
-        };
-      }
-
-      case "fn": {
-        return {
-          type: "fn",
-          args: ast.args.map((arg) =>
-            this.typeAstToType(arg, opts, bound, traitDefs),
-          ),
-          return: this.typeAstToType(ast.return, opts, bound, traitDefs),
-        };
-      }
-
-      case "var": {
-        if (
-          opts.type === "constructor-arg" &&
-          !opts.params.includes(ast.ident)
-        ) {
-          this.errors.push({
-            range: ast.range,
-            description: new UnboundTypeParam(ast.ident),
-          });
-        }
-
-        const bound_ = bound[ast.ident];
-        if (bound_ === undefined) {
-          const traits = traitDefs[ast.ident] ?? [];
-          const $ = TVar.fresh(traits);
-          bound[ast.ident] = $;
-          return $.asType();
-        }
-
-        return bound_.asType();
-      }
-
-      case "any":
-        if (opts.type === "constructor-arg") {
-          this.errors.push({
-            range: ast.range,
-            description: new InvalidCatchall(),
-          });
-        }
-        return { type: "var", var: TVar.fresh() };
-    }
-  }
-
   private typecheckDeclaration(decl: TypedDeclaration) {
     if (decl.typeHint !== undefined) {
+      // TODO validate where clause:
+      // 1. no duplicate vars
+      // 2. no orphan vars
+      decl.$traitsConstraints = Object.fromEntries(
+        decl.typeHint.where.map(
+          (def) => [def.typeVar, new Set(def.traits)] as const,
+        ),
+      );
+
       const hint = this.hydrateTypeAst(decl.typeHint.mono, {
         type: "signature",
       });
@@ -517,7 +442,7 @@ class Typechecker {
           });
         }
 
-        const t = instantiate(pattern.$resolution.variant.$type);
+        const t = instantiate(pattern.$resolution.variant.$type, {});
 
         if (t.type === "named") {
           this.unifyNode(pattern, t, pattern.$type.asType());
@@ -560,17 +485,17 @@ class Typechecker {
     }
   }
 
-  private checkInstantiatedVars(
-    scheme: TypeScheme,
-    { instantiatedVarNode, currentDeclaration }: ScheduledAmbiguousVarCheck,
-  ) {
+  private checkInstantiatedVars({
+    instantiatedVarNode,
+    currentDeclaration,
+  }: ScheduledAmbiguousVarCheck) {
     const bindingUnboundTypes = new Set<number>(
       findUnboundTypeVars(currentDeclaration).map((v) => v.id),
     );
 
     const instantiatedVarUnboundTypes = findUnboundTypeVars(
       instantiatedVarNode.$type.asType(),
-    ).filter((v) => v.traits.length !== 0);
+    ).filter((v) => v.traits.size !== 0);
 
     for (const instantiatedVarType of instantiatedVarUnboundTypes) {
       const areVarsInBindings = bindingUnboundTypes.has(instantiatedVarType.id);
@@ -596,8 +521,11 @@ class Typechecker {
       this.errors.push({
         range: instantiatedVarNode.range,
         description: new AmbiguousTypeVar(
-          instantiatedVarType.traits[0]!,
-          typeToString(instantiatedVarNode.$type.asType(), scheme),
+          [...instantiatedVarType.traits.values()][0]!,
+          typeToString(
+            instantiatedVarNode.$type.asType(),
+            this.currentDeclaration?.$traitsConstraints,
+          ),
         ),
       });
 
@@ -672,7 +600,7 @@ class Typechecker {
           return;
         }
 
-        const instantiator = new Instantiator();
+        const instantiator = new Instantiator({});
         const type_ = instantiator.instantiate(
           ast.struct.$resolution.declaration.$type,
         );
@@ -722,7 +650,7 @@ class Typechecker {
 
         this.scheduledAmbiguousVarChecks.push({
           instantiatedVarNode: ast,
-          currentDeclaration: this.currentDeclarationType!,
+          currentDeclaration: this.currentDeclaration!.binding.$type.asType(),
         });
 
         return;
@@ -813,7 +741,7 @@ class Typechecker {
   }
 
   private unifyNode(ast: RangeMeta, t1: Type, t2: Type) {
-    const e = unify(t1, t2);
+    const e = unify(t1, t2, this.store);
     if (e === undefined) {
       return;
     }
@@ -824,7 +752,7 @@ class Typechecker {
     ast: TypedExpr & { type: "field-access" },
     resolution: FieldResolution,
   ) {
-    const instantiator = new Instantiator();
+    const instantiator = new Instantiator({});
 
     const structType: Type = instantiator.instantiate(
       resolution.declaration.$type,
@@ -992,13 +920,6 @@ function inferConstant(x: ConstLiteral): Type {
   }
 }
 
-type TypeAstConversionType =
-  | { type: "type-hint" }
-  | {
-      type: "constructor-arg";
-      params: string[];
-    };
-
 export const CORE_PACKAGE = "kestrel_core";
 
 function topSortedModules(
@@ -1037,8 +958,6 @@ export function typecheckProject(
   implicitImports: Import[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
 ): ProjectTypeCheckResult {
-  resetTraitsRegistry();
-
   const sortedModules = topSortedModules(project, implicitImports);
 
   const projectResult: ProjectTypeCheckResult = {};
@@ -1100,7 +1019,9 @@ function resolutionToType(
       return resolution.binding.$type.asType();
 
     case "global-variable": {
-      const instantiator = new Instantiator();
+      const instantiator = new Instantiator(
+        resolution.declaration.$traitsConstraints,
+      );
 
       if (currentDeclarations.includes(resolution.declaration)) {
         return resolution.declaration.binding.$type.asType();
@@ -1111,13 +1032,13 @@ function resolutionToType(
       );
 
       // TODO we should schedule here the ambiguous check
-      ast.$instantiated = instantiator.instantiatedRigid;
+      ast.$instantiated = instantiator.instantiatedRigid.inner;
 
       return type;
     }
 
     case "constructor":
-      return instantiate(resolution.variant.$type);
+      return instantiate(resolution.variant.$type, {});
 
     // TODO should struct go here?
   }
@@ -1204,7 +1125,7 @@ type TraitDependencies = {
  * ```
  * is represented as the `Set([1])` set (where the elems are the index of type params)
  */
-function getTraitDependencies(
+export function getTraitDependencies(
   type: Type,
   namedDependency: (
     package_: string,
@@ -1265,4 +1186,60 @@ function getTraitDependencies(
   recur(type);
 
   return deps;
+}
+
+function mkDepsFor(
+  /* &mut */ out: DefaultMap<string, Set<string>>,
+
+  type_: Type,
+  trait: string,
+  store: Pick<TraitsStore, "getNamedTypeDependencies">,
+
+  def: Type,
+): boolean {
+  switch (type_.type) {
+    case "rigid-var":
+      out.get(type_.name).add(trait);
+      return true;
+
+    case "fn":
+      return false;
+
+    case "named": {
+      if (
+        def.type === "named" &&
+        type_.package_ === def.package_ &&
+        type_.module === def.module &&
+        type_.name === def.name
+      ) {
+        // recursive def: no deps
+        return true;
+      }
+
+      const neededArgs = store.getNamedTypeDependencies(type_, trait);
+      if (neededArgs === undefined) {
+        return false;
+      }
+
+      for (let argIndex = 0; argIndex < type_.args.length; argIndex++) {
+        const arg = type_.args[argIndex]!;
+
+        const neededArg = neededArgs[argIndex];
+        if (neededArg === undefined) {
+          continue;
+        }
+        for (const neededTrait of neededArg) {
+          const ok = mkDepsFor(out, arg, neededTrait, store, def);
+          if (!ok) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    case "var":
+      return false;
+  }
 }

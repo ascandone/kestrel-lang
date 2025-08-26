@@ -339,7 +339,7 @@ export async function lspCmd() {
       return;
     }
 
-    const label = `${hint.name}: ${typeToString(hint.type, hint.scheme)}`;
+    const label = `${hint.name}: ${typeToString(hint.type)}`;
 
     return {
       signatures: [
@@ -521,8 +521,8 @@ export async function lspCmd() {
       return;
     }
 
-    return module.typed.declarations.map(({ binding, $scheme: scheme }) => {
-      const tpp = typeToString(binding.$type.asType(), scheme);
+    return module.typed.declarations.map(({ binding }) => {
+      const tpp = typeToString(binding.$type.asType());
       return {
         command: { title: tpp, command: "noop" },
         range: binding.range,
