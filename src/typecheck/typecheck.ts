@@ -19,7 +19,7 @@ import {
   TypedTypeDeclaration,
   TypedTypeVariant,
 } from "./typedAst";
-import { TraitImpl, defaultImports } from "./defaultImports";
+import { TraitImpl, defaultImports, defaultTraitImpls } from "./defaultImports";
 import {
   TVar,
   Type,
@@ -58,7 +58,7 @@ export function typecheck(
   deps: Deps = {},
   implicitImports: Import[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
-  traitImpls: TraitImpl[] = [],
+  traitImpls: TraitImpl[] = defaultTraitImpls,
 ): [TypedModule, ErrorInfo[]] {
   return new Typechecker(package_, ns, mainType, deps, traitImpls).run(
     module,
