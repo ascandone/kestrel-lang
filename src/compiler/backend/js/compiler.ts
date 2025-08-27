@@ -40,6 +40,8 @@ export class Compiler {
    * TODO make sure this doesn't break project compilation
    */
   private currentCompilerId = 0;
+  private currentDecl?: ir.QualifiedIdentifier;
+  private tailCalls?: Set<ir.Expr & { type: "application" }>;
 
   constructor(readonly options: CompileOptions = {}) {}
 
@@ -107,6 +109,7 @@ export class Compiler {
   }
 
   private compileDeclaration(decl: ir.ValueDeclaration): t.Statement[] {
+    this.currentDecl = decl.name;
     this.compileExprAsJsStms(decl.value, {
       type: "assign_var",
       declare: true,
@@ -174,28 +177,26 @@ export class Compiler {
   private compileExprAsJsStms(src: ir.Expr, as: CompilationMode): void {
     switch (src.type) {
       case "application": {
-        const isTailcall = false; // TODO
+        const isTailcall = this.tailCalls?.has(src) ?? false;
         if (!isTailcall) {
           break;
         }
-        //     if (this.isTailCall(src, tailPosCaller)) {
-        //       const tailCallIdent = this.makeFreshIdent();
-        //       this.tailCallIdent = tailCallIdent;
-        //       for (let i = 0; i < src.args.length; i++) {
-        //         const expr = this.compileExprAsJsExpr(src.args[i]!, tailPosCaller);
-        //         this.statementsBuf.push({
-        //           type: "ExpressionStatement",
-        //           expression: {
-        //             type: "AssignmentExpression",
-        //             operator: "=",
-        //             left: { type: "Identifier", name: `GEN_TC__${i}` },
-        //             right: expr,
-        //           },
-        //         });
-        //       }
-        //       return;
-        //     }
-        throw new Error("TODO compile tailcall");
+
+        // const tailCallIdent = this.makeFreshIdent();
+        // this.tailCallIdent = tailCallIdent;
+        for (let i = 0; i < src.args.length; i++) {
+          const expr = this.compileExprAsJsExpr(src.args[i]!);
+          this.statementsBuf.push({
+            type: "ExpressionStatement",
+            expression: {
+              type: "AssignmentExpression",
+              operator: "=",
+              left: { type: "Identifier", name: `GEN_TC__${i}` },
+              right: expr,
+            },
+          });
+        }
+        return;
       }
 
       case "match":
@@ -773,26 +774,64 @@ export class Compiler {
   }
 
   private compileFnAsExpr(src: ir.Expr & { type: "fn" }): t.Expression {
-    // TODO TCO
+    const tailCalls = tcIdents(this.currentDecl!, src.body);
+    this.tailCalls = tailCalls;
+
     // TODO would it be possible to have a simplier repr for fn params? it probably shoudn't involve the IR lowering
     // maybe by keeping a scope with the locals defined as params? and converting to simple names
     const [{ params }, stms] = this.wrapStatements(() => {
-      const params = src.bindings.map(
-        (param): t.Identifier => compileLocalIdent(param),
-      );
+      const params = src.bindings.map((param): t.Identifier => {
+        return compileLocalIdent(param);
+      });
       this.compileExprAsJsStms(src.body, {
         type: "return",
       });
       return { params };
     });
+
     const bodyStms: t.Expression | t.BlockStatement = (() => {
-      if (stms.length === 1 && stms[0]!.type === "ReturnStatement") {
+      if (
+        tailCalls.size === 0 &&
+        stms.length === 1 &&
+        stms[0]!.type === "ReturnStatement"
+      ) {
         return stms[0].argument!;
       }
       return {
         type: "BlockStatement",
         directives: [],
-        body: stms,
+        body:
+          tailCalls.size === 0
+            ? stms
+            : [
+                {
+                  type: "WhileStatement",
+                  test: { type: "BooleanLiteral", value: true },
+                  body: {
+                    type: "BlockStatement",
+                    directives: [],
+                    body: [
+                      ...params.map(
+                        (id, index): t.Statement => ({
+                          type: "VariableDeclaration",
+                          kind: "const",
+                          declarations: [
+                            {
+                              type: "VariableDeclarator",
+                              id,
+                              init: {
+                                type: "Identifier",
+                                name: `GEN_TC__${index}`,
+                              },
+                            },
+                          ],
+                        }),
+                      ),
+                      ...stms,
+                    ],
+                  },
+                },
+              ],
       };
     })();
 
@@ -800,7 +839,15 @@ export class Compiler {
       type: "ArrowFunctionExpression",
       async: false,
       expression: true,
-      params,
+      params:
+        tailCalls.size === 0
+          ? params
+          : params.map(
+              (_, i): t.Identifier => ({
+                type: "Identifier",
+                name: `GEN_TC__${i}`,
+              }),
+            ),
       body: bodyStms,
     };
   }
@@ -1233,4 +1280,45 @@ export function compileProject(
   buf.push(`${entryPointMod}$main.exec();\n`);
 
   return buf.join("\n\n");
+}
+
+function tcIdents(binding: ir.QualifiedIdentifier, expr: ir.Expr) {
+  const tailCalls = new Set<ir.Expr & { type: "application" }>();
+
+  function helper(expr: ir.Expr) {
+    switch (expr.type) {
+      case "application": {
+        if (
+          expr.caller.type !== "identifier" ||
+          expr.caller.ident.type !== "global" ||
+          !expr.caller.ident.name.equals(binding)
+        ) {
+          return;
+        }
+
+        tailCalls.add(expr);
+        return;
+      }
+
+      case "match":
+        for (const [, clause] of expr.clauses) {
+          helper(clause);
+        }
+        return;
+
+      case "identifier":
+      case "constant":
+      case "fn":
+      case "field-access":
+      case "struct-literal":
+        return;
+
+      default:
+        expr satisfies never;
+    }
+  }
+
+  helper(expr);
+
+  return tailCalls;
 }
