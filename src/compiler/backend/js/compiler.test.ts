@@ -663,10 +663,9 @@ describe("if expressions", () => {
   });
 });
 
-describe.skip("TCO", () => {
+describe("TCO", () => {
   test("does not apply inside infix application", () => {
     const out = compileSrc(`
-    extern let (+): Fn(Int, Int) -> Int
     let loop = fn {
       1 + loop()
     }
@@ -700,9 +699,9 @@ describe.skip("TCO", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$f = x => {
-        const a = Main$f(x + 1);
-        return a;
+      "const Main$f = Main$f$x => {
+        const Main$f$a = Main$f(Main$f$x + 1);
+        return Main$f$a;
       };"
     `);
   });
@@ -731,10 +730,10 @@ describe.skip("TCO", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$loop = (GEN_TC__0, GEN_TC__1) => {
         while (true) {
-          const x = GEN_TC__0;
-          const y = GEN_TC__1;
-          GEN_TC__0 = x + 1;
-          GEN_TC__1 = y;
+          const Main$loop$x = GEN_TC__0;
+          const Main$loop$y = GEN_TC__1;
+          GEN_TC__0 = Main$loop$x + 1;
+          GEN_TC__1 = Main$loop$y;
         }
       };"
     `);
@@ -753,10 +752,10 @@ describe.skip("TCO", () => {
       "const Main$Box = _0 => _0;
       const Main$loop = (GEN_TC__0, GEN_TC__1) => {
         while (true) {
-          const x = GEN_TC__0;
-          const GEN__0 = GEN_TC__1;
-          GEN_TC__0 = x + 1;
-          GEN_TC__1 = Main$Box(GEN__0);
+          const Main$loop$x = GEN_TC__0;
+          const Main$loop$_IR_GEN = GEN_TC__1;
+          GEN_TC__0 = Main$loop$x + 1;
+          GEN_TC__1 = Main$loop$_IR_GEN;
         }
       };"
     `);
@@ -777,11 +776,11 @@ describe.skip("TCO", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$to_zero = GEN_TC__0 => {
         while (true) {
-          const x = GEN_TC__0;
-          if (x === 0) {
-            return x;
+          const Main$to_zero$x = GEN_TC__0;
+          if (_eq(Main$to_zero$x, 0)) {
+            return Main$to_zero$x;
           } else {
-            GEN_TC__0 = x - 1;
+            GEN_TC__0 = Main$to_zero$x - 1;
           }
         }
       };"
@@ -813,11 +812,11 @@ describe.skip("TCO", () => {
       });
       const List$to_zero = GEN_TC__0 => {
         while (true) {
-          const lst = GEN_TC__0;
-          if (lst.$ === 0) {
+          const List$to_zero$lst = GEN_TC__0;
+          if (List$to_zero$lst.$ === 0) {
             return 0;
-          } else if (lst.$ === 1) {
-            GEN_TC__0 = lst._1;
+          } else if (List$to_zero$lst.$ === 1) {
+            GEN_TC__0 = List$to_zero$lst._1;
           } else {
             throw new Error("[non exhaustive match]");
           }
@@ -851,15 +850,15 @@ describe.skip("TCO", () => {
       });
       const List$reduce = (GEN_TC__0, GEN_TC__1, GEN_TC__2) => {
         while (true) {
-          const lst = GEN_TC__0;
-          const acc = GEN_TC__1;
-          const f = GEN_TC__2;
-          if (lst.$ === 0) {
-            return acc;
-          } else if (lst.$ === 1) {
-            GEN_TC__0 = lst;
-            GEN_TC__1 = f(acc, lst._0);
-            GEN_TC__2 = f;
+          const List$reduce$lst = GEN_TC__0;
+          const List$reduce$acc = GEN_TC__1;
+          const List$reduce$f = GEN_TC__2;
+          if (List$reduce$lst.$ === 0) {
+            return List$reduce$acc;
+          } else if (List$reduce$lst.$ === 1) {
+            GEN_TC__0 = List$reduce$lst;
+            GEN_TC__1 = List$reduce$f(List$reduce$acc, List$reduce$lst._0);
+            GEN_TC__2 = List$reduce$f;
           } else {
             throw new Error("[non exhaustive match]");
           }
@@ -883,12 +882,12 @@ describe.skip("TCO", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$ap = f => f(10);
+      "const Main$ap = Main$ap$f => Main$ap$f(10);
       const Main$f = GEN_TC__0 => {
         while (true) {
-          const a = GEN_TC__0;
-          if (a) {} else {
-            const id = Main$ap(x => x);
+          const Main$f$a = GEN_TC__0;
+          if (Main$f$a) {} else {
+            const Main$f$id = Main$ap(Main$f$x => Main$f$x);
             return 0;
           }
         }
@@ -915,8 +914,8 @@ describe.skip("TCO", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$f1 = () => {
-        const f1 = () => 0;
-        return f1();
+        const Main$f1$f1 = () => 0;
+        return Main$f1$f1();
       };"
     `);
   });
