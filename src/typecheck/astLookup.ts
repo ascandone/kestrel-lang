@@ -92,6 +92,9 @@ export class Finder<T> {
           (expr.spread === undefined ? undefined : this.visitExpr(expr.spread))
         );
 
+      case "pipe":
+        return this.visitExpr(expr.left) ?? this.visitExpr(expr.right);
+
       default:
         return expr satisfies never;
     }

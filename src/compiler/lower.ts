@@ -232,6 +232,20 @@ class ExprEmitter {
           args: expr.args.map((arg) => this.lowerExpr(arg)),
         };
 
+      case "pipe":
+        if (expr.right.type !== "application") {
+          throw new CompilationError("bad pipe");
+        }
+
+        return {
+          type: "application",
+          caller: this.lowerExpr(expr.right.caller),
+          args: [
+            this.lowerExpr(expr.left),
+            ...expr.right.args.map((arg) => this.lowerExpr(arg)),
+          ],
+        };
+
       case "if": {
         const typeName = new ir.QualifiedIdentifier(
           typed.CORE_PACKAGE,

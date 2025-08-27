@@ -681,6 +681,34 @@ class Typechecker {
         }
         return;
 
+      case "pipe":
+        this.typecheckAnnotatedExpr(ast.left);
+        if (ast.right.type !== "application") {
+          this.errors.push({
+            range: ast.right.range,
+            description: new err.InvalidPipe(),
+          });
+          return;
+        }
+
+        // NOTE: make sure we don't typecheck ast.right - as it would fail
+        this.typecheckAnnotatedExpr(ast.right.caller);
+        for (const arg of ast.right.args) {
+          this.typecheckAnnotatedExpr(arg);
+        }
+
+        this.unifyExpr(ast, ast.right.caller.$type.asType(), {
+          type: "fn",
+          args: [
+            ast.left.$type.asType(),
+            ...ast.right.args.map((a) => a.$type.asType()),
+          ],
+          return: ast.$type.asType(),
+        });
+
+        this.unifyNode(ast.right, ast.right.$type.asType(), ast.$type.asType());
+        return;
+
       case "field-access": {
         this.typecheckAnnotatedExpr(ast.struct);
         if (ast.$resolution === undefined) {

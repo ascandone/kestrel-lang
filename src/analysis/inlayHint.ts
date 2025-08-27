@@ -13,39 +13,30 @@ class InlayHintBuf implements visitor.VisitOptions {
   public inlayHints: InlayHint[] = [];
   constructor(private readonly ctx: RigidVarsCtx) {}
 
-  onApplication(ast: RangeMeta & TypedExpr & { type: "application" }): void {
-    const resolved = ast.caller.$type.resolve();
-    if (ast.isPipe) {
-      if (resolved.type !== "bound" || resolved.value.type !== "fn") {
-        // invalid pipe
-        return;
-      }
-
-      const [arg] = ast.args;
-      if (arg === undefined) {
-        return;
-      }
-
-      const argWasPipe = arg.type === "application" && arg.isPipe;
-
-      const isArgOnNewline = ast.range.end.line !== arg.range.end.line;
-
-      if (isArgOnNewline) {
-        if (!argWasPipe) {
-          this.inlayHints.push({
-            label: typeToString(arg.$type.asType(), this.ctx),
-            positition: arg.range.end,
-            paddingLeft: true,
-          });
-        }
-
-        this.inlayHints.push({
-          label: typeToString(resolved.value.return, this.ctx),
-          positition: ast.range.end,
-          paddingLeft: true,
-        });
-      }
+  onPipe(ast: RangeMeta & TypedExpr & { type: "pipe" }): void {
+    if (ast.right.type !== "application") {
+      return;
     }
+
+    const isArgOnNewline = ast.left.range.end.line !== ast.right.range.end.line;
+    if (!isArgOnNewline) {
+      return;
+    }
+
+    const showLeftArg = ast.left.type !== "pipe";
+    if (showLeftArg) {
+      this.inlayHints.push({
+        label: typeToString(ast.left.$type.asType(), this.ctx),
+        positition: ast.left.range.end,
+        paddingLeft: true,
+      });
+    }
+
+    this.inlayHints.push({
+      label: typeToString(ast.$type.asType(), this.ctx),
+      positition: ast.range.end,
+      paddingLeft: true,
+    });
   }
 }
 

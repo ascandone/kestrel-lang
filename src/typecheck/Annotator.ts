@@ -1,4 +1,3 @@
-import { ErrorInfo } from "./errors";
 import {
   Declaration,
   Expr,
@@ -23,13 +22,10 @@ import {
   TypedTypeAst,
   TypedTypeDeclaration,
 } from "./typedAst";
-import * as err from "./errors";
 
 // TODO instead of traversing tree, mark fields as optional in the raw tree and use structuredClone to mutate freely
 
 export class Annotator {
-  constructor(private readonly errors: ErrorInfo[]) {}
-
   public annotateModule(
     module: UntypedModule,
   ): Omit<TypedModule, "moduleInterface"> {
@@ -172,23 +168,6 @@ export class Annotator {
   private annotateExpr(ast: Expr): TypedExpr {
     switch (ast.type) {
       // Syntax sugar
-      case "pipe":
-        if (ast.right.type !== "application") {
-          this.errors.push({
-            range: ast.right.range,
-            description: new err.InvalidPipe(),
-          });
-          return this.annotateExpr(ast.left);
-        }
-
-        return this.annotateExpr({
-          type: "application",
-          isPipe: true,
-          range: ast.range,
-          caller: ast.right.caller,
-          args: [ast.left, ...ast.right.args],
-        });
-
       case "infix":
         return this.annotateExpr({
           type: "application",
@@ -198,6 +177,14 @@ export class Annotator {
         });
 
       // Actual AST
+      case "pipe":
+        return {
+          ...ast,
+          $type: TVar.fresh(),
+          left: this.annotateExpr(ast.left),
+          right: this.annotateExpr(ast.right),
+        };
+
       case "syntax-err":
       case "constant":
         return { ...ast, $type: TVar.fresh() };

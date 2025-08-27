@@ -32,6 +32,7 @@ export type VisitOptions = {
   onBlock?(expr: TypedExpr & { type: "block" }): VoidFunction | void;
   onIdentifier?(expr: TypedExpr & { type: "identifier" }): void;
   onApplication?(expr: TypedExpr & { type: "application" }): void;
+  onPipe?(expr: TypedExpr & { type: "pipe" }): void;
   onFieldAccess?(expr: TypedExpr & { type: "field-access" }): void;
   onStructLiteral?(expr: TypedExpr & { type: "struct-literal" }): void;
   onFn?(expr: TypedExpr & { type: "fn" }): VoidFunction | void;
@@ -137,6 +138,12 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
       for (const arg of expr.args) {
         visitExpr(arg, opts);
       }
+      return;
+
+    case "pipe":
+      opts.onPipe?.(expr);
+      visitExpr(expr.left, opts);
+      visitExpr(expr.right, opts);
       return;
 
     case "fn": {

@@ -112,7 +112,11 @@ export type Expr = RangeMeta &
         type: "application";
         caller: Expr;
         args: Expr[];
-        isPipe?: boolean;
+      }
+    | {
+        type: "pipe";
+        left: Expr;
+        right: Expr;
       }
     | {
         type: "field-access";
@@ -232,18 +236,12 @@ export type TraitDef = {
   traits: string[];
 };
 
-export type SyntaxSugar =
-  | {
-      type: "pipe";
-      left: Expr;
-      right: Expr;
-    }
-  | {
-      type: "infix";
-      operator: string;
-      left: Expr;
-      right: Expr;
-    };
+export type SyntaxSugar = {
+  type: "infix";
+  operator: string;
+  left: Expr;
+  right: Expr;
+};
 
 export type RangeMeta = { range: Range };
 

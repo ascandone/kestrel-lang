@@ -129,7 +129,11 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         type: "application";
         caller: TypedExpr;
         args: TypedExpr[];
-        isPipe?: boolean;
+      }
+    | {
+        type: "pipe";
+        left: TypedExpr;
+        right: TypedExpr;
       }
     | {
         type: "field-access";

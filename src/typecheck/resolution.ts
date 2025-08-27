@@ -752,7 +752,7 @@ class Resolver {
   } {
     TVar.resetId();
 
-    const annotator = new Annotator(this.errors);
+    const annotator = new Annotator();
     const annotatedModule = annotator.annotateModule(module);
 
     // First, we load global values into scope

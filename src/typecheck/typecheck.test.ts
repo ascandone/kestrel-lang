@@ -146,17 +146,15 @@ describe("basic constructs inference", () => {
     type T1 { C1 }
     type Ret {}
 
-    extern pub let f: Fn(T, T1) -> Ret
+    extern let f: Fn(T, T1) -> Ret
     pub let x = C |> f(C1)
   `,
     );
 
     expect(errors).toEqual([]);
-    expect(types).toEqual(
-      expect.objectContaining({
-        x: "Ret",
-      }),
-    );
+    expect(types).toEqual({
+      x: "Ret",
+    });
   });
 
   test("invalid pipe operator", () => {
