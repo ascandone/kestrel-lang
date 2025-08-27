@@ -58,6 +58,9 @@ export function visitTypeAst(ast: TypedTypeAst, opts: VisitOptions) {
         visitTypeAst(arg, opts);
       }
       return;
+
+    default:
+      ast satisfies never;
   }
 }
 
@@ -78,6 +81,10 @@ export function visitPattern(
       for (const arg of expr.args) {
         visitPattern(arg, opts);
       }
+      return;
+
+    default:
+      expr satisfies never;
   }
 }
 
@@ -103,6 +110,8 @@ export function visitBlockStatementLetClause(
       onExit?.();
       break;
     }
+    default:
+      expr satisfies never;
   }
 }
 
@@ -187,6 +196,6 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
       return;
 
     default:
-      return expr;
+      expr satisfies never;
   }
 }
