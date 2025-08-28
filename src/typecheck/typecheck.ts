@@ -36,16 +36,6 @@ import {
   instantiate,
   TraitsStore,
 } from "../type";
-import {
-  ArityMismatch,
-  AmbiguousTypeVar,
-  ErrorInfo,
-  InvalidField,
-  MissingRequiredFields,
-  OccursCheck,
-  TraitNotSatified,
-  TypeMismatch,
-} from "./errors";
 import * as err from "./errors";
 import { DependencyProvider, resolve } from "./resolution";
 import { topologicalSort } from "../utils/topsort";
@@ -65,7 +55,7 @@ export function typecheck(
   ns: string,
   module: UntypedModule,
   options: Partial<TypecheckOptions> = {},
-): [TypedModule, ErrorInfo[]] {
+): [TypedModule, err.ErrorInfo[]] {
   const tc = new Typechecker(package_, ns, module, options);
 
   tc.run();
@@ -98,7 +88,7 @@ class Typechecker {
 
   // Initiated in ctor
   public readonly typedModule: TypedModule;
-  public readonly errors: ErrorInfo[];
+  public readonly errors: err.ErrorInfo[];
   private readonly mutuallyRecursiveBindings: TypedDeclaration[][];
   private readonly mainType: Type;
   private readonly traitImpls: TraitImpl[];
@@ -250,7 +240,7 @@ class Typechecker {
     this.localDerives.set(`${typeDecl.name}:${trait}`, params);
   }
 
-  run(): [TypedModule, ErrorInfo[]] {
+  run(): [TypedModule, err.ErrorInfo[]] {
     for (const typeDecl of this.typedModule.typeDeclarations) {
       if (typeDecl.type === "adt") {
         for (const variant of typeDecl.variants) {
@@ -355,7 +345,7 @@ class Typechecker {
 
         this.errors.push({
           range: { start, end },
-          description: new ArityMismatch(
+          description: new err.ArityMismatch(
             e.left.args.length,
             e.right.args.length,
           ),
@@ -369,7 +359,7 @@ class Typechecker {
 
         this.errors.push({
           range: { start, end },
-          description: new ArityMismatch(
+          description: new err.ArityMismatch(
             e.left.args.length,
             e.right.args.length,
           ),
@@ -380,7 +370,10 @@ class Typechecker {
 
       this.errors.push({
         range: ast.range,
-        description: new ArityMismatch(e.left.args.length, e.right.args.length),
+        description: new err.ArityMismatch(
+          e.left.args.length,
+          e.right.args.length,
+        ),
       });
 
       return;
@@ -471,7 +464,7 @@ class Typechecker {
           if (t.args.length !== pattern.args.length) {
             this.errors.push({
               range: pattern.range,
-              description: new ArityMismatch(
+              description: new err.ArityMismatch(
                 t.args.length,
                 pattern.args.length,
               ),
@@ -520,7 +513,7 @@ class Typechecker {
       this.ambiguousTypeVarErrorsEmitted.add(instantiatedVarType.id);
       this.errors.push({
         range: instantiatedVarNode.range,
-        description: new AmbiguousTypeVar(
+        description: new err.AmbiguousTypeVar(
           [...instantiatedVarType.traits.values()][0]!,
           typeToString(
             instantiatedVarNode.$type.asType(),
@@ -986,7 +979,7 @@ class Typechecker {
 
     if (missingFields.length !== 0) {
       this.errors.push({
-        description: new MissingRequiredFields(
+        description: new err.MissingRequiredFields(
           typeToString(type),
           missingFields,
         ),
@@ -1002,7 +995,7 @@ class Typechecker {
     const emitErr = () => {
       this.errors.push({
         range: fieldAccessAst.field.range,
-        description: new InvalidField(
+        description: new err.InvalidField(
           typeToString(fieldAccessAst.struct.$type.asType()),
           fieldAccessAst.field.name,
         ),
@@ -1186,26 +1179,26 @@ export function typecheckProject(
 export type TypecheckedModule = {
   package: string;
   typedModule: TypedModule;
-  errors: ErrorInfo[];
+  errors: err.ErrorInfo[];
 };
 
 export type ProjectTypeCheckResult = Record<string, TypecheckedModule>;
 
-function unifyErr(node: RangeMeta, e: UnifyError): ErrorInfo {
+function unifyErr(node: RangeMeta, e: UnifyError): err.ErrorInfo {
   switch (e.type) {
     case "missing-trait":
       return {
         range: node.range,
-        description: new TraitNotSatified(e.type_, e.trait),
+        description: new err.TraitNotSatified(e.type_, e.trait),
       };
 
     case "type-mismatch":
       return {
         range: node.range,
-        description: new TypeMismatch(e.left, e.right),
+        description: new err.TypeMismatch(e.left, e.right),
       };
     case "occurs-check":
-      return { range: node.range, description: new OccursCheck() };
+      return { range: node.range, description: new err.OccursCheck() };
   }
 }
 
