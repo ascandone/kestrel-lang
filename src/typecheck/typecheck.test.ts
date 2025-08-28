@@ -598,16 +598,18 @@ describe("type hints", () => {
     });
   });
 
-  test.todo("unify generalized values", () => {
-    const [types, errs] = tc("let f: Fn(ta) -> tb = fn x { x }");
+  test("unify generalized values", () => {
+    const [types, errs] = tc("pub let f: Fn(ta) -> tb = fn x { x }");
     expect(errs[0]!.description).toBeInstanceOf(err.TypeMismatch);
     expect(types).toEqual({
       f: "Fn(ta) -> tb",
     });
   });
 
-  test.todo("vars type hints are used by typechecker", () => {
-    const [types, errs] = tc("pub let eq: Fn(a, a, b) -> a = fn x, y, z { x }");
+  test("vars type hints are used by typechecker", () => {
+    const [types, errs] = tc(
+      "pub let eq: Fn(a, a, b) -> a = fn x, _y, _z { x }",
+    );
     expect(errs).toEqual([]);
     expect(types).toEqual({
       eq: "Fn(a, a, b) -> a",

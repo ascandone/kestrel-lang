@@ -922,9 +922,6 @@ describe("TCO", () => {
 });
 
 describe("ADTs", () => {
-  // TODO probably not necessary
-  test.todo("represent Unit as null");
-
   test("reference ctor identifier", () => {
     const Dependency = typecheckSource_(
       "pkg",
@@ -1982,8 +1979,6 @@ describe("traits compilation", () => {
       "const Main$x = Main$take_int(Main$p(Show_Int$Int));"
     `);
   });
-
-  test.todo("apply dict arg to locals");
 
   test("applying with concrete types", () => {
     const out = compileSrc(
