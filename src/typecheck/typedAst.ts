@@ -1,5 +1,5 @@
 import * as ast from "../parser";
-import { TVar, Type, RigidVarsCtx } from "../type";
+import { Type, RigidVarsCtx } from "../type";
 
 // -- Common
 
@@ -298,7 +298,7 @@ export type StructResolution = {
   namespace: string;
 };
 
-export type TypeMeta = { $type: TVar };
+export type TypeMeta = { $type: Type };
 
 export type FieldResolution = StructResolution & {
   field: TypedStructDeclarationField;

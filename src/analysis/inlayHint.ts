@@ -26,14 +26,14 @@ class InlayHintBuf implements visitor.VisitOptions {
     const showLeftArg = ast.left.type !== "pipe";
     if (showLeftArg) {
       this.inlayHints.push({
-        label: typeToString(ast.left.$type.asType(), this.ctx),
+        label: typeToString(ast.left.$type, this.ctx),
         positition: ast.left.range.end,
         paddingLeft: true,
       });
     }
 
     this.inlayHints.push({
-      label: typeToString(ast.$type.asType(), this.ctx),
+      label: typeToString(ast.$type, this.ctx),
       positition: ast.range.end,
       paddingLeft: true,
     });

@@ -518,7 +518,7 @@ export function lowerProgram(
         knownImplicitArities.set(ident.toString(), implArity);
 
         if (decl.extern) {
-          visitReferencedTypes(decl.binding.$type.asType(), (ns) => {
+          visitReferencedTypes(decl.binding.$type, (ns) => {
             if (ns !== namespace) {
               getDependency(ns);
             }
@@ -640,7 +640,7 @@ function makeImplicitArity(
     }
   }
 
-  helper(decl.binding.$type.asType());
+  helper(decl.binding.$type);
 
   return out;
 }

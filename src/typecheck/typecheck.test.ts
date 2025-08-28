@@ -3309,7 +3309,7 @@ function programTypes(typed: TypedModule): Record<string, string> {
     .filter((t) => t.pub)
     .map((decl) => [
       decl.binding.name,
-      typeToString(decl.binding.$type.asType(), decl.$traitsConstraints),
+      typeToString(decl.binding.$type, decl.$traitsConstraints),
     ]);
 
   return Object.fromEntries(kvs);

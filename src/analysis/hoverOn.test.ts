@@ -3,6 +3,7 @@ import { Hovered, hoverOn, hoverToMarkdown } from "./hoverOn";
 import { unsafeParse } from "../parser";
 import { typecheck } from "../typecheck/typecheck";
 import { rangeOf } from "./__test__/utils";
+import { resolveType } from "../type";
 
 test("hover a declaration's binding", () => {
   const src = `let x = 42`;
@@ -73,7 +74,7 @@ test("hovering with scheme", () => {
   if (hoverable.hovered.type !== "local-variable") {
     throw new Error("fail");
   }
-  const resolved = hoverable.hovered.binding.$type.resolve();
+  const resolved = resolveType(hoverable.hovered.binding.$type);
   if (resolved.type !== "unbound") {
     throw new Error("fail");
   }

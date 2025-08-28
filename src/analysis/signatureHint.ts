@@ -49,7 +49,7 @@ function getSignature(
       const { declaration } = expr.caller.$resolution;
       return {
         name: declaration.binding.name,
-        type: declaration.binding.$type.asType(),
+        type: declaration.binding.$type,
         docComment: declaration.docComment,
       };
     }
@@ -58,7 +58,7 @@ function getSignature(
       const { binding } = expr.caller.$resolution;
       return {
         name: binding.name,
-        type: binding.$type.asType(),
+        type: binding.$type,
       };
     }
 

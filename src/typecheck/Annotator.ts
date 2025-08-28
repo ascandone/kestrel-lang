@@ -56,7 +56,7 @@ export class Annotator {
           variants: typeDecl.variants.map((variant) => ({
             ...variant,
             $scheme: {},
-            $type: TVar.fresh().asType(),
+            $type: TVar.freshType(),
             args: variant.args.map((arg) => this.annotateTypeAst(arg)),
           })),
         };
@@ -65,11 +65,11 @@ export class Annotator {
         return {
           ...typeDecl,
           $traits: new Map(),
-          $type: TVar.fresh().asType(),
+          $type: TVar.freshType(),
           fields: typeDecl.fields.map(
             (untypedField): TypedStructDeclarationField => ({
               ...untypedField,
-              $type: TVar.fresh().asType(),
+              $type: TVar.freshType(),
               typeAst: this.annotateTypeAst(untypedField.typeAst),
             }),
           ),
@@ -114,7 +114,7 @@ export class Annotator {
   private annotateDeclaration(decl: Declaration): TypedDeclaration {
     const binding: TypedBinding = {
       ...decl.binding,
-      $type: TVar.fresh(),
+      $type: TVar.freshType(),
     };
 
     let tDecl: TypedDeclaration;
@@ -152,7 +152,7 @@ export class Annotator {
       case "identifier":
         return {
           ...ast,
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
         };
 
       case "constructor":
@@ -160,7 +160,7 @@ export class Annotator {
           ...ast,
           args: ast.args.map((arg) => this.annotateMatchPattern(arg)),
           $resolution: undefined,
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
         };
     }
   }
@@ -180,14 +180,14 @@ export class Annotator {
       case "pipe":
         return {
           ...ast,
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
           left: this.annotateExpr(ast.left),
           right: this.annotateExpr(ast.right),
         };
 
       case "syntax-err":
       case "constant":
-        return { ...ast, $type: TVar.fresh() };
+        return { ...ast, $type: TVar.freshType() };
 
       case "block":
         return {
@@ -198,7 +198,7 @@ export class Annotator {
               case "let":
                 return {
                   ...st,
-                  $type: TVar.fresh(),
+                  $type: TVar.freshType(),
                   pattern: this.annotateMatchPattern(st.pattern),
                   value: this.annotateExpr(st.value),
                 };
@@ -210,15 +210,15 @@ export class Annotator {
                     ...st.mapper,
                     $instantiated: new Map(),
                     $resolution: undefined,
-                    $type: TVar.fresh(),
+                    $type: TVar.freshType(),
                   },
-                  $type: TVar.fresh(),
+                  $type: TVar.freshType(),
                   pattern: this.annotateMatchPattern(st.pattern),
                   value: this.annotateExpr(st.value),
                 };
             }
           }),
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
         };
 
       case "struct-literal":
@@ -242,28 +242,28 @@ export class Annotator {
             ast.spread === undefined
               ? undefined
               : this.annotateExpr(ast.spread),
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
         };
 
       case "list-literal":
         return {
           ...ast,
           values: ast.values.map((v) => this.annotateExpr(v)),
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
         };
 
       case "identifier":
         return {
           ...ast,
           $resolution: undefined,
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
           $instantiated: new Map(),
         };
 
       case "fn":
         return {
           ...ast,
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
           body: this.annotateExpr(ast.body),
           params: ast.params.map((p) => this.annotateMatchPattern(p)),
         };
@@ -271,7 +271,7 @@ export class Annotator {
       case "application":
         return {
           ...ast,
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
           caller: this.annotateExpr(ast.caller),
           args: ast.args.map((arg) => this.annotateExpr(arg)),
         };
@@ -281,7 +281,7 @@ export class Annotator {
           ...ast,
           struct: this.annotateExpr(ast.struct),
           $resolution: undefined,
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
         };
 
       case "if":
@@ -290,13 +290,13 @@ export class Annotator {
           condition: this.annotateExpr(ast.condition),
           then: this.annotateExpr(ast.then),
           else: this.annotateExpr(ast.else),
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
         };
 
       case "match":
         return {
           ...ast,
-          $type: TVar.fresh(),
+          $type: TVar.freshType(),
           expr: this.annotateExpr(ast.expr),
           clauses: ast.clauses.map(([pattern, expr]) => {
             const annotatedPattern = this.annotateMatchPattern(pattern);

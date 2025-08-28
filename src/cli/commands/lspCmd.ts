@@ -522,7 +522,7 @@ export async function lspCmd() {
     }
 
     return module.typed.declarations.map(({ binding }) => {
-      const tpp = typeToString(binding.$type.asType());
+      const tpp = typeToString(binding.$type);
       return {
         command: { title: tpp, command: "noop" },
         range: binding.range,

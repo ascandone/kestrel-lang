@@ -167,7 +167,7 @@ type ${hovered.typeDecl.name}
 ${hovered.typeDecl.docComment ?? ""}
       `;
     case "local-variable": {
-      const tpp = typeToString(hovered.binding.$type.asType());
+      const tpp = typeToString(hovered.binding.$type);
       return `\`\`\`
 ${hovered.binding.name}: ${tpp}
 \`\`\`
@@ -176,7 +176,7 @@ local declaration
     }
 
     case "global-variable": {
-      const tpp = typeToString(hovered.declaration.binding.$type.asType());
+      const tpp = typeToString(hovered.declaration.binding.$type);
       return `\`\`\`
 ${hovered.declaration.binding.name}: ${tpp}
 \`\`\`
@@ -248,7 +248,7 @@ function hoveredFinder(position: Position) {
           return {
             hovered: {
               type: "field",
-              type_: typeToString(expr.$type.asType()),
+              type_: typeToString(expr.$type),
             },
             range: expr.field.range,
           };

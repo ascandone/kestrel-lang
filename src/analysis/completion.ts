@@ -4,7 +4,14 @@ import {
   CompletionItemKind,
   Position,
 } from "vscode-languageserver";
-import { DUMMY_STORE, Instantiator, TVar, typeToString, unify } from "../type";
+import {
+  DUMMY_STORE,
+  Instantiator,
+  Type,
+  resolveType,
+  typeToString,
+  unify,
+} from "../type";
 import { Finder } from "../typecheck/astLookup";
 
 // TODO find a decent name
@@ -55,8 +62,8 @@ class ExprCompletion {
     }).visitExpr(declaration.value);
   }
 
-  private fieldCompletion(structType: TVar) {
-    const resolved = structType.resolve();
+  private fieldCompletion(structType: Type) {
+    const resolved = resolveType(structType);
     switch (resolved.type) {
       case "unbound":
         return this.module.typeDeclarations.flatMap((d) => {
@@ -71,18 +78,18 @@ class ExprCompletion {
           }));
         });
 
-      case "bound": {
-        if (resolved.value.type !== "named") {
-          return [];
-        }
+      case "fn":
+      case "rigid-var":
+        return [];
 
-        const typedModule = this.deps.getModuleByNs(resolved.value.module);
+      case "named": {
+        const typedModule = this.deps.getModuleByNs(resolved.module);
         if (typedModule === undefined) {
           return undefined;
         }
 
         for (const d of typedModule.typeDeclarations) {
-          if (d.type !== "struct" || d.name !== resolved.value.name) {
+          if (d.type !== "struct" || d.name !== resolved.name) {
             continue;
           }
 
@@ -90,7 +97,7 @@ class ExprCompletion {
             const intantiator = new Instantiator();
             const instantiatedDeclaration = intantiator.instantiate(d.$type);
             const instantiatedField = intantiator.instantiate(f.$type);
-            unify(instantiatedDeclaration, structType.asType(), DUMMY_STORE);
+            unify(instantiatedDeclaration, structType, DUMMY_STORE);
 
             return {
               label: f.name,
