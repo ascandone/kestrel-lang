@@ -1,10 +1,5 @@
 import * as parser from "../../parser";
-import {
-  CORE_PACKAGE,
-  typecheck,
-  type Deps,
-  DEFAULT_MAIN_TYPE,
-} from "../../typecheck";
+import { CORE_PACKAGE, typecheck, type Deps } from "../../typecheck";
 import { TraitImpl } from "../../typecheck/defaultImports";
 
 const dummyPosition: parser.Position = { line: 0, character: 0 };
@@ -131,15 +126,11 @@ function typecheckSourceRaw(
   traitImpls: TraitImpl[] = [],
 ) {
   const parsed = parser.unsafeParse(src);
-  const [program] = typecheck(
-    package_,
-    ns,
-    parsed,
-    (ns) => deps[ns],
+  const [program] = typecheck(package_, ns, parsed, {
     implicitImports,
-    DEFAULT_MAIN_TYPE,
     traitImpls,
-  );
+    getDependency: (ns) => deps[ns],
+  });
 
   return program;
 }

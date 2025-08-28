@@ -2,7 +2,6 @@ import { describe, expect, test } from "vitest";
 import { Position, Range, Import, unsafeParse } from "../parser";
 import {
   CORE_PACKAGE,
-  DEFAULT_MAIN_TYPE,
   Deps as IDeps,
   typecheck,
   typecheckProject,
@@ -3288,15 +3287,11 @@ function tcProgram(
   const deps_: IDeps = Object.fromEntries(
     Object.entries(deps).map(([k, v]) => [k, v.moduleInterface]),
   );
-  return typecheck(
-    "pkg",
-    ns,
-    parsedProgram,
-    (ns) => deps_[ns],
-    prelude,
-    DEFAULT_MAIN_TYPE,
+  return typecheck("pkg", ns, parsedProgram, {
     traitImpls,
-  );
+    implicitImports: prelude,
+    getDependency: (ns) => deps_[ns],
+  });
 }
 
 function tc(

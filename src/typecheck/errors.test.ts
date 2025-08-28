@@ -37,7 +37,9 @@ describe(errorInfoToString.name, () => {
 function snapshotErr(src: string, opts: { DEBUG_LOG?: boolean } = {}) {
   const module = "Main";
   const parsed = unsafeParse(src);
-  const [, errors] = typecheck("pkg", module, parsed, () => undefined, []);
+  const [, errors] = typecheck("pkg", module, parsed, {
+    implicitImports: [],
+  });
 
   if (errors.length !== 1) {
     console.log(errors);

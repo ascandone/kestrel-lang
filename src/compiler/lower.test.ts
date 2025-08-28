@@ -645,13 +645,9 @@ describe("traits", () => {
 
 function getIR(src: string) {
   const untypedMod = unsafeParse(src);
-  const [tc, errors] = typecheck(
-    "pkg",
-    "Main",
-    untypedMod,
-    () => undefined,
-    [],
-  );
+  const [tc, errors] = typecheck("pkg", "Main", untypedMod, {
+    implicitImports: [],
+  });
   expect(errors.filter((e) => e.description.severity === "error")).toEqual([]);
   return lowerProgram(tc, new Map(), () => {
     // TODO fix this

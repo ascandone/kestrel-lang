@@ -53,24 +53,20 @@ import { DefaultMap } from "../data/defaultMap";
 
 export type Deps = Record<string, ModuleInterface>;
 
+export type TypecheckOptions = {
+  getDependency: DependencyProvider;
+  implicitImports: Import[];
+  mainType: Type;
+  traitImpls: TraitImpl[];
+};
+
 export function typecheck(
   package_: string,
   ns: string,
   module: UntypedModule,
-  getDependency: DependencyProvider = () => undefined,
-  implicitImports: Import[] = defaultImports,
-  mainType = DEFAULT_MAIN_TYPE,
-  traitImpls: TraitImpl[] = defaultTraitImpls,
+  options: Partial<TypecheckOptions> = {},
 ): [TypedModule, ErrorInfo[]] {
-  const tc = new Typechecker(
-    package_,
-    ns,
-    mainType,
-    getDependency,
-    traitImpls,
-    module,
-    implicitImports,
-  );
+  const tc = new Typechecker(package_, ns, module, options);
 
   tc.run();
 
@@ -102,23 +98,29 @@ class Typechecker {
 
   // Initiated in ctor
   public readonly typedModule: TypedModule;
+  public readonly errors: ErrorInfo[];
   private readonly mutuallyRecursiveBindings: TypedDeclaration[][];
-  public errors: ErrorInfo[];
+  private readonly mainType: Type;
+  private readonly traitImpls: TraitImpl[];
+  private readonly getDependency: DependencyProvider;
 
   constructor(
     private readonly package_: string,
     private readonly ns: string,
-    private readonly mainType: Type,
-    private readonly getDependency: DependencyProvider,
-    private readonly traitImpls: TraitImpl[] = [],
     module: UntypedModule,
-    implicitImports: Import[] = defaultImports,
+
+    {
+      getDependency = () => undefined,
+      implicitImports = defaultImports,
+      mainType = DEFAULT_MAIN_TYPE,
+      traitImpls = defaultTraitImpls,
+    }: Partial<TypecheckOptions> = {},
   ) {
     TVar.resetId();
     const [typedModule, errors] = resolve(
       this.package_,
       this.ns,
-      this.getDependency,
+      getDependency,
       module,
       implicitImports,
     );
@@ -126,6 +128,9 @@ class Typechecker {
     this.typedModule = typedModule;
     this.mutuallyRecursiveBindings = typedModule.mutuallyRecursiveDeclrs;
     this.errors = errors;
+    this.mainType = mainType;
+    this.traitImpls = traitImpls;
+    this.getDependency = getDependency;
   }
 
   private pushErrorNode(ast: TypeMeta) {
@@ -1166,14 +1171,11 @@ export function typecheckProject(
       // A module might import a module that do not exist
       continue;
     }
-    const [typedModule, errors] = typecheck(
-      m.package,
-      ns,
-      m.module,
-      (ns) => deps[ns],
-      m.package === CORE_PACKAGE ? [] : implicitImports,
+    const [typedModule, errors] = typecheck(m.package, ns, m.module, {
       mainType,
-    );
+      getDependency: (ns) => deps[ns],
+      implicitImports: m.package === CORE_PACKAGE ? [] : implicitImports,
+    });
     projectResult[ns] = { typedModule, errors, package: m.package };
     deps[ns] = typedModule.moduleInterface;
   }
