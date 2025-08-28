@@ -570,7 +570,7 @@ class Typechecker {
       }
 
       case "list-literal": {
-        const valueType = TVar.fresh().asType();
+        const valueType = TVar.freshType();
         this.unifyExpr(ast, ast.$type, List(valueType));
         for (const value of ast.values) {
           this.unifyExpr(value, value.$type, valueType);
@@ -1031,14 +1031,14 @@ class Typechecker {
             description: new err.InvalidCatchall(),
           });
         }
-        return TVar.fresh().asType();
+        return TVar.freshType();
       case "var":
         if (ctx.type === "typedef" && !ctx.params.includes(ast.ident)) {
           this.errors.push({
             range: ast.range,
             description: new err.UnboundTypeParam(ast.ident),
           });
-          return TVar.fresh().asType();
+          return TVar.freshType();
         }
 
         return { type: "rigid-var", name: ast.ident };
@@ -1051,7 +1051,7 @@ class Typechecker {
       case "named": {
         const resolution = ast.$resolution;
         if (resolution === undefined) {
-          return TVar.fresh().asType();
+          return TVar.freshType();
         }
 
         if (resolution.declaration.params.length !== ast.args.length) {
@@ -1457,7 +1457,7 @@ function getMatchingCtors(
 
   /** 0-n columns (depending on the number of args) */
   const newColumns: PatternMatrix = variantDefinition.args.map(() => ({
-    type: TVar.fresh().asType(),
+    type: TVar.freshType(),
     patterns: [],
   }));
 

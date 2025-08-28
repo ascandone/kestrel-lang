@@ -404,7 +404,7 @@ describe("unify", () => {
   });
 
   test("don't unify rigid vars when different", () => {
-    const $a = TVar.fresh().asType();
+    const $a = TVar.freshType();
 
     expect(
       unify($a, {
@@ -489,12 +489,12 @@ describe("typeToString", () => {
   });
 
   test("handle scheme", () => {
-    const f = TVar.fresh().asType();
+    const f = TVar.freshType();
     expect(typeToString(f, { a: new Set() })).toBe("b");
   });
 
   test("closure", () => {
-    const a = TVar.fresh().asType();
+    const a = TVar.freshType();
     expect(typeToString(a)).toBe("a");
   });
 
@@ -516,7 +516,7 @@ describe("typeToString", () => {
   });
 
   test("mixed rigid vars and flex vars traits", () => {
-    const b = TVar.fresh().asType();
+    const b = TVar.freshType();
     const c = TVar.fresh(["Read"]).asType();
     const f: Type = {
       type: "fn",

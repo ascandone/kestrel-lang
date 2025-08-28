@@ -303,7 +303,7 @@ export class Instantiator {
     TVar.fresh([...(this.rigidVarsCtx[name] ?? new Set())]).asType(),
   );
   public readonly instantiatedFlex = new DefaultMap<number, Type>(() =>
-    TVar.fresh().asType(),
+    TVar.freshType(),
   );
 
   public instantiate(mono_: Type): Type {
