@@ -135,7 +135,7 @@ function typecheckSourceRaw(
     package_,
     ns,
     parsed,
-    deps,
+    (ns) => deps[ns],
     implicitImports,
     DEFAULT_MAIN_TYPE,
     traitImpls,

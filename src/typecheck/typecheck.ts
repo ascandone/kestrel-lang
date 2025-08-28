@@ -9,6 +9,7 @@ import {
 import {
   FieldResolution,
   IdentifierResolution,
+  ModuleInterface,
   StructResolution,
   TypeMeta,
   TypedBlockStatement,
@@ -46,16 +47,17 @@ import {
   TypeMismatch,
 } from "./errors";
 import * as err from "./errors";
-import { Deps, resolve } from "./resolution";
+import { DependencyProvider, resolve } from "./resolution";
 import { topologicalSort } from "../utils/topsort";
 import { DefaultMap } from "../data/defaultMap";
-export { Deps } from "./resolution";
+
+export type Deps = Record<string, ModuleInterface>;
 
 export function typecheck(
   package_: string,
   ns: string,
   module: UntypedModule,
-  deps: Deps = {},
+  getDependency: DependencyProvider = () => undefined,
   implicitImports: Import[] = defaultImports,
   mainType = DEFAULT_MAIN_TYPE,
   traitImpls: TraitImpl[] = defaultTraitImpls,
@@ -64,7 +66,7 @@ export function typecheck(
     package_,
     ns,
     mainType,
-    deps,
+    getDependency,
     traitImpls,
     module,
     implicitImports,
@@ -107,7 +109,7 @@ class Typechecker {
     private readonly package_: string,
     private readonly ns: string,
     private readonly mainType: Type,
-    private readonly deps: Deps,
+    private readonly getDependency: DependencyProvider,
     private readonly traitImpls: TraitImpl[] = [],
     module: UntypedModule,
     implicitImports: Import[] = defaultImports,
@@ -116,7 +118,7 @@ class Typechecker {
     const [typedModule, errors] = resolve(
       this.package_,
       this.ns,
-      this.deps,
+      this.getDependency,
       module,
       implicitImports,
     );
@@ -162,7 +164,7 @@ class Typechecker {
       return this.localDerives.get(`${name}:${trait}`);
     }
 
-    const modInt = this.deps[module];
+    const modInt = this.getDependency(module);
     if (modInt === undefined) {
       return undefined;
     }
@@ -277,7 +279,6 @@ class Typechecker {
       this.doubleCheckFieldAccess(
         fieldAccessAst,
         fieldAccessAst.struct.$type.resolve(),
-        this.deps,
       );
     }
 
@@ -780,7 +781,7 @@ class Typechecker {
     const decl =
       res.package_ === this.package_ && res.module === this.ns
         ? this.typedModule.typeDeclarations.find((t) => t.name === name)
-        : this.deps[res.module]?.publicTypes[name];
+        : this.getDependency(res.module)?.publicTypes[name];
 
     return decl;
   }
@@ -992,7 +993,6 @@ class Typechecker {
   private doubleCheckFieldAccess(
     fieldAccessAst: TypedExpr & { type: "field-access" },
     resolved: TVarResolution,
-    deps: Deps,
   ) {
     const emitErr = () => {
       this.errors.push({
@@ -1017,7 +1017,7 @@ class Typechecker {
           return;
         }
 
-        const mod = deps[resolved.value.module];
+        const mod = this.getDependency(resolved.value.module);
         if (mod === undefined) {
           throw new Error("TODO handle invalid mod");
         }
@@ -1170,7 +1170,7 @@ export function typecheckProject(
       m.package,
       ns,
       m.module,
-      deps,
+      (ns) => deps[ns],
       m.package === CORE_PACKAGE ? [] : implicitImports,
       mainType,
     );

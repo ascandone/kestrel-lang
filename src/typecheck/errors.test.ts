@@ -37,11 +37,12 @@ describe(errorInfoToString.name, () => {
 function snapshotErr(src: string, opts: { DEBUG_LOG?: boolean } = {}) {
   const module = "Main";
   const parsed = unsafeParse(src);
-  const [, errors] = typecheck("pkg", module, parsed, {}, []);
+  const [, errors] = typecheck("pkg", module, parsed, () => undefined, []);
 
   if (errors.length !== 1) {
     console.log(errors);
   }
+
   expect(errors).toHaveLength(1);
 
   const error = errors[0]!;

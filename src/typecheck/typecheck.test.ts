@@ -2196,8 +2196,6 @@ describe("pattern matching", () => {
       unsafeParse(`
         pub(..) type T1 { X }
       `),
-      {},
-      [],
     );
 
     const [, errs] = tc(
@@ -2224,8 +2222,6 @@ describe("pattern matching", () => {
       unsafeParse(`
         pub(..) type T1 { X }
       `),
-      {},
-      [],
     );
 
     const [, errs] = tc(
@@ -2657,8 +2653,6 @@ describe("modules", () => {
       unsafeParse(`
         pub let x = 42
       `),
-      {},
-      [],
     );
 
     const [, errs] = tc(
@@ -2685,8 +2679,6 @@ describe("modules", () => {
       unsafeParse(`
         pub let x = 42
       `),
-      {},
-      [],
     );
 
     const [, errs] = tc(
@@ -2713,8 +2705,6 @@ describe("modules", () => {
       unsafeParse(`
         pub let x = 42
       `),
-      {},
-      [],
     );
 
     const [, errs] = tc(
@@ -2741,8 +2731,6 @@ describe("modules", () => {
       unsafeParse(`
         pub(..) type T1 { X }
       `),
-      {},
-      [],
     );
 
     const [, errs] = tc(
@@ -2769,8 +2757,6 @@ describe("modules", () => {
       unsafeParse(`
         pub(..) type T1 { X }
       `),
-      {},
-      [],
     );
 
     const [, errs] = tc(
@@ -2795,8 +2781,6 @@ describe("modules", () => {
       unsafeParse(`
         pub(..) type T1 { X }
       `),
-      {},
-      [],
     );
 
     const [, errs] = tc(
@@ -3308,7 +3292,7 @@ function tcProgram(
     "pkg",
     ns,
     parsedProgram,
-    deps_,
+    (ns) => deps_[ns],
     prelude,
     DEFAULT_MAIN_TYPE,
     traitImpls,

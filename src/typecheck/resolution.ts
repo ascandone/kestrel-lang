@@ -22,8 +22,7 @@ import * as visitor from "./visitor";
 import * as ast from "../parser/ast";
 import * as graph from "../data/graph";
 
-// Record from namespace (e.g. "A.B.C" ) to the module
-export type Deps = Record<string, ModuleInterface>;
+export type DependencyProvider = (ns: string) => ModuleInterface | undefined;
 
 class LocalFrames {
   private currentScope?: Map<string, IdentifierResolution | undefined>;
@@ -67,11 +66,11 @@ class UnimplementedErr extends Error {}
 export function resolve(
   package_: string,
   ns: string,
-  deps: Deps,
+  getDependency: DependencyProvider,
   module: UntypedModule,
   implicitImports: Import[],
 ) {
-  const resolution = new Resolver(package_, ns, deps);
+  const resolution = new Resolver(package_, ns, getDependency);
   const typedModule = resolution.run(module, implicitImports);
   return [typedModule, resolution.errors] as const;
 }
@@ -145,7 +144,7 @@ class Resolver {
   constructor(
     private readonly package_: string,
     private readonly ns: string,
-    private readonly deps: Deps,
+    private readonly getDependency: DependencyProvider,
   ) {}
 
   private loadTypeImport(
@@ -249,7 +248,7 @@ class Resolver {
     for (const import_ of imports) {
       this.importedModules.add(import_.ns);
 
-      const dep = this.deps[import_.ns];
+      const dep = this.getDependency(import_.ns);
       if (dep === undefined) {
         this.errors.push({
           description: new err.UnboundModule(import_.ns),
@@ -669,7 +668,7 @@ class Resolver {
 
     this.unusedImports.delete(ns);
 
-    const dep = this.deps[ns];
+    const dep = this.getDependency(ns);
     if (dep === undefined) {
       // The error was already emitted
       return undefined;
