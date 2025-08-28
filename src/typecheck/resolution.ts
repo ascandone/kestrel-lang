@@ -72,11 +72,8 @@ export function resolve(
   implicitImports: Import[],
 ) {
   const resolution = new Resolver(package_, ns, deps);
-  const out = resolution.run(module, implicitImports);
-  return {
-    errors: resolution.errors,
-    ...out,
-  };
+  const typedModule = resolution.run(module, implicitImports);
+  return [typedModule, resolution.errors] as const;
 }
 
 class Resolver {
@@ -743,13 +740,7 @@ class Resolver {
     }
   }
 
-  run(
-    module: UntypedModule,
-    implicitImports: Import[],
-  ): {
-    typedModule: TypedModule;
-    mutuallyRecursiveBindings: TypedDeclaration[][];
-  } {
+  run(module: UntypedModule, implicitImports: Import[]): TypedModule {
     TVar.resetId();
 
     const annotator = new Annotator();
@@ -781,6 +772,7 @@ class Resolver {
     const typedModule: TypedModule = {
       ...annotatedModule,
 
+      mutuallyRecursiveDeclrs: scc,
       moduleInterface: makeInterface(
         this.package_,
         this.ns,
@@ -789,10 +781,7 @@ class Resolver {
       ),
     };
 
-    return {
-      typedModule,
-      mutuallyRecursiveBindings: scc,
-    };
+    return typedModule;
   }
 }
 

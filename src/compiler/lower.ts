@@ -502,45 +502,47 @@ export function lowerProgram(
       ];
     }),
 
-    values: module.declarations.flatMap((decl): ir.ValueDeclaration[] => {
-      const ident = mkIdent(decl.binding.name);
+    values: module.mutuallyRecursiveDeclrs
+      .flatMap((decl) => decl)
+      .flatMap((decl): ir.ValueDeclaration[] => {
+        const ident = mkIdent(decl.binding.name);
 
-      let id = 0;
-      const flexVarsStore = new DefaultMap<number, number>(() => id++);
+        let id = 0;
+        const flexVarsStore = new DefaultMap<number, number>(() => id++);
 
-      const implArity = makeImplicitArity(
-        decl,
-        decl.$traitsConstraints,
-        flexVarsStore,
-      );
-      knownImplicitArities.set(ident.toString(), implArity);
+        const implArity = makeImplicitArity(
+          decl,
+          decl.$traitsConstraints,
+          flexVarsStore,
+        );
+        knownImplicitArities.set(ident.toString(), implArity);
 
-      if (decl.extern) {
-        visitReferencedTypes(decl.binding.$type.asType(), (ns) => {
-          if (ns !== namespace) {
-            getDependency(ns);
-          }
-        });
-        return [];
-      }
+        if (decl.extern) {
+          visitReferencedTypes(decl.binding.$type.asType(), (ns) => {
+            if (ns !== namespace) {
+              getDependency(ns);
+            }
+          });
+          return [];
+        }
 
-      const emitter = new ExprEmitter(
-        namespace,
-        ident,
-        knownImplicitArities,
-        flexVarsStore,
-        getDependency,
-      );
+        const emitter = new ExprEmitter(
+          namespace,
+          ident,
+          knownImplicitArities,
+          flexVarsStore,
+          getDependency,
+        );
 
-      return [
-        {
-          name: ident,
-          value: emitter.lowerExpr(decl.value),
-          inline: decl.inline,
-          implicitTraitParams: implArity,
-        },
-      ];
-    }),
+        return [
+          {
+            name: ident,
+            value: emitter.lowerExpr(decl.value),
+            inline: decl.inline,
+            implicitTraitParams: implArity,
+          },
+        ];
+      }),
   };
 }
 

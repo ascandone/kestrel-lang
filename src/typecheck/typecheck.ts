@@ -113,7 +113,7 @@ class Typechecker {
     implicitImports: Import[] = defaultImports,
   ) {
     TVar.resetId();
-    const { typedModule, errors, mutuallyRecursiveBindings } = resolve(
+    const [typedModule, errors] = resolve(
       this.package_,
       this.ns,
       this.deps,
@@ -122,7 +122,7 @@ class Typechecker {
     );
 
     this.typedModule = typedModule;
-    this.mutuallyRecursiveBindings = mutuallyRecursiveBindings;
+    this.mutuallyRecursiveBindings = typedModule.mutuallyRecursiveDeclrs;
     this.errors = errors;
   }
 

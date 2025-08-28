@@ -246,6 +246,7 @@ export type TypedModule = {
 
   // TODO move it outside of this struct
   moduleInterface: ModuleInterface;
+  mutuallyRecursiveDeclrs: TypedDeclaration[][];
 };
 
 // -- specific

@@ -74,7 +74,7 @@ describe("global identifiers", () => {
   });
 
   // this should be handled at the IR lowering level
-  test.todo("refer to idents in revers order", () => {
+  test("refer to idents in revers order", () => {
     const out = compileSrc(`
       let y = x
       let x = 0
