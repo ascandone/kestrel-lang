@@ -28,7 +28,7 @@ import {
 export class Annotator {
   public annotateModule(
     module: UntypedModule,
-  ): Omit<TypedModule, "moduleInterface"> {
+  ): Omit<TypedModule, "moduleInterface" | "mutuallyRecursiveDeclrs"> {
     return {
       moduleDoc: module.moduleDoc,
       declarations: module.declarations.map((d) => this.annotateDeclaration(d)),
