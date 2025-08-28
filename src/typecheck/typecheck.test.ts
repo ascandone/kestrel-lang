@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { Position, Range, Import, unsafeParse } from "../parser";
 import {
+  CORE_PACKAGE,
   DEFAULT_MAIN_TYPE,
   Deps as IDeps,
   typecheck,
@@ -2144,6 +2145,7 @@ describe("pattern matching", () => {
       pub let f = fn x {
         match x {
           None => 2,
+          _ => 1,
         }
       }
     `,
@@ -2326,12 +2328,21 @@ describe("pattern matching", () => {
   });
 
   test("force exhaustive match in let binding when there are many values for a const", () => {
-    const [, errs] = tc(`
+    const [Int] = typecheck(
+      CORE_PACKAGE,
+      "Int",
+      unsafeParse(`extern pub type Int`),
+    );
+
+    const [, errs] = tc(
+      `
     pub let f = {
       let 42 = 42;
       0
     }
-  `);
+  `,
+      { Int },
+    );
 
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
@@ -2360,6 +2371,238 @@ describe("pattern matching", () => {
 
     expect(errs).toHaveLength(1);
     expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
+  });
+
+  describe("exhastivness check", () => {
+    test("simple", () => {
+      const [, errs] = tc(`
+      type Union { A, B }
+
+      pub let f = match A {
+        A => 0,
+      }
+    `);
+
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
+    });
+
+    test("with params (non exhaustive)", () => {
+      const [, errs] = tc(`
+      type Union { A, B }
+      type Opt<a> { Some(a), None }
+
+      pub let f = match None {
+        Some(A) => 0,
+        None => 0,
+      }
+    `);
+
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
+    });
+
+    test("with params (exhaustive)", () => {
+      const [, errs] = tc(`
+      type Union { A, B }
+      type Opt<a> { Some(a), None }
+
+      pub let f = match None {
+        Some(A) => 0,
+        Some(B) => 0,
+        None => 0,
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
+    test("catchall prevens exhastive match err", () => {
+      const [, errs] = tc(`
+      type Union { A, B }
+      type Opt<a> { Some(a), None }
+ 
+      pub let f = match None {
+        Some(A) => 0,
+        Some(_) => 0,
+        None => 0,
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
+    test("on pair (non-exhaustive)", () => {
+      const [, errs] = tc(`
+      type Union { A, B }
+      type Opt<a> { Some(a), None }
+      type Pair<a, b> { Pair(a, b) }
+ 
+      pub let f = fn pair {
+        match pair {
+          Pair(Some(A), None) => 0,
+          Pair(Some(_), None) => 1,
+          Pair(_, Some(_)) => 2,
+        }
+      }
+    `);
+
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
+    });
+
+    test("on pair (exhaustive)", () => {
+      const [, errs] = tc(`
+      type Union { A, B }
+      type Opt<a> { Some(a), None }
+      type Pair<a, b> { Pair(a, b) }
+ 
+      pub let f = fn pair {
+        match pair {
+          Pair(Some(A), None) => 0,
+          Pair(Some(_), None) => 1,
+          Pair(_, Some(_)) => 2,
+
+          Pair(None, None) => 3,
+        }
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
+    test("on literals (exhastive)", () => {
+      const [Int] = typecheck(
+        CORE_PACKAGE,
+        "Int",
+        unsafeParse(`extern pub type Int`),
+      );
+
+      const [, errs] = tc(
+        `
+      
+      pub let f = fn num {
+        match num {
+          0 => "a",
+          1 => "b",
+          _ => "c",
+        }
+      }
+    `,
+        { Int },
+      );
+
+      expect(errs).toEqual([]);
+    });
+
+    test("on literals (non exhastive)", () => {
+      const [Int] = typecheck(
+        CORE_PACKAGE,
+        "Int",
+        unsafeParse(`extern pub type Int`),
+      );
+
+      const [, errs] = tc(
+        `
+      
+      pub let f = fn num {
+        match num {
+          0 => "a",
+          1 => "b",
+        }
+      }
+    `,
+        { Int },
+      );
+
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
+    });
+
+    test("on literals (not exhastive on the rest of the matrix)", () => {
+      const [Int] = typecheck(
+        CORE_PACKAGE,
+        "Int",
+        unsafeParse(`extern pub type Int`),
+      );
+
+      const [, errs] = tc(
+        `
+      type Opt<a> { Some(a), None }
+      type Pair<a, b> { Pair(a, b) }
+      pub let f = fn pair {
+        match pair {
+          Pair(0, Some(_)) => "a",
+          Pair(0, None) => "a",
+
+          Pair(1, None) => "b",
+          
+          Pair(_, _) => ",",
+        }
+      }
+    `,
+        { Int },
+      );
+
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
+    });
+
+    test("on literals (not exhastive on the wildcard specialization)", () => {
+      const [Int] = typecheck(
+        CORE_PACKAGE,
+        "Int",
+        unsafeParse(`extern pub type Int`),
+      );
+
+      const [, errs] = tc(
+        `
+      type Opt<a> { Some(a), None }
+      type Pair<a, b> { Pair(a, b) }
+      pub let f = fn pair {
+        match pair {
+          Pair(0, Some(_)) => "a",
+          Pair(0, None) => "a",
+
+          Pair(_, None) => ",",
+        }
+      }
+    `,
+        { Int },
+      );
+
+      expect(errs).toHaveLength(1);
+      expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
+    });
+
+    test("on literals (exhastive on the rest of the matrix)", () => {
+      const [Int] = typecheck(
+        CORE_PACKAGE,
+        "Int",
+        unsafeParse(`extern pub type Int`),
+      );
+
+      const [, errs] = tc(
+        `
+      type Opt<a> { Some(a), None }
+      type Pair<a, b> { Pair(a, b) }
+      pub let f = fn pair {
+        match pair {
+          Pair(0, Some(_)) => "a",
+          Pair(0, None) => "a",
+
+          Pair(1, None) => "b",
+          Pair(1, _) => "b",
+          
+          _ => ",",
+        }
+      }
+    `,
+        { Int },
+      );
+
+      expect(errs).toEqual([]);
+    });
   });
 });
 

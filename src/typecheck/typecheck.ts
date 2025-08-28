@@ -4,6 +4,7 @@ import {
   Import,
   UntypedModule,
   TypeDeclaration,
+  Range,
 } from "../parser";
 import {
   FieldResolution,
@@ -40,7 +41,6 @@ import {
   ErrorInfo,
   InvalidField,
   MissingRequiredFields,
-  NonExhaustiveMatch,
   OccursCheck,
   TraitNotSatified,
   TypeMismatch,
@@ -60,10 +60,19 @@ export function typecheck(
   mainType = DEFAULT_MAIN_TYPE,
   traitImpls: TraitImpl[] = defaultTraitImpls,
 ): [TypedModule, ErrorInfo[]] {
-  return new Typechecker(package_, ns, mainType, deps, traitImpls).run(
+  const tc = new Typechecker(
+    package_,
+    ns,
+    mainType,
+    deps,
+    traitImpls,
     module,
     implicitImports,
   );
+
+  tc.run();
+
+  return [tc.typedModule, tc.errors];
 }
 
 type ScheduledAmbiguousVarCheck = {
@@ -72,7 +81,6 @@ type ScheduledAmbiguousVarCheck = {
 };
 
 class Typechecker {
-  private errors: ErrorInfo[] = [];
   private scheduledFieldResolutions: (TypedExpr & { type: "field-access" })[] =
     [];
 
@@ -90,13 +98,33 @@ class Typechecker {
    */
   private localDerives = new Map<string, Set<string>[]>();
 
+  // Initiated in ctor
+  public readonly typedModule: TypedModule;
+  private readonly mutuallyRecursiveBindings: TypedDeclaration[][];
+  public errors: ErrorInfo[];
+
   constructor(
     private readonly package_: string,
     private readonly ns: string,
     private readonly mainType: Type,
     private readonly deps: Deps,
     private readonly traitImpls: TraitImpl[] = [],
-  ) {}
+    module: UntypedModule,
+    implicitImports: Import[] = defaultImports,
+  ) {
+    TVar.resetId();
+    const { typedModule, errors, mutuallyRecursiveBindings } = resolve(
+      this.package_,
+      this.ns,
+      this.deps,
+      module,
+      implicitImports,
+    );
+
+    this.typedModule = typedModule;
+    this.mutuallyRecursiveBindings = mutuallyRecursiveBindings;
+    this.errors = errors;
+  }
 
   private pushErrorNode(ast: TypeMeta) {
     const resolved = ast.$type.resolve();
@@ -215,23 +243,8 @@ class Typechecker {
     this.localDerives.set(`${typeDecl.name}:${trait}`, params);
   }
 
-  run(
-    module: UntypedModule,
-    implicitImports: Import[] = defaultImports,
-  ): [TypedModule, ErrorInfo[]] {
-    TVar.resetId();
-
-    const { typedModule, errors, mutuallyRecursiveBindings } = resolve(
-      this.package_,
-      this.ns,
-      this.deps,
-      module,
-      implicitImports,
-    );
-
-    this.errors = errors;
-
-    for (const typeDecl of typedModule.typeDeclarations) {
+  run(): [TypedModule, ErrorInfo[]] {
+    for (const typeDecl of this.typedModule.typeDeclarations) {
       if (typeDecl.type === "adt") {
         for (const variant of typeDecl.variants) {
           variant.$type = this.hydrateVariant(typeDecl, variant);
@@ -246,7 +259,7 @@ class Typechecker {
       }
     }
 
-    for (const group of mutuallyRecursiveBindings) {
+    for (const group of this.mutuallyRecursiveBindings) {
       this.currentRecGroup = group;
       // TODO something's not right here (we should generalize the whole group after the typecheck pass)
       for (const decl of group) {
@@ -268,7 +281,7 @@ class Typechecker {
       );
     }
 
-    return [typedModule, this.errors];
+    return [this.typedModule, this.errors];
   }
 
   private hydrateStruct(typeDecl: TypedTypeDeclaration & { type: "struct" }) {
@@ -404,18 +417,9 @@ class Typechecker {
     );
   }
 
-  private typecheckPattern(
-    pattern: TypedMatchPattern,
-    forceExhaustive = false,
-  ) {
+  private typecheckPattern(pattern: TypedMatchPattern) {
     switch (pattern.type) {
       case "lit": {
-        if (forceExhaustive) {
-          this.errors.push({
-            description: new NonExhaustiveMatch(),
-            range: pattern.range,
-          });
-        }
         const t = inferConstant(pattern.literal);
         this.unifyNode(pattern, pattern.$type.asType(), t);
       }
@@ -430,16 +434,6 @@ class Typechecker {
 
         if (pattern.$resolution.type !== "constructor") {
           throw new Error("[unreachable] invalid resolution for constructor");
-        }
-
-        if (
-          forceExhaustive &&
-          pattern.$resolution.declaration.variants.length > 1
-        ) {
-          this.errors.push({
-            range: pattern.range,
-            description: new NonExhaustiveMatch(),
-          });
         }
 
         const t = instantiate(pattern.$resolution.variant.$type, {});
@@ -465,7 +459,7 @@ class Typechecker {
               pattern.args[i]!.$type.asType(),
               t.args[i]!,
             );
-            this.typecheckPattern(pattern.args[i]!, forceExhaustive);
+            this.typecheckPattern(pattern.args[i]!);
           }
 
           if (t.args.length !== pattern.args.length) {
@@ -540,7 +534,7 @@ class Typechecker {
   ) {
     switch (stm.type) {
       case "let":
-        this.typecheckPattern(stm.pattern, true);
+        this.typecheckPattern(stm.pattern);
         this.unifyNode(stm, stm.$type.asType(), bodyType);
         this.unifyNode(
           stm,
@@ -548,6 +542,8 @@ class Typechecker {
           stm.value.$type.asType(),
         );
         this.typecheckAnnotatedExpr(stm.value);
+
+        this.checkExhaustiveMatchBinding(stm.pattern);
         break;
 
       case "let#":
@@ -565,7 +561,9 @@ class Typechecker {
         });
         this.typecheckAnnotatedExpr(stm.mapper);
         this.typecheckAnnotatedExpr(stm.value);
-        this.typecheckPattern(stm.pattern, true);
+        this.typecheckPattern(stm.pattern);
+
+        this.checkExhaustiveMatchBinding(stm.pattern);
         break;
 
       default:
@@ -660,13 +658,16 @@ class Typechecker {
         this.unifyExpr(ast, ast.$type.asType(), {
           type: "fn",
           args: ast.params.map((p) => {
-            this.typecheckPattern(p, true);
+            this.typecheckPattern(p);
             return p.$type.asType();
           }),
           return: ast.body.$type.asType(),
         });
 
         this.typecheckAnnotatedExpr(ast.body);
+
+        this.checkExhaustiveMatchBindings(ast.range, ast.params);
+
         return;
 
       case "application":
@@ -739,6 +740,7 @@ class Typechecker {
           this.unifyExpr(ast, ast.$type.asType(), expr.$type.asType());
           this.typecheckAnnotatedExpr(expr);
         }
+        this.checkExhaustiveMatch(ast);
         return;
 
       case "block": {
@@ -765,6 +767,174 @@ class Typechecker {
 
       default:
         return ast satisfies never;
+    }
+  }
+
+  private getTypeDecl(type: Type) {
+    const res = resolveType(type);
+    if (res.type === "unbound" || res.type !== "named") {
+      return;
+    }
+
+    const name = res.name;
+    const decl =
+      res.package_ === this.package_ && res.module === this.ns
+        ? this.typedModule.typeDeclarations.find((t) => t.name === name)
+        : this.deps[res.module]?.publicTypes[name];
+
+    return decl;
+  }
+
+  private checkPatternsMatrix(rng: Range, cols: PatternMatrix) {
+    const [firstCol, ...otherCols] = cols;
+    if (firstCol === undefined) {
+      return;
+    }
+
+    // we specialize on the first
+    const decl = this.getTypeDecl(firstCol.type);
+    if (decl === undefined) {
+      // undefined decl: error has alreay beed emitted
+      return;
+    }
+
+    switch (decl.type) {
+      case "adt": {
+        for (const variantDefinition of decl.variants) {
+          // TODO attach types directly on type AST
+          const argsTypes = getVariantArgs(variantDefinition);
+          if (argsTypes === undefined) {
+            return;
+          }
+
+          const [matchingCtors, usedRows, ok] = getMatchingCtors(
+            variantDefinition,
+            firstCol.patterns,
+          );
+
+          if (!ok) {
+            this.errors.push({
+              description: new err.NonExhaustiveMatch(),
+              range: rng,
+            });
+          }
+
+          const specializedMatrix: PatternMatrix = [
+            ...matchingCtors,
+            ...otherCols.map((col) => ({
+              type: col.type,
+              patterns: col.patterns.filter((_p, index) => usedRows.has(index)),
+            })),
+          ];
+
+          // we have produced the new matrix specialized on this ctor: we proceed with the check there
+          this.checkPatternsMatrix(rng, specializedMatrix);
+        }
+
+        return;
+      }
+
+      case "extern": {
+        // we'll assume it's never possible to do exhaustive pattern matching on any extern value
+        // this is not quite accurate: for example, we could indeed pattern match exhaustively a Char.
+        // for the sake of simplicity, we won't allow that for now
+
+        const wildCardCols = new Set<number>();
+        const groups = new DefaultMap<string, Set<number>>(() => new Set());
+        firstCol.patterns.forEach((pat, rowIndex) => {
+          if (pat.type === "identifier") {
+            wildCardCols.add(rowIndex);
+          } else if (pat.type === "lit") {
+            const lit = pat.literal.value.toString();
+            groups.get(lit).add(rowIndex);
+          }
+        });
+
+        const hasWildcard = wildCardCols.size !== 0;
+        if (!hasWildcard) {
+          this.errors.push({
+            description: new err.NonExhaustiveMatch(),
+            range: rng,
+          });
+          return;
+        }
+
+        for (const usedRows of groups.inner.values()) {
+          const specializedMatrix: PatternMatrix = [
+            ...otherCols.map((col) => ({
+              type: col.type,
+              patterns: col.patterns.filter((_p, index) => usedRows.has(index)),
+            })),
+          ];
+
+          this.checkPatternsMatrix(rng, specializedMatrix);
+        }
+
+        const specializedMatrix: PatternMatrix = [
+          ...otherCols.map((col) => ({
+            type: col.type,
+            patterns: col.patterns.filter((_p, index) =>
+              wildCardCols.has(index),
+            ),
+          })),
+        ];
+        this.checkPatternsMatrix(rng, specializedMatrix);
+
+        return;
+      }
+
+      case "struct":
+        // we won't check this, as it's not possible yet to perform pattern match on structs
+        return;
+
+      default:
+        decl satisfies never;
+    }
+  }
+
+  private checkExhaustiveMatch(expr: TypedExpr & { type: "match" }) {
+    try {
+      this.checkPatternsMatrix(expr.range, [
+        {
+          type: expr.expr.$type.asType(),
+          patterns: expr.clauses.map(([pat]) => pat),
+        },
+      ]);
+    } catch (error) {
+      if (!(error instanceof MalformedPatternErr)) {
+        throw error;
+      }
+    }
+  }
+
+  private checkExhaustiveMatchBinding(expr: TypedMatchPattern) {
+    try {
+      this.checkPatternsMatrix(expr.range, [
+        { type: expr.$type.asType(), patterns: [expr] },
+      ]);
+    } catch (error) {
+      if (!(error instanceof MalformedPatternErr)) {
+        throw error;
+      }
+    }
+  }
+
+  private checkExhaustiveMatchBindings(
+    rng: Range,
+    params: TypedMatchPattern[],
+  ) {
+    try {
+      this.checkPatternsMatrix(
+        rng,
+        params.map((param) => ({
+          type: param.$type.asType(),
+          patterns: [param],
+        })),
+      );
+    } catch (error) {
+      if (!(error instanceof MalformedPatternErr)) {
+        throw error;
+      }
     }
   }
 
@@ -1270,4 +1440,97 @@ function mkDepsFor(
     case "var":
       return false;
   }
+}
+
+type PatternMatrix = {
+  type: Type;
+  patterns: TypedMatchPattern[];
+}[];
+
+function getVariantArgs(variant: TypedTypeVariant) {
+  if (variant.args.length === 0) {
+    return [];
+  }
+
+  const t = variant.$type;
+  if (t.type !== "fn") {
+    return undefined;
+  }
+
+  return t.args;
+}
+
+// TODO remove
+/**
+ * temporary hack to short-circuit exhaustive pattern detection. Refactor the pattern error code instead
+ */
+class MalformedPatternErr extends Error {}
+
+/**
+ * Given a variant definition, find all the patterns in the first row that are instances of that ctor.
+ * Also returns the rowIndex of the original matrix
+ * e.g.
+ *
+ * ```kestrel
+ * getMatchingCtors(Just, [Just(a, b), None, Other, Just(1, 2)])
+ * //=> [(a, b), (1, 2)]
+ * ```
+ * */
+function getMatchingCtors(
+  variantDefinition: TypedTypeVariant,
+  col: PatternMatrix[number]["patterns"],
+) {
+  const keptRows = new Set<number>();
+
+  /** 0-n columns (depending on the number of args) */
+  const newColumns: PatternMatrix = variantDefinition.args.map(() => ({
+    type: TVar.fresh().asType(),
+    patterns: [],
+  }));
+
+  const argsTypes = getVariantArgs(variantDefinition);
+  if (argsTypes === undefined) {
+    return [newColumns, keptRows, true] as const;
+  }
+
+  let foundCol = false;
+
+  col.forEach((pattern, index) => {
+    // -- wildcard
+    if (pattern.type === "identifier") {
+      foundCol = true;
+      keptRows.add(index);
+      newColumns.forEach((newCol) => {
+        newCol.patterns.push(pattern);
+      });
+      return;
+    }
+
+    // -- ctor
+    const matching =
+      pattern.type === "constructor" &&
+      pattern.$resolution !== undefined &&
+      pattern.$resolution.type === "constructor" &&
+      pattern.$resolution.variant.name === variantDefinition.name;
+    if (!matching) {
+      return;
+    }
+
+    foundCol = true;
+    keptRows.add(index);
+    newColumns.forEach((newCol, newColIndex) => {
+      const subPattern = pattern.args[newColIndex];
+      if (subPattern === undefined) {
+        throw new MalformedPatternErr();
+      }
+
+      if (index === 0) {
+        newCol.type = subPattern.$type.asType();
+      }
+
+      newCol.patterns.push(subPattern);
+    });
+  });
+
+  return [newColumns, keptRows, foundCol] as const;
 }
