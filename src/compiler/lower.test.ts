@@ -430,10 +430,13 @@ describe("traits", () => {
 
   test("unresolved traits", () => {
     const out = dumpIR(`
-      extern let p: a  where a: Show
-      let x = p //: a1 where a1: Show 
+      extern let p: z where z: Show
+
+      // inferred as:
+      //@type a where a: Show
+      let x = p
     `);
-    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x[0:Show] = p[0:Show]"`);
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x[a:Show] = p[a:Show]"`);
   });
 
   test("pass to fn", () => {
@@ -442,8 +445,8 @@ describe("traits", () => {
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
-      "let pkg:Main.f[0:Show] = fn x#0 {
-        show[0:Show](x#0)
+      "let pkg:Main.f[a:Show] = fn x#0 {
+        show[a:Show](x#0)
       }"
     `);
   });
@@ -459,10 +462,10 @@ describe("traits", () => {
       }
     `);
     expect(out).toMatchInlineSnapshot(`
-      "let pkg:Main.rec_val[0:Show, 1:Show] = fn unresolved#0, unresolved2#0 {
-        match show[0:Show](unresolved#0) {
-          _#0 => match show[1:Show](unresolved2#0) {
-            _#1 => rec_val[0:Show, 1:Show](unresolved#0, unresolved2#0),
+      "let pkg:Main.rec_val[a:Show, b:Show] = fn unresolved#0, unresolved2#0 {
+        match show[a:Show](unresolved#0) {
+          _#0 => match show[b:Show](unresolved2#0) {
+            _#1 => rec_val[a:Show, b:Show](unresolved#0, unresolved2#0),
           },
         }
       }"
@@ -475,8 +478,8 @@ describe("traits", () => {
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
-      "let pkg:Main.f[0:Show] = fn x#0 {
-        show[0:Show](x#0)
+      "let pkg:Main.f[a:Show] = fn x#0 {
+        show[a:Show](x#0)
       }"
     `);
   });
@@ -487,7 +490,7 @@ describe("traits", () => {
       let f = show
     `);
     expect(out).toMatchInlineSnapshot(
-      `"let pkg:Main.f[0:Eq, 0:Show] = show[0:Eq, 0:Show]"`,
+      `"let pkg:Main.f[a:Eq, a:Show] = show[a:Eq, a:Show]"`,
     );
   });
 
@@ -512,7 +515,7 @@ describe("traits", () => {
   test("do not pass extra args", () => {
     const out = dumpIR(
       `
-      extern let inspect: Fn(a) -> String where a: Show
+      extern let inspect: Fn(u) -> String where u: Show
       extern let eq: Fn(z, z) -> Bool where z: Eq
 
       let equal = fn x, y {
@@ -526,10 +529,10 @@ describe("traits", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "let pkg:Main.equal[0:Eq, 0:Show] = fn x#0, y#0 {
-        match eq[0:Eq](x#0, y#0) {
+      "let pkg:Main.equal[a:Eq, a:Show] = fn x#0, y#0 {
+        match eq[a:Eq](x#0, y#0) {
           True => "ok",
-          False => inspect[0:Show](x#0),
+          False => inspect[a:Show](x#0),
         }
       }"
     `);
@@ -578,8 +581,8 @@ describe("traits", () => {
 
     expect(out).toMatchInlineSnapshot(
       `
-      "let pkg:Main.f[0:Show] = fn arg#0 {
-        show2[0:Show, String:Show](arg#0, "hello")
+      "let pkg:Main.f[a:Show] = fn arg#0 {
+        show2[a:Show, String:Show](arg#0, "hello")
       }"
     `,
     );
@@ -639,7 +642,7 @@ describe("traits", () => {
       let x = s
     `);
 
-    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x[0:Show] = s[0:Show]"`);
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x[a:Show] = s[a:Show]"`);
   });
 });
 

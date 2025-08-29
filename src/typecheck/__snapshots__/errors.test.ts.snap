@@ -21,8 +21,8 @@ Expected 1 arguments, but got 2.
 exports[`errorInfoToString > type error 1`] = `
 "[31mError:[0m [1mType mismatch[0m
 
-Expected:  String
-     Got:  Custom
+Expected:  Custom
+     Got:  String
 
 
 3|       pub let x: Custom = "abc"

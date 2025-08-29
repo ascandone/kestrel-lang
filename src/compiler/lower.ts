@@ -1,4 +1,3 @@
-import { DefaultMap } from "../data/defaultMap";
 import { RigidVarsCtx, resolveType } from "../type";
 import * as typed from "../typecheck";
 import * as ir from "./ir";
@@ -8,7 +7,6 @@ class ExprEmitter {
     private readonly namespace: string,
     private readonly currentDecl: ir.QualifiedIdentifier,
     private readonly knownImplicitArities: Map<string, ir.ImplicitParam[]>,
-    private readonly flexVarsStore: DefaultMap<number, number>,
     private readonly getDependency: (ns: string) => undefined | ir.Program,
   ) {}
 
@@ -411,15 +409,7 @@ class ExprEmitter {
           return [];
         }
 
-        const id = this.flexVarsStore.get(resolution.id).toString();
-
-        return [
-          {
-            type: "var",
-            id,
-            trait: arity.trait,
-          },
-        ];
+        throw new CompilationError("unbound dict");
       }
 
       case "fn":
@@ -427,7 +417,13 @@ class ExprEmitter {
         throw new CompilationError("Invalid implicit param resolution (fn)");
 
       case "rigid-var":
-        throw new Error("TODO rigid var to implicit");
+        return [
+          {
+            type: "var",
+            id: resolution.name,
+            trait: arity.trait,
+          },
+        ];
 
       case "named":
         return [
@@ -507,14 +503,7 @@ export function lowerProgram(
       .flatMap((decl): ir.ValueDeclaration[] => {
         const ident = mkIdent(decl.binding.name);
 
-        let id = 0;
-        const flexVarsStore = new DefaultMap<number, number>(() => id++);
-
-        const implArity = makeImplicitArity(
-          decl,
-          decl.$traitsConstraints,
-          flexVarsStore,
-        );
+        const implArity = makeImplicitArity(decl, decl.$traitsConstraints);
         knownImplicitArities.set(ident.toString(), implArity);
 
         if (decl.extern) {
@@ -530,7 +519,6 @@ export function lowerProgram(
           namespace,
           ident,
           knownImplicitArities,
-          flexVarsStore,
           getDependency,
         );
 
@@ -589,29 +577,32 @@ const CONS = (hd: ir.Expr, tl: ir.Expr): ir.Expr => ({
 function makeImplicitArity(
   decl: typed.TypedDeclaration,
   traitsBounds: RigidVarsCtx,
-  freshVarsStore: DefaultMap<number, number>,
 ): ir.ImplicitParam[] {
   const alreadySeen = new Set<string>();
 
   const out: ir.ImplicitParam[] = [];
 
-  function push(name: string, traits: Iterable<string>) {
-    if (alreadySeen.has(name)) {
-      return;
-    }
-    alreadySeen.add(name);
-    for (const trait of traits) {
-      out.push({
-        type: "var",
-        id: name,
-        trait,
-      });
-    }
-  }
-
   function helper(type_: typed.Type) {
     const resolved = resolveType(type_);
     switch (resolved.type) {
+      case "rigid-var":
+        if (alreadySeen.has(resolved.name)) {
+          return;
+        }
+        alreadySeen.add(resolved.name);
+
+        for (const trait of traitsBounds[resolved.name] ?? []) {
+          out.push({
+            type: "var",
+            id: resolved.name,
+            trait,
+          });
+        }
+        return;
+
+      case "unbound":
+        return;
+
       case "fn":
         for (const arg of resolved.args) {
           helper(arg);
@@ -624,16 +615,6 @@ function makeImplicitArity(
           helper(arg);
         }
         return;
-
-      case "rigid-var":
-        push(resolved.name, traitsBounds[resolved.name] ?? []);
-        break;
-
-      case "unbound": {
-        const id = freshVarsStore.get(resolved.id);
-        push(id.toString(), resolved.traits);
-        return;
-      }
 
       default:
         resolved satisfies never;

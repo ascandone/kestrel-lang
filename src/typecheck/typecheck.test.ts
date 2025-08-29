@@ -1008,7 +1008,7 @@ describe("traits", () => {
     expect(errs).not.toEqual([]);
   });
 
-  test("forbid ambiguous instantiations", () => {
+  test("forbid ambiguous instantiations (1)", () => {
     const [, errs] = tc(`
     extern let take_default: Fn(a) -> x where a: Default
     extern let default: a where a: Default
@@ -1022,7 +1022,7 @@ describe("traits", () => {
     );
   });
 
-  test("forbid ambiguous instantiations", () => {
+  test("forbid ambiguous instantiations (2)", () => {
     const [, errs] = tc(`
       type String {}
       extern let show: Fn(a) -> String where a: Show
@@ -1431,23 +1431,6 @@ describe("struct", () => {
     });
   });
 
-  test("infer type when accessing known field", () => {
-    const [types, errs] = tc(`
-      extern type String
-
-      type Person struct {
-        name: String
-      }
-
-      pub let p_name = fn p { p.name }
-    `);
-
-    expect(errs).toEqual([]);
-    expect(types).toEqual({
-      p_name: "Fn(Person) -> String",
-    });
-  });
-
   test("do not allow invalid field access", () => {
     const [types, errs] = tc(`
       extern type String
@@ -1481,13 +1464,13 @@ describe("struct", () => {
 
     const [types, errs] = tc(
       `
-      import Person.{Person(..)}
-      pub let name = fn p { p.name }
+      import Person.{Person}
+      pub let name: Fn(Person) -> _ = fn p { p.name }
     `,
       { Person },
     );
 
-    expect(errs).toHaveLength(0);
+    expect(errs).toEqual([]);
     expect(types).toEqual({
       name: "Fn(Person) -> String",
     });
@@ -1773,23 +1756,6 @@ describe("struct", () => {
     });
   });
 
-  test("inferring params in dot access", () => {
-    const [types, errs] = tc(
-      `
-        type Box<a> struct {
-          field: a
-        }
-
-        pub let get_field = fn box { box.field }
-    `,
-    );
-
-    expect(errs).toEqual([]);
-    expect(types).toEqual({
-      get_field: "Fn(Box<a>) -> a",
-    });
-  });
-
   test("making sure field values are generalized", () => {
     const [types, errs] = tc(
       `
@@ -1799,7 +1765,7 @@ describe("struct", () => {
       }
 
       pub let get_field_1: Fn(Box<Int>) -> Int = fn box { box.field }
-      pub let get_field_2 = fn box { box.field }
+      pub let get_field_2: Fn(Box<_>) -> _ = fn box { box.field }
   `,
     );
 

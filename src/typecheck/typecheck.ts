@@ -29,12 +29,13 @@ import {
   UnifyError,
   Instantiator,
   typeToString,
-  findUnboundTypeVars,
   ConcreteType,
   resolveType,
   instantiate,
   TraitsStore,
   TypeResolution,
+  generalize,
+  GeneralizeResult,
 } from "../type";
 import * as err from "./errors";
 import { DependencyProvider, resolve } from "./resolution";
@@ -64,8 +65,9 @@ export function typecheck(
 }
 
 type ScheduledAmbiguousVarCheck = {
-  currentDeclaration: Type;
-  instantiatedVarNode: { name: string } & TypeMeta & RangeMeta;
+  instantiated: Map<string, Type>;
+  currentDeclaration: TypedDeclaration;
+  instantiatedVarNode: TypedExpr & { type: "identifier" };
 };
 
 class Typechecker {
@@ -77,7 +79,7 @@ class Typechecker {
 
   private ambiguousTypeVarErrorsEmitted = new Set<number>();
 
-  private currentRecGroup: TypedDeclaration[] = [];
+  private currentRecGroup = new Set<TypedDeclaration>();
   private currentDeclaration?: TypedDeclaration;
 
   private scheduledAmbiguousVarChecks: ScheduledAmbiguousVarCheck[] = [];
@@ -257,17 +259,30 @@ class Typechecker {
     }
 
     for (const group of this.mutuallyRecursiveBindings) {
-      this.currentRecGroup = group;
-      // TODO something's not right here (we should generalize the whole group after the typecheck pass)
+      this.currentRecGroup = new Set(group);
+
       for (const decl of group) {
         this.currentDeclaration = decl;
         this.typecheckDeclaration(decl);
-
-        for (const check of this.scheduledAmbiguousVarChecks) {
-          this.checkInstantiatedVars(check);
-        }
-        this.scheduledAmbiguousVarChecks = [];
       }
+
+      const generalized = new Map<TypedDeclaration, GeneralizeResult>();
+
+      for (const decl of group) {
+        const gen = generalize(decl.binding.$type, decl.$traitsConstraints);
+        generalized.set(decl, gen);
+
+        decl.binding.$type = gen.polyType;
+        decl.$traitsConstraints = gen.ctx;
+      }
+
+      for (const check of this.scheduledAmbiguousVarChecks) {
+        this.checkInstantiatedVars(
+          check,
+          generalized.get(check.currentDeclaration),
+        );
+      }
+      this.scheduledAmbiguousVarChecks = [];
     }
 
     for (const fieldAccessAst of this.scheduledFieldResolutions) {
@@ -408,8 +423,8 @@ class Typechecker {
       return;
     }
 
-    this.typecheckAnnotatedExpr(decl.value);
     this.unifyExpr(decl.value, decl.binding.$type, decl.value.$type);
+    this.typecheckAnnotatedExpr(decl.value);
   }
 
   private typecheckPattern(pattern: TypedMatchPattern) {
@@ -470,53 +485,98 @@ class Typechecker {
     }
   }
 
-  private checkInstantiatedVars({
-    instantiatedVarNode,
-    currentDeclaration,
-  }: ScheduledAmbiguousVarCheck) {
-    const bindingUnboundTypes = new Set<number>(
-      findUnboundTypeVars(currentDeclaration).map((v) => v.id),
-    );
+  /**
+   * TODO find decent name & descr. This one is completely random
+   */
+  private getGeneralizedType(
+    instantiatedVarNode: ScheduledAmbiguousVarCheck["instantiatedVarNode"],
 
-    const instantiatedVarUnboundTypes = findUnboundTypeVars(
-      instantiatedVarNode.$type,
-    ).filter((v) => v.traits.size !== 0);
+    type: Type,
+    generalized: GeneralizeResult["generalized"],
+  ): Type {
+    const type_ = resolveType(type);
+    switch (type_.type) {
+      case "unbound": {
+        const [trait] = type_.traits;
+        if (
+          trait === undefined ||
+          this.ambiguousTypeVarErrorsEmitted.has(type_.id) ||
+          this.errorNodesTypeVarIds.has(type_.id)
+        ) {
+          return type;
+        }
 
-    for (const instantiatedVarType of instantiatedVarUnboundTypes) {
-      const areVarsInBindings = bindingUnboundTypes.has(instantiatedVarType.id);
-      if (areVarsInBindings) {
-        continue;
+        const genLookup = generalized.get(type_.id);
+        if (genLookup === undefined) {
+          this.ambiguousTypeVarErrorsEmitted.add(type_.id);
+          this.errors.push({
+            description: new err.AmbiguousTypeVar(
+              trait,
+              typeToString(instantiatedVarNode.$type),
+            ),
+            range: instantiatedVarNode.range,
+          });
+          throw new AmbiguousTypeErrHalt();
+        }
+
+        // Note that a generalized type doesn't contain flex vars
+        return genLookup;
       }
 
-      const wasErrorNode = this.errorNodesTypeVarIds.has(
-        instantiatedVarType.id,
-      );
-      if (wasErrorNode) {
-        continue;
-      }
+      case "rigid-var":
+        return type_;
 
-      const wasErrorAlreadyEmitted = this.ambiguousTypeVarErrorsEmitted.has(
-        instantiatedVarType.id,
-      );
-      if (wasErrorAlreadyEmitted) {
-        continue;
-      }
-
-      this.ambiguousTypeVarErrorsEmitted.add(instantiatedVarType.id);
-      this.errors.push({
-        range: instantiatedVarNode.range,
-        description: new err.AmbiguousTypeVar(
-          [...instantiatedVarType.traits.values()][0]!,
-          typeToString(
-            instantiatedVarNode.$type,
-            this.currentDeclaration?.$traitsConstraints,
+      case "fn":
+        return {
+          ...type_,
+          args: type_.args.map((arg) =>
+            this.getGeneralizedType(instantiatedVarNode, arg, generalized),
           ),
-        ),
-      });
+          return: this.getGeneralizedType(
+            instantiatedVarNode,
+            type_.return,
+            generalized,
+          ),
+        };
 
-      // TODO do I have to break the loop here? double check
-      return;
+      case "named":
+        return {
+          ...type_,
+          args: type_.args.map((arg) =>
+            this.getGeneralizedType(instantiatedVarNode, arg, generalized),
+          ),
+        };
+
+      default:
+        return type_ satisfies never;
     }
+  }
+
+  private checkInstantiatedVars(
+    { instantiated, instantiatedVarNode }: ScheduledAmbiguousVarCheck,
+    gen: GeneralizeResult | undefined,
+  ) {
+    if (gen === undefined) {
+      throw new Error("err: gen not found");
+    }
+
+    for (const [name, type] of instantiated) {
+      try {
+        const newType = this.getGeneralizedType(
+          instantiatedVarNode,
+          type,
+          gen.generalized,
+        );
+
+        instantiatedVarNode.$instantiated.set(name, newType);
+      } catch (error) {
+        if (!(error instanceof AmbiguousTypeErrHalt)) {
+          throw error;
+        }
+      }
+    }
+
+    return;
   }
 
   private typecheckAnnotatedBlockStatement(
@@ -626,13 +686,8 @@ class Typechecker {
         this.unifyExpr(
           ast,
           ast.$type,
-          resolutionToType(ast, ast.$resolution, this.currentRecGroup),
+          this.resolutionToType(ast, ast.$resolution),
         );
-
-        this.scheduledAmbiguousVarChecks.push({
-          instantiatedVarNode: ast,
-          currentDeclaration: this.currentDeclaration!.binding.$type,
-        });
 
         return;
       }
@@ -692,7 +747,27 @@ class Typechecker {
 
       case "field-access": {
         this.typecheckAnnotatedExpr(ast.struct);
+
+        const fieldResolution = this.getFieldResolution(
+          ast.field.name,
+          ast.struct.$type,
+        );
+
+        if (fieldResolution === undefined) {
+          this.errors.push({
+            description: new err.InvalidField(
+              typeToString(ast.struct.$type),
+              ast.field.name,
+            ),
+            range: ast.field.range,
+          });
+          return;
+        }
+
+        ast.$resolution = fieldResolution;
+
         if (ast.$resolution === undefined) {
+          // TODO get rid of this part of the logic
           this.scheduledFieldResolutions.push(ast);
           return;
         }
@@ -749,6 +824,43 @@ class Typechecker {
     }
   }
 
+  private getFieldResolution(
+    fieldName: string,
+    type: Type,
+  ): FieldResolution | undefined {
+    const lookup = this.getTypeDecl(type);
+
+    // definition does not exist (that shouldn't happen)
+    if (lookup === undefined) {
+      return undefined;
+    }
+
+    // definition is not a struct
+    if (lookup.declaration.type !== "struct") {
+      return undefined;
+    }
+
+    // field is private
+    if (lookup.module !== this.ns && lookup.declaration.pub !== "..") {
+      return undefined;
+    }
+
+    const field = lookup.declaration.fields.find(
+      (field) => field.name === fieldName,
+    );
+
+    if (field === undefined) {
+      return undefined;
+    }
+
+    return {
+      declaration: lookup.declaration,
+      field,
+      namespace: lookup.module,
+      package_: lookup.package_,
+    };
+  }
+
   private getTypeDecl(type: Type) {
     const res = resolveType(type);
     if (res.type === "unbound" || res.type !== "named") {
@@ -761,7 +873,15 @@ class Typechecker {
         ? this.typedModule.typeDeclarations.find((t) => t.name === name)
         : this.getDependency(res.module)?.publicTypes[name];
 
-    return decl;
+    if (decl === undefined) {
+      return undefined;
+    }
+
+    return {
+      declaration: decl,
+      package_: res.package_,
+      module: res.module,
+    };
   }
 
   private checkPatternsMatrix(rng: Range, cols: PatternMatrix) {
@@ -771,15 +891,15 @@ class Typechecker {
     }
 
     // we specialize on the first
-    const decl = this.getTypeDecl(firstCol.type);
-    if (decl === undefined) {
+    const lookup = this.getTypeDecl(firstCol.type);
+    if (lookup === undefined) {
       // undefined decl: error has alreay beed emitted
       return;
     }
 
-    switch (decl.type) {
+    switch (lookup.declaration.type) {
       case "adt": {
-        for (const variantDefinition of decl.variants) {
+        for (const variantDefinition of lookup.declaration.variants) {
           // TODO attach types directly on type AST
           const argsTypes = getVariantArgs(variantDefinition);
           if (argsTypes === undefined) {
@@ -867,7 +987,7 @@ class Typechecker {
         return;
 
       default:
-        decl satisfies never;
+        lookup.declaration satisfies never;
     }
   }
 
@@ -1007,15 +1127,54 @@ class Typechecker {
         return;
       }
 
-      default:
-        throw new Error("TODO handle field access to fn");
-
       case "unbound":
         if (fieldAccessAst.field.structName === undefined) {
           emitErr();
         }
 
         return;
+
+      case "rigid-var":
+      case "fn":
+        throw new Error("TODO handle field access to fn");
+    }
+  }
+
+  private resolutionToType(
+    ast: TypedExpr & { type: "identifier" },
+    resolution: IdentifierResolution,
+  ): Type {
+    switch (resolution.type) {
+      case "local-variable":
+        return resolution.binding.$type;
+
+      case "constructor":
+        return instantiate(resolution.variant.$type, {});
+
+      case "global-variable": {
+        const instantiator = new Instantiator(
+          resolution.declaration.$traitsConstraints,
+        );
+
+        if (this.currentRecGroup.has(resolution.declaration)) {
+          return resolution.declaration.binding.$type;
+        }
+
+        const type = instantiator.instantiate(
+          resolution.declaration.binding.$type,
+        );
+
+        this.scheduledAmbiguousVarChecks.push({
+          instantiated: instantiator.instantiatedRigid.inner,
+          instantiatedVarNode: ast,
+          currentDeclaration: this.currentDeclaration!,
+        });
+
+        return type;
+      }
+
+      default:
+        return resolution satisfies never;
     }
   }
 
@@ -1177,41 +1336,6 @@ function unifyErr(node: RangeMeta, e: UnifyError): err.ErrorInfo {
       };
     case "occurs-check":
       return { range: node.range, description: new err.OccursCheck() };
-  }
-}
-
-function resolutionToType(
-  ast: TypedExpr & { type: "identifier" },
-  resolution: IdentifierResolution,
-  currentDeclarations: TypedDeclaration[],
-): Type {
-  switch (resolution.type) {
-    case "local-variable":
-      return resolution.binding.$type;
-
-    case "global-variable": {
-      const instantiator = new Instantiator(
-        resolution.declaration.$traitsConstraints,
-      );
-
-      if (currentDeclarations.includes(resolution.declaration)) {
-        return resolution.declaration.binding.$type;
-      }
-
-      const type = instantiator.instantiate(
-        resolution.declaration.binding.$type,
-      );
-
-      // TODO we should schedule here the ambiguous check
-      ast.$instantiated = instantiator.instantiatedRigid.inner;
-
-      return type;
-    }
-
-    case "constructor":
-      return instantiate(resolution.variant.$type, {});
-
-    // TODO should struct go here?
   }
 }
 
@@ -1507,3 +1631,6 @@ function getMatchingCtors(
 
   return [newColumns, keptRows, foundCol] as const;
 }
+
+// Hack to short-circuit
+class AmbiguousTypeErrHalt extends Error {}

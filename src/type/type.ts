@@ -466,37 +466,6 @@ class TypePrinter {
   }
 }
 
-export function findUnboundTypeVars(t: Type): UnboundType[] {
-  const vars: UnboundType[] = [];
-
-  function helper(t: Type) {
-    const resolved = resolveType(t);
-
-    switch (resolved.type) {
-      case "fn":
-        for (const arg of resolved.args) {
-          helper(arg);
-        }
-        helper(resolved.return);
-        return;
-
-      case "named":
-        for (const arg of resolved.args) {
-          helper(arg);
-        }
-        return;
-
-      case "unbound":
-        vars.push(resolved);
-        return;
-    }
-  }
-
-  helper(t);
-
-  return vars;
-}
-
 /**
  * Add a trait constraint to a type. Fail if any dependency fails.
  * E.g.
@@ -554,3 +523,75 @@ export const DUMMY_STORE: TraitsStore = {
     return undefined;
   },
 };
+
+export type GeneralizeResult = {
+  polyType: Type;
+  ctx: RigidVarsCtx;
+  generalized: Map<number, Type>;
+};
+export function generalize(type: Type, ctx: RigidVarsCtx): GeneralizeResult {
+  ctx = { ...ctx };
+  fillRigidVars(type, ctx);
+  const gen = new Generalizer(ctx);
+  const polyType = gen.generalize(type);
+  return {
+    polyType,
+    ctx,
+    generalized: gen.boundFlexVars,
+  };
+}
+
+class Generalizer {
+  public readonly boundFlexVars = new Map<number, Type>();
+  private currentFlexId = 0;
+
+  constructor(private readonly ctx: RigidVarsCtx) {}
+
+  private getFlexName(): string {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const id = this.currentFlexId++;
+      const name = counterToTypeName(id);
+      if (!(name in this.ctx)) {
+        return name;
+      }
+    }
+  }
+
+  public generalize(type: Type): Type {
+    const type_ = resolveType(type);
+    switch (type_.type) {
+      case "unbound": {
+        const lookup = this.boundFlexVars.get(type_.id);
+        if (lookup !== undefined) {
+          return lookup;
+        }
+
+        const name = this.getFlexName();
+        this.ctx[name] = new Set(type_.traits);
+        const genType: Type = { type: "rigid-var", name };
+        this.boundFlexVars.set(type_.id, genType);
+        return genType;
+      }
+
+      case "rigid-var":
+        return type_;
+
+      case "fn":
+        return {
+          ...type_,
+          args: type_.args.map((arg) => this.generalize(arg)),
+          return: this.generalize(type_.return),
+        };
+
+      case "named":
+        return {
+          ...type_,
+          args: type_.args.map((arg) => this.generalize(arg)),
+        };
+
+      default:
+        return type_ satisfies never;
+    }
+  }
+}

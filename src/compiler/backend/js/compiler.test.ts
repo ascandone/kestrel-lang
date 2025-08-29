@@ -1998,9 +1998,7 @@ describe("traits compilation", () => {
       extern let p: a  where a: Show
       let x = p //: a1 where a1: Show 
     `);
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$x = Show_0 => Main$p(Show_0);"
-    `);
+    expect(out).toMatchInlineSnapshot(`"const Main$x = Show_a => Main$p(Show_a);"`);
   });
 
   test("higher order fn", () => {
@@ -2023,9 +2021,7 @@ describe("traits compilation", () => {
       extern let show: Fn(a) -> String where a: Show
       let f = fn x { show(x) }
     `);
-    expect(out).toMatchInlineSnapshot(`
-      "const Main$f = Show_0 => Main$f$x => Main$show(Show_0)(Main$f$x);"
-    `);
+    expect(out).toMatchInlineSnapshot(`"const Main$f = Show_a => Main$f$x => Main$show(Show_a)(Main$f$x);"`);
   });
 
   test("do not duplicate vars", () => {
@@ -2034,7 +2030,7 @@ describe("traits compilation", () => {
       let f = show2
     `);
     expect(out).toMatchInlineSnapshot(
-      `"const Main$f = Show_0 => Main$show2(Show_0);"`,
+      `"const Main$f = Show_a => Main$show2(Show_a);"`,
     );
   });
 
@@ -2044,7 +2040,7 @@ describe("traits compilation", () => {
       let f = show
     `);
     expect(out).toMatchInlineSnapshot(
-      `"const Main$f = (Eq_0, Show_0) => Main$show(Eq_0, Show_0);"`,
+      `"const Main$f = (Eq_a, Show_a) => Main$show(Eq_a, Show_a);"`,
     );
   });
 
@@ -2079,11 +2075,11 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Main$equal = (Eq_0, Show_0) => (Main$equal$x, Main$equal$y) => {
-        if (Main$eq(Eq_0)(Main$equal$x, Main$equal$y)) {
+      "const Main$equal = (Eq_a, Show_a) => (Main$equal$x, Main$equal$y) => {
+        if (Main$eq(Eq_a)(Main$equal$x, Main$equal$y)) {
           return \`ok\`;
         } else {
-          return Main$inspect(Show_0)(Main$equal$x);
+          return Main$inspect(Show_a)(Main$equal$x);
         }
       };"
     `);
@@ -2129,7 +2125,7 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(
-      `"const Main$f = Show_0 => Main$f$arg => Main$show2(Show_0, Show_String$String)(Main$f$arg, \`hello\`);"`,
+      `"const Main$f = Show_a => Main$f$arg => Main$show2(Show_a, Show_String$String)(Main$f$arg, \`hello\`);"`,
     );
   });
 
@@ -2204,7 +2200,7 @@ describe("traits compilation", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$X = 0;
-      const Main$x = Show_0 => Main$s(Show_0);"
+      const Main$x = Show_a => Main$s(Show_a);"
     `);
   });
 
@@ -2217,7 +2213,7 @@ describe("traits compilation", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Some = _0 => _0;
-      const Main$x = Show_1 => Main$s(Show_1);"
+      const Main$x = Show_b => Main$s(Show_b);"
     `);
   });
 
@@ -2243,7 +2239,7 @@ describe("traits compilation", () => {
       const Main$None = {
         $: 1
       };
-      const Main$f = Show_0 => Main$f$x => Main$show(Show_Main$Option(Show_0))({
+      const Main$f = Show_a => Main$f$x => Main$show(Show_Main$Option(Show_a))({
         $: 0,
         _0: Main$f$x
       });"
@@ -2258,9 +2254,7 @@ describe("traits compilation", () => {
 `,
     );
 
-    expect(out).toMatchInlineSnapshot(`
-    "const Main$f = Eq_0 => (Main$f$x, Main$f$y) => _eq(Eq_0)(Main$f$x, Main$f$y);"
-  `);
+    expect(out).toMatchInlineSnapshot(`"const Main$f = Eq_a => (Main$f$x, Main$f$y) => _eq(Eq_a)(Main$f$x, Main$f$y);"`);
   });
 
   test("== compares primitives directly", () => {
@@ -2368,7 +2362,7 @@ describe("traits compilation", () => {
     );
 
     expect(out).toMatchInlineSnapshot(
-      `"const Main$called = FromJson_0 => Main$from_json(FromJson_0)(Main$json);"`,
+      `"const Main$called = FromJson_a => Main$from_json(FromJson_a)(Main$json);"`,
     );
   });
 });
