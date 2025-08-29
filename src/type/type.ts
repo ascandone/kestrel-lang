@@ -298,7 +298,6 @@ export function instantiate(mono: Type, rigidVarsCtx: RigidVarsCtx) {
 export class Instantiator {
   constructor(private readonly rigidVarsCtx: RigidVarsCtx = {}) {}
 
-  // TODO change this to Type instaead
   public readonly instantiatedRigid = new DefaultMap<string, Type>((name) =>
     TVar.fresh([...(this.rigidVarsCtx[name] ?? new Set())]).asType(),
   );
