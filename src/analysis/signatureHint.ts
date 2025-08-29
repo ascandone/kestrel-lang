@@ -1,5 +1,5 @@
 import { Position } from "../parser";
-import { Type } from "../type";
+import { RigidVarsCtx, Type } from "../type";
 import { Finder } from "../typecheck/astLookup";
 import { TypedExpr, TypedModule } from "../typecheck/typedAst";
 import { statementByOffset } from "./common";
@@ -7,6 +7,7 @@ import { statementByOffset } from "./common";
 export type FunctionSignatureHint = {
   name: string;
   type: Type;
+  ctx?: RigidVarsCtx;
   docComment?: string;
 };
 
@@ -51,6 +52,7 @@ function getSignature(
         name: declaration.binding.name,
         type: declaration.binding.$type,
         docComment: declaration.docComment,
+        ctx: declaration.$traitsConstraints,
       };
     }
 
