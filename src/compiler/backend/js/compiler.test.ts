@@ -1998,7 +1998,9 @@ describe("traits compilation", () => {
       extern let p: a  where a: Show
       let x = p //: a1 where a1: Show 
     `);
-    expect(out).toMatchInlineSnapshot(`"const Main$x = Show_a => Main$p(Show_a);"`);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$x = Show_a => Main$p(Show_a);"`,
+    );
   });
 
   test("higher order fn", () => {
@@ -2021,7 +2023,9 @@ describe("traits compilation", () => {
       extern let show: Fn(a) -> String where a: Show
       let f = fn x { show(x) }
     `);
-    expect(out).toMatchInlineSnapshot(`"const Main$f = Show_a => Main$f$x => Main$show(Show_a)(Main$f$x);"`);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$f = Show_a => Main$f$x => Main$show(Show_a)(Main$f$x);"`,
+    );
   });
 
   test("do not duplicate vars", () => {
@@ -2254,7 +2258,9 @@ describe("traits compilation", () => {
 `,
     );
 
-    expect(out).toMatchInlineSnapshot(`"const Main$f = Eq_a => (Main$f$x, Main$f$y) => _eq(Eq_a)(Main$f$x, Main$f$y);"`);
+    expect(out).toMatchInlineSnapshot(
+      `"const Main$f = Eq_a => (Main$f$x, Main$f$y) => _eq(Eq_a)(Main$f$x, Main$f$y);"`,
+    );
   });
 
   test("== compares primitives directly", () => {
@@ -2365,14 +2371,6 @@ describe("traits compilation", () => {
       `"const Main$called = FromJson_a => Main$from_json(FromJson_a)(Main$json);"`,
     );
   });
-});
-
-describe.skip("Eq trait", () => {
-  test("== performs structural equality when type is unbound");
-  test("== performs structural equality when type is adt");
-  test("== doesn't perform structural equality when type is int");
-  test("== doesn't perform structural equality when type is string");
-  test("== doesn't perform structural equality when type is float");
 });
 
 describe("deriving", () => {
