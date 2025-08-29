@@ -24,20 +24,23 @@ import {
   typecheckProject,
   typeToString,
   TypedModule,
-  goToDefinitionOf,
-  hoverOn,
-  hoverToMarkdown,
   UntypedProject,
-  findReferences,
-  functionSignatureHint,
-  getInlayHints,
+  ErrorInfo,
+  Severity,
 } from "../../typecheck";
 import { readProjectWithDeps } from "../common";
-import { ErrorInfo, Severity } from "../../errors";
 import { withDisabled } from "../../utils/colors";
 import { format } from "../../format";
 import { Config, readConfig } from "../config";
-import { getCompletionItems } from "../../typecheck/typedAst/completion";
+import {
+  getCompletionItems,
+  findReferences,
+  functionSignatureHint,
+  getInlayHints,
+  goToDefinitionOf,
+  hoverOn,
+  hoverToMarkdown,
+} from "../../analysis";
 
 type Connection = _Connection;
 
@@ -336,7 +339,7 @@ export async function lspCmd() {
       return;
     }
 
-    const label = `${hint.name}: ${typeToString(hint.type, hint.scheme)}`;
+    const label = `${hint.name}: ${typeToString(hint.type)}`;
 
     return {
       signatures: [
@@ -382,7 +385,8 @@ export async function lspCmd() {
     }
 
     const refs =
-      findReferences(ns, position, state.getTypedProject())?.references ?? [];
+      findReferences(module.package_, ns, position, state.getTypedProject())
+        ?.references ?? [];
 
     return refs.map(([referenceNs, referenceExpr]) => {
       const referenceModule = state.moduleByNs(referenceNs)!;
@@ -409,7 +413,12 @@ export async function lspCmd() {
       return;
     }
 
-    const refs = findReferences(ns, position, state.getTypedProject());
+    const refs = findReferences(
+      module.package_,
+      ns,
+      position,
+      state.getTypedProject(),
+    );
 
     if (refs === undefined) {
       return;
@@ -512,11 +521,11 @@ export async function lspCmd() {
       return;
     }
 
-    return module.typed.declarations.map(({ range, binding, scheme }) => {
-      const tpp = typeToString(binding.$.asType(), scheme);
+    return module.typed.declarations.map(({ binding }) => {
+      const tpp = typeToString(binding.$type);
       return {
         command: { title: tpp, command: "noop" },
-        range,
+        range: binding.range,
       };
     });
   });
@@ -551,13 +560,18 @@ export async function lspCmd() {
       return;
     }
 
-    const hoverData = hoverOn(module.ns, module.typed, position);
+    const hoverData = hoverOn(
+      module.package_,
+      module.ns,
+      module.typed,
+      position,
+    );
     if (hoverData === undefined) {
       return undefined;
     }
 
-    const [scheme, hover] = hoverData;
-    const md = hoverToMarkdown(scheme, hover);
+    const hover = hoverData;
+    const md = hoverToMarkdown(hover);
     return {
       range: hover.range,
       contents: {

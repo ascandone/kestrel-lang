@@ -1,3 +1,4 @@
 export * from "./typecheck";
 export * from "./typedAst";
-export { Type, typeToString } from "./type";
+export * from "./errors";
+export { Type, typeToString } from "../type";

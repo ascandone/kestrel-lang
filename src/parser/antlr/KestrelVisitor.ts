@@ -1,76 +1,75 @@
-// Generated from Kestrel.g4 by ANTLR 4.13.1
+// Generated from Kestrel.g4 by ANTLR 4.13.2
 
 import {ParseTreeVisitor} from 'antlr4';
 
 
-import { ModuleNamespaceContext } from "./KestrelParser";
-import { ProgramContext } from "./KestrelParser";
-import { Import_Context } from "./KestrelParser";
-import { ValueExposingContext } from "./KestrelParser";
-import { TypeExposingContext } from "./KestrelParser";
-import { LetDeclarationContext } from "./KestrelParser";
-import { ExternLetDeclarationContext } from "./KestrelParser";
-import { TypeDeclarationContext } from "./KestrelParser";
-import { StructDeclarationContext } from "./KestrelParser";
-import { ExternTypeDeclarationContext } from "./KestrelParser";
-import { LetDeclaration_Context } from "./KestrelParser";
-import { ExternLetDeclaration_Context } from "./KestrelParser";
-import { TypeDeclaration_Context } from "./KestrelParser";
-import { StructDeclaration_Context } from "./KestrelParser";
-import { ExternTypeDeclaration_Context } from "./KestrelParser";
-import { PubExposingContext } from "./KestrelParser";
-import { ParamsListContext } from "./KestrelParser";
-import { TypeVariantsContext } from "./KestrelParser";
-import { FieldDeclContext } from "./KestrelParser";
-import { DeclarationFieldsContext } from "./KestrelParser";
-import { PolyTypeContext } from "./KestrelParser";
-import { TraitImplClauseContext } from "./KestrelParser";
-import { NamedTypeContext } from "./KestrelParser";
-import { FnTypeContext } from "./KestrelParser";
-import { GenericTypeContext } from "./KestrelParser";
-import { TupleTypeContext } from "./KestrelParser";
-import { FnTypeParamsContext } from "./KestrelParser";
-import { TypeConstructorDeclContext } from "./KestrelParser";
-import { QualifiedIdContext } from "./KestrelParser";
-import { StructFieldContext } from "./KestrelParser";
-import { StructFieldsContext } from "./KestrelParser";
-import { ListLitContext } from "./KestrelParser";
-import { ParensContext } from "./KestrelParser";
-import { StringContext } from "./KestrelParser";
-import { MulDivContext } from "./KestrelParser";
-import { AddSubContext } from "./KestrelParser";
-import { FieldAccessContext } from "./KestrelParser";
-import { FnContext } from "./KestrelParser";
-import { MatchContext } from "./KestrelParser";
-import { PipeContext } from "./KestrelParser";
-import { FloatContext } from "./KestrelParser";
-import { EqContext } from "./KestrelParser";
-import { IntContext } from "./KestrelParser";
-import { CompContext } from "./KestrelParser";
-import { CallContext } from "./KestrelParser";
-import { TupleContext } from "./KestrelParser";
-import { CharContext } from "./KestrelParser";
-import { BoolNotContext } from "./KestrelParser";
-import { IdContext } from "./KestrelParser";
-import { BlockExprContext } from "./KestrelParser";
-import { IfContext } from "./KestrelParser";
-import { BoolOrContext } from "./KestrelParser";
-import { StructLitContext } from "./KestrelParser";
-import { BoolAndContext } from "./KestrelParser";
-import { ConsContext } from "./KestrelParser";
-import { MatchClauseContext } from "./KestrelParser";
-import { BlockContext } from "./KestrelParser";
-import { BlockContentExprContext } from "./KestrelParser";
-import { BlockContentLetHashExprContext } from "./KestrelParser";
-import { BlockContentLetExprContext } from "./KestrelParser";
-import { IntPatternContext } from "./KestrelParser";
-import { TuplePatternContext } from "./KestrelParser";
-import { CharPatternContext } from "./KestrelParser";
-import { ConsPatternContext } from "./KestrelParser";
-import { FloatPatternContext } from "./KestrelParser";
-import { ConstructorContext } from "./KestrelParser";
-import { MatchIdentContext } from "./KestrelParser";
-import { StringPatternContext } from "./KestrelParser";
+import { ModuleNamespaceContext } from "./KestrelParser.js";
+import { ProgramContext } from "./KestrelParser.js";
+import { Import_Context } from "./KestrelParser.js";
+import { ValueExposingContext } from "./KestrelParser.js";
+import { TypeExposingContext } from "./KestrelParser.js";
+import { LetDeclarationContext } from "./KestrelParser.js";
+import { ExternLetDeclarationContext } from "./KestrelParser.js";
+import { TypeDeclarationContext } from "./KestrelParser.js";
+import { StructDeclarationContext } from "./KestrelParser.js";
+import { ExternTypeDeclarationContext } from "./KestrelParser.js";
+import { LetDeclaration_Context } from "./KestrelParser.js";
+import { ExternLetDeclaration_Context } from "./KestrelParser.js";
+import { TypeDeclaration_Context } from "./KestrelParser.js";
+import { StructDeclaration_Context } from "./KestrelParser.js";
+import { ExternTypeDeclaration_Context } from "./KestrelParser.js";
+import { PubExposingContext } from "./KestrelParser.js";
+import { ParamsListContext } from "./KestrelParser.js";
+import { TypeVariantsContext } from "./KestrelParser.js";
+import { FieldDeclContext } from "./KestrelParser.js";
+import { DeclarationFieldsContext } from "./KestrelParser.js";
+import { PolyTypeContext } from "./KestrelParser.js";
+import { TraitImplClauseContext } from "./KestrelParser.js";
+import { NamedTypeContext } from "./KestrelParser.js";
+import { FnTypeContext } from "./KestrelParser.js";
+import { GenericTypeContext } from "./KestrelParser.js";
+import { TupleTypeContext } from "./KestrelParser.js";
+import { FnTypeParamsContext } from "./KestrelParser.js";
+import { TypeConstructorDeclContext } from "./KestrelParser.js";
+import { QualifiedIdContext } from "./KestrelParser.js";
+import { StructFieldContext } from "./KestrelParser.js";
+import { StructFieldsContext } from "./KestrelParser.js";
+import { ListLitContext } from "./KestrelParser.js";
+import { ParensContext } from "./KestrelParser.js";
+import { StringContext } from "./KestrelParser.js";
+import { MulDivContext } from "./KestrelParser.js";
+import { AddSubContext } from "./KestrelParser.js";
+import { FieldAccessContext } from "./KestrelParser.js";
+import { FnContext } from "./KestrelParser.js";
+import { MatchContext } from "./KestrelParser.js";
+import { PipeContext } from "./KestrelParser.js";
+import { FloatContext } from "./KestrelParser.js";
+import { EqContext } from "./KestrelParser.js";
+import { IntContext } from "./KestrelParser.js";
+import { CompContext } from "./KestrelParser.js";
+import { CallContext } from "./KestrelParser.js";
+import { TupleContext } from "./KestrelParser.js";
+import { CharContext } from "./KestrelParser.js";
+import { BoolNotContext } from "./KestrelParser.js";
+import { IdContext } from "./KestrelParser.js";
+import { BlockExprContext } from "./KestrelParser.js";
+import { IfContext } from "./KestrelParser.js";
+import { BoolOrContext } from "./KestrelParser.js";
+import { StructLitContext } from "./KestrelParser.js";
+import { BoolAndContext } from "./KestrelParser.js";
+import { ConsContext } from "./KestrelParser.js";
+import { MatchClauseContext } from "./KestrelParser.js";
+import { BlockLetHashContext } from "./KestrelParser.js";
+import { BlockLetContext } from "./KestrelParser.js";
+import { BlockContext } from "./KestrelParser.js";
+import { IntPatternContext } from "./KestrelParser.js";
+import { TuplePatternContext } from "./KestrelParser.js";
+import { CharPatternContext } from "./KestrelParser.js";
+import { ConsPatternContext } from "./KestrelParser.js";
+import { FloatPatternContext } from "./KestrelParser.js";
+import { ConstructorContext } from "./KestrelParser.js";
+import { MatchIdentContext } from "./KestrelParser.js";
+import { StringPatternContext } from "./KestrelParser.js";
 
 
 /**
@@ -453,32 +452,25 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitMatchClause?: (ctx: MatchClauseContext) => Result;
 	/**
+	 * Visit a parse tree produced by the `blockLetHash`
+	 * labeled alternative in `KestrelParser.blockStatement`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBlockLetHash?: (ctx: BlockLetHashContext) => Result;
+	/**
+	 * Visit a parse tree produced by the `blockLet`
+	 * labeled alternative in `KestrelParser.blockStatement`.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	visitBlockLet?: (ctx: BlockLetContext) => Result;
+	/**
 	 * Visit a parse tree produced by `KestrelParser.block`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	visitBlock?: (ctx: BlockContext) => Result;
-	/**
-	 * Visit a parse tree produced by the `blockContentExpr`
-	 * labeled alternative in `KestrelParser.blockContent`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitBlockContentExpr?: (ctx: BlockContentExprContext) => Result;
-	/**
-	 * Visit a parse tree produced by the `blockContentLetHashExpr`
-	 * labeled alternative in `KestrelParser.blockContent`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitBlockContentLetHashExpr?: (ctx: BlockContentLetHashExprContext) => Result;
-	/**
-	 * Visit a parse tree produced by the `blockContentLetExpr`
-	 * labeled alternative in `KestrelParser.blockContent`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitBlockContentLetExpr?: (ctx: BlockContentLetExprContext) => Result;
 	/**
 	 * Visit a parse tree produced by the `intPattern`
 	 * labeled alternative in `KestrelParser.matchPattern`.

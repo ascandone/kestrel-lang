@@ -1,7 +1,6 @@
 import { TypedProject } from "../../common";
-import { Position } from "../../../parser";
+import { Position, gtEqPos } from "../../../parser";
 import { TypedModule, TypedTypeAst, typeToString } from "../../../typecheck";
-import { gtEqPos } from "../../../typecheck/typedAst/common";
 
 export type Variant = {
   name: string;
@@ -64,7 +63,7 @@ export function makeModuleDoc(
     const item: Item = {
       type: "value",
       name: decl.binding.name,
-      signature: typeToString(decl.binding.$.asType()),
+      signature: typeToString(decl.binding.$type),
     };
 
     if (decl.docComment !== undefined) {

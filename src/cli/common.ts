@@ -7,11 +7,14 @@ import {
   UntypedProject,
 } from "../typecheck";
 import { exit } from "node:process";
-import { compileProject, defaultEntryPoint } from "../compiler";
+import {
+  compileProject,
+  defaultEntryPoint,
+} from "../compiler/backend/js/compiler";
 import { col } from "../utils/colors";
 import { Config, readConfig } from "./config";
 import { join } from "node:path";
-import { errorInfoToString } from "../errors";
+import { errorInfoToString } from "../typecheck/errors";
 import * as paths from "./paths";
 
 export const EXTENSION = "kes";
@@ -184,7 +187,7 @@ export async function checkProject(
 export async function compilePath(
   path: string,
   entryPointModule?: string,
-  optimize?: boolean,
+  _optimize?: boolean,
 ): Promise<string> {
   const rawProject = await readProjectWithDeps(path);
   const [typedProject] = await checkProject(rawProject);
@@ -208,7 +211,6 @@ export async function compilePath(
 
     return compileProject(project, {
       externs,
-      optimize,
       entrypoint: {
         ...defaultEntryPoint,
         module: entryPointModule ?? defaultEntryPoint.module,
