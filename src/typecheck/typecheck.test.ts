@@ -1131,8 +1131,7 @@ describe("traits", () => {
     expect(errs[0]?.description).toBeInstanceOf(err.UnboundVariable);
   });
 
-  // TODO Skip until type sigs are fixed
-  test.todo("forbid ambiguous instantiations within args", () => {
+  test("forbid ambiguous instantiations within args", () => {
     const [, errs] = tc(
       `
       extern type Option<a>
@@ -1154,8 +1153,51 @@ describe("traits", () => {
     expect(errs).not.toEqual([]);
     expect(errs.length).toBe(1);
     expect(errs[0]!.description).toEqual(
-      new err.AmbiguousTypeVar("Default", "Option<a> where a: Default"),
+      new err.TraitNotSatified("Option<a>", "Default"),
     );
+  });
+
+  test("allow resolution because of rigid bounds", () => {
+    const [, errs] = tc(
+      `
+      extern type Option<a>
+      extern let default: a where a: Default
+      pub let forbidden: Option<a> where a: Default = default
+  `,
+      {},
+      [],
+      [
+        {
+          moduleName: "Main",
+          typeName: "Option",
+          trait: "Default",
+          deps: [["Default"]],
+        },
+      ],
+    );
+
+    expect(errs).toEqual([]);
+  });
+
+  test("allow resolution because of concrete rigid", () => {
+    const [, errs] = tc(
+      `
+      extern type String
+      extern let default: a where a: Default
+      pub let forbidden: String = default
+  `,
+      {},
+      [],
+      [
+        {
+          moduleName: "Main",
+          typeName: "String",
+          trait: "Default",
+        },
+      ],
+    );
+
+    expect(errs).toEqual([]);
   });
 });
 

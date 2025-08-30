@@ -618,7 +618,7 @@ describe("traits", () => {
     );
   });
 
-  test.skip("rigid types sig", () => {
+  test("rigid types sig", () => {
     const out = dumpIR(
       `
       extern let show: Fn(a) -> String where a: Show

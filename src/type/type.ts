@@ -82,7 +82,7 @@ export type TraitsStore = {
     trait: string,
   ) => undefined | Set<string>[];
 
-  getRigidVarImpl?(trait: string): boolean;
+  getRigidVarImpl?(name: string, trait: string): boolean;
 };
 
 export class TVar {
@@ -200,6 +200,7 @@ export class TVar {
       return TVar.unify(t1.return, t2.return, store);
     }
 
+    // (Rigid, Rigid)
     if (
       t1.type === "rigid-var" &&
       t2.type === "rigid-var" &&
@@ -507,7 +508,7 @@ function unifyTypeWithTraits(
     }
 
     case "rigid-var":
-      return store.getRigidVarImpl?.(trait) ?? false;
+      return store.getRigidVarImpl?.(resolved.name, trait) ?? false;
 
     case "unbound":
       resolved.traits.add(trait);

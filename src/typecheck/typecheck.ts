@@ -11,7 +11,6 @@ import {
   IdentifierResolution,
   ModuleInterface,
   StructResolution,
-  TypeMeta,
   TypedBlockStatement,
   TypedDeclaration,
   TypedExpr,
@@ -36,6 +35,7 @@ import {
   TypeResolution,
   generalize,
   GeneralizeResult,
+  RigidVarsCtx,
 } from "../type";
 import * as err from "./errors";
 import { DependencyProvider, resolve } from "./resolution";
@@ -125,16 +125,34 @@ class Typechecker {
     this.getDependency = getDependency;
   }
 
-  private pushErrorNode(ast: TypeMeta) {
-    const resolved = resolveType(ast.$type);
-    if (resolved.type === "unbound") {
-      this.errorNodesTypeVarIds.add(resolved.id);
+  private pushErrorNode(type: Type) {
+    const resolved = resolveType(type);
+    switch (resolved.type) {
+      case "unbound":
+        this.errorNodesTypeVarIds.add(resolved.id);
+        return;
+
+      case "rigid-var":
+        return;
+      case "fn":
+        for (const arg of resolved.args) {
+          this.pushErrorNode(arg);
+        }
+        this.pushErrorNode(resolved.return);
+        return;
+      case "named":
+        for (const arg of resolved.args) {
+          this.pushErrorNode(arg);
+        }
+        return;
+      default:
+        return resolved satisfies never;
     }
   }
 
   private store: TraitsStore = {
-    getRigidVarImpl: (trait) => {
-      const impls = this.currentDeclaration?.$traitsConstraints[trait];
+    getRigidVarImpl: (name, trait) => {
+      const impls = this.currentDeclaration?.$traitsConstraints[name];
       if (impls === undefined) {
         return false;
       }
@@ -348,6 +366,9 @@ class Typechecker {
       return;
     }
 
+    this.pushErrorNode(t1);
+    this.pushErrorNode(t2);
+
     if (
       e.type === "type-mismatch" &&
       e.left.type === "fn" &&
@@ -394,8 +415,9 @@ class Typechecker {
       return;
     }
 
-    this.pushErrorNode(ast);
-    this.errors.push(unifyErr(ast, e));
+    this.errors.push(
+      castUnifyErr(ast, e, this.currentDeclaration!.$traitsConstraints),
+    );
   }
 
   private typecheckDeclaration(decl: TypedDeclaration) {
@@ -679,7 +701,7 @@ class Typechecker {
         if (ast.$resolution === undefined) {
           // Error was already emitted
           // Do not narrow the identifier's type
-          this.pushErrorNode(ast);
+          this.pushErrorNode(ast.$type);
           return;
         }
 
@@ -1042,7 +1064,12 @@ class Typechecker {
     if (e === undefined) {
       return;
     }
-    this.errors.push(unifyErr(ast, e));
+    this.pushErrorNode(t1);
+    this.pushErrorNode(t2);
+
+    this.errors.push(
+      castUnifyErr(ast, e, this.currentDeclaration!.$traitsConstraints),
+    );
   }
 
   private unifyFieldAccess(
@@ -1321,12 +1348,19 @@ export type TypecheckedModule = {
 
 export type ProjectTypeCheckResult = Record<string, TypecheckedModule>;
 
-function unifyErr(node: RangeMeta, e: UnifyError): err.ErrorInfo {
+function castUnifyErr(
+  node: RangeMeta,
+  e: UnifyError,
+  rigidVarsCtx: RigidVarsCtx,
+): err.ErrorInfo {
   switch (e.type) {
     case "missing-trait":
       return {
         range: node.range,
-        description: new err.TraitNotSatified(e.type_, e.trait),
+        description: new err.TraitNotSatified(
+          typeToString(e.type_, rigidVarsCtx),
+          e.trait,
+        ),
       };
 
     case "type-mismatch":
