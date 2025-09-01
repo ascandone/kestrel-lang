@@ -188,18 +188,54 @@ test("prevent ambiguous import", () => {
   ]);
 });
 
-test.todo("invalidate", () => {
+test("invalidate all the reachable inverse dependency graph on upsert", () => {
   const checker = prjTypechecker({
     pkg: {
       Main: `
         import Dep
-        pub let x = Dep.x
+        import Dep2
+
+        pub let x1 = Dep.x
+        pub let x2 = Dep2.x
       `,
       Dep: `pub let x = 42`,
+      Dep2: `pub let x = 42`,
     },
   });
+  checker.typecheck();
 
   checker.upsert("pkg", "Dep", unsafeParse(``));
+  const changed = checker.typecheck();
+
+  // We don't want to typecheck Dep2 as well
+  expect(changed).toEqual([
+    expect.objectContaining({ package_: "pkg", moduleId: "Main" }),
+    expect.objectContaining({ package_: "pkg", moduleId: "Dep" }),
+  ]);
+});
+
+test("invalidate all the reachable inverse dependency graph on delete", () => {
+  const checker = prjTypechecker({
+    pkg: {
+      Main: `
+        import Dep
+        import Dep2
+
+        pub let x1 = Dep.x
+        pub let x2 = Dep2.x
+      `,
+      Dep: `pub let x = 42`,
+      Dep2: `pub let x = 42`,
+    },
+  });
+  checker.typecheck();
+
+  checker.delete("pkg", "Dep");
+  const changed = checker.typecheck();
+
+  expect(changed).toEqual([
+    expect.objectContaining({ package_: "pkg", moduleId: "Main" }),
+  ]);
 });
 
 type RawProject = Record<string, Record<string, string>>;

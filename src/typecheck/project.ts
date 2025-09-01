@@ -23,6 +23,7 @@ export class ProjectTypechecker {
     Map<string, [TypedModule, err.ErrorInfo[]]>
   >(() => new Map());
 
+  /** keys (and values) have the form `${pkg}:${moduleId}` */
   private readonly inverseDependencyGraph = new DefaultMap<string, Set<string>>(
     () => new Set(),
   );
@@ -42,10 +43,27 @@ export class ProjectTypechecker {
   // -- public API
 
   public upsert(package_: string, moduleId: string, module: UntypedModule) {
-    throw new Error("unimplemented: upsert");
+    this.invalidateCache(package_, moduleId);
+
+    // Add to project
+    let packages = this.rawProject.get(moduleId);
+    if (packages === undefined) {
+      packages = new Map();
+      this.rawProject.set(moduleId, packages);
+    }
+    packages.set(package_, module);
   }
+
   public delete(package_: string, moduleId: string) {
-    throw new Error("unimplemented: delete");
+    this.invalidateCache(package_, moduleId);
+
+    // Delete module
+    let packages = this.rawProject.get(moduleId);
+    if (packages === undefined) {
+      packages = new Map();
+      this.rawProject.set(moduleId, packages);
+    }
+    packages.delete(package_);
   }
 
   /** typecheck the whole project and returns the set of changed files */
@@ -75,7 +93,21 @@ export class ProjectTypechecker {
   }> = [];
 
   /** recursively invalidate cache */
-  private invalidateCache(moduleId: string) {}
+  private invalidateCache(package_: string, moduleId: string) {
+    this.compiledProject.get(moduleId).delete(package_);
+
+    // TODO add to work list so that we don't have to iterate the whole project
+    const key = `${package_}:${moduleId}`;
+
+    const revDeps = this.inverseDependencyGraph.get(key);
+    for (const key_ of revDeps) {
+      // TODO maybe use different data structure?
+      const [package2, moduleId2] = key_.split(":");
+      this.invalidateCache(package2!, moduleId2!);
+    }
+
+    this.inverseDependencyGraph.inner.set(key, new Set());
+  }
 
   private resolveModule(
     requestedModuleId: string,
@@ -150,18 +182,23 @@ export class ProjectTypechecker {
 
     const importErrors: err.ErrorInfo[] = [];
     const output = typecheck(package_, moduleId, module, {
-      getDependency: (moduleId: string) => {
-        // TODO prevent cycles
-
-        const resolved = this.resolveModule(moduleId, package_);
+      getDependency: (dependencyModuleId: string) => {
+        const resolved = this.resolveModule(dependencyModuleId, package_);
         if (resolved.type === "ERR") {
           return resolved;
         }
 
+        // TODO it's not super correct not to do this if the resolution fails
+        // (we risk stale dependencies if there are imports errs)
+
+        this.inverseDependencyGraph
+          .get(`${resolved.value[0]}:${dependencyModuleId}`)
+          .add(`${package_}:${moduleId}`);
+
         const [resolvedPackage, rawModule] = resolved.value;
         const [output] = this.typecheckModule(
           resolvedPackage,
-          moduleId,
+          dependencyModuleId,
           rawModule,
         );
 
