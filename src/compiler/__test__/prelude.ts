@@ -132,7 +132,13 @@ function typecheckSourceRaw(
   const [program] = typecheck(package_, ns, parsed, {
     implicitImports,
     traitImpls,
-    getDependency: (ns) => deps[ns],
+    getDependency: (ns) => {
+      const dep = deps[ns];
+      if (dep === undefined) {
+        return { type: "ERR", error: { type: "UNBOUND_MODULE" } };
+      }
+      return { type: "OK", value: dep };
+    },
   });
 
   return program;

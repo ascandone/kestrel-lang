@@ -3268,7 +3268,13 @@ function tcProgram(
   return typecheck("pkg", ns, parsedProgram, {
     traitImpls,
     implicitImports: prelude,
-    getDependency: (ns) => deps_[ns],
+    getDependency: (ns) => {
+      const dep = deps_[ns];
+      if (dep === undefined) {
+        return { type: "ERR", error: { type: "UNBOUND_MODULE" } };
+      }
+      return { type: "OK", value: dep };
+    },
   });
 }
 

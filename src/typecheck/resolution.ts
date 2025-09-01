@@ -21,8 +21,24 @@ import { Annotator } from "./Annotator";
 import * as visitor from "./visitor";
 import * as ast from "../parser/ast";
 import * as graph from "../data/graph";
+import { Result } from "../data/result";
 
-export type DependencyProvider = (ns: string) => ModuleInterface | undefined;
+export type DependencyProviderError =
+  | {
+      type: "UNBOUND_MODULE";
+    }
+  | {
+      type: "CYCLIC_DEPENDENCY";
+      path: string[];
+    }
+  | {
+      type: "AMBIGUOUS_IMPORT";
+      packages: string[];
+    };
+
+export type DependencyProvider = (
+  ns: string,
+) => Result<ModuleInterface, DependencyProviderError>;
 
 class LocalFrames {
   private currentScope?: Map<string, IdentifierResolution | undefined>;
@@ -243,17 +259,34 @@ class Resolver {
     ]);
   }
 
+  private emitBadImportErr(
+    import_: TypedImport,
+    error: DependencyProviderError,
+  ) {
+    switch (error.type) {
+      case "UNBOUND_MODULE":
+        this.errors.push({
+          description: new err.UnboundModule(import_.ns),
+          range: import_.range,
+        });
+        return;
+
+      case "CYCLIC_DEPENDENCY":
+        throw new Error("TODO emit cyclic dependency error");
+
+      case "AMBIGUOUS_IMPORT":
+        throw new Error("TODO emit ambiguos dependency error");
+    }
+  }
+
   /** add imports to scope and mark them as unused */
   private loadImports(imports: TypedImport[], markUnused: boolean) {
     for (const import_ of imports) {
       this.importedModules.add(import_.ns);
 
       const dep = this.getDependency(import_.ns);
-      if (dep === undefined) {
-        this.errors.push({
-          description: new err.UnboundModule(import_.ns),
-          range: import_.range,
-        });
+      if (dep.type === "ERR") {
+        this.emitBadImportErr(import_, dep.error);
         continue;
       }
 
@@ -268,11 +301,11 @@ class Resolver {
 
         switch (exposing.type) {
           case "type":
-            this.loadTypeImport(dep, exposing);
+            this.loadTypeImport(dep.value, exposing);
             break;
 
           case "value":
-            this.loadValueImport(dep, exposing);
+            this.loadValueImport(dep.value, exposing);
             break;
         }
       }
@@ -668,13 +701,14 @@ class Resolver {
 
     this.unusedImports.delete(ns);
 
+    // TODO why are we accessing this in two places?
     const dep = this.getDependency(ns);
-    if (dep === undefined) {
+    if (dep.type !== "OK") {
       // The error was already emitted
       return undefined;
     }
 
-    return dep;
+    return dep.value;
   }
 
   private emitUnusedImportsErrors() {

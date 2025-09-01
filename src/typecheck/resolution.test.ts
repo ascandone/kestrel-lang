@@ -63,5 +63,11 @@ function getBindings(arr: TypedDeclaration[][]) {
 
 function resolve(src: string) {
   const parsed = unsafeParse(src);
-  return resolution.resolve("pkg", "Main", () => undefined, parsed, []);
+  return resolution.resolve(
+    "pkg",
+    "Main",
+    () => ({ type: "ERR", error: { type: "UNBOUND_MODULE" } }),
+    parsed,
+    [],
+  );
 }
