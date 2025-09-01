@@ -446,7 +446,7 @@ class Typechecker {
     }
 
     this.unifyExpr(decl.value, decl.binding.$type, decl.value.$type);
-    this.typecheckAnnotatedExpr(decl.value);
+    this.typecheckExpr(decl.value);
   }
 
   private typecheckPattern(pattern: TypedMatchPattern) {
@@ -601,16 +601,13 @@ class Typechecker {
     return;
   }
 
-  private typecheckAnnotatedBlockStatement(
-    stm: TypedBlockStatement,
-    bodyType: Type,
-  ) {
+  private typecheckBlockStatement(stm: TypedBlockStatement, bodyType: Type) {
     switch (stm.type) {
       case "let":
         this.typecheckPattern(stm.pattern);
         this.unifyNode(stm, stm.$type, bodyType);
         this.unifyNode(stm, stm.pattern.$type, stm.value.$type);
-        this.typecheckAnnotatedExpr(stm.value);
+        this.typecheckExpr(stm.value);
 
         this.checkExhaustiveMatchBinding(stm.pattern);
         break;
@@ -628,8 +625,8 @@ class Typechecker {
           ],
           return: stm.$type,
         });
-        this.typecheckAnnotatedExpr(stm.mapper);
-        this.typecheckAnnotatedExpr(stm.value);
+        this.typecheckExpr(stm.mapper);
+        this.typecheckExpr(stm.value);
         this.typecheckPattern(stm.pattern);
 
         this.checkExhaustiveMatchBinding(stm.pattern);
@@ -640,7 +637,7 @@ class Typechecker {
     }
   }
 
-  private typecheckAnnotatedExpr(ast: TypedExpr): void {
+  private typecheckExpr(ast: TypedExpr): void {
     switch (ast.type) {
       case "syntax-err":
         return;
@@ -656,7 +653,7 @@ class Typechecker {
         this.unifyExpr(ast, ast.$type, core.List(valueType));
         for (const value of ast.values) {
           this.unifyExpr(value, value.$type, valueType);
-          this.typecheckAnnotatedExpr(value);
+          this.typecheckExpr(value);
         }
         return;
       }
@@ -683,14 +680,14 @@ class Typechecker {
           );
 
           this.unifyExpr(field.value, field.value.$type, fieldType);
-          this.typecheckAnnotatedExpr(field.value);
+          this.typecheckExpr(field.value);
         }
 
         this.checkMissingStructFields(ast, ast.struct.$resolution, type_);
         this.unifyExpr(ast, ast.$type, type_);
 
         if (ast.spread !== undefined) {
-          this.typecheckAnnotatedExpr(ast.spread);
+          this.typecheckExpr(ast.spread);
           this.unifyExpr(ast.spread, ast.spread.$type, ast.$type);
         }
 
@@ -724,26 +721,26 @@ class Typechecker {
           return: ast.body.$type,
         });
 
-        this.typecheckAnnotatedExpr(ast.body);
+        this.typecheckExpr(ast.body);
 
         this.checkExhaustiveMatchBindings(ast.range, ast.params);
 
         return;
 
       case "application":
-        this.typecheckAnnotatedExpr(ast.caller);
+        this.typecheckExpr(ast.caller);
         this.unifyExpr(ast, ast.caller.$type, {
           type: "fn",
           args: ast.args.map((arg) => arg.$type),
           return: ast.$type,
         });
         for (const arg of ast.args) {
-          this.typecheckAnnotatedExpr(arg);
+          this.typecheckExpr(arg);
         }
         return;
 
       case "pipe":
-        this.typecheckAnnotatedExpr(ast.left);
+        this.typecheckExpr(ast.left);
         if (ast.right.type !== "application") {
           this.errors.push({
             range: ast.right.range,
@@ -753,9 +750,9 @@ class Typechecker {
         }
 
         // NOTE: make sure we don't typecheck ast.right - as it would fail
-        this.typecheckAnnotatedExpr(ast.right.caller);
+        this.typecheckExpr(ast.right.caller);
         for (const arg of ast.right.args) {
-          this.typecheckAnnotatedExpr(arg);
+          this.typecheckExpr(arg);
         }
 
         this.unifyExpr(ast, ast.right.caller.$type, {
@@ -768,7 +765,7 @@ class Typechecker {
         return;
 
       case "field-access": {
-        this.typecheckAnnotatedExpr(ast.struct);
+        this.typecheckExpr(ast.struct);
 
         const fieldResolution = this.getFieldResolution(
           ast.field.name,
@@ -804,18 +801,18 @@ class Typechecker {
         this.unifyExpr(ast, ast.condition.$type, core.Bool);
         this.unifyExpr(ast, ast.$type, ast.then.$type);
         this.unifyExpr(ast, ast.$type, ast.else.$type);
-        this.typecheckAnnotatedExpr(ast.condition);
-        this.typecheckAnnotatedExpr(ast.then);
-        this.typecheckAnnotatedExpr(ast.else);
+        this.typecheckExpr(ast.condition);
+        this.typecheckExpr(ast.then);
+        this.typecheckExpr(ast.else);
         return;
 
       case "match":
-        this.typecheckAnnotatedExpr(ast.expr);
+        this.typecheckExpr(ast.expr);
         for (const [pattern, expr] of ast.clauses) {
           this.unifyExpr(ast, pattern.$type, ast.expr.$type);
           this.typecheckPattern(pattern);
           this.unifyExpr(ast, ast.$type, expr.$type);
-          this.typecheckAnnotatedExpr(expr);
+          this.typecheckExpr(expr);
         }
         this.checkExhaustiveMatch(ast);
         return;
@@ -826,17 +823,17 @@ class Typechecker {
         const firstStatement = ast.statements[0];
         if (firstStatement === undefined) {
           this.unifyExpr(ast, ast.$type, ast.returning.$type);
-          this.typecheckAnnotatedExpr(ast.returning);
+          this.typecheckExpr(ast.returning);
           return;
         }
 
         ast.statements.forEach((stm, index) => {
           const nextType =
             ast.statements[index + 1]?.$type ?? ast.returning.$type;
-          this.typecheckAnnotatedBlockStatement(stm, nextType);
+          this.typecheckBlockStatement(stm, nextType);
         });
 
-        this.typecheckAnnotatedExpr(ast.returning);
+        this.typecheckExpr(ast.returning);
         this.unifyExpr(ast, ast.$type, firstStatement.$type);
         return;
       }
