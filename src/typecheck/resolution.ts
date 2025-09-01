@@ -272,10 +272,18 @@ class Resolver {
         return;
 
       case "CYCLIC_DEPENDENCY":
-        throw new Error("TODO emit cyclic dependency error");
+        this.errors.push({
+          description: new err.CyclicImport(error.path),
+          range: import_.range,
+        });
+        return;
 
       case "AMBIGUOUS_IMPORT":
-        throw new Error("TODO emit ambiguos dependency error");
+        this.errors.push({
+          description: new err.AmbiguousImport(error.packages),
+          range: import_.range,
+        });
+        return;
     }
   }
 

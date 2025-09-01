@@ -83,9 +83,110 @@ test("emit error when dependency is not visible", () => {
   ]);
 });
 
-test.todo("prevent dependency cycle");
-test.todo("prevent ambiguous import");
-test.todo("emit error on unkown dependency");
+test("prevent dependency cycle", () => {
+  const checker = prjTypechecker({
+    pkg: {
+      A: `
+        import B
+        pub let x = B.x
+      `,
+      B: `
+        import C
+        pub let x = C.x
+      `,
+      C: `
+        import A
+        pub let x = A.x
+      `,
+    },
+  });
+
+  const changed = checker.typecheck();
+
+  expect(changed).toEqual([
+    expect.objectContaining({
+      package_: "pkg",
+      moduleId: "C",
+      output: [
+        expect.anything(),
+        <err.ErrorInfo[]>[
+          {
+            description: new err.CyclicImport(["A", "B", "C"]),
+            range: expect.anything(),
+          },
+        ],
+      ],
+    }),
+    expect.objectContaining({
+      package_: "pkg",
+      moduleId: "B",
+      output: [expect.anything(), []],
+    }),
+    expect.objectContaining({
+      package_: "pkg",
+      moduleId: "A",
+      output: [expect.anything(), []],
+    }),
+  ]);
+});
+
+test("prevent ambiguous import", () => {
+  const checker = prjTypechecker(
+    {
+      pkg: {
+        Main: `
+        import Dep
+        pub let x = Dep.x
+      `,
+      },
+
+      pkg1: {
+        Dep: ``,
+      },
+      pkg2: {
+        Dep: ``,
+      },
+    },
+    {
+      packageDependencies: new Map(
+        Object.entries({
+          pkg: new Set(["pkg1", "pkg2"]),
+        }),
+      ),
+    },
+  );
+
+  const changed = checker.typecheck();
+
+  expect(changed).toEqual([
+    expect.objectContaining({
+      package_: "pkg",
+      moduleId: "Main",
+      output: [
+        expect.anything(),
+
+        <err.ErrorInfo[]>[
+          {
+            description: new err.AmbiguousImport(["pkg1", "pkg2"]),
+            range: expect.anything(),
+          },
+        ],
+      ],
+    }),
+
+    expect.objectContaining({
+      package_: "pkg1",
+      moduleId: "Dep",
+      output: [expect.anything(), expect.anything()],
+    }),
+
+    expect.objectContaining({
+      package_: "pkg2",
+      moduleId: "Dep",
+      output: [expect.anything(), expect.anything()],
+    }),
+  ]);
+});
 
 test.todo("invalidate", () => {
   const checker = prjTypechecker({

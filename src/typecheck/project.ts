@@ -27,6 +27,13 @@ export class ProjectTypechecker {
     () => new Set(),
   );
 
+  /**
+   * The visit path, used to track cycles
+   *
+   * Note: we don't track packages because there can't be a dependency cycle between different packages (as the package graph is acyclic)
+   */
+  private currentPath: string[] = [];
+
   constructor(
     private readonly rawProject: RawProject,
     private readonly projectOptions: Partial<ProjectOptions> = {},
@@ -109,6 +116,13 @@ export class ProjectTypechecker {
       };
     }
 
+    if (this.currentPath.includes(requestedModuleId)) {
+      return {
+        type: "ERR",
+        error: { type: "CYCLIC_DEPENDENCY", path: this.currentPath },
+      };
+    }
+
     return { type: "OK", value: visibleModules[0]! };
   }
 
@@ -132,6 +146,8 @@ export class ProjectTypechecker {
     moduleId: string,
     module: UntypedModule,
   ): [TypedModule, err.ErrorInfo[]] {
+    this.currentPath.push(moduleId);
+
     const importErrors: err.ErrorInfo[] = [];
     const output = typecheck(package_, moduleId, module, {
       getDependency: (moduleId: string) => {

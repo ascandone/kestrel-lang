@@ -196,6 +196,24 @@ export class UnboundModule implements ErrorDescription {
   }
 }
 
+export class CyclicImport implements ErrorDescription {
+  constructor(public path: string[]) {}
+  severity: Severity = "error";
+  errorName = "Cyclic import";
+  shortDescription(): string {
+    return `Cyclic dependency detected: [${this.path.join(", ")}].`;
+  }
+}
+
+export class AmbiguousImport implements ErrorDescription {
+  constructor(public packages: string[]) {}
+  severity: Severity = "error";
+  errorName = "Ambiguos import";
+  shortDescription(): string {
+    return `Ambiguos import. The module could belong to any of those packages: ${this.packages.join(", ")}.`;
+  }
+}
+
 export class UnimportedModule implements ErrorDescription {
   constructor(public moduleName: string) {}
   severity: Severity = "error";
