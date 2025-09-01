@@ -211,10 +211,7 @@ export async function compilePath(
 
     return compileProject(project, {
       externs,
-      entrypoint: {
-        ...defaultEntryPoint,
-        module: entryPointModule ?? defaultEntryPoint.module,
-      },
+      entrypoint: entryPointModule ?? defaultEntryPoint,
     });
   } catch (e) {
     console.error(col.red.tag`Error:`, (e as Error).message);
