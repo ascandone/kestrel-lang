@@ -44,13 +44,14 @@ import * as core from "./core_package";
 
 export const DEFAULT_MAIN_TYPE = core.Task(core.Unit);
 
-export type Deps = Record<string, ModuleInterface>;
-
-export type TypecheckOptions = {
-  getDependency: DependencyProvider;
+export type ProjectOptions = {
   implicitImports: Import[];
   mainType: Type;
   traitImpls: TraitImpl[];
+};
+
+export type TypecheckOptions = ProjectOptions & {
+  getDependency: DependencyProvider;
 };
 
 export function typecheck(
@@ -1310,6 +1311,14 @@ export type UntypedProject = Record<
   }
 >;
 
+export type TypecheckedModule = {
+  package: string;
+  typedModule: TypedModule;
+  errors: err.ErrorInfo[];
+};
+
+export type ProjectTypeCheckResult = Record<string, TypecheckedModule>;
+
 export function typecheckProject(
   project: UntypedProject,
   implicitImports: Import[] = defaultImports,
@@ -1318,7 +1327,7 @@ export function typecheckProject(
   const sortedModules = topSortedModules(project, implicitImports);
 
   const projectResult: ProjectTypeCheckResult = {};
-  const deps: Deps = {};
+  const deps: Record<string, ModuleInterface> = {};
   for (const ns of sortedModules) {
     const m = project[ns];
     if (m === undefined) {
@@ -1336,14 +1345,6 @@ export function typecheckProject(
 
   return projectResult;
 }
-
-export type TypecheckedModule = {
-  package: string;
-  typedModule: TypedModule;
-  errors: err.ErrorInfo[];
-};
-
-export type ProjectTypeCheckResult = Record<string, TypecheckedModule>;
 
 function castUnifyErr(
   node: RangeMeta,
@@ -1368,81 +1369,6 @@ function castUnifyErr(
     case "occurs-check":
       return { range: node.range, description: new err.OccursCheck() };
   }
-}
-
-type TraitDependencies = {
-  rigid: Set<string>;
-  flexible: Set<number>;
-};
-
-/**
- * e.g.
- * ```kestrel
- * impl Show for T<x, y> where y: Show { .. }
- * ```
- * is represented as the `Set([1])` set (where the elems are the index of type params)
- */
-export function getTraitDependencies(
-  type: Type,
-  namedDependency: (
-    package_: string,
-    module: string,
-    named: string,
-  ) => Set<number>,
-): TraitDependencies | undefined {
-  let deps: TraitDependencies | undefined = {
-    flexible: new Set(),
-    rigid: new Set(),
-  };
-
-  function recur(type: Type) {
-    if (deps === undefined) {
-      return;
-    }
-
-    const resolved = resolveType(type);
-
-    switch (resolved.type) {
-      case "named": {
-        const deps = namedDependency(
-          resolved.package_,
-          resolved.module,
-          resolved.name,
-        );
-
-        for (const paramIndex of deps) {
-          const dependency = resolved.args[paramIndex];
-          if (dependency === undefined) {
-            throw new Error(
-              "[unreachable] bad index in dependency representation",
-            );
-          }
-
-          recur(dependency);
-        }
-
-        return;
-      }
-
-      case "fn":
-        // Fn never derives
-        deps = undefined;
-        return;
-
-      case "rigid-var":
-        deps.rigid.add(resolved.name);
-        return;
-
-      case "unbound":
-        // TODO maybe we need to check if trait is present here?
-        // resolved.traits;
-        throw new Error("TODO no idea what this means");
-    }
-  }
-
-  recur(type);
-
-  return deps;
 }
 
 function mkDepsFor(
