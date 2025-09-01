@@ -55,13 +55,36 @@ export function typecheck(
   package_: string,
   ns: string,
   module: UntypedModule,
-  options: Partial<TypecheckOptions> = {},
+  {
+    getDependency = () => undefined,
+    implicitImports = defaultImports,
+    mainType = DEFAULT_MAIN_TYPE,
+    traitImpls = defaultTraitImpls,
+  }: Partial<TypecheckOptions> = {},
 ): [TypedModule, err.ErrorInfo[]] {
-  const tc = new Typechecker(package_, ns, module, options);
+  TVar.resetId();
+
+  const [typedModule, errors] = resolve(
+    package_,
+    ns,
+    getDependency,
+    module,
+    implicitImports,
+  );
+
+  const tc = new Typechecker(
+    errors,
+    package_,
+    ns,
+    typedModule,
+    getDependency,
+    mainType,
+    traitImpls,
+  );
 
   tc.run();
 
-  return [tc.typedModule, tc.errors];
+  return [typedModule, errors];
 }
 
 type ScheduledAmbiguousVarCheck = {
@@ -88,42 +111,17 @@ class Typechecker {
    */
   private localDerives = new Map<string, Set<string>[]>();
 
-  // Initiated in ctor
-  public readonly typedModule: TypedModule;
-  public readonly errors: err.ErrorInfo[];
-  private readonly mutuallyRecursiveBindings: TypedDeclaration[][];
-  private readonly mainType: Type;
-  private readonly traitImpls: TraitImpl[];
-  private readonly getDependency: DependencyProvider;
-
   constructor(
+    private readonly errors: err.ErrorInfo[],
+
     private readonly package_: string,
     private readonly ns: string,
-    module: UntypedModule,
+    private readonly typedModule: TypedModule,
 
-    {
-      getDependency = () => undefined,
-      implicitImports = defaultImports,
-      mainType = DEFAULT_MAIN_TYPE,
-      traitImpls = defaultTraitImpls,
-    }: Partial<TypecheckOptions> = {},
-  ) {
-    TVar.resetId();
-    const [typedModule, errors] = resolve(
-      this.package_,
-      this.ns,
-      getDependency,
-      module,
-      implicitImports,
-    );
-
-    this.typedModule = typedModule;
-    this.mutuallyRecursiveBindings = typedModule.mutuallyRecursiveDeclrs;
-    this.errors = errors;
-    this.mainType = mainType;
-    this.traitImpls = traitImpls;
-    this.getDependency = getDependency;
-  }
+    private readonly getDependency: DependencyProvider,
+    private readonly mainType: Type,
+    private readonly traitImpls: TraitImpl[],
+  ) {}
 
   private pushErrorNode(type: Type) {
     const resolved = resolveType(type);
@@ -276,7 +274,7 @@ class Typechecker {
       }
     }
 
-    for (const group of this.mutuallyRecursiveBindings) {
+    for (const group of this.typedModule.mutuallyRecursiveDeclrs) {
       this.currentRecGroup = new Set(group);
 
       for (const decl of group) {
