@@ -1,5 +1,5 @@
 import { test, expect, describe } from "vitest";
-import { Deps, TypedModule } from "../../../typecheck";
+import { TypedModule } from "../../../typecheck";
 import { Compiler, compile } from "./compiler";
 import {
   TraitImpl,
@@ -7,6 +7,7 @@ import {
 } from "../../../typecheck/defaultImports";
 import { ProjectLowering, lowerProgram } from "../../lower";
 import {
+  Deps,
   typecheckSource,
   typecheckSource_ as typecheckSource_,
 } from "../../__test__/prelude";

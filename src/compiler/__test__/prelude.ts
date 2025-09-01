@@ -1,5 +1,5 @@
 import * as parser from "../../parser";
-import { typecheck, type Deps } from "../../typecheck";
+import { typecheck, ModuleInterface } from "../../typecheck";
 import { CORE_PACKAGE } from "../../typecheck/core_package";
 import { TraitImpl } from "../../typecheck/defaultImports";
 
@@ -117,6 +117,8 @@ const DEFAULT_DEPS: Deps = {
   Bool,
   Float,
 };
+
+export type Deps = Record<string, ModuleInterface>;
 
 function typecheckSourceRaw(
   package_: string,

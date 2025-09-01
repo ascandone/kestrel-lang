@@ -1,15 +1,10 @@
 import { describe, expect, test } from "vitest";
 import { Position, Range, Import, unsafeParse } from "../parser";
-import {
-  Deps as IDeps,
-  typecheck,
-  typecheckProject,
-  TypedModule,
-  typeToString,
-} from ".";
+import { typecheck, typecheckProject, TypedModule, typeToString } from ".";
 import { ErrorInfo } from "./errors";
 import * as err from "./errors";
 import { TraitImpl } from "./defaultImports";
+import { Deps as IDeps } from "../compiler/__test__/prelude";
 
 describe("basic constructs inference", () => {
   test("infer int", () => {
