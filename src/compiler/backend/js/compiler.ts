@@ -2,11 +2,10 @@ import * as t from "@babel/types";
 import generate from "@babel/generator";
 
 import * as ir from "../../ir";
-import { DEFAULT_MAIN_TYPE, TypedModule } from "../../../typecheck";
+import { type TypedModule } from "../../../typecheck";
 import { CompilationError, ProjectLowering } from "../../lower";
 import * as common from "./common";
 import * as deriving from "./deriving";
-import { ConcreteType } from "../../../type";
 import { CORE_PACKAGE } from "../../../typecheck/core_package";
 
 export type CompileOptions = {
@@ -1224,28 +1223,20 @@ function makeImplicitParamIdentifier(arg: ir.ImplicitTraitArg): t.Expression {
 
 // Project compilation
 
-export const defaultEntryPoint: NonNullable<
-  CompileProjectOptions["entrypoint"]
-> = {
-  module: "Main",
-  type: DEFAULT_MAIN_TYPE,
-};
+export const defaultEntryPoint = "Main";
 
 export type CompileProjectOptions = {
   externs?: Record<string, string>;
-  entrypoint?: {
-    module: string;
-    type: ConcreteType;
-  };
+  entrypoint?: string;
 };
 
 export function compileProject(
   typedProject: Record<string, TypedModule>,
   { entrypoint = defaultEntryPoint, externs = {} }: CompileProjectOptions = {},
 ): string {
-  const entry = typedProject[entrypoint.module];
+  const entry = typedProject[entrypoint];
   if (entry === undefined) {
-    throw new Error(`Entrypoint not found: '${entrypoint.module}'`);
+    throw new Error(`Entrypoint not found: '${entrypoint}'`);
   }
 
   const mainDecl = entry.declarations.find(
@@ -1256,7 +1247,7 @@ export function compileProject(
   }
 
   const proj = new ProjectLowering(typedProject);
-  proj.visit(entrypoint.module);
+  proj.visit(entrypoint);
 
   const compiler = new Compiler();
 
@@ -1273,7 +1264,7 @@ export function compileProject(
     buf.push(out);
   }
 
-  const entryPointMod = common.sanitizeNamespace(entrypoint.module);
+  const entryPointMod = common.sanitizeNamespace(entrypoint);
   buf.push(`${entryPointMod}$main.exec();\n`);
 
   return buf.join("\n\n");
