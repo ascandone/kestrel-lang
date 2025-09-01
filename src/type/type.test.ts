@@ -18,8 +18,8 @@ import {
   List,
   Option,
   Tuple,
+  CORE_PACKAGE,
 } from "./__test__/types";
-import { CORE_PACKAGE } from "../typecheck";
 
 function unify(t1: Type, t2: Type, store = DUMMY_STORE) {
   return unify_(t1, t2, store);

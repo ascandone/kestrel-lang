@@ -2,15 +2,12 @@ import * as t from "@babel/types";
 import generate from "@babel/generator";
 
 import * as ir from "../../ir";
-import {
-  CORE_PACKAGE,
-  DEFAULT_MAIN_TYPE,
-  TypedModule,
-} from "../../../typecheck";
+import { DEFAULT_MAIN_TYPE, TypedModule } from "../../../typecheck";
 import { CompilationError, ProjectLowering } from "../../lower";
 import * as common from "./common";
 import * as deriving from "./deriving";
 import { ConcreteType } from "../../../type";
+import { CORE_PACKAGE } from "../../../typecheck/core_package";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;

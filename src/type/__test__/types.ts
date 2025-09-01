@@ -1,7 +1,7 @@
 import { ConcreteType, Type } from "..";
 
 export const BASICS_MODULE = "Basics";
-export const CORE_PACKAGE = "kestrel_core";
+export const CORE_PACKAGE = "stdlib";
 
 export const Int: ConcreteType = {
   module: BASICS_MODULE,
@@ -10,32 +10,11 @@ export const Int: ConcreteType = {
   name: "Int",
   args: [],
 };
-export const Float: ConcreteType = {
-  module: BASICS_MODULE,
-  package_: CORE_PACKAGE,
-  type: "named",
-  name: "Float",
-  args: [],
-};
-export const String: ConcreteType = {
-  module: BASICS_MODULE,
-  package_: CORE_PACKAGE,
-  type: "named",
-  name: "String",
-  args: [],
-};
 export const Bool: ConcreteType = {
   module: BASICS_MODULE,
   package_: CORE_PACKAGE,
   type: "named",
   name: "Bool",
-  args: [],
-};
-export const Unit: ConcreteType = {
-  module: BASICS_MODULE,
-  package_: CORE_PACKAGE,
-  type: "named",
-  name: "Unit",
   args: [],
 };
 export function List(arg: Type): ConcreteType {

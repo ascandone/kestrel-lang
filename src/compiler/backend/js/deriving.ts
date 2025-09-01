@@ -1,11 +1,8 @@
 import * as t from "@babel/types";
-import {
-  CORE_PACKAGE,
-  TypedTypeAst,
-  TypedTypeDeclaration,
-} from "../../../typecheck";
+import { TypedTypeAst, TypedTypeDeclaration } from "../../../typecheck";
 import * as common from "./common";
 import * as ir from "../../ir";
+import { CORE_PACKAGE } from "../../../typecheck/core_package";
 
 function shouldDeriveTrait(
   trait: string,

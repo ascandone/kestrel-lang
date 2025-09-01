@@ -28,7 +28,6 @@ import {
   UnifyError,
   Instantiator,
   typeToString,
-  ConcreteType,
   resolveType,
   instantiate,
   TraitsStore,
@@ -41,6 +40,9 @@ import * as err from "./errors";
 import { DependencyProvider, resolve } from "./resolution";
 import { topologicalSort } from "../utils/topsort";
 import { DefaultMap } from "../data/defaultMap";
+import * as core from "./core_package";
+
+export const DEFAULT_MAIN_TYPE = core.Task(core.Unit);
 
 export type Deps = Record<string, ModuleInterface>;
 
@@ -651,7 +653,7 @@ class Typechecker {
 
       case "list-literal": {
         const valueType = TVar.freshType();
-        this.unifyExpr(ast, ast.$type, List(valueType));
+        this.unifyExpr(ast, ast.$type, core.List(valueType));
         for (const value of ast.values) {
           this.unifyExpr(value, value.$type, valueType);
           this.typecheckAnnotatedExpr(value);
@@ -799,7 +801,7 @@ class Typechecker {
       }
 
       case "if":
-        this.unifyExpr(ast, ast.condition.$type, Bool);
+        this.unifyExpr(ast, ast.condition.$type, core.Bool);
         this.unifyExpr(ast, ast.$type, ast.then.$type);
         this.unifyExpr(ast, ast.$type, ast.else.$type);
         this.typecheckAnnotatedExpr(ast.condition);
@@ -1262,23 +1264,23 @@ class Typechecker {
 }
 
 function inferConstant(x: ConstLiteral): Type {
-  // Keep this in sync with core
   switch (x.type) {
     case "int":
-      return Int;
+      return core.Int;
 
     case "float":
-      return Float;
+      return core.Float;
 
     case "string":
-      return String;
+      return core.String;
 
     case "char":
-      return Char;
+      return core.Char;
+
+    default:
+      return x satisfies never;
   }
 }
-
-export const CORE_PACKAGE = "kestrel_core";
 
 function topSortedModules(
   project: UntypedProject,
@@ -1289,7 +1291,7 @@ function topSortedModules(
   const dependencyGraph: Record<string, string[]> = {};
   for (const [ns, { package: package_, module }] of Object.entries(project)) {
     const deps =
-      package_ === CORE_PACKAGE
+      package_ === core.CORE_PACKAGE
         ? getDependencies(module)
         : [...implNsImports, ...getDependencies(module)];
 
@@ -1329,7 +1331,7 @@ export function typecheckProject(
     const [typedModule, errors] = typecheck(m.package, ns, m.module, {
       mainType,
       getDependency: (ns) => deps[ns],
-      implicitImports: m.package === CORE_PACKAGE ? [] : implicitImports,
+      implicitImports: m.package === core.CORE_PACKAGE ? [] : implicitImports,
     });
     projectResult[ns] = { typedModule, errors, package: m.package };
     deps[ns] = typedModule.moduleInterface;
@@ -1370,75 +1372,6 @@ function castUnifyErr(
       return { range: node.range, description: new err.OccursCheck() };
   }
 }
-
-// Keep this in sync with core
-const Bool: ConcreteType = {
-  type: "named",
-  package_: CORE_PACKAGE,
-  module: "Bool",
-  name: "Bool",
-  args: [],
-};
-
-const Int: ConcreteType = {
-  type: "named",
-  package_: CORE_PACKAGE,
-  module: "Int",
-  name: "Int",
-  args: [],
-};
-
-const Float: ConcreteType = {
-  type: "named",
-  package_: CORE_PACKAGE,
-  module: "Float",
-  name: "Float",
-  args: [],
-};
-
-const String: ConcreteType = {
-  type: "named",
-  package_: CORE_PACKAGE,
-  module: "String",
-  name: "String",
-  args: [],
-};
-
-const Char: ConcreteType = {
-  type: "named",
-  package_: CORE_PACKAGE,
-  module: "Char",
-  name: "Char",
-  args: [],
-};
-
-const Unit: ConcreteType = {
-  type: "named",
-  package_: CORE_PACKAGE,
-  module: "Tuple",
-  name: "Unit",
-  args: [],
-};
-
-const List = (a: Type): ConcreteType => ({
-  type: "named",
-  package_: CORE_PACKAGE,
-  module: "List",
-  name: "List",
-  args: [a],
-});
-
-function Task(arg: Type): ConcreteType {
-  return {
-    type: "named",
-    package_: CORE_PACKAGE,
-    module: "Task",
-    name: "Task",
-    args: [arg],
-  };
-}
-
-export const DEFAULT_MAIN_TYPE = Task(Unit);
 
 type TraitDependencies = {
   rigid: Set<string>;

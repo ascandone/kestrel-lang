@@ -1,5 +1,6 @@
 import { RigidVarsCtx, resolveType } from "../type";
 import * as typed from "../typecheck";
+import { CORE_PACKAGE } from "../typecheck/core_package";
 import * as ir from "./ir";
 
 class ExprEmitter {
@@ -246,7 +247,7 @@ class ExprEmitter {
 
       case "if": {
         const typeName = new ir.QualifiedIdentifier(
-          typed.CORE_PACKAGE,
+          CORE_PACKAGE,
           "Bool",
           "Bool",
         );
@@ -544,7 +545,7 @@ function getResolution<T>(node: { $resolution?: T | undefined }): T {
 }
 
 const listQualifiedName = new ir.QualifiedIdentifier(
-  typed.CORE_PACKAGE,
+  CORE_PACKAGE,
   "List",
   "List",
 );

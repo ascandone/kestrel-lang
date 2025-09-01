@@ -1,5 +1,5 @@
 import { test, expect, describe } from "vitest";
-import { CORE_PACKAGE, Deps, TypedModule } from "../../../typecheck";
+import { Deps, TypedModule } from "../../../typecheck";
 import { Compiler, compile } from "./compiler";
 import {
   TraitImpl,
@@ -10,6 +10,7 @@ import {
   typecheckSource,
   typecheckSource_ as typecheckSource_,
 } from "../../__test__/prelude";
+import { CORE_PACKAGE } from "../../../typecheck/core_package";
 
 describe("datatype representation", () => {
   test("int", () => {

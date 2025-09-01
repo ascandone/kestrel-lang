@@ -1,5 +1,6 @@
 import * as parser from "../../parser";
-import { CORE_PACKAGE, typecheck, type Deps } from "../../typecheck";
+import { typecheck, type Deps } from "../../typecheck";
+import { CORE_PACKAGE } from "../../typecheck/core_package";
 import { TraitImpl } from "../../typecheck/defaultImports";
 
 const dummyPosition: parser.Position = { line: 0, character: 0 };

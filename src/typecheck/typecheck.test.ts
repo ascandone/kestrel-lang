@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { Position, Range, Import, unsafeParse } from "../parser";
 import {
-  CORE_PACKAGE,
   Deps as IDeps,
   typecheck,
   typecheckProject,
@@ -2333,11 +2332,7 @@ describe("pattern matching", () => {
   });
 
   test("force exhaustive match in let binding when there are many values for a const", () => {
-    const [Int] = typecheck(
-      CORE_PACKAGE,
-      "Int",
-      unsafeParse(`extern pub type Int`),
-    );
+    const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
 
     const [, errs] = tc(
       `
@@ -2477,11 +2472,7 @@ describe("pattern matching", () => {
     });
 
     test("on literals (exhastive)", () => {
-      const [Int] = typecheck(
-        CORE_PACKAGE,
-        "Int",
-        unsafeParse(`extern pub type Int`),
-      );
+      const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
 
       const [, errs] = tc(
         `
@@ -2501,11 +2492,7 @@ describe("pattern matching", () => {
     });
 
     test("on literals (non exhastive)", () => {
-      const [Int] = typecheck(
-        CORE_PACKAGE,
-        "Int",
-        unsafeParse(`extern pub type Int`),
-      );
+      const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
 
       const [, errs] = tc(
         `
@@ -2525,11 +2512,7 @@ describe("pattern matching", () => {
     });
 
     test("on literals (not exhastive on the rest of the matrix)", () => {
-      const [Int] = typecheck(
-        CORE_PACKAGE,
-        "Int",
-        unsafeParse(`extern pub type Int`),
-      );
+      const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
 
       const [, errs] = tc(
         `
@@ -2554,11 +2537,7 @@ describe("pattern matching", () => {
     });
 
     test("on literals (not exhastive on the wildcard specialization)", () => {
-      const [Int] = typecheck(
-        CORE_PACKAGE,
-        "Int",
-        unsafeParse(`extern pub type Int`),
-      );
+      const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
 
       const [, errs] = tc(
         `
@@ -2581,11 +2560,7 @@ describe("pattern matching", () => {
     });
 
     test("on literals (exhastive on the rest of the matrix)", () => {
-      const [Int] = typecheck(
-        CORE_PACKAGE,
-        "Int",
-        unsafeParse(`extern pub type Int`),
-      );
+      const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
 
       const [, errs] = tc(
         `
@@ -3218,13 +3193,13 @@ describe("typecheck project", () => {
     const project = typecheckProject(
       {
         A: {
-          package: "kestrel_core",
+          package: "pkg",
           module: unsafeParse(`
         pub let x = 42
       `),
         },
         B: {
-          package: "kestrel_core",
+          package: "pkg",
           module: unsafeParse(`
         import A.{x}
         pub let y = x
@@ -3251,13 +3226,13 @@ describe("typecheck project", () => {
     const project = typecheckProject(
       {
         A: {
-          package: "kestrel_core",
+          package: "pkg",
           module: unsafeParse(`
         pub let x = 42
       `),
         },
         B: {
-          package: "kestrel_core",
+          package: "pkg",
           module: unsafeParse(`
         import A
         pub let y = A.x
