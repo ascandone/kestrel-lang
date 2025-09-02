@@ -1,5 +1,5 @@
 import { DefaultMap } from "../data/defaultMap";
-import { UntypedModule } from "../parser";
+import { parse_ } from "../parser";
 import { TypedModule } from "./typedAst";
 import * as err from "./errors";
 import { TypecheckOptions, typecheck } from "./typecheck";
@@ -7,7 +7,7 @@ import { Result } from "../data/result";
 import { DependencyProviderError } from "./resolution";
 
 /** e.g. `{ "My/Mod": { pkg_a: ..., pkg_b: ... } }` */
-export type RawProject = Map<string, Map<string, UntypedModule>>;
+export type RawProject = Map<string, Map<string, string>>;
 
 export type ProjectOptions = Pick<
   TypecheckOptions,
@@ -15,6 +15,12 @@ export type ProjectOptions = Pick<
 > & {
   packageDependencies: Map<string, Set<string>>;
 };
+
+export type TypecheckResult = Array<{
+  package_: string;
+  moduleId: string;
+  output: [TypedModule, err.ErrorInfo[]];
+}>;
 
 export class ProjectTypechecker {
   /** e.g. `{ "My/Mod": { pkg_a: ..., pkg_b: ... } }` */
@@ -42,7 +48,7 @@ export class ProjectTypechecker {
 
   // -- public API
 
-  public upsert(package_: string, moduleId: string, module: UntypedModule) {
+  public upsert(package_: string, moduleId: string, source: string) {
     this.invalidateCache(package_, moduleId);
 
     // Add to project
@@ -51,7 +57,7 @@ export class ProjectTypechecker {
       packages = new Map();
       this.rawProject.set(moduleId, packages);
     }
-    packages.set(package_, module);
+    packages.set(package_, source);
   }
 
   public delete(package_: string, moduleId: string) {
@@ -67,11 +73,7 @@ export class ProjectTypechecker {
   }
 
   /** typecheck the whole project and returns the set of changed files */
-  public typecheck(): Array<{
-    package_: string;
-    moduleId: string;
-    output: [TypedModule, err.ErrorInfo[]];
-  }> {
+  public typecheck(): TypecheckResult {
     // no worklist: initial load
     for (const [moduleId, modules] of this.rawProject.entries()) {
       for (const [package_, untypedModule] of modules.entries()) {
@@ -112,10 +114,7 @@ export class ProjectTypechecker {
   private resolveModule(
     requestedModuleId: string,
     callerPackage: string,
-  ): Result<
-    [package_: string, module: UntypedModule],
-    DependencyProviderError
-  > {
+  ): Result<[package_: string, source: string], DependencyProviderError> {
     const modules = this.rawProject.get(requestedModuleId);
     if (modules === undefined) {
       // TODO maybe this could be an exception? should it even happen?
@@ -161,7 +160,7 @@ export class ProjectTypechecker {
   private typecheckModule(
     package_: string,
     moduleId: string,
-    module: UntypedModule,
+    module: string,
   ): [TypedModule, err.ErrorInfo[]] {
     const cached = this.compiledProject.get(moduleId)?.get(package_);
     if (cached !== undefined) {
@@ -176,12 +175,20 @@ export class ProjectTypechecker {
   private typecheckModule__raw(
     package_: string,
     moduleId: string,
-    module: UntypedModule,
+    module: string,
   ): [TypedModule, err.ErrorInfo[]] {
     this.currentPath.push(moduleId);
 
-    const importErrors: err.ErrorInfo[] = [];
-    const output = typecheck(package_, moduleId, module, {
+    const [untypedModule, parseErrors] = parse_(module);
+
+    const errors: err.ErrorInfo[] = parseErrors.map((e) => ({
+      description: new err.ParsingError(e.description),
+      range: e.range,
+    }));
+
+    // TODO add errors to buffer
+
+    const output = typecheck(package_, moduleId, untypedModule, {
       getDependency: (dependencyModuleId: string) => {
         const resolved = this.resolveModule(dependencyModuleId, package_);
         if (resolved.type === "ERR") {
@@ -208,7 +215,7 @@ export class ProjectTypechecker {
     });
 
     this.changedModules.push({ package_, moduleId, output });
-    output[1].push(...importErrors);
+    output[1].push(...errors);
     return output;
   }
 }

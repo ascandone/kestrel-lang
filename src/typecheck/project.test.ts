@@ -1,6 +1,5 @@
 import { expect, test } from "vitest";
 import * as project from "./project";
-import { UntypedModule, unsafeParse } from "../parser";
 import { DefaultMap } from "../data/defaultMap";
 import * as err from "./errors";
 
@@ -16,6 +15,31 @@ test("single module", () => {
     expect.objectContaining({
       package_: "pkg",
       moduleId: "Main",
+    }),
+  ]);
+});
+
+test("single module with parsing erro", () => {
+  const checker = prjTypechecker({
+    pkg: {
+      Main: "pub let x = ",
+    },
+  });
+
+  const changed = checker.typecheck();
+  expect(changed).toEqual([
+    expect.objectContaining({
+      package_: "pkg",
+      moduleId: "Main",
+      output: [
+        expect.anything(),
+        <err.ErrorInfo[]>[
+          {
+            description: expect.any(err.ParsingError),
+            range: expect.anything(),
+          },
+        ],
+      ],
     }),
   ]);
 });
@@ -204,7 +228,7 @@ test("invalidate all the reachable inverse dependency graph on upsert", () => {
   });
   checker.typecheck();
 
-  checker.upsert("pkg", "Dep", unsafeParse(``));
+  checker.upsert("pkg", "Dep", ``);
   const changed = checker.typecheck();
 
   // We don't want to typecheck Dep2 as well
@@ -243,13 +267,11 @@ function prjTypechecker(
   proj: RawProject,
   options: Partial<project.ProjectOptions> = {},
 ) {
-  const proj_ = new DefaultMap<string, Map<string, UntypedModule>>(
-    () => new Map(),
-  );
+  const proj_ = new DefaultMap<string, Map<string, string>>(() => new Map());
 
   for (const [pkg, modules] of Object.entries(proj)) {
     for (const [moduleId, source] of Object.entries(modules)) {
-      proj_.get(moduleId).set(pkg, unsafeParse(source));
+      proj_.get(moduleId).set(pkg, source);
     }
   }
 
