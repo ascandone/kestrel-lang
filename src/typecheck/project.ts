@@ -1,4 +1,4 @@
-import { DefaultMap } from "../data/defaultMap";
+import { DefaultMap, nestedMapGetOrPutDefault } from "../data/defaultMap";
 import { parse_ } from "../parser";
 import { TypedModule } from "./typedAst";
 import * as err from "./errors";
@@ -50,26 +50,12 @@ export class ProjectTypechecker {
 
   public upsert(package_: string, moduleId: string, source: string) {
     this.invalidateCache(package_, moduleId);
-
-    // Add to project
-    let packages = this.rawProject.get(moduleId);
-    if (packages === undefined) {
-      packages = new Map();
-      this.rawProject.set(moduleId, packages);
-    }
-    packages.set(package_, source);
+    nestedMapGetOrPutDefault(this.rawProject, moduleId).set(package_, source);
   }
 
   public delete(package_: string, moduleId: string) {
     this.invalidateCache(package_, moduleId);
-
-    // Delete module
-    let packages = this.rawProject.get(moduleId);
-    if (packages === undefined) {
-      packages = new Map();
-      this.rawProject.set(moduleId, packages);
-    }
-    packages.delete(package_);
+    nestedMapGetOrPutDefault(this.rawProject, moduleId).delete(package_);
   }
 
   /** typecheck the whole project and returns the set of changed files */
