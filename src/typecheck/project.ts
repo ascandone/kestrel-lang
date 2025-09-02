@@ -76,8 +76,8 @@ export class ProjectTypechecker {
   public typecheck(): TypecheckResult {
     // no worklist: initial load
     for (const [moduleId, modules] of this.rawProject.entries()) {
-      for (const [package_, untypedModule] of modules.entries()) {
-        this.typecheckModule(package_, moduleId, untypedModule);
+      for (const [package_, source] of modules.entries()) {
+        this.typecheckModule(package_, moduleId, source);
       }
     }
 
