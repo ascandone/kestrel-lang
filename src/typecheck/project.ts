@@ -160,14 +160,14 @@ export class ProjectTypechecker {
   private typecheckModule(
     package_: string,
     moduleId: string,
-    module: string,
+    source: string,
   ): [TypedModule, err.ErrorInfo[]] {
     const cached = this.compiledProject.get(moduleId)?.get(package_);
     if (cached !== undefined) {
       return cached;
     }
 
-    const out = this.typecheckModule__raw(package_, moduleId, module);
+    const out = this.typecheckModule__raw(package_, moduleId, source);
     this.compiledProject.get(moduleId).set(package_, out);
     return out;
   }
