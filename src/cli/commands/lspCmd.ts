@@ -137,7 +137,7 @@ class State {
     return typedProject;
   }
 
-  getPackageName(): string {
+  private getPackageName(): string {
     return this.config.type === "package" ? this.config.name : "";
   }
 
@@ -162,10 +162,9 @@ class State {
     return undefined;
   }
 
-  upsertByUri(
-    package_: string,
-    textDoc: TextDocument,
-  ): PublishDiagnosticsParams[] {
+  upsertByUri(textDoc: TextDocument): PublishDiagnosticsParams[] {
+    const package_ = this.getPackageName();
+
     const oldNs = this.nsByUri(textDoc.uri);
 
     if (oldNs !== undefined) {
@@ -317,10 +316,7 @@ export async function lspCmd() {
   });
 
   documents.onDidChangeContent((change) => {
-    const diagnostics = state.upsertByUri(
-      state.getPackageName(),
-      change.document,
-    );
+    const diagnostics = state.upsertByUri(change.document);
     for (const diagnostic of diagnostics) {
       connection.sendDiagnostics(diagnostic);
     }
