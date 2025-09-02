@@ -55,7 +55,7 @@ export class ProjectTypechecker {
 
   public delete(package_: string, moduleId: string) {
     this.invalidateCache(package_, moduleId);
-    nestedMapGetOrPutDefault(this.rawProject, moduleId).delete(package_);
+    return nestedMapGetOrPutDefault(this.rawProject, moduleId).delete(package_);
   }
 
   /** typecheck the whole project and returns the set of changed files */
