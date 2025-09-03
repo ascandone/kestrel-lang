@@ -1,9 +1,10 @@
 import { test, expect } from "vitest";
 import { findReferences } from "./findReferences";
-import { Position, unsafeParse } from "../parser";
-import { UntypedProject, typecheckProject } from "../typecheck/typecheck";
+import { Position } from "../parser";
 import { positionOf, rangeOf } from "./__test__/utils";
 import { Identifier, TypedModule } from "../typecheck";
+import * as project from "../typecheck/project";
+import { nestedMapGetOrPutDefault } from "../data/defaultMap";
 
 test("glb decl in the same module", () => {
   const Main = `
@@ -59,14 +60,24 @@ test("glb decl in different modules", () => {
 function typecheckRaw(
   rawProject: Record<string, string>,
 ): Record<string, TypedModule> {
-  const untypedProject: UntypedProject = {};
-  for (const [ns, src] of Object.entries(rawProject)) {
-    untypedProject[ns] = { package: "", module: unsafeParse(src) };
+  const raw: project.RawProject = new Map();
+  for (const [moduleId, src] of Object.entries(rawProject)) {
+    nestedMapGetOrPutDefault(raw, moduleId).set("", src);
   }
-  const p = typecheckProject(untypedProject);
-  return Object.fromEntries(
-    Object.entries(p).map(([k, { typedModule }]) => [k, typedModule]),
-  );
+
+  const checker = new project.ProjectTypechecker(raw);
+
+  checker.typecheck();
+
+  const ret: Record<string, TypedModule> = {};
+
+  for (const [moduleId, packages] of checker.compiledProject.inner) {
+    for (const [, [typedModule]] of packages) {
+      ret[moduleId] = typedModule;
+    }
+  }
+
+  return ret;
 }
 
 function parseFindReferences(
