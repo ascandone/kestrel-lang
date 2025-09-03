@@ -93,7 +93,7 @@ export async function lspCmd() {
   documents.listen(connection);
   connection.listen();
 
-  state.runTypecheckSync(true);
+  state.runTypecheckSync();
 
   documents.onDidChangeContent((change) => {
     state.upsertDoc(change.document);

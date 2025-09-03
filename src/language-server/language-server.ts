@@ -4,7 +4,7 @@ import * as project from "../typecheck/project";
 import { ErrorInfo, TypedModule } from "../typecheck";
 import { nestedMapGetOrPutDefault } from "../data/defaultMap";
 
-export const DEBOUNCE_AMOUNT_MS = 150;
+export const DEBOUNCE_AMOUNT_MS = 1_000;
 
 export class LsState {
   private timeoutInterval?: NodeJS.Timeout;
@@ -45,15 +45,13 @@ export class LsState {
   private startTimeout() {
     clearTimeout(this.timeoutInterval);
     this.timeoutInterval = setTimeout(() => {
-      this.runTypecheckSync(true);
+      this.runTypecheckSync();
     }, DEBOUNCE_AMOUNT_MS);
   }
 
-  public runTypecheckSync(notify: boolean) {
+  public runTypecheckSync() {
     const out = this.projectChecker.typecheck();
-    if (notify) {
-      this.onTypecheckProject(out);
-    }
+    this.onTypecheckProject(out);
     return out;
   }
 
@@ -90,14 +88,14 @@ export class LsState {
   public getModuleByModuleId(
     moduleId: string,
   ): [TypedModule, ErrorInfo[]] | undefined {
-    this.runTypecheckSync(true);
+    this.runTypecheckSync();
     return this.projectChecker.compiledProject.get(moduleId).get(this.package_);
   }
 
   public moduleByUri(
     uri: TextDocument["uri"],
   ): [TypedModule, ErrorInfo[]] | undefined {
-    this.runTypecheckSync(true);
+    this.runTypecheckSync();
     const doc = this.moduleIdByUri.get(uri);
     if (doc === undefined) {
       return undefined;
