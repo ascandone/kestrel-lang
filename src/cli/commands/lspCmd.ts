@@ -10,259 +10,31 @@ import {
   TextDocuments,
   TextEdit,
   WorkspaceEdit,
-  _Connection,
   createConnection,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
+import { readConfig } from "../config";
+import { LsState } from "../../language-server/language-server";
+import { readRawProject } from "../common";
+import { nestedMapGetOrPutDefault } from "../../data/defaultMap";
 import {
-  AntlrLexerError,
-  AntlrParsingError,
-  UntypedModule,
-  parse,
-} from "../../parser";
-import {
-  typecheckProject,
-  typeToString,
-  TypedModule,
-  UntypedProject,
   ErrorInfo,
+  ParsingError,
   Severity,
+  typeToString,
 } from "../../typecheck";
-import { readProjectWithDeps } from "../common";
 import { withDisabled } from "../../utils/colors";
-import { format } from "../../format";
-import { Config, readConfig } from "../config";
 import {
-  getCompletionItems,
   findReferences,
   functionSignatureHint,
+  getCompletionItems,
   getInlayHints,
   goToDefinitionOf,
   hoverOn,
   hoverToMarkdown,
 } from "../../analysis";
-
-type Connection = _Connection;
-
-type Module = {
-  ns: string;
-  package_: string;
-  document: TextDocument;
-  untyped?: UntypedModule;
-  lexerErrors: AntlrLexerError[];
-  parsingErrors: AntlrParsingError[];
-  typed?: TypedModule;
-};
-
-function parseErrToDiagnostic(
-  document: TextDocument,
-  err: AntlrParsingError,
-): PublishDiagnosticsParams {
-  return {
-    uri: document.uri,
-    diagnostics: [
-      {
-        message: err.description,
-        source: "Parsing",
-        severity: DiagnosticSeverity.Error,
-        range: err.range,
-      },
-    ],
-  };
-}
-
-function dedupParams(
-  params: PublishDiagnosticsParams[],
-): PublishDiagnosticsParams[] {
-  const params_: PublishDiagnosticsParams[] = [];
-  for (const p of params) {
-    const prev = params_.find((p2) => p2.uri === p.uri);
-    if (prev !== undefined) {
-      prev.diagnostics.push(...p.diagnostics);
-    } else {
-      params_.push(p);
-    }
-  }
-
-  return params_;
-}
-
-function lexerErrToDiagnostic(
-  document: TextDocument,
-  err: AntlrLexerError,
-): PublishDiagnosticsParams {
-  return {
-    uri: document.uri,
-    diagnostics: [
-      {
-        message: err.description,
-        source: "Parsing",
-        severity: DiagnosticSeverity.Error,
-        range: { start: err.position, end: err.position },
-      },
-    ],
-  };
-}
-
-function errorInfoToDiagnostic(
-  errorsInfo: ErrorInfo[],
-  document: TextDocument,
-): PublishDiagnosticsParams {
-  return {
-    uri: document.uri,
-    diagnostics: errorsInfo.map((e) => ({
-      message: withDisabled(
-        false,
-        () =>
-          `${e.description.errorName}\n\n${e.description.shortDescription()}`,
-      ),
-      severity: toDiagnosticSeverity(e.description.severity),
-      range: e.range,
-    })),
-  };
-}
-
-class State {
-  constructor(public readonly config: Config) {}
-  private modulesByNs: Record<string, Module> = {};
-
-  getTypedProject(): Record<string, TypedModule> {
-    const typedProject: Record<string, TypedModule> = {};
-    for (const [ns, module] of Object.entries(this.modulesByNs)) {
-      if (module.typed !== undefined) {
-        typedProject[ns] = module.typed;
-      }
-    }
-
-    return typedProject;
-  }
-
-  getPackageName(): string {
-    return this.config.type === "package" ? this.config.name : "";
-  }
-
-  moduleByUri(uri: string): Module | undefined {
-    const ns = this.nsByUri(uri);
-    if (ns === undefined) {
-      return undefined;
-    }
-    return this.moduleByNs(ns);
-  }
-
-  moduleByNs(ns: string): Module | undefined {
-    return this.modulesByNs[ns];
-  }
-
-  nsByUri(uri: string): string | undefined {
-    for (const [k, v] of Object.entries(this.modulesByNs)) {
-      if (v.document.uri === uri) {
-        return k;
-      }
-    }
-    return undefined;
-  }
-
-  upsertByUri(
-    package_: string,
-    textDoc: TextDocument,
-  ): PublishDiagnosticsParams[] {
-    const oldNs = this.nsByUri(textDoc.uri);
-
-    if (oldNs !== undefined) {
-      return this.insertByNs(this.modulesByNs[oldNs]!.package_, oldNs, textDoc);
-    } else {
-      return this.insertByUri(package_, textDoc);
-    }
-  }
-
-  insertByUri(
-    package_: string,
-    document: TextDocument,
-  ): PublishDiagnosticsParams[] {
-    const ns = this.makeNsByUri(document.uri);
-    return this.insertByNs(ns, package_, document);
-  }
-
-  typecheckProject(): PublishDiagnosticsParams[] {
-    const untypedProject: UntypedProject = {};
-    for (const [k, mod] of Object.entries(this.modulesByNs)) {
-      if (mod.untyped !== undefined) {
-        untypedProject[k] = { package: mod.package_, module: mod.untyped };
-      }
-    }
-
-    const diagnostics: PublishDiagnosticsParams[] = [];
-
-    const typecheckedProject = typecheckProject(untypedProject);
-    for (const [k, { typedModule, errors }] of Object.entries(
-      typecheckedProject,
-    )) {
-      const module = this.modulesByNs[k]!;
-      this.modulesByNs[k]!.typed = typedModule;
-      diagnostics.push(errorInfoToDiagnostic(errors, module.document));
-    }
-
-    return diagnostics;
-  }
-
-  insertByNs(
-    package_: string,
-    ns: string,
-    document: TextDocument,
-    skipTypecheck: boolean = false,
-  ): PublishDiagnosticsParams[] {
-    const parsed = parse(document.getText());
-
-    const diagnostics: PublishDiagnosticsParams[] = [
-      ...parsed.lexerErrors.map((e) => lexerErrToDiagnostic(document, e)),
-      ...parsed.parsingErrors.map((e) => parseErrToDiagnostic(document, e)),
-    ];
-
-    this.modulesByNs[ns] = {
-      ns,
-      package_,
-      document,
-      parsingErrors: parsed.parsingErrors,
-      lexerErrors: parsed.lexerErrors,
-      untyped: parsed.parsed,
-    };
-
-    if (skipTypecheck) {
-      return diagnostics;
-    } else {
-      return dedupParams([...diagnostics, ...this.typecheckProject()]);
-    }
-  }
-
-  private makeNsByUri(uri: string) {
-    let ns = uri.replace("file://", "").replace(process.cwd(), "");
-    for (const sourceDir of this.config["source-directories"]) {
-      const regexp = new RegExp(`^/${sourceDir}/`);
-      ns = ns.replace(regexp, "");
-    }
-    ns = ns.replace(/.kes$/, "");
-    return ns;
-  }
-}
-
-async function initProject_(connection: Connection, state: State) {
-  const path = process.cwd();
-  const rawProject = await readProjectWithDeps(path, state.config);
-  for (const [ns, raw] of Object.entries(rawProject)) {
-    const uri = `file://${raw.path}`;
-    const textDoc = TextDocument.create(uri, "kestrel", 1, raw.content);
-    const diagnosticParams = state.insertByNs(raw.package, ns, textDoc, true);
-
-    for (const p of diagnosticParams) {
-      await connection.sendDiagnostics(p);
-      return;
-    }
-  }
-
-  for (const diagnostic of state.typecheckProject()) {
-    connection.sendDiagnostics(diagnostic);
-  }
-}
+import { format } from "../../format";
+import * as project from "../../typecheck/project";
 
 export async function lspCmd() {
   const documents = new TextDocuments(TextDocument);
@@ -270,12 +42,35 @@ export async function lspCmd() {
     // @ts-ignore
     createConnection();
 
-  const path = process.cwd();
-  const config = await readConfig(path);
+  const currentDirectory = process.cwd();
+  const config = await readConfig(currentDirectory);
 
-  const state = new State(config);
+  const package_ = config.type === "package" ? config.name : "";
 
-  await initProject_(connection, state);
+  const [rawProject, deps] = await readRawProject_(currentDirectory);
+
+  const state = new LsState(
+    package_,
+    currentDirectory,
+    config["source-directories"],
+    async (results) => {
+      for (const res of results) {
+        const doc = state.getDocByModuleId(res.moduleId);
+        if (doc === undefined) {
+          continue;
+        }
+
+        const [, errors] = res.output;
+
+        const param = errorInfoToDiagnostic(errors, doc);
+        connection.sendDiagnostics(param);
+      }
+    },
+    rawProject,
+    {
+      packageDependencies: deps,
+    },
+  );
 
   connection.onInitialize(() => ({
     capabilities: {
@@ -297,12 +92,22 @@ export async function lspCmd() {
     },
   }));
 
+  documents.listen(connection);
+  connection.listen();
+
+  state.runTypecheckSync(true);
+
+  documents.onDidChangeContent((change) => {
+    state.upsertDoc(change.document);
+  });
+
   connection.languages.inlayHint.on((ctx) => {
     const module = state.moduleByUri(ctx.textDocument.uri);
-    if (module?.typed === undefined) {
+    if (module === undefined) {
       return;
     }
-    return getInlayHints(module.typed).map(
+
+    return getInlayHints(module[0]).map(
       (hint): InlayHint => ({
         label: hint.label,
         paddingLeft: hint.paddingLeft,
@@ -312,28 +117,13 @@ export async function lspCmd() {
     );
   });
 
-  documents.onDidClose(async ({ document }) => {
-    connection.sendDiagnostics({ uri: document.uri, diagnostics: [] });
-  });
-
-  documents.onDidChangeContent((change) => {
-    const diagnostics = state.upsertByUri(
-      state.getPackageName(),
-      change.document,
-    );
-    for (const diagnostic of diagnostics) {
-      connection.sendDiagnostics(diagnostic);
-    }
-  });
-
   connection.onSignatureHelp(({ textDocument, position }) => {
     const module = state.moduleByUri(textDocument.uri);
-
-    if (module?.typed === undefined) {
+    if (module === undefined) {
       return;
     }
 
-    const hint = functionSignatureHint(module.typed, position);
+    const hint = functionSignatureHint(module[0], position);
 
     if (hint === undefined) {
       return;
@@ -359,40 +149,35 @@ export async function lspCmd() {
 
   connection.onCompletion(({ textDocument, position }) => {
     const module = state.moduleByUri(textDocument.uri);
-
-    if (module?.typed === undefined) {
+    if (module === undefined) {
       return;
     }
-
-    const kind = getCompletionItems(module.typed, position, {
+    return getCompletionItems(module[0], position, {
       getModuleByNs(ns) {
-        return state.moduleByNs(ns)?.typed;
+        return state.moduleByUri(ns)?.[0];
       },
     });
-
-    return kind;
   });
 
   connection.onReferences(({ textDocument, position }) => {
-    const ns = state.nsByUri(textDocument.uri);
-    if (ns === undefined) {
-      return;
-    }
-
     const module = state.moduleByUri(textDocument.uri);
     if (module === undefined) {
       return;
     }
 
     const refs =
-      findReferences(module.package_, ns, position, state.getTypedProject())
-        ?.references ?? [];
+      findReferences(
+        module[0].moduleInterface.package_,
+        module[0].moduleInterface.ns,
+        position,
+        state.getTypedProject(),
+      )?.references ?? [];
 
     return refs.map(([referenceNs, referenceExpr]) => {
-      const referenceModule = state.moduleByNs(referenceNs)!;
+      const referenceModule = state.getDocByModuleId(referenceNs)!;
 
       return {
-        uri: referenceModule.document.uri,
+        uri: referenceModule.uri,
         range: referenceExpr.range,
       };
     });
@@ -403,19 +188,14 @@ export async function lspCmd() {
   });
 
   connection.onRenameRequest(({ textDocument, position, newName }) => {
-    const ns = state.nsByUri(textDocument.uri);
-    if (ns === undefined) {
-      return;
-    }
-
     const module = state.moduleByUri(textDocument.uri);
     if (module === undefined) {
       return;
     }
 
     const refs = findReferences(
-      module.package_,
-      ns,
+      module[0].moduleInterface.package_,
+      module[0].moduleInterface.ns,
       position,
       state.getTypedProject(),
     );
@@ -427,9 +207,9 @@ export async function lspCmd() {
     const changes: NonNullable<WorkspaceEdit["changes"]> = {};
     switch (refs.resolution.type) {
       case "global-variable": {
-        const module = state.moduleByNs(refs.resolution.namespace)!;
+        const module = state.getDocByModuleId(refs.resolution.namespace)!;
 
-        getOrDefault(changes, module.document.uri, []).push({
+        getOrDefault(changes, module.uri, []).push({
           newText: newName,
           range: refs.resolution.declaration.binding.range,
         });
@@ -443,7 +223,7 @@ export async function lspCmd() {
     }
 
     for (const [ns, ident] of refs.references) {
-      const refModule = state.moduleByNs(ns);
+      const refModule = state.moduleByUri(ns);
       if (refModule === undefined) {
         continue;
       }
@@ -453,7 +233,12 @@ export async function lspCmd() {
           ? newName
           : `${ident.namespace}.${newName}`;
 
-      getOrDefault(changes, refModule.document.uri, []).push({
+      const doc = state.getDocByModuleId(ns);
+      if (doc === undefined) {
+        return undefined;
+      }
+
+      getOrDefault(changes, doc.uri, []).push({
         newText,
         range: ident.range,
       });
@@ -465,19 +250,24 @@ export async function lspCmd() {
   connection.onDocumentFormatting(({ textDocument }) => {
     const module = state.moduleByUri(textDocument.uri);
 
-    if (module === undefined || module?.untyped === undefined) {
+    if (module === undefined) {
       return;
     }
 
-    if (module.lexerErrors.length !== 0 || module.parsingErrors.length !== 0) {
+    const hasParsingErr = module[1].some((e) => e instanceof ParsingError);
+    if (hasParsingErr) {
       return;
     }
 
-    const formatted_ = format(module.untyped);
+    const formatted_ = format(module[0]);
 
+    const doc = state.getDocByModuleId(module[0].moduleInterface.ns);
+    if (doc === undefined) {
+      return;
+    }
     const start: Position = { line: 0, character: 0 };
-    const len = module.document.getText().length;
-    const end = module.document.positionAt(len);
+    const len = doc.getText().length;
+    const end = doc.positionAt(len);
 
     return [
       {
@@ -493,15 +283,11 @@ export async function lspCmd() {
       return undefined;
     }
 
-    if (module.typed === undefined) {
-      return;
-    }
-
-    const decls = module.typed.declarations.map((st) => ({
+    const decls = module[0].declarations.map((st) => ({
       name: st.binding.name,
       range: st.range,
     }));
-    const typeDecl = module.typed.typeDeclarations.map((st) => ({
+    const typeDecl = module[0].typeDeclarations.map((st) => ({
       name: st.name,
       range: st.range,
     }));
@@ -517,11 +303,11 @@ export async function lspCmd() {
 
   connection.onCodeLens(({ textDocument }) => {
     const module = state.moduleByUri(textDocument.uri);
-    if (module?.typed === undefined) {
+    if (module === undefined) {
       return;
     }
 
-    return module.typed.declarations.map(({ binding, $traitsConstraints }) => {
+    return module[0].declarations.map(({ binding, $traitsConstraints }) => {
       const tpp = typeToString(binding.$type, $traitsConstraints);
       return {
         command: { title: tpp, command: "noop" },
@@ -534,19 +320,19 @@ export async function lspCmd() {
 
   connection.onDefinition(({ textDocument, position }) => {
     const module = state.moduleByUri(textDocument.uri);
-    if (module?.typed === undefined) {
+    if (module === undefined) {
       return;
     }
 
-    const resolved = goToDefinitionOf(module.typed, position);
+    const resolved = goToDefinitionOf(module[0], position);
     if (resolved === undefined) {
       return undefined;
     }
 
-    const definitionDoc =
-      resolved.namespace === undefined
-        ? module.document
-        : state.moduleByNs(resolved.namespace)!.document;
+    const definitionDoc = state.getDocByModuleId(resolved.namespace);
+    if (definitionDoc === undefined) {
+      return undefined;
+    }
 
     return {
       uri: definitionDoc.uri,
@@ -555,15 +341,16 @@ export async function lspCmd() {
   });
 
   connection.onHover(({ textDocument, position }) => {
-    const module = state.moduleByUri(textDocument.uri);
-    if (module?.typed === undefined) {
+    const result = state.moduleByUri(textDocument.uri);
+    if (result === undefined) {
       return;
     }
 
+    const [typedModule] = result;
     const hoverData = hoverOn(
-      module.package_,
-      module.ns,
-      module.typed,
+      typedModule.moduleInterface.package_,
+      typedModule.moduleInterface.ns,
+      typedModule,
       position,
     );
     if (hoverData === undefined) {
@@ -580,9 +367,38 @@ export async function lspCmd() {
       },
     };
   });
+}
 
-  documents.listen(connection);
-  connection.listen();
+async function readRawProject_(
+  path: string,
+): Promise<
+  [
+    Map<string, Map<string, { doc: TextDocument; source: string }>>,
+    project.ProjectOptions["packageDependencies"],
+  ]
+> {
+  const [prj, deps] = await readRawProject(path);
+
+  const rawProject: Map<
+    string,
+    Map<string, { doc: TextDocument; source: string }>
+  > = new Map();
+
+  for (const [moduleId, packages] of prj) {
+    for (const [package_, raw] of packages) {
+      nestedMapGetOrPutDefault(rawProject, moduleId).set(package_, {
+        doc: TextDocument.create(
+          `file://${raw.path}`,
+          "kestrel",
+          1,
+          raw.content,
+        ),
+        source: raw.content,
+      });
+    }
+  }
+
+  return [rawProject, deps] as const;
 }
 
 function toDiagnosticSeverity(severity: Severity): DiagnosticSeverity {
@@ -592,6 +408,24 @@ function toDiagnosticSeverity(severity: Severity): DiagnosticSeverity {
     case "warning":
       return DiagnosticSeverity.Warning;
   }
+}
+
+function errorInfoToDiagnostic(
+  errorsInfo: ErrorInfo[],
+  document: TextDocument,
+): PublishDiagnosticsParams {
+  return {
+    uri: document.uri,
+    diagnostics: errorsInfo.map((e) => ({
+      message: withDisabled(
+        false,
+        () =>
+          `${e.description.errorName}\n\n${e.description.shortDescription()}`,
+      ),
+      severity: toDiagnosticSeverity(e.description.severity),
+      range: e.range,
+    })),
+  };
 }
 
 function getOrDefault<V>(o: Record<string, V>, k: string, default_: V): V {

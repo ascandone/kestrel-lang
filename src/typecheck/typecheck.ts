@@ -44,14 +44,11 @@ import * as core from "./core_package";
 
 export const DEFAULT_MAIN_TYPE = core.Task(core.Unit);
 
-export type ProjectOptions = {
+export type TypecheckOptions = {
+  getDependency: DependencyProvider;
   implicitImports: Import[];
   mainType: Type;
   traitImpls: TraitImpl[];
-};
-
-export type TypecheckOptions = ProjectOptions & {
-  getDependency: DependencyProvider;
 };
 
 export function typecheck(
@@ -59,12 +56,16 @@ export function typecheck(
   ns: string,
   module: UntypedModule,
   {
-    getDependency = () => undefined,
+    getDependency = () => ({ type: "ERR", error: { type: "UNBOUND_MODULE" } }),
     implicitImports = defaultImports,
     mainType = DEFAULT_MAIN_TYPE,
     traitImpls = defaultTraitImpls,
   }: Partial<TypecheckOptions> = {},
 ): [TypedModule, err.ErrorInfo[]] {
+  if (package_ === core.CORE_PACKAGE) {
+    implicitImports = [];
+  }
+
   TVar.resetId();
 
   const [typedModule, errors] = resolve(
@@ -114,6 +115,8 @@ class Typechecker {
    */
   private localDerives = new Map<string, Set<string>[]>();
 
+  private readonly getDependency: (ns: string) => ModuleInterface | undefined;
+
   constructor(
     private readonly errors: err.ErrorInfo[],
 
@@ -121,10 +124,18 @@ class Typechecker {
     private readonly ns: string,
     private readonly typedModule: TypedModule,
 
-    private readonly getDependency: DependencyProvider,
+    getDependency: DependencyProvider,
     private readonly mainType: Type,
     private readonly traitImpls: TraitImpl[],
-  ) {}
+  ) {
+    this.getDependency = (ns) => {
+      const out = getDependency(ns);
+      if (out.type !== "OK") {
+        return undefined;
+      }
+      return out.value;
+    };
+  }
 
   private pushErrorNode(type: Type) {
     const resolved = resolveType(type);
@@ -1336,7 +1347,13 @@ export function typecheckProject(
     }
     const [typedModule, errors] = typecheck(m.package, ns, m.module, {
       mainType,
-      getDependency: (ns) => deps[ns],
+      getDependency: (ns) => {
+        const dep = deps[ns];
+        if (dep === undefined) {
+          return { type: "ERR", error: { type: "UNBOUND_MODULE" } };
+        }
+        return { type: "OK", value: dep };
+      },
       implicitImports: m.package === core.CORE_PACKAGE ? [] : implicitImports,
     });
     projectResult[ns] = { typedModule, errors, package: m.package };

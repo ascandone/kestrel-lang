@@ -746,6 +746,29 @@ export type ParseResult = {
   parsingErrors: AntlrParsingError[];
 };
 
+export type ParseError = {
+  description: string;
+  range: Range;
+};
+export function parse_(input: string): [UntypedModule, ParseError[]] {
+  const parseResult = parse(input);
+  const errs: ParseError[] = [];
+  for (const lErr of parseResult.lexerErrors) {
+    errs.push({
+      description: lErr.description,
+      range: { start: lErr.position, end: lErr.position },
+    });
+  }
+  for (const pErr of parseResult.parsingErrors) {
+    errs.push({
+      description: pErr.description,
+      range: pErr.range,
+    });
+  }
+  return [parseResult.parsed, errs] as const;
+}
+
+/** @deprecated use parse_ instead */
 export function parse(input: string): ParseResult {
   const chars = new antlr4.CharStream(input);
   const lexer = new Lexer(chars);
