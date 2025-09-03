@@ -9,7 +9,7 @@ import {
 import { firstBy, statementByOffset } from "./common";
 
 export type Location = {
-  namespace?: string;
+  namespace: string;
   range: Range;
 };
 
@@ -36,7 +36,11 @@ export function goToDefinitionOf(
 
       return statement.declaration.extern
         ? undefined
-        : goToDefinitionOfExpr(statement.declaration.value, position);
+        : goToDefinitionOfExpr(
+            statement.declaration.value,
+            position,
+            module.moduleInterface.ns,
+          );
 
     case "type-declaration": {
       if (statement.typeDeclaration.type !== "adt") {
@@ -163,6 +167,7 @@ function resolutionFinder(position: Position) {
 function goToDefinitionOfExpr(
   ast: TypedExpr,
   position: Position,
+  moduleId: string,
 ): Location | undefined {
   const resolution = resolutionFinder(position).visitExpr(ast);
   if (resolution === undefined) {
@@ -171,7 +176,7 @@ function goToDefinitionOfExpr(
 
   switch (resolution.type) {
     case "local-variable":
-      return { namespace: undefined, range: resolution.binding.range };
+      return { namespace: moduleId, range: resolution.binding.range };
     case "global-variable":
       return {
         namespace: resolution.namespace,
