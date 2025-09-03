@@ -62,6 +62,10 @@ export function typecheck(
     traitImpls = defaultTraitImpls,
   }: Partial<TypecheckOptions> = {},
 ): [TypedModule, err.ErrorInfo[]] {
+  if (package_ === core.CORE_PACKAGE) {
+    implicitImports = [];
+  }
+
   TVar.resetId();
 
   const [typedModule, errors] = resolve(
