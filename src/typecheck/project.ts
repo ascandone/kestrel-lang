@@ -136,7 +136,10 @@ export class ProjectTypechecker {
     if (this.currentPath.includes(requestedModuleId)) {
       return {
         type: "ERR",
-        error: { type: "CYCLIC_DEPENDENCY", path: this.currentPath },
+        error: {
+          type: "CYCLIC_DEPENDENCY",
+          path: [...this.currentPath, requestedModuleId],
+        },
       };
     }
 
@@ -163,8 +166,6 @@ export class ProjectTypechecker {
     moduleId: string,
     module: string,
   ): [TypedModule, err.ErrorInfo[]] {
-    this.currentPath.push(moduleId);
-
     const [untypedModule, parseErrors] = parse_(module);
 
     const errors: err.ErrorInfo[] = parseErrors.map((e) => ({
@@ -174,6 +175,7 @@ export class ProjectTypechecker {
 
     // TODO add errors to buffer
 
+    this.currentPath.push(moduleId);
     const output = typecheck(package_, moduleId, untypedModule, {
       getDependency: (dependencyModuleId: string) => {
         const resolved = this.resolveModule(dependencyModuleId, package_);
@@ -199,6 +201,7 @@ export class ProjectTypechecker {
       },
       ...this.projectOptions,
     });
+    this.currentPath.pop();
 
     this.changedModules.push({ package_, moduleId, output });
     output[1].push(...errors);

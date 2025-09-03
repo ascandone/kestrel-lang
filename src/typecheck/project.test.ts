@@ -135,7 +135,7 @@ test("prevent dependency cycle", () => {
         expect.anything(),
         <err.ErrorInfo[]>[
           {
-            description: new err.CyclicImport(["A", "B", "C"]),
+            description: new err.CyclicImport(["A", "B", "C", "A"]),
             range: expect.anything(),
           },
         ],
@@ -233,8 +233,8 @@ test("invalidate all the reachable inverse dependency graph on upsert", () => {
 
   // We don't want to typecheck Dep2 as well
   expect(changed).toEqual([
-    expect.objectContaining({ package_: "pkg", moduleId: "Main" }),
     expect.objectContaining({ package_: "pkg", moduleId: "Dep" }),
+    expect.objectContaining({ package_: "pkg", moduleId: "Main" }),
   ]);
 });
 
