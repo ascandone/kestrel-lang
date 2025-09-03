@@ -11,7 +11,7 @@ test("completion of field access of a struct whose type is resolved", () => {
 extern type String
 extern type Int
 
-type Person struct {
+struct Person {
   name: String,
   age: Int,
 }
@@ -55,7 +55,7 @@ test("completion of field access of a struct whose type is _not_ resolved", () =
 extern type String
 extern type Int
 
-type Person struct {
+struct Person {
   name: String,
   age: Int,
 }

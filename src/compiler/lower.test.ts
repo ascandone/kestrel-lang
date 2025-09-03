@@ -209,7 +209,7 @@ test("struct creation and access", () => {
     @extern
     @type String
     let n
-    type User struct {
+    struct User {
       name: String,
       age: String,
     }

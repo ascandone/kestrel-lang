@@ -488,41 +488,41 @@ describe("type declarations", () => {
 
 describe("structs", () => {
   test("empty struct", () => {
-    const src = `type Person struct { }`;
+    const src = `struct Person { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("pub modifier", () => {
-    const src = `pub type Person struct { }`;
+    const src = `pub struct Person { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("pub(..) modifier", () => {
-    const src = `pub(..) type Person struct { }`;
+    const src = `pub(..) struct Person { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("type params", () => {
-    const src = `type Person<a, b> struct { }`;
+    const src = `struct Person<a, b> { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("doc comments", () => {
     const src = `
       /// example docs
-      type Person struct { }
+      struct Person { }
     `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("field", () => {
-    const src = `type Person struct { age: Int }`;
+    const src = `struct Person { age: Int }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("many fields", () => {
     const src = `
-      type Person struct {
+      struct Person {
         name: a,
         age: b, 
       }

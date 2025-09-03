@@ -1196,7 +1196,7 @@ describe("list literal", () => {
 describe("structs", () => {
   test("struct declaration is a noop", () => {
     const out = compileSrc(`
-      type User struct {
+      struct User {
           name: String
       }
     `);
@@ -1208,7 +1208,7 @@ describe("structs", () => {
 
   test("struct declaration", () => {
     const out = compileSrc(`
-      type Point struct {
+      struct Point {
           x: Int,
           y: Int,
       }
@@ -1229,7 +1229,7 @@ describe("structs", () => {
 
   test("empty struct is represented as {}", () => {
     const out = compileSrc(`
-      type Nil struct { }
+      struct Nil { }
 
       pub let nil = Nil { }
     `);
@@ -1241,7 +1241,7 @@ describe("structs", () => {
 
   test("field access", () => {
     const out = compileSrc(`
-      type Box struct { x: Int }
+      struct Box { x: Int }
 
       pub let b = Box { x: 42 } 
 
@@ -1258,7 +1258,7 @@ describe("structs", () => {
 
   test("field access of struct lit", () => {
     const out = compileSrc(`
-      type Box struct { x: Int }
+      struct Box { x: Int }
 
       pub let x_f = Box { x: 42 }.x
     `);
@@ -1272,7 +1272,7 @@ describe("structs", () => {
 
   test("struct update", () => {
     const out = compileSrc(`
-      type Point3D struct {
+      struct Point3D {
         x: Int,
         y: Int,
         z: Int,
@@ -1300,7 +1300,7 @@ describe("structs", () => {
 
   test("struct update when expr is not ident", () => {
     const out = compileSrc(`
-      type Point3D struct {
+      struct Point3D {
         x: Int,
         y: Int,
         z: Int,
@@ -2762,7 +2762,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type DoNotDerive
-      type Struct struct { x: DoNotDerive }
+      struct Struct { x: DoNotDerive }
     `,
         { allowDeriving: ["Eq"] },
       );
@@ -2772,7 +2772,7 @@ describe("deriving", () => {
     test("no fields", () => {
       const out = compileSrc(
         `
-      type T struct { }
+      struct T { }
     `,
         { allowDeriving: ["Eq"] },
       );
@@ -2785,7 +2785,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       
-      type T struct { x: Int }
+      struct T { x: Int }
     `,
         {
           allowDeriving: ["Eq"],
@@ -2801,7 +2801,7 @@ describe("deriving", () => {
     test("single field with var args", () => {
       const out = compileSrc(
         `
-      type T<a, b, c, d> struct { field: b }
+      struct T<a, b, c, d> { field: b }
     `,
         { allowDeriving: ["Eq"] },
       );
@@ -2815,7 +2815,7 @@ describe("deriving", () => {
         `
       extern type Num
       extern type Str
-      type T struct {
+      struct T {
         int_field: Num,
         str_field: Str,
       }
@@ -2838,7 +2838,7 @@ describe("deriving", () => {
         `
       type X<a> { X(a) }
 
-      type Y<param> struct {
+      struct Y<param> {
         field: X<param>,
       }
     `,
@@ -2857,7 +2857,7 @@ describe("deriving", () => {
     test("recursive data structures", () => {
       const out = compileSrc(
         `
-      type Struct<a> struct {
+      struct Struct<a> {
         x: a,
         y: Struct<a>,
       }
@@ -3117,7 +3117,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type DoNotDerive
-      type T struct { x: DoNotDerive }
+      struct T { x: DoNotDerive }
     `,
         { allowDeriving: ["Show"] },
       );
@@ -3129,7 +3129,7 @@ describe("deriving", () => {
     test("no fields", () => {
       const out = compileSrc(
         `
-      type T struct {  }
+      struct T {  }
     `,
         { allowDeriving: ["Show"] },
       );
@@ -3142,7 +3142,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
-      type T struct { field: MyInt }
+      struct T { field: MyInt }
     `,
         {
           allowDeriving: ["Show"],
@@ -3158,7 +3158,7 @@ describe("deriving", () => {
     test("single field with var arg", () => {
       const out = compileSrc(
         `
-      type T<a, b, c, d> struct { field: c }
+      struct T<a, b, c, d> { field: c }
     `,
         { allowDeriving: ["Show"] },
       );
@@ -3172,7 +3172,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
-      type T<a, b> struct {
+      struct T<a, b> {
         field_int: MyInt,
         field_a: a,
         field_b: b,
@@ -3194,7 +3194,7 @@ describe("deriving", () => {
         `
       type X<a> { X(a) }
 
-      type Y<b> struct {
+      struct Y<b> {
         field: X<b>,
       }
     `,
@@ -3213,7 +3213,7 @@ describe("deriving", () => {
     test("recursive data structures", () => {
       const out = compileSrc(
         `
-      type Str<a> struct {
+      struct Str<a> {
         field: Str<a>,
       }
     `,

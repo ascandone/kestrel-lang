@@ -62,8 +62,11 @@ typeDeclaration_:
 		'}';
 
 structDeclaration_:
-	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? 'struct' '{'
-		declarationFields? '}';
+	(doc = DOC_COMMENT_LINE*)
+	pub=pubExposing?
+	'struct' name=TYPE_ID paramsList?
+	'{' declarationFields? '}'
+	;
 
 externTypeDeclaration_:
 	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?;

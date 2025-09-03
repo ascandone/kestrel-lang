@@ -967,7 +967,7 @@ describe("traits", () => {
           @type (a) -> a where a: Eq
           let take_eq
   
-          type MyType struct { }
+          struct MyType { }
   
           pub let example = take_eq(MyType { })
         `,
@@ -984,7 +984,7 @@ describe("traits", () => {
           @type (a) -> a where a: Show
           let take_shoq
   
-          type MyType struct { }
+          struct MyType { }
   
           pub let example = take_shoq(MyType { })
         `,
@@ -1002,7 +1002,7 @@ describe("traits", () => {
           let take_eq
           type EqT { EqT }
   
-          type MyType struct {
+          struct MyType {
             x: EqT
           }
   
@@ -1027,7 +1027,7 @@ describe("traits", () => {
           @type NotEq
           let x
   
-          type MyType struct {
+          struct MyType {
             x: NotEq
           }
   
@@ -1047,7 +1047,7 @@ describe("traits", () => {
           @type (a) -> a where a: Eq
           pub let take_eq
   
-          type MyType<a, b> struct {
+          struct MyType<a, b> {
             x: b,
           }
   
@@ -1075,7 +1075,7 @@ describe("traits", () => {
           @type (a) -> a where a: Eq
           let take_eq
   
-          type Rec<a> struct {
+          struct Rec<a> {
             field: Option<Rec<a>>,
           }
 
@@ -1595,7 +1595,7 @@ describe("custom types", () => {
 describe("struct", () => {
   test("allow creating types", () => {
     const [, errs] = tc(`
-      type Person struct { }
+      struct Person { }
 
 
       @extern
@@ -1609,7 +1609,7 @@ describe("struct", () => {
   test("allow recursive types", () => {
     const [, errs] = tc(`
       extern type List<a>
-      type Person struct {
+      struct Person {
         friends: List<Person>,
       }
     `);
@@ -1621,7 +1621,7 @@ describe("struct", () => {
     const [types, errs] = tc(`
       extern type String
 
-      type Person struct {
+      struct Person {
         name: String
       }
 
@@ -1642,7 +1642,7 @@ describe("struct", () => {
   test("do not allow invalid field access", () => {
     const [types, errs] = tc(`
       extern type String
-      type Person struct {
+      struct Person {
         name: String
       }
 
@@ -1668,7 +1668,7 @@ describe("struct", () => {
       "Person",
       `
       extern type String
-      pub(..) type Person struct {
+      pub(..) struct Person {
         name: String
       }
     `,
@@ -1703,7 +1703,7 @@ describe("struct", () => {
       "Person",
       `
       extern type String
-      pub(..) type Person struct {
+      pub(..) struct Person {
         name: String
       }
     `,
@@ -1734,7 +1734,7 @@ describe("struct", () => {
       "Person",
       `
       extern type String
-      pub(..) type Person struct {
+      pub(..) struct Person {
         name: String
       }
     `,
@@ -1766,7 +1766,7 @@ describe("struct", () => {
       const [types, errs] = tc(
         `
         extern type String
-        type Person struct {
+        struct Person {
           name: String
         }
 
@@ -1785,7 +1785,7 @@ describe("struct", () => {
     test("emit err when field accessed with qualified syntax is invalid", () => {
       const [, errs] = tc(
         `
-        type Person struct { }
+        struct Person { }
 
         pub let name = fn p {
           p.Person#invalid_field
@@ -1804,7 +1804,7 @@ describe("struct", () => {
         "Person",
         `
       extern type String
-      pub(..) type Person struct {
+      pub(..) struct Person {
         name: String
       }
     `,
@@ -1844,7 +1844,7 @@ describe("struct", () => {
       const [Person] = tcProgram(
         "Person",
         `
-        pub(..) type Person struct {}
+        pub(..) struct Person {}
   `,
       );
 
@@ -1869,7 +1869,7 @@ describe("struct", () => {
         "Person",
         `
         extern type Int
-        pub type Person struct {
+        pub struct Person {
           private_field: Int
         }
   `,
@@ -1897,7 +1897,7 @@ describe("struct", () => {
       "Person",
       `
       extern type String
-      pub type Person struct { // note fields are  private
+      pub struct Person { // note fields are  private
         name: String
       }
     `,
@@ -1926,7 +1926,7 @@ describe("struct", () => {
       `
         type X { X }
 
-        pub type Struct struct {
+        pub struct Struct {
           x: X
         }
 
@@ -1945,7 +1945,7 @@ describe("struct", () => {
   test("typecheck params in struct types", () => {
     const [types, errs] = tc(
       `
-        type Person<a, b, c> struct { }
+        struct Person<a, b, c> { }
 
         @extern
         @type Person
@@ -1963,7 +1963,7 @@ describe("struct", () => {
   test("handling params in dot access", () => {
     const [types, errs] = tc(
       `
-        type Box<a> struct {
+        struct Box<a> {
           field: a
         }
 
@@ -1988,7 +1988,7 @@ describe("struct", () => {
     const [types, errs] = tc(
       `
       extern type Int
-      type Box<a> struct {
+      struct Box<a> {
         field: a
       }
 
@@ -2010,7 +2010,7 @@ describe("struct", () => {
   test("handling params in struct definition (phantom types)", () => {
     const [types, errs] = tc(
       `
-        type Box<a, b> struct { }
+        struct Box<a, b> { }
 
         pub let box = Box { }
     `,
@@ -2025,7 +2025,7 @@ describe("struct", () => {
   test("typecheck extra fields", () => {
     const [types, errs] = tc(
       `
-        type Struct struct {}
+        struct Struct {}
 
         pub let s = Struct {
           extra: 42
@@ -2047,7 +2047,7 @@ describe("struct", () => {
     const [types, errs] = tc(
       `
         extern type String
-        type Person struct {
+        struct Person {
           name: String,
           second_name: String,
         }
@@ -2072,7 +2072,7 @@ describe("struct", () => {
     const [types, errs] = tc(
       `
         type X {  }
-        type Struct struct {
+        struct Struct {
           field: X,
         }
 
@@ -2093,7 +2093,7 @@ describe("struct", () => {
   test("handling params in struct definition when fields are bound to params", () => {
     const [types, errs] = tc(
       `
-      type Box<a, b> struct {
+      struct Box<a, b> {
         a: a,
         b: b,
       }
@@ -2114,7 +2114,7 @@ describe("struct", () => {
   test("instantiated fresh vars when creating structs", () => {
     const [types, errs] = tc(
       `
-      type Box<a> struct { a: a }
+      struct Box<a> { a: a }
 
       pub let str_box = Box { a: "abc" }
       pub let int_box = Box { a: 42 }
@@ -2131,7 +2131,7 @@ describe("struct", () => {
   test("updating a infers the spread arg", () => {
     const [types, errs] = tc(
       `
-      type Box<a> struct { a: a }
+      struct Box<a> { a: a }
 
       pub let set_a = fn box {
         Box {
@@ -2151,7 +2151,7 @@ describe("struct", () => {
   test("allow to specify a subset of the fields when update another struct", () => {
     const [, errs] = tc(
       `
-      type Str<a, b> struct {
+      struct Str<a, b> {
         a: a,
         b: b
       }

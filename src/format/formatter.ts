@@ -651,10 +651,10 @@ function typeDeclToDoc(tDecl: TypeDeclaration): Doc {
       return concat(
         docComment,
         tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
-        text("type "),
+        text("struct "),
         text(tDecl.name),
         params,
-        text(" struct "),
+        text(" "),
         tDecl.fields.length === 0 ? text("{ }") : block_(fields),
       );
     }

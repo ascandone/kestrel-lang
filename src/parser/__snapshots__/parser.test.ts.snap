@@ -8388,7 +8388,7 @@ exports[`structs > doc comments 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 28,
+          "character": 23,
           "line": 2,
         },
         "start": {
@@ -8415,7 +8415,7 @@ exports[`structs > empty struct 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 22,
+          "character": 17,
           "line": 0,
         },
         "start": {
@@ -8441,11 +8441,11 @@ exports[`structs > field 1`] = `
           "name": "age",
           "range": {
             "end": {
-              "character": 29,
+              "character": 24,
               "line": 0,
             },
             "start": {
-              "character": 21,
+              "character": 16,
               "line": 0,
             },
           },
@@ -8454,11 +8454,11 @@ exports[`structs > field 1`] = `
             "name": "Int",
             "range": {
               "end": {
-                "character": 29,
+                "character": 24,
                 "line": 0,
               },
               "start": {
-                "character": 26,
+                "character": 21,
                 "line": 0,
               },
             },
@@ -8471,7 +8471,7 @@ exports[`structs > field 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 31,
+          "character": 26,
           "line": 0,
         },
         "start": {
@@ -8659,7 +8659,7 @@ exports[`structs > pub modifier 1`] = `
       "pub": true,
       "range": {
         "end": {
-          "character": 26,
+          "character": 21,
           "line": 0,
         },
         "start": {
@@ -8686,7 +8686,7 @@ exports[`structs > pub(..) modifier 1`] = `
       "pub": "..",
       "range": {
         "end": {
-          "character": 30,
+          "character": 25,
           "line": 0,
         },
         "start": {
@@ -8793,11 +8793,11 @@ exports[`structs > type params 1`] = `
           "name": "a",
           "range": {
             "end": {
-              "character": 13,
+              "character": 15,
               "line": 0,
             },
             "start": {
-              "character": 12,
+              "character": 14,
               "line": 0,
             },
           },
@@ -8806,11 +8806,11 @@ exports[`structs > type params 1`] = `
           "name": "b",
           "range": {
             "end": {
-              "character": 16,
+              "character": 18,
               "line": 0,
             },
             "start": {
-              "character": 15,
+              "character": 17,
               "line": 0,
             },
           },
@@ -8819,7 +8819,7 @@ exports[`structs > type params 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 28,
+          "character": 23,
           "line": 0,
         },
         "start": {

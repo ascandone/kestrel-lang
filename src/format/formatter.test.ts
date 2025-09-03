@@ -91,11 +91,11 @@ describe("list lit syntax", () => {
 
 describe("struct", () => {
   test("struct definition without fields", () => {
-    expect(`type X struct { }\n`).toBeFormatted();
+    expect(`struct X { }\n`).toBeFormatted();
   });
 
   test("struct definition with many fields", () => {
-    expect(`type X struct {
+    expect(`struct X {
   some_field: Int,
   another_field: String,
 }\n`).toBeFormatted();

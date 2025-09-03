@@ -273,7 +273,7 @@ test("hover a type ast in constructor", () => {
 
 test("hover on a field (instantiated)", () => {
   const src = `
-      type X<gen> struct { some_field: gen }
+      struct X<gen> { some_field: gen }
       let x = X { some_field: 42 }
 
       pub let hov = x.some_field
@@ -288,7 +288,7 @@ test("hover on a field (instantiated)", () => {
 
 test("hover on a field (tvar)", () => {
   const src = `
-      type X<gen> struct { some_field: gen }
+      struct X<gen> { some_field: gen }
       pub let hov = fn x { x.some_field }
     `;
   const hoverable = parseHover(src, "some_field", 2)!;
