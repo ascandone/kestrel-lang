@@ -16,6 +16,8 @@ import { Config, readConfig } from "./config";
 import { join } from "node:path";
 import { errorInfoToString } from "../typecheck/errors";
 import * as paths from "./paths";
+import { DefaultMap } from "../data/defaultMap";
+import * as project from "../typecheck/project";
 
 export const EXTENSION = "kes";
 
@@ -25,6 +27,84 @@ export type RawModule = {
   content: string;
   extern: string | undefined;
 };
+
+/** Read a package and its dependecies. Returns a (module, pkg)-indexed nested map */
+export async function readRawProject(path: string) {
+  const project = new DefaultMap<string, Map<string, RawModule>>(
+    () => new Map(),
+  );
+
+  const packagesDeps: project.ProjectOptions["packageDependencies"] = new Map();
+
+  // TODO make sure there aren't cyclic deps
+  async function helper(path: string) {
+    const config = await readConfig(path);
+
+    const name = config.type === "application" ? "" : config.name;
+    const deps = Object.keys(config.dependencies ?? {});
+    packagesDeps.set(name, new Set(deps));
+
+    await readPackage(project, path, config);
+
+    try {
+      const deps = await readdir(paths.dependencies(path));
+      for (const dependencyName of deps) {
+        const depPath = paths.dependency(path, dependencyName);
+        await helper(depPath);
+      }
+    } catch {
+      // Assume /deps/ is not present otherwise
+    }
+  }
+
+  await helper(path);
+
+  return [project.inner, packagesDeps] as const;
+}
+
+/** Read a single package and load its content into the project  */
+async function readPackage(
+  /* &mut */ project: DefaultMap<string, Map<string, RawModule>>,
+
+  path: string,
+  config?: Config,
+): Promise<void> {
+  if (config === undefined) {
+    config = await readConfig(path);
+  }
+
+  for (const sourceDir of config["source-directories"]) {
+    const files = await readdir(join(path, sourceDir), { recursive: true });
+
+    // TODo is the file relative path?
+    for (const file of files) {
+      const [moduleName, ext] = file.split(".");
+      if (ext !== EXTENSION) {
+        continue;
+      }
+
+      const filePath = join(path, sourceDir, file);
+      const fileBuf = await readFile(filePath);
+
+      let extern: string | undefined = undefined;
+      try {
+        const externPath = join(path, sourceDir, `${moduleName}.js`);
+        const externBuf = await readFile(externPath);
+        extern = externBuf.toString();
+      } catch {
+        // Assume file did not exist
+      }
+
+      const package_ = config.type === "package" ? config.name : "";
+      project.get(moduleName!).set(package_, {
+        package: package_,
+        path: filePath,
+        content: fileBuf.toString(),
+        extern,
+      });
+    }
+  }
+}
 
 export async function readProjectWithDeps(
   path: string,
