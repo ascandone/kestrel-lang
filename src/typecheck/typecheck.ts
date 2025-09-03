@@ -1330,6 +1330,7 @@ export type TypecheckedModule = {
 
 export type ProjectTypeCheckResult = Record<string, TypecheckedModule>;
 
+/** @deprecated */
 export function typecheckProject(
   project: UntypedProject,
   implicitImports: Import[] = defaultImports,

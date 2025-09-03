@@ -1,10 +1,12 @@
 import { describe, expect, test } from "vitest";
 import { Position, Range, Import, unsafeParse } from "../parser";
-import { typecheck, typecheckProject, TypedModule, typeToString } from ".";
+import { typecheck, TypedModule, typeToString } from ".";
 import { ErrorInfo } from "./errors";
 import * as err from "./errors";
 import { TraitImpl } from "./defaultImports";
 import { Deps as IDeps } from "../compiler/__test__/prelude";
+import { ProjectTypechecker, RawProject } from "./project";
+import { nestedMapGetOrPutDefault } from "../data/defaultMap";
 
 describe("basic constructs inference", () => {
   test("infer int", () => {
@@ -3184,63 +3186,79 @@ describe("modules", () => {
 });
 
 describe("typecheck project", () => {
+  // TODO is it redundant? Maybe it's ok to do that in the ProjectTypechecker tests
+
   test("single import", () => {
-    const project = typecheckProject(
-      {
-        A: {
-          package: "pkg",
-          module: unsafeParse(`
+    const prj: RawProject = new Map();
+
+    nestedMapGetOrPutDefault(prj, "A").set(
+      "pkg",
+      `
         pub let x = 42
-      `),
-        },
-        B: {
-          package: "pkg",
-          module: unsafeParse(`
+      `,
+    );
+    nestedMapGetOrPutDefault(prj, "B").set(
+      "pkg",
+      `
         import A.{x}
         pub let y = x
-      `),
-        },
-      },
-      [],
+      `,
     );
 
-    expect(project.A).not.toBeUndefined();
-    expect(project.A!.errors).toEqual([]);
-    expect(programTypes(project.A!.typedModule)).toEqual({
+    const checker = new ProjectTypechecker(prj, {
+      implicitImports: [],
+    });
+    checker.typecheck();
+
+    const A = checker.compiledProject.get("A").get("pkg");
+    expect(A).not.toBeUndefined();
+
+    expect(A![1]).toEqual([]);
+    expect(programTypes(A![0])).toEqual({
       x: "Int",
     });
 
-    expect(project.B).not.toBeUndefined();
-    expect(project.B!.errors).toEqual([]);
-    expect(programTypes(project.B!.typedModule)).toEqual({
+    const B = checker.compiledProject.get("B").get("pkg");
+    expect(B).not.toBeUndefined();
+    expect(B![1]).toEqual([]);
+    expect(programTypes(B![0])).toEqual({
       y: "Int",
     });
   });
 
   test("qualified imports", () => {
-    const project = typecheckProject(
-      {
-        A: {
-          package: "pkg",
-          module: unsafeParse(`
+    const prj: RawProject = new Map();
+
+    nestedMapGetOrPutDefault(prj, "A").set(
+      "pkg",
+      `
         pub let x = 42
-      `),
-        },
-        B: {
-          package: "pkg",
-          module: unsafeParse(`
-        import A
-        pub let y = A.x
-      `),
-        },
-      },
-      [],
+      `,
+    );
+    nestedMapGetOrPutDefault(prj, "B").set(
+      "pkg",
+      `
+         import A
+         pub let y = A.x
+      `,
     );
 
-    expect(project.B).not.toBeUndefined();
+    const checker = new ProjectTypechecker(prj, {
+      implicitImports: [],
+    });
+    checker.typecheck();
 
-    expect(project.B!.errors).toEqual([]);
-    expect(programTypes(project.B!.typedModule)).toEqual({
+    const B = checker.compiledProject.get("B").get("pkg");
+    expect(B).not.toBeUndefined();
+    expect(B![1]).toEqual([]);
+    expect(programTypes(B![0])).toEqual({
+      y: "Int",
+    });
+
+    expect(B).not.toBeUndefined();
+
+    expect(B![1]).toEqual([]);
+    expect(programTypes(B![0])).toEqual({
       y: "Int",
     });
   });
