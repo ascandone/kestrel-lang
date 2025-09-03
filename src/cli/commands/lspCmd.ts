@@ -100,7 +100,7 @@ export async function lspCmd() {
   });
 
   connection.languages.inlayHint.on((ctx) => {
-    const module = state.moduleByUri(ctx.textDocument.uri);
+    const module = state.getModuleByUri(ctx.textDocument.uri);
     if (module === undefined) {
       return;
     }
@@ -116,7 +116,7 @@ export async function lspCmd() {
   });
 
   connection.onSignatureHelp(({ textDocument, position }) => {
-    const module = state.moduleByUri(textDocument.uri);
+    const module = state.getModuleByUri(textDocument.uri);
     if (module === undefined) {
       return;
     }
@@ -146,19 +146,19 @@ export async function lspCmd() {
   });
 
   connection.onCompletion(({ textDocument, position }) => {
-    const module = state.moduleByUri(textDocument.uri);
+    const module = state.getModuleByUri(textDocument.uri);
     if (module === undefined) {
       return;
     }
     return getCompletionItems(module[0], position, {
       getModuleByNs(ns) {
-        return state.moduleByUri(ns)?.[0];
+        return state.getModuleByUri(ns)?.[0];
       },
     });
   });
 
   connection.onReferences(({ textDocument, position }) => {
-    const module = state.moduleByUri(textDocument.uri);
+    const module = state.getModuleByUri(textDocument.uri);
     if (module === undefined) {
       return;
     }
@@ -186,7 +186,7 @@ export async function lspCmd() {
   });
 
   connection.onRenameRequest(({ textDocument, position, newName }) => {
-    const module = state.moduleByUri(textDocument.uri);
+    const module = state.getModuleByUri(textDocument.uri);
     if (module === undefined) {
       return;
     }
@@ -221,7 +221,7 @@ export async function lspCmd() {
     }
 
     for (const [ns, ident] of refs.references) {
-      const refModule = state.moduleByUri(ns);
+      const refModule = state.getModuleByUri(ns);
       if (refModule === undefined) {
         continue;
       }
@@ -246,7 +246,7 @@ export async function lspCmd() {
   });
 
   connection.onDocumentFormatting(({ textDocument }) => {
-    const module = state.moduleByUri(textDocument.uri);
+    const module = state.getModuleByUri(textDocument.uri);
 
     if (module === undefined) {
       return;
@@ -276,7 +276,7 @@ export async function lspCmd() {
   });
 
   connection.onDocumentSymbol(({ textDocument }) => {
-    const module = state.moduleByUri(textDocument.uri);
+    const module = state.getModuleByUri(textDocument.uri);
     if (module === undefined) {
       return undefined;
     }
@@ -300,7 +300,7 @@ export async function lspCmd() {
   });
 
   connection.onCodeLens(({ textDocument }) => {
-    const module = state.moduleByUri(textDocument.uri);
+    const module = state.getModuleByUri(textDocument.uri);
     if (module === undefined) {
       return;
     }
@@ -317,7 +317,7 @@ export async function lspCmd() {
   connection.onExecuteCommand(() => {});
 
   connection.onDefinition(({ textDocument, position }) => {
-    const module = state.moduleByUri(textDocument.uri);
+    const module = state.getModuleByUri(textDocument.uri);
     if (module === undefined) {
       return;
     }
@@ -339,7 +339,7 @@ export async function lspCmd() {
   });
 
   connection.onHover(({ textDocument, position }) => {
-    const result = state.moduleByUri(textDocument.uri);
+    const result = state.getModuleByUri(textDocument.uri);
     if (result === undefined) {
       return;
     }

@@ -91,7 +91,7 @@ export class LsState {
     return this.projectChecker.compiledProject.get(moduleId).get(this.package_);
   }
 
-  public moduleByUri(
+  public getModuleByUri(
     uri: TextDocument["uri"],
   ): [TypedModule, ErrorInfo[]] | undefined {
     this.runTypecheckSync();
