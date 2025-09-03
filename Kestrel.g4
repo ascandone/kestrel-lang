@@ -58,8 +58,9 @@ letDeclaration_:
 	(pub = 'pub'?) 'let' binding=(INFIX_ID | ID) ('=' expr)?;
 
 typeDeclaration_:
-	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants?
-		'}';
+	(doc = DOC_COMMENT_LINE*)
+	pub=pubExposing? 'enum' name=TYPE_ID paramsList?
+	'{' typeVariants? '}';
 
 structDeclaration_:
 	(doc = DOC_COMMENT_LINE*)

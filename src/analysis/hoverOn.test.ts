@@ -211,7 +211,7 @@ test("hover a reference to a local binding in a match expr subject", () => {
 
 test("hover a constructor", () => {
   const src = `
-        type T { Constr(Int) }
+        enum T { Constr(Int) }
         let t = Constr(42)
     `;
   const hoverable = parseHover(src, "Constr", 2)!;
@@ -225,11 +225,11 @@ test("hover a constructor", () => {
 
 test("hover a type def", () => {
   const src = `
-      type T { }
+      enum T { }
     `;
   const hoverable = parseHover(src, "T", 1)!;
   expect(hoverable).toEqual<Hovered>({
-    range: rangeOf(src, "type T { }", 1),
+    range: rangeOf(src, "enum T { }", 1),
     hovered: expect.objectContaining({
       type: "type",
     }),
@@ -238,8 +238,8 @@ test("hover a type def", () => {
 
 test("hover a type ast", () => {
   const src = `
-        type T { }
-        type Box<a> { }
+        enum T { }
+        enum Box<a> { }
 
         @extern
         @type () -> Box<T>
@@ -256,8 +256,8 @@ test("hover a type ast", () => {
 
 test("hover a type ast in constructor", () => {
   const src = `
-      type X { }
-      type T { Constr(X) }
+      enum X { }
+      enum T { Constr(X) }
     `;
   const hoverable = parseHover(src, "X", 2)!;
   expect(hoverable).toEqual<Hovered>({
@@ -340,7 +340,7 @@ test("snapshot when hovering on a local fn", () => {
 
 test("snapshot when hovering on a constructor", () => {
   const src = `
-      type T<content> { X, Constr(content) }
+      enum T<content> { X, Constr(content) }
     `;
   const hoverable = parseHover(src, "Constr")!;
   expect(hoverToMarkdown(hoverable)).toMatchSnapshot();
@@ -348,7 +348,7 @@ test("snapshot when hovering on a constructor", () => {
 
 test("snapshot when hovering on a constructor reference", () => {
   const src = `
-      type T<content> { Constr(content) }
+      enum T<content> { Constr(content) }
 
       pub let c = Constr(42)
     `;

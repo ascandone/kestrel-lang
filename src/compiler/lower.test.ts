@@ -206,9 +206,11 @@ test("if expr", () => {
 test("struct creation and access", () => {
   const ir = toSexpr(`
     extern type String
+
     @extern
     @type String
     let n
+
     struct User {
       name: String,
       age: String,
@@ -248,7 +250,7 @@ test("struct creation and access", () => {
 
 test("constructor", () => {
   const ir = toSexpr(`
-    type Option<a> {
+    enum Option<a> {
       None,
       Some(a),
     }
@@ -280,7 +282,7 @@ test("list literal", () => {
 describe("pattern matching", () => {
   test("toplevel", () => {
     const ir = toSexpr(`
-    type Option<a> {
+    enum Option<a> {
       None,
       Some(a),
     }
@@ -307,7 +309,7 @@ describe("pattern matching", () => {
 
   test("nested", () => {
     const ir = toSexpr(`
-    type Option<a> {
+    enum Option<a> {
       None,
       Some(a),
     }
@@ -334,7 +336,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in let", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
 
@@ -353,7 +355,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in let#", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
 
@@ -376,7 +378,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in fn", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
     
@@ -396,7 +398,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in fn with many args", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
     
@@ -424,7 +426,8 @@ describe("traits", () => {
       @type a where a: Show
       let p
 
-      type Str {}
+      enum Str {}
+
       @extern
       @type (Str) -> a
       let take_int
@@ -520,7 +523,7 @@ describe("traits", () => {
       let show
 
       
-      type S {} // <- it derives both Eq and Show
+      enum S {} // <- it derives both Eq and Show
 
       @extern
       @type S
@@ -628,7 +631,7 @@ describe("traits", () => {
       @type (a) -> String where a: Show
       let show
 
-      type AlwaysShow<a> { X }
+      enum AlwaysShow<a> { X }
       
       let x = show(X)
     `);
@@ -645,7 +648,7 @@ describe("traits", () => {
       @type (a) -> String where a: Show
       let show
 
-      type Option<a, b> { Some(b) }
+      enum Option<a, b> { Some(b) }
       
       let x = show(Some(42))
     `,
@@ -678,10 +681,12 @@ describe("traits", () => {
 
   test("trait deps in args when param aren't traits dependencies", () => {
     const out = dumpIR(`
-      type IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
+      enum IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
+
       @extern
       @type IsShow<a> where a: Show
       let s
+
       let x = s
     `);
 

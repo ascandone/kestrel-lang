@@ -627,7 +627,7 @@ function typeDeclToDoc(tDecl: TypeDeclaration): Doc {
       return concat(
         docComment,
         tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
-        text("type "),
+        text("enum "),
         text(tDecl.name),
         params,
         text(" "),

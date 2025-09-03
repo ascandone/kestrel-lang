@@ -437,28 +437,28 @@ describe("traits", () => {
 
 describe("type declarations", () => {
   test("type with no variants", () => {
-    const src = "type Never { }";
+    const src = "enum Never { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("type with a variant with no args", () => {
-    const src = "type T { C }";
+    const src = "enum T { C }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("type with a variant with one arg", () => {
-    const src = "type T { C(Arg) }";
+    const src = "enum T { C(Arg) }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("type with a variant with many args", () => {
-    const src = "type T { C(A, B) }";
+    const src = "enum T { C(A, B) }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("type with a variant with complex args", () => {
     const src = `
-      type T {
+      enum T {
         C(Example<a, Nested<Int>>)
       }
     `;
@@ -466,22 +466,22 @@ describe("type declarations", () => {
   });
 
   test("type with many variants", () => {
-    const src = `type T { A, B }`;
+    const src = `enum T { A, B }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("trailing comma after variants", () => {
-    const src = `type T { A, B, }`;
+    const src = `enum T { A, B, }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("single type param", () => {
-    const src = `type T<a> { }`;
+    const src = `enum T<a> { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("many type params", () => {
-    const src = `type T<a, b, c> { }`;
+    const src = `enum T<a, b, c> { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });
@@ -703,12 +703,12 @@ describe("imports", () => {
   });
 
   test("parse pub modifier on types", () => {
-    const src = "pub type T { }";
+    const src = "pub enum T { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parse pub(..) modifier on types", () => {
-    const src = "pub(..) type T { }";
+    const src = "pub(..) enum T { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
@@ -807,7 +807,7 @@ describe("Comments", () => {
     const src = `
     /// first line
     /// second line
-    type X {}
+    enum X {}
     `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

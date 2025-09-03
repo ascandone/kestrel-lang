@@ -514,7 +514,7 @@ import B
 });
 
 test("order between type declrs and declrs", () => {
-  const t = `type T { }`;
+  const t = `enum T { }`;
   const d = `let x = 0`;
   expect(`${t}\n\n${d}\n`).toBeFormatted();
   expect(`${d}\n\n${t}\n`).toBeFormatted();
@@ -615,7 +615,7 @@ let f
   test("doc comments on types", () => {
     expect(`/// First line
 /// Second line
-type X { }
+enum X { }
 `).toBeFormatted();
   });
 
@@ -752,26 +752,26 @@ describe("type delc", () => {
   });
 
   test("adts with no construtcors", () => {
-    expect(`type T { }\n`).toBeFormatted();
+    expect(`enum T { }\n`).toBeFormatted();
   });
 
   test("adts pub modifier", () => {
-    expect(`pub type T { }\n`).toBeFormatted();
+    expect(`pub enum T { }\n`).toBeFormatted();
   });
 
   test("adts pub(..) modifier", () => {
-    expect(`pub(..) type T { }\n`).toBeFormatted();
+    expect(`pub(..) enum T { }\n`).toBeFormatted();
   });
 
   test("adts with a constructors", () => {
-    expect(`type Unit {
+    expect(`enum Unit {
   Unit,
 }
 `).toBeFormatted();
   });
 
   test("adts with many constructors", () => {
-    expect(`type T {
+    expect(`enum T {
   A,
   B,
 }
@@ -779,26 +779,26 @@ describe("type delc", () => {
   });
 
   test("adts with a constructors with an arg", () => {
-    expect(`type Box {
+    expect(`enum Box {
   Box(Int),
 }
 `).toBeFormatted();
   });
 
   test("adts with a constructors with many args", () => {
-    expect(`type Box {
+    expect(`enum Box {
   Box(Int, a, Option<Int>),
 }
 `).toBeFormatted();
   });
 
   test("adts with one type params", () => {
-    expect(`type Box<a> { }
+    expect(`enum Box<a> { }
 `).toBeFormatted();
   });
 
   test("adts with many type params", () => {
-    expect(`type Box<a, b, c> { }
+    expect(`enum Box<a, b, c> { }
 `).toBeFormatted();
   });
 });

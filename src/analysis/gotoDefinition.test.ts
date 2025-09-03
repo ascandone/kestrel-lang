@@ -39,7 +39,7 @@ test("wrapped in an if and appl", () => {
 
 test("pattern ident", () => {
   const src = `
-      type Box<a> { Box(a) }
+      enum Box<a> { Box(a) }
       let _ = match Box(Box(42)) {
         _ => 0,
         Box(Box(local_var)) => local_var,
@@ -79,15 +79,15 @@ test("shadowed let", () => {
 
 test("type ast", () => {
   const src = `
-      type X {}
-      type Box<a> {}
+      enum X {}
+      enum Box<a> {}
 
       @extern
       @type Box<() -> X>
       let x
     `;
   const location = parseGotoDef(src, "X", 2);
-  expect(location?.range).toEqual(rangeOf(src, "type X {}", 1));
+  expect(location?.range).toEqual(rangeOf(src, "enum X {}", 1));
 });
 
 test("do not leak bindings", () => {
@@ -104,15 +104,15 @@ test("do not leak bindings", () => {
 
 test("type ast in constructors", () => {
   const src = `
-      type X {}
-      type Box<a> {}
+      enum X {}
+      enum Box<a> {}
 
-      type Custom {
+      enum Custom {
         CustomConstr(Box<X>)
       }
     `;
   const location = parseGotoDef(src, "X", 2);
-  expect(location?.range).toEqual(rangeOf(src, "type X {}", 1));
+  expect(location?.range).toEqual(rangeOf(src, "enum X {}", 1));
 });
 
 function parseGotoDef(

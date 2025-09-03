@@ -127,8 +127,8 @@ describe("basic constructs inference", () => {
 
   test("application args should be typechecked", () => {
     const src = `
-    type T { C }
-    type Ret {}
+    enum T { C }
+    enum Ret {}
 
 
     @extern
@@ -145,9 +145,9 @@ describe("basic constructs inference", () => {
   test("application (pipe operator)", () => {
     const [types, errors] = tc(
       `
-    type T { C }
-    type T1 { C1 }
-    type Ret {}
+    enum T { C }
+    enum T1 { C1 }
+    enum Ret {}
 
     
     @extern
@@ -197,7 +197,7 @@ describe("basic constructs inference", () => {
   test("typecheck if ret value", () => {
     const [types] = tc(
       `
-    type Bool { True }
+    enum Bool { True }
     pub let f =
       if True {
         0
@@ -215,7 +215,7 @@ describe("basic constructs inference", () => {
   test("unify if clauses", () => {
     const [types] = tc(
       `
-    type Bool { True }
+    enum Bool { True }
     pub let f = fn x {
       if True {
         0
@@ -553,7 +553,7 @@ describe("type hints", () => {
   test("type hints of fns are used by typechecker", () => {
     const [types, errs] = tc(
       `
-        type T { C }
+        enum T { C }
         @type () -> T
         pub let x = fn { 42 }
         `,
@@ -807,10 +807,10 @@ describe("traits", () => {
     const [, errs] = tc(
       `
         
-      @extern
+        @extern
         @type (a) -> a where a: Eq
         let take_eq
-        type MyType {
+        enum MyType {
           Singleton
         }
 
@@ -830,7 +830,7 @@ describe("traits", () => {
         @type (a) -> a where a: Eq
         let take_eq
 
-        pub(..) type MyType {
+        pub(..) enum MyType {
           Singleton,
           Box(NotEq)
         }
@@ -846,14 +846,13 @@ describe("traits", () => {
   test("derives Eq even when constructors have arguments that derive Eq", () => {
     const [, errs] = tc(
       `
-        type EqType { }
-
+        enum EqType { }
         
         @extern
         @type (a) -> a where a: Eq
         let take_eq
 
-        pub(..) type MyType {
+        pub(..) enum MyType {
           Singleton,
           Box(EqType)
         }
@@ -873,7 +872,7 @@ describe("traits", () => {
         @type (a) -> a where a: Eq
         let take_eq
 
-        pub(..) type MyType<a> {
+        pub(..) enum MyType<a> {
           Box(a)
         }
 
@@ -898,9 +897,9 @@ describe("traits", () => {
         @type (a) -> a where a: Eq
         let take_eq
 
-        type IsEq { }
+        enum IsEq { }
 
-        pub(..) type Option<a> {
+        pub(..) enum Option<a> {
           Some(a),
           None,
         }
@@ -925,7 +924,7 @@ describe("traits", () => {
         @type (a) -> a where a: Eq
         let take_eq
 
-        pub(..) type Rec<a> {
+        pub(..) enum Rec<a> {
           End,
           Nest(Rec<a>),
         }
@@ -940,13 +939,13 @@ describe("traits", () => {
   test("derives in self-recursive types (nested)", () => {
     const [, errs] = tc(
       `
-        type Box<a> { Box(a) }
+        enum Box<a> { Box(a) }
         
         @extern
         @type (a) -> a where a: Eq
         let take_eq
 
-        pub(..) type Rec<a> {
+        pub(..) enum Rec<a> {
           End,
           Nest(Box<Rec<a>>),
         }
@@ -1000,7 +999,7 @@ describe("traits", () => {
           @extern
           @type (a) -> a where a: Eq
           let take_eq
-          type EqT { EqT }
+          enum EqT { EqT }
   
           struct MyType {
             x: EqT
@@ -1068,7 +1067,7 @@ describe("traits", () => {
       // TODO assertion
       const [, errs] = tc(
         `
-          type Option<a> { None, Some(a) }
+          enum Option<a> { None, Some(a) }
 
           
           @extern
@@ -1096,14 +1095,14 @@ describe("traits", () => {
   test("fails to derives in self-recursive types when not derivable (nested)", () => {
     const [, errs] = tc(
       `
-        type Box<a> { Box(a) }
+        enum Box<a> { Box(a) }
         
         @extern
         @type (a) -> a where a: Eq
         let take_eq
 
         extern type NotEq
-        pub(..) type Rec<a> {
+        pub(..) enum Rec<a> {
           End,
           Nest(Box<Rec<a>>, NotEq),
         }
@@ -1137,7 +1136,7 @@ describe("traits", () => {
 
   test("forbid ambiguous instantiations (2)", () => {
     const [, errs] = tc(`
-      type String {}
+      enum String {}
       
       @extern
       @type (a) -> String where a: Show
@@ -1203,10 +1202,10 @@ describe("traits", () => {
   test("repro", () => {
     const [, errs] = tc(
       `
-      type List<a> { Nil, Cons(a, List<a>) }
+      enum List<a> { Nil, Cons(a, List<a>) }
 
-      type Bool { True, False }
-      type Option<a> { None, Some(a) }
+      enum Bool { True, False }
+      enum Option<a> { None, Some(a) }
 
       
       @extern
@@ -1367,7 +1366,7 @@ describe("custom types", () => {
     @type X
     pub let x
 
-    type T { }
+    enum T { }
     @type (T) -> X 
     pub let f = fn _ { x }
   `,
@@ -1382,7 +1381,7 @@ describe("custom types", () => {
 
   test("handles constructor without args nor params", () => {
     const [types, errs] = tc(`
-    type T { C }
+    enum T { C }
     pub let c = C
   `);
 
@@ -1395,7 +1394,7 @@ describe("custom types", () => {
   test("generalize type constructors", () => {
     const [types, errs] = tc(
       `
-      type Box<a> {
+      enum Box<a> {
         Box(a),
         Nested(Box<a>)
       }
@@ -1416,7 +1415,7 @@ describe("custom types", () => {
     const [types, errs] = tc(
       `
     extern type Int
-    type T { C(Int) }
+    enum T { C(Int) }
     pub let c = C
   `,
     );
@@ -1431,8 +1430,8 @@ describe("custom types", () => {
     const [types, errs] = tc(
       `
     extern type Int
-    type Option<a> { }
-    type T {
+    enum Option<a> { }
+    enum T {
       C(Option<Int>, Int)
     }
     pub let c = C
@@ -1448,10 +1447,10 @@ describe("custom types", () => {
   test("handles constructor wrapping a function", () => {
     const [types, errs] = tc(
       `
-    type A {}
-    type B {}
-    type C {}
-    type T {
+    enum A {}
+    enum B {}
+    enum C {}
+    enum T {
       C((A, B) -> C)
     }
     pub let c = C
@@ -1467,7 +1466,7 @@ describe("custom types", () => {
   test("handles types that do not exist", () => {
     const [, errs] = tc(
       `
-    type T {
+    enum T {
       C(NotFound)
     }
   `,
@@ -1480,9 +1479,9 @@ describe("custom types", () => {
   test("checks arity in constructors", () => {
     const [, errs] = tc(
       `  
-      type T<a> { }
+      enum T<a> { }
 
-      type T1<a, b> {
+      enum T1<a, b> {
         C(T<a, b>)
       }
     `,
@@ -1499,8 +1498,8 @@ describe("custom types", () => {
   test("add types to the type pool", () => {
     const [, errs] = tc(
       `
-      type A {}
-      type B { C(A) }
+      enum A {}
+      enum B { C(A) }
   `,
     );
 
@@ -1510,7 +1509,7 @@ describe("custom types", () => {
   test("handles parametric types", () => {
     const [types, errs] = tc(
       `
-        type Box<a, b> { C }
+        enum Box<a, b> { C }
         pub let a = C
   `,
     );
@@ -1524,7 +1523,7 @@ describe("custom types", () => {
   test("allows using parametric types in constructors", () => {
     const [types, errs] = tc(
       `
-        type T<a, b> { C(b) }
+        enum T<a, b> { C(b) }
         pub let a = C
         pub let b = C(1)
   `,
@@ -1540,7 +1539,7 @@ describe("custom types", () => {
   test("forbids unbound type params", () => {
     const [, errs] = tc(
       `
-        type T { C(a) }
+        enum T { C(a) }
   `,
     );
 
@@ -1551,7 +1550,7 @@ describe("custom types", () => {
   test("doesn't allow shadowing type params", () => {
     const [, errs] = tc(
       `
-        type Box<a, a> { }
+        enum Box<a, a> { }
   `,
     );
 
@@ -1562,7 +1561,7 @@ describe("custom types", () => {
   test("prevents catchall to be used in type args", () => {
     const [, errs] = tc(
       `
-        type T { C(_) }
+        enum T { C(_) }
   `,
     );
 
@@ -1573,7 +1572,7 @@ describe("custom types", () => {
   test("allows self-recursive type", () => {
     const [, errs] = tc(
       `
-        type T { C(T) }
+        enum T { C(T) }
       `,
     );
 
@@ -1583,8 +1582,8 @@ describe("custom types", () => {
   test("allows mutually recursive type", () => {
     const [, errs] = tc(
       `
-        type A { A(B) }
-        type B { B(A) }
+        enum A { A(B) }
+        enum B { B(A) }
       `,
     );
 
@@ -1924,7 +1923,7 @@ describe("struct", () => {
   test("allow creating structs", () => {
     const [types, errs] = tc(
       `
-        type X { X }
+        enum X { X }
 
         pub struct Struct {
           x: X
@@ -2071,7 +2070,7 @@ describe("struct", () => {
   test("typecheck fields of wrong type", () => {
     const [types, errs] = tc(
       `
-        type X {  }
+        enum X {  }
         struct Struct {
           field: X,
         }
@@ -2223,7 +2222,7 @@ describe("pattern matching", () => {
 
   test("infers matched type when there are no args", () => {
     const [types, errs] = tc(`
-      type T { C }
+      enum T { C }
 
       pub let f = fn x {
         match x {
@@ -2241,7 +2240,7 @@ describe("pattern matching", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub(..) type T { T }
+      pub(..) enum T { T }
     `,
     );
 
@@ -2269,8 +2268,8 @@ describe("pattern matching", () => {
   test("infers matched type when there are concrete args", () => {
     const [types, errs] = tc(
       `
-      type Bool { }
-      type T { C(Bool) }
+      enum Bool { }
+      enum T { C(Bool) }
 
       pub let f = fn x {
         match x {
@@ -2289,7 +2288,7 @@ describe("pattern matching", () => {
   test("typechecks constructor args", () => {
     const [, errs] = tc(
       `
-      type T<a> { C(a, a, a) }
+      enum T<a> { C(a, a, a) }
 
       pub let f = fn x {
         match x {
@@ -2309,11 +2308,11 @@ describe("pattern matching", () => {
   test("infers nested types in p match", () => {
     const [types, errs] = tc(
       `
-      type Bool {
+      enum Bool {
         True,
       }
 
-      type Box<a> {
+      enum Box<a> {
         Make(a),
       }
 
@@ -2335,7 +2334,7 @@ describe("pattern matching", () => {
     const [types, errs] = tc(
       `
 
-      type Option<a> {
+      enum Option<a> {
         None,
         Some(a),
       }
@@ -2358,8 +2357,8 @@ describe("pattern matching", () => {
   test("does not allow a type to be defined twice in the same module", () => {
     const [, errs] = tc(
       `
-      type T {}
-      type T {}
+      enum T {}
+      enum T {}
     `,
     );
 
@@ -2373,8 +2372,8 @@ describe("pattern matching", () => {
   test("does not allow duplicate constructor", () => {
     const [, errs] = tc(
       `
-      type T1 { X }
-      type T2 { X }
+      enum T1 { X }
+      enum T2 { X }
     `,
     );
 
@@ -2390,14 +2389,14 @@ describe("pattern matching", () => {
       "pkg",
       "T1",
       unsafeParse(`
-        pub(..) type T1 { X }
+        pub(..) enum T1 { X }
       `),
     );
 
     const [, errs] = tc(
       `
       import T1.{T1(..)}
-      type T2 { X }
+      enum T2 { X }
     `,
       { T1 },
     );
@@ -2416,7 +2415,7 @@ describe("pattern matching", () => {
       "pkg",
       "T1",
       unsafeParse(`
-        pub(..) type T1 { X }
+        pub(..) enum T1 { X }
       `),
     );
 
@@ -2452,7 +2451,7 @@ describe("pattern matching", () => {
 
   test("use pattern matching bound vars in nested types", () => {
     const [types, errs] = tc(`
-      type Boxed<a> { Boxed(a) }
+      enum Boxed<a> { Boxed(a) }
 
       pub let x = match Boxed(42) {
         Boxed(a) => a
@@ -2467,7 +2466,7 @@ describe("pattern matching", () => {
 
   test("return error on wrong matched type", () => {
     const [, errs] = tc(`
-      type X { X }
+      enum X { X }
       pub let v = match 42 {
         X => 0
       }
@@ -2493,7 +2492,7 @@ describe("pattern matching", () => {
   test("infers fn match param type", () => {
     const [types, errs] = tc(`
     extern type T
-    type Box { Boxed(T) }
+    enum Box { Boxed(T) }
 
     pub let f = fn Boxed(n) { n }
   `);
@@ -2507,7 +2506,7 @@ describe("pattern matching", () => {
   test("infers let match type", () => {
     const [types, errs] = tc(`
     extern type T
-    type Box { Boxed(T) }
+    enum Box { Boxed(T) }
 
     pub let f = fn box {
       let Boxed(n) = box;
@@ -2540,7 +2539,7 @@ describe("pattern matching", () => {
 
   test("force exhaustive match in let binding when there are many constructors", () => {
     const [, errs] = tc(`
-    type Union { A, B }
+    enum Union { A, B }
 
     pub let f = {
       let A = A;
@@ -2554,7 +2553,7 @@ describe("pattern matching", () => {
 
   test("force exhaustive match in fns binding when there are many constructors", () => {
     const [, errs] = tc(`
-    type Union { A, B }
+    enum Union { A, B }
 
     pub let f = fn A { 0 }
   `);
@@ -2566,7 +2565,7 @@ describe("pattern matching", () => {
   describe("exhastivness check", () => {
     test("simple", () => {
       const [, errs] = tc(`
-      type Union { A, B }
+      enum Union { A, B }
 
       pub let f = match A {
         A => 0,
@@ -2579,8 +2578,8 @@ describe("pattern matching", () => {
 
     test("with params (non exhaustive)", () => {
       const [, errs] = tc(`
-      type Union { A, B }
-      type Opt<a> { Some(a), None }
+      enum Union { A, B }
+      enum Opt<a> { Some(a), None }
 
       pub let f = match None {
         Some(A) => 0,
@@ -2594,8 +2593,8 @@ describe("pattern matching", () => {
 
     test("with params (exhaustive)", () => {
       const [, errs] = tc(`
-      type Union { A, B }
-      type Opt<a> { Some(a), None }
+      enum Union { A, B }
+      enum Opt<a> { Some(a), None }
 
       pub let f = match None {
         Some(A) => 0,
@@ -2609,8 +2608,8 @@ describe("pattern matching", () => {
 
     test("catchall prevens exhastive match err", () => {
       const [, errs] = tc(`
-      type Union { A, B }
-      type Opt<a> { Some(a), None }
+      enum Union { A, B }
+      enum Opt<a> { Some(a), None }
  
       pub let f = match None {
         Some(A) => 0,
@@ -2624,9 +2623,9 @@ describe("pattern matching", () => {
 
     test("on pair (non-exhaustive)", () => {
       const [, errs] = tc(`
-      type Union { A, B }
-      type Opt<a> { Some(a), None }
-      type Pair<a, b> { Pair(a, b) }
+      enum Union { A, B }
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
  
       pub let f = fn pair {
         match pair {
@@ -2643,9 +2642,9 @@ describe("pattern matching", () => {
 
     test("on pair (exhaustive)", () => {
       const [, errs] = tc(`
-      type Union { A, B }
-      type Opt<a> { Some(a), None }
-      type Pair<a, b> { Pair(a, b) }
+      enum Union { A, B }
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
  
       pub let f = fn pair {
         match pair {
@@ -2706,8 +2705,8 @@ describe("pattern matching", () => {
 
       const [, errs] = tc(
         `
-      type Opt<a> { Some(a), None }
-      type Pair<a, b> { Pair(a, b) }
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
       pub let f = fn pair {
         match pair {
           Pair(0, Some(_)) => "a",
@@ -2731,8 +2730,8 @@ describe("pattern matching", () => {
 
       const [, errs] = tc(
         `
-      type Opt<a> { Some(a), None }
-      type Pair<a, b> { Pair(a, b) }
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
       pub let f = fn pair {
         match pair {
           Pair(0, Some(_)) => "a",
@@ -2754,8 +2753,8 @@ describe("pattern matching", () => {
 
       const [, errs] = tc(
         `
-      type Opt<a> { Some(a), None }
-      type Pair<a, b> { Pair(a, b) }
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
       pub let f = fn pair {
         match pair {
           Pair(0, Some(_)) => "a",
@@ -2805,7 +2804,7 @@ describe("prelude", () => {
   test("typechecks extern values", () => {
     const [types, errs] = tc(
       `
-     type Unit { }
+     enum Unit { }
 
      @extern
      @type Unit
@@ -2911,7 +2910,7 @@ describe("modules", () => {
       "pkg",
       "T1",
       unsafeParse(`
-        pub(..) type T1 { X }
+        pub(..) enum T1 { X }
       `),
     );
 
@@ -2937,7 +2936,7 @@ describe("modules", () => {
       "pkg",
       "T1",
       unsafeParse(`
-        pub(..) type T1 { X }
+        pub(..) enum T1 { X }
       `),
     );
 
@@ -2964,14 +2963,14 @@ describe("modules", () => {
       "pkg",
       "T1",
       unsafeParse(`
-        pub(..) type T1 { X }
+        pub(..) enum T1 { X }
       `),
     );
 
     const [, errs] = tc(
       `
       import T1.{T1(..)}
-      type T1 {}
+      enum T1 {}
 
 
       @extern
@@ -3019,7 +3018,7 @@ describe("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub(..) type Box { X }
+      pub(..) enum Box { X }
       pub let x = 42
     `,
     );
@@ -3052,7 +3051,7 @@ describe("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub type MyType {}
+      pub enum MyType {}
     `,
     );
 
@@ -3084,7 +3083,7 @@ describe("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub(..) type MyType { A }
+      pub(..) enum MyType { A }
     `,
     );
 
@@ -3118,8 +3117,8 @@ describe("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub(..) type T { T }
-      pub(..) type Boxed { Boxed(T) }
+      pub(..) enum T { T }
+      pub(..) enum Boxed { Boxed(T) }
     `,
     );
 
@@ -3153,7 +3152,7 @@ describe("modules", () => {
   });
 
   test("detects unused types", () => {
-    const [A] = tcProgram("A", `pub type T { }`);
+    const [A] = tcProgram("A", `pub enum T { }`);
     const [, errs] = tc(`import A.{T}`, { A });
 
     expect(errs).toHaveLength(1);
@@ -3164,7 +3163,7 @@ describe("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub(..) type MyType { Constr }
+      pub(..) enum MyType { Constr }
     `,
     );
 
@@ -3205,7 +3204,7 @@ describe("modules", () => {
   });
 
   test("allow importing types (unqualified)", () => {
-    const [Mod] = tcProgram("Mod", `pub type Example { }`);
+    const [Mod] = tcProgram("Mod", `pub enum Example { }`);
 
     const [types, errs] = tc(
       `
@@ -3225,7 +3224,7 @@ describe("modules", () => {
   });
 
   test("allow importing types (qualified)", () => {
-    const [Mod] = tcProgram("Mod", `pub type Example { }`);
+    const [Mod] = tcProgram("Mod", `pub enum Example { }`);
     const [types, errs] = tc(
       `
       import Mod
@@ -3244,7 +3243,7 @@ describe("modules", () => {
   });
 
   test("allow using imported types in match patterns", () => {
-    const [Mod] = tcProgram("Mod", `pub(..) type T { Constr }`);
+    const [Mod] = tcProgram("Mod", `pub(..) enum T { Constr }`);
     const [, errs] = tc(
       `
       import Mod.{T(..)}
@@ -3280,7 +3279,7 @@ describe("modules", () => {
   });
 
   test("error when importing a type the is not pub", () => {
-    const [Mod] = tcProgram("Mod", `type PrivateType {}`);
+    const [Mod] = tcProgram("Mod", `enum PrivateType {}`);
     const [, errs] = tc(`import Mod.{PrivateType}`, { Mod });
 
     expect(errs).toEqual([
@@ -3325,7 +3324,7 @@ describe("modules", () => {
   });
 
   test("qualified imports should not work on priv constructors", () => {
-    const [Mod] = tcProgram("Mod", `pub type T { A }`);
+    const [Mod] = tcProgram("Mod", `pub enum T { A }`);
     const [, errs] = tc(
       `
       import Mod
@@ -3339,7 +3338,7 @@ describe("modules", () => {
   });
 
   test("qualified imports should not work on priv types", () => {
-    const [Mod] = tcProgram("Mod", `type PrivateType {}`);
+    const [Mod] = tcProgram("Mod", `enum PrivateType {}`);
     const [, errs] = tc(
       `
       import Mod
@@ -3368,7 +3367,7 @@ describe("modules", () => {
 
   test("error when expose impl is run on a opaque type", () => {
     // Note it is `pub` instead of `pub(..)`
-    const [Mod] = tcProgram("Mod", `pub type T {}`);
+    const [Mod] = tcProgram("Mod", `pub enum T {}`);
     const [, errs] = tc(`import Mod.{T(..)}`, { Mod });
 
     expect(errs).toEqual([
@@ -3389,11 +3388,11 @@ describe("modules", () => {
   });
 
   test("types from different modules with the same name aren't treated the same", () => {
-    const [Mod] = tcProgram("Mod", `pub(..) type T { Constr }`);
+    const [Mod] = tcProgram("Mod", `pub(..) enum T { Constr }`);
     const [, errs] = tc(
       `
       import Mod
-      type T { Constr }
+      enum T { Constr }
 
       @type T
       pub let t = Mod.Constr

@@ -487,7 +487,7 @@ describe("fn", () => {
 
   test("do not let GEN values be shadowed", () => {
     const out = compileSrc(`
-      type Box<a> { Box(a) }
+      enum Box<a> { Box(a) }
       let x = fn Box(a) {
         fn Box(_) {
           a
@@ -783,7 +783,7 @@ describe("TCO", () => {
 
   test("toplevel with match args", () => {
     const out = compileSrc(`
-      type Box { Box(a) }
+      enum Box { Box(a) }
 
       let loop = fn x, Box(y) {
         loop(x + 1, Box(y))
@@ -835,7 +835,7 @@ describe("TCO", () => {
   test("in a pattern matching expr", () => {
     const out = compileSrc(
       `
-      type List<a> { Nil, Cons(a, List<a>) }
+      enum List<a> { Nil, Cons(a, List<a>) }
       pub let to_zero = fn lst {
         match lst {
           Nil => 0,
@@ -873,7 +873,7 @@ describe("TCO", () => {
   test("Example: List.reduce", () => {
     const out = compileSrc(
       `
-      type List<a> { Nil, Cons(a, List<a>) }
+      enum List<a> { Nil, Cons(a, List<a>) }
       pub let reduce = fn lst, acc, f {
         match lst {
           Nil => acc,
@@ -972,7 +972,7 @@ describe("ADTs", () => {
       "pkg",
       "Dependency",
       `
-        pub(..) type Pair<a, b> {
+        pub(..) enum Pair<a, b> {
           Pair(a, b),
         }
     `,
@@ -992,7 +992,7 @@ describe("ADTs", () => {
   test("do not emit Bool repr", () => {
     const out = compileSrc(
       `
-      type Bool { True, False }
+      enum Bool { True, False }
     `,
       { ns: "Bool", package_: CORE_PACKAGE },
     );
@@ -1001,7 +1001,7 @@ describe("ADTs", () => {
 
   // whenever no variant has any argumuments, you can represent it with numbers
   test("create ADTs with zero args", () => {
-    const out = compileSrc(`type T { X, Y, Z }`);
+    const out = compileSrc(`enum T { X, Y, Z }`);
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$X = 0;
@@ -1012,7 +1012,7 @@ describe("ADTs", () => {
 
   test("create unboxed ADTs when there is exactly one variant with exactly one arg", () => {
     const out = compileSrc(`
-      type T { X(Int) }
+      enum T { X(Int) }
     `);
 
     expect(out).toMatchInlineSnapshot(`
@@ -1022,7 +1022,7 @@ describe("ADTs", () => {
 
   test("create ADTs when at least a variant has one arg", () => {
     const out = compileSrc(`
-        type T { X, Y(Int) }
+        enum T { X, Y(Int) }
     `);
 
     expect(out).toMatchInlineSnapshot(`
@@ -1037,7 +1037,7 @@ describe("ADTs", () => {
   });
 
   test("allow custom types with one arg", () => {
-    const out = compileSrc(`type T { X(Int), Y(Bool) }`);
+    const out = compileSrc(`enum T { X(Int), Y(Bool) }`);
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$X = _0 => ({
@@ -1052,7 +1052,7 @@ describe("ADTs", () => {
   });
 
   test("allow custom types with two args", () => {
-    const out = compileSrc(`type T { X(Int, Int) }`);
+    const out = compileSrc(`enum T { X(Int, Int) }`);
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$X = (_0, _1) => ({
@@ -1066,7 +1066,7 @@ describe("ADTs", () => {
   test("inline ctor call with default repr", () => {
     const out = compileSrc(
       `
-      type Pair<a, b> {
+      enum Pair<a, b> {
         First,
         Pair(a, b),
       }
@@ -1097,7 +1097,7 @@ describe("ADTs", () => {
   test("allow custom types with zero args", () => {
     const out = compileSrc(
       `
-       pub(..) type MyType { Variant(Int) }
+       pub(..) enum MyType { Variant(Int) }
   
       let x = Variant(42)
     `,
@@ -1111,7 +1111,7 @@ describe("ADTs", () => {
   test("enum repr", () => {
     const out = compileSrc(
       `
-       pub(..) type MyType {
+       pub(..) enum MyType {
           T0,
           T1,
         }
@@ -1134,7 +1134,7 @@ describe("list literal", () => {
       CORE_PACKAGE,
       "List",
       `
-        pub type List<a> {
+        pub enum List<a> {
           Nil,
           Cons(a, List<a>),
         }
@@ -1383,7 +1383,7 @@ describe("modules", () => {
   test("variants from modules different than Main are namespaced", () => {
     const out = compileSrc(
       `
-      type MyType { C1, C2(Int) }
+      enum MyType { C1, C2(Int) }
       let c2_example = C2(42)
     `,
       { ns: "MyModule" },
@@ -1486,7 +1486,7 @@ describe("modules", () => {
     const mod = typecheckSource(
       "pkg",
       "ExampleModule",
-      `pub(..) type T { Constr }`,
+      `pub(..) enum T { Constr }`,
     );
     const out = compileSrc(
       `
@@ -1505,7 +1505,7 @@ describe("modules", () => {
     const mod = typecheckSource(
       "pkg",
       "ExampleModule",
-      `pub(..) type T { Constr }`,
+      `pub(..) enum T { Constr }`,
     );
     const out = compileSrc(
       `
@@ -1543,7 +1543,7 @@ describe("pattern matching", () => {
 
   test("pattern matching an enum repr", () => {
     const out = compileSrc(`
-    type T {
+    enum T {
       A,
       B,
     }
@@ -1570,7 +1570,7 @@ describe("pattern matching", () => {
 
   test("pattern matching (flat)", () => {
     const out = compileSrc(`
-    type T {
+    enum T {
       A,
       B(Int),
     }
@@ -1606,7 +1606,7 @@ describe("pattern matching", () => {
 
   test("pattern match on unboxed variant", () => {
     const out = compileSrc(`
-    type T {
+    enum T {
       A(Int),
     }
   
@@ -1744,7 +1744,7 @@ describe("pattern matching", () => {
     const out = compileSrc(
       `
 
-    type Unit { Unit }
+    enum Unit { Unit }
     let x = match Unit {
       Unit => 0,
     }
@@ -1773,7 +1773,7 @@ describe("pattern matching", () => {
   test("pattern matching nested value", () => {
     const out = compileSrc(
       `
-  type T {
+  enum T {
     C(Bool),
   }
 
@@ -1812,7 +1812,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in tail position (match constructor)", () => {
     const out = compileSrc(`
-    type Box { Box(Int) }
+    enum Box { Box(Int) }
     
     let f = fn {
       match Box(42) {
@@ -1849,17 +1849,17 @@ describe("pattern matching", () => {
 
   test("eval complex match", () => {
     const out = compileSrc(`
-      type Option<a> {
+      enum Option<a> {
         None,
         Some(a),
       }
       
-      type Result<a, b> {
+      enum Result<a, b> {
         Ok(a),
         Err(b),
       }
       
-      type Data {
+      enum Data {
         A,
         B(Int),
         Z(Option<String>, Result<Option<String>, String>),
@@ -1881,7 +1881,7 @@ describe("pattern matching", () => {
 
   test("matching ident", () => {
     const out = compileSrc(`
-    type Box { Box(Int) }
+    enum Box { Box(Int) }
 
     let f = fn b {
       match b {
@@ -1898,7 +1898,7 @@ describe("pattern matching", () => {
 
   test("compiling let match before desugaring", () => {
     const out = compileSrc(`
-    type Box { Box(Int) }
+    enum Box { Box(Int) }
 
     let f = fn b {
       match b {
@@ -1916,7 +1916,7 @@ describe("pattern matching", () => {
 
   test("compiling let match", () => {
     const out = compileSrc(`
-    type Box { Box(Int) }
+    enum Box { Box(Int) }
 
     let f = fn b {
       let Box(a) = b;
@@ -1932,7 +1932,7 @@ describe("pattern matching", () => {
 
   test("compiling let within let match", () => {
     const out = compileSrc(`
-    type Box { Box(Int) }
+    enum Box { Box(Int) }
 
     let f = fn b {
       let Box(a) = {
@@ -1954,7 +1954,7 @@ describe("pattern matching", () => {
 
   test("compiling nested let match", () => {
     const out = compileSrc(`
-    type Pair { Pair(Int, Int) }
+    enum Pair { Pair(Int, Int) }
 
     let f = fn b {
       let Pair(_, Pair(a, _)) = b;
@@ -1974,7 +1974,7 @@ describe("pattern matching", () => {
 
   test("compiling fn match", () => {
     const out = compileSrc(`
-    type Box { Box(Int) }
+    enum Box { Box(Int) }
 
     let f = fn x, Box(a), y { a }
   `);
@@ -1987,7 +1987,7 @@ describe("pattern matching", () => {
 
   test("statements inside p match", () => {
     const out = compileSrc(`
-    type Pair<a, b> { Pair(a, b), None }
+    enum Pair<a, b> { Pair(a, b), None }
 
     let f = fn x {
       match x {
@@ -2240,7 +2240,7 @@ describe("traits compilation", () => {
       let show
 
 
-      type AlwaysShow<a> { X }
+      enum AlwaysShow<a> { X }
       
       let x = show(X)
     `);
@@ -2259,7 +2259,7 @@ describe("traits compilation", () => {
       let show
 
 
-      type Option<a, b> { Some(b) }
+      enum Option<a, b> { Some(b) }
       
       let x = show(Some(42))
     `,
@@ -2281,8 +2281,8 @@ describe("traits compilation", () => {
       let show
 
 
-      type Tuple2<a, b> { Tuple2(a, b) }
-      type Option<a> { Some(a) }
+      enum Tuple2<a, b> { Tuple2(a, b) }
+      enum Option<a> { Some(a) }
       
       let x = show(Tuple2(Some(42), 2))
     `,
@@ -2306,7 +2306,7 @@ describe("traits compilation", () => {
 
   test("trait deps in args when param aren't traits dependencies", () => {
     const out = compileSrc(`
-      type IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
+      enum IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
 
       @extern
       @type IsShow<a> where a: Show
@@ -2323,7 +2323,7 @@ describe("traits compilation", () => {
 
   test("trait deps in args when param aren traits dependencies", () => {
     const out = compileSrc(`
-      type Option<a, b, c> { Some(b) } 
+      enum Option<a, b, c> { Some(b) } 
 
       @extern
       @type Option<a, b, c> where b: Show
@@ -2345,7 +2345,7 @@ describe("traits compilation", () => {
       let show
 
 
-      type Option<a> {
+      enum Option<a> {
         Some(a),
         None,
       }
@@ -2419,7 +2419,7 @@ describe("traits compilation", () => {
     let (==)
 
 
-    type T { C(Int) }
+    enum T { C(Int) }
     let f = C(0) == C(1)
 `,
       { ns: "Bool", package_: CORE_PACKAGE },
@@ -2526,7 +2526,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type DoNotDerive
-      type T { X(DoNotDerive) }
+      enum T { X(DoNotDerive) }
     `,
         { allowDeriving: ["Eq"] },
       );
@@ -2538,7 +2538,7 @@ describe("deriving", () => {
     test("no variants", () => {
       const out = compileSrc(
         `
-      type T { }
+      enum T { }
     `,
         { allowDeriving: ["Eq"] },
       );
@@ -2548,7 +2548,7 @@ describe("deriving", () => {
     test("singleton without args", () => {
       const out = compileSrc(
         `
-      type T { X }
+      enum T { X }
     `,
         { allowDeriving: ["Eq"] },
       );
@@ -2562,7 +2562,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
-      type T { X(MyInt, MyInt) }
+      enum T { X(MyInt, MyInt) }
     `,
         {
           allowDeriving: ["Eq"],
@@ -2583,7 +2583,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
-      type T { X(MyInt) }
+      enum T { X(MyInt) }
     `,
         {
           allowDeriving: ["Eq"],
@@ -2599,7 +2599,7 @@ describe("deriving", () => {
     test("singleton with var args", () => {
       const out = compileSrc(
         `
-      type T<a, b, c, d> { X(b) }
+      enum T<a, b, c, d> { X(b) }
     `,
         { allowDeriving: ["Eq"] },
       );
@@ -2614,7 +2614,7 @@ describe("deriving", () => {
         `
       extern type IntZ
       extern type BoolZ
-      type T { X(IntZ, BoolZ) }
+      enum T { X(IntZ, BoolZ) }
     `,
         {
           allowDeriving: ["Eq"],
@@ -2637,7 +2637,7 @@ describe("deriving", () => {
     test("compare unboxed when repr is enum", () => {
       const out = compileSrc(
         `
-      type T { X, Y, Z }
+      enum T { X, Y, Z }
     `,
         { allowDeriving: ["Eq"] },
       );
@@ -2654,7 +2654,7 @@ describe("deriving", () => {
         `
       extern type Num
       extern type Flag
-      type T<a> {
+      enum T<a> {
         A(Num),
         B(a, Num),
         C,
@@ -2701,9 +2701,9 @@ describe("deriving", () => {
     test("parametric arg", () => {
       const out = compileSrc(
         `
-      type X<a> { X(a) }
+      enum X<a> { X(a) }
 
-      type Y<b> {
+      enum Y<b> {
         Y(X<b>),
       }
     `,
@@ -2723,7 +2723,7 @@ describe("deriving", () => {
     test("recursive data structures", () => {
       const out = compileSrc(
         `
-      type List<a> {
+      enum List<a> {
         None,
         Cons(a, List<a>),
       }
@@ -2836,7 +2836,7 @@ describe("deriving", () => {
     test("field with parametric arg", () => {
       const out = compileSrc(
         `
-      type X<a> { X(a) }
+      enum X<a> { X(a) }
 
       struct Y<param> {
         field: X<param>,
@@ -2878,7 +2878,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type DoNotDerive
-      type T { X(DoNotDerive) }
+      enum T { X(DoNotDerive) }
     `,
         { allowDeriving: ["Show"] },
       );
@@ -2890,7 +2890,7 @@ describe("deriving", () => {
     test("no variants", () => {
       const out = compileSrc(
         `
-      type T {  }
+      enum T {  }
     `,
         { allowDeriving: ["Show"] },
       );
@@ -2900,7 +2900,7 @@ describe("deriving", () => {
     test("singleton without args", () => {
       const out = compileSrc(
         `
-      type T { X }
+      enum T { X }
     `,
         { allowDeriving: ["Show"] },
       );
@@ -2914,7 +2914,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
-      type T { X(MyInt, MyInt) }
+      enum T { X(MyInt, MyInt) }
     `,
         {
           ns: "Main",
@@ -2937,7 +2937,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
-      type T { X(MyInt) }
+      enum T { X(MyInt) }
     `,
         {
           allowDeriving: ["Show"],
@@ -2955,7 +2955,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
-      type T { X(MyInt) }
+      enum T { X(MyInt) }
     `,
         {
           allowDeriving: ["Show"],
@@ -2979,7 +2979,7 @@ describe("deriving", () => {
     test("single variant with var arg", () => {
       const out = compileSrc(
         `
-      type T<a, b, c, d> { X(c) }
+      enum T<a, b, c, d> { X(c) }
     `,
         { allowDeriving: ["Show"] },
       );
@@ -2994,7 +2994,7 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
-      type T<a, b> {
+      enum T<a, b> {
         A,
         B(MyInt, a),
         C(b),
@@ -3035,9 +3035,9 @@ describe("deriving", () => {
     test("parametric arg", () => {
       const out = compileSrc(
         `
-      type X<a> { X(a) }
+      enum X<a> { X(a) }
 
-      type Y<b> {
+      enum Y<b> {
         Y(X<b>),
       }
     `,
@@ -3057,7 +3057,7 @@ describe("deriving", () => {
     test("recursive data structures", () => {
       const out = compileSrc(
         `
-      type Lst<a> {
+      enum Lst<a> {
         None,
         Cons(a, Lst<a>),
       }
@@ -3090,7 +3090,7 @@ describe("deriving", () => {
     test("handle special tuple syntax", () => {
       const out = compileSrc(
         `
-      type Tuple2<a, b> {
+      enum Tuple2<a, b> {
         Tuple2(a, b),
       }
     `,
@@ -3192,7 +3192,7 @@ describe("deriving", () => {
     test("parametric arg", () => {
       const out = compileSrc(
         `
-      type X<a> { X(a) }
+      enum X<a> { X(a) }
 
       struct Y<b> {
         field: X<b>,

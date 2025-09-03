@@ -46,13 +46,13 @@ test("Extract types documentation", () => {
     /// Comment
     extern pub type X
 
-    pub(..) type Y<x, y> {
+    pub(..) enum Y<x, y> {
       FirstVariant,
       SecondVariant(x, Arg),
       Rec(Y<y, Arg>),
     }
 
-    pub type Opaque { Constr }
+    pub enum Opaque { Constr }
   `;
 
   expect(parseExtractDocs(src)).toEqual<ModuleDoc>({

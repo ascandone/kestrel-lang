@@ -27,7 +27,7 @@ describe(errorInfoToString.name, () => {
 
   test("type error", () => {
     const src = `
-      type Custom {}
+      enum Custom {}
 
       @type Custom
       pub let x = "abc"

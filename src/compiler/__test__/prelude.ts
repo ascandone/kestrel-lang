@@ -129,7 +129,7 @@ const Bool = typecheckSourceRaw(
   CORE_PACKAGE,
   "Bool",
   `
-    pub(..) type Bool {
+    pub(..) enum Bool {
       True,
       False,
     }
