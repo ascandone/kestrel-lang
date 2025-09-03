@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { makeModuleId } from "./language-server";
+import { makeModuleId } from "./analysis-state";
 
 describe("makeModuleId", () => {
   test("no source dirs", () => {

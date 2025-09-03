@@ -14,7 +14,6 @@ import {
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { getConfigPackageName, readConfig } from "../config";
-import { LsState } from "../../language-server/language-server";
 import { readRawProject } from "../common";
 import { nestedMapGetOrPutDefault } from "../../common/defaultMap";
 import {
@@ -32,6 +31,7 @@ import {
   goToDefinitionOf,
   hoverOn,
   hoverToMarkdown,
+  AnalysisState,
 } from "../../analysis";
 import { format } from "../../format";
 import * as project from "../../typecheck/project";
@@ -47,7 +47,7 @@ export async function lspCmd() {
 
   const [rawProject, deps] = await readRawProject_(currentDirectory);
 
-  const state = new LsState(
+  const state = new AnalysisState(
     getConfigPackageName(config),
     currentDirectory,
     config["source-directories"],

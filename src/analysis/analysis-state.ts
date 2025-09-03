@@ -6,7 +6,7 @@ import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 
 export const DEBOUNCE_AMOUNT_MS = 150;
 
-export class LsState {
+export class AnalysisState {
   private timeoutToken?: NodeJS.Timeout;
   private readonly projectChecker: project.ProjectTypechecker;
 
