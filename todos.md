@@ -1,5 +1,7 @@
 ## Todos
 
+- feat: package manager
+- breaking: syntax changes
 - refactor: compare tvars by identity instead of by id
 - feat: improve implicit imports repr
   - no dummy ranges
@@ -17,14 +19,9 @@
 - test: test self-recursive let exprs (and prevent binding pollution and direct dependency)
 - refactor: treat constructor and ident as separate nodes
 - feat: add package and module to compilation output
-- feat: proper dependencies resolution
-- refactor: store traits dict in type def
-  - perf: do not invalidate the whole ast
 - test: test position of type errs
 - refactor: implement infixes as macros for normal extern functions
 - refactor: ditch the ".type" tagging convention, and use .eg. `_tag` instead
-
-- breaking: use @type annotation for type hints
 
 ### Done
 
@@ -35,3 +32,5 @@
 - feat: allow mutually recursive values
 - refactor: add package to named type repr
 - refactor: re-architecture compiler using IR
+- refactor: store traits dict in type def
+  - perf: do not invalidate the whole ast
