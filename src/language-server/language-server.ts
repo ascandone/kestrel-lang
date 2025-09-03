@@ -4,7 +4,7 @@ import * as project from "../typecheck/project";
 import { ErrorInfo, TypedModule } from "../typecheck";
 import { nestedMapGetOrPutDefault } from "../data/defaultMap";
 
-export const DEBOUNCE_AMOUNT_MS = 1_000;
+export const DEBOUNCE_AMOUNT_MS = 150;
 
 export class LsState {
   private timeoutInterval?: NodeJS.Timeout;
