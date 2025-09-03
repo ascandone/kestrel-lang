@@ -15,7 +15,7 @@ test("Extract values documentation", () => {
     pub let x = 1
 
     /// Extern value
-    extern pub let y: Fn(Bool) -> Int
+    extern pub let y: (Bool) -> Int
   `;
 
   expect(parseExtractDocs(src)).toEqual<ModuleDoc>({
@@ -30,7 +30,7 @@ test("Extract values documentation", () => {
       {
         type: "value",
         name: "y",
-        signature: "Fn(Bool) -> Int",
+        signature: "(Bool) -> Int",
         docComment: " Extern value\n",
       },
     ],

@@ -106,7 +106,7 @@ describe("global identifiers", () => {
 describe("function application", () => {
   test("function calls with no args", () => {
     const out = compileSrc(`
-      extern let f: Fn() -> a
+      extern let f: () -> a
       let y = f()
     `);
 
@@ -115,7 +115,7 @@ describe("function application", () => {
 
   test("function calls with args", () => {
     const out = compileSrc(`
-      extern let f: Fn(a, a) -> a
+      extern let f: (a, a) -> a
       let y = f(1, 2)
     `);
 
@@ -278,7 +278,7 @@ describe("let expressions", () => {
 
   test("two let as fn args, shadowing", () => {
     const out = compileSrc(`
-      extern let f: Fn(a, a) -> a
+      extern let f: (a, a) -> a
       let x = f(
         { let a = 0; a },
         { let a = 1; a },
@@ -312,7 +312,7 @@ describe("let expressions", () => {
 
   test("let inside arg of a function", () => {
     const out = compileSrc(`
-  extern let f: Fn(a) -> a
+  extern let f: (a) -> a
   let a = f({
     let x = 0;
     x
@@ -393,7 +393,7 @@ describe("fn", () => {
 
   test("fn as expr", () => {
     const out = compileSrc(`
-    extern let f: Fn(a) -> a
+    extern let f: (a) -> a
     let x = f(fn {
       1
     })
@@ -455,7 +455,7 @@ describe("fn", () => {
 
   test("two fns as args", () => {
     const out = compileSrc(`
-      extern let f: Fn(a) -> a
+      extern let f: (a) -> a
       let x = f(
         fn { 0 },
         fn { 1 },
@@ -527,7 +527,7 @@ describe("if expressions", () => {
   test("if within fn", () => {
     // TODO switch this to if-else syntax
     const out = compileSrc(`
-    extern let eq: Fn(a, a) -> Bool
+    extern let eq: (a, a) -> Bool
     let is_zero = fn n {
       if eq(n, 0) {
         "zero"
@@ -551,7 +551,7 @@ describe("if expressions", () => {
   test("nested ifs", () => {
     // TODO switch this to if-else syntax
     const out = compileSrc(`
-    extern let eq: Fn(a, a) -> Bool
+    extern let eq: (a, a) -> Bool
     let is_zero = fn n {
       if eq(n, 0) {
         "zero"
@@ -582,7 +582,7 @@ describe("if expressions", () => {
 
   test("let expr inside if condition", () => {
     const out = compileSrc(`
-    extern let is_zero: Fn(a) -> Bool
+    extern let is_zero: (a) -> Bool
 
     pub let x = if { let a = 42; is_zero(a) } {
         "a"
@@ -625,7 +625,7 @@ describe("if expressions", () => {
 
   test.skip("eval if", () => {
     const out = compileSrc(`
-      extern let eq: Fn(a, a) -> Bool
+      extern let eq: (a, a) -> Bool
       let is_zero = fn n {
         if n == 0 {
           "yes"
@@ -643,8 +643,8 @@ describe("if expressions", () => {
 
   test("ifs as expr", () => {
     const out = compileSrc(`
-    extern let eq: Fn(a, a) -> Bool
-    extern let f: Fn(a) -> a
+    extern let eq: (a, a) -> Bool
+    extern let f: (a) -> a
 
     let x = f(
       if eq(0, 1) {
@@ -681,7 +681,7 @@ describe("TCO", () => {
 
   test("does not apply inside application", () => {
     const out = compileSrc(`
-    extern let a: Fn(a) -> a
+    extern let a: (a) -> a
     let loop = fn {
       a(loop())
     }
@@ -766,7 +766,7 @@ describe("TCO", () => {
 
   test("inside if", () => {
     const out = compileSrc(`
-      extern let (==): Fn(a, a) -> Bool
+      extern let (==): (a, a) -> Bool
       let to_zero = fn x {
         if x == 0 {
           x
@@ -1261,7 +1261,7 @@ describe("structs", () => {
         z: Int,
       }
 
-      extern let get_original: Fn() -> Point3D
+      extern let get_original: () -> Point3D
       pub let update_y = Point3D {
         y: 42,
         ..get_original()
@@ -1781,7 +1781,7 @@ describe("pattern matching", () => {
 
   test("pattern matching as fn arg", () => {
     const out = compileSrc(`
-    extern let f: Fn(a) -> a
+    extern let f: (a) -> a
     let x = f(match 42 {
       _ => 0,
     })
@@ -1974,7 +1974,7 @@ describe("traits compilation", () => {
     const out = compileSrc(`
       extern let p: a where a: Show
 
-      extern let take_int: Fn(Int) -> a
+      extern let take_int: (Int) -> a
 
       let x = take_int(p)
     `);
@@ -1986,7 +1986,7 @@ describe("traits compilation", () => {
   test("applying with concrete types", () => {
     const out = compileSrc(
       `
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
       let x = show("abc")
     `,
       { traitImpl: defaultTraitImpls },
@@ -2010,7 +2010,7 @@ describe("traits compilation", () => {
     const out = compileSrc(
       `
       let id = fn x { x }
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
       let f = id(show)(42)
     `,
       { traitImpl: defaultTraitImpls },
@@ -2023,7 +2023,7 @@ describe("traits compilation", () => {
 
   test("applying with type variables", () => {
     const out = compileSrc(`
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(
@@ -2033,7 +2033,7 @@ describe("traits compilation", () => {
 
   test("do not duplicate vars", () => {
     const out = compileSrc(`
-      extern let show2: Fn(a, a) -> String where a: Show
+      extern let show2: (a, a) -> String where a: Show
       let f = show2
     `);
     expect(out).toMatchInlineSnapshot(
@@ -2043,7 +2043,7 @@ describe("traits compilation", () => {
 
   test("handle multiple traits", () => {
     const out = compileSrc(`
-      extern let show: Fn(a, a) -> String where a: Eq + Show
+      extern let show: (a, a) -> String where a: Eq + Show
       let f = show
     `);
     expect(out).toMatchInlineSnapshot(
@@ -2054,7 +2054,7 @@ describe("traits compilation", () => {
   test("handle multiple traits when applying to concrete args", () => {
     const out = compileSrc(
       `
-      extern let show: Fn(a, a) -> String where a: Eq + Show
+      extern let show: (a, a) -> String where a: Eq + Show
       let f = show("a", "b")
     `,
       { traitImpl: defaultTraitImpls },
@@ -2068,8 +2068,8 @@ describe("traits compilation", () => {
   test("do not pass extra args", () => {
     const out = compileSrc(
       `
-      extern let inspect: Fn(a) -> String where a: Show
-      extern let eq: Fn(a, a) -> Bool where a: Eq
+      extern let inspect: (a) -> String where a: Show
+      extern let eq: (a, a) -> Bool where a: Eq
 
       let equal = fn x, y {
         if eq(x, y) {
@@ -2095,7 +2095,7 @@ describe("traits compilation", () => {
   test("do not duplicate when there's only one var to pass", () => {
     const out = compileSrc(
       `
-      extern let show2: Fn(a, a) -> String where a: Show
+      extern let show2: (a, a) -> String where a: Show
       let f = fn arg {
         show2(arg, "hello")
       }
@@ -2110,7 +2110,7 @@ describe("traits compilation", () => {
   test("pass an arg twice if needed", () => {
     const out = compileSrc(
       `
-      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      extern let show2: (a, b) -> String where a: Show, b: Show
       let f = show2("a", "b")
     `,
       { traitImpl: defaultTraitImpls },
@@ -2123,7 +2123,7 @@ describe("traits compilation", () => {
   test("partial application", () => {
     const out = compileSrc(
       `
-      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      extern let show2: (a, b) -> String where a: Show, b: Show
       let f = fn arg {
         show2(arg, "hello")
       }
@@ -2138,7 +2138,7 @@ describe("traits compilation", () => {
 
   test("pass trait dicts for types with params when they do not have deps", () => {
     const out = compileSrc(`
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
 
       type AlwaysShow<a> { X }
       
@@ -2154,7 +2154,7 @@ describe("traits compilation", () => {
   test("pass higher order trait dicts for types with params when they do have deps", () => {
     const out = compileSrc(
       `
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
 
       type Option<a, b> { Some(b) }
       
@@ -2173,7 +2173,7 @@ describe("traits compilation", () => {
   test("deeply nested higher order traits", () => {
     const out = compileSrc(
       `
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
 
       type Tuple2<a, b> { Tuple2(a, b) }
       type Option<a> { Some(a) }
@@ -2226,7 +2226,7 @@ describe("traits compilation", () => {
 
   test("pass higher order trait dicts for types when their deps is in scope", () => {
     const out = compileSrc(`
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
 
       type Option<a> {
         Some(a),
@@ -2256,7 +2256,7 @@ describe("traits compilation", () => {
   test("== handles traits dicts", () => {
     const out = compileSrc(
       `
-  extern let (==): Fn(a, a) -> Bool where a: Eq
+  extern let (==): (a, a) -> Bool where a: Eq
   let f = fn x, y { x == y }
 `,
     );
@@ -2269,7 +2269,7 @@ describe("traits compilation", () => {
   test("== compares primitives directly", () => {
     const out = compileSrc(
       `
-  extern let (==): Fn(a, a) -> Bool where a: Eq
+  extern let (==): (a, a) -> Bool where a: Eq
   let a = 1 == 2
   let b = 1.0 == 2.0
   let c = "a" == "ab"
@@ -2291,7 +2291,7 @@ describe("traits compilation", () => {
     const out = compileSrc(
       `
     
-    extern let (==): Fn(a, a) -> Bool where a: Eq
+    extern let (==): (a, a) -> Bool where a: Eq
 
     type T { C(Int) }
     let f = C(0) == C(1)
@@ -2313,8 +2313,8 @@ describe("traits compilation", () => {
       extern type Json
       extern type Option<a>
 
-      extern let from_json: Fn(Json) -> Option<a> where a: FromJson
-      extern let take_opt_int: Fn(Option<Num>) -> Num
+      extern let from_json: (Json) -> Option<a> where a: FromJson
+      extern let take_opt_int: (Option<Num>) -> Num
       extern let json: Json
 
 
@@ -2351,8 +2351,8 @@ describe("traits compilation", () => {
       extern type Json
       extern type Option<a>
 
-      extern let from_json: Fn(Json) -> Option<a> where a: FromJson
-      extern let take_opt_int: Fn(Option<Num>) -> x
+      extern let from_json: (Json) -> Option<a> where a: FromJson
+      extern let take_opt_int: (Option<Num>) -> x
       extern let json: Json
 
       let called = from_json(json)

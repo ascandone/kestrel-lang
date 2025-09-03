@@ -240,7 +240,7 @@ test("hover a type ast", () => {
   const src = `
         type T { }
         type Box<a> { }
-        extern let t: Fn() -> Box<T>
+        extern let t: () -> Box<T>
     `;
   const hoverable = parseHover(src, "T", 2)!;
   expect(hoverable).toEqual<Hovered>({
@@ -303,14 +303,14 @@ test("snapshot when hovering on global fn", () => {
 });
 
 test("snapshot when hovering on an extern type", () => {
-  const src = `extern let glb: Fn(x) -> x`;
+  const src = `extern let glb: (x) -> x`;
   const hoverable = parseHover(src, "glb")!;
   expect(hoverToMarkdown(hoverable)).toMatchSnapshot();
 });
 
 test("snapshot when hovering on an extern type reference", () => {
   const src = `
-      extern let glb: Fn(x) -> x
+      extern let glb: (x) -> x
       let v = glb
     `;
   const hoverable = parseHover(src, "glb", 2)!;

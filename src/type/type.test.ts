@@ -462,30 +462,30 @@ describe("typeToString", () => {
   });
 
   test("fn type with no args", () => {
-    expect(typeToString(Fn([], Bool))).toBe("Fn() -> Bool");
+    expect(typeToString(Fn([], Bool))).toBe("() -> Bool");
   });
 
   test("fn type with one args", () => {
-    expect(typeToString(Fn([Int], Bool))).toBe("Fn(Int) -> Bool");
+    expect(typeToString(Fn([Int], Bool))).toBe("(Int) -> Bool");
   });
 
   test("fn type with two args ", () => {
-    expect(typeToString(Fn([Int, Bool], Bool))).toBe("Fn(Int, Bool) -> Bool");
+    expect(typeToString(Fn([Int, Bool], Bool))).toBe("(Int, Bool) -> Bool");
   });
 
   test("higher order function", () => {
     const f = Fn([Fn([Int], Bool)], Bool);
-    expect(typeToString(f)).toBe("Fn(Fn(Int) -> Bool) -> Bool");
+    expect(typeToString(f)).toBe("((Int) -> Bool) -> Bool");
   });
 
   test("tv as arg", () => {
     const $a = TVar.fresh();
-    expect(typeToString(Fn([$a.asType()], $a.asType()))).toBe("Fn(a) -> a");
+    expect(typeToString(Fn([$a.asType()], $a.asType()))).toBe("(a) -> a");
   });
 
   test("n-arity type nested in a fn", () => {
     const f = Fn([List(Int)], Option(Bool));
-    expect(typeToString(f)).toBe("Fn(List<Int>) -> Option<Bool>");
+    expect(typeToString(f)).toBe("(List<Int>) -> Option<Bool>");
   });
 
   test("handle scheme", () => {
@@ -529,7 +529,7 @@ describe("typeToString", () => {
         a: new Set(["Ord", "Show"]),
         // b: new Set(["Read"]),
       }),
-    ).toBe("Fn(a, b) -> c where a: Ord + Show, c: Read");
+    ).toBe("(a, b) -> c where a: Ord + Show, c: Read");
   });
 });
 

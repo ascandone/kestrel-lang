@@ -9774,7 +9774,7 @@ exports[`type hints > parses Fn type with args 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 25,
+          "character": 23,
           "line": 0,
         },
         "start": {
@@ -9790,11 +9790,11 @@ exports[`type hints > parses Fn type with args 1`] = `
               "name": "X",
               "range": {
                 "end": {
-                  "character": 12,
+                  "character": 10,
                   "line": 0,
                 },
                 "start": {
-                  "character": 11,
+                  "character": 9,
                   "line": 0,
                 },
               },
@@ -9805,11 +9805,11 @@ exports[`type hints > parses Fn type with args 1`] = `
               "name": "Y",
               "range": {
                 "end": {
-                  "character": 15,
+                  "character": 13,
                   "line": 0,
                 },
                 "start": {
-                  "character": 14,
+                  "character": 12,
                   "line": 0,
                 },
               },
@@ -9818,7 +9818,7 @@ exports[`type hints > parses Fn type with args 1`] = `
           ],
           "range": {
             "end": {
-              "character": 21,
+              "character": 19,
               "line": 0,
             },
             "start": {
@@ -9831,11 +9831,11 @@ exports[`type hints > parses Fn type with args 1`] = `
             "name": "Z",
             "range": {
               "end": {
-                "character": 21,
+                "character": 19,
                 "line": 0,
               },
               "start": {
-                "character": 20,
+                "character": 18,
                 "line": 0,
               },
             },
@@ -9845,7 +9845,7 @@ exports[`type hints > parses Fn type with args 1`] = `
         },
         "range": {
           "end": {
-            "character": 21,
+            "character": 19,
             "line": 0,
           },
           "start": {
@@ -9858,11 +9858,11 @@ exports[`type hints > parses Fn type with args 1`] = `
       "value": {
         "range": {
           "end": {
-            "character": 25,
+            "character": 23,
             "line": 0,
           },
           "start": {
-            "character": 24,
+            "character": 22,
             "line": 0,
           },
         },
@@ -9902,7 +9902,7 @@ exports[`type hints > parses Fn type with no args 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 23,
+          "character": 21,
           "line": 0,
         },
         "start": {
@@ -9915,7 +9915,7 @@ exports[`type hints > parses Fn type with no args 1`] = `
           "args": [],
           "range": {
             "end": {
-              "character": 19,
+              "character": 17,
               "line": 0,
             },
             "start": {
@@ -9928,11 +9928,11 @@ exports[`type hints > parses Fn type with no args 1`] = `
             "name": "Int",
             "range": {
               "end": {
-                "character": 19,
+                "character": 17,
                 "line": 0,
               },
               "start": {
-                "character": 16,
+                "character": 14,
                 "line": 0,
               },
             },
@@ -9942,7 +9942,7 @@ exports[`type hints > parses Fn type with no args 1`] = `
         },
         "range": {
           "end": {
-            "character": 19,
+            "character": 17,
             "line": 0,
           },
           "start": {
@@ -9955,11 +9955,11 @@ exports[`type hints > parses Fn type with no args 1`] = `
       "value": {
         "range": {
           "end": {
-            "character": 23,
+            "character": 21,
             "line": 0,
           },
           "start": {
-            "character": 22,
+            "character": 20,
             "line": 0,
           },
         },

@@ -21,7 +21,7 @@ test("global value of same module", () => {
 test("intrinsics", () => {
   const ir = toSexpr(`
     extern type Int
-    extern let (+): Fn(Int, Int) -> Int
+    extern let (+): (Int, Int) -> Int
 
     pub let y = fn a, b {
       a + b
@@ -419,7 +419,7 @@ describe("traits", () => {
       extern let p: a where a: Show
 
       type Str {}
-      extern let take_int: Fn(Str) -> a
+      extern let take_int: (Str) -> a
 
       let x = take_int(p)
     `);
@@ -441,7 +441,7 @@ describe("traits", () => {
 
   test("pass to fn", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
@@ -453,7 +453,7 @@ describe("traits", () => {
 
   test("handles recursive defs", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
 
       pub let rec_val = fn unresolved, unresolved2 {
         let _ = show(unresolved);
@@ -474,7 +474,7 @@ describe("traits", () => {
 
   test("make sure we don't show duplicates", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> a where a: Show
+      extern let show: (a) -> a where a: Show
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
@@ -486,7 +486,7 @@ describe("traits", () => {
 
   test("handle multiple traits", () => {
     const out = dumpIR(`
-      extern let show: Fn(a, a) -> String where a: Eq + Show
+      extern let show: (a, a) -> String where a: Eq + Show
       let f = show
     `);
     expect(out).toMatchInlineSnapshot(
@@ -497,7 +497,7 @@ describe("traits", () => {
   test("handle multiple traits when applying to concrete args", () => {
     const out = dumpIR(
       `
-      extern let show: Fn(a, a) -> String where a: Eq + Show
+      extern let show: (a, a) -> String where a: Eq + Show
 
       
       type S {} // <- it derives both Eq and Show
@@ -515,8 +515,8 @@ describe("traits", () => {
   test("do not pass extra args", () => {
     const out = dumpIR(
       `
-      extern let inspect: Fn(u) -> String where u: Show
-      extern let eq: Fn(z, z) -> Bool where z: Eq
+      extern let inspect: (u) -> String where u: Show
+      extern let eq: (z, z) -> Bool where z: Eq
 
       let equal = fn x, y {
         if eq(x, y) {
@@ -541,7 +541,7 @@ describe("traits", () => {
   test("do not duplicate when there's only one var to pass", () => {
     const out = dumpIR(
       `
-      extern let show2: Fn(a, a) -> String where a: Show
+      extern let show2: (a, a) -> String where a: Show
 
       let f = fn arg {
         show2(arg, "hello")
@@ -560,7 +560,7 @@ describe("traits", () => {
   test("pass an arg twice if needed", () => {
     const out = dumpIR(
       `
-      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      extern let show2: (a, b) -> String where a: Show, b: Show
       let f = show2("a", "b")
     `,
     );
@@ -572,7 +572,7 @@ describe("traits", () => {
   test("partial application", () => {
     const out = dumpIR(
       `
-      extern let show2: Fn(k, u) -> String where k: Show, u: Show
+      extern let show2: (k, u) -> String where k: Show, u: Show
       let f = fn arg {
         show2(arg, "hello")
       }
@@ -590,7 +590,7 @@ describe("traits", () => {
 
   test("pass trait dicts for types with params when they do not have deps", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
 
       type AlwaysShow<a> { X }
       
@@ -605,7 +605,7 @@ describe("traits", () => {
   test("pass higher order trait dicts for types with params when they do have deps", () => {
     const out = dumpIR(
       `
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
 
       type Option<a, b> { Some(b) }
       
@@ -621,9 +621,9 @@ describe("traits", () => {
   test("rigid types sig", () => {
     const out = dumpIR(
       `
-      extern let show: Fn(a) -> String where a: Show
+      extern let show: (a) -> String where a: Show
 
-      pub let x: Fn(a) -> String where a: Show =
+      pub let x: (a) -> String where a: Show =
         fn a { show(a) }
     `,
     );

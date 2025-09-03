@@ -435,12 +435,12 @@ describe("type hints", () => {
   });
 
   test("parses Fn type with no args", () => {
-    const src = "let x : Fn() -> Int = 0";
+    const src = "let x : () -> Int = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses Fn type with args", () => {
-    const src = "let x : Fn(X, Y) -> Z = 0";
+    const src = "let x : (X, Y) -> Z = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 

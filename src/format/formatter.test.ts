@@ -656,11 +656,11 @@ describe("type hints", () => {
   });
 
   test("infix extern", () => {
-    expect(`extern let (+): Fn(Int, Int) -> Int\n`).toBeFormatted();
+    expect(`extern let (+): (Int, Int) -> Int\n`).toBeFormatted();
   });
 
   test("prefix extern", () => {
-    expect(`extern let (!): Fn(Bool) -> Bool\n`).toBeFormatted();
+    expect(`extern let (!): (Bool) -> Bool\n`).toBeFormatted();
   });
 
   test("concrete with one arg", () => {
@@ -680,15 +680,15 @@ describe("type hints", () => {
   });
 
   test("Fn with no args", () => {
-    expect(`extern let f: Fn() -> Int\n`).toBeFormatted();
+    expect(`extern let f: () -> Int\n`).toBeFormatted();
   });
 
   test("Fn with one arg", () => {
-    expect(`extern let f: Fn(A) -> Int\n`).toBeFormatted();
+    expect(`extern let f: (A) -> Int\n`).toBeFormatted();
   });
 
   test("Fn with many arg", () => {
-    expect(`extern let f: Fn(A, B, C) -> Int\n`).toBeFormatted();
+    expect(`extern let f: (A, B, C) -> Int\n`).toBeFormatted();
   });
 
   test("tuple sugar", () => {
@@ -696,7 +696,7 @@ describe("type hints", () => {
   });
 
   test("type with trait annotations", () => {
-    expect(`extern let f: Fn(a) -> b where a: Show, b: Eq\n`).toBeFormatted();
+    expect(`extern let f: (a) -> b where a: Show, b: Eq\n`).toBeFormatted();
   });
 
   test("type with many traits for each var", () => {

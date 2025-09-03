@@ -61,12 +61,12 @@ const Int = typecheckSourceRaw(
   "Int",
   `
     extern pub type Int
-    extern pub let (+): Fn(Int, Int) -> Int
-    extern pub let (-): Fn(Int, Int) -> Int
-    extern pub let (*): Fn(Int, Int) -> Int
-    extern pub let (/): Fn(Int, Int) -> Int
-    extern pub let (^): Fn(Int, Int) -> Int
-    extern pub let (%): Fn(Int, Int) -> Int
+    extern pub let (+): (Int, Int) -> Int
+    extern pub let (-): (Int, Int) -> Int
+    extern pub let (*): (Int, Int) -> Int
+    extern pub let (/): (Int, Int) -> Int
+    extern pub let (^): (Int, Int) -> Int
+    extern pub let (%): (Int, Int) -> Int
   `,
 ).moduleInterface;
 
@@ -75,10 +75,10 @@ const Float = typecheckSourceRaw(
   "Float",
   `
     extern pub type Float
-    extern pub let (+.): Fn(Int, Int) -> Int
-    extern pub let (-.): Fn(Int, Int) -> Int
-    extern pub let (*.): Fn(Int, Int) -> Int
-    extern pub let (/.): Fn(Int, Int) -> Int
+    extern pub let (+.): (Int, Int) -> Int
+    extern pub let (-.): (Int, Int) -> Int
+    extern pub let (*.): (Int, Int) -> Int
+    extern pub let (/.): (Int, Int) -> Int
   `,
 ).moduleInterface;
 
@@ -87,7 +87,7 @@ const String = typecheckSourceRaw(
   "String",
   `
     extern pub type String
-    extern pub let (++): Fn(String, String) -> String
+    extern pub let (++): (String, String) -> String
   `,
 ).moduleInterface;
 
@@ -99,15 +99,15 @@ const Bool = typecheckSourceRaw(
       True,
       False,
     }
-    extern pub let (&&): Fn(Bool, Bool) -> Bool
-    extern pub let (||): Fn(Bool, Bool) -> Bool
-    extern pub let (!): Fn(Bool) -> Bool
-    extern pub let (==): Fn(a, a) -> Bool where a: Eq
-    extern pub let (!=): Fn(a, a) -> Bool where a: Eq
-    extern pub let (>): Fn(a, a) -> Bool where a: Ord
-    extern pub let (>=): Fn(a, a) -> Bool where a: Ord
-    extern pub let (<): Fn(a, a) -> Bool where a: Ord
-    extern pub let (<=): Fn(a, a) -> Bool where a: Ord
+    extern pub let (&&): (Bool, Bool) -> Bool
+    extern pub let (||): (Bool, Bool) -> Bool
+    extern pub let (!): (Bool) -> Bool
+    extern pub let (==): (a, a) -> Bool where a: Eq
+    extern pub let (!=): (a, a) -> Bool where a: Eq
+    extern pub let (>): (a, a) -> Bool where a: Ord
+    extern pub let (>=): (a, a) -> Bool where a: Ord
+    extern pub let (<): (a, a) -> Bool where a: Ord
+    extern pub let (<=): (a, a) -> Bool where a: Ord
   `,
 ).moduleInterface;
 

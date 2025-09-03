@@ -511,7 +511,7 @@ function typeAstToDoc(typeAst: TypeAst): Doc {
 
     case "fn":
       return concat(
-        text("Fn("),
+        text("("),
         sepByString(", ", typeAst.args.map(typeAstToDoc)),
         text(") -> "),
         typeAstToDoc(typeAst.return),

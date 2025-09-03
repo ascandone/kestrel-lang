@@ -81,7 +81,7 @@ test("type ast", () => {
   const src = `
       type X {}
       type Box<a> {}
-      extern let x: Box<Fn() -> X>
+      extern let x: Box<() -> X>
     `;
   const location = parseGotoDef(src, "X", 2);
   expect(location?.range).toEqual(rangeOf(src, "type X {}", 1));

@@ -84,7 +84,7 @@ type:
 	(moduleNamespace '.')? name = TYPE_ID (
 		'<' type (',' type)* '>'
 	)?												# namedType
-	| 'Fn' '(' fnTypeParams? ')' '->' ret = type	# fnType
+	| '(' fnTypeParams? ')' '->' ret = type	# fnType
 	| ID											# genericType
 	| '(' type ',' type (',' type)* ')'				# tupleType;
 
