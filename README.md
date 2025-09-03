@@ -7,7 +7,7 @@
 Kestrel is a pure, strongly typed functional language that compiles to js.
 
 ```rust
-// Type is inferred as `Fn(Int) -> String`
+// Type is inferred as `(Int) -> String`
 pub let fizz_buzz = fn n {
   match (n % 3, n % 5) {
     (0, 0) => "FizzBuzz",
@@ -18,7 +18,7 @@ pub let fizz_buzz = fn n {
 }
 ```
 
-Take a look at the [language tour](https://github.com/ascandone/kestrel-lang/blob/main/language-tour.md) to learn more. You can find some examples by looking at the standard library [implementation](https://github.com/ascandone/kestrel_core/tree/main/src)
+Take a look at the [language tour](https://ascandone.github.com/language-tour) to learn more. You can find some examples by looking at the standard library [implementation](https://github.com/ascandone/kestrel_core/tree/main/src)
 
 ### Get started
 
