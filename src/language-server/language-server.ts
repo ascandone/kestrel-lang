@@ -35,7 +35,6 @@ export class LsState {
       }
     }
 
-    // TODO pass packages dependencies
     this.projectChecker = new project.ProjectTypechecker(
       rawProject,
       projectOptions,
