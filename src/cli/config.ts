@@ -54,6 +54,10 @@ export const defaultConfig = {
   },
 };
 
+export function getConfigPackageName(config: Config): string {
+  return config.type === "application" ? "" : config.name;
+}
+
 export async function readConfig(
   root: string = process.cwd(),
 ): Promise<Config> {

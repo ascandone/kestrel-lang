@@ -1,6 +1,8 @@
+import { nestedMapGetOrPutDefault } from "../data/defaultMap";
 import { RigidVarsCtx, resolveType } from "../type";
 import * as typed from "../typecheck";
 import { CORE_PACKAGE } from "../typecheck/core_package";
+import { TypedProject } from "../typecheck/project";
 import * as ir from "./ir";
 
 class ExprEmitter {
@@ -633,29 +635,29 @@ export class ProjectLowering {
   private readonly visited = new Map<string, ir.Program>();
   private readonly knownImplicitArities = new Map<string, ir.ImplicitParam[]>();
 
-  constructor(
-    private readonly typedProject: Record<string, typed.TypedModule>,
-  ) {}
+  constructor(private readonly typedProject: TypedProject) {}
 
-  visit(ns: string): ir.Program {
-    const cached = this.visited.get(ns);
+  visit(package_: string, moduleId: string): ir.Program {
+    const cached = this.visited.get(moduleId);
     if (cached !== undefined) {
       return cached;
     }
 
-    const module = this.typedProject[ns];
+    const module = nestedMapGetOrPutDefault(this.typedProject, moduleId).get(
+      package_,
+    );
     if (module === undefined) {
-      throw new CompilationError(`Could not find module '${ns}'`);
+      throw new CompilationError(`Could not find module '${moduleId}'`);
     }
 
     const lowered = lowerProgram(
-      module,
+      module[0],
       this.knownImplicitArities,
-      (dependencyNs) => this.visit(dependencyNs),
+      (dependencyNs) => this.visit(package_, dependencyNs),
     );
 
     this.sortedVisited.push(lowered);
-    this.visited.set(ns, lowered);
+    this.visited.set(moduleId, lowered);
 
     return lowered;
   }

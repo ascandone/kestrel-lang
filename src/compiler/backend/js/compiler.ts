@@ -2,11 +2,12 @@ import * as t from "@babel/types";
 import generate from "@babel/generator";
 
 import * as ir from "../../ir";
-import { type TypedModule } from "../../../typecheck";
 import { CompilationError, ProjectLowering } from "../../lower";
 import * as common from "./common";
 import * as deriving from "./deriving";
 import { CORE_PACKAGE } from "../../../typecheck/core_package";
+import { TypedProject } from "../../../typecheck/project";
+import { nestedMapGetOrPutDefault } from "../../../data/defaultMap";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;
@@ -1231,15 +1232,19 @@ export type CompileProjectOptions = {
 };
 
 export function compileProject(
-  typedProject: Record<string, TypedModule>,
+  package_: string,
+  typedProject: TypedProject,
   { entrypoint = defaultEntryPoint, externs = {} }: CompileProjectOptions = {},
 ): string {
-  const entry = typedProject[entrypoint];
+  const entry = nestedMapGetOrPutDefault(typedProject, entrypoint).get(
+    package_,
+  );
+
   if (entry === undefined) {
     throw new Error(`Entrypoint not found: '${entrypoint}'`);
   }
 
-  const mainDecl = entry.declarations.find(
+  const mainDecl = entry[0].declarations.find(
     (d) => d.binding.name === "main" && d.pub,
   );
   if (mainDecl === undefined) {
@@ -1247,7 +1252,7 @@ export function compileProject(
   }
 
   const proj = new ProjectLowering(typedProject);
-  proj.visit(entrypoint);
+  proj.visit(package_, entrypoint);
 
   const compiler = new Compiler();
 

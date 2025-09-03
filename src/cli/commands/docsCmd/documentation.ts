@@ -1,6 +1,7 @@
-import { TypedProject } from "../../common";
+import { nestedMapEntries } from "../../../data/defaultMap";
 import { Position, gtEqPos } from "../../../parser";
 import { TypedModule, TypedTypeAst, typeToString } from "../../../typecheck";
+import { TypedProject } from "../../../typecheck/project";
 
 export type Variant = {
   name: string;
@@ -39,10 +40,14 @@ export function makeProjectDoc(
   typedProject: TypedProject,
 ): ProjectDoc {
   const modules: ProjectDoc["modules"] = {};
-  for (const mod in typedProject) {
-    if (typedProject[mod]?.package === package_) {
-      modules[mod] = makeModuleDoc(mod, typedProject[mod]!.typedModule);
+
+  for (const [moduleId, modulePackage, [typedModule]] of nestedMapEntries(
+    typedProject,
+  )) {
+    if (package_ !== modulePackage) {
+      continue;
     }
+    modules[moduleId] = makeModuleDoc(moduleId, typedModule);
   }
   return { version, modules };
 }

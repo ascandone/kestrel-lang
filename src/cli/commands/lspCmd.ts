@@ -13,7 +13,7 @@ import {
   createConnection,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { readConfig } from "../config";
+import { getConfigPackageName, readConfig } from "../config";
 import { LsState } from "../../language-server/language-server";
 import { readRawProject } from "../common";
 import { nestedMapGetOrPutDefault } from "../../data/defaultMap";
@@ -45,12 +45,10 @@ export async function lspCmd() {
   const currentDirectory = process.cwd();
   const config = await readConfig(currentDirectory);
 
-  const package_ = config.type === "package" ? config.name : "";
-
   const [rawProject, deps] = await readRawProject_(currentDirectory);
 
   const state = new LsState(
-    package_,
+    getConfigPackageName(config),
     currentDirectory,
     config["source-directories"],
     async (results) => {

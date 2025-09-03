@@ -22,6 +22,11 @@ export type TypecheckResult = Array<{
   output: [TypedModule, err.ErrorInfo[]];
 }>;
 
+export type TypedProject = Map<
+  string,
+  Map<string, [TypedModule, err.ErrorInfo[]]>
+>;
+
 export class ProjectTypechecker {
   /** e.g. `{ "My/Mod": { pkg_a: ..., pkg_b: ... } }` */
   public readonly compiledProject = new DefaultMap<
@@ -172,8 +177,6 @@ export class ProjectTypechecker {
       description: new err.ParsingError(e.description),
       range: e.range,
     }));
-
-    // TODO add errors to buffer
 
     this.currentPath.push(moduleId);
     const output = typecheck(package_, moduleId, untypedModule, {

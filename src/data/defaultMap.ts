@@ -27,3 +27,11 @@ export class DefaultMap<K, V> {
     return mapGetOrPutDefault(this.inner, k, this.init);
   }
 }
+
+export function* nestedMapEntries<K, K1, V>(map: Map<K, Map<K1, V>>) {
+  for (const [k1, inner] of map) {
+    for (const [k2, value] of inner) {
+      yield [k1, k2, value] as const;
+    }
+  }
+}

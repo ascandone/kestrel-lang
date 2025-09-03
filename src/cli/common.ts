@@ -1,22 +1,20 @@
 import { readFile, readdir } from "node:fs/promises";
 import { parse, UntypedModule } from "../parser";
-import {
-  TypecheckedModule,
-  typecheckProject,
-  TypedModule,
-  UntypedProject,
-} from "../typecheck";
 import { exit } from "node:process";
 import {
   compileProject,
   defaultEntryPoint,
 } from "../compiler/backend/js/compiler";
 import { col } from "../utils/colors";
-import { Config, readConfig } from "./config";
+import { Config, getConfigPackageName, readConfig } from "./config";
 import { join } from "node:path";
 import { errorInfoToString } from "../typecheck/errors";
 import * as paths from "./paths";
-import { DefaultMap } from "../data/defaultMap";
+import {
+  DefaultMap,
+  nestedMapGetOrPutDefault,
+  nestedMapEntries,
+} from "../data/defaultMap";
 import * as project from "../typecheck/project";
 
 export const EXTENSION = "kes";
@@ -28,8 +26,12 @@ export type RawModule = {
   extern: string | undefined;
 };
 
+export type RawProject = Map<string, Map<string, RawModule>>;
+
 /** Read a package and its dependecies. Returns a (module, pkg)-indexed nested map */
-export async function readRawProject(path: string) {
+export async function readRawProject(
+  path: string,
+): Promise<[RawProject, project.ProjectOptions["packageDependencies"]]> {
   const project = new DefaultMap<string, Map<string, RawModule>>(
     () => new Map(),
   );
@@ -40,9 +42,8 @@ export async function readRawProject(path: string) {
   async function helper(path: string) {
     const config = await readConfig(path);
 
-    const name = config.type === "application" ? "" : config.name;
     const deps = Object.keys(config.dependencies ?? {});
-    packagesDeps.set(name, new Set(deps));
+    packagesDeps.set(getConfigPackageName(config), new Set(deps));
 
     await readPackage(project, path, config);
 
@@ -95,7 +96,7 @@ async function readPackage(
         // Assume file did not exist
       }
 
-      const package_ = config.type === "package" ? config.name : "";
+      const package_ = getConfigPackageName(config);
       project.get(moduleName!).set(package_, {
         package: package_,
         path: filePath,
@@ -106,76 +107,11 @@ async function readPackage(
   }
 }
 
-export async function readProjectWithDeps(
+export async function check(
   path: string,
-  config?: Config,
-): Promise<Record<string, RawModule>> {
-  if (config === undefined) {
-    config = await readConfig(path);
-  }
-  let rawProject: Record<string, RawModule> = await readProject(path, config);
-  try {
-    const deps = await readdir(paths.dependencies(path));
-    for (const dependencyName of deps) {
-      const depPath = paths.dependency(path, dependencyName);
-      const dep = await readProject(depPath);
-      rawProject = { ...rawProject, ...dep };
-    }
-  } catch {
-    // Assume /deps/ is not present otherwise
-  }
-
-  return rawProject;
-}
-
-async function readProject(
-  path: string,
-  config?: Config,
-): Promise<Record<string, RawModule>> {
-  if (config === undefined) {
-    config = await readConfig(path);
-  }
-
-  const res: Record<string, RawModule> = {};
-  for (const sourceDir of config["source-directories"]) {
-    const files = await readdir(join(path, sourceDir), { recursive: true });
-
-    // TODo is the file relative path?
-    for (const file of files) {
-      const [moduleName, ext] = file.split(".");
-      if (ext !== EXTENSION) {
-        continue;
-      }
-
-      const filePath = join(path, sourceDir, file);
-      const fileBuf = await readFile(filePath);
-
-      let extern: string | undefined = undefined;
-      try {
-        const externPath = join(path, sourceDir, `${moduleName}.js`);
-        const externBuf = await readFile(externPath);
-        extern = externBuf.toString();
-      } catch {
-        // Assume file did not exist
-      }
-
-      res[moduleName!] = {
-        package: config.type === "package" ? config.name : "",
-        path: filePath,
-        content: fileBuf.toString(),
-        extern,
-      };
-    }
-  }
-
-  return res;
-}
-
-export type TypedProject = Record<string, TypecheckedModule>;
-
-export async function check(path: string): Promise<TypedProject | undefined> {
-  const rawProject = await readProjectWithDeps(path);
-  const [project, hasWarnings] = await checkProject(rawProject);
+): Promise<project.TypedProject | undefined> {
+  const [rawProject, projectDeps] = await readRawProject(path);
+  const [project, hasWarnings] = await checkProject(rawProject, projectDeps);
   if (hasWarnings) {
     return undefined;
   }
@@ -185,13 +121,13 @@ export async function check(path: string): Promise<TypedProject | undefined> {
 export function parseModule(src: string): UntypedModule {
   const parseResult = parse(src);
   if (parseResult.lexerErrors.length !== 0) {
-    console.log(
+    console.info(
       `${col.red.tag`Parsing error:`} ${parseResult.parsingErrors[0]!.description!}`,
     );
     exit(1);
   }
   if (parseResult.parsingErrors.length !== 0) {
-    console.log(
+    console.info(
       `${col.red.tag`Parsing error:`} ${parseResult.parsingErrors[0]!.description!}`,
     );
     exit(1);
@@ -200,52 +136,42 @@ export function parseModule(src: string): UntypedModule {
 }
 
 export async function checkProject(
-  rawProject: Record<string, RawModule>,
-): Promise<[TypedProject | undefined, boolean]> {
-  const untypedProject: UntypedProject = {};
+  rawProject: Map<string, Map<string, RawModule>>,
+  packageDependencies: project.ProjectOptions["packageDependencies"],
+): Promise<[project.TypedProject | undefined, boolean]> {
+  const raw: project.RawProject = new Map();
 
-  for (const [ns, info] of Object.entries(rawProject)) {
-    const parseResult = parse(info.content);
-    if (parseResult.lexerErrors.length !== 0) {
-      console.log(
-        `${col.red.tag`Parsing error:`} ${parseResult.parsingErrors[0]!.description!}`,
-      );
-      exit(1);
-    }
-
-    if (parseResult.parsingErrors.length !== 0) {
-      console.log(
-        `${col.red.tag`Parsing error:`} ${parseResult.parsingErrors[0]!.description!}`,
-      );
-      exit(1);
-    }
-
-    untypedProject[ns] = {
-      package: info.package,
-      module: parseResult.parsed,
-    };
+  for (const [moduleId, package_, info] of nestedMapEntries(rawProject)) {
+    nestedMapGetOrPutDefault(raw, moduleId).set(package_, info.content);
   }
 
-  const typedProject = typecheckProject(untypedProject);
+  const checker = new project.ProjectTypechecker(raw, {
+    packageDependencies,
+  });
+  checker.typecheck();
 
-  const res: TypedProject = {};
   let errorsCount = 0,
     warningsCount = 0;
-  for (const [ns, m] of Object.entries(typedProject)) {
-    res[ns] = m;
-    if (m.errors.length !== 0) {
-      console.log(col.blue.tag`-------- ${ns}.${EXTENSION}\n`);
-    }
 
-    for (const error of m.errors) {
-      if (error.description.severity === "warning") {
-        warningsCount++;
-      } else {
-        errorsCount++;
+  // TODO make this bit a pure and test it
+  for (const [moduleId, packages] of checker.compiledProject.inner) {
+    for (const [package_, [, errors]] of packages) {
+      if (errors.length !== 0) {
+        console.info(col.blue.tag`-------- ${moduleId}.${EXTENSION}\n`);
       }
 
-      const src = rawProject[ns]!.content!;
-      console.log(errorInfoToString(src, error), "\n\n");
+      for (const error of errors) {
+        if (error.description.severity === "warning") {
+          warningsCount++;
+        } else {
+          errorsCount++;
+        }
+
+        const src = nestedMapGetOrPutDefault(rawProject, moduleId).get(
+          package_,
+        )!.content;
+        console.info(errorInfoToString(src, error), "\n\n");
+      }
     }
   }
 
@@ -254,11 +180,11 @@ export async function checkProject(
 
   if (totalIssuesCount > 0) {
     const plErr = totalIssuesCount === 1 ? "error" : "errors";
-    console.log(`[Found ${totalIssuesCount} ${plErr}]\n`);
+    console.info(`[Found ${totalIssuesCount} ${plErr}]\n`);
   }
 
   if (errorsCount === 0) {
-    return [res, hasWarnings];
+    return [checker.compiledProject.inner, hasWarnings];
   } else {
     return [undefined, hasWarnings];
   }
@@ -269,27 +195,32 @@ export async function compilePath(
   entryPointModule?: string,
   _optimize?: boolean,
 ): Promise<string> {
-  const rawProject = await readProjectWithDeps(path);
-  const [typedProject] = await checkProject(rawProject);
+  const [rawProject] = await readRawProject(path);
+  const [typedProject] = await checkProject(rawProject, new Map());
   if (typedProject === undefined) {
     exit(1);
   }
 
   const externs: Record<string, string> = {};
-  for (const ns in typedProject) {
-    const extern = rawProject[ns]?.extern;
-    if (extern !== undefined) {
-      externs[ns] = extern.toString();
+  for (const [moduleId, packages] of typedProject) {
+    for (const [package_] of packages) {
+      const extern = nestedMapGetOrPutDefault(rawProject, moduleId).get(
+        package_,
+      )?.extern;
+
+      if (extern !== undefined) {
+        // TODO(bug) this isn't safe: we need a nested map for externs as well
+        externs[moduleId] = extern.toString();
+      }
     }
   }
 
-  try {
-    const project: Record<string, TypedModule> = {};
-    for (const [k, v] of Object.entries(typedProject)) {
-      project[k] = v.typedModule;
-    }
+  // TODO we could rease this config
+  const config = await readConfig(path);
 
-    return compileProject(project, {
+  try {
+    // TODO package_
+    return compileProject(getConfigPackageName(config), typedProject, {
       externs,
       entrypoint: entryPointModule ?? defaultEntryPoint,
     });

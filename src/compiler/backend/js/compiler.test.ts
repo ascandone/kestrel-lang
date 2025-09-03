@@ -1,5 +1,4 @@
 import { test, expect, describe } from "vitest";
-import { TypedModule } from "../../../typecheck";
 import { Compiler, compile } from "./compiler";
 import {
   TraitImpl,
@@ -12,6 +11,8 @@ import {
   typecheckSource_ as typecheckSource_,
 } from "../../__test__/prelude";
 import { CORE_PACKAGE } from "../../../typecheck/core_package";
+import { TypedProject } from "../../../typecheck/project";
+import { nestedMapGetOrPutDefault } from "../../../data/defaultMap";
 
 describe("datatype representation", () => {
   test("int", () => {
@@ -3125,16 +3126,22 @@ function compileSrc(
 class ProjectCompiler {
   private readonly compiler = new Compiler();
 
-  private readonly typedProject: Record<string, TypedModule> = {};
+  private readonly typedProject: TypedProject = new Map();
   private readonly deps: Deps = {};
 
   private readonly projectLower = new ProjectLowering(this.typedProject);
 
-  compile(package_: string, ns: string, src: string) {
-    const program = typecheckSource_(package_, ns, src, this.deps);
-    this.typedProject[ns] = program;
-    this.deps[ns] = program.moduleInterface;
-    const ir = this.projectLower.visit(ns);
+  compile(package_: string, moduleId: string, src: string) {
+    const program = typecheckSource_(package_, moduleId, src, this.deps);
+
+    // TODO use ProjectChecker instead
+    nestedMapGetOrPutDefault(this.typedProject, moduleId).set(package_, [
+      program,
+      [],
+    ]);
+
+    this.deps[moduleId] = program.moduleInterface;
+    const ir = this.projectLower.visit(package_, moduleId);
     this.compiler.compile(ir);
     return this.compiler.generate();
   }

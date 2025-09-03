@@ -38,7 +38,6 @@ import {
 } from "../type";
 import * as err from "./errors";
 import { DependencyProvider, resolve } from "./resolution";
-import { topologicalSort } from "../utils/topsort";
 import { DefaultMap } from "../data/defaultMap";
 import * as core from "./core_package";
 
@@ -1291,29 +1290,6 @@ function inferConstant(x: ConstLiteral): Type {
   }
 }
 
-function topSortedModules(
-  project: UntypedProject,
-  implicitImports: Import[] = defaultImports,
-): string[] {
-  const implNsImports = implicitImports.map((i) => i.ns);
-
-  const dependencyGraph: Record<string, string[]> = {};
-  for (const [ns, { package: package_, module }] of Object.entries(project)) {
-    const deps =
-      package_ === core.CORE_PACKAGE
-        ? getDependencies(module)
-        : [...implNsImports, ...getDependencies(module)];
-
-    dependencyGraph[ns] = deps;
-  }
-
-  return topologicalSort(dependencyGraph);
-}
-
-function getDependencies(program: UntypedModule): string[] {
-  return program.imports.map((i) => i.ns);
-}
-
 export type UntypedProject = Record<
   string,
   {
@@ -1329,40 +1305,6 @@ export type TypecheckedModule = {
 };
 
 export type ProjectTypeCheckResult = Record<string, TypecheckedModule>;
-
-/** @deprecated */
-export function typecheckProject(
-  project: UntypedProject,
-  implicitImports: Import[] = defaultImports,
-  mainType = DEFAULT_MAIN_TYPE,
-): ProjectTypeCheckResult {
-  const sortedModules = topSortedModules(project, implicitImports);
-
-  const projectResult: ProjectTypeCheckResult = {};
-  const deps: Record<string, ModuleInterface> = {};
-  for (const ns of sortedModules) {
-    const m = project[ns];
-    if (m === undefined) {
-      // A module might import a module that do not exist
-      continue;
-    }
-    const [typedModule, errors] = typecheck(m.package, ns, m.module, {
-      mainType,
-      getDependency: (ns) => {
-        const dep = deps[ns];
-        if (dep === undefined) {
-          return { type: "ERR", error: { type: "UNBOUND_MODULE" } };
-        }
-        return { type: "OK", value: dep };
-      },
-      implicitImports: m.package === core.CORE_PACKAGE ? [] : implicitImports,
-    });
-    projectResult[ns] = { typedModule, errors, package: m.package };
-    deps[ns] = typedModule.moduleInterface;
-  }
-
-  return projectResult;
-}
 
 function castUnifyErr(
   node: RangeMeta,
