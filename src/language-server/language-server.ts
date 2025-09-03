@@ -7,7 +7,7 @@ import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 export const DEBOUNCE_AMOUNT_MS = 150;
 
 export class LsState {
-  private timeoutInterval?: NodeJS.Timeout;
+  private timeoutToken?: NodeJS.Timeout;
   private readonly projectChecker: project.ProjectTypechecker;
 
   private readonly moduleIdByUri = new Map<
@@ -16,6 +16,9 @@ export class LsState {
   >();
   /** Only modules of this.package */
   private readonly docByModuleId = new Map<string, TextDocument>();
+
+  /** Listeners that are flushed after they are */
+  private listenersOnce: Array<(out: project.TypecheckResult) => void> = [];
 
   constructor(
     private readonly package_: string,
@@ -42,8 +45,8 @@ export class LsState {
   }
 
   private startTimeout() {
-    clearTimeout(this.timeoutInterval);
-    this.timeoutInterval = setTimeout(() => {
+    clearTimeout(this.timeoutToken);
+    this.timeoutToken = setTimeout(() => {
       this.runTypecheckSync();
     }, DEBOUNCE_AMOUNT_MS);
   }
@@ -51,6 +54,9 @@ export class LsState {
   public runTypecheckSync() {
     const out = this.projectChecker.typecheck();
     this.onTypecheckProject(out);
+    for (const listener of this.listenersOnce) {
+      listener(out);
+    }
     return out;
   }
 
@@ -84,40 +90,57 @@ export class LsState {
     }
   }
 
-  public getModuleByModuleId(
-    moduleId: string,
-  ): [TypedModule, ErrorInfo[]] | undefined {
-    this.runTypecheckSync();
-    return this.projectChecker.compiledProject.get(moduleId).get(this.package_);
+  public getDocByModuleId(moduleId: string): TextDocument | undefined {
+    return this.docByModuleId.get(moduleId);
   }
 
-  public getModuleByUri(
+  public async getModuleByUriAsync(
     uri: TextDocument["uri"],
-  ): [TypedModule, ErrorInfo[]] | undefined {
-    this.runTypecheckSync();
+  ): Promise<[TypedModule, ErrorInfo[]] | undefined> {
+    const proj = await this.getProjectAsync();
     const doc = this.moduleIdByUri.get(uri);
     if (doc === undefined) {
       return undefined;
     }
-    return this.getModuleByModuleId(doc.moduleId);
+
+    return proj.get(doc.moduleId)?.get(this.package_);
   }
 
-  public getTypedProject(): Record<string, TypedModule> {
-    const p: Record<string, TypedModule> = {};
-    for (const [moduleId, packages] of this.projectChecker.compiledProject
-      .inner) {
-      for (const [package_, [typedModule]] of packages) {
-        if (package_ !== this.package_) {
-          continue;
-        }
-        p[moduleId] = typedModule;
-      }
+  public getModuleByUriSync(
+    uri: TextDocument["uri"],
+  ): [TypedModule, ErrorInfo[]] | undefined {
+    const doc = this.moduleIdByUri.get(uri);
+    if (doc === undefined) {
+      return undefined;
     }
-    return p;
+
+    return this.getProjectSync().get(doc.moduleId)?.get(this.package_);
   }
 
-  public getDocByModuleId(moduleId: string): TextDocument | undefined {
-    return this.docByModuleId.get(moduleId);
+  /**
+   * Async API: wait for project, as soon as it's ready
+   * (either when the debounce timer completes, or when there's a sync request)
+   */
+  private getProjectAsync(): Promise<project.TypedProject> {
+    if (this.timeoutToken === undefined) {
+      const project = this.getProjectSync();
+      return Promise.resolve(project);
+    }
+
+    return new Promise((resolve) => {
+      this.listenersOnce.push(() => {
+        resolve(this.projectChecker.compiledProject.inner);
+      });
+    });
+  }
+
+  /**
+   * Sync API: synchronously typecheck and get the project immediately.
+   * Will stop the debounce and notify async listeners as well
+   */
+  public getProjectSync(): project.TypedProject {
+    this.runTypecheckSync();
+    return this.projectChecker.compiledProject.inner;
   }
 
   private makeModuleId(uri: TextDocument["uri"]) {

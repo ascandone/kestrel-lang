@@ -99,9 +99,9 @@ export async function lspCmd() {
     state.upsertDoc(change.document);
   });
 
-  connection.languages.inlayHint.on((ctx) => {
-    const module = state.getModuleByUri(ctx.textDocument.uri);
-    if (module === undefined) {
+  connection.languages.inlayHint.on(async (ctx, tk) => {
+    const module = await state.getModuleByUriAsync(ctx.textDocument.uri);
+    if (module === undefined || tk.isCancellationRequested) {
       return;
     }
 
@@ -116,7 +116,7 @@ export async function lspCmd() {
   });
 
   connection.onSignatureHelp(({ textDocument, position }) => {
-    const module = state.getModuleByUri(textDocument.uri);
+    const module = state.getModuleByUriSync(textDocument.uri);
     if (module === undefined) {
       return;
     }
@@ -146,19 +146,19 @@ export async function lspCmd() {
   });
 
   connection.onCompletion(({ textDocument, position }) => {
-    const module = state.getModuleByUri(textDocument.uri);
+    const module = state.getModuleByUriSync(textDocument.uri);
     if (module === undefined) {
       return;
     }
     return getCompletionItems(module[0], position, {
       getModuleByNs(ns) {
-        return state.getModuleByUri(ns)?.[0];
+        return state.getModuleByUriSync(ns)?.[0];
       },
     });
   });
 
   connection.onReferences(({ textDocument, position }) => {
-    const module = state.getModuleByUri(textDocument.uri);
+    const module = state.getModuleByUriSync(textDocument.uri);
     if (module === undefined) {
       return;
     }
@@ -168,7 +168,7 @@ export async function lspCmd() {
         module[0].moduleInterface.package_,
         module[0].moduleInterface.ns,
         position,
-        state.getTypedProject(),
+        state.getProjectSync(),
       )?.references ?? [];
 
     return refs.map(([referenceNs, referenceExpr]) => {
@@ -186,7 +186,7 @@ export async function lspCmd() {
   });
 
   connection.onRenameRequest(({ textDocument, position, newName }) => {
-    const module = state.getModuleByUri(textDocument.uri);
+    const module = state.getModuleByUriSync(textDocument.uri);
     if (module === undefined) {
       return;
     }
@@ -195,7 +195,7 @@ export async function lspCmd() {
       module[0].moduleInterface.package_,
       module[0].moduleInterface.ns,
       position,
-      state.getTypedProject(),
+      state.getProjectSync(),
     );
 
     if (refs === undefined) {
@@ -221,7 +221,7 @@ export async function lspCmd() {
     }
 
     for (const [ns, ident] of refs.references) {
-      const refModule = state.getModuleByUri(ns);
+      const refModule = state.getModuleByUriSync(ns);
       if (refModule === undefined) {
         continue;
       }
@@ -246,7 +246,7 @@ export async function lspCmd() {
   });
 
   connection.onDocumentFormatting(({ textDocument }) => {
-    const module = state.getModuleByUri(textDocument.uri);
+    const module = state.getModuleByUriSync(textDocument.uri);
 
     if (module === undefined) {
       return;
@@ -276,7 +276,7 @@ export async function lspCmd() {
   });
 
   connection.onDocumentSymbol(({ textDocument }) => {
-    const module = state.getModuleByUri(textDocument.uri);
+    const module = state.getModuleByUriSync(textDocument.uri);
     if (module === undefined) {
       return undefined;
     }
@@ -299,9 +299,9 @@ export async function lspCmd() {
     }));
   });
 
-  connection.onCodeLens(({ textDocument }) => {
-    const module = state.getModuleByUri(textDocument.uri);
-    if (module === undefined) {
+  connection.onCodeLens(async ({ textDocument }, ctx) => {
+    const module = await state.getModuleByUriAsync(textDocument.uri);
+    if (module === undefined || ctx.isCancellationRequested) {
       return;
     }
 
@@ -317,7 +317,7 @@ export async function lspCmd() {
   connection.onExecuteCommand(() => {});
 
   connection.onDefinition(({ textDocument, position }) => {
-    const module = state.getModuleByUri(textDocument.uri);
+    const module = state.getModuleByUriSync(textDocument.uri);
     if (module === undefined) {
       return;
     }
@@ -339,7 +339,7 @@ export async function lspCmd() {
   });
 
   connection.onHover(({ textDocument, position }) => {
-    const result = state.getModuleByUri(textDocument.uri);
+    const result = state.getModuleByUriSync(textDocument.uri);
     if (result === undefined) {
       return;
     }

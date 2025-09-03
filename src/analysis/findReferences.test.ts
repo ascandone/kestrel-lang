@@ -2,7 +2,7 @@ import { test, expect } from "vitest";
 import { findReferences } from "./findReferences";
 import { Position } from "../parser";
 import { positionOf, rangeOf } from "./__test__/utils";
-import { Identifier, TypedModule } from "../typecheck";
+import { Identifier } from "../typecheck";
 import * as project from "../typecheck/project";
 import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 
@@ -59,7 +59,7 @@ test("glb decl in different modules", () => {
 
 function typecheckRaw(
   rawProject: Record<string, string>,
-): Record<string, TypedModule> {
+): project.TypedProject {
   const raw: project.RawProject = new Map();
   for (const [moduleId, src] of Object.entries(rawProject)) {
     nestedMapGetOrPutDefault(raw, moduleId).set("", src);
@@ -69,21 +69,13 @@ function typecheckRaw(
 
   checker.typecheck();
 
-  const ret: Record<string, TypedModule> = {};
-
-  for (const [moduleId, packages] of checker.compiledProject.inner) {
-    for (const [, [typedModule]] of packages) {
-      ret[moduleId] = typedModule;
-    }
-  }
-
-  return ret;
+  return checker.compiledProject.inner;
 }
 
 function parseFindReferences(
   hoveringOnNamespace: string,
   position: Position,
-  typedProject: Record<string, TypedModule> = {},
+  typedProject: project.TypedProject,
 ): [string, Identifier][] {
   return findReferences("", hoveringOnNamespace, position, typedProject)!
     .references;

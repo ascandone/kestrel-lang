@@ -804,7 +804,8 @@ export function parse(input: string): ParseResult {
 
   const declarations = declCtx
     .declaration_list()
-    .map((d) => new DeclarationVisitor().visit(d));
+    .map((d) => new DeclarationVisitor().visit(d))
+    .filter((d) => d !== null);
 
   const parsed: UntypedModule = {
     lineComments,

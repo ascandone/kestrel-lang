@@ -8,6 +8,8 @@ import {
 import { statementByOffset } from "./common";
 import { contains } from "../parser";
 import * as visitor from "../typecheck/visitor";
+import { TypedProject } from "../typecheck/project";
+import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 
 export type References = {
   resolution: IdentifierResolution;
@@ -17,16 +19,18 @@ export type References = {
 // TODO also rename exposed imports
 export function findReferences(
   package_: string,
-  namespace: string,
+  moduleId: string,
   position: Position,
-  typedProject: Record<string, TypedModule>,
+  typedProject: TypedProject,
 ): References | undefined {
-  const srcModule = typedProject[namespace];
+  const srcModule = nestedMapGetOrPutDefault(typedProject, moduleId).get(
+    package_,
+  );
   if (srcModule === undefined) {
     throw new Error("[unreachable] module not found");
   }
 
-  const statement = statementByOffset(srcModule, position);
+  const statement = statementByOffset(srcModule[0], position);
   if (statement === undefined) {
     return undefined;
   }
@@ -42,7 +46,7 @@ export function findReferences(
           type: "global-variable",
           declaration: statement.declaration,
           package_,
-          namespace,
+          namespace: moduleId,
         },
         references: findReferencesOfDeclaration(
           statement.declaration,
@@ -59,7 +63,7 @@ export function findReferences(
 
 function findReferencesOfDeclaration(
   declaration: TypedDeclaration,
-  typedProject: Record<string, TypedModule>,
+  typedProject: TypedProject,
 ): [string, Identifier][] {
   const ret: [string, Identifier][] = [];
   for (const [namespace, typedModule] of Object.entries(typedProject)) {
