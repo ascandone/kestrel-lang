@@ -1,7 +1,7 @@
-import { showErrorLine } from "../utils/showErrorLine";
+import { showErrorLine } from "../common/showErrorLine";
 import { Range } from "../parser";
 import { Type, typeToString } from ".";
-import { col, withDisabled } from "../utils/colors";
+import { col, withDisabled } from "../common/colors";
 
 export type Severity = "error" | "warning";
 

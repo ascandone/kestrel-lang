@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { fetchDeps } from "../deps";
-import { col } from "../../utils/colors";
+import { col } from "../../common/colors";
 
 const execP = promisify(exec);
 

@@ -2,7 +2,7 @@ import { promisify } from "node:util";
 import { mkdir, symlink } from "node:fs/promises";
 import { exec } from "node:child_process";
 import * as dec from "ts-decode";
-import { col } from "../utils/colors";
+import { col } from "../common/colors";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { Config, Dependency, readConfig } from "./config";
 import * as paths from "./paths";

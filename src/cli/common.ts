@@ -5,7 +5,7 @@ import {
   compileProject,
   defaultEntryPoint,
 } from "../compiler/backend/js/compiler";
-import { col } from "../utils/colors";
+import { col } from "../common/colors";
 import { Config, getConfigPackageName, readConfig } from "./config";
 import { join } from "node:path";
 import { errorInfoToString } from "../typecheck/errors";
@@ -14,7 +14,7 @@ import {
   DefaultMap,
   nestedMapGetOrPutDefault,
   nestedMapEntries,
-} from "../data/defaultMap";
+} from "../common/defaultMap";
 import * as project from "../typecheck/project";
 
 export const EXTENSION = "kes";

@@ -4,7 +4,7 @@ import { Position } from "../parser";
 import { positionOf, rangeOf } from "./__test__/utils";
 import { Identifier, TypedModule } from "../typecheck";
 import * as project from "../typecheck/project";
-import { nestedMapGetOrPutDefault } from "../data/defaultMap";
+import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 
 test("glb decl in the same module", () => {
   const Main = `

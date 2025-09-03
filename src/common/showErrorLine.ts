@@ -1,5 +1,5 @@
 import { Range } from "../parser";
-import { col } from "../utils/colors";
+import { col } from "./colors";
 
 function repeatN(ch: string, times: number) {
   return Array.from({ length: times }, () => ch).join("");

@@ -38,7 +38,7 @@ import {
 } from "../type";
 import * as err from "./errors";
 import { DependencyProvider, resolve } from "./resolution";
-import { DefaultMap } from "../data/defaultMap";
+import { DefaultMap } from "../common/defaultMap";
 import * as core from "./core_package";
 
 export const DEFAULT_MAIN_TYPE = core.Task(core.Unit);

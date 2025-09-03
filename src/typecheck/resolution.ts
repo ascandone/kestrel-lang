@@ -20,8 +20,8 @@ import * as err from "./errors";
 import { Annotator } from "./Annotator";
 import * as visitor from "./visitor";
 import * as ast from "../parser/ast";
-import * as graph from "../data/graph";
-import { Result } from "../data/result";
+import * as graph from "../common/graph";
+import { Result } from "../common/result";
 
 export type DependencyProviderError =
   | {

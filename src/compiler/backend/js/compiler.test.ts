@@ -12,7 +12,7 @@ import {
 } from "../../__test__/prelude";
 import { CORE_PACKAGE } from "../../../typecheck/core_package";
 import { TypedProject } from "../../../typecheck/project";
-import { nestedMapGetOrPutDefault } from "../../../data/defaultMap";
+import { nestedMapGetOrPutDefault } from "../../../common/defaultMap";
 
 describe("datatype representation", () => {
   test("int", () => {

@@ -1,4 +1,4 @@
-import { nestedMapGetOrPutDefault } from "../data/defaultMap";
+import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 import { RigidVarsCtx, resolveType } from "../type";
 import * as typed from "../typecheck";
 import { CORE_PACKAGE } from "../typecheck/core_package";

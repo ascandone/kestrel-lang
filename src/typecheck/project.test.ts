@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import * as project from "./project";
-import { DefaultMap } from "../data/defaultMap";
+import { DefaultMap } from "../common/defaultMap";
 import * as err from "./errors";
 
 test("single module", () => {

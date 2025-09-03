@@ -1,4 +1,4 @@
-import { nestedMapEntries } from "../../../data/defaultMap";
+import { nestedMapEntries } from "../../../common/defaultMap";
 import { Position, gtEqPos } from "../../../parser";
 import { TypedModule, TypedTypeAst, typeToString } from "../../../typecheck";
 import { TypedProject } from "../../../typecheck/project";

@@ -6,7 +6,7 @@ import * as err from "./errors";
 import { TraitImpl } from "./defaultImports";
 import { Deps as IDeps } from "../compiler/__test__/prelude";
 import { ProjectTypechecker, RawProject } from "./project";
-import { nestedMapGetOrPutDefault } from "../data/defaultMap";
+import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 
 describe("basic constructs inference", () => {
   test("infer int", () => {

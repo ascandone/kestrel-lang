@@ -1,4 +1,4 @@
-import { DefaultMap } from "../data/defaultMap";
+import { DefaultMap } from "../common/defaultMap";
 
 export type ConcreteType =
   | {

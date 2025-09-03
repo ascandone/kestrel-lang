@@ -2,7 +2,7 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import path from "path";
 import * as project from "../typecheck/project";
 import { ErrorInfo, TypedModule } from "../typecheck";
-import { nestedMapGetOrPutDefault } from "../data/defaultMap";
+import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 
 export const DEBOUNCE_AMOUNT_MS = 150;
 

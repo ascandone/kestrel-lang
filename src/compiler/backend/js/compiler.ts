@@ -7,7 +7,7 @@ import * as common from "./common";
 import * as deriving from "./deriving";
 import { CORE_PACKAGE } from "../../../typecheck/core_package";
 import { TypedProject } from "../../../typecheck/project";
-import { nestedMapGetOrPutDefault } from "../../../data/defaultMap";
+import { nestedMapGetOrPutDefault } from "../../../common/defaultMap";
 
 export type CompileOptions = {
   allowDeriving?: string[] | undefined;

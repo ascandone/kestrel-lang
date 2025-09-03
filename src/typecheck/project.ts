@@ -1,9 +1,9 @@
-import { DefaultMap, nestedMapGetOrPutDefault } from "../data/defaultMap";
+import { DefaultMap, nestedMapGetOrPutDefault } from "../common/defaultMap";
 import { parse_ } from "../parser";
 import { TypedModule } from "./typedAst";
 import * as err from "./errors";
 import { TypecheckOptions, typecheck } from "./typecheck";
-import { Result } from "../data/result";
+import { Result } from "../common/result";
 import { DependencyProviderError } from "./resolution";
 
 /** e.g. `{ "My/Mod": { pkg_a: ..., pkg_b: ... } }` */

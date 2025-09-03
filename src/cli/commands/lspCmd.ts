@@ -16,14 +16,14 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import { getConfigPackageName, readConfig } from "../config";
 import { LsState } from "../../language-server/language-server";
 import { readRawProject } from "../common";
-import { nestedMapGetOrPutDefault } from "../../data/defaultMap";
+import { nestedMapGetOrPutDefault } from "../../common/defaultMap";
 import {
   ErrorInfo,
   ParsingError,
   Severity,
   typeToString,
 } from "../../typecheck";
-import { withDisabled } from "../../utils/colors";
+import { withDisabled } from "../../common/colors";
 import {
   findReferences,
   functionSignatureHint,
