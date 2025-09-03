@@ -9,7 +9,10 @@ import { statementByOffset } from "./common";
 import { contains } from "../parser";
 import * as visitor from "../typecheck/visitor";
 import { TypedProject } from "../typecheck/project";
-import { nestedMapGetOrPutDefault } from "../common/defaultMap";
+import {
+  nestedMapEntries,
+  nestedMapGetOrPutDefault,
+} from "../common/defaultMap";
 
 export type References = {
   resolution: IdentifierResolution;
@@ -66,7 +69,9 @@ function findReferencesOfDeclaration(
   typedProject: TypedProject,
 ): [string, Identifier][] {
   const ret: [string, Identifier][] = [];
-  for (const [namespace, typedModule] of Object.entries(typedProject)) {
+  for (const [namespace, _package_, [typedModule]] of nestedMapEntries(
+    typedProject,
+  )) {
     const lookups = findReferencesOfDeclarationInModule(
       declaration,
       typedModule,
