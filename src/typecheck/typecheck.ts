@@ -12,7 +12,7 @@ import {
   ModuleInterface,
   StructResolution,
   TypedBlockStatement,
-  TypedDeclaration,
+  TypedValueDeclaration,
   TypedExpr,
   TypedMatchPattern,
   TypedModule,
@@ -92,7 +92,7 @@ export function typecheck(
 
 type ScheduledAmbiguousVarCheck = {
   instantiated: Map<string, Type>;
-  currentDeclaration: TypedDeclaration;
+  currentDeclaration: TypedValueDeclaration;
   instantiatedVarNode: TypedExpr & { type: "identifier" };
 };
 
@@ -105,8 +105,8 @@ class Typechecker {
 
   private ambiguousTypeVarErrorsEmitted = new Set<number>();
 
-  private currentRecGroup = new Set<TypedDeclaration>();
-  private currentDeclaration?: TypedDeclaration;
+  private currentRecGroup = new Set<TypedValueDeclaration>();
+  private currentDeclaration?: TypedValueDeclaration;
 
   private scheduledAmbiguousVarChecks: ScheduledAmbiguousVarCheck[] = [];
 
@@ -295,7 +295,7 @@ class Typechecker {
         this.typecheckDeclaration(decl);
       }
 
-      const generalized = new Map<TypedDeclaration, GeneralizeResult>();
+      const generalized = new Map<TypedValueDeclaration, GeneralizeResult>();
 
       for (const decl of group) {
         const gen = generalize(decl.binding.$type, decl.$traitsConstraints);
@@ -431,33 +431,46 @@ class Typechecker {
     );
   }
 
-  private typecheckDeclaration(decl: TypedDeclaration) {
-    if (decl.typeHint !== undefined) {
-      // TODO validate where clause:
-      // 1. no duplicate vars
-      // 2. no orphan vars
-      decl.$traitsConstraints = Object.fromEntries(
-        decl.typeHint.where.map(
-          (def) => [def.typeVar, new Set(def.traits)] as const,
-        ),
-      );
+  private unifyWithTypeAttribute(decl: TypedValueDeclaration) {
+    const hintsAttributes = decl.attributes.flatMap((a) =>
+      a.type === "@type" ? [a] : [],
+    );
 
-      const hint = this.hydrateTypeAst(decl.typeHint.mono, {
-        type: "signature",
-      });
-      this.unifyNode(decl, decl.binding.$type, hint);
+    if (hintsAttributes.length > 1) {
+      // TODO emit error
     }
+
+    const hint = hintsAttributes[0]?.polytype;
+
+    if (hint === undefined) {
+      return;
+    }
+
+    // TODO validate where clause:
+    // 1. no duplicate vars
+    // 2. no orphan vars
+    decl.$traitsConstraints = Object.fromEntries(
+      hint.where.map((def) => [def.typeVar, new Set(def.traits)] as const),
+    );
+
+    const type_ = this.hydrateTypeAst(hint.mono, {
+      type: "signature",
+    });
+    this.unifyNode(decl, decl.binding.$type, type_);
+  }
+
+  private typecheckDeclaration(decl: TypedValueDeclaration) {
+    this.unifyWithTypeAttribute(decl);
 
     if (decl.binding.name === "main") {
       this.unifyNode(decl.binding, decl.binding.$type, this.mainType);
     }
 
-    if (decl.extern) {
-      return;
+    // TODO handle @extern
+    if (decl.value !== undefined) {
+      this.unifyExpr(decl.value, decl.binding.$type, decl.value.$type);
+      this.typecheckExpr(decl.value);
     }
-
-    this.unifyExpr(decl.value, decl.binding.$type, decl.value.$type);
-    this.typecheckExpr(decl.value);
   }
 
   private typecheckPattern(pattern: TypedMatchPattern) {

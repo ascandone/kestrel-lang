@@ -28,7 +28,9 @@ describe(errorInfoToString.name, () => {
   test("type error", () => {
     const src = `
       type Custom {}
-      pub let x: Custom = "abc"
+
+      @type Custom
+      pub let x = "abc"
     `;
     snapshotErr(src);
   });

@@ -15,7 +15,9 @@ test("Extract values documentation", () => {
     pub let x = 1
 
     /// Extern value
-    extern pub let y: (Bool) -> Int
+    @type (Bool) -> Int
+    @extern
+    pub let y
   `;
 
   expect(parseExtractDocs(src)).toEqual<ModuleDoc>({
@@ -83,9 +85,15 @@ test("Extract types documentation", () => {
 
 test("order between types and values", () => {
   const src = `
-  extern pub let x: a
+  @extern
+  @type a
+  pub let x
+
   extern pub type X
-  extern pub let y: b
+
+  @extern
+  @type b
+  pub let y
 `;
 
   expect(parseExtractDocs(src)).toEqual<ModuleDoc>({

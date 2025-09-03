@@ -39,22 +39,23 @@ importExposing:
 	name = (ID | INFIX_ID)				# valueExposing
 	| name = TYPE_ID EXPOSING_NESTED?	# typeExposing;
 
-declaration:
-	letDeclaration_				# letDeclaration
-	| externLetDeclaration_		# externLetDeclaration
-	| typeDeclaration_			# typeDeclaration
-	| structDeclaration_		# structDeclaration
-	| externTypeDeclaration_	# externTypeDeclaration;
+declaration
+	: letDeclaration_	# letDeclaration
+	| typeDeclaration_ # typeDeclaration
+	| structDeclaration_ # structDeclaration
+	| externTypeDeclaration_ # externTypeDeclaration
+	;
+
+valueAttribute
+	: '@type' polyType # attrType
+	| '@inline' # attrInline
+	| '@extern' #attrExtern
+	;
 
 letDeclaration_:
-	(doc = DOC_COMMENT_LINE*) (inline = '@inline')? (
-		pub = 'pub'?
-	) 'let' ID (':' typeHint = polyType)? '=' expr;
-
-externLetDeclaration_:
-	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'let' (
-		binding = (INFIX_ID | ID)
-	) ':' typeHint = polyType;
+	(doc = DOC_COMMENT_LINE*)
+	(valueAttribute*)
+	(pub = 'pub'?) 'let' binding=(INFIX_ID | ID) ('=' expr)?;
 
 typeDeclaration_:
 	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants?

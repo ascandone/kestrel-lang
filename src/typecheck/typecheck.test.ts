@@ -108,7 +108,11 @@ describe("basic constructs inference", () => {
     const [types, errors] = tc(
       `
     extern type Bool
-    extern pub let (>): (a, a) -> Bool
+
+    @extern
+    @type (a, a) -> Bool
+    let (>)
+
     pub let x = 1 > 2
   `,
     );
@@ -126,7 +130,10 @@ describe("basic constructs inference", () => {
     type T { C }
     type Ret {}
 
-    extern pub let f: (T, T) -> Ret
+
+    @extern
+    @type (T, T) -> Ret
+    pub let f
     pub let x = f(42, C)
   `;
 
@@ -142,7 +149,10 @@ describe("basic constructs inference", () => {
     type T1 { C1 }
     type Ret {}
 
-    extern let f: (T, T1) -> Ret
+    
+    @extern
+    @type (T, T1) -> Ret
+    let f
     pub let x = C |> f(C1)
   `,
     );
@@ -169,7 +179,10 @@ describe("basic constructs inference", () => {
       `
     extern type Int
     extern type Bool
-    extern pub let (>): (Int, Int) -> Bool
+
+    @extern
+    @type (Int, Int) -> Bool
+    pub let (>)
     pub let f = fn x, y { x > y }
   `,
     );
@@ -526,7 +539,8 @@ describe("type hints", () => {
     const [types, errs] = tc(
       `
         extern type Int
-        pub let x: Int = 1.1
+        @type Int
+        pub let x = 1.1
       `,
     );
     expect(errs).toHaveLength(1);
@@ -540,7 +554,8 @@ describe("type hints", () => {
     const [types, errs] = tc(
       `
         type T { C }
-        pub let x: () -> T = fn { 42 }
+        @type () -> T
+        pub let x = fn { 42 }
         `,
     );
     expect(errs).toHaveLength(1);
@@ -557,8 +572,13 @@ describe("type hints", () => {
       `
       extern type Bool
       extern type Int
-      extern pub let (!): (Bool) -> Bool
-      pub let x: (Bool) -> Int = fn x { !x }
+
+      @extern
+      @type (Bool) -> Bool
+      pub let (!)
+
+      @type (Bool) -> Int
+      pub let x = fn x { !x }
       `,
     );
     expect(errs).toHaveLength(1);
@@ -574,7 +594,8 @@ describe("type hints", () => {
     const [types, errs] = tc(
       `
       extern type Int
-      pub let x: _ = 1`,
+      @type _
+      pub let x = 1`,
     );
     expect(errs).toEqual([]);
     expect(types).toEqual({
@@ -583,7 +604,10 @@ describe("type hints", () => {
   });
 
   test("vars type hints should be generalized", () => {
-    const [types, errs] = tc("pub let x: a = 0");
+    const [types, errs] = tc(`
+      @type a
+      pub let x = 0
+    `);
 
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toBeInstanceOf(err.TypeMismatch);
@@ -594,7 +618,10 @@ describe("type hints", () => {
   });
 
   test("unify generalized values", () => {
-    const [types, errs] = tc("pub let f: (ta) -> tb = fn x { x }");
+    const [types, errs] = tc(`
+      @type (ta) -> tb 
+      pub let f = fn x { x }
+    `);
     expect(errs[0]!.description).toBeInstanceOf(err.TypeMismatch);
     expect(types).toEqual({
       f: "(ta) -> tb",
@@ -602,7 +629,10 @@ describe("type hints", () => {
   });
 
   test("vars type hints are used by typechecker", () => {
-    const [types, errs] = tc("pub let eq: (a, a, b) -> a = fn x, _y, _z { x }");
+    const [types, errs] = tc(`
+      @type (a, a, b) -> a
+      pub let eq = fn x, _y, _z { x }
+    `);
     expect(errs).toEqual([]);
     expect(types).toEqual({
       eq: "(a, a, b) -> a",
@@ -612,7 +642,9 @@ describe("type hints", () => {
   test("type hints instantiate polytypes", () => {
     const [types, errs] = tc(`
       extern type Int
-      pub let f: (Int) -> Int = fn x { x }
+
+      @type (Int) -> Int
+      pub let f = fn x { x }
     `);
     expect(errs).toEqual([]);
     expect(types).toEqual({
@@ -621,7 +653,10 @@ describe("type hints", () => {
   });
 
   test("unknown types are ignored", () => {
-    const [types, errs] = tc("pub let x: NotFound = 1");
+    const [types, errs] = tc(`
+      @type NotFound
+      pub let x = 1
+    `);
 
     expect(errs).toHaveLength(1);
 
@@ -637,7 +672,10 @@ describe("traits", () => {
     const [types, errs] = tc(
       `
         extern type String
-        extern pub let show: (a) -> String where a: Show
+
+        @extern
+        @type (a) -> String where a: Show
+        pub let show
         pub let x = show(42) // note that 'Int' doesn't implement 'Show' in this test
       `,
     );
@@ -652,7 +690,10 @@ describe("traits", () => {
     const [, errs] = tc(
       `
         extern type String
-        extern pub let show: (a) -> String where a: Show
+
+        @extern
+        @type (a) -> String where a: Show
+        pub let show
         pub let x = show(42)
       `,
       {},
@@ -666,7 +707,10 @@ describe("traits", () => {
     const [types, errs] = tc(
       `
         extern type String
-        extern pub let show: (a) -> String where a: Show
+
+        @extern
+        @type (a) -> String where a: Show
+        pub let show
 
         pub let use_show = fn value {
           show(value)
@@ -684,10 +728,16 @@ describe("traits", () => {
     const [, errs] = tc(
       `
         extern type String
-        extern let show: (a) -> String where a: Show
+        
+        @extern
+        @type (a) -> String where a: Show
+        let show
 
         extern type Int
-        extern pub let (+): (Int, Int) -> Int
+
+        @extern
+        @type (Int, Int) -> Int
+        pub let (+)
         pub let f = fn x {
           let _ = show(x);
           x + 1
@@ -701,8 +751,14 @@ describe("traits", () => {
     const [types, errs] = tc(
       `
         extern type Unit
-        extern let show: (a) -> Unit where a: Show
-        extern let eq: (a) -> Unit where a: Eq
+        
+        @extern
+        @type (a) -> Unit where a: Show
+        let show
+        
+        @extern
+        @type (a) -> Unit where a: Eq
+        let eq
 
         pub let f = fn x {
           let _ = show(x);
@@ -722,8 +778,14 @@ describe("traits", () => {
     const [types, errs] = tc(
       `
         extern type Unit
-        extern pub let show: (a) -> Unit where a: Show
-        extern pub let eq: (a) -> Unit where a: Eq
+
+        @extern
+        @type (a) -> Unit where a: Show
+        pub let show
+
+        @extern
+        @type (a) -> Unit where a: Eq
+        pub let eq
 
         pub let f = fn x {
           let _ = show(x);
@@ -744,7 +806,10 @@ describe("traits", () => {
   test("is able to derive Eq trait in ADTs with only a singleton", () => {
     const [, errs] = tc(
       `
-        extern let take_eq: (a) -> a where a: Eq
+        
+      @extern
+        @type (a) -> a where a: Eq
+        let take_eq
         type MyType {
           Singleton
         }
@@ -760,7 +825,10 @@ describe("traits", () => {
     const [, errs] = tc(
       `
         extern type NotEq
-        extern let take_eq: (a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
         pub(..) type MyType {
           Singleton,
@@ -780,7 +848,10 @@ describe("traits", () => {
       `
         type EqType { }
 
-        extern let take_eq: (a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
         pub(..) type MyType {
           Singleton,
@@ -797,14 +868,20 @@ describe("traits", () => {
   test("requires deps to derive Eq in order to derive Eq", () => {
     const [, errs] = tc(
       `
-        extern let take_eq: (a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
         pub(..) type MyType<a> {
           Box(a)
         }
 
         extern type NotEq
-        extern let my_type: MyType<NotEq>
+        
+        @extern
+        @type MyType<NotEq>
+        let my_type
 
         pub let example = take_eq(my_type)
       `,
@@ -816,7 +893,10 @@ describe("traits", () => {
   test("derives Eq when dependencies derive Eq", () => {
     const [, errs] = tc(
       `
-        extern let take_eq: (a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
         type IsEq { }
 
@@ -825,7 +905,10 @@ describe("traits", () => {
           None,
         }
 
-        extern let is_eq: Option<IsEq>
+        
+        @extern
+        @type Option<IsEq>
+        let is_eq
 
         pub let example = take_eq(is_eq)
       `,
@@ -837,7 +920,10 @@ describe("traits", () => {
   test("derives in self-recursive types", () => {
     const [, errs] = tc(
       `
-        extern let take_eq: (a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
         pub(..) type Rec<a> {
           End,
@@ -855,7 +941,10 @@ describe("traits", () => {
     const [, errs] = tc(
       `
         type Box<a> { Box(a) }
-        extern let take_eq: (a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
         pub(..) type Rec<a> {
           End,
@@ -873,7 +962,10 @@ describe("traits", () => {
     test("is able to derive Eq in empty structs", () => {
       const [, errs] = tc(
         `
-          extern let take_eq: (a) -> a where a: Eq
+          
+          @extern
+          @type (a) -> a where a: Eq
+          let take_eq
   
           type MyType struct { }
   
@@ -887,7 +979,10 @@ describe("traits", () => {
     test("is able to derive Show in empty structs", () => {
       const [, errs] = tc(
         `
-          extern let take_shoq: (a) -> a where a: Show
+          
+          @extern
+          @type (a) -> a where a: Show
+          let take_shoq
   
           type MyType struct { }
   
@@ -901,7 +996,10 @@ describe("traits", () => {
     test("is able to derive Eq in structs where all the fields are Eq", () => {
       const [, errs] = tc(
         `
-          extern let take_eq: (a) -> a where a: Eq
+          
+          @extern
+          @type (a) -> a where a: Eq
+          let take_eq
           type EqT { EqT }
   
           type MyType struct {
@@ -918,10 +1016,16 @@ describe("traits", () => {
     test("is not able to derive Eq in structs where at least a fields is not Eq", () => {
       const [, errs] = tc(
         `
-          extern let take_eq: (a) -> a where a: Eq
+          
+          @extern
+          @type (a) -> a where a: Eq
+          let take_eq
   
           extern type NotEq
-          extern let x: NotEq
+          
+          @extern
+          @type NotEq
+          let x
   
           type MyType struct {
             x: NotEq
@@ -938,7 +1042,10 @@ describe("traits", () => {
     test("requires struct params to be Eq when they appear in struct, for it to be derived", () => {
       const [types, errs] = tc(
         `
-          extern pub let take_eq: (a) -> a where a: Eq
+
+          @extern
+          @type (a) -> a where a: Eq
+          pub let take_eq
   
           type MyType<a, b> struct {
             x: b,
@@ -963,7 +1070,10 @@ describe("traits", () => {
         `
           type Option<a> { None, Some(a) }
 
-          extern let take_eq: (a) -> a where a: Eq
+          
+          @extern
+          @type (a) -> a where a: Eq
+          let take_eq
   
           type Rec<a> struct {
             field: Option<Rec<a>>,
@@ -987,7 +1097,10 @@ describe("traits", () => {
     const [, errs] = tc(
       `
         type Box<a> { Box(a) }
-        extern let take_eq: (a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
         extern type NotEq
         pub(..) type Rec<a> {
@@ -1004,8 +1117,14 @@ describe("traits", () => {
 
   test("forbid ambiguous instantiations (1)", () => {
     const [, errs] = tc(`
-    extern let take_default: (a) -> x where a: Default
-    extern let default: a where a: Default
+    
+    @extern
+    @type (a) -> x where a: Default
+    let take_default
+    
+    @extern
+    @type a where a: Default
+    let default
     pub let forbidden = take_default(default)
 `);
 
@@ -1019,7 +1138,10 @@ describe("traits", () => {
   test("forbid ambiguous instantiations (2)", () => {
     const [, errs] = tc(`
       type String {}
-      extern let show: (a) -> String where a: Show
+      
+      @extern
+      @type (a) -> String where a: Show
+      let show
 
       pub let f = {
         let _nested = fn x { show(x) };
@@ -1040,8 +1162,14 @@ describe("traits", () => {
       `
     extern type X
 
-    extern let take_x: (X) -> X
-    extern let default: a where a: Default
+    
+    @extern
+    @type (X) -> X
+    let take_x
+    
+    @extern
+    @type a where a: Default
+    let default
     pub let forbidden = take_x(default)
 `,
       {},
@@ -1056,9 +1184,13 @@ describe("traits", () => {
     const [, errs] = tc(
       `
     extern type X
-    extern let default: a where a: Default
+    
+    @extern
+    @type a where a: Default
+    let default
 
-    pub let legal: X = default
+    @type X
+    pub let legal = default
 `,
       {},
       [],
@@ -1076,8 +1208,14 @@ describe("traits", () => {
       type Bool { True, False }
       type Option<a> { None, Some(a) }
 
-      extern let find: (List<a>, (a) -> Bool) -> Option<a>
-      extern let (==): (a, a) -> Bool where a: Eq
+      
+      @extern
+      @type (List<a>, (a) -> Bool) -> Option<a>
+      let find
+      
+      @extern
+      @type (a, a) -> Bool where a: Eq
+      let (==)
 
       pub let res = None == find(Nil, fn _ {
         False
@@ -1093,8 +1231,14 @@ describe("traits", () => {
     const [, errs] = tc(
       `
       extern type String
-      extern let show: (a) -> String where a: Show
-      extern let showable: a where a: Show
+      
+      @extern
+      @type (a) -> String where a: Show
+      let show
+      
+      @extern
+      @type a where a: Show
+      let showable
 
       pub let e = {
         let showable1 = showable;
@@ -1112,7 +1256,10 @@ describe("traits", () => {
     const [, errs] = tc(
       `
     extern type X
-    extern let show: (a) -> X where a: Default
+    
+    @extern
+    @type (a) -> X where a: Default
+    let show
 
     pub let x = show(unbound_var)
 `,
@@ -1129,8 +1276,13 @@ describe("traits", () => {
     const [, errs] = tc(
       `
       extern type Option<a>
-      extern let default: a where a: Default
-      pub let forbidden: Option<a> = default
+      
+      @extern
+      @type a where a: Default
+      let default
+
+      @type Option<a>
+      pub let forbidden = default
   `,
       {},
       [],
@@ -1155,8 +1307,13 @@ describe("traits", () => {
     const [, errs] = tc(
       `
       extern type Option<a>
-      extern let default: a where a: Default
-      pub let forbidden: Option<a> where a: Default = default
+      
+      @extern
+      @type a where a: Default
+      let default
+
+      @type Option<a> where a: Default
+      pub let forbidden = default
   `,
       {},
       [],
@@ -1177,8 +1334,13 @@ describe("traits", () => {
     const [, errs] = tc(
       `
       extern type String
-      extern let default: a where a: Default
-      pub let forbidden: String = default
+      
+      @extern
+      @type a where a: Default
+      let default
+
+      @type String
+      pub let forbidden = default
   `,
       {},
       [],
@@ -1200,10 +1362,14 @@ describe("custom types", () => {
     const [types, errs] = tc(
       `
     extern type X
-    extern pub let x: X
+
+    @extern
+    @type X
+    pub let x
 
     type T { }
-    pub let f: (T) -> X = fn _ { x }
+    @type (T) -> X 
+    pub let f = fn _ { x }
   `,
     );
 
@@ -1431,7 +1597,10 @@ describe("struct", () => {
     const [, errs] = tc(`
       type Person struct { }
 
-      extern pub let p: Person
+
+      @extern
+      @type Person
+      pub let p
     `);
 
     expect(errs).toHaveLength(0);
@@ -1456,7 +1625,10 @@ describe("struct", () => {
         name: String
       }
 
-      extern let p: Person
+      
+      @extern
+      @type Person
+      let p
 
       pub let p_name = p.name
     `);
@@ -1474,7 +1646,11 @@ describe("struct", () => {
         name: String
       }
 
-      extern let p: Person
+      
+      @extern
+      @type Person
+      let p
+
       pub let invalid = p.invalid_field
     `);
 
@@ -1501,7 +1677,8 @@ describe("struct", () => {
     const [types, errs] = tc(
       `
       import Person.{Person}
-      pub let name: (Person) -> _ = fn p { p.name }
+      @type (Person) -> _
+      pub let name = fn p { p.name }
     `,
       { Person },
     );
@@ -1536,7 +1713,10 @@ describe("struct", () => {
       `
       import Person.{Person}
 
-      extern pub let x: Person // <- this prevents UnusedExposing err
+
+      @extern
+      @type Person
+      pub let x // <- this prevents UnusedExposing err
 
       pub let name = fn p { p.name }
     `,
@@ -1564,7 +1744,10 @@ describe("struct", () => {
       `
       import Person.{Person}
 
-      extern pub let p: Person
+
+      @extern
+      @type Person
+      pub let p
 
       pub let name = p.name 
     `,
@@ -1724,7 +1907,10 @@ describe("struct", () => {
       `
       import Person.{Person}
 
-      extern pub let p: Person
+
+      @extern
+      @type Person
+      pub let p
 
       pub let name = p.name 
     `,
@@ -1760,7 +1946,10 @@ describe("struct", () => {
     const [types, errs] = tc(
       `
         type Person<a, b, c> struct { }
-        extern pub let p: Person
+
+        @extern
+        @type Person
+        pub let p
     `,
     );
 
@@ -1779,7 +1968,10 @@ describe("struct", () => {
         }
 
         extern type Int
-        extern pub let box: Box<Int>
+
+        @extern
+        @type Box<Int>
+        pub let box
 
         pub let field = box.field
     `,
@@ -1800,8 +1992,11 @@ describe("struct", () => {
         field: a
       }
 
-      pub let get_field_1: (Box<Int>) -> Int = fn box { box.field }
-      pub let get_field_2: (Box<_>) -> _ = fn box { box.field }
+      @type (Box<Int>) -> Int
+      pub let get_field_1 = fn box { box.field }
+
+      @type (Box<_>) -> _
+      pub let get_field_2 = fn box { box.field }
   `,
     );
 
@@ -2584,7 +2779,8 @@ describe("pattern matching", () => {
 describe("prelude", () => {
   test("intrinsics' types are not visible by default", () => {
     const [, errs] = tc(`
-     pub let x : Int = 0
+      @type Int
+      pub let x = 0
     `);
 
     expect(errs).toHaveLength(1);
@@ -2594,8 +2790,13 @@ describe("prelude", () => {
   test("checks extern types", () => {
     const [, errs] = tc(`
      extern type ExtType
-     extern pub let x : ExtType
-     pub let y: ExtType = x
+
+     @extern
+     @type ExtType
+     pub let x
+
+     @type ExtType 
+     pub let y = x
     `);
 
     expect(errs).toEqual([]);
@@ -2605,7 +2806,11 @@ describe("prelude", () => {
     const [types, errs] = tc(
       `
      type Unit { }
-     extern pub let x : Unit
+
+     @extern
+     @type Unit
+     pub let x
+
      pub let y = x
     `,
     );
@@ -2739,7 +2944,10 @@ describe("modules", () => {
     const [, errs] = tc(
       `
       import T1.{T1, T1}
-      extern pub let t: T1
+
+      @extern
+      @type T1
+      pub let t
     `,
       { T1 },
     );
@@ -2765,7 +2973,10 @@ describe("modules", () => {
       import T1.{T1(..)}
       type T1 {}
 
-      extern pub let t: T1
+
+      @extern
+      @type T1
+      pub let t
     `,
       { T1 },
     );
@@ -2847,7 +3058,8 @@ describe("modules", () => {
 
     const [, errs] = tc(
       `
-      let x: (MyType) -> MyType = fn x { x }
+      @type (MyType) -> MyType
+      let x = fn x { x }
     `,
       { A },
       [
@@ -2998,7 +3210,10 @@ describe("modules", () => {
     const [types, errs] = tc(
       `
       import Mod.{Example}
-      extern pub let x: Example
+
+      @extern
+      @type Example
+      pub let x
     `,
       { Mod },
     );
@@ -3014,7 +3229,10 @@ describe("modules", () => {
     const [types, errs] = tc(
       `
       import Mod
-      extern pub let x: Mod.Example
+
+      @extern
+      @type Mod.Example
+      pub let x
     `,
       { Mod },
     );
@@ -3125,7 +3343,10 @@ describe("modules", () => {
     const [, errs] = tc(
       `
       import Mod
-      extern pub let x: Mod.PrivateType
+
+      @extern
+      @type Mod.PrivateType
+      pub let x
     `,
       { Mod },
     );
@@ -3173,7 +3394,9 @@ describe("modules", () => {
       `
       import Mod
       type T { Constr }
-      pub let t: T = Mod.Constr
+
+      @type T
+      pub let t = Mod.Constr
     `,
       { Mod },
     );

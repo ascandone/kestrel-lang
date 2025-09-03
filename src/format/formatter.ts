@@ -7,12 +7,13 @@ import {
   PolyTypeAst,
   RangeMeta,
   TypeAst,
-  Declaration,
+  ValueDeclaration,
   Expr,
   Import,
   UntypedModule,
   TypeDeclaration,
   TypeVariant,
+  ValueDeclarationAttribute,
 } from "../parser";
 import {
   Doc,
@@ -554,7 +555,21 @@ function declarationValueToDoc(expr: Expr): Doc {
   }
 }
 
-function declToDoc(ast: Declaration): Doc {
+function attrToDoc(ast: ValueDeclarationAttribute): Doc {
+  switch (ast.type) {
+    case "@type":
+      return concat(text(ast.type), text(" "), typeHintToDoc(ast.polytype));
+
+    case "@inline":
+    case "@extern":
+      return text(ast.type);
+
+    default:
+      return ast satisfies never;
+  }
+}
+
+function declToDoc(ast: ValueDeclaration): Doc {
   const name =
     isInfix(ast.binding.name) || isPrefix(ast.binding.name)
       ? `(${ast.binding.name})`
@@ -562,14 +577,15 @@ function declToDoc(ast: Declaration): Doc {
 
   return concat(
     ast.docComment === undefined ? nil : handleDocComment(ast.docComment),
-    !ast.extern && ast.inline ? concat(text("@inline"), lines()) : nil,
-    ast.extern ? text("extern ") : nil,
+
+    ...ast.attributes.map((a) => concat(attrToDoc(a), lines())),
+
     ast.pub ? text("pub ") : nil,
     text(`let ${name}`),
-    ast.typeHint === undefined
+
+    ast.value === undefined
       ? nil
-      : concat(text(": "), typeHintToDoc(ast.typeHint)),
-    ast.extern ? nil : concat(text(" ="), declarationValueToDoc(ast.value)),
+      : concat(text(" ="), declarationValueToDoc(ast.value)),
   );
 }
 
@@ -682,7 +698,7 @@ function importToDoc(import_: Import): Doc {
 }
 
 type Statement =
-  | { type: "decl"; decl: Declaration }
+  | { type: "decl"; decl: ValueDeclaration }
   | { type: "type"; decl: TypeDeclaration };
 
 export function format(ast: UntypedModule): string {

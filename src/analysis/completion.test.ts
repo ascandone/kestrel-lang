@@ -16,7 +16,9 @@ type Person struct {
   age: Int,
 }
 
-extern let p: Person
+@type Person
+@extern
+let p
 
 let expr = p.  
 `;

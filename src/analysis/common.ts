@@ -1,6 +1,6 @@
 import { Position, contains } from "../parser";
 import {
-  TypedDeclaration,
+  TypedValueDeclaration,
   TypedImport,
   TypedModule,
   TypedTypeDeclaration,
@@ -22,7 +22,7 @@ export function firstBy<T, U>(
 export type StatementType =
   | {
       type: "declaration";
-      declaration: TypedDeclaration;
+      declaration: TypedValueDeclaration;
     }
   | {
       type: "type-declaration";

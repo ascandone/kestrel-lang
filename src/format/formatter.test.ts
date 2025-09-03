@@ -606,7 +606,9 @@ let f = 0
   test("doc comments on extern declrs", () => {
     expect(`/// First line
 /// Second line
-extern let f: X
+@extern
+@type X
+let f
 `).toBeFormatted();
   });
 
@@ -644,64 +646,94 @@ import A/B
 
 describe("type hints", () => {
   test("concrete type", () => {
-    expect(`let f: Int = 0\n`).toBeFormatted();
+    expect(`@type Int
+let f = 0
+`).toBeFormatted();
   });
 
   test("qualified concrete type", () => {
-    expect(`let f: A/B/C.Int = 0\n`).toBeFormatted();
+    expect(`@type A/B/C.Int
+let f = 0
+`).toBeFormatted();
   });
 
   test("type hints on extern", () => {
-    expect(`extern let f: Int\n`).toBeFormatted();
+    expect(`@type Int
+@extern
+let f\n`).toBeFormatted();
   });
 
   test("infix extern", () => {
-    expect(`extern let (+): (Int, Int) -> Int\n`).toBeFormatted();
+    expect(`@extern
+@type (Int, Int) -> Int
+let (+)\n`).toBeFormatted();
   });
 
   test("prefix extern", () => {
-    expect(`extern let (!): (Bool) -> Bool\n`).toBeFormatted();
+    expect(`@extern
+@type (Bool) -> Bool
+let (!)\n`).toBeFormatted();
   });
 
   test("concrete with one arg", () => {
-    expect(`extern let f: Option<Int>\n`).toBeFormatted();
+    expect(`@extern
+@type Option<Int>
+let f\n`).toBeFormatted();
   });
 
   test("concrete with many args", () => {
-    expect(`extern let f: Result<Int, String>\n`).toBeFormatted();
+    expect(`@extern
+@type Result<Int, String>
+let f\n`).toBeFormatted();
   });
 
   test("tvar", () => {
-    expect(`extern let f: a\n`).toBeFormatted();
+    expect(`@extern
+@type a
+let f\n`).toBeFormatted();
   });
 
   test("catchall", () => {
-    expect(`extern let f: _\n`).toBeFormatted();
+    expect(`@extern
+@type _
+let f\n`).toBeFormatted();
   });
 
   test("Fn with no args", () => {
-    expect(`extern let f: () -> Int\n`).toBeFormatted();
+    expect(`@extern
+@type () -> Int
+let f\n`).toBeFormatted();
   });
 
   test("Fn with one arg", () => {
-    expect(`extern let f: (A) -> Int\n`).toBeFormatted();
+    expect(`@extern
+@type (A) -> Int
+let f\n`).toBeFormatted();
   });
 
   test("Fn with many arg", () => {
-    expect(`extern let f: (A, B, C) -> Int\n`).toBeFormatted();
+    expect(`@extern
+@type (A, B, C) -> Int
+let f\n`).toBeFormatted();
   });
 
   test("tuple sugar", () => {
-    expect(`extern let f: (Int, Option<Char>)\n`).toBeFormatted();
+    expect(`@extern
+@type (Int, Option<Char>)
+let f\n`).toBeFormatted();
   });
 
   test("type with trait annotations", () => {
-    expect(`extern let f: (a) -> b where a: Show, b: Eq\n`).toBeFormatted();
+    expect(`@extern
+@type (a) -> b where a: Show, b: Eq
+let f\n`).toBeFormatted();
   });
 
   test("type with many traits for each var", () => {
     expect(
-      `extern let x: (a, b) where a: Show + Eq, b: Ord + Show\n`,
+      `@extern
+@type (a, b) where a: Show + Eq, b: Ord + Show
+let x\n`,
     ).toBeFormatted();
   });
 });

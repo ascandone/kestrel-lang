@@ -509,7 +509,7 @@ export function lowerProgram(
         const implArity = makeImplicitArity(decl, decl.$traitsConstraints);
         knownImplicitArities.set(ident.toString(), implArity);
 
-        if (decl.extern) {
+        if (decl.value === undefined) {
           visitReferencedTypes(decl.binding.$type, (ns) => {
             if (ns !== namespace) {
               getDependency(ns);
@@ -529,7 +529,7 @@ export function lowerProgram(
           {
             name: ident,
             value: emitter.lowerExpr(decl.value),
-            inline: decl.inline,
+            inline: decl.attributes.some((a) => a.type === "@inline"),
             implicitTraitParams: implArity,
           },
         ];
@@ -578,7 +578,7 @@ const CONS = (hd: ir.Expr, tl: ir.Expr): ir.Expr => ({
  * Traverse the type of a declaration to find the implicit arity (the trait dicts to pass)
  * */
 function makeImplicitArity(
-  decl: typed.TypedDeclaration,
+  decl: typed.TypedValueDeclaration,
   traitsBounds: RigidVarsCtx,
 ): ir.ImplicitParam[] {
   const alreadySeen = new Set<string>();
