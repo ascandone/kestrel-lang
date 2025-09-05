@@ -23,8 +23,9 @@ async function getDocsJson(root: string) {
     config.name ?? "",
     config.version,
     typedProject,
+    new Set(config.exposedModules),
   );
-  return JSON.stringify(projectDoc);
+  return JSON.stringify(projectDoc, null, 2);
 }
 
 export async function makeDocs() {
