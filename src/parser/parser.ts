@@ -15,7 +15,6 @@ import Parser, {
   CallContext,
   CharContext,
   CharPatternContext,
-  ConsContext,
   ConsPatternContext,
   ConstructorContext,
   ExprContext,
@@ -426,18 +425,6 @@ class ExpressionVisitor extends Visitor<Expr> {
   visitComp = makeInfixOp;
   visitEq = makeInfixOp;
 
-  visitCons = (ctx: ConsContext): Expr => ({
-    type: "application",
-    range: rangeOfCtx(ctx),
-    caller: {
-      type: "identifier",
-      name: "Cons",
-      namespace: "List",
-      range: rangeOfTk(ctx._op),
-    },
-    args: [this.visit(ctx.expr(0)), this.visit(ctx.expr(1))],
-  });
-
   visitTuple = (ctx: TupleContext): Expr => {
     // TODO this should be in the AST
     const args = ctx.expr_list().map((e) => this.visit(e));
@@ -488,7 +475,12 @@ class ExpressionVisitor extends Visitor<Expr> {
   visitListLit = (ctx: ListLitContext): Expr => ({
     type: "list-literal",
     range: rangeOfCtx(ctx),
-    values: ctx.expr_list().map((e) => this.visit(e)),
+    values:
+      ctx
+        .listElems()
+        ?.expr_list()
+        ?.map((e) => this.visit(e)) ?? [],
+    tail: ctx._tail == null ? undefined : this.visit(ctx._tail),
   });
 
   visitPipe = (ctx: PipeContext): Expr => ({

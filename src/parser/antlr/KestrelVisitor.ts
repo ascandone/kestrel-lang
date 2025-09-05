@@ -58,7 +58,7 @@ import { IfContext } from "./KestrelParser.js";
 import { BoolOrContext } from "./KestrelParser.js";
 import { StructLitContext } from "./KestrelParser.js";
 import { BoolAndContext } from "./KestrelParser.js";
-import { ConsContext } from "./KestrelParser.js";
+import { ListElemsContext } from "./KestrelParser.js";
 import { MatchClauseContext } from "./KestrelParser.js";
 import { BlockLetHashContext } from "./KestrelParser.js";
 import { BlockLetContext } from "./KestrelParser.js";
@@ -448,12 +448,11 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitBoolAnd?: (ctx: BoolAndContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `cons`
-	 * labeled alternative in `KestrelParser.expr`.
+	 * Visit a parse tree produced by `KestrelParser.listElems`.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	visitCons?: (ctx: ConsContext) => Result;
+	visitListElems?: (ctx: ListElemsContext) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.matchClause`.
 	 * @param ctx the parse tree

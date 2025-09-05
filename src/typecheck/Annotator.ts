@@ -250,6 +250,8 @@ export class Annotator {
           ...ast,
           values: ast.values.map((v) => this.annotateExpr(v)),
           $type: TVar.freshType(),
+          tail:
+            ast.tail === undefined ? undefined : this.annotateExpr(ast.tail),
         };
 
       case "identifier":

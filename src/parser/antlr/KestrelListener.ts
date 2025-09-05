@@ -58,7 +58,7 @@ import { IfContext } from "./KestrelParser.js";
 import { BoolOrContext } from "./KestrelParser.js";
 import { StructLitContext } from "./KestrelParser.js";
 import { BoolAndContext } from "./KestrelParser.js";
-import { ConsContext } from "./KestrelParser.js";
+import { ListElemsContext } from "./KestrelParser.js";
 import { MatchClauseContext } from "./KestrelParser.js";
 import { BlockLetHashContext } from "./KestrelParser.js";
 import { BlockLetContext } from "./KestrelParser.js";
@@ -701,17 +701,15 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitBoolAnd?: (ctx: BoolAndContext) => void;
 	/**
-	 * Enter a parse tree produced by the `cons`
-	 * labeled alternative in `KestrelParser.expr`.
+	 * Enter a parse tree produced by `KestrelParser.listElems`.
 	 * @param ctx the parse tree
 	 */
-	enterCons?: (ctx: ConsContext) => void;
+	enterListElems?: (ctx: ListElemsContext) => void;
 	/**
-	 * Exit a parse tree produced by the `cons`
-	 * labeled alternative in `KestrelParser.expr`.
+	 * Exit a parse tree produced by `KestrelParser.listElems`.
 	 * @param ctx the parse tree
 	 */
-	exitCons?: (ctx: ConsContext) => void;
+	exitListElems?: (ctx: ListElemsContext) => void;
 	/**
 	 * Enter a parse tree produced by `KestrelParser.matchClause`.
 	 * @param ctx the parse tree

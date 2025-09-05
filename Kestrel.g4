@@ -114,7 +114,6 @@ expr:
 	| expr '(' (expr (',' expr)* ','?)? ')'									# call
 	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr						# MulDiv
 	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr						# AddSub
-	| <assoc = right> expr op = '::' expr									# cons
 	| expr op = ('==' | '!=') expr											# Eq
 	| expr op = ('<' | '<=' | '>' | '>=') expr								# Comp
 	| expr op = '||' expr													# BoolOr
@@ -125,8 +124,10 @@ expr:
 	| 'fn' (matchPattern (',' matchPattern)* ','?)? block					# fn
 	| 'if' condition = expr then = block 'else' else = block				# if
 	| 'match' matched = expr '{' (matchClause (',' matchClause)*)? ','? '}'	# match
-	| '[' (expr (',' expr)* ','?)? ']'										# listLit
+	| '[' (listElems (',' '..' tail=expr)? ','?)? ']'										# listLit
 	| expr op = '|>' expr													# Pipe;
+
+listElems: expr (',' expr)*;
 
 matchClause: matchPattern '=>' expr;
 

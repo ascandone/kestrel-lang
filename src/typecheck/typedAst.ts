@@ -99,6 +99,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
     | {
         type: "list-literal";
         values: TypedExpr[];
+        tail?: TypedExpr;
       }
     | {
         type: "struct-literal";

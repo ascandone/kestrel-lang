@@ -314,7 +314,7 @@ class ExprEmitter {
       case "list-literal":
         return expr.values.reduceRight(
           (acc, expr): ir.Expr => CONS(this.lowerExpr(expr), acc),
-          NIL,
+          expr.tail === undefined ? NIL : this.lowerExpr(expr.tail),
         );
 
       case "match":

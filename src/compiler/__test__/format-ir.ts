@@ -224,16 +224,6 @@ export class ExprPrinter {
         return constToDoc(pattern.literal);
 
       case "constructor": {
-        if (pattern.name === "Cons" && pattern.args.length === 2) {
-          const left = pattern.args[0]!;
-          const right = pattern.args[1]!;
-          return concat(
-            this.patternToDoc(left),
-            text(" :: "),
-            this.patternToDoc(right),
-          );
-        }
-
         if (pattern.args.length === 0) {
           return text(pattern.name);
         }

@@ -240,8 +240,19 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
               ),
             ),
           ],
-          ",",
+          ast.tail === undefined ? "," : "",
         ),
+
+        ast.tail === undefined
+          ? nil
+          : concat(
+              //
+              text(","),
+              break_(),
+              text(".."),
+              exprToDoc(ast.tail, block),
+            ),
+
         text("]"),
       );
 

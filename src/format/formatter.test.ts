@@ -77,7 +77,7 @@ describe("list lit syntax", () => {
   });
 
   test("check prec", () => {
-    expect(`let x = a :: []\n`).toBeFormatted();
+    expect(`let x = [a]\n`).toBeFormatted();
   });
 
   test("on singleton", () => {
@@ -170,11 +170,11 @@ describe("struct", () => {
 });
 
 test("cons application sugar", () => {
-  expect(`let x = hd :: hd2 :: tl\n`).toBeFormatted();
+  expect(`let x = [hd, hd2, ..tl]\n`).toBeFormatted();
 });
 
-test.todo("cons application is rassoc", () => {
-  expect(`let x = (hd :: tl1) :: tl2\n`).toBeFormatted();
+test("cons application is rassoc", () => {
+  expect(`let x = [[hd, ..tl1], ..tl2]\n`).toBeFormatted();
 });
 
 test("infix application", () => {
@@ -909,7 +909,7 @@ pub let range = fn from, to {
   if from >= to {
     []
   } else {
-    from :: range(from + 1, to)
+    [from, ..range(from + 1, to)]
   }
 }
 
@@ -917,7 +917,7 @@ pub let filter_map = fn lst, f {
   reduce_right(lst, [], fn x, xs {
     match f(x) {
       None => xs,
-      Some(hd) => hd :: xs,
+      Some(hd) => [hd, ..xs],
     }
   })
 }

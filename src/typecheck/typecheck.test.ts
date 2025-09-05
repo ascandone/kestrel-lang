@@ -532,6 +532,15 @@ describe("list literal", () => {
       lst: "List<Int>",
     });
   });
+
+  test("infers tail type", () => {
+    const [types, errs] = tc(`pub let cons = fn a, b { [a, ..b] }`);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      cons: "(a, List<a>) -> List<a>",
+    });
+  });
 });
 
 describe("type hints", () => {

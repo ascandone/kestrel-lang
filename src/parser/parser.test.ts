@@ -234,13 +234,8 @@ test("parse list sugar with many values", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test("parse conslist sugar", () => {
-  const src = "let _ = hd :: tl";
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
-
-test("parse cons operator is right-associative", () => {
-  const src = "let _ = a :: b :: nil";
+test("cons list after a single elem", () => {
+  const src = "let _ = [xs, ..tl]";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 

@@ -85,6 +85,7 @@ export type Expr = RangeMeta &
     | {
         type: "list-literal";
         values: Expr[];
+        tail?: Expr;
       }
     | {
         type: "struct-literal";

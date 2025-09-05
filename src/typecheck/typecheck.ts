@@ -65,8 +65,6 @@ export function typecheck(
     implicitImports = [];
   }
 
-  TVar.resetId();
-
   const [typedModule, errors] = resolve(
     package_,
     ns,
@@ -678,6 +676,10 @@ class Typechecker {
         for (const value of ast.values) {
           this.unifyExpr(value, value.$type, valueType);
           this.typecheckExpr(value);
+        }
+        if (ast.tail !== undefined) {
+          this.typecheckExpr(ast.tail);
+          this.unifyExpr(ast.tail, ast.tail.$type, core.List(valueType));
         }
         return;
       }

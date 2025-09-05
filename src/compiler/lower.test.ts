@@ -279,6 +279,19 @@ test("list literal", () => {
   `);
 });
 
+test("list literal (cons)", () => {
+  const ir = toSexpr(`
+    let tl = [2]
+    pub let lst = [1, ..tl]
+  `);
+
+  expect(ir).toMatchInlineSnapshot(`
+    "let pkg:Main.tl = kestrel_core:List.Cons(2, kestrel_core:List.Nil)
+
+    let pkg:Main.lst = kestrel_core:List.Cons(1, tl)"
+  `);
+});
+
 describe("pattern matching", () => {
   test("toplevel", () => {
     const ir = toSexpr(`

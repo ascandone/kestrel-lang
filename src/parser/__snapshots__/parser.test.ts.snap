@@ -867,6 +867,88 @@ exports[`Fault tolerance > missing string lit termination 1`] = `
 }
 `;
 
+exports[`cons list after a single elem 1`] = `
+{
+  "declarations": [
+    {
+      "attributes": [],
+      "binding": {
+        "name": "_",
+        "range": {
+          "end": {
+            "character": 5,
+            "line": 0,
+          },
+          "start": {
+            "character": 4,
+            "line": 0,
+          },
+        },
+      },
+      "pub": false,
+      "range": {
+        "end": {
+          "character": 18,
+          "line": 0,
+        },
+        "start": {
+          "character": 0,
+          "line": 0,
+        },
+      },
+      "value": {
+        "range": {
+          "end": {
+            "character": 18,
+            "line": 0,
+          },
+          "start": {
+            "character": 8,
+            "line": 0,
+          },
+        },
+        "tail": {
+          "name": "tl",
+          "namespace": undefined,
+          "range": {
+            "end": {
+              "character": 17,
+              "line": 0,
+            },
+            "start": {
+              "character": 15,
+              "line": 0,
+            },
+          },
+          "type": "identifier",
+        },
+        "type": "list-literal",
+        "values": [
+          {
+            "name": "xs",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 11,
+                "line": 0,
+              },
+              "start": {
+                "character": 9,
+                "line": 0,
+              },
+            },
+            "type": "identifier",
+          },
+        ],
+      },
+    },
+  ],
+  "imports": [],
+  "lineComments": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`extern bindings > let decls 1`] = `
 {
   "declarations": [
@@ -3583,245 +3665,6 @@ exports[`parse chars 1`] = `
 }
 `;
 
-exports[`parse cons operator is right-associative 1`] = `
-{
-  "declarations": [
-    {
-      "attributes": [],
-      "binding": {
-        "name": "_",
-        "range": {
-          "end": {
-            "character": 5,
-            "line": 0,
-          },
-          "start": {
-            "character": 4,
-            "line": 0,
-          },
-        },
-      },
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 21,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
-        },
-      },
-      "value": {
-        "args": [
-          {
-            "name": "a",
-            "namespace": undefined,
-            "range": {
-              "end": {
-                "character": 9,
-                "line": 0,
-              },
-              "start": {
-                "character": 8,
-                "line": 0,
-              },
-            },
-            "type": "identifier",
-          },
-          {
-            "args": [
-              {
-                "name": "b",
-                "namespace": undefined,
-                "range": {
-                  "end": {
-                    "character": 14,
-                    "line": 0,
-                  },
-                  "start": {
-                    "character": 13,
-                    "line": 0,
-                  },
-                },
-                "type": "identifier",
-              },
-              {
-                "name": "nil",
-                "namespace": undefined,
-                "range": {
-                  "end": {
-                    "character": 21,
-                    "line": 0,
-                  },
-                  "start": {
-                    "character": 18,
-                    "line": 0,
-                  },
-                },
-                "type": "identifier",
-              },
-            ],
-            "caller": {
-              "name": "Cons",
-              "namespace": "List",
-              "range": {
-                "end": {
-                  "character": 17,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 15,
-                  "line": 0,
-                },
-              },
-              "type": "identifier",
-            },
-            "range": {
-              "end": {
-                "character": 21,
-                "line": 0,
-              },
-              "start": {
-                "character": 13,
-                "line": 0,
-              },
-            },
-            "type": "application",
-          },
-        ],
-        "caller": {
-          "name": "Cons",
-          "namespace": "List",
-          "range": {
-            "end": {
-              "character": 12,
-              "line": 0,
-            },
-            "start": {
-              "character": 10,
-              "line": 0,
-            },
-          },
-          "type": "identifier",
-        },
-        "range": {
-          "end": {
-            "character": 21,
-            "line": 0,
-          },
-          "start": {
-            "character": 8,
-            "line": 0,
-          },
-        },
-        "type": "application",
-      },
-    },
-  ],
-  "imports": [],
-  "lineComments": [],
-  "typeDeclarations": [],
-}
-`;
-
-exports[`parse conslist sugar 1`] = `
-{
-  "declarations": [
-    {
-      "attributes": [],
-      "binding": {
-        "name": "_",
-        "range": {
-          "end": {
-            "character": 5,
-            "line": 0,
-          },
-          "start": {
-            "character": 4,
-            "line": 0,
-          },
-        },
-      },
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 16,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
-        },
-      },
-      "value": {
-        "args": [
-          {
-            "name": "hd",
-            "namespace": undefined,
-            "range": {
-              "end": {
-                "character": 10,
-                "line": 0,
-              },
-              "start": {
-                "character": 8,
-                "line": 0,
-              },
-            },
-            "type": "identifier",
-          },
-          {
-            "name": "tl",
-            "namespace": undefined,
-            "range": {
-              "end": {
-                "character": 16,
-                "line": 0,
-              },
-              "start": {
-                "character": 14,
-                "line": 0,
-              },
-            },
-            "type": "identifier",
-          },
-        ],
-        "caller": {
-          "name": "Cons",
-          "namespace": "List",
-          "range": {
-            "end": {
-              "character": 13,
-              "line": 0,
-            },
-            "start": {
-              "character": 11,
-              "line": 0,
-            },
-          },
-          "type": "identifier",
-        },
-        "range": {
-          "end": {
-            "character": 16,
-            "line": 0,
-          },
-          "start": {
-            "character": 8,
-            "line": 0,
-          },
-        },
-        "type": "application",
-      },
-    },
-  ],
-  "imports": [],
-  "lineComments": [],
-  "typeDeclarations": [],
-}
-`;
-
 exports[`parse empty list sugar 1`] = `
 {
   "declarations": [
@@ -3862,6 +3705,7 @@ exports[`parse empty list sugar 1`] = `
             "line": 0,
           },
         },
+        "tail": undefined,
         "type": "list-literal",
         "values": [],
       },
@@ -5057,6 +4901,7 @@ exports[`parse list sugar with many values 1`] = `
             "line": 0,
           },
         },
+        "tail": undefined,
         "type": "list-literal",
         "values": [
           {
@@ -5214,6 +5059,7 @@ exports[`parse singleton list sugar 1`] = `
             "line": 0,
           },
         },
+        "tail": undefined,
         "type": "list-literal",
         "values": [
           {
