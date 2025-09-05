@@ -12,8 +12,7 @@ import {
   nestedMapEntries,
 } from "../common/defaultMap";
 import * as project from "../typecheck/project";
-import { KestrelJson } from "./kestrel-json/schema";
-import { readConfig } from "./kestrel-json";
+import { readConfig, KestrelJson } from "./kestrel-json";
 
 export const EXTENSION = "kes";
 
