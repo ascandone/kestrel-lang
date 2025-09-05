@@ -3,7 +3,7 @@ import { makeProjectDoc } from "./docsCmd/documentation";
 import { check } from "../common";
 import { join } from "node:path";
 import { exit } from "process";
-import { readConfig } from "../config";
+import { readConfig } from "../kestrel-json";
 
 const DOCS_JSON_NAME = "docs.json";
 
@@ -14,17 +14,16 @@ async function getDocsJson(root: string) {
     exit(1);
   }
 
-  if (config.type !== "package") {
-    console.error("I can only generate docs.json for packages");
-    exit(1);
-  }
-
   const typedProject = await check(root);
   if (typedProject === undefined) {
     return;
   }
 
-  const projectDoc = makeProjectDoc(config.name, config.version, typedProject);
+  const projectDoc = makeProjectDoc(
+    config.name ?? "",
+    config.version,
+    typedProject,
+  );
   return JSON.stringify(projectDoc);
 }
 
