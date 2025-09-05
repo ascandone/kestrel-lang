@@ -5665,7 +5665,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 35,
+          "character": 37,
           "line": 0,
         },
         "start": {
@@ -5682,11 +5682,11 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
                   "name": "hd",
                   "range": {
                     "end": {
-                      "character": 20,
+                      "character": 21,
                       "line": 0,
                     },
                     "start": {
-                      "character": 18,
+                      "character": 19,
                       "line": 0,
                     },
                   },
@@ -5696,11 +5696,11 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
                   "name": "tl",
                   "range": {
                     "end": {
-                      "character": 26,
+                      "character": 27,
                       "line": 0,
                     },
                     "start": {
-                      "character": 24,
+                      "character": 25,
                       "line": 0,
                     },
                   },
@@ -5711,7 +5711,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
               "namespace": "List",
               "range": {
                 "end": {
-                  "character": 26,
+                  "character": 28,
                   "line": 0,
                 },
                 "start": {
@@ -5726,11 +5726,11 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 33,
+                  "character": 35,
                   "line": 0,
                 },
                 "start": {
-                  "character": 30,
+                  "character": 32,
                   "line": 0,
                 },
               },
@@ -5755,7 +5755,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
         },
         "range": {
           "end": {
-            "character": 35,
+            "character": 37,
             "line": 0,
           },
           "start": {
@@ -5794,7 +5794,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 42,
+          "character": 46,
           "line": 0,
         },
         "start": {
@@ -5808,61 +5808,61 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
             {
               "args": [
                 {
-                  "name": "hd",
-                  "range": {
-                    "end": {
-                      "character": 20,
-                      "line": 0,
-                    },
-                    "start": {
-                      "character": 18,
-                      "line": 0,
-                    },
-                  },
-                  "type": "identifier",
-                },
-                {
                   "args": [
                     {
-                      "name": "tl",
+                      "name": "hd",
                       "range": {
                         "end": {
-                          "character": 26,
+                          "character": 22,
                           "line": 0,
                         },
                         "start": {
-                          "character": 24,
+                          "character": 20,
                           "line": 0,
                         },
                       },
                       "type": "identifier",
                     },
                     {
-                      "args": [],
-                      "name": "Nil",
-                      "namespace": undefined,
+                      "name": "tl",
                       "range": {
                         "end": {
-                          "character": 33,
+                          "character": 28,
                           "line": 0,
                         },
                         "start": {
-                          "character": 30,
+                          "character": 26,
                           "line": 0,
                         },
                       },
-                      "type": "constructor",
+                      "type": "identifier",
                     },
                   ],
                   "name": "Cons",
                   "namespace": "List",
                   "range": {
                     "end": {
-                      "character": 33,
+                      "character": 29,
                       "line": 0,
                     },
                     "start": {
-                      "character": 24,
+                      "character": 19,
+                      "line": 0,
+                    },
+                  },
+                  "type": "constructor",
+                },
+                {
+                  "args": [],
+                  "name": "Nil",
+                  "namespace": undefined,
+                  "range": {
+                    "end": {
+                      "character": 36,
+                      "line": 0,
+                    },
+                    "start": {
+                      "character": 33,
                       "line": 0,
                     },
                   },
@@ -5873,7 +5873,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
               "namespace": "List",
               "range": {
                 "end": {
-                  "character": 33,
+                  "character": 37,
                   "line": 0,
                 },
                 "start": {
@@ -5888,11 +5888,11 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 40,
+                  "character": 44,
                   "line": 0,
                 },
                 "start": {
-                  "character": 37,
+                  "character": 41,
                   "line": 0,
                 },
               },
@@ -5917,7 +5917,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
         },
         "range": {
           "end": {
-            "character": 42,
+            "character": 46,
             "line": 0,
           },
           "start": {
@@ -5956,7 +5956,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 41,
+          "character": 43,
           "line": 0,
         },
         "start": {
@@ -5975,11 +5975,11 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                       "name": "hd",
                       "range": {
                         "end": {
-                          "character": 21,
+                          "character": 22,
                           "line": 0,
                         },
                         "start": {
-                          "character": 19,
+                          "character": 20,
                           "line": 0,
                         },
                       },
@@ -5991,11 +5991,11 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                       "namespace": undefined,
                       "range": {
                         "end": {
-                          "character": 28,
+                          "character": 29,
                           "line": 0,
                         },
                         "start": {
-                          "character": 25,
+                          "character": 26,
                           "line": 0,
                         },
                       },
@@ -6006,7 +6006,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                   "namespace": "List",
                   "range": {
                     "end": {
-                      "character": 28,
+                      "character": 30,
                       "line": 0,
                     },
                     "start": {
@@ -6020,11 +6020,11 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                   "name": "y",
                   "range": {
                     "end": {
-                      "character": 31,
+                      "character": 33,
                       "line": 0,
                     },
                     "start": {
-                      "character": 30,
+                      "character": 32,
                       "line": 0,
                     },
                   },
@@ -6035,7 +6035,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
               "namespace": "Tuple",
               "range": {
                 "end": {
-                  "character": 32,
+                  "character": 34,
                   "line": 0,
                 },
                 "start": {
@@ -6050,11 +6050,11 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 39,
+                  "character": 41,
                   "line": 0,
                 },
                 "start": {
-                  "character": 36,
+                  "character": 38,
                   "line": 0,
                 },
               },
@@ -6079,7 +6079,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
         },
         "range": {
           "end": {
-            "character": 41,
+            "character": 43,
             "line": 0,
           },
           "start": {
@@ -6921,7 +6921,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 37,
+          "character": 39,
           "line": 0,
         },
         "start": {
@@ -6932,7 +6932,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
       "value": {
         "range": {
           "end": {
-            "character": 37,
+            "character": 39,
             "line": 0,
           },
           "start": {
@@ -6945,11 +6945,11 @@ exports[`pattern matching > matching pattern in let 1`] = `
           "namespace": undefined,
           "range": {
             "end": {
-              "character": 35,
+              "character": 37,
               "line": 0,
             },
             "start": {
-              "character": 32,
+              "character": 34,
               "line": 0,
             },
           },
@@ -6979,11 +6979,11 @@ exports[`pattern matching > matching pattern in let 1`] = `
                       "name": "b",
                       "range": {
                         "end": {
-                          "character": 20,
+                          "character": 21,
                           "line": 0,
                         },
                         "start": {
-                          "character": 19,
+                          "character": 20,
                           "line": 0,
                         },
                       },
@@ -6993,11 +6993,11 @@ exports[`pattern matching > matching pattern in let 1`] = `
                       "name": "c",
                       "range": {
                         "end": {
-                          "character": 25,
+                          "character": 26,
                           "line": 0,
                         },
                         "start": {
-                          "character": 24,
+                          "character": 25,
                           "line": 0,
                         },
                       },
@@ -7008,7 +7008,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
                   "namespace": "List",
                   "range": {
                     "end": {
-                      "character": 25,
+                      "character": 27,
                       "line": 0,
                     },
                     "start": {
@@ -7023,7 +7023,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 26,
+                  "character": 28,
                   "line": 0,
                 },
                 "start": {
@@ -7035,7 +7035,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
             },
             "range": {
               "end": {
-                "character": 31,
+                "character": 33,
                 "line": 0,
               },
               "start": {
@@ -7049,11 +7049,11 @@ exports[`pattern matching > matching pattern in let 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 30,
+                  "character": 32,
                   "line": 0,
                 },
                 "start": {
-                  "character": 29,
+                  "character": 31,
                   "line": 0,
                 },
               },
@@ -7092,7 +7092,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 43,
+          "character": 45,
           "line": 0,
         },
         "start": {
@@ -7103,7 +7103,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
       "value": {
         "range": {
           "end": {
-            "character": 43,
+            "character": 45,
             "line": 0,
           },
           "start": {
@@ -7116,11 +7116,11 @@ exports[`pattern matching > matching pattern in let# 1`] = `
           "namespace": undefined,
           "range": {
             "end": {
-              "character": 41,
+              "character": 43,
               "line": 0,
             },
             "start": {
-              "character": 38,
+              "character": 40,
               "line": 0,
             },
           },
@@ -7165,11 +7165,11 @@ exports[`pattern matching > matching pattern in let# 1`] = `
                       "name": "b",
                       "range": {
                         "end": {
-                          "character": 26,
+                          "character": 27,
                           "line": 0,
                         },
                         "start": {
-                          "character": 25,
+                          "character": 26,
                           "line": 0,
                         },
                       },
@@ -7179,11 +7179,11 @@ exports[`pattern matching > matching pattern in let# 1`] = `
                       "name": "c",
                       "range": {
                         "end": {
-                          "character": 31,
+                          "character": 32,
                           "line": 0,
                         },
                         "start": {
-                          "character": 30,
+                          "character": 31,
                           "line": 0,
                         },
                       },
@@ -7194,7 +7194,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
                   "namespace": "List",
                   "range": {
                     "end": {
-                      "character": 31,
+                      "character": 33,
                       "line": 0,
                     },
                     "start": {
@@ -7209,7 +7209,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 32,
+                  "character": 34,
                   "line": 0,
                 },
                 "start": {
@@ -7221,7 +7221,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
             },
             "range": {
               "end": {
-                "character": 37,
+                "character": 39,
                 "line": 0,
               },
               "start": {
@@ -7235,11 +7235,11 @@ exports[`pattern matching > matching pattern in let# 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 36,
+                  "character": 38,
                   "line": 0,
                 },
                 "start": {
-                  "character": 35,
+                  "character": 37,
                   "line": 0,
                 },
               },

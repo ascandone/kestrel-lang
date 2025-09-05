@@ -839,7 +839,7 @@ describe("TCO", () => {
       pub let to_zero = fn lst {
         match lst {
           Nil => 0,
-          _ :: tl => to_zero(tl),
+          [_, ..tl] => to_zero(tl),
         }
       }
   `,
@@ -877,7 +877,7 @@ describe("TCO", () => {
       pub let reduce = fn lst, acc, f {
         match lst {
           Nil => acc,
-          hd :: tl => reduce(lst, f(acc, hd), f),
+          [hd, ..tl] => reduce(lst, f(acc, hd), f),
         }
       }
   `,

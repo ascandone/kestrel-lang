@@ -55,7 +55,6 @@ const ORDERED_INFIX_SYMBOLS = [
   ["^"],
   ["*", "*.", "/", "/.", "%"],
   ["+", "-", "+.", "-.", "++"],
-  ["::"],
   ["==", "!="],
   ["<", "<=", ">", ">="],
   ["||"],
@@ -436,6 +435,37 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
   }
 }
 
+function formatListPattern(
+  patterns: MatchPattern[],
+  tail: MatchPattern | undefined,
+): Doc {
+  return group(
+    text("["),
+
+    indentWithSpaceBreak(
+      [
+        sepBy(
+          concat(text(","), break_()),
+          patterns.map((pattern) => patternToDoc(pattern)),
+        ),
+      ],
+      tail === undefined ? "," : "",
+    ),
+
+    tail === undefined
+      ? nil
+      : concat(
+          //
+          text(","),
+          break_(),
+          text(".."),
+          patternToDoc(tail),
+        ),
+
+    text("]"),
+  );
+}
+
 function patternToDoc(pattern: MatchPattern): Doc {
   switch (pattern.type) {
     case "identifier":
@@ -448,7 +478,10 @@ function patternToDoc(pattern: MatchPattern): Doc {
       if (pattern.name === "Cons" && pattern.args.length === 2) {
         const left = pattern.args[0]!;
         const right = pattern.args[1]!;
-        return concat(patternToDoc(left), text(" :: "), patternToDoc(right));
+        return formatListPattern([left], right);
+      }
+      if (pattern.name === "Nil") {
+        return formatListPattern([], undefined);
       }
 
       if (pattern.args.length === 0) {

@@ -623,17 +623,17 @@ describe("pattern matching", () => {
   });
 
   test("matching cons literal (syntax sugar)", () => {
-    const src = `let _ = match x { hd :: tl => res }`;
+    const src = `let _ = match x { [hd, ..tl] => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("matching cons literal is right assoc", () => {
-    const src = `let _ = match x { hd :: tl :: Nil => res }`;
+    const src = `let _ = match x { [[hd, ..tl], ..Nil] => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("matching cons nested in tuple", () => {
-    const src = `let _ = match x { (hd :: Nil, y) => res }`;
+    const src = `let _ = match x { ([hd, ..Nil], y) => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
@@ -643,12 +643,12 @@ describe("pattern matching", () => {
   });
 
   test("matching pattern in let", () => {
-    const src = `let _ = { let X(a, b :: c) = x; res }`;
+    const src = `let _ = { let X(a, [b, ..c]) = x; res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("matching pattern in let#", () => {
-    const src = `let _ = { let#ident X(a, b :: c) = x; res }`;
+    const src = `let _ = { let#ident X(a, [b, ..c]) = x; res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 

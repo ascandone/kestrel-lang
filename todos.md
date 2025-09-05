@@ -1,5 +1,6 @@
 ## Todos
 
+- refactor: model list pattern in ast
 - feat: package manager
 - breaking: syntax changes
 - refactor: compare tvars by identity instead of by id

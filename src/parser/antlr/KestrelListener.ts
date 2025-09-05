@@ -63,14 +63,15 @@ import { MatchClauseContext } from "./KestrelParser.js";
 import { BlockLetHashContext } from "./KestrelParser.js";
 import { BlockLetContext } from "./KestrelParser.js";
 import { BlockContext } from "./KestrelParser.js";
-import { IntPatternContext } from "./KestrelParser.js";
-import { TuplePatternContext } from "./KestrelParser.js";
-import { CharPatternContext } from "./KestrelParser.js";
-import { ConsPatternContext } from "./KestrelParser.js";
-import { FloatPatternContext } from "./KestrelParser.js";
-import { ConstructorContext } from "./KestrelParser.js";
 import { MatchIdentContext } from "./KestrelParser.js";
+import { ConstructorContext } from "./KestrelParser.js";
+import { IntPatternContext } from "./KestrelParser.js";
+import { FloatPatternContext } from "./KestrelParser.js";
+import { CharPatternContext } from "./KestrelParser.js";
 import { StringPatternContext } from "./KestrelParser.js";
+import { ListPatternContext } from "./KestrelParser.js";
+import { TuplePatternContext } from "./KestrelParser.js";
+import { ListPatternsContext } from "./KestrelParser.js";
 
 
 /**
@@ -755,65 +756,17 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitBlock?: (ctx: BlockContext) => void;
 	/**
-	 * Enter a parse tree produced by the `intPattern`
+	 * Enter a parse tree produced by the `matchIdent`
 	 * labeled alternative in `KestrelParser.matchPattern`.
 	 * @param ctx the parse tree
 	 */
-	enterIntPattern?: (ctx: IntPatternContext) => void;
+	enterMatchIdent?: (ctx: MatchIdentContext) => void;
 	/**
-	 * Exit a parse tree produced by the `intPattern`
+	 * Exit a parse tree produced by the `matchIdent`
 	 * labeled alternative in `KestrelParser.matchPattern`.
 	 * @param ctx the parse tree
 	 */
-	exitIntPattern?: (ctx: IntPatternContext) => void;
-	/**
-	 * Enter a parse tree produced by the `tuplePattern`
-	 * labeled alternative in `KestrelParser.matchPattern`.
-	 * @param ctx the parse tree
-	 */
-	enterTuplePattern?: (ctx: TuplePatternContext) => void;
-	/**
-	 * Exit a parse tree produced by the `tuplePattern`
-	 * labeled alternative in `KestrelParser.matchPattern`.
-	 * @param ctx the parse tree
-	 */
-	exitTuplePattern?: (ctx: TuplePatternContext) => void;
-	/**
-	 * Enter a parse tree produced by the `charPattern`
-	 * labeled alternative in `KestrelParser.matchPattern`.
-	 * @param ctx the parse tree
-	 */
-	enterCharPattern?: (ctx: CharPatternContext) => void;
-	/**
-	 * Exit a parse tree produced by the `charPattern`
-	 * labeled alternative in `KestrelParser.matchPattern`.
-	 * @param ctx the parse tree
-	 */
-	exitCharPattern?: (ctx: CharPatternContext) => void;
-	/**
-	 * Enter a parse tree produced by the `consPattern`
-	 * labeled alternative in `KestrelParser.matchPattern`.
-	 * @param ctx the parse tree
-	 */
-	enterConsPattern?: (ctx: ConsPatternContext) => void;
-	/**
-	 * Exit a parse tree produced by the `consPattern`
-	 * labeled alternative in `KestrelParser.matchPattern`.
-	 * @param ctx the parse tree
-	 */
-	exitConsPattern?: (ctx: ConsPatternContext) => void;
-	/**
-	 * Enter a parse tree produced by the `floatPattern`
-	 * labeled alternative in `KestrelParser.matchPattern`.
-	 * @param ctx the parse tree
-	 */
-	enterFloatPattern?: (ctx: FloatPatternContext) => void;
-	/**
-	 * Exit a parse tree produced by the `floatPattern`
-	 * labeled alternative in `KestrelParser.matchPattern`.
-	 * @param ctx the parse tree
-	 */
-	exitFloatPattern?: (ctx: FloatPatternContext) => void;
+	exitMatchIdent?: (ctx: MatchIdentContext) => void;
 	/**
 	 * Enter a parse tree produced by the `constructor`
 	 * labeled alternative in `KestrelParser.matchPattern`.
@@ -827,17 +780,41 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitConstructor?: (ctx: ConstructorContext) => void;
 	/**
-	 * Enter a parse tree produced by the `matchIdent`
+	 * Enter a parse tree produced by the `intPattern`
 	 * labeled alternative in `KestrelParser.matchPattern`.
 	 * @param ctx the parse tree
 	 */
-	enterMatchIdent?: (ctx: MatchIdentContext) => void;
+	enterIntPattern?: (ctx: IntPatternContext) => void;
 	/**
-	 * Exit a parse tree produced by the `matchIdent`
+	 * Exit a parse tree produced by the `intPattern`
 	 * labeled alternative in `KestrelParser.matchPattern`.
 	 * @param ctx the parse tree
 	 */
-	exitMatchIdent?: (ctx: MatchIdentContext) => void;
+	exitIntPattern?: (ctx: IntPatternContext) => void;
+	/**
+	 * Enter a parse tree produced by the `floatPattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	enterFloatPattern?: (ctx: FloatPatternContext) => void;
+	/**
+	 * Exit a parse tree produced by the `floatPattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	exitFloatPattern?: (ctx: FloatPatternContext) => void;
+	/**
+	 * Enter a parse tree produced by the `charPattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	enterCharPattern?: (ctx: CharPatternContext) => void;
+	/**
+	 * Exit a parse tree produced by the `charPattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	exitCharPattern?: (ctx: CharPatternContext) => void;
 	/**
 	 * Enter a parse tree produced by the `stringPattern`
 	 * labeled alternative in `KestrelParser.matchPattern`.
@@ -850,5 +827,39 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitStringPattern?: (ctx: StringPatternContext) => void;
+	/**
+	 * Enter a parse tree produced by the `listPattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	enterListPattern?: (ctx: ListPatternContext) => void;
+	/**
+	 * Exit a parse tree produced by the `listPattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	exitListPattern?: (ctx: ListPatternContext) => void;
+	/**
+	 * Enter a parse tree produced by the `tuplePattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	enterTuplePattern?: (ctx: TuplePatternContext) => void;
+	/**
+	 * Exit a parse tree produced by the `tuplePattern`
+	 * labeled alternative in `KestrelParser.matchPattern`.
+	 * @param ctx the parse tree
+	 */
+	exitTuplePattern?: (ctx: TuplePatternContext) => void;
+	/**
+	 * Enter a parse tree produced by `KestrelParser.listPatterns`.
+	 * @param ctx the parse tree
+	 */
+	enterListPatterns?: (ctx: ListPatternsContext) => void;
+	/**
+	 * Exit a parse tree produced by `KestrelParser.listPatterns`.
+	 * @param ctx the parse tree
+	 */
+	exitListPatterns?: (ctx: ListPatternsContext) => void;
 }
 

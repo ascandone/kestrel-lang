@@ -859,9 +859,23 @@ describe("pattern matching", () => {
 `).toBeFormatted();
   });
 
-  test("matching :: sugar", () => {
+  test("matching cons pattern", () => {
     expect(`let m = match expr {
-  hd :: tl => ret,
+  [hd, ..tl] => ret,
+}
+`).toBeFormatted();
+  });
+
+  test("matching empty pattern", () => {
+    expect(`let m = match expr {
+  [] => ret,
+}
+`).toBeFormatted();
+  });
+
+  test.todo("matching nested pattern", () => {
+    expect(`let m = match expr {
+  [1, 2, ..tl] => ret,
 }
 `).toBeFormatted();
   });

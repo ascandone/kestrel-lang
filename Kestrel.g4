@@ -139,17 +139,18 @@ blockStatement
 block: '{' blockStatement* expr '}';
 
 // Pattern matching syntax
-matchPattern:
-	ID # matchIdent
-	| (moduleNamespace '.')? name = TYPE_ID (
-		'(' matchPattern (',' matchPattern)* ')'
-	)?															# constructor
+matchPattern
+	: ID # matchIdent
+	| (moduleNamespace '.')? name = TYPE_ID ('(' matchPattern (',' matchPattern)* ')')?  # constructor
 	| INT														# intPattern
 	| FLOAT														# floatPattern
 	| CHAR														# charPattern
 	| STRING													# stringPattern
-	| <assoc = right> matchPattern '::' matchPattern			# consPattern
-	| '(' matchPattern ',' matchPattern (',' matchPattern)* ')'	# tuplePattern;
+	| '[' (listPatterns  (',' '..' tail=matchPattern)? ','?)? ']'		# listPattern
+	| '(' matchPattern ',' matchPattern (',' matchPattern)* ')'	# tuplePattern
+	;
+
+listPatterns: matchPattern (',' matchPattern)*;
 
 INFIX_CHAR:
 	'+'

@@ -15,7 +15,6 @@ import Parser, {
   CallContext,
   CharContext,
   CharPatternContext,
-  ConsPatternContext,
   ConstructorContext,
   ExprContext,
   ExternTypeDeclarationContext,
@@ -232,14 +231,33 @@ class MatchPatternVisitor extends Visitor<MatchPattern> {
     };
   };
 
-  visitConsPattern = (ctx: ConsPatternContext): MatchPattern => {
-    return {
-      type: "constructor",
-      range: rangeOfCtx(ctx),
-      namespace: "List",
-      name: "Cons",
-      args: [this.visit(ctx.matchPattern(0)), this.visit(ctx.matchPattern(1))],
-    };
+  visitListPattern = (ctx: parser.ListPatternContext): MatchPattern => {
+    const elems =
+      ctx
+        .listPatterns()
+        ?.matchPattern_list()
+        ?.map((e) => this.visit(e)) ?? [];
+
+    const tail = ctx._tail == null ? undefined : this.visit(ctx._tail);
+
+    return elems.reduceRight(
+      (prev, pattern) => {
+        return {
+          type: "constructor",
+          range: rangeOfCtx(ctx),
+          namespace: "List",
+          name: "Cons",
+          args: [pattern, prev],
+        };
+      },
+      tail ?? {
+        type: "constructor",
+        range: rangeOfCtx(ctx),
+        namespace: "List",
+        name: "Nil",
+        args: [],
+      },
+    );
   };
 }
 
