@@ -7,4 +7,5 @@ export async function checkCmd() {
   }
 
   console.log("Found no errors ✅");
+  return program;
 }

@@ -7,8 +7,10 @@ import { compileCmd } from "./commands/compileCmd";
 import { runCmd } from "./commands/runCmd";
 import { initCmd } from "./commands/initCmd";
 import { formatCmd } from "./commands/formatCmd";
-// import { depsInstall } from "./commands/depsCmd";
 import { makeDocs, checkDocs } from "./commands/docsCmd";
+import { publishCmd } from "./commands/publishCmd";
+// import { depsInstall } from "./commands/depsCmd";
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require("../../package.json");
 
@@ -53,6 +55,11 @@ cmd
   .command("run [entrypoint]")
   .description("Evaluate the given entrypoint")
   .action(runCmd);
+
+cmd
+  .command("publish")
+  .description("Publish the package into the Kestrel package repository")
+  .action(publishCmd);
 
 cmd.command("lsp").description("Run the language server").action(lspCmd);
 

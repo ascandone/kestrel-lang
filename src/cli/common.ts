@@ -61,7 +61,7 @@ export async function readRawProject(
 }
 
 /** Read a single package and load its content into the project  */
-async function readPackage(
+export async function readPackage(
   /* &mut */ project: DefaultMap<string, Map<string, RawModule>>,
 
   path: string,

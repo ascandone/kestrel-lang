@@ -37,7 +37,7 @@ export async function makeDocs() {
 
   const fileName = join(root, DOCS_JSON_NAME);
   await writeFile(fileName, json);
-  console.log(`Created ${fileName}`);
+  console.info(`Created ${DOCS_JSON_NAME}`);
 }
 
 export async function checkDocs() {
@@ -53,9 +53,9 @@ export async function checkDocs() {
   }
 
   if (oldContent.toString() !== json) {
-    console.log(`The docs.json file is not in sync`);
+    console.error(`The docs.json file is not in sync`);
     exit(1);
   }
 
-  console.log(`The docs.json file is in sync ✅`);
+  console.info(`The docs.json file is in sync ✅`);
 }
