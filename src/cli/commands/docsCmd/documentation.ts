@@ -38,13 +38,14 @@ export function makeProjectDoc(
   package_: string,
   version: string,
   typedProject: TypedProject,
+  exposedModules: Set<string>,
 ): ProjectDoc {
   const modules: ProjectDoc["modules"] = {};
 
   for (const [moduleId, modulePackage, [typedModule]] of nestedMapEntries(
     typedProject,
   )) {
-    if (package_ !== modulePackage) {
+    if (package_ !== modulePackage || !exposedModules.has(moduleId)) {
       continue;
     }
     modules[moduleId] = makeModuleDoc(moduleId, typedModule);

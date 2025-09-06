@@ -13,7 +13,6 @@ import {
   createConnection,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { getConfigPackageName, readConfig } from "../config";
 import { readRawProject } from "../common";
 import { nestedMapGetOrPutDefault } from "../../common/defaultMap";
 import {
@@ -35,6 +34,7 @@ import {
 } from "../../analysis";
 import { format } from "../../format";
 import * as project from "../../typecheck/project";
+import { readConfig } from "../kestrel-json";
 
 export async function lspCmd() {
   const documents = new TextDocuments(TextDocument);
@@ -48,9 +48,9 @@ export async function lspCmd() {
   const [rawProject, deps] = await readRawProject_(currentDirectory);
 
   const state = new AnalysisState(
-    getConfigPackageName(config),
+    config.name ?? "",
     currentDirectory,
-    config["source-directories"],
+    config.sources,
     async (results) => {
       for (const res of results) {
         const doc = state.getDocByModuleId(res.moduleId);

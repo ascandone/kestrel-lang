@@ -3,7 +3,7 @@ import { makeProjectDoc } from "./docsCmd/documentation";
 import { check } from "../common";
 import { join } from "node:path";
 import { exit } from "process";
-import { readConfig } from "../config";
+import { readConfig } from "../kestrel-json";
 
 const DOCS_JSON_NAME = "docs.json";
 
@@ -14,18 +14,18 @@ async function getDocsJson(root: string) {
     exit(1);
   }
 
-  if (config.type !== "package") {
-    console.error("I can only generate docs.json for packages");
-    exit(1);
-  }
-
   const typedProject = await check(root);
   if (typedProject === undefined) {
     return;
   }
 
-  const projectDoc = makeProjectDoc(config.name, config.version, typedProject);
-  return JSON.stringify(projectDoc);
+  const projectDoc = makeProjectDoc(
+    config.name ?? "",
+    config.version,
+    typedProject,
+    new Set(config.exposedModules),
+  );
+  return JSON.stringify(projectDoc, null, 2);
 }
 
 export async function makeDocs() {
@@ -37,7 +37,7 @@ export async function makeDocs() {
 
   const fileName = join(root, DOCS_JSON_NAME);
   await writeFile(fileName, json);
-  console.log(`Created ${fileName}`);
+  console.info(`Created ${DOCS_JSON_NAME}`);
 }
 
 export async function checkDocs() {
@@ -53,9 +53,9 @@ export async function checkDocs() {
   }
 
   if (oldContent.toString() !== json) {
-    console.log(`The docs.json file is not in sync`);
+    console.error(`The docs.json file is not in sync`);
     exit(1);
   }
 
-  console.log(`The docs.json file is in sync ✅`);
+  console.info(`The docs.json file is in sync ✅`);
 }

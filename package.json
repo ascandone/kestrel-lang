@@ -29,6 +29,8 @@
     "@babel/generator": "^7.25.0",
     "antlr4": "^4.13.1-patch-1",
     "commander": "^11.1.0",
+    "semver": "^7.7.2",
+    "tar": "^7.4.3",
     "ts-decode": "^0.0.14",
     "vscode-languageserver": "^10.0.0-next.6",
     "vscode-languageserver-textdocument": "^1.0.11"
@@ -43,7 +45,7 @@
     "@vitest/ui": "^3.2.4",
     "eslint": "^8.56.0",
     "prettier": "^3.2.1",
-    "typescript": "^5.3.3",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
