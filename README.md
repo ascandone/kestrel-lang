@@ -18,7 +18,7 @@ pub let fizz_buzz = fn n {
 }
 ```
 
-Take a look at the [language tour](https://ascandone.github.com/language-tour) to learn more. You can find some examples by looking at the standard library [implementation](https://github.com/ascandone/kestrel_core/tree/main/src)
+Take a look at the [language tour](https://ascandone.github.io/kestrel-docs) to learn more. You can find some examples by looking at the standard library [implementation](https://github.com/ascandone/kestrel_core/tree/main/src)
 
 ### Get started
 
