@@ -21,7 +21,9 @@ test("global value of same module", () => {
 test("intrinsics", () => {
   const ir = toSexpr(`
     extern type Int
-    extern let (+): Fn(Int, Int) -> Int
+    @extern
+    @type (Int, Int) -> Int
+    let (+)
 
     pub let y = fn a, b {
       a + b
@@ -204,8 +206,12 @@ test("if expr", () => {
 test("struct creation and access", () => {
   const ir = toSexpr(`
     extern type String
-    extern let n: String
-    type User struct {
+
+    @extern
+    @type String
+    let n
+
+    struct User {
       name: String,
       age: String,
     }
@@ -244,7 +250,7 @@ test("struct creation and access", () => {
 
 test("constructor", () => {
   const ir = toSexpr(`
-    type Option<a> {
+    enum Option<a> {
       None,
       Some(a),
     }
@@ -273,10 +279,23 @@ test("list literal", () => {
   `);
 });
 
+test("list literal (cons)", () => {
+  const ir = toSexpr(`
+    let tl = [2]
+    pub let lst = [1, ..tl]
+  `);
+
+  expect(ir).toMatchInlineSnapshot(`
+    "let pkg:Main.tl = kestrel_core:List.Cons(2, kestrel_core:List.Nil)
+
+    let pkg:Main.lst = kestrel_core:List.Cons(1, tl)"
+  `);
+});
+
 describe("pattern matching", () => {
   test("toplevel", () => {
     const ir = toSexpr(`
-    type Option<a> {
+    enum Option<a> {
       None,
       Some(a),
     }
@@ -303,7 +322,7 @@ describe("pattern matching", () => {
 
   test("nested", () => {
     const ir = toSexpr(`
-    type Option<a> {
+    enum Option<a> {
       None,
       Some(a),
     }
@@ -330,7 +349,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in let", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
 
@@ -349,7 +368,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in let#", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
 
@@ -372,7 +391,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in fn", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
     
@@ -392,7 +411,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in fn with many args", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
     
@@ -416,10 +435,15 @@ describe("pattern matching", () => {
 describe("traits", () => {
   test("pass traits to value", () => {
     const out = dumpIR(`
-      extern let p: a where a: Show
+      @extern
+      @type a where a: Show
+      let p
 
-      type Str {}
-      extern let take_int: Fn(Str) -> a
+      enum Str {}
+
+      @extern
+      @type (Str) -> a
+      let take_int
 
       let x = take_int(p)
     `);
@@ -430,7 +454,9 @@ describe("traits", () => {
 
   test("unresolved traits", () => {
     const out = dumpIR(`
-      extern let p: z where z: Show
+      @extern
+      @type z where z: Show
+      let p
 
       // inferred as:
       //@type a where a: Show
@@ -441,7 +467,9 @@ describe("traits", () => {
 
   test("pass to fn", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> String where a: Show
+      @extern
+      @type (a) -> String where a: Show
+      let show
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
@@ -453,7 +481,9 @@ describe("traits", () => {
 
   test("handles recursive defs", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> String where a: Show
+      @extern
+      @type (a) -> String where a: Show
+      let show
 
       pub let rec_val = fn unresolved, unresolved2 {
         let _ = show(unresolved);
@@ -474,7 +504,9 @@ describe("traits", () => {
 
   test("make sure we don't show duplicates", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> a where a: Show
+      @extern
+      @type (a) -> a where a: Show
+      let show
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
@@ -486,7 +518,9 @@ describe("traits", () => {
 
   test("handle multiple traits", () => {
     const out = dumpIR(`
-      extern let show: Fn(a, a) -> String where a: Eq + Show
+      @extern
+      @type (a, a) -> String where a: Eq + Show
+      let show
       let f = show
     `);
     expect(out).toMatchInlineSnapshot(
@@ -497,11 +531,16 @@ describe("traits", () => {
   test("handle multiple traits when applying to concrete args", () => {
     const out = dumpIR(
       `
-      extern let show: Fn(a, a) -> String where a: Eq + Show
+      @extern
+      @type (a, a) -> String where a: Eq + Show
+      let show
 
       
-      type S {} // <- it derives both Eq and Show
-      extern let s: S
+      enum S {} // <- it derives both Eq and Show
+
+      @extern
+      @type S
+      let s
       
       let f = show(s, s)
     `,
@@ -515,8 +554,13 @@ describe("traits", () => {
   test("do not pass extra args", () => {
     const out = dumpIR(
       `
-      extern let inspect: Fn(u) -> String where u: Show
-      extern let eq: Fn(z, z) -> Bool where z: Eq
+      @extern
+      @type (u) -> String where u: Show
+      let inspect
+
+      @extern
+      @type (z, z) -> Bool where z: Eq
+      let eq
 
       let equal = fn x, y {
         if eq(x, y) {
@@ -541,7 +585,9 @@ describe("traits", () => {
   test("do not duplicate when there's only one var to pass", () => {
     const out = dumpIR(
       `
-      extern let show2: Fn(a, a) -> String where a: Show
+      @extern
+      @type (a, a) -> String where a: Show
+      let show2
 
       let f = fn arg {
         show2(arg, "hello")
@@ -560,7 +606,9 @@ describe("traits", () => {
   test("pass an arg twice if needed", () => {
     const out = dumpIR(
       `
-      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      @extern
+      @type (a, b) -> String where a: Show, b: Show
+      let show2
       let f = show2("a", "b")
     `,
     );
@@ -572,7 +620,9 @@ describe("traits", () => {
   test("partial application", () => {
     const out = dumpIR(
       `
-      extern let show2: Fn(k, u) -> String where k: Show, u: Show
+      @extern
+      @type (k, u) -> String where k: Show, u: Show
+      let show2
       let f = fn arg {
         show2(arg, "hello")
       }
@@ -590,9 +640,11 @@ describe("traits", () => {
 
   test("pass trait dicts for types with params when they do not have deps", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> String where a: Show
+      @extern
+      @type (a) -> String where a: Show
+      let show
 
-      type AlwaysShow<a> { X }
+      enum AlwaysShow<a> { X }
       
       let x = show(X)
     `);
@@ -605,9 +657,11 @@ describe("traits", () => {
   test("pass higher order trait dicts for types with params when they do have deps", () => {
     const out = dumpIR(
       `
-      extern let show: Fn(a) -> String where a: Show
+      @extern
+      @type (a) -> String where a: Show
+      let show
 
-      type Option<a, b> { Some(b) }
+      enum Option<a, b> { Some(b) }
       
       let x = show(Some(42))
     `,
@@ -621,9 +675,12 @@ describe("traits", () => {
   test("rigid types sig", () => {
     const out = dumpIR(
       `
-      extern let show: Fn(a) -> String where a: Show
+      @extern
+      @type (a) -> String where a: Show
+      let show
 
-      pub let x: Fn(a) -> String where a: Show =
+      @type (a) -> String where a: Show 
+      pub let x=
         fn a { show(a) }
     `,
     );
@@ -637,8 +694,12 @@ describe("traits", () => {
 
   test("trait deps in args when param aren't traits dependencies", () => {
     const out = dumpIR(`
-      type IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
-      extern let s: IsShow<a> where a: Show
+      enum IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
+
+      @extern
+      @type IsShow<a> where a: Show
+      let s
+
       let x = s
     `);
 

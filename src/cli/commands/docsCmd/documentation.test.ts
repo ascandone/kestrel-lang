@@ -15,7 +15,9 @@ test("Extract values documentation", () => {
     pub let x = 1
 
     /// Extern value
-    extern pub let y: Fn(Bool) -> Int
+    @type (Bool) -> Int
+    @extern
+    pub let y
   `;
 
   expect(parseExtractDocs(src)).toEqual<ModuleDoc>({
@@ -30,7 +32,7 @@ test("Extract values documentation", () => {
       {
         type: "value",
         name: "y",
-        signature: "Fn(Bool) -> Int",
+        signature: "(Bool) -> Int",
         docComment: " Extern value\n",
       },
     ],
@@ -44,13 +46,13 @@ test("Extract types documentation", () => {
     /// Comment
     extern pub type X
 
-    pub(..) type Y<x, y> {
+    pub(..) enum Y<x, y> {
       FirstVariant,
       SecondVariant(x, Arg),
       Rec(Y<y, Arg>),
     }
 
-    pub type Opaque { Constr }
+    pub enum Opaque { Constr }
   `;
 
   expect(parseExtractDocs(src)).toEqual<ModuleDoc>({
@@ -83,9 +85,15 @@ test("Extract types documentation", () => {
 
 test("order between types and values", () => {
   const src = `
-  extern pub let x: a
+  @extern
+  @type a
+  pub let x
+
   extern pub type X
-  extern pub let y: b
+
+  @extern
+  @type b
+  pub let y
 `;
 
   expect(parseExtractDocs(src)).toEqual<ModuleDoc>({

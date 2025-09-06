@@ -178,6 +178,9 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
       for (const subExpr of expr.values) {
         visitExpr(subExpr, opts);
       }
+      if (expr.tail !== undefined) {
+        visitExpr(expr.tail, opts);
+      }
       return;
 
     case "field-access":

@@ -25,8 +25,8 @@ Expected:  Custom
      Got:  String
 
 
-3|       pub let x: Custom = "abc"
- | [31m                          ~~~~~[0m"
+5|       pub let x = "abc"
+ | [31m                  ~~~~~[0m"
 `;
 
 exports[`errorInfoToString > unbound variable 1`] = `

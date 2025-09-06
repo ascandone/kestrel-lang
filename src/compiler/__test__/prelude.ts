@@ -61,12 +61,31 @@ const Int = typecheckSourceRaw(
   "Int",
   `
     extern pub type Int
-    extern pub let (+): Fn(Int, Int) -> Int
-    extern pub let (-): Fn(Int, Int) -> Int
-    extern pub let (*): Fn(Int, Int) -> Int
-    extern pub let (/): Fn(Int, Int) -> Int
-    extern pub let (^): Fn(Int, Int) -> Int
-    extern pub let (%): Fn(Int, Int) -> Int
+
+    @type (Int, Int) -> Int
+    @extern
+    pub let (+)
+
+    @type (Int, Int) -> Int
+    @extern
+    pub let (-)
+
+    @type (Int, Int) -> Int
+    @extern
+    pub let (*)
+
+    @type (Int, Int) -> Int
+    @extern
+    pub let (/)
+
+    @type (Int, Int) -> Int
+    @extern
+    pub let (^)
+
+    @type (Int, Int) -> Int
+    @extern
+    pub let (%)
+
   `,
 ).moduleInterface;
 
@@ -75,10 +94,22 @@ const Float = typecheckSourceRaw(
   "Float",
   `
     extern pub type Float
-    extern pub let (+.): Fn(Int, Int) -> Int
-    extern pub let (-.): Fn(Int, Int) -> Int
-    extern pub let (*.): Fn(Int, Int) -> Int
-    extern pub let (/.): Fn(Int, Int) -> Int
+    
+    @type (Int, Int) -> Int
+    @extern
+    pub let (+.)
+    
+    @type (Int, Int) -> Int
+    @extern
+    pub let (-.)
+    
+    @type (Int, Int) -> Int
+    @extern
+    pub let (*.)
+    
+    @type (Int, Int) -> Int
+    @extern
+    pub let (/.)
   `,
 ).moduleInterface;
 
@@ -87,7 +118,10 @@ const String = typecheckSourceRaw(
   "String",
   `
     extern pub type String
-    extern pub let (++): Fn(String, String) -> String
+
+    @type (String, String) -> String
+    @extern
+    pub let (++)
   `,
 ).moduleInterface;
 
@@ -95,19 +129,46 @@ const Bool = typecheckSourceRaw(
   CORE_PACKAGE,
   "Bool",
   `
-    pub(..) type Bool {
+    pub(..) enum Bool {
       True,
       False,
     }
-    extern pub let (&&): Fn(Bool, Bool) -> Bool
-    extern pub let (||): Fn(Bool, Bool) -> Bool
-    extern pub let (!): Fn(Bool) -> Bool
-    extern pub let (==): Fn(a, a) -> Bool where a: Eq
-    extern pub let (!=): Fn(a, a) -> Bool where a: Eq
-    extern pub let (>): Fn(a, a) -> Bool where a: Ord
-    extern pub let (>=): Fn(a, a) -> Bool where a: Ord
-    extern pub let (<): Fn(a, a) -> Bool where a: Ord
-    extern pub let (<=): Fn(a, a) -> Bool where a: Ord
+    
+    @type (Bool, Bool) -> Bool
+    @extern
+    pub let (&&)
+    
+    @type (Bool, Bool) -> Bool
+    @extern
+    pub let (||)
+    
+    @type (Bool) -> Bool
+    @extern
+    pub let (!)
+    
+    @type (a, a) -> Bool where a: Eq
+    @extern
+    pub let (==)
+    
+    @type (a, a) -> Bool where a: Eq
+    @extern
+    pub let (!=)
+    
+    @type (a, a) -> Bool where a: Ord
+    @extern
+    pub let (>)
+    
+    @type (a, a) -> Bool where a: Ord
+    @extern
+    pub let (>=)
+    
+    @type (a, a) -> Bool where a: Ord
+    @extern
+    pub let (<)
+    
+    @type (a, a) -> Bool where a: Ord
+    @extern
+    pub let (<=)
   `,
 ).moduleInterface;
 

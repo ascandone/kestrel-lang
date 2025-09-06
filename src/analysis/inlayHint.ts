@@ -42,7 +42,7 @@ class InlayHintBuf implements visitor.VisitOptions {
 
 export function getInlayHints(module: TypedModule): InlayHint[] {
   return module.declarations.flatMap<InlayHint>((d) => {
-    if (d.extern) {
+    if (d.value === undefined) {
       return [];
     }
     const buf = new InlayHintBuf({});

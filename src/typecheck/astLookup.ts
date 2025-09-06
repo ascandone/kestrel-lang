@@ -81,7 +81,10 @@ export class Finder<T> {
         );
 
       case "list-literal":
-        return firstBy(expr.values, (v) => this.visitExpr(v));
+        return (
+          firstBy(expr.values, (v) => this.visitExpr(v)) ??
+          (expr.tail === undefined ? undefined : this.visitExpr(expr.tail))
+        );
 
       case "field-access":
         return this.visitExpr(expr.struct);

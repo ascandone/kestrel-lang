@@ -144,7 +144,7 @@ function typeAstToString(typeAst: TypedTypeAst): string {
     case "fn": {
       const args = typeAst.args.map(typeAstToString).join(", ");
       const ret = typeAstToString(typeAst.return);
-      return `Fn(${args}) -> ${ret}`;
+      return `(${args}) -> ${ret}`;
     }
   }
 }

@@ -39,30 +39,35 @@ importExposing:
 	name = (ID | INFIX_ID)				# valueExposing
 	| name = TYPE_ID EXPOSING_NESTED?	# typeExposing;
 
-declaration:
-	letDeclaration_				# letDeclaration
-	| externLetDeclaration_		# externLetDeclaration
-	| typeDeclaration_			# typeDeclaration
-	| structDeclaration_		# structDeclaration
-	| externTypeDeclaration_	# externTypeDeclaration;
+declaration
+	: letDeclaration_	# letDeclaration
+	| typeDeclaration_ # typeDeclaration
+	| structDeclaration_ # structDeclaration
+	| externTypeDeclaration_ # externTypeDeclaration
+	;
+
+valueAttribute
+	: '@type' polyType # attrType
+	| '@inline' # attrInline
+	| '@extern' #attrExtern
+	;
 
 letDeclaration_:
-	(doc = DOC_COMMENT_LINE*) (inline = '@inline')? (
-		pub = 'pub'?
-	) 'let' ID (':' typeHint = polyType)? '=' expr;
-
-externLetDeclaration_:
-	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'let' (
-		binding = (INFIX_ID | ID)
-	) ':' typeHint = polyType;
+	(doc = DOC_COMMENT_LINE*)
+	(valueAttribute*)
+	(pub = 'pub'?) 'let' binding=(INFIX_ID | ID) ('=' expr)?;
 
 typeDeclaration_:
-	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? '{' typeVariants?
-		'}';
+	(doc = DOC_COMMENT_LINE*)
+	pub=pubExposing? 'enum' name=TYPE_ID paramsList?
+	'{' typeVariants? '}';
 
 structDeclaration_:
-	(doc = DOC_COMMENT_LINE*) pub = pubExposing? 'type' name = TYPE_ID paramsList? 'struct' '{'
-		declarationFields? '}';
+	(doc = DOC_COMMENT_LINE*)
+	pub=pubExposing?
+	'struct' name=TYPE_ID paramsList?
+	'{' declarationFields? '}'
+	;
 
 externTypeDeclaration_:
 	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?;
@@ -84,7 +89,7 @@ type:
 	(moduleNamespace '.')? name = TYPE_ID (
 		'<' type (',' type)* '>'
 	)?												# namedType
-	| 'Fn' '(' fnTypeParams? ')' '->' ret = type	# fnType
+	| '(' fnTypeParams? ')' '->' ret = type	# fnType
 	| ID											# genericType
 	| '(' type ',' type (',' type)* ')'				# tupleType;
 
@@ -109,7 +114,6 @@ expr:
 	| expr '(' (expr (',' expr)* ','?)? ')'									# call
 	| expr op = ('*' | '/' | '*.' | '/.' | '%') expr						# MulDiv
 	| expr op = ('+' | '-' | '+.' | '-.' | '++') expr						# AddSub
-	| <assoc = right> expr op = '::' expr									# cons
 	| expr op = ('==' | '!=') expr											# Eq
 	| expr op = ('<' | '<=' | '>' | '>=') expr								# Comp
 	| expr op = '||' expr													# BoolOr
@@ -120,8 +124,10 @@ expr:
 	| 'fn' (matchPattern (',' matchPattern)* ','?)? block					# fn
 	| 'if' condition = expr then = block 'else' else = block				# if
 	| 'match' matched = expr '{' (matchClause (',' matchClause)*)? ','? '}'	# match
-	| '[' (expr (',' expr)* ','?)? ']'										# listLit
+	| '[' (listElems (',' '..' tail=expr)? ','?)? ']'										# listLit
 	| expr op = '|>' expr													# Pipe;
+
+listElems: expr (',' expr)*;
 
 matchClause: matchPattern '=>' expr;
 
@@ -133,17 +139,18 @@ blockStatement
 block: '{' blockStatement* expr '}';
 
 // Pattern matching syntax
-matchPattern:
-	ID # matchIdent
-	| (moduleNamespace '.')? name = TYPE_ID (
-		'(' matchPattern (',' matchPattern)* ')'
-	)?															# constructor
+matchPattern
+	: ID # matchIdent
+	| (moduleNamespace '.')? name = TYPE_ID ('(' matchPattern (',' matchPattern)* ')')?  # constructor
 	| INT														# intPattern
 	| FLOAT														# floatPattern
 	| CHAR														# charPattern
 	| STRING													# stringPattern
-	| <assoc = right> matchPattern '::' matchPattern			# consPattern
-	| '(' matchPattern ',' matchPattern (',' matchPattern)* ')'	# tuplePattern;
+	| '[' (listPatterns  (',' '..' tail=matchPattern)? ','?)? ']'		# listPattern
+	| '(' matchPattern ',' matchPattern (',' matchPattern)* ')'	# tuplePattern
+	;
+
+listPatterns: matchPattern (',' matchPattern)*;
 
 INFIX_CHAR:
 	'+'
