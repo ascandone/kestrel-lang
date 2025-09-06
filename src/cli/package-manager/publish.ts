@@ -17,10 +17,10 @@ import {
 } from "./registry";
 import { existsSync } from "node:fs";
 import { makeProjectDoc } from "../commands/docsCmd/documentation";
-import { checkCmd } from "../commands/checkCmd";
 import { TypedProject } from "../../typecheck/project";
 import { exec as execSync } from "node:child_process";
 import { promisify } from "node:util";
+import { check } from "../common";
 
 const exec = promisify(execSync);
 
@@ -30,7 +30,7 @@ export async function publish(token: string) {
   );
 
   // TODO check semantic version diff
-  const typedProject = await checkCmd();
+  const typedProject = await check(process.cwd());
   if (typedProject === undefined) {
     throw new Error("Error while checking");
   }
@@ -226,7 +226,9 @@ async function createPR(args: {
   await exec(`git add .`, opts);
   try {
     await exec(`git branch ${branchName}`, opts);
-  } catch {}
+  } catch {
+    /* empty */
+  }
   await exec(`git checkout ${branchName}`, opts);
   await exec(`git commit -m "Publish ${versionedPackage}"`, opts);
   await exec(`git push origin ${branchName}`, opts);

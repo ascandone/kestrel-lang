@@ -9,7 +9,7 @@ import { initCmd } from "./commands/initCmd";
 import { formatCmd } from "./commands/formatCmd";
 import { makeDocs, checkDocs } from "./commands/docsCmd";
 import { publishCmd } from "./commands/publishCmd";
-// import { depsInstall } from "./commands/depsCmd";
+import { depsInstall } from "./commands/depsCmd";
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require("../../package.json");
@@ -34,8 +34,8 @@ cmd
   .description("Compile the entrypoint into a js file")
   .action(compileCmd);
 
-// const deps = program.command("deps").description("Manage dependencies");
-// deps.command("install").description("Install dependencies").action(depsInstall);
+const deps = cmd.command("deps").description("Manage dependencies");
+deps.command("install").description("Install dependencies").action(depsInstall);
 
 const docs = cmd.command("docs").description("Manage documentation");
 docs.command("make").description("Create the docs.json file").action(makeDocs);
