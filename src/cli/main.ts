@@ -7,54 +7,60 @@ import { compileCmd } from "./commands/compileCmd";
 import { runCmd } from "./commands/runCmd";
 import { initCmd } from "./commands/initCmd";
 import { formatCmd } from "./commands/formatCmd";
-import { depsInstall } from "./commands/depsCmd";
 import { makeDocs, checkDocs } from "./commands/docsCmd";
+import { publishCmd } from "./commands/publishCmd";
+import { depsInstall } from "./commands/depsCmd";
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const packageJson = require("../../package.json");
 
-const program = new Command();
+const cmd = new Command();
+cmd.version(packageJson.version);
 
-program.version(packageJson.version);
-
-program
-  .command("init <project_name>")
-  .description("Init a kestrel program")
+cmd
+  .command("init <package_name>")
+  .description("Init a kestrel package")
   .action(initCmd);
 
-program
+cmd
   .command("check")
-  .description("Infer the type of given file")
+  .description("Analyse and typecheck the project")
   .action(checkCmd);
 
-program
+cmd
   .command("compile <entrypoint>")
   .option("--out <path>")
   .option("--optimize")
-  .description("Compile the file into a js file")
+  .description("Compile the entrypoint into a js file")
   .action(compileCmd);
 
-const deps = program.command("deps").description("Manage dependencies");
+const deps = cmd.command("deps").description("Manage dependencies");
 deps.command("install").description("Install dependencies").action(depsInstall);
 
-const docs = program.command("docs").description("Manage documentation");
+const docs = cmd.command("docs").description("Manage documentation");
 docs.command("make").description("Create the docs.json file").action(makeDocs);
 docs
   .command("check")
   .description("Check that the docs.json file is up to date")
   .action(checkDocs);
 
-program
+cmd
   .command("format")
   .description("Format a kestrel file")
   .option("--path <path>")
   .option("--write")
   .action(formatCmd);
 
-program
+cmd
   .command("run [entrypoint]")
-  .description("Evaluate the given file")
+  .description("Evaluate the given entrypoint")
   .action(runCmd);
 
-program.command("lsp").description("Run the language server").action(lspCmd);
+cmd
+  .command("publish")
+  .description("Publish the package into the Kestrel package repository")
+  .action(publishCmd);
 
-program.parse();
+cmd.command("lsp").description("Run the language server").action(lspCmd);
+
+cmd.parse();

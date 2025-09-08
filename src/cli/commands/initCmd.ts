@@ -1,10 +1,10 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { configDecoder, defaultConfig, writeConfig } from "../config";
 import { join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { fetchDeps } from "../deps";
 import { col } from "../../common/colors";
+import { KestrelJson, writeConfig } from "../kestrel-json";
+import { install } from "../package-manager/install";
 
 const execP = promisify(exec);
 
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install kestrel cli
         run: npm install -g kestrel-lang
       - name: Check if project is formatted
@@ -66,7 +66,16 @@ export async function initCmd(projectName: string) {
 
   await mkdir(projectName);
   const path = join(process.cwd(), projectName);
-  await writeConfig(path, defaultConfig);
+
+  const config: KestrelJson = {
+    name: projectName,
+    sources: ["src"],
+    dependencies: {
+      kestrel_core: "0.0.1",
+    },
+  };
+
+  await writeConfig(path, config);
   process.stdout.write(`${col.blue.tag`[info]`} Created project\n`);
 
   await initVscode(path);
@@ -74,6 +83,5 @@ export async function initCmd(projectName: string) {
   await initGit(path);
   process.stdout.write(`${col.blue.tag`[info]`} Initialized git project\n`);
 
-  const parsedConfig = configDecoder.decodeUnsafeThrow(defaultConfig);
-  await fetchDeps(path, parsedConfig);
+  await install();
 }

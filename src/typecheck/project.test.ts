@@ -262,6 +262,8 @@ test("invalidate all the reachable inverse dependency graph on delete", () => {
   ]);
 });
 
+test.todo("exposedPackages is honored");
+
 type RawProject = Record<string, Record<string, string>>;
 function prjTypechecker(
   proj: RawProject,

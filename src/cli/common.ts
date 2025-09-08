@@ -1,12 +1,8 @@
 import { readFile, readdir } from "node:fs/promises";
 import { parse, UntypedModule } from "../parser";
 import { exit } from "node:process";
-import {
-  compileProject,
-  defaultEntryPoint,
-} from "../compiler/backend/js/compiler";
+import { compileProject } from "../compiler/backend/js/compiler";
 import { col } from "../common/colors";
-import { Config, getConfigPackageName, readConfig } from "./config";
 import { join } from "node:path";
 import { errorInfoToString } from "../typecheck/errors";
 import * as paths from "./paths";
@@ -16,6 +12,7 @@ import {
   nestedMapEntries,
 } from "../common/defaultMap";
 import * as project from "../typecheck/project";
+import { readConfig, KestrelJson } from "./kestrel-json";
 
 export const EXTENSION = "kes";
 
@@ -43,7 +40,7 @@ export async function readRawProject(
     const config = await readConfig(path);
 
     const deps = Object.keys(config.dependencies ?? {});
-    packagesDeps.set(getConfigPackageName(config), new Set(deps));
+    packagesDeps.set(config.name ?? "", new Set(deps));
 
     await readPackage(project, path, config);
 
@@ -64,17 +61,17 @@ export async function readRawProject(
 }
 
 /** Read a single package and load its content into the project  */
-async function readPackage(
+export async function readPackage(
   /* &mut */ project: DefaultMap<string, Map<string, RawModule>>,
 
   path: string,
-  config?: Config,
+  config?: KestrelJson,
 ): Promise<void> {
   if (config === undefined) {
     config = await readConfig(path);
   }
 
-  for (const sourceDir of config["source-directories"]) {
+  for (const sourceDir of config.sources) {
     const files = await readdir(join(path, sourceDir), { recursive: true });
 
     // TODo is the file relative path?
@@ -96,7 +93,7 @@ async function readPackage(
         // Assume file did not exist
       }
 
-      const package_ = getConfigPackageName(config);
+      const package_ = config.name ?? "";
       project.get(moduleName!).set(package_, {
         package: package_,
         path: filePath,
@@ -192,11 +189,11 @@ export async function checkProject(
 
 export async function compilePath(
   path: string,
-  entryPointModule?: string,
+  entrypoint?: string,
   _optimize?: boolean,
 ): Promise<string> {
-  const [rawProject] = await readRawProject(path);
-  const [typedProject] = await checkProject(rawProject, new Map());
+  const [rawProject, packageDependencies] = await readRawProject(path);
+  const [typedProject] = await checkProject(rawProject, packageDependencies);
   if (typedProject === undefined) {
     exit(1);
   }
@@ -218,11 +215,13 @@ export async function compilePath(
   // TODO we could rease this config
   const config = await readConfig(path);
 
+  const entryPointModule = config.entrypoints?.[entrypoint ?? "main"];
+
   try {
     // TODO package_
-    return compileProject(getConfigPackageName(config), typedProject, {
+    return compileProject(config.name ?? "", typedProject, {
       externs,
-      entrypoint: entryPointModule ?? defaultEntryPoint,
+      entrypoint: entryPointModule,
     });
   } catch (e) {
     console.error(col.red.tag`Error:`, (e as Error).message);
