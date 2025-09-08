@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { col } from "../../common/colors";
-import { DEFAULT_CONFIG, KestrelJson, writeConfig } from "../kestrel-json";
+import { KestrelJson, writeConfig } from "../kestrel-json";
+import { install } from "../package-manager/install";
 
 const execP = promisify(exec);
 
@@ -67,9 +68,13 @@ export async function initCmd(projectName: string) {
   const path = join(process.cwd(), projectName);
 
   const config: KestrelJson = {
-    ...DEFAULT_CONFIG,
     name: projectName,
+    sources: ["src"],
+    dependencies: {
+      kestrel_core: "0.0.1",
+    },
   };
+
   await writeConfig(path, config);
   process.stdout.write(`${col.blue.tag`[info]`} Created project\n`);
 
@@ -78,5 +83,5 @@ export async function initCmd(projectName: string) {
   await initGit(path);
   process.stdout.write(`${col.blue.tag`[info]`} Initialized git project\n`);
 
-  // await fetchDeps(path,DEFAULT_CONFIG);
+  await install();
 }

@@ -38,7 +38,3 @@ export async function writeConfig(path: string, config: unknown) {
   await writeFile(kestrelJsonPath, content + "\n");
   await mkdir(join(path, "src"));
 }
-
-export const DEFAULT_CONFIG: KestrelJson = {
-  sources: ["src"],
-};

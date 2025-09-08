@@ -192,8 +192,8 @@ export async function compilePath(
   entrypoint?: string,
   _optimize?: boolean,
 ): Promise<string> {
-  const [rawProject] = await readRawProject(path);
-  const [typedProject] = await checkProject(rawProject, new Map());
+  const [rawProject, packageDependencies] = await readRawProject(path);
+  const [typedProject] = await checkProject(rawProject, packageDependencies);
   if (typedProject === undefined) {
     exit(1);
   }
