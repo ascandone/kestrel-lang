@@ -36,12 +36,9 @@ import { format } from "../../format";
 import * as project from "../../typecheck/project";
 import { readConfig } from "../kestrel-json";
 
-export async function lspCmd() {
-  const documents = new TextDocuments(TextDocument);
-  const connection =
-    // @ts-ignore
-    createConnection();
-
+async function initState(
+  sendDiagnostics: (param: PublishDiagnosticsParams) => void,
+) {
   const currentDirectory = process.cwd();
   const config = await readConfig(currentDirectory);
 
@@ -62,7 +59,7 @@ export async function lspCmd() {
         const [, errors] = res.output;
 
         const param = errorInfoToDiagnostic(errors, doc);
-        connection.sendDiagnostics(param);
+        sendDiagnostics(param);
       }
     },
     rawProject,
@@ -71,6 +68,17 @@ export async function lspCmd() {
       exposedModules,
     },
   );
+
+  return state;
+}
+
+export async function lspCmd() {
+  const documents = new TextDocuments(TextDocument);
+  const connection =
+    // @ts-ignore
+    createConnection();
+
+  const state = await initState((params) => connection.sendDiagnostics(params));
 
   connection.onInitialize(() => ({
     capabilities: {
