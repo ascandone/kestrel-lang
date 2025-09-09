@@ -262,7 +262,9 @@ export async function lspCmd() {
       return;
     }
 
-    const hasParsingErr = module[1].some((e) => e instanceof ParsingError);
+    const hasParsingErr = module[1].some(
+      (e) => e.description instanceof ParsingError,
+    );
     if (hasParsingErr) {
       return;
     }
