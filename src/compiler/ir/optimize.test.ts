@@ -214,7 +214,7 @@ describe("inline let", () => {
 });
 
 describe("mixed rules", () => {
-  test.todo("apply recursively twice", () => {
+  test("apply recursively twice", () => {
     const out = applyRule(
       optimize.allOptimizations,
       `
@@ -227,15 +227,7 @@ describe("mixed rules", () => {
     `,
     );
 
-    expect(out).toMatchInlineSnapshot(`
-      "let pkg:Main.x = {
-        let x#0 = {
-          let y#0 = 42;
-          y#0
-        };
-        x#0
-      }"
-    `);
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x = 42"`);
   });
 });
 

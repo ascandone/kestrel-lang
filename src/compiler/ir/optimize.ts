@@ -133,7 +133,7 @@ const bindingAppearsAtMostOnce = (
 export const composeRules = (rules: Rule[]): Rule =>
   rules.reduce((prev, next) => (expr, ctx) => next(prev(expr, ctx), ctx));
 
-export const allOptimizations = composeRules([betaReduction]);
+export const allOptimizations = composeRules([betaReduction, inlineLet]);
 
 /**
  * An higher-order rule that evaluates the given rule until it reaches a fixedpoint
