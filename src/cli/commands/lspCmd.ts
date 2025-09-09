@@ -45,7 +45,8 @@ export async function lspCmd() {
   const currentDirectory = process.cwd();
   const config = await readConfig(currentDirectory);
 
-  const [rawProject, deps] = await readRawProject_(currentDirectory);
+  const [rawProject, deps, exposedModules] =
+    await readRawProject_(currentDirectory);
 
   const state = new AnalysisState(
     config.name ?? "",
@@ -67,6 +68,7 @@ export async function lspCmd() {
     rawProject,
     {
       packageDependencies: deps,
+      exposedModules,
     },
   );
 
@@ -375,9 +377,10 @@ async function readRawProject_(
   [
     Map<string, Map<string, { doc: TextDocument; source: string }>>,
     project.ProjectOptions["packageDependencies"],
+    project.ProjectOptions["exposedModules"],
   ]
 > {
-  const [prj, deps] = await readRawProject(path);
+  const [prj, deps, exposedModules] = await readRawProject(path);
 
   const rawProject: Map<
     string,
@@ -398,7 +401,7 @@ async function readRawProject_(
     }
   }
 
-  return [rawProject, deps] as const;
+  return [rawProject, deps, exposedModules] as const;
 }
 
 function toDiagnosticSeverity(severity: Severity): DiagnosticSeverity {

@@ -28,12 +28,19 @@ export type RawProject = Map<string, Map<string, RawModule>>;
 /** Read a package and its dependecies. Returns a (module, pkg)-indexed nested map */
 export async function readRawProject(
   path: string,
-): Promise<[RawProject, project.ProjectOptions["packageDependencies"]]> {
+): Promise<
+  [
+    RawProject,
+    project.ProjectOptions["packageDependencies"],
+    project.ProjectOptions["exposedModules"],
+  ]
+> {
   const project = new DefaultMap<string, Map<string, RawModule>>(
     () => new Map(),
   );
 
   const packagesDeps: project.ProjectOptions["packageDependencies"] = new Map();
+  const exposedModules: project.ProjectOptions["exposedModules"] = new Map();
 
   // TODO make sure there aren't cyclic deps
   async function helper(path: string) {
@@ -41,6 +48,7 @@ export async function readRawProject(
 
     const deps = Object.keys(config.dependencies ?? {});
     packagesDeps.set(config.name ?? "", new Set(deps));
+    exposedModules.set(config.name ?? "", new Set(config.exposedModules));
 
     await readPackage(project, path, config);
 
@@ -57,7 +65,7 @@ export async function readRawProject(
 
   await helper(path);
 
-  return [project.inner, packagesDeps] as const;
+  return [project.inner, packagesDeps, exposedModules] as const;
 }
 
 /** Read a single package and load its content into the project  */
@@ -107,8 +115,12 @@ export async function readPackage(
 export async function check(
   path: string,
 ): Promise<project.TypedProject | undefined> {
-  const [rawProject, projectDeps] = await readRawProject(path);
-  const [project, hasWarnings] = await checkProject(rawProject, projectDeps);
+  const [rawProject, projectDeps, exposedModules] = await readRawProject(path);
+  const [project, hasWarnings] = await checkProject(
+    rawProject,
+    projectDeps,
+    exposedModules,
+  );
   if (hasWarnings) {
     return undefined;
   }
@@ -135,6 +147,7 @@ export function parseModule(src: string): UntypedModule {
 export async function checkProject(
   rawProject: Map<string, Map<string, RawModule>>,
   packageDependencies: project.ProjectOptions["packageDependencies"],
+  exposedModules: project.ProjectOptions["exposedModules"],
 ): Promise<[project.TypedProject | undefined, boolean]> {
   const raw: project.RawProject = new Map();
 
@@ -144,6 +157,7 @@ export async function checkProject(
 
   const checker = new project.ProjectTypechecker(raw, {
     packageDependencies,
+    exposedModules,
   });
   checker.typecheck();
 
@@ -192,8 +206,13 @@ export async function compilePath(
   entrypoint?: string,
   _optimize?: boolean,
 ): Promise<string> {
-  const [rawProject, packageDependencies] = await readRawProject(path);
-  const [typedProject] = await checkProject(rawProject, packageDependencies);
+  const [rawProject, packageDependencies, exposedModules] =
+    await readRawProject(path);
+  const [typedProject] = await checkProject(
+    rawProject,
+    packageDependencies,
+    exposedModules,
+  );
   if (typedProject === undefined) {
     exit(1);
   }
