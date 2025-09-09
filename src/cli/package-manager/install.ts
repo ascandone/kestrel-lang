@@ -36,7 +36,14 @@ async function installLockFile(config: KestrelJson) {
   // resolve again
   console.info("stale kestrel.lock");
 
-  const solution = await solve(config.dependencies ?? {}, new Fetcher());
+  // TODO this would allow mutually exclusive "dependencies" and "devDependencies" constraints
+  const solution = await solve(
+    {
+      ...config.dependencies,
+      ...config.devDependencies,
+    },
+    new Fetcher(),
+  );
   if (solution === undefined) {
     throw new Error("cannot find resolution");
   }
