@@ -85,6 +85,11 @@ export const inlineLet: Rule = (expr_) => {
       return substitute(expr.body, expr.binding, expr.value);
   }
 
+  const isRecursive = bindingOccursIn(expr.value, expr.binding);
+  if (isRecursive) {
+    return expr_;
+  }
+
   // else, check occurrences
   const isJustOneOcc = bindingAppearsAtMostOnce(expr.body, expr.binding);
   if (isJustOneOcc) {
@@ -125,6 +130,28 @@ const bindingAppearsAtMostOnce = (
   });
 
   return returnValue;
+};
+
+const bindingOccursIn = (
+  expr: ir.Expr,
+  binding: ir.Ident & { type: "local" },
+) => {
+  let appears = false;
+
+  lazyVisit(expr, (expr, next) => {
+    if (
+      expr.type === "identifier" &&
+      expr.ident.type === "local" &&
+      ir.localIdentEq(expr.ident, binding)
+    ) {
+      appears = true;
+      return;
+    }
+
+    next();
+  });
+
+  return appears;
 };
 
 /**

@@ -229,6 +229,29 @@ describe("mixed rules", () => {
 
     expect(out).toMatchInlineSnapshot(`"let pkg:Main.x = 42"`);
   });
+
+  test("skip opt when recursive def", () => {
+    const out = applyRule(
+      optimize.allOptimizations,
+      `
+        let x = {
+          let f = fn arg {
+            f(arg)
+          };
+          f(0)
+        }
+    `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.x = {
+        let f#0 = fn arg#0 {
+          f#0(arg#0)
+        };
+        f#0(0)
+      }"
+    `);
+  });
 });
 
 function strConst(value: string): ir.Expr {
