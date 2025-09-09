@@ -228,11 +228,13 @@ describe("mixed rules", () => {
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "(:def x
-          (:let (x#0
-                  (:let (y#0 42)
-                      y#0))
-              x#0))"
+      "let pkg:Main.x = {
+        let x#0 = {
+          let y#0 = 42;
+          y#0
+        };
+        x#0
+      }"
     `);
   });
 });

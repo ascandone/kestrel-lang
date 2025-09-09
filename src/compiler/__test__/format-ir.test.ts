@@ -158,6 +158,28 @@ test("pattern", () => {
   `);
 });
 
+test("nested let sugar", () => {
+  const doc = new ExprPrinter().exprToDoc(
+    ir.desugarLet({
+      binding: mkBinding("a"),
+      value: mkIdent("x"),
+      body: ir.desugarLet({
+        binding: mkBinding("b"),
+        value: mkIdent("y"),
+        body: mkIdent("body"),
+      }),
+    }),
+  );
+
+  expect(pprint(doc)).toMatchInlineSnapshot(`
+    "{
+      let a#0 = x#0;
+      let b#0 = y#0;
+      body#0
+    }"
+  `);
+});
+
 test("field access", () => {
   const doc = new ExprPrinter().exprToDoc({
     type: "field-access",
