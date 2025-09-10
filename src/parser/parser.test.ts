@@ -193,14 +193,6 @@ let _ = if b { 0 } else { 1 }
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.todo("parse if-else syntax sugar", () => {
-  const src = `
-    let _ = if b { 0 } else if { 1 } else { 2 }
-  `;
-
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
-
 test("parse if expr with a let expr", () => {
   const src = `
 let _ = if b {
@@ -556,14 +548,10 @@ describe("structs", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.todo("complex exprs in update syntax");
-
   test("qualified field access", () => {
     const src = `let _ = s.MyStruct#my_field`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
-
-  test.todo("namespaced-qualified field access");
 });
 
 describe("pattern matching", () => {

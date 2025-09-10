@@ -650,27 +650,6 @@ describe("if expressions", () => {
     `);
   });
 
-  test.skip("eval if", () => {
-    const out = compileSrc(`
-      @extern
-      @type (a, a) -> Bool
-      let eq
-
-      let is_zero = fn n {
-        if n == 0 {
-          "yes"
-        } else {
-          "nope"
-        }
-      }
-    `);
-
-    const isZero = new Function(`${out}; return Main$is_zero`)();
-
-    expect(isZero(0)).toEqual("yes");
-    expect(isZero(42)).toEqual("nope");
-  });
-
   test("ifs as expr", () => {
     const out = compileSrc(`
     @extern
@@ -2410,25 +2389,29 @@ describe("traits compilation", () => {
     `);
   });
 
-  test.skip("== handles traits dicts on adts", () => {
+  test("== handles traits dicts on adts", () => {
     const out = compileSrc(
       `
     
+    enum X { X }
+
     @extern
     @type (a, a) -> Bool where a: Eq
     let (==)
 
 
-    enum T { C(Int) }
-    let f = C(0) == C(1)
+    enum T { C(X) }
+    let f = C(X) == C(X)
 `,
-      { ns: "Bool", package_: CORE_PACKAGE },
+      { ns: "Bool", package_: CORE_PACKAGE, allowDeriving: ["Eq"] },
     );
 
     expect(out).toMatchInlineSnapshot(`
-      "const Bool$C = _0 => _0;
-      const Eq_Main$T = (x, y) => Eq_Main$Int(x, y);
-      const Bool$f = _eq(Eq_Bool$T)(0, 1);"
+      "const Bool$X = 0;
+      const Eq_Bool$X = (x, y) => true;
+      const Bool$C = _0 => _0;
+      const Eq_Bool$T = (x, y) => Eq_Bool$X(x, y);
+      const Bool$f = _eq(Eq_Bool$T)(Bool$X, Bool$X);"
     `);
   });
 

@@ -1735,7 +1735,28 @@ describe("struct", () => {
     expect(errs[0]?.description).toBeInstanceOf(err.InvalidField);
   });
 
-  test.todo("emit bad import if trying to import(..) private fields");
+  test.todo("emit bad import if trying to import(..) a struct", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      pub(..) struct Person<a> {
+        name: a
+      }
+    `,
+    );
+
+    const [, errs] = tc(
+      `
+      import Person.{Person(..)}
+
+      pub let a = Person { name: 0 }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(err.BadImport);
+  });
 
   test("allow accessing fields in other modules if public", () => {
     const [Person] = tcProgram(
@@ -1766,137 +1787,6 @@ describe("struct", () => {
     expect(types).toEqual({
       p: "Person",
       name: "String",
-    });
-  });
-
-  describe.todo("qualified fields", () => {
-    test("allow accessing fields in same module with qualified field syntax", () => {
-      const [types, errs] = tc(
-        `
-        extern type String
-        struct Person {
-          name: String
-        }
-
-        pub let name = fn p {
-          p.Person#name
-        }
-    `,
-      );
-
-      expect(errs).toEqual([]);
-      expect(types).toEqual({
-        name: "(Person) -> String",
-      });
-    });
-
-    test("emit err when field accessed with qualified syntax is invalid", () => {
-      const [, errs] = tc(
-        `
-        struct Person { }
-
-        pub let name = fn p {
-          p.Person#invalid_field
-        }
-    `,
-      );
-
-      expect(errs).toHaveLength(1);
-      expect(errs[0]?.description).toEqual(
-        new err.InvalidField("Person", "invalid_field"),
-      );
-    });
-
-    test("allow accessing fields in other modules with qualified field syntax", () => {
-      const [Person] = tcProgram(
-        "Person",
-        `
-      extern type String
-      pub(..) struct Person {
-        name: String
-      }
-    `,
-      );
-
-      const [types, errs] = tc(
-        `
-      import Person.{Person}
-
-      pub let name = fn p {
-        p.Person#name
-      }
-    `,
-        { Person },
-      );
-
-      expect(errs).toEqual([]);
-      expect(types).toEqual({
-        name: "(Person) -> String",
-      });
-    });
-
-    test("emit error when struct of qualified field does not exist", () => {
-      const [, errs] = tc(
-        `
-      pub let name = fn p {
-        p.InvalidType#name
-      }
-    `,
-      );
-
-      expect(errs).toHaveLength(1);
-      expect(errs[0]?.description).toEqual(new err.UnboundType("InvalidType"));
-    });
-
-    test("emit error when qualified field does not exist", () => {
-      const [Person] = tcProgram(
-        "Person",
-        `
-        pub(..) struct Person {}
-  `,
-      );
-
-      const [, errs] = tc(
-        `
-      import Person.{Person}
-      pub let name = fn p {
-        p.Person#invalid_field
-      }
-    `,
-        { Person },
-      );
-
-      expect(errs).toHaveLength(1);
-      expect(errs[0]?.description).toEqual(
-        new err.InvalidField("Person", "invalid_field"),
-      );
-    });
-
-    test("emit error when qualified field is private", () => {
-      const [Person] = tcProgram(
-        "Person",
-        `
-        extern type Int
-        pub struct Person {
-          private_field: Int
-        }
-  `,
-      );
-
-      const [, errs] = tc(
-        `
-      import Person.{Person}
-      pub let name = fn p {
-        p.Person#private_field
-      }
-    `,
-        { Person },
-      );
-
-      expect(errs).toHaveLength(1);
-      expect(errs[0]?.description).toEqual(
-        new err.InvalidField("Person", "private_field"),
-      );
     });
   });
 
@@ -2074,7 +1964,27 @@ describe("struct", () => {
     });
   });
 
-  test.todo("prevent from creating structs with private fields");
+  test.todo("prevent from creating structs with private fields", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      pub struct Person<a> {
+        name: a
+      }
+    `,
+    );
+
+    const [, errs] = tc(
+      `
+      import Person.{Person}
+
+      pub let a = Person { name: 0 }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(1);
+  });
 
   test("typecheck fields of wrong type", () => {
     const [types, errs] = tc(
@@ -2177,7 +2087,23 @@ describe("struct", () => {
     expect(errs).toEqual([]);
   });
 
-  test.todo("namespaced struct names");
+  test.todo("qualified struct names", () => {
+    const [, errs] = tc(
+      `
+      struct Str<a> {
+        a: a,
+      }
+
+      pub let x = Main.Str {
+        a: 0
+      }
+      
+      
+  `,
+    );
+
+    expect(errs).toEqual([]);
+  });
 });
 
 describe("pattern matching", () => {
