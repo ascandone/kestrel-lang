@@ -38,6 +38,67 @@ export const betaReduction: Rule = (expr) => {
 };
 
 /**
+ * Evaluate a pattern when the constructor is called inline. For example:
+ * ```kestrel
+ * match Ok(1, 2) {
+ *   Ok(a, b) => a + b,
+ *   Err(e) => e,
+ * }
+ * ```
+ *
+ * would become:
+ * ```kestrel
+ * {
+ *   let a = 1;
+ *   let b = 2;
+ *   a + b
+ * }
+ * ```
+ */
+export const foldMatch: Rule = (expr) => {
+  if (
+    expr.type !== "match" ||
+    expr.expr.type !== "application" ||
+    expr.expr.caller.type !== "identifier" ||
+    expr.expr.caller.ident.type !== "constructor"
+  ) {
+    return expr;
+  }
+
+  for (const [pat, ret] of expr.clauses) {
+    if (
+      pat.type !== "constructor" ||
+      pat.typeName.name !== expr.expr.caller.ident.name
+    ) {
+      continue;
+    }
+
+    // TODO when we'll compile pattern match into the IR, we'll get rid of this bit
+    const idents = pat.args.flatMap((pat) =>
+      pat.type === "identifier" ? [pat] : [],
+    );
+    if (idents.length !== pat.args.length) {
+      return expr;
+    }
+
+    // Found matching clause: returning
+
+    const args = expr.expr.args;
+    return idents.reduceRight((prev, curr, index) => {
+      const matchingArg = args[index]!;
+
+      return ir.desugarLet({
+        binding: curr.ident,
+        value: matchingArg,
+        body: prev,
+      });
+    }, ret);
+  }
+
+  return expr;
+};
+
+/**
  * inline the let binding if one of the 2 things happen:
  *
  * 1. the value is a simple expression: an identifier or a literal
@@ -160,7 +221,11 @@ const bindingOccursIn = (
 export const composeRules = (rules: Rule[]): Rule =>
   rules.reduce((prev, next) => (expr, ctx) => next(prev(expr, ctx), ctx));
 
-export const allOptimizations = composeRules([betaReduction, inlineLet]);
+export const allOptimizations = composeRules([
+  betaReduction,
+  inlineLet,
+  foldMatch,
+]);
 
 /**
  * An higher-order rule that evaluates the given rule until it reaches a fixedpoint

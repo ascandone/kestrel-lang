@@ -252,6 +252,28 @@ describe("mixed rules", () => {
       }"
     `);
   });
+
+  test("fold match", () => {
+    const out = applyRule(
+      optimize.foldMatch,
+      `
+        enum Box<a> { Box(a) }
+
+        let x = {
+          match Box(0) {
+            Box(x) => x
+          }
+        }
+    `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.x = {
+        let x#0 = 0;
+        x#0
+      }"
+    `);
+  });
 });
 
 function strConst(value: string): ir.Expr {
