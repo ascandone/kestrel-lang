@@ -2511,6 +2511,19 @@ describe("pattern matching", () => {
       expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
     });
 
+    test("wildcard makes it exhaustive", () => {
+      const [, errs] = tc(`
+      enum Union { A, B, C, D }
+
+      pub let f = match A {
+        A => 0,
+        _ => 1,
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
     test("with params (non exhaustive)", () => {
       const [, errs] = tc(`
       enum Union { A, B }
