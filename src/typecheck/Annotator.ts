@@ -46,6 +46,7 @@ export class Annotator {
     switch (typeDecl.type) {
       case "extern":
         return {
+          $type: TVar.freshType(),
           $traits: new Map(),
           ...typeDecl,
         };
@@ -53,12 +54,16 @@ export class Annotator {
       case "adt":
         return {
           ...typeDecl,
+          $type: TVar.freshType(),
           $traits: new Map(),
           variants: typeDecl.variants.map((variant) => ({
             ...variant,
             $scheme: {},
             $type: TVar.freshType(),
-            args: variant.args.map((arg) => this.annotateTypeAst(arg)),
+            args: variant.args.map((arg) => ({
+              $type: TVar.freshType(),
+              ast: this.annotateTypeAst(arg.ast),
+            })),
           })),
         };
 

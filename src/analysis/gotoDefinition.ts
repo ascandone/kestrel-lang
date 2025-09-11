@@ -54,7 +54,7 @@ export function goToDefinitionOf(
         }
 
         return firstBy(variant.args, (arg) =>
-          goToDefinitionOfTypeAst(arg, position),
+          goToDefinitionOfTypeAst(arg.ast, position),
         );
       });
 

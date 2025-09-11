@@ -780,7 +780,7 @@ class Resolver {
         case "adt":
           for (const variant of declaration.variants) {
             for (const arg of variant.args) {
-              this.resolveTypeAst(arg);
+              this.resolveTypeAst(arg.ast);
             }
           }
           break;

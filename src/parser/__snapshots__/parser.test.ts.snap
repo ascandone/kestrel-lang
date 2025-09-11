@@ -9367,65 +9367,67 @@ exports[`type declarations > type with a variant with complex args 1`] = `
         {
           "args": [
             {
-              "args": [
-                {
-                  "ident": "a",
-                  "range": {
-                    "end": {
-                      "character": 19,
-                      "line": 2,
-                    },
-                    "start": {
-                      "character": 18,
-                      "line": 2,
-                    },
-                  },
-                  "type": "var",
-                },
-                {
-                  "args": [
-                    {
-                      "args": [],
-                      "name": "Int",
-                      "range": {
-                        "end": {
-                          "character": 31,
-                          "line": 2,
-                        },
-                        "start": {
-                          "character": 28,
-                          "line": 2,
-                        },
+              "ast": {
+                "args": [
+                  {
+                    "ident": "a",
+                    "range": {
+                      "end": {
+                        "character": 19,
+                        "line": 2,
                       },
-                      "type": "named",
+                      "start": {
+                        "character": 18,
+                        "line": 2,
+                      },
                     },
-                  ],
-                  "name": "Nested",
-                  "range": {
-                    "end": {
-                      "character": 32,
-                      "line": 2,
-                    },
-                    "start": {
-                      "character": 21,
-                      "line": 2,
-                    },
+                    "type": "var",
                   },
-                  "type": "named",
+                  {
+                    "args": [
+                      {
+                        "args": [],
+                        "name": "Int",
+                        "range": {
+                          "end": {
+                            "character": 31,
+                            "line": 2,
+                          },
+                          "start": {
+                            "character": 28,
+                            "line": 2,
+                          },
+                        },
+                        "type": "named",
+                      },
+                    ],
+                    "name": "Nested",
+                    "range": {
+                      "end": {
+                        "character": 32,
+                        "line": 2,
+                      },
+                      "start": {
+                        "character": 21,
+                        "line": 2,
+                      },
+                    },
+                    "type": "named",
+                  },
+                ],
+                "name": "Example",
+                "range": {
+                  "end": {
+                    "character": 33,
+                    "line": 2,
+                  },
+                  "start": {
+                    "character": 10,
+                    "line": 2,
+                  },
                 },
-              ],
-              "name": "Example",
-              "range": {
-                "end": {
-                  "character": 33,
-                  "line": 2,
-                },
-                "start": {
-                  "character": 10,
-                  "line": 2,
-                },
+                "type": "named",
               },
-              "type": "named",
             },
           ],
           "name": "C",
@@ -9471,34 +9473,38 @@ exports[`type declarations > type with a variant with many args 1`] = `
         {
           "args": [
             {
-              "args": [],
-              "name": "A",
-              "range": {
-                "end": {
-                  "character": 12,
-                  "line": 0,
+              "ast": {
+                "args": [],
+                "name": "A",
+                "range": {
+                  "end": {
+                    "character": 12,
+                    "line": 0,
+                  },
+                  "start": {
+                    "character": 11,
+                    "line": 0,
+                  },
                 },
-                "start": {
-                  "character": 11,
-                  "line": 0,
-                },
+                "type": "named",
               },
-              "type": "named",
             },
             {
-              "args": [],
-              "name": "B",
-              "range": {
-                "end": {
-                  "character": 15,
-                  "line": 0,
+              "ast": {
+                "args": [],
+                "name": "B",
+                "range": {
+                  "end": {
+                    "character": 15,
+                    "line": 0,
+                  },
+                  "start": {
+                    "character": 14,
+                    "line": 0,
+                  },
                 },
-                "start": {
-                  "character": 14,
-                  "line": 0,
-                },
+                "type": "named",
               },
-              "type": "named",
             },
           ],
           "name": "C",
@@ -9586,19 +9592,21 @@ exports[`type declarations > type with a variant with one arg 1`] = `
         {
           "args": [
             {
-              "args": [],
-              "name": "Arg",
-              "range": {
-                "end": {
-                  "character": 14,
-                  "line": 0,
+              "ast": {
+                "args": [],
+                "name": "Arg",
+                "range": {
+                  "end": {
+                    "character": 14,
+                    "line": 0,
+                  },
+                  "start": {
+                    "character": 11,
+                    "line": 0,
+                  },
                 },
-                "start": {
-                  "character": 11,
-                  "line": 0,
-                },
+                "type": "named",
               },
-              "type": "named",
             },
           ],
           "name": "C",

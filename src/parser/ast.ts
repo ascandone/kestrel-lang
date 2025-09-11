@@ -165,7 +165,9 @@ export type Import = RangeMeta & {
 
 export type TypeVariant = RangeMeta & {
   name: string;
-  args: TypeAst[];
+  args: {
+    ast: TypeAst;
+  }[];
 };
 
 export type ValueDeclarationAttribute = RangeMeta &

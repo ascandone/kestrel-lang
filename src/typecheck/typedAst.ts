@@ -188,7 +188,10 @@ export type TypedImport = ast.RangeMeta & {
 assertSubtype<ast.TypeVariant, TypedTypeVariant>;
 export type TypedTypeVariant = ast.RangeMeta & {
   name: string;
-  args: TypedTypeAst[];
+  args: {
+    ast: TypedTypeAst;
+    $type: Type;
+  }[];
 
   $type: Type;
 };
@@ -218,6 +221,7 @@ export type TypedTypeDeclaration = ast.RangeMeta & {
   params: Array<{ name: string } & ast.RangeMeta>;
   docComment?: string;
 
+  $type: Type;
   $traits: Map<string, Set<string>[]>;
 } & (
     | {
@@ -229,8 +233,6 @@ export type TypedTypeDeclaration = ast.RangeMeta & {
         type: "struct";
         fields: TypedStructDeclarationField[];
         pub: boolean | "..";
-
-        $type: Type;
       }
     | {
         type: "extern";

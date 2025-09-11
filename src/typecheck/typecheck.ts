@@ -3,7 +3,6 @@ import {
   RangeMeta,
   Import,
   UntypedModule,
-  TypeDeclaration,
   Range,
 } from "../parser";
 import {
@@ -210,25 +209,20 @@ class Typechecker {
     for (const variant of typeDecl.variants) {
       // TODO refactor this so that we have a type per ctor arg
 
-      const resolved = resolveType(variant.$type);
+      for (const arg of variant.args) {
+        const ok = mkDepsFor(
+          out,
+          arg.$type,
+          trait,
+          {
+            // TODO check .bind is needed
+            getNamedTypeDependencies: this.getNamedTypeDependencies.bind(this),
+          },
+          typeDecl.$type,
+        );
 
-      if (resolved.type === "fn") {
-        for (const arg of resolved.args) {
-          const ok = mkDepsFor(
-            out,
-            arg,
-            trait,
-            {
-              // TODO check .bind is needed
-              getNamedTypeDependencies:
-                this.getNamedTypeDependencies.bind(this),
-            },
-            resolved.return,
-          );
-
-          if (!ok) {
-            return;
-          }
+        if (!ok) {
+          return;
         }
       }
 
@@ -271,10 +265,18 @@ class Typechecker {
 
   run(): [TypedModule, err.ErrorInfo[]] {
     for (const typeDecl of this.typedModule.typeDeclarations) {
+      typeDecl.$type = {
+        type: "named",
+        package_: this.package_,
+        module: this.ns,
+        name: typeDecl.name,
+        args: typeDecl.params.map(
+          (param): Type => ({ type: "rigid-var", name: param.name }),
+        ),
+      };
+
       if (typeDecl.type === "adt") {
-        for (const variant of typeDecl.variants) {
-          variant.$type = this.hydrateVariant(typeDecl, variant);
-        }
+        this.hydrateVariant(typeDecl);
 
         this.adtDerive("Eq", typeDecl);
         this.adtDerive("Show", typeDecl);
@@ -325,14 +327,6 @@ class Typechecker {
   private hydrateStruct(typeDecl: TypedTypeDeclaration & { type: "struct" }) {
     const params = typeDecl.params.map((p) => p.name);
 
-    typeDecl.$type = {
-      type: "named",
-      package_: this.package_,
-      module: this.ns,
-      name: typeDecl.name,
-      args: params.map((name) => ({ type: "rigid-var", name })),
-    };
-
     for (const field of typeDecl.fields) {
       const type = this.hydrateTypeAst(field.typeAst, {
         type: "typedef",
@@ -342,31 +336,26 @@ class Typechecker {
     }
   }
 
-  private hydrateVariant(
-    typeDecl: TypeDeclaration & { type: "adt" },
-    variant: TypedTypeVariant,
-  ): Type {
+  private hydrateVariant(typeDecl: TypedTypeDeclaration & { type: "adt" }) {
     const params = typeDecl.params.map((p) => p.name);
 
-    const returnType: Type = {
-      type: "named",
-      package_: this.package_,
-      module: this.ns,
-      name: typeDecl.name,
-      args: params.map((name): Type => ({ type: "rigid-var", name })),
-    };
+    for (const variant of typeDecl.variants) {
+      for (const arg of variant.args) {
+        arg.$type = this.hydrateTypeAst(arg.ast, {
+          type: "typedef",
+          params,
+        });
+      }
 
-    if (variant.args.length === 0) {
-      return returnType;
+      variant.$type =
+        variant.args.length === 0
+          ? typeDecl.$type
+          : {
+              type: "fn",
+              args: variant.args.map((v) => v.$type),
+              return: typeDecl.$type,
+            };
     }
-
-    return {
-      type: "fn",
-      args: variant.args.map((v) =>
-        this.hydrateTypeAst(v, { type: "typedef", params }),
-      ),
-      return: returnType,
-    };
   }
 
   private unifyExpr(ast: TypedExpr, t1: Type, t2: Type) {

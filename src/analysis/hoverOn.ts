@@ -74,7 +74,7 @@ export function hoverOn(
           }
 
           const res = firstBy(variant.args, (arg) =>
-            hoverOnTypeAst(arg, position),
+            hoverOnTypeAst(arg.ast, position),
           );
           if (res !== undefined) {
             return res;

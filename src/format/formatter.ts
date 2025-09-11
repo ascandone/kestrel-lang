@@ -711,7 +711,10 @@ function variantToDoc(variant: TypeVariant): Doc {
       ? []
       : [
           text("("),
-          sepByString(", ", variant.args.map(typeAstToDoc)),
+          sepByString(
+            ", ",
+            variant.args.map((arg) => typeAstToDoc(arg.ast)),
+          ),
           text(")"),
         ];
 

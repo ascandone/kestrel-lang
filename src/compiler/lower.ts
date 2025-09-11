@@ -482,7 +482,7 @@ export function lowerProgram(
             (ctor): ir.AdtConstructor => ({
               name: mkIdent(ctor.name),
               arity: ctor.args.length,
-              args: ctor.args,
+              args: ctor.args.map((a) => a.ast),
             }),
           ),
         },
