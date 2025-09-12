@@ -918,10 +918,7 @@ class Typechecker {
     };
   }
 
-  private specialize(
-    columnIndex: number,
-    matrix: PatternMatrix,
-  ): DecisionTree | undefined {
+  private specialize(columnIndex: number, matrix: PatternMatrix): DecisionTree {
     // TODO do not return undefined
 
     const ctorsArities = new Map<string, number>();
@@ -955,7 +952,13 @@ class Typechecker {
       ctorsArities.set(key, arities.ctorArgs);
     }
 
+    const switchTree: DecisionTree & { type: "switch" } = {
+      type: "switch",
+      clauses: [],
+    };
+
     // now we specialize on each ctor
+
     for (const [id, ctorArity] of ctorsArities) {
       const specializedMatrix = matrix.flatMap(
         (clause): PatternMatrix[number][] => {
@@ -1012,7 +1015,10 @@ class Typechecker {
         },
       );
 
-      this.checkPatternsMatrix(specializedMatrix);
+      switchTree.clauses.push([
+        id,
+        this.checkPatternsMatrix(specializedMatrix),
+      ]);
     }
 
     if (totalCtors === undefined) {
@@ -1026,16 +1032,13 @@ class Typechecker {
         return specializedCol.type === "identifier";
       });
 
-      this.checkPatternsMatrix(specializedMatrix);
+      switchTree.default = this.checkPatternsMatrix(specializedMatrix);
     }
 
-    // TODO decisionTree
-    return undefined;
+    return switchTree;
   }
 
-  private checkPatternsMatrix(matrix: PatternMatrix): DecisionTree | undefined {
-    // dbgShowMatrix(matrix);
-
+  private checkPatternsMatrix(matrix: PatternMatrix): DecisionTree {
     const firstRow = matrix[0];
 
     if (firstRow === undefined) {
@@ -1419,7 +1422,16 @@ type PatternMatrix = {
   action: number;
 }[];
 
-type DecisionTree = { type: "leaf"; action: number };
+type DecisionTree =
+  | {
+      type: "leaf";
+      action: number;
+    }
+  | {
+      type: "switch";
+      clauses: [pattern: string, DecisionTree][];
+      default?: DecisionTree;
+    };
 
 // Hack to short-circuit
 class AmbiguousTypeErrHalt extends Error {}
