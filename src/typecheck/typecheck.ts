@@ -1473,27 +1473,3 @@ function getPatternCtorsArity(
       return pat satisfies never;
   }
 }
-
-function dbgShowMatrix(matrix: PatternMatrix) {
-  function showPat(col: TypedMatchPattern): string {
-    switch (col.type) {
-      case "identifier":
-        return col.name;
-
-      case "lit":
-        return col.literal.value.toString();
-
-      case "constructor":
-        if (col.args.length === 0) {
-          return col.name;
-        }
-        return col.name + "(" + col.args.map(showPat).join(", ") + ")";
-    }
-  }
-
-  console.log("<matrix>");
-  for (const row of matrix) {
-    console.log("  ", "<pat>", row.patterns.map(showPat).join(", "), "</pat>");
-  }
-  console.log("</matrix>\n");
-}
