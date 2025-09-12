@@ -734,11 +734,9 @@ class Typechecker {
         });
 
         this.typecheckExpr(ast.body);
-
-        for (const param of ast.params) {
-          this.checkExhaustiveMatchBindings(ast.range, [param]);
-        }
-
+        this.checkExhaustiveMatrix(ast.range, [
+          { action: 0, patterns: ast.params },
+        ]);
         return;
 
       case "application":
@@ -1066,14 +1064,9 @@ class Typechecker {
     return this.specialize(nonWildcardColumnIndex, matrix);
   }
 
-  private checkExhaustivePattern(rng: Range, clauses: TypedMatchPattern[]) {
+  private checkExhaustiveMatrix(rng: Range, matrix: PatternMatrix) {
     try {
-      this.checkPatternsMatrix(
-        clauses.map((clause, index) => ({
-          patterns: [clause],
-          action: index,
-        })),
-      );
+      this.checkPatternsMatrix(matrix);
     } catch (error) {
       if (error instanceof MalformedMatrixHalt) {
         return;
@@ -1091,11 +1084,14 @@ class Typechecker {
     }
   }
 
-  private checkExhaustiveMatchBindings(
-    rng: Range,
-    params: TypedMatchPattern[],
-  ) {
-    this.checkExhaustivePattern(rng, params);
+  private checkExhaustivePattern(rng: Range, clauses: TypedMatchPattern[]) {
+    this.checkExhaustiveMatrix(
+      rng,
+      clauses.map((clause, index) => ({
+        patterns: [clause],
+        action: index,
+      })),
+    );
   }
 
   private unifyNode(ast: RangeMeta, t1: Type, t2: Type) {
