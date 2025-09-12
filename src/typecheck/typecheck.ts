@@ -17,7 +17,6 @@ import {
   TypedModule,
   TypedTypeAst,
   TypedTypeDeclaration,
-  TypedTypeVariant,
 } from "./typedAst";
 import { TraitImpl, defaultImports, defaultTraitImpls } from "./defaultImports";
 import {
@@ -619,8 +618,7 @@ class Typechecker {
         this.unifyNode(stm, stm.$type, bodyType);
         this.unifyNode(stm, stm.pattern.$type, stm.value.$type);
         this.typecheckExpr(stm.value);
-
-        this.checkExhaustiveMatchBinding(stm.pattern);
+        this.checkExhaustivePattern(stm.range, [stm.pattern]);
         break;
 
       case "let#":
@@ -639,8 +637,7 @@ class Typechecker {
         this.typecheckExpr(stm.mapper);
         this.typecheckExpr(stm.value);
         this.typecheckPattern(stm.pattern);
-
-        this.checkExhaustiveMatchBinding(stm.pattern);
+        this.checkExhaustivePattern(stm.range, [stm.pattern]);
         break;
 
       default:
@@ -738,7 +735,9 @@ class Typechecker {
 
         this.typecheckExpr(ast.body);
 
-        this.checkExhaustiveMatchBindings(ast.range, ast.params);
+        for (const param of ast.params) {
+          this.checkExhaustiveMatchBindings(ast.range, [param]);
+        }
 
         return;
 
@@ -829,7 +828,10 @@ class Typechecker {
           this.unifyExpr(ast, ast.$type, expr.$type);
           this.typecheckExpr(expr);
         }
-        this.checkExhaustiveMatch(ast);
+        this.checkExhaustivePattern(
+          ast.range,
+          ast.clauses.map((clause) => clause[0]),
+        );
         return;
 
       case "block": {
@@ -918,137 +920,176 @@ class Typechecker {
     };
   }
 
-  private checkPatternsMatrix(rng: Range, cols: PatternMatrix) {
-    const [firstCol, ...otherCols] = cols;
-    if (firstCol === undefined) {
-      return;
-    }
+  private specialize(
+    columnIndex: number,
+    matrix: PatternMatrix,
+  ): DecisionTree | undefined {
+    // TODO do not return undefined
 
-    // we specialize on the first
-    const lookup = this.getTypeDecl(firstCol.type);
-    if (lookup === undefined) {
-      // undefined decl: error has alreay beed emitted
-      return;
-    }
+    const ctorsArities = new Map<string, number>();
 
-    switch (lookup.declaration.type) {
-      case "adt": {
-        for (const variantDefinition of lookup.declaration.variants) {
-          // TODO attach types directly on type AST
-          const argsTypes = getVariantArgs(variantDefinition);
-          if (argsTypes === undefined) {
-            return;
-          }
+    // first, we gather all the ctors of head patterns of this col
 
-          const [matchingCtors, usedRows, ok] = getMatchingCtors(
-            variantDefinition,
-            firstCol.patterns,
-          );
+    // TODO can we simply store ctors cardinality?
+    let totalCtors: number | undefined;
 
-          if (!ok) {
-            this.errors.push({
-              description: new err.NonExhaustiveMatch(),
-              range: rng,
-            });
-          }
-
-          const specializedMatrix: PatternMatrix = [
-            ...matchingCtors,
-            ...otherCols.map((col) => ({
-              type: col.type,
-              patterns: col.patterns.filter((_p, index) => usedRows.has(index)),
-            })),
-          ];
-
-          // we have produced the new matrix specialized on this ctor: we proceed with the check there
-          this.checkPatternsMatrix(rng, specializedMatrix);
-        }
-
-        return;
+    for (const clause of matrix) {
+      const specializedCol = clause.patterns[columnIndex]!;
+      if (specializedCol.type === "identifier") {
+        continue;
       }
 
-      case "extern": {
-        // we'll assume it's never possible to do exhaustive pattern matching on any extern value
-        // this is not quite accurate: for example, we could indeed pattern match exhaustively a Char.
-        // for the sake of simplicity, we won't allow that for now
+      const arities = getPatternCtorsArity(specializedCol);
 
-        const wildCardCols = new Set<number>();
-        const groups = new DefaultMap<string, Set<number>>(() => new Set());
-        firstCol.patterns.forEach((pat, rowIndex) => {
-          if (pat.type === "identifier") {
-            wildCardCols.add(rowIndex);
-          } else if (pat.type === "lit") {
-            const lit = pat.literal.value.toString();
-            groups.get(lit).add(rowIndex);
-          }
-        });
-
-        const hasWildcard = wildCardCols.size !== 0;
-        if (!hasWildcard) {
-          this.errors.push({
-            description: new err.NonExhaustiveMatch(),
-            range: rng,
-          });
-          return;
-        }
-
-        for (const usedRows of groups.inner.values()) {
-          const specializedMatrix: PatternMatrix = [
-            ...otherCols.map((col) => ({
-              type: col.type,
-              patterns: col.patterns.filter((_p, index) => usedRows.has(index)),
-            })),
-          ];
-
-          this.checkPatternsMatrix(rng, specializedMatrix);
-        }
-
-        const specializedMatrix: PatternMatrix = [
-          ...otherCols.map((col) => ({
-            type: col.type,
-            patterns: col.patterns.filter((_p, index) =>
-              wildCardCols.has(index),
-            ),
-          })),
-        ];
-        this.checkPatternsMatrix(rng, specializedMatrix);
-
-        return;
+      // Set the number of ctors
+      if (totalCtors === undefined) {
+        totalCtors = arities.totalCtors;
+      } else if (totalCtors !== arities.totalCtors) {
+        throw new MalformedMatrixHalt();
       }
 
-      case "struct":
-        // we won't check this, as it's not possible yet to perform pattern match on structs
-        return;
+      // Set the arity of this ctor
+      const key = patToCtorKey(specializedCol);
 
-      default:
-        lookup.declaration satisfies never;
+      if (ctorsArities.has(key)) {
+        continue;
+      }
+      ctorsArities.set(key, arities.ctorArgs);
     }
-  }
 
-  private checkExhaustiveMatch(expr: TypedExpr & { type: "match" }) {
-    try {
-      this.checkPatternsMatrix(expr.range, [
-        {
-          type: expr.expr.$type,
-          patterns: expr.clauses.map(([pat]) => pat),
+    // now we specialize on each ctor
+    for (const [id, ctorArity] of ctorsArities) {
+      const specializedMatrix = matrix.flatMap(
+        (clause): PatternMatrix[number][] => {
+          const rowPrefix = clause.patterns.slice(0, columnIndex);
+          const specializedCol = clause.patterns[columnIndex]!;
+          const rowPostfix = clause.patterns.slice(columnIndex + 1);
+
+          if (specializedCol.type === "identifier") {
+            return [
+              {
+                action: clause.action,
+                patterns: [
+                  ...rowPrefix,
+                  ...new Array(ctorArity).fill(specializedCol),
+                  ...rowPostfix,
+                ],
+              },
+            ];
+          }
+
+          const key = patToCtorKey(specializedCol);
+          if (key !== id) {
+            return [];
+          }
+
+          switch (specializedCol.type) {
+            case "lit":
+              return [
+                {
+                  action: clause.action,
+                  patterns: [...rowPrefix, ...rowPostfix],
+                },
+              ];
+
+            case "constructor":
+              if (ctorArity !== specializedCol.args.length) {
+                throw new MalformedMatrixHalt();
+              }
+
+              return [
+                {
+                  action: clause.action,
+                  patterns: [
+                    ...rowPrefix,
+                    ...specializedCol.args,
+                    ...rowPostfix,
+                  ],
+                },
+              ];
+
+            default:
+              return specializedCol satisfies never;
+          }
         },
-      ]);
-    } catch (error) {
-      if (!(error instanceof MalformedPatternErr)) {
-        throw error;
-      }
+      );
+
+      this.checkPatternsMatrix__paper(specializedMatrix);
     }
+
+    if (totalCtors === undefined) {
+      throw new MalformedMatrixHalt();
+    }
+
+    if (ctorsArities.size < totalCtors) {
+      // default pattern
+      const specializedMatrix = matrix.filter((clause) => {
+        const specializedCol = clause.patterns[columnIndex]!;
+        return specializedCol.type === "identifier";
+      });
+
+      this.checkPatternsMatrix__paper(specializedMatrix);
+    }
+
+    // TODO decisionTree
+    return undefined;
   }
 
-  private checkExhaustiveMatchBinding(expr: TypedMatchPattern) {
+  private checkPatternsMatrix__paper(
+    matrix: PatternMatrix,
+  ): DecisionTree | undefined {
+    // dbgShowMatrix(matrix);
+
+    const firstRow = matrix[0];
+
+    if (firstRow === undefined) {
+      throw new NonExhaustiveMatchHalt();
+    }
+
+    const nonWildcardColumnIndex = firstRow.patterns.findIndex(
+      (col) => col.type !== "identifier",
+    );
+
+    if (nonWildcardColumnIndex === -1) {
+      // Yield the first action
+      return { type: "leaf", action: firstRow.action };
+    }
+
+    const col = firstRow.patterns[nonWildcardColumnIndex]!;
+    if (col.type === "identifier") {
+      throw new Error("[unreachable] unexpected identifier");
+    }
+
+    if (nonWildcardColumnIndex === 0) {
+      return this.specialize(nonWildcardColumnIndex, matrix);
+    }
+
+    // TODO swap
+    return this.specialize(nonWildcardColumnIndex, matrix);
+  }
+
+  private checkExhaustivePattern(rng: Range, clauses: TypedMatchPattern[]) {
     try {
-      this.checkPatternsMatrix(expr.range, [
-        { type: expr.$type, patterns: [expr] },
-      ]);
+      this.checkPatternsMatrix__paper(
+        clauses.map((clause, index) => ({
+          patterns: [clause],
+          action: index,
+        })),
+      );
     } catch (error) {
-      if (!(error instanceof MalformedPatternErr)) {
-        throw error;
+      if (error instanceof MalformedMatrixHalt) {
+        return;
       }
+
+      if (error instanceof NonExhaustiveMatchHalt) {
+        this.errors.push({
+          description: new err.NonExhaustiveMatch(),
+          range: rng,
+        });
+        return;
+      }
+
+      throw error;
     }
   }
 
@@ -1056,19 +1097,7 @@ class Typechecker {
     rng: Range,
     params: TypedMatchPattern[],
   ) {
-    try {
-      this.checkPatternsMatrix(
-        rng,
-        params.map((param) => ({
-          type: param.$type,
-          patterns: [param],
-        })),
-      );
-    } catch (error) {
-      if (!(error instanceof MalformedPatternErr)) {
-        throw error;
-      }
-    }
+    this.checkExhaustivePattern(rng, params);
   }
 
   private unifyNode(ast: RangeMeta, t1: Type, t2: Type) {
@@ -1392,97 +1421,79 @@ function mkDepsFor(
 }
 
 type PatternMatrix = {
-  type: Type;
   patterns: TypedMatchPattern[];
+  action: number;
 }[];
 
-function getVariantArgs(variant: TypedTypeVariant) {
-  if (variant.args.length === 0) {
-    return [];
-  }
-
-  const t = variant.$type;
-  if (t.type !== "fn") {
-    return undefined;
-  }
-
-  return t.args;
-}
-
-// TODO remove
-/**
- * temporary hack to short-circuit exhaustive pattern detection. Refactor the pattern error code instead
- */
-class MalformedPatternErr extends Error {}
-
-/**
- * Given a variant definition, find all the patterns in the first row that are instances of that ctor.
- * Also returns the rowIndex of the original matrix
- * e.g.
- *
- * ```kestrel
- * getMatchingCtors(Just, [Just(a, b), None, Other, Just(1, 2)])
- * //=> [(a, b), (1, 2)]
- * ```
- * */
-function getMatchingCtors(
-  variantDefinition: TypedTypeVariant,
-  col: PatternMatrix[number]["patterns"],
-) {
-  const keptRows = new Set<number>();
-
-  /** 0-n columns (depending on the number of args) */
-  const newColumns: PatternMatrix = variantDefinition.args.map(() => ({
-    type: TVar.freshType(),
-    patterns: [],
-  }));
-
-  const argsTypes = getVariantArgs(variantDefinition);
-  if (argsTypes === undefined) {
-    return [newColumns, keptRows, true] as const;
-  }
-
-  let foundCol = false;
-
-  col.forEach((pattern, index) => {
-    // -- wildcard
-    if (pattern.type === "identifier") {
-      foundCol = true;
-      keptRows.add(index);
-      newColumns.forEach((newCol) => {
-        newCol.patterns.push(pattern);
-      });
-      return;
-    }
-
-    // -- ctor
-    const matching =
-      pattern.type === "constructor" &&
-      pattern.$resolution !== undefined &&
-      pattern.$resolution.type === "constructor" &&
-      pattern.$resolution.variant.name === variantDefinition.name;
-    if (!matching) {
-      return;
-    }
-
-    foundCol = true;
-    keptRows.add(index);
-    newColumns.forEach((newCol, newColIndex) => {
-      const subPattern = pattern.args[newColIndex];
-      if (subPattern === undefined) {
-        throw new MalformedPatternErr();
-      }
-
-      if (index === 0) {
-        newCol.type = subPattern.$type;
-      }
-
-      newCol.patterns.push(subPattern);
-    });
-  });
-
-  return [newColumns, keptRows, foundCol] as const;
-}
+type DecisionTree = { type: "leaf"; action: number };
 
 // Hack to short-circuit
 class AmbiguousTypeErrHalt extends Error {}
+
+class NonExhaustiveMatchHalt extends Error {}
+
+class MalformedMatrixHalt extends Error {}
+
+function patToCtorKey(pat: TypedMatchPattern): string {
+  switch (pat.type) {
+    case "identifier":
+      return "_";
+    case "lit":
+      return "%" + pat.literal.value.toString();
+    case "constructor":
+      return pat.name;
+  }
+}
+
+function getPatternCtorsArity(
+  pat: TypedMatchPattern & { type: "lit" | "constructor" },
+): { totalCtors: number; ctorArgs: number } {
+  switch (pat.type) {
+    case "lit":
+      return {
+        ctorArgs: 0,
+        totalCtors: Infinity,
+      };
+
+    case "constructor": {
+      if (
+        pat.$resolution === undefined ||
+        pat.$resolution.type !== "constructor"
+      ) {
+        throw new MalformedMatrixHalt();
+      }
+
+      return {
+        ctorArgs: pat.$resolution.variant.args.length,
+        totalCtors: pat.$resolution.declaration.variants.length,
+      };
+    }
+
+    default:
+      return pat satisfies never;
+  }
+}
+
+function dbgShowMatrix(matrix: PatternMatrix) {
+  function showPat(col: TypedMatchPattern): string {
+    switch (col.type) {
+      case "identifier":
+        return col.name;
+
+      case "lit":
+        return col.literal.value.toString();
+
+      case "constructor":
+        if (col.args.length === 0) {
+          return col.name;
+        }
+        return col.name + "(" + col.args.map(showPat).join(", ") + ")";
+    }
+  }
+
+  console.log("<matrix>");
+  for (const row of matrix) {
+    console.log("  ", "<pat>", row.patterns.map(showPat).join(", "), "</pat>");
+  }
+  console.log("</matrix>\n");
+}

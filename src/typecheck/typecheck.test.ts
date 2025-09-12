@@ -2108,7 +2108,7 @@ describe("struct", () => {
 
 describe("pattern matching", () => {
   test("typechecks matched expressions", () => {
-    const [, errs] = tc(`pub let v = match unbound { }`);
+    const [, errs] = tc(`pub let v = match unbound { _ => 0 }`);
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toBeInstanceOf(err.UnboundVariable);
   });
@@ -2145,6 +2145,7 @@ describe("pattern matching", () => {
     pub let f = fn x {
         match x {
           42 => 0,
+          _ => 0,
         }
       }
     `);
@@ -2669,8 +2670,7 @@ describe("pattern matching", () => {
         { Int },
       );
 
-      expect(errs).toHaveLength(1);
-      expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
+      expect(errs).toEqual([]);
     });
 
     test("on literals (not exhastive on the wildcard specialization)", () => {
