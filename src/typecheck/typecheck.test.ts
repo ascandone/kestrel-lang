@@ -2525,6 +2525,19 @@ describe("pattern matching", () => {
       expect(errs).toEqual([]);
     });
 
+    test("simple exhaustive pattern", () => {
+      const [, errs] = tc(`
+      enum Opt<a> { Some(a), None }
+
+      pub let f = match None {
+        Some(_a) => 0,
+        None => 0,
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
     test("with params (non exhaustive)", () => {
       const [, errs] = tc(`
       enum Union { A, B }
