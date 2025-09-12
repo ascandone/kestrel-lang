@@ -734,9 +734,11 @@ class Typechecker {
         });
 
         this.typecheckExpr(ast.body);
-        this.checkExhaustiveMatrix(ast.range, [
-          { action: 0, patterns: ast.params },
-        ]);
+        this.checkExhaustiveMatrix(
+          ast.range,
+          ast.params.map((_, index) => [`$${index}`]),
+          [{ action: 0, patterns: ast.params }],
+        );
         return;
 
       case "application":
@@ -918,7 +920,11 @@ class Typechecker {
     };
   }
 
-  private specialize(columnIndex: number, matrix: PatternMatrix): DecisionTree {
+  private specialize(
+    columnIndex: number,
+    fringe: unknown[][],
+    matrix: PatternMatrix,
+  ): DecisionTree {
     // TODO do not return undefined
 
     const ctorsArities = new Map<string, number>();
@@ -954,10 +960,16 @@ class Typechecker {
 
     const switchTree: DecisionTree & { type: "switch" } = {
       type: "switch",
+      subject: fringe[columnIndex]!,
       clauses: [],
     };
 
     // now we specialize on each ctor
+
+    const fringePrefix = fringe.slice(0, columnIndex);
+    const fringePostfix = fringe.slice(columnIndex + 1);
+
+    const fringeCol = fringe[columnIndex]!;
 
     for (const [id, ctorArity] of ctorsArities) {
       const specializedMatrix = matrix.flatMap(
@@ -1017,7 +1029,20 @@ class Typechecker {
 
       switchTree.clauses.push([
         id,
-        this.checkPatternsMatrix(specializedMatrix),
+        this.checkPatternsMatrix(
+          [
+            ...fringePrefix,
+
+            ...Array.from({ length: ctorArity }, (_, index) => [
+              ...fringeCol,
+              // add the new path here
+              `._${index}`,
+            ]),
+
+            ...fringePostfix,
+          ],
+          specializedMatrix,
+        ),
       ]);
     }
 
@@ -1032,13 +1057,20 @@ class Typechecker {
         return specializedCol.type === "identifier";
       });
 
-      switchTree.default = this.checkPatternsMatrix(specializedMatrix);
+      // TODO fringe
+      switchTree.default = this.checkPatternsMatrix(
+        [...fringePrefix, ...fringePostfix],
+        specializedMatrix,
+      );
     }
 
     return switchTree;
   }
 
-  private checkPatternsMatrix(matrix: PatternMatrix): DecisionTree {
+  private checkPatternsMatrix(
+    fringe: unknown[][],
+    matrix: PatternMatrix,
+  ): DecisionTree {
     const firstRow = matrix[0];
 
     if (firstRow === undefined) {
@@ -1059,17 +1091,27 @@ class Typechecker {
       throw new Error("[unreachable] unexpected identifier");
     }
 
-    if (nonWildcardColumnIndex === 0) {
-      return this.specialize(nonWildcardColumnIndex, matrix);
-    }
+    // TODO why does this make the fringe wrong?
+    // swap
+    // if (nonWildcardColumnIndex !== 0) {
+    //   fringe = [...fringe];
+    //   [fringe[0], fringe[nonWildcardColumnIndex]] = [
+    //     fringe[nonWildcardColumnIndex]!,
+    //     fringe[0]!,
+    //   ];
+    // }
 
-    // TODO swap
-    return this.specialize(nonWildcardColumnIndex, matrix);
+    return this.specialize(nonWildcardColumnIndex, fringe, matrix);
   }
 
-  private checkExhaustiveMatrix(rng: Range, matrix: PatternMatrix) {
+  private checkExhaustiveMatrix(
+    rng: Range,
+    fringe: unknown[][],
+    matrix: PatternMatrix,
+  ) {
     try {
-      this.checkPatternsMatrix(matrix);
+      const tree = this.checkPatternsMatrix(fringe, matrix);
+      // console.dir(tree, { depth: Infinity });
     } catch (error) {
       if (error instanceof MalformedMatrixHalt) {
         return;
@@ -1090,6 +1132,7 @@ class Typechecker {
   private checkExhaustivePattern(rng: Range, clauses: TypedMatchPattern[]) {
     this.checkExhaustiveMatrix(
       rng,
+      [["$0"]],
       clauses.map((clause, index) => ({
         patterns: [clause],
         action: index,
@@ -1429,6 +1472,7 @@ type DecisionTree =
     }
   | {
       type: "switch";
+      subject: unknown[];
       clauses: [pattern: string, DecisionTree][];
       default?: DecisionTree;
     };

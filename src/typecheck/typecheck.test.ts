@@ -2538,6 +2538,35 @@ describe("pattern matching", () => {
       expect(errs).toEqual([]);
     });
 
+    test("nested exhaustive pattern", () => {
+      const [, errs] = tc(`
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
+      enum Union { A, B, C, D }
+
+      pub let f = match Pair(0, None) {
+        Pair(_x, Some(_y)) => 0,
+        _z => 0,
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
+    test("fn pat with catchall", () => {
+      const [, errs] = tc(`
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
+      enum Union { A }
+
+      pub let f = fn _, Pair(A, a) {
+        a
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
     test("with params (non exhaustive)", () => {
       const [, errs] = tc(`
       enum Union { A, B }
