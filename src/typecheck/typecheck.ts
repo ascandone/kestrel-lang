@@ -1014,7 +1014,7 @@ class Typechecker {
         },
       );
 
-      this.checkPatternsMatrix__paper(specializedMatrix);
+      this.checkPatternsMatrix(specializedMatrix);
     }
 
     if (totalCtors === undefined) {
@@ -1028,16 +1028,14 @@ class Typechecker {
         return specializedCol.type === "identifier";
       });
 
-      this.checkPatternsMatrix__paper(specializedMatrix);
+      this.checkPatternsMatrix(specializedMatrix);
     }
 
     // TODO decisionTree
     return undefined;
   }
 
-  private checkPatternsMatrix__paper(
-    matrix: PatternMatrix,
-  ): DecisionTree | undefined {
+  private checkPatternsMatrix(matrix: PatternMatrix): DecisionTree | undefined {
     // dbgShowMatrix(matrix);
 
     const firstRow = matrix[0];
@@ -1070,7 +1068,7 @@ class Typechecker {
 
   private checkExhaustivePattern(rng: Range, clauses: TypedMatchPattern[]) {
     try {
-      this.checkPatternsMatrix__paper(
+      this.checkPatternsMatrix(
         clauses.map((clause, index) => ({
           patterns: [clause],
           action: index,
