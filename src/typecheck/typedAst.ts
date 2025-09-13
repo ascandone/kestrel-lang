@@ -1,5 +1,6 @@
 import * as ast from "../parser";
 import { Type, RigidVarsCtx } from "../type";
+import { DecisionTree } from "./exhaustiveness";
 
 // -- Common
 
@@ -160,6 +161,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         type: "match";
         expr: TypedExpr;
         clauses: Array<[TypedMatchPattern, TypedExpr]>;
+        $decisionTree?: DecisionTree;
       }
   );
 

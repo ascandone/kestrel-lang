@@ -1649,6 +1649,7 @@ describe("pattern matching", () => {
     let v = 42
     let x = match v {
       1 => 0,
+      _ => 1,
     }
   `);
 
@@ -1658,7 +1659,7 @@ describe("pattern matching", () => {
       if (Main$v === 1) {
         Main$x = 0;
       } else {
-        throw new Error("[non exhaustive match]");
+        Main$x = 1;
       }"
     `);
   });

@@ -829,7 +829,7 @@ class Typechecker {
           this.unifyExpr(ast, ast.$type, expr.$type);
           this.typecheckExpr(expr);
         }
-        this.checkExhaustiveMatrix(
+        ast.$decisionTree = this.checkExhaustiveMatrix(
           ast.range,
           ast.clauses.map(([pat]) => [pat]),
         );
@@ -923,7 +923,7 @@ class Typechecker {
 
   private checkExhaustiveMatrix(rng: Range, matrix: TypedMatchPattern[][]) {
     try {
-      runExhaustivenessCheck(matrix);
+      return runExhaustivenessCheck(matrix);
     } catch (error) {
       if (error instanceof MalformedMatrixHalt) {
         return;

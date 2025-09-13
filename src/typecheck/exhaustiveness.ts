@@ -40,7 +40,7 @@ export type DecisionTree =
       type: "switch";
       subject: DecisionTreeBinding;
       clauses: [pattern: DecisionTreePattern, DecisionTree][];
-      default?: DecisionTree;
+      default?: [DecisionTreeBinding, DecisionTree];
     };
 
 function checkPatternsMatrix(
@@ -85,8 +85,6 @@ function specialize(
   fringe: DecisionTreeBinding[],
   matrix: PatternMatrix,
 ): DecisionTree {
-  // TODO do not return undefined
-
   const ctors = new Map<string, DecisionTreePattern>();
 
   // first, we gather all the ctors of head patterns of this col
@@ -149,20 +147,13 @@ function specialize(
           type: "constructor",
           resolution: specializedCol.$resolution,
           args: specializedCol.args.map((_, argIndex): DecisionTreeBinding => {
-            // TODO remove "!""
-            const matchingArgs = matchingCtors.flatMap((ctor) => {
-              const arg = ctor.args[argIndex]!;
-              if (arg.type === "identifier" && !arg.name.startsWith("_")) {
-                return [arg];
-              } else {
-                return [];
-              }
-            });
-
-            if (matchingArgs.length === 1) {
+            if (
+              matchingCtors.length === 1 &&
+              matchingCtors[0]!.args[argIndex]!.type === "identifier"
+            ) {
               return {
                 type: "identifier",
-                binding: matchingArgs[0]!,
+                binding: matchingCtors[0]!.args[argIndex]!,
               };
             }
 
@@ -273,10 +264,25 @@ function specialize(
       return specializedCol.type === "identifier";
     });
 
-    switchTree.default = checkPatternsMatrix(
+    const subTree = checkPatternsMatrix(
       [...fringePrefix, genDecisionTreeBinding(), ...fringePostfix],
       specializedMatrix,
     );
+
+    const patterns = specializedMatrix.map(
+      (clause) =>
+        clause.patterns[columnIndex]! as typedAst.TypedMatchPattern & {
+          type: "identifier";
+        },
+    );
+
+    const binding: DecisionTreeBinding =
+      patterns.length === 1
+        ? { type: "identifier", binding: patterns[0]! }
+        : genDecisionTreeBinding();
+
+    // TODO reuse binding from patterns if unique
+    switchTree.default = [binding, subTree];
   }
 
   return switchTree;

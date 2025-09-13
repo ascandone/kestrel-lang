@@ -2,6 +2,11 @@ import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 import { RigidVarsCtx, resolveType } from "../type";
 import * as typed from "../typecheck";
 import { CORE_PACKAGE } from "../typecheck/core_package";
+import {
+  DecisionTree,
+  DecisionTreeBinding,
+  DecisionTreePattern,
+} from "../typecheck/exhaustiveness";
 import { TypedProject } from "../typecheck/project";
 import * as ir from "./ir";
 
@@ -37,6 +42,28 @@ class ExprEmitter {
       declaration: this.currentDecl,
       unique: this.getFreshUnique(name),
     };
+  }
+
+  private mkUnique(id: number): ir.Ident & { type: "local" } {
+    const ident: ir.Ident & { type: "local" } = {
+      type: "local",
+      name: `GEN`,
+      declaration: this.currentDecl,
+      unique: id,
+    };
+
+    return ident;
+  }
+
+  private lowerPatternBinding(
+    arg: DecisionTreeBinding,
+  ): ir.Ident & { type: "local" } {
+    switch (arg.type) {
+      case "identifier":
+        return this.mkIdent(arg.binding);
+      case "generated":
+        return this.mkUnique(arg.id);
+    }
   }
 
   private mkIdent(pattern: typed.TypedBinding): ir.Ident & { type: "local" } {
@@ -132,6 +159,41 @@ class ExprEmitter {
               this.lowerBlock(statementsLeft, returning),
             ],
           ],
+        };
+      }
+    }
+  }
+
+  private lowerPattern_(expr: DecisionTreePattern): ir.MatchPattern {
+    switch (expr.type) {
+      case "constant":
+        return {
+          type: "constant",
+          value: expr.value,
+        };
+
+      case "constructor": {
+        const resolution = expr.resolution;
+        if (resolution.type !== "constructor") {
+          throw new CompilationError("wrong resolution for constructor");
+        }
+
+        const qualifiedIdent = new ir.QualifiedIdentifier(
+          resolution.package_,
+          resolution.namespace,
+          resolution.declaration.name,
+        );
+
+        return {
+          type: "constructor",
+          args: expr.args.map(
+            (arg): ir.MatchPattern => ({
+              type: "identifier",
+              ident: this.lowerPatternBinding(arg),
+            }),
+          ),
+          name: resolution.variant.name,
+          typeName: qualifiedIdent,
         };
       }
     }
@@ -320,15 +382,70 @@ class ExprEmitter {
           expr.tail === undefined ? NIL : this.lowerExpr(expr.tail),
         );
 
-      case "match":
+      case "match": {
+        if (expr.$decisionTree === undefined) {
+          throw new CompilationError("Missing decision tree");
+        }
+
+        const actions = new Map<number, typed.TypedExpr>();
+
+        const ids = new Map<number, ir.Expr>();
+        ids.set(0, this.lowerExpr(expr.expr));
+
+        expr.clauses.forEach(([_, expr], index) => {
+          actions.set(index, expr);
+        });
+
+        return this.lowerMatch(actions, ids, expr.$decisionTree);
+      }
+    }
+  }
+
+  private lowerMatch(
+    actions: Map<number, typed.TypedExpr>,
+    ids: Map<number, ir.Expr>,
+    tree: DecisionTree,
+  ): ir.Expr {
+    switch (tree.type) {
+      case "leaf": {
+        const expr = actions.get(tree.action);
+        if (expr === undefined) {
+          throw new CompilationError("Undefined action for decision tree");
+        }
+        return this.lowerExpr(expr);
+      }
+
+      case "switch": {
+        const expr: ir.Expr =
+          tree.subject.type === "identifier"
+            ? { type: "identifier", ident: this.mkIdent(tree.subject.binding) }
+            : ids.get(tree.subject.id) ?? {
+                type: "identifier",
+                ident: this.mkUnique(tree.subject.id),
+              };
+
+        const clauses: [ir.MatchPattern, ir.Expr][] = [];
+        for (const [pat, subTree] of tree.clauses) {
+          clauses.push([
+            this.lowerPattern_(pat),
+            this.lowerMatch(actions, ids, subTree),
+          ]);
+        }
+
+        if (tree.default !== undefined) {
+          const [pat, subTree] = tree.default;
+          clauses.push([
+            { type: "identifier", ident: this.lowerPatternBinding(pat) },
+            this.lowerMatch(actions, ids, subTree),
+          ]);
+        }
+
         return {
           type: "match",
-          expr: this.lowerExpr(expr.expr),
-          clauses: expr.clauses.map(
-            ([pat, then_]) =>
-              [this.lowerPattern(pat), this.lowerExpr(then_)] as const,
-          ),
+          expr,
+          clauses,
         };
+      }
     }
   }
 

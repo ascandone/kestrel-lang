@@ -1,6 +1,6 @@
 import { DecisionTree, DecisionTreeBinding } from "../exhaustiveness";
 
-export function dbgTree(tree: DecisionTree, level: number) {
+export function dbgTree(tree: DecisionTree, level: number = 0) {
   const IDENT_SYM = "  ";
   const ident = Array.from({ length: level }).fill(IDENT_SYM).join("");
 
@@ -50,8 +50,13 @@ export function dbgTree(tree: DecisionTree, level: number) {
       }
 
       if (tree.default !== undefined) {
-        console.info(ident + IDENT_SYM, "<default>");
-        dbgTree(tree.default, level + 2);
+        const [pat, subTree] = tree.default;
+        console.info(
+          ident + IDENT_SYM,
+          `<default binding=${argPatToString(pat)}>`,
+        );
+
+        dbgTree(subTree, level + 2);
         console.info(ident + IDENT_SYM, "</default>");
       }
 

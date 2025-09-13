@@ -318,8 +318,10 @@ describe("pattern matching", () => {
       "let pkg:Main.m = fn x#0, f#0 {
         match f#0(x#0) {
           None => 0,
-          Some(0) => x#0,
-          Some(x#1) => x#1,
+          Some(GEN#1) => match GEN#1 {
+            0 => x#0,
+            x#1 => x#1,
+          },
         }
       }"
     `);
@@ -346,8 +348,11 @@ describe("pattern matching", () => {
       "let pkg:Main.opt = Some(Some(0))
 
       let pkg:Main.m = match opt {
-        Some(Some(x#0)) => x#0,
-        _#0 => 0,
+        Some(GEN#1) => match GEN#1 {
+          Some(x#0) => x#0,
+          _#0 => 0,
+        },
+        _#1 => 0,
       }"
     `);
   });
