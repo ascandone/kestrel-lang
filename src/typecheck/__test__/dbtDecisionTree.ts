@@ -1,4 +1,4 @@
-import { DecisionTree, DecisionTreeBinding } from "../typecheck";
+import { DecisionTree, DecisionTreeBinding } from "../exhaustiveness";
 
 export function dbgTree(tree: DecisionTree, level: number) {
   const IDENT_SYM = "  ";
