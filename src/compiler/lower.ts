@@ -139,10 +139,10 @@ class ExprEmitter {
 
   private lowerPattern(expr: typed.TypedMatchPattern): ir.MatchPattern {
     switch (expr.type) {
-      case "lit":
+      case "constant":
         return {
-          type: "lit",
-          literal: expr.literal,
+          type: "constant",
+          value: expr.value,
         };
 
       case "identifier":

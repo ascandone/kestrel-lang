@@ -185,36 +185,36 @@ class MatchPatternVisitor extends Visitor<MatchPattern> {
   });
 
   visitIntPattern = (ctx: IntPatternContext): MatchPattern => ({
-    type: "lit",
+    type: "constant",
     range: rangeOfCtx(ctx),
-    literal: {
+    value: {
       type: "int",
       value: Number(ctx.getText()),
     },
   });
 
   visitFloatPattern = (ctx: FloatPatternContext): MatchPattern => ({
-    type: "lit",
+    type: "constant",
     range: rangeOfCtx(ctx),
-    literal: {
+    value: {
       type: "float",
       value: Number(ctx.getText()),
     },
   });
 
   visitStringPattern = (ctx: StringPatternContext): MatchPattern => ({
-    type: "lit",
+    type: "constant",
     range: rangeOfCtx(ctx),
-    literal: {
+    value: {
       type: "string",
       value: ctx.getText().slice(1, -1),
     },
   });
 
   visitCharPattern = (ctx: CharPatternContext): MatchPattern => ({
-    type: "lit",
+    type: "constant",
     range: rangeOfCtx(ctx),
-    literal: {
+    value: {
       type: "char",
       value: ctx.getText().slice(1, -1),
     },

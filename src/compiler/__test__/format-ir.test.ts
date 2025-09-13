@@ -141,7 +141,7 @@ test("pattern", () => {
           type: "constructor",
           name: "Ctor",
           args: [
-            { type: "lit", literal: { type: "int", value: 42 } },
+            { type: "constant", value: { type: "int", value: 42 } },
             { type: "identifier", ident: mkBinding("x") },
           ],
           typeName: ident,

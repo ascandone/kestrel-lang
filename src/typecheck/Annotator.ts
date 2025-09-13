@@ -153,7 +153,7 @@ export class Annotator {
 
   private annotateMatchPattern(ast: MatchPattern): TypedMatchPattern {
     switch (ast.type) {
-      case "lit":
+      case "constant":
       case "identifier":
         return {
           ...ast,

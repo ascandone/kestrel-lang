@@ -17,6 +17,7 @@ import {
   TypedModule,
   TypedTypeAst,
   TypedTypeDeclaration,
+  TypedBinding,
 } from "./typedAst";
 import { TraitImpl, defaultImports, defaultTraitImpls } from "./defaultImports";
 import {
@@ -461,8 +462,8 @@ class Typechecker {
 
   private typecheckPattern(pattern: TypedMatchPattern) {
     switch (pattern.type) {
-      case "lit": {
-        const t = inferConstant(pattern.literal);
+      case "constant": {
+        const t = inferConstant(pattern.value);
         this.unifyNode(pattern, pattern.$type, t);
       }
 
@@ -734,11 +735,9 @@ class Typechecker {
         });
 
         this.typecheckExpr(ast.body);
-        this.checkExhaustiveMatrix(
-          ast.range,
-          ast.params.map((_, index) => [`$${index}`]),
-          [{ action: 0, patterns: ast.params }],
-        );
+        this.checkExhaustiveMatrix(ast.range, [
+          { action: 0, patterns: ast.params },
+        ]);
         return;
 
       case "application":
@@ -920,14 +919,19 @@ class Typechecker {
     };
   }
 
+  private nextUniqueDecisionTreeId = 0;
+  private genDecisionTreeBinding(): DecisionTreeBinding {
+    return { type: "generated", id: this.nextUniqueDecisionTreeId++ };
+  }
+
   private specialize(
     columnIndex: number,
-    fringe: unknown[][],
+    fringe: DecisionTreeBinding[],
     matrix: PatternMatrix,
   ): DecisionTree {
     // TODO do not return undefined
 
-    const ctorsArities = new Map<string, number>();
+    const ctors = new Map<string, DecisionTreePattern>();
 
     // first, we gather all the ctors of head patterns of this col
 
@@ -952,26 +956,93 @@ class Typechecker {
       // Set the arity of this ctor
       const key = patToCtorKey(specializedCol);
 
-      if (ctorsArities.has(key)) {
+      if (ctors.has(key)) {
         continue;
       }
-      ctorsArities.set(key, arities.ctorArgs);
+      switch (specializedCol.type) {
+        case "constant":
+          ctors.set(key, {
+            type: "constant",
+            value: specializedCol.value,
+          });
+          break;
+
+        case "constructor": {
+          if (
+            specializedCol.$resolution === undefined ||
+            specializedCol.$resolution.type !== "constructor"
+          ) {
+            throw new MalformedMatrixHalt();
+          }
+
+          const matchingCtors: (TypedMatchPattern & { type: "constructor" })[] =
+            matrix.flatMap((clause) => {
+              const pat = clause.patterns[columnIndex]!;
+              if (
+                pat.type === "constructor" &&
+                pat.$resolution === specializedCol.$resolution
+              ) {
+                return [pat];
+              } else {
+                return [];
+              }
+            });
+
+          ctors.set(key, {
+            type: "constructor",
+            resolution: specializedCol.$resolution,
+            args: specializedCol.args.map(
+              (_, argIndex): DecisionTreeBinding => {
+                // TODO remove "!""
+                const matchingArgs = matchingCtors.flatMap((ctor) => {
+                  const arg = ctor.args[argIndex]!;
+                  if (arg.type === "identifier" && !arg.name.startsWith("_")) {
+                    return [arg];
+                  } else {
+                    return [];
+                  }
+                });
+
+                if (matchingArgs.length === 1) {
+                  return {
+                    type: "identifier",
+                    binding: matchingArgs[0]!,
+                  };
+                }
+
+                return this.genDecisionTreeBinding();
+              },
+            ),
+          });
+          break;
+        }
+        default:
+          specializedCol satisfies never;
+      }
     }
+
+    const fringePrefix = fringe.slice(0, columnIndex);
+    const fringeCol = fringe[columnIndex]!;
+    const fringePostfix = fringe.slice(columnIndex + 1);
 
     const switchTree: DecisionTree & { type: "switch" } = {
       type: "switch",
-      subject: fringe[columnIndex]!,
+      subject: fringeCol,
       clauses: [],
     };
 
     // now we specialize on each ctor
 
-    const fringePrefix = fringe.slice(0, columnIndex);
-    const fringePostfix = fringe.slice(columnIndex + 1);
+    for (const [id, ctorPat] of ctors) {
+      const ctorArity = (() => {
+        switch (ctorPat.type) {
+          case "constructor":
+            return ctorPat.args;
+          case "constant":
+            return [];
+        }
+      })();
 
-    const fringeCol = fringe[columnIndex]!;
-
-    for (const [id, ctorArity] of ctorsArities) {
       const specializedMatrix = matrix.flatMap(
         (clause): PatternMatrix[number][] => {
           const rowPrefix = clause.patterns.slice(0, columnIndex);
@@ -984,7 +1055,7 @@ class Typechecker {
                 action: clause.action,
                 patterns: [
                   ...rowPrefix,
-                  ...new Array(ctorArity).fill(specializedCol),
+                  ...ctorArity.map(() => specializedCol),
                   ...rowPostfix,
                 ],
               },
@@ -997,7 +1068,7 @@ class Typechecker {
           }
 
           switch (specializedCol.type) {
-            case "lit":
+            case "constant":
               return [
                 {
                   action: clause.action,
@@ -1006,7 +1077,11 @@ class Typechecker {
               ];
 
             case "constructor":
-              if (ctorArity !== specializedCol.args.length) {
+              if (ctorArity.length !== specializedCol.args.length) {
+                throw new MalformedMatrixHalt();
+              }
+
+              if (ctorPat.type !== "constructor") {
                 throw new MalformedMatrixHalt();
               }
 
@@ -1028,19 +1103,9 @@ class Typechecker {
       );
 
       switchTree.clauses.push([
-        id,
+        ctorPat,
         this.checkPatternsMatrix(
-          [
-            ...fringePrefix,
-
-            ...Array.from({ length: ctorArity }, (_, index) => [
-              ...fringeCol,
-              // add the new path here
-              `._${index}`,
-            ]),
-
-            ...fringePostfix,
-          ],
+          [...fringePrefix, ...ctorArity, ...fringePostfix],
           specializedMatrix,
         ),
       ]);
@@ -1050,16 +1115,15 @@ class Typechecker {
       throw new MalformedMatrixHalt();
     }
 
-    if (ctorsArities.size < totalCtors) {
+    if (ctors.size < totalCtors) {
       // default pattern
       const specializedMatrix = matrix.filter((clause) => {
         const specializedCol = clause.patterns[columnIndex]!;
         return specializedCol.type === "identifier";
       });
 
-      // TODO fringe
       switchTree.default = this.checkPatternsMatrix(
-        [...fringePrefix, ...fringePostfix],
+        [...fringePrefix, this.genDecisionTreeBinding(), ...fringePostfix],
         specializedMatrix,
       );
     }
@@ -1068,7 +1132,7 @@ class Typechecker {
   }
 
   private checkPatternsMatrix(
-    fringe: unknown[][],
+    fringe: DecisionTreeBinding[],
     matrix: PatternMatrix,
   ): DecisionTree {
     const firstRow = matrix[0];
@@ -1104,14 +1168,15 @@ class Typechecker {
     return this.specialize(nonWildcardColumnIndex, fringe, matrix);
   }
 
-  private checkExhaustiveMatrix(
-    rng: Range,
-    fringe: unknown[][],
-    matrix: PatternMatrix,
-  ) {
+  private checkExhaustiveMatrix(rng: Range, matrix: PatternMatrix) {
+    this.nextUniqueDecisionTreeId = 0;
+    const fringe =
+      matrix[0] === undefined
+        ? []
+        : matrix[0].patterns.map(() => this.genDecisionTreeBinding());
+
     try {
-      const tree = this.checkPatternsMatrix(fringe, matrix);
-      // console.dir(tree, { depth: Infinity });
+      this.checkPatternsMatrix(fringe, matrix);
     } catch (error) {
       if (error instanceof MalformedMatrixHalt) {
         return;
@@ -1132,7 +1197,6 @@ class Typechecker {
   private checkExhaustivePattern(rng: Range, clauses: TypedMatchPattern[]) {
     this.checkExhaustiveMatrix(
       rng,
-      [["$0"]],
       clauses.map((clause, index) => ({
         patterns: [clause],
         action: index,
@@ -1465,15 +1529,36 @@ type PatternMatrix = {
   action: number;
 }[];
 
-type DecisionTree =
+export type DecisionTreeBinding =
+  | {
+      type: "identifier";
+      binding: TypedBinding;
+    }
+  | {
+      type: "generated";
+      id: number;
+    };
+
+export type DecisionTreePattern =
+  | {
+      type: "constructor";
+      resolution: IdentifierResolution & { type: "constructor" };
+      args: DecisionTreeBinding[];
+    }
+  | {
+      type: "constant";
+      value: ConstLiteral;
+    };
+
+export type DecisionTree =
   | {
       type: "leaf";
       action: number;
     }
   | {
       type: "switch";
-      subject: unknown[];
-      clauses: [pattern: string, DecisionTree][];
+      subject: DecisionTreeBinding;
+      clauses: [pattern: DecisionTreePattern, DecisionTree][];
       default?: DecisionTree;
     };
 
@@ -1488,18 +1573,18 @@ function patToCtorKey(pat: TypedMatchPattern): string {
   switch (pat.type) {
     case "identifier":
       return "_";
-    case "lit":
-      return "%" + pat.literal.value.toString();
+    case "constant":
+      return "%" + pat.value.value.toString();
     case "constructor":
       return pat.name;
   }
 }
 
 function getPatternCtorsArity(
-  pat: TypedMatchPattern & { type: "lit" | "constructor" },
+  pat: TypedMatchPattern & { type: "constant" | "constructor" },
 ): { totalCtors: number; ctorArgs: number } {
   switch (pat.type) {
-    case "lit":
+    case "constant":
       return {
         ctorArgs: 0,
         totalCtors: Infinity,

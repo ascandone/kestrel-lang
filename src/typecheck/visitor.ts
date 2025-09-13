@@ -69,7 +69,7 @@ export function visitPattern(
   opts: VisitOptions,
 ): void {
   switch (expr.type) {
-    case "lit":
+    case "constant":
       return;
 
     case "identifier":

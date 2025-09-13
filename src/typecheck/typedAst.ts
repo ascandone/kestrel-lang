@@ -41,8 +41,8 @@ export type TypedMatchPattern = (TypeMeta & ast.RangeMeta) &
         name: string;
       }
     | {
-        type: "lit";
-        literal: ast.ConstLiteral;
+        type: "constant";
+        value: ast.ConstLiteral;
       }
     | {
         type: "constructor";

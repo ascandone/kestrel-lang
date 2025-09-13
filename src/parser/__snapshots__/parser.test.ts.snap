@@ -5576,10 +5576,6 @@ exports[`pattern matching > matching char literals 1`] = `
         "clauses": [
           [
             {
-              "literal": {
-                "type": "char",
-                "value": "a",
-              },
               "range": {
                 "end": {
                   "character": 21,
@@ -5590,7 +5586,11 @@ exports[`pattern matching > matching char literals 1`] = `
                   "line": 0,
                 },
               },
-              "type": "lit",
+              "type": "constant",
+              "value": {
+                "type": "char",
+                "value": "a",
+              },
             },
             {
               "name": "res",
@@ -6345,10 +6345,6 @@ exports[`pattern matching > matching float literals 1`] = `
         "clauses": [
           [
             {
-              "literal": {
-                "type": "float",
-                "value": 1.1,
-              },
               "range": {
                 "end": {
                   "character": 21,
@@ -6359,7 +6355,11 @@ exports[`pattern matching > matching float literals 1`] = `
                   "line": 0,
                 },
               },
-              "type": "lit",
+              "type": "constant",
+              "value": {
+                "type": "float",
+                "value": 1.1,
+              },
             },
             {
               "name": "res",
@@ -6446,10 +6446,6 @@ exports[`pattern matching > matching int literals 1`] = `
         "clauses": [
           [
             {
-              "literal": {
-                "type": "int",
-                "value": 42,
-              },
               "range": {
                 "end": {
                   "character": 20,
@@ -6460,7 +6456,11 @@ exports[`pattern matching > matching int literals 1`] = `
                   "line": 0,
                 },
               },
-              "type": "lit",
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 42,
+              },
             },
             {
               "name": "res",
@@ -7421,10 +7421,6 @@ exports[`pattern matching > matching str literals 1`] = `
         "clauses": [
           [
             {
-              "literal": {
-                "type": "string",
-                "value": "abc",
-              },
               "range": {
                 "end": {
                   "character": 23,
@@ -7435,7 +7431,11 @@ exports[`pattern matching > matching str literals 1`] = `
                   "line": 0,
                 },
               },
-              "type": "lit",
+              "type": "constant",
+              "value": {
+                "type": "string",
+                "value": "abc",
+              },
             },
             {
               "name": "res",

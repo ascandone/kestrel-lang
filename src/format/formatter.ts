@@ -471,8 +471,8 @@ function patternToDoc(pattern: MatchPattern): Doc {
     case "identifier":
       return text(pattern.name);
 
-    case "lit":
-      return constToDoc(pattern.literal);
+    case "constant":
+      return constToDoc(pattern.value);
 
     case "constructor": {
       if (pattern.name === "Cons" && pattern.args.length === 2) {

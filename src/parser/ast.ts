@@ -35,9 +35,8 @@ export type MatchPattern = RangeMeta &
         name: string;
       }
     | {
-        // TODO we should call it "constant"
-        type: "lit";
-        literal: ConstLiteral;
+        type: "constant";
+        value: ConstLiteral;
       }
     | {
         type: "constructor";

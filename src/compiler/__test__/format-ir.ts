@@ -277,8 +277,8 @@ export class ExprPrinter {
       case "identifier":
         return text(this.identToString(pattern.ident));
 
-      case "lit":
-        return constToDoc(pattern.literal);
+      case "constant":
+        return constToDoc(pattern.value);
 
       case "constructor": {
         if (pattern.args.length === 0) {

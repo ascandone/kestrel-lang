@@ -21,7 +21,7 @@ export class Finder<T> {
   private visitPattern_(expr: TypedMatchPattern): T | undefined {
     switch (expr.type) {
       case "identifier":
-      case "lit":
+      case "constant":
         return undefined;
 
       case "constructor":
