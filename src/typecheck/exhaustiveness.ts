@@ -59,7 +59,10 @@ function checkPatternsMatrix(
 
   if (nonWildcardColumnIndex === -1) {
     // Yield the first action
-    return { type: "leaf", action: firstRow.action };
+    return {
+      type: "leaf",
+      action: firstRow.action,
+    };
   }
 
   const col = firstRow.patterns[nonWildcardColumnIndex]!;

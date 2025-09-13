@@ -298,6 +298,30 @@ test("list literal (cons)", () => {
 });
 
 describe("pattern matching", () => {
+  test("pattern with exactly one ident", () => {
+    const out = toSexpr(`
+      let id = fn e { e }
+      // let v = {
+      //   let a = 0;
+      //   id(a)
+      // }
+      let v = match 0 {
+        a => id(a)
+      }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.id = fn e#0 {
+        e#0
+      }
+
+      let pkg:Main.v = {
+        let a#0 = 0;
+        id(a#0)
+      }"
+    `);
+  });
+
   test("toplevel", () => {
     const ir = toSexpr(`
     enum Option<a> {

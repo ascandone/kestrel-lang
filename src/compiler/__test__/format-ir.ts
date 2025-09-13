@@ -27,16 +27,13 @@ type LetSugar = {
 };
 
 function tryWrappingLet(expr: ir.Expr): ir.Expr | LetSugar {
-  if (expr.type !== "match" || expr.clauses.length !== 1) {
+  if (expr.type !== "match" || expr.clauses.length !== 0) {
     return expr;
   }
 
-  const [pat, body] = expr.clauses[0]!;
-  if (pat.type !== "identifier") {
-    return expr;
-  }
+  const [pat, body] = expr.default!;
 
-  const clause = { binding: pat.ident, value: expr.expr } as const;
+  const clause = { binding: pat, value: expr.expr } as const;
   const inner = tryWrappingLet(body);
   if (inner.type === "let") {
     return {
@@ -73,7 +70,6 @@ export class ExprPrinter {
 
   public exprToDoc(expr_: ir.Expr, withinBlock = false): Doc {
     const expr = tryWrappingLet(expr_);
-
     switch (expr.type) {
       case "constant":
         return constToDoc(expr.value);
@@ -159,10 +155,19 @@ export class ExprPrinter {
           clauses.length === 0
             ? text("{ }")
             : block_(
-                sepBy(
-                  break_("", ""),
-                  clauses.map((clause) => concat(clause, text(","))),
-                ),
+                sepBy(break_("", ""), [
+                  ...clauses.map((clause) => concat(clause, text(","))),
+                  ...(expr.default === undefined
+                    ? []
+                    : [
+                        concat(
+                          text(this.identToString(expr.default[0])),
+                          text(" => "),
+                          this.exprToDoc(expr.default[1]),
+                          text(","),
+                        ),
+                      ]),
+                ]),
               ),
         );
       }
@@ -274,9 +279,6 @@ export class ExprPrinter {
 
   private patternToDoc(pattern: ir.MatchPattern): Doc {
     switch (pattern.type) {
-      case "identifier":
-        return text(this.identToString(pattern.ident));
-
       case "constant":
         return constToDoc(pattern.value);
 
@@ -290,7 +292,7 @@ export class ExprPrinter {
           text("("),
           sepByString(
             ", ",
-            pattern.args.map((p) => this.patternToDoc(p)),
+            pattern.args.map((p) => text(this.identToString(p))),
           ),
           text(")"),
         );

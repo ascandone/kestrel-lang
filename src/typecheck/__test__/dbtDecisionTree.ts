@@ -16,7 +16,7 @@ export function dbgTree(tree: DecisionTree, level: number = 0) {
 
   switch (tree.type) {
     case "leaf":
-      console.info(ident, "<leaf>", tree.action, "</leaf>");
+      console.info(ident, `<leaf>`, tree.action, "</leaf>");
       break;
 
     case "switch":
@@ -32,7 +32,7 @@ export function dbgTree(tree: DecisionTree, level: number = 0) {
 
             console.info(
               ident + IDENT_SYM,
-              `<ctor name=${pat.resolution.declaration.name}::${pat.resolution.variant.name}${ctorArgs}>`,
+              `<ctor pattern=${pat.resolution.declaration.name}::${pat.resolution.variant.name}${ctorArgs}>`,
             );
             dbgTree(sub, level + 2);
             console.info(ident + IDENT_SYM, "</ctor>");

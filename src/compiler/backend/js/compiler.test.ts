@@ -277,7 +277,8 @@ describe("let expressions", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$x$a = 0;
-      const Main$x$a$1 = Main$x$a + 1;
+      const Main$x$mid = Main$x$a;
+      const Main$x$a$1 = Main$x$mid + 1;
       const Main$x = Main$x$a$1;"
     `);
   });
@@ -1520,29 +1521,91 @@ describe("pattern matching", () => {
     `);
   });
 
+  test("pattern matching a number", () => {
+    const out = compileSrc(`
+    let x = match 42 {
+      0 => "a",
+      1 => "b",
+      _ => "c",
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "let Main$x;
+      switch (42) {
+        case 0:
+          Main$x = \`a\`;
+          break;
+        case 1:
+          Main$x = \`b\`;
+          break;
+        default:
+          Main$x = \`c\`;
+          break;
+      }"
+    `);
+  });
+
   test("pattern matching an enum repr", () => {
     const out = compileSrc(`
     enum T {
       A,
       B,
+      C,
     }
   
     let x = match B {
-      A => "a",
+      C => "c",
       B => "b",
+      A => "a",
     }
   `);
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$A = 0;
       const Main$B = 1;
+      const Main$C = 2;
       let Main$x;
-      if (Main$B === 0) {
-        Main$x = \`a\`;
-      } else if (Main$B === 1) {
-        Main$x = \`b\`;
-      } else {
-        throw new Error("[non exhaustive match]");
+      switch (Main$B) {
+        case 2:
+          Main$x = \`c\`;
+          break;
+        case 1:
+          Main$x = \`b\`;
+          break;
+        case 0:
+          Main$x = \`a\`;
+          break;
+      }"
+    `);
+  });
+
+  test("pattern matching an enum repr with default", () => {
+    const out = compileSrc(`
+    enum T {
+      A,
+      B,
+      C,
+    }
+  
+    let x = match B {
+      A => "a",
+      _ => "other",
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$A = 0;
+      const Main$B = 1;
+      const Main$C = 2;
+      let Main$x;
+      switch (Main$B) {
+        case 0:
+          Main$x = \`a\`;
+          break;
+        default:
+          Main$x = \`other\`;
+          break;
       }"
     `);
   });
@@ -1568,17 +1631,18 @@ describe("pattern matching", () => {
         $: 1,
         _0
       });
-      let Main$x;
       const $0 = {
         $: 1,
         _0: 42
       };
-      if ($0.$ === 0) {
-        Main$x = 0;
-      } else if ($0.$ === 1) {
-        Main$x = 1;
-      } else {
-        throw new Error("[non exhaustive match]");
+      let Main$x;
+      switch ($0.$) {
+        case 0:
+          Main$x = 0;
+          break;
+        case 1:
+          Main$x = 1;
+          break;
       }"
     `);
   });
@@ -1601,7 +1665,7 @@ describe("pattern matching", () => {
     `);
   });
 
-  // TODO remove this test when exhaustive match is impl
+  // TODO fix decision tree
   test("avoid redundant checks", () => {
     const out = compileSrc(`
     let x = match 0 {
@@ -1633,13 +1697,16 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const $0 = 0;
-      if ($0 === 0) {
-        Main$x = \`0\`;
-      } else if ($0 === 1) {
-        Main$x = \`1\`;
-      } else {
-        Main$x = \`2\`;
+      switch (0) {
+        case 0:
+          Main$x = \`0\`;
+          break;
+        case 1:
+          Main$x = \`1\`;
+          break;
+        default:
+          Main$x = \`2\`;
+          break;
       }"
     `);
   });
@@ -1656,10 +1723,13 @@ describe("pattern matching", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$v = 42;
       let Main$x;
-      if (Main$v === 1) {
-        Main$x = 0;
-      } else {
-        Main$x = 1;
+      switch (Main$v) {
+        case 1:
+          Main$x = 0;
+          break;
+        default:
+          Main$x = 1;
+          break;
       }"
     `);
   });
@@ -1668,16 +1738,19 @@ describe("pattern matching", () => {
     const out = compileSrc(`
   let x = match "subject" {
     "constraint" => 0,
+    _ => 1,
   }
 `);
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const $0 = \`subject\`;
-      if ($0 === \`constraint\`) {
-        Main$x = 0;
-      } else {
-        throw new Error("[non exhaustive match]");
+      switch (\`subject\`) {
+        case \`constraint\`:
+          Main$x = 0;
+          break;
+        default:
+          Main$x = 1;
+          break;
       }"
     `);
   });
@@ -1686,16 +1759,19 @@ describe("pattern matching", () => {
     const out = compileSrc(`
   let x = match 'a' {
     'x' => 0,
+    _ => 1,
   }
 `);
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const $0 = \`a\`;
-      if ($0 === \`x\`) {
-        Main$x = 0;
-      } else {
-        throw new Error("[non exhaustive match]");
+      switch (\`a\`) {
+        case \`x\`:
+          Main$x = 0;
+          break;
+        default:
+          Main$x = 1;
+          break;
       }"
     `);
   });
@@ -1720,6 +1796,68 @@ describe("pattern matching", () => {
     `);
   });
 
+  test("pattern matching bool values swapped", () => {
+    const out = compileSrc(
+      `
+    let x = match True {
+      False => 0,
+      True => 1,
+    }
+  `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "let Main$x;
+      if (true) {
+        Main$x = 1;
+      } else {
+        Main$x = 0;
+      }"
+    `);
+  });
+
+  test("pattern matching bool with catchall", () => {
+    const out = compileSrc(
+      `
+    let x = match True {
+      False => 0,
+      _ => 1,
+    }
+  `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "let Main$x;
+      if (true) {
+        Main$x = 1;
+      } else {
+        Main$x = 0;
+      }"
+    `);
+  });
+
+  test("pattern matching bool with redundant clause", () => {
+    const out = compileSrc(
+      `
+    let x = match True {
+      False => 0,
+      False => 999,
+      _ => 1,
+    }
+  `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "let Main$x;
+      if (true) {
+        Main$x = 1;
+      } else {
+        Main$x = 0;
+      }"
+    `);
+  });
+
+  // TODO we can impl this as a IR rewrite instead
   test("pattern matching Unit values", () => {
     const out = compileSrc(
       `
@@ -1755,22 +1893,66 @@ describe("pattern matching", () => {
       `
   enum T {
     C(Bool),
+    D, // <- prevents unboxed repr
   }
 
   let x = match C(True) {
     C(True) => 0,
+    _ => 1,
+  }
+`,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$C = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$D = {
+        $: 1
+      };
+      const $0 = {
+        $: 0,
+        _0: true
+      };
+      let Main$x;
+      switch ($0.$) {
+        case 0:
+          if ($0._0) {
+            Main$x = 0;
+          } else {
+            Main$x = 1;
+          }
+          break;
+        default:
+          Main$x = 1;
+          break;
+      }"
+    `);
+  });
+
+  test("pattern matching nested unboxed  value", () => {
+    const out = compileSrc(
+      `
+  enum T {
+    C(Bool),
+  }
+
+  let x = match C(True) {
+    C(True) => 0,
+    _ => 1,
   }
 `,
     );
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$C = _0 => _0;
-      let Main$x;
       const $0 = true;
+      let Main$x;
       if ($0) {
         Main$x = 0;
       } else {
-        throw new Error("[non exhaustive match]");
+        Main$x = 1;
       }"
     `);
   });
@@ -1852,6 +2034,7 @@ describe("pattern matching", () => {
   
       let m = match x {
         Z(Some(s1), Ok(Some(s2))) => s1 ++ s2,
+        _ => "def"
       }
     `);
 
