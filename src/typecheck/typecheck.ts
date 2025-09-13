@@ -3,7 +3,6 @@ import {
   RangeMeta,
   Import,
   UntypedModule,
-  TypeDeclaration,
   Range,
 } from "../parser";
 import {
@@ -12,13 +11,12 @@ import {
   ModuleInterface,
   StructResolution,
   TypedBlockStatement,
-  TypedDeclaration,
+  TypedValueDeclaration,
   TypedExpr,
   TypedMatchPattern,
   TypedModule,
   TypedTypeAst,
   TypedTypeDeclaration,
-  TypedTypeVariant,
 } from "./typedAst";
 import { TraitImpl, defaultImports, defaultTraitImpls } from "./defaultImports";
 import {
@@ -40,6 +38,11 @@ import * as err from "./errors";
 import { DependencyProvider, resolve } from "./resolution";
 import { DefaultMap } from "../common/defaultMap";
 import * as core from "./core_package";
+import {
+  MalformedMatrixHalt,
+  NonExhaustiveMatchHalt,
+  runExhaustivenessCheck,
+} from "./exhaustiveness";
 
 export const DEFAULT_MAIN_TYPE = core.Task(core.Unit);
 
@@ -64,8 +67,6 @@ export function typecheck(
   if (package_ === core.CORE_PACKAGE) {
     implicitImports = [];
   }
-
-  TVar.resetId();
 
   const [typedModule, errors] = resolve(
     package_,
@@ -92,7 +93,7 @@ export function typecheck(
 
 type ScheduledAmbiguousVarCheck = {
   instantiated: Map<string, Type>;
-  currentDeclaration: TypedDeclaration;
+  currentDeclaration: TypedValueDeclaration;
   instantiatedVarNode: TypedExpr & { type: "identifier" };
 };
 
@@ -105,8 +106,8 @@ class Typechecker {
 
   private ambiguousTypeVarErrorsEmitted = new Set<number>();
 
-  private currentRecGroup = new Set<TypedDeclaration>();
-  private currentDeclaration?: TypedDeclaration;
+  private currentRecGroup = new Set<TypedValueDeclaration>();
+  private currentDeclaration?: TypedValueDeclaration;
 
   private scheduledAmbiguousVarChecks: ScheduledAmbiguousVarCheck[] = [];
 
@@ -212,25 +213,20 @@ class Typechecker {
     for (const variant of typeDecl.variants) {
       // TODO refactor this so that we have a type per ctor arg
 
-      const resolved = resolveType(variant.$type);
+      for (const arg of variant.args) {
+        const ok = mkDepsFor(
+          out,
+          arg.$type,
+          trait,
+          {
+            // TODO check .bind is needed
+            getNamedTypeDependencies: this.getNamedTypeDependencies.bind(this),
+          },
+          typeDecl.$type,
+        );
 
-      if (resolved.type === "fn") {
-        for (const arg of resolved.args) {
-          const ok = mkDepsFor(
-            out,
-            arg,
-            trait,
-            {
-              // TODO check .bind is needed
-              getNamedTypeDependencies:
-                this.getNamedTypeDependencies.bind(this),
-            },
-            resolved.return,
-          );
-
-          if (!ok) {
-            return;
-          }
+        if (!ok) {
+          return;
         }
       }
 
@@ -273,10 +269,18 @@ class Typechecker {
 
   run(): [TypedModule, err.ErrorInfo[]] {
     for (const typeDecl of this.typedModule.typeDeclarations) {
+      typeDecl.$type = {
+        type: "named",
+        package_: this.package_,
+        module: this.ns,
+        name: typeDecl.name,
+        args: typeDecl.params.map(
+          (param): Type => ({ type: "rigid-var", name: param.name }),
+        ),
+      };
+
       if (typeDecl.type === "adt") {
-        for (const variant of typeDecl.variants) {
-          variant.$type = this.hydrateVariant(typeDecl, variant);
-        }
+        this.hydrateVariant(typeDecl);
 
         this.adtDerive("Eq", typeDecl);
         this.adtDerive("Show", typeDecl);
@@ -295,7 +299,7 @@ class Typechecker {
         this.typecheckDeclaration(decl);
       }
 
-      const generalized = new Map<TypedDeclaration, GeneralizeResult>();
+      const generalized = new Map<TypedValueDeclaration, GeneralizeResult>();
 
       for (const decl of group) {
         const gen = generalize(decl.binding.$type, decl.$traitsConstraints);
@@ -327,14 +331,6 @@ class Typechecker {
   private hydrateStruct(typeDecl: TypedTypeDeclaration & { type: "struct" }) {
     const params = typeDecl.params.map((p) => p.name);
 
-    typeDecl.$type = {
-      type: "named",
-      package_: this.package_,
-      module: this.ns,
-      name: typeDecl.name,
-      args: params.map((name) => ({ type: "rigid-var", name })),
-    };
-
     for (const field of typeDecl.fields) {
       const type = this.hydrateTypeAst(field.typeAst, {
         type: "typedef",
@@ -344,31 +340,26 @@ class Typechecker {
     }
   }
 
-  private hydrateVariant(
-    typeDecl: TypeDeclaration & { type: "adt" },
-    variant: TypedTypeVariant,
-  ): Type {
+  private hydrateVariant(typeDecl: TypedTypeDeclaration & { type: "adt" }) {
     const params = typeDecl.params.map((p) => p.name);
 
-    const returnType: Type = {
-      type: "named",
-      package_: this.package_,
-      module: this.ns,
-      name: typeDecl.name,
-      args: params.map((name): Type => ({ type: "rigid-var", name })),
-    };
+    for (const variant of typeDecl.variants) {
+      for (const arg of variant.args) {
+        arg.$type = this.hydrateTypeAst(arg.ast, {
+          type: "typedef",
+          params,
+        });
+      }
 
-    if (variant.args.length === 0) {
-      return returnType;
+      variant.$type =
+        variant.args.length === 0
+          ? typeDecl.$type
+          : {
+              type: "fn",
+              args: variant.args.map((v) => v.$type),
+              return: typeDecl.$type,
+            };
     }
-
-    return {
-      type: "fn",
-      args: variant.args.map((v) =>
-        this.hydrateTypeAst(v, { type: "typedef", params }),
-      ),
-      return: returnType,
-    };
   }
 
   private unifyExpr(ast: TypedExpr, t1: Type, t2: Type) {
@@ -431,39 +422,52 @@ class Typechecker {
     );
   }
 
-  private typecheckDeclaration(decl: TypedDeclaration) {
-    if (decl.typeHint !== undefined) {
-      // TODO validate where clause:
-      // 1. no duplicate vars
-      // 2. no orphan vars
-      decl.$traitsConstraints = Object.fromEntries(
-        decl.typeHint.where.map(
-          (def) => [def.typeVar, new Set(def.traits)] as const,
-        ),
-      );
+  private unifyWithTypeAttribute(decl: TypedValueDeclaration) {
+    const hintsAttributes = decl.attributes.flatMap((a) =>
+      a.type === "@type" ? [a] : [],
+    );
 
-      const hint = this.hydrateTypeAst(decl.typeHint.mono, {
-        type: "signature",
-      });
-      this.unifyNode(decl, decl.binding.$type, hint);
+    if (hintsAttributes.length > 1) {
+      // TODO emit error
     }
+
+    const hint = hintsAttributes[0]?.polytype;
+
+    if (hint === undefined) {
+      return;
+    }
+
+    // TODO validate where clause:
+    // 1. no duplicate vars
+    // 2. no orphan vars
+    decl.$traitsConstraints = Object.fromEntries(
+      hint.where.map((def) => [def.typeVar, new Set(def.traits)] as const),
+    );
+
+    const type_ = this.hydrateTypeAst(hint.mono, {
+      type: "signature",
+    });
+    this.unifyNode(decl, decl.binding.$type, type_);
+  }
+
+  private typecheckDeclaration(decl: TypedValueDeclaration) {
+    this.unifyWithTypeAttribute(decl);
 
     if (decl.binding.name === "main") {
       this.unifyNode(decl.binding, decl.binding.$type, this.mainType);
     }
 
-    if (decl.extern) {
-      return;
+    // TODO handle @extern
+    if (decl.value !== undefined) {
+      this.unifyExpr(decl.value, decl.binding.$type, decl.value.$type);
+      this.typecheckExpr(decl.value);
     }
-
-    this.unifyExpr(decl.value, decl.binding.$type, decl.value.$type);
-    this.typecheckExpr(decl.value);
   }
 
   private typecheckPattern(pattern: TypedMatchPattern) {
     switch (pattern.type) {
-      case "lit": {
-        const t = inferConstant(pattern.literal);
+      case "constant": {
+        const t = inferConstant(pattern.value);
         this.unifyNode(pattern, pattern.$type, t);
       }
 
@@ -619,8 +623,7 @@ class Typechecker {
         this.unifyNode(stm, stm.$type, bodyType);
         this.unifyNode(stm, stm.pattern.$type, stm.value.$type);
         this.typecheckExpr(stm.value);
-
-        this.checkExhaustiveMatchBinding(stm.pattern);
+        this.checkExhaustiveMatrix(stm.range, [[stm.pattern]]);
         break;
 
       case "let#":
@@ -639,8 +642,7 @@ class Typechecker {
         this.typecheckExpr(stm.mapper);
         this.typecheckExpr(stm.value);
         this.typecheckPattern(stm.pattern);
-
-        this.checkExhaustiveMatchBinding(stm.pattern);
+        this.checkExhaustiveMatrix(stm.range, [[stm.pattern]]);
         break;
 
       default:
@@ -665,6 +667,10 @@ class Typechecker {
         for (const value of ast.values) {
           this.unifyExpr(value, value.$type, valueType);
           this.typecheckExpr(value);
+        }
+        if (ast.tail !== undefined) {
+          this.typecheckExpr(ast.tail);
+          this.unifyExpr(ast.tail, ast.tail.$type, core.List(valueType));
         }
         return;
       }
@@ -733,9 +739,7 @@ class Typechecker {
         });
 
         this.typecheckExpr(ast.body);
-
-        this.checkExhaustiveMatchBindings(ast.range, ast.params);
-
+        this.checkExhaustiveMatrix(ast.range, [ast.params.map((p) => p)]);
         return;
 
       case "application":
@@ -825,7 +829,10 @@ class Typechecker {
           this.unifyExpr(ast, ast.$type, expr.$type);
           this.typecheckExpr(expr);
         }
-        this.checkExhaustiveMatch(ast);
+        this.checkExhaustiveMatrix(
+          ast.range,
+          ast.clauses.map(([pat]) => [pat]),
+        );
         return;
 
       case "block": {
@@ -914,156 +921,23 @@ class Typechecker {
     };
   }
 
-  private checkPatternsMatrix(rng: Range, cols: PatternMatrix) {
-    const [firstCol, ...otherCols] = cols;
-    if (firstCol === undefined) {
-      return;
-    }
-
-    // we specialize on the first
-    const lookup = this.getTypeDecl(firstCol.type);
-    if (lookup === undefined) {
-      // undefined decl: error has alreay beed emitted
-      return;
-    }
-
-    switch (lookup.declaration.type) {
-      case "adt": {
-        for (const variantDefinition of lookup.declaration.variants) {
-          // TODO attach types directly on type AST
-          const argsTypes = getVariantArgs(variantDefinition);
-          if (argsTypes === undefined) {
-            return;
-          }
-
-          const [matchingCtors, usedRows, ok] = getMatchingCtors(
-            variantDefinition,
-            firstCol.patterns,
-          );
-
-          if (!ok) {
-            this.errors.push({
-              description: new err.NonExhaustiveMatch(),
-              range: rng,
-            });
-          }
-
-          const specializedMatrix: PatternMatrix = [
-            ...matchingCtors,
-            ...otherCols.map((col) => ({
-              type: col.type,
-              patterns: col.patterns.filter((_p, index) => usedRows.has(index)),
-            })),
-          ];
-
-          // we have produced the new matrix specialized on this ctor: we proceed with the check there
-          this.checkPatternsMatrix(rng, specializedMatrix);
-        }
-
+  private checkExhaustiveMatrix(rng: Range, matrix: TypedMatchPattern[][]) {
+    try {
+      runExhaustivenessCheck(matrix);
+    } catch (error) {
+      if (error instanceof MalformedMatrixHalt) {
         return;
       }
 
-      case "extern": {
-        // we'll assume it's never possible to do exhaustive pattern matching on any extern value
-        // this is not quite accurate: for example, we could indeed pattern match exhaustively a Char.
-        // for the sake of simplicity, we won't allow that for now
-
-        const wildCardCols = new Set<number>();
-        const groups = new DefaultMap<string, Set<number>>(() => new Set());
-        firstCol.patterns.forEach((pat, rowIndex) => {
-          if (pat.type === "identifier") {
-            wildCardCols.add(rowIndex);
-          } else if (pat.type === "lit") {
-            const lit = pat.literal.value.toString();
-            groups.get(lit).add(rowIndex);
-          }
+      if (error instanceof NonExhaustiveMatchHalt) {
+        this.errors.push({
+          description: new err.NonExhaustiveMatch(),
+          range: rng,
         });
-
-        const hasWildcard = wildCardCols.size !== 0;
-        if (!hasWildcard) {
-          this.errors.push({
-            description: new err.NonExhaustiveMatch(),
-            range: rng,
-          });
-          return;
-        }
-
-        for (const usedRows of groups.inner.values()) {
-          const specializedMatrix: PatternMatrix = [
-            ...otherCols.map((col) => ({
-              type: col.type,
-              patterns: col.patterns.filter((_p, index) => usedRows.has(index)),
-            })),
-          ];
-
-          this.checkPatternsMatrix(rng, specializedMatrix);
-        }
-
-        const specializedMatrix: PatternMatrix = [
-          ...otherCols.map((col) => ({
-            type: col.type,
-            patterns: col.patterns.filter((_p, index) =>
-              wildCardCols.has(index),
-            ),
-          })),
-        ];
-        this.checkPatternsMatrix(rng, specializedMatrix);
-
         return;
       }
 
-      case "struct":
-        // we won't check this, as it's not possible yet to perform pattern match on structs
-        return;
-
-      default:
-        lookup.declaration satisfies never;
-    }
-  }
-
-  private checkExhaustiveMatch(expr: TypedExpr & { type: "match" }) {
-    try {
-      this.checkPatternsMatrix(expr.range, [
-        {
-          type: expr.expr.$type,
-          patterns: expr.clauses.map(([pat]) => pat),
-        },
-      ]);
-    } catch (error) {
-      if (!(error instanceof MalformedPatternErr)) {
-        throw error;
-      }
-    }
-  }
-
-  private checkExhaustiveMatchBinding(expr: TypedMatchPattern) {
-    try {
-      this.checkPatternsMatrix(expr.range, [
-        { type: expr.$type, patterns: [expr] },
-      ]);
-    } catch (error) {
-      if (!(error instanceof MalformedPatternErr)) {
-        throw error;
-      }
-    }
-  }
-
-  private checkExhaustiveMatchBindings(
-    rng: Range,
-    params: TypedMatchPattern[],
-  ) {
-    try {
-      this.checkPatternsMatrix(
-        rng,
-        params.map((param) => ({
-          type: param.$type,
-          patterns: [param],
-        })),
-      );
-    } catch (error) {
-      if (!(error instanceof MalformedPatternErr)) {
-        throw error;
-      }
+      throw error;
     }
   }
 
@@ -1385,99 +1259,6 @@ function mkDepsFor(
     case "var":
       return false;
   }
-}
-
-type PatternMatrix = {
-  type: Type;
-  patterns: TypedMatchPattern[];
-}[];
-
-function getVariantArgs(variant: TypedTypeVariant) {
-  if (variant.args.length === 0) {
-    return [];
-  }
-
-  const t = variant.$type;
-  if (t.type !== "fn") {
-    return undefined;
-  }
-
-  return t.args;
-}
-
-// TODO remove
-/**
- * temporary hack to short-circuit exhaustive pattern detection. Refactor the pattern error code instead
- */
-class MalformedPatternErr extends Error {}
-
-/**
- * Given a variant definition, find all the patterns in the first row that are instances of that ctor.
- * Also returns the rowIndex of the original matrix
- * e.g.
- *
- * ```kestrel
- * getMatchingCtors(Just, [Just(a, b), None, Other, Just(1, 2)])
- * //=> [(a, b), (1, 2)]
- * ```
- * */
-function getMatchingCtors(
-  variantDefinition: TypedTypeVariant,
-  col: PatternMatrix[number]["patterns"],
-) {
-  const keptRows = new Set<number>();
-
-  /** 0-n columns (depending on the number of args) */
-  const newColumns: PatternMatrix = variantDefinition.args.map(() => ({
-    type: TVar.freshType(),
-    patterns: [],
-  }));
-
-  const argsTypes = getVariantArgs(variantDefinition);
-  if (argsTypes === undefined) {
-    return [newColumns, keptRows, true] as const;
-  }
-
-  let foundCol = false;
-
-  col.forEach((pattern, index) => {
-    // -- wildcard
-    if (pattern.type === "identifier") {
-      foundCol = true;
-      keptRows.add(index);
-      newColumns.forEach((newCol) => {
-        newCol.patterns.push(pattern);
-      });
-      return;
-    }
-
-    // -- ctor
-    const matching =
-      pattern.type === "constructor" &&
-      pattern.$resolution !== undefined &&
-      pattern.$resolution.type === "constructor" &&
-      pattern.$resolution.variant.name === variantDefinition.name;
-    if (!matching) {
-      return;
-    }
-
-    foundCol = true;
-    keptRows.add(index);
-    newColumns.forEach((newCol, newColIndex) => {
-      const subPattern = pattern.args[newColIndex];
-      if (subPattern === undefined) {
-        throw new MalformedPatternErr();
-      }
-
-      if (index === 0) {
-        newCol.type = subPattern.$type;
-      }
-
-      newCol.patterns.push(subPattern);
-    });
-  });
-
-  return [newColumns, keptRows, foundCol] as const;
 }
 
 // Hack to short-circuit

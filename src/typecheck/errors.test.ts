@@ -27,8 +27,10 @@ describe(errorInfoToString.name, () => {
 
   test("type error", () => {
     const src = `
-      type Custom {}
-      pub let x: Custom = "abc"
+      enum Custom {}
+
+      @type Custom
+      pub let x = "abc"
     `;
     snapshotErr(src);
   });

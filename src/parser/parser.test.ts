@@ -1,74 +1,5 @@
 import { expect, test, describe } from "vitest";
 import { parse, unsafeParse } from "./parser";
-import { UntypedModule } from "./ast";
-import { rangeOf } from "../analysis/__test__/utils";
-
-test("parsing a declaration", () => {
-  const src = "let x = 0";
-  expect(unsafeParse(src)).toEqual<UntypedModule>({
-    lineComments: [],
-    imports: [],
-    typeDeclarations: [],
-    declarations: [
-      {
-        pub: false,
-        extern: false,
-        inline: false,
-        binding: { name: "x", range: rangeOf(src, "x") },
-        value: {
-          type: "constant",
-          value: {
-            type: "int",
-            value: 0,
-          },
-          range: rangeOf(src, "0"),
-        },
-        range: rangeOf(src, src),
-      },
-    ],
-  });
-});
-
-test("parsing two declarations", () => {
-  const src = `let x = 0\nlet y = 1`;
-  expect(unsafeParse(src)).toEqual<UntypedModule>({
-    lineComments: [],
-    imports: [],
-    typeDeclarations: [],
-    declarations: [
-      {
-        pub: false,
-        extern: false,
-        inline: false,
-        binding: { name: "x", range: rangeOf(src, "x") },
-        value: {
-          type: "constant",
-          value: {
-            type: "int",
-            value: 0,
-          },
-          range: rangeOf(src, "0"),
-        },
-        range: rangeOf(src, "let x = 0"),
-      },
-      {
-        pub: false,
-        extern: false,
-        inline: false,
-        binding: { name: "y", range: rangeOf(src, "y") },
-        value: {
-          type: "constant",
-          value: {
-            type: "int",
-            value: 1,
-          },
-          range: rangeOf(src, "1"),
-        },
-        range: rangeOf(src, "let y = 1"),
-      },
-    ],
-  });
-});
 
 test("parse float", () => {
   const src = "let _ = 1.23";
@@ -262,14 +193,6 @@ let _ = if b { 0 } else { 1 }
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test.todo("parse if-else syntax sugar", () => {
-  const src = `
-    let _ = if b { 0 } else if { 1 } else { 2 }
-  `;
-
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
-
 test("parse if expr with a let expr", () => {
   const src = `
 let _ = if b {
@@ -303,13 +226,8 @@ test("parse list sugar with many values", () => {
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
-test("parse conslist sugar", () => {
-  const src = "let _ = hd :: tl";
-  expect(unsafeParse(src)).toMatchSnapshot();
-});
-
-test("parse cons operator is right-associative", () => {
-  const src = "let _ = a :: b :: nil";
+test("cons list after a single elem", () => {
+  const src = "let _ = [xs, ..tl]";
   expect(unsafeParse(src)).toMatchSnapshot();
 });
 
@@ -405,97 +323,129 @@ test("ignoring comments", () => {
 
 describe("type hints", () => {
   test("parses a concrete type with no args as a type hint", () => {
-    const src = "let x : Int = 0";
-    expect(unsafeParse(src)).toMatchSnapshot();
-  });
-
-  test("parses a concrete type with no args as a type hint (no whitespace after binding)", () => {
-    const src = "let x: Int = 0";
+    const src = `
+      @type Int
+      let x = 0
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses a concrete type with no args as a type hint (extern)", () => {
-    const src = "extern let x: Int";
+    const src = `
+      @extern
+      @type Int
+      let x
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses underscore type", () => {
-    const src = "let x : _ = 0";
+    const src = "@type _ let x = 0";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses concrete type with 1 arg", () => {
-    const src = "let x : Option<Int> = 0";
+    const src = `
+    @type Option<Int>
+    let x = 0
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses concrete type with 2 args", () => {
-    const src = "let x : Result<Int, Bool> = 0";
+    const src = `
+      @type Result<Int, Bool>
+      let x  = 0
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses Fn type with no args", () => {
-    const src = "let x : Fn() -> Int = 0";
+    const src = `
+      @type () -> Int
+      let x  = 0
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses Fn type with args", () => {
-    const src = "let x : Fn(X, Y) -> Z = 0";
+    const src = `
+      @type (X, Y) -> Z
+      let x = 0
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses type vars hints", () => {
-    const src = "let x : a = 0";
+    const src = `
+      @type a
+      let x = 0
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses tuple type syntax sugar", () => {
-    const src = "let x : (Int, Maybe<Int>) = 0";
+    const src = `
+      @type(Int, Maybe<Int>)
+      let x = 0
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });
 
 describe("traits", () => {
   test("parses traits in a polytype", () => {
-    const src = "extern let x: a where a: Ord";
+    const src = `
+      @extern
+      @type a where a: Ord
+      let x
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses many traits in a polytype for the same tvar", () => {
-    const src = "extern let x: a where a: Ord + Eq";
+    const src = `
+      @extern
+      @type a where a: Ord + Eq
+      let x
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parses traits for many vars", () => {
-    const src = "extern let x: (a, b) where a: Ord, b: Show";
+    const src = `
+      @extern
+      @type (a, b) where a: Ord, b: Show
+      let x
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });
 
 describe("type declarations", () => {
   test("type with no variants", () => {
-    const src = "type Never { }";
+    const src = "enum Never { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("type with a variant with no args", () => {
-    const src = "type T { C }";
+    const src = "enum T { C }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("type with a variant with one arg", () => {
-    const src = "type T { C(Arg) }";
+    const src = "enum T { C(Arg) }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("type with a variant with many args", () => {
-    const src = "type T { C(A, B) }";
+    const src = "enum T { C(A, B) }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("type with a variant with complex args", () => {
     const src = `
-      type T {
+      enum T {
         C(Example<a, Nested<Int>>)
       }
     `;
@@ -503,63 +453,63 @@ describe("type declarations", () => {
   });
 
   test("type with many variants", () => {
-    const src = `type T { A, B }`;
+    const src = `enum T { A, B }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("trailing comma after variants", () => {
-    const src = `type T { A, B, }`;
+    const src = `enum T { A, B, }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("single type param", () => {
-    const src = `type T<a> { }`;
+    const src = `enum T<a> { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("many type params", () => {
-    const src = `type T<a, b, c> { }`;
+    const src = `enum T<a, b, c> { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 });
 
 describe("structs", () => {
   test("empty struct", () => {
-    const src = `type Person struct { }`;
+    const src = `struct Person { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("pub modifier", () => {
-    const src = `pub type Person struct { }`;
+    const src = `pub struct Person { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("pub(..) modifier", () => {
-    const src = `pub(..) type Person struct { }`;
+    const src = `pub(..) struct Person { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("type params", () => {
-    const src = `type Person<a, b> struct { }`;
+    const src = `struct Person<a, b> { }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("doc comments", () => {
     const src = `
       /// example docs
-      type Person struct { }
+      struct Person { }
     `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("field", () => {
-    const src = `type Person struct { age: Int }`;
+    const src = `struct Person { age: Int }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("many fields", () => {
     const src = `
-      type Person struct {
+      struct Person {
         name: a,
         age: b, 
       }
@@ -598,14 +548,10 @@ describe("structs", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
-  test.todo("complex exprs in update syntax");
-
   test("qualified field access", () => {
     const src = `let _ = s.MyStruct#my_field`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
-
-  test.todo("namespaced-qualified field access");
 });
 
 describe("pattern matching", () => {
@@ -665,17 +611,17 @@ describe("pattern matching", () => {
   });
 
   test("matching cons literal (syntax sugar)", () => {
-    const src = `let _ = match x { hd :: tl => res }`;
+    const src = `let _ = match x { [hd, ..tl] => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("matching cons literal is right assoc", () => {
-    const src = `let _ = match x { hd :: tl :: Nil => res }`;
+    const src = `let _ = match x { [[hd, ..tl], ..Nil] => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("matching cons nested in tuple", () => {
-    const src = `let _ = match x { (hd :: Nil, y) => res }`;
+    const src = `let _ = match x { ([hd, ..Nil], y) => res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
@@ -685,12 +631,12 @@ describe("pattern matching", () => {
   });
 
   test("matching pattern in let", () => {
-    const src = `let _ = { let X(a, b :: c) = x; res }`;
+    const src = `let _ = { let X(a, [b, ..c]) = x; res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("matching pattern in let#", () => {
-    const src = `let _ = { let#ident X(a, b :: c) = x; res }`;
+    const src = `let _ = { let#ident X(a, [b, ..c]) = x; res }`;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
@@ -711,7 +657,8 @@ describe("extern bindings", () => {
 
   test("let decls", () => {
     const src = `
-      extern let x: Int
+      @type Int 
+      let x
     `;
 
     expect(unsafeParse(src)).toMatchSnapshot();
@@ -719,7 +666,8 @@ describe("extern bindings", () => {
 
   test("let decls defining infix operators", () => {
     const src = `
-      extern let (>=>): ExampleType
+      @extern
+      let (>=>)
     `;
 
     expect(unsafeParse(src)).toMatchSnapshot();
@@ -733,17 +681,17 @@ describe("imports", () => {
   });
 
   test("parse pub modifier on extern values", () => {
-    const src = "extern pub let _: Int";
+    const src = "@extern @type Int pub let _";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parse pub modifier on types", () => {
-    const src = "pub type T { }";
+    const src = "pub enum T { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
   test("parse pub(..) modifier on types", () => {
-    const src = "pub(..) type T { }";
+    const src = "pub(..) enum T { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
@@ -793,7 +741,11 @@ describe("imports", () => {
   });
 
   test("type defs can be qualified", () => {
-    const src = "extern let x: A/B.MyType";
+    const src = `
+      @extern
+      @type A/B.MyType
+      let x
+    `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
@@ -817,7 +769,9 @@ describe("Comments", () => {
     const src = `
     /// first line
     /// second line
-    extern let x: X
+    @type X
+    @extern
+    let x
     `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });
@@ -836,7 +790,7 @@ describe("Comments", () => {
     const src = `
     /// first line
     /// second line
-    type X {}
+    enum X {}
     `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

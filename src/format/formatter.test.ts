@@ -77,7 +77,7 @@ describe("list lit syntax", () => {
   });
 
   test("check prec", () => {
-    expect(`let x = a :: []\n`).toBeFormatted();
+    expect(`let x = [a]\n`).toBeFormatted();
   });
 
   test("on singleton", () => {
@@ -91,11 +91,11 @@ describe("list lit syntax", () => {
 
 describe("struct", () => {
   test("struct definition without fields", () => {
-    expect(`type X struct { }\n`).toBeFormatted();
+    expect(`struct X { }\n`).toBeFormatted();
   });
 
   test("struct definition with many fields", () => {
-    expect(`type X struct {
+    expect(`struct X {
   some_field: Int,
   another_field: String,
 }\n`).toBeFormatted();
@@ -170,11 +170,11 @@ describe("struct", () => {
 });
 
 test("cons application sugar", () => {
-  expect(`let x = hd :: hd2 :: tl\n`).toBeFormatted();
+  expect(`let x = [hd, hd2, ..tl]\n`).toBeFormatted();
 });
 
-test.todo("cons application is rassoc", () => {
-  expect(`let x = (hd :: tl1) :: tl2\n`).toBeFormatted();
+test("cons application is rassoc", () => {
+  expect(`let x = [[hd, ..tl1], ..tl2]\n`).toBeFormatted();
 });
 
 test("infix application", () => {
@@ -514,7 +514,7 @@ import B
 });
 
 test("order between type declrs and declrs", () => {
-  const t = `type T { }`;
+  const t = `enum T { }`;
   const d = `let x = 0`;
   expect(`${t}\n\n${d}\n`).toBeFormatted();
   expect(`${d}\n\n${t}\n`).toBeFormatted();
@@ -606,14 +606,16 @@ let f = 0
   test("doc comments on extern declrs", () => {
     expect(`/// First line
 /// Second line
-extern let f: X
+@extern
+@type X
+let f
 `).toBeFormatted();
   });
 
   test("doc comments on types", () => {
     expect(`/// First line
 /// Second line
-type X { }
+enum X { }
 `).toBeFormatted();
   });
 
@@ -644,64 +646,94 @@ import A/B
 
 describe("type hints", () => {
   test("concrete type", () => {
-    expect(`let f: Int = 0\n`).toBeFormatted();
+    expect(`@type Int
+let f = 0
+`).toBeFormatted();
   });
 
   test("qualified concrete type", () => {
-    expect(`let f: A/B/C.Int = 0\n`).toBeFormatted();
+    expect(`@type A/B/C.Int
+let f = 0
+`).toBeFormatted();
   });
 
   test("type hints on extern", () => {
-    expect(`extern let f: Int\n`).toBeFormatted();
+    expect(`@type Int
+@extern
+let f\n`).toBeFormatted();
   });
 
   test("infix extern", () => {
-    expect(`extern let (+): Fn(Int, Int) -> Int\n`).toBeFormatted();
+    expect(`@extern
+@type (Int, Int) -> Int
+let (+)\n`).toBeFormatted();
   });
 
   test("prefix extern", () => {
-    expect(`extern let (!): Fn(Bool) -> Bool\n`).toBeFormatted();
+    expect(`@extern
+@type (Bool) -> Bool
+let (!)\n`).toBeFormatted();
   });
 
   test("concrete with one arg", () => {
-    expect(`extern let f: Option<Int>\n`).toBeFormatted();
+    expect(`@extern
+@type Option<Int>
+let f\n`).toBeFormatted();
   });
 
   test("concrete with many args", () => {
-    expect(`extern let f: Result<Int, String>\n`).toBeFormatted();
+    expect(`@extern
+@type Result<Int, String>
+let f\n`).toBeFormatted();
   });
 
   test("tvar", () => {
-    expect(`extern let f: a\n`).toBeFormatted();
+    expect(`@extern
+@type a
+let f\n`).toBeFormatted();
   });
 
   test("catchall", () => {
-    expect(`extern let f: _\n`).toBeFormatted();
+    expect(`@extern
+@type _
+let f\n`).toBeFormatted();
   });
 
   test("Fn with no args", () => {
-    expect(`extern let f: Fn() -> Int\n`).toBeFormatted();
+    expect(`@extern
+@type () -> Int
+let f\n`).toBeFormatted();
   });
 
   test("Fn with one arg", () => {
-    expect(`extern let f: Fn(A) -> Int\n`).toBeFormatted();
+    expect(`@extern
+@type (A) -> Int
+let f\n`).toBeFormatted();
   });
 
   test("Fn with many arg", () => {
-    expect(`extern let f: Fn(A, B, C) -> Int\n`).toBeFormatted();
+    expect(`@extern
+@type (A, B, C) -> Int
+let f\n`).toBeFormatted();
   });
 
   test("tuple sugar", () => {
-    expect(`extern let f: (Int, Option<Char>)\n`).toBeFormatted();
+    expect(`@extern
+@type (Int, Option<Char>)
+let f\n`).toBeFormatted();
   });
 
   test("type with trait annotations", () => {
-    expect(`extern let f: Fn(a) -> b where a: Show, b: Eq\n`).toBeFormatted();
+    expect(`@extern
+@type (a) -> b where a: Show, b: Eq
+let f\n`).toBeFormatted();
   });
 
   test("type with many traits for each var", () => {
     expect(
-      `extern let x: (a, b) where a: Show + Eq, b: Ord + Show\n`,
+      `@extern
+@type (a, b) where a: Show + Eq, b: Ord + Show
+let x\n`,
     ).toBeFormatted();
   });
 });
@@ -720,26 +752,26 @@ describe("type delc", () => {
   });
 
   test("adts with no construtcors", () => {
-    expect(`type T { }\n`).toBeFormatted();
+    expect(`enum T { }\n`).toBeFormatted();
   });
 
   test("adts pub modifier", () => {
-    expect(`pub type T { }\n`).toBeFormatted();
+    expect(`pub enum T { }\n`).toBeFormatted();
   });
 
   test("adts pub(..) modifier", () => {
-    expect(`pub(..) type T { }\n`).toBeFormatted();
+    expect(`pub(..) enum T { }\n`).toBeFormatted();
   });
 
   test("adts with a constructors", () => {
-    expect(`type Unit {
+    expect(`enum Unit {
   Unit,
 }
 `).toBeFormatted();
   });
 
   test("adts with many constructors", () => {
-    expect(`type T {
+    expect(`enum T {
   A,
   B,
 }
@@ -747,26 +779,26 @@ describe("type delc", () => {
   });
 
   test("adts with a constructors with an arg", () => {
-    expect(`type Box {
+    expect(`enum Box {
   Box(Int),
 }
 `).toBeFormatted();
   });
 
   test("adts with a constructors with many args", () => {
-    expect(`type Box {
+    expect(`enum Box {
   Box(Int, a, Option<Int>),
 }
 `).toBeFormatted();
   });
 
   test("adts with one type params", () => {
-    expect(`type Box<a> { }
+    expect(`enum Box<a> { }
 `).toBeFormatted();
   });
 
   test("adts with many type params", () => {
-    expect(`type Box<a, b, c> { }
+    expect(`enum Box<a, b, c> { }
 `).toBeFormatted();
   });
 });
@@ -827,9 +859,23 @@ describe("pattern matching", () => {
 `).toBeFormatted();
   });
 
-  test("matching :: sugar", () => {
+  test("matching cons pattern", () => {
     expect(`let m = match expr {
-  hd :: tl => ret,
+  [hd, ..tl] => ret,
+}
+`).toBeFormatted();
+  });
+
+  test("matching empty pattern", () => {
+    expect(`let m = match expr {
+  [] => ret,
+}
+`).toBeFormatted();
+  });
+
+  test.todo("matching nested pattern", () => {
+    expect(`let m = match expr {
+  [1, 2, ..tl] => ret,
 }
 `).toBeFormatted();
   });
@@ -877,7 +923,7 @@ pub let range = fn from, to {
   if from >= to {
     []
   } else {
-    from :: range(from + 1, to)
+    [from, ..range(from + 1, to)]
   }
 }
 
@@ -885,7 +931,7 @@ pub let filter_map = fn lst, f {
   reduce_right(lst, [], fn x, xs {
     match f(x) {
       None => xs,
-      Some(hd) => hd :: xs,
+      Some(hd) => [hd, ..xs],
     }
   })
 }

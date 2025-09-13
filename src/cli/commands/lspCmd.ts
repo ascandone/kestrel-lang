@@ -13,7 +13,6 @@ import {
   createConnection,
 } from "vscode-languageserver";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { getConfigPackageName, readConfig } from "../config";
 import { readRawProject } from "../common";
 import { nestedMapGetOrPutDefault } from "../../common/defaultMap";
 import {
@@ -35,22 +34,21 @@ import {
 } from "../../analysis";
 import { format } from "../../format";
 import * as project from "../../typecheck/project";
+import { readConfig } from "../kestrel-json";
 
-export async function lspCmd() {
-  const documents = new TextDocuments(TextDocument);
-  const connection =
-    // @ts-ignore
-    createConnection();
-
+async function initState(
+  sendDiagnostics: (param: PublishDiagnosticsParams) => void,
+) {
   const currentDirectory = process.cwd();
   const config = await readConfig(currentDirectory);
 
-  const [rawProject, deps] = await readRawProject_(currentDirectory);
+  const [rawProject, deps, exposedModules] =
+    await readRawProject_(currentDirectory);
 
   const state = new AnalysisState(
-    getConfigPackageName(config),
+    config.name ?? "",
     currentDirectory,
-    config["source-directories"],
+    config.sources,
     async (results) => {
       for (const res of results) {
         const doc = state.getDocByModuleId(res.moduleId);
@@ -61,14 +59,26 @@ export async function lspCmd() {
         const [, errors] = res.output;
 
         const param = errorInfoToDiagnostic(errors, doc);
-        connection.sendDiagnostics(param);
+        sendDiagnostics(param);
       }
     },
     rawProject,
     {
       packageDependencies: deps,
+      exposedModules,
     },
   );
+
+  return state;
+}
+
+export async function lspCmd() {
+  const documents = new TextDocuments(TextDocument);
+  const connection =
+    // @ts-ignore
+    createConnection();
+
+  const state = await initState((params) => connection.sendDiagnostics(params));
 
   connection.onInitialize(() => ({
     capabilities: {
@@ -252,7 +262,9 @@ export async function lspCmd() {
       return;
     }
 
-    const hasParsingErr = module[1].some((e) => e instanceof ParsingError);
+    const hasParsingErr = module[1].some(
+      (e) => e.description instanceof ParsingError,
+    );
     if (hasParsingErr) {
       return;
     }
@@ -305,13 +317,15 @@ export async function lspCmd() {
       return;
     }
 
-    return module[0].declarations.map(({ binding, $traitsConstraints }) => {
-      const tpp = typeToString(binding.$type, $traitsConstraints);
-      return {
-        command: { title: tpp, command: "noop" },
-        range: binding.range,
-      };
-    });
+    return module[0].declarations
+      .filter((decl) => !decl.attributes.some((a) => a.type === "@type"))
+      .map(({ binding, $traitsConstraints }) => {
+        const tpp = typeToString(binding.$type, $traitsConstraints);
+        return {
+          command: { title: tpp, command: "noop" },
+          range: binding.range,
+        };
+      });
   });
 
   connection.onExecuteCommand(() => {});
@@ -373,9 +387,10 @@ async function readRawProject_(
   [
     Map<string, Map<string, { doc: TextDocument; source: string }>>,
     project.ProjectOptions["packageDependencies"],
+    project.ProjectOptions["exposedModules"],
   ]
 > {
-  const [prj, deps] = await readRawProject(path);
+  const [prj, deps, exposedModules] = await readRawProject(path);
 
   const rawProject: Map<
     string,
@@ -396,7 +411,7 @@ async function readRawProject_(
     }
   }
 
-  return [rawProject, deps] as const;
+  return [rawProject, deps, exposedModules] as const;
 }
 
 function toDiagnosticSeverity(severity: Severity): DiagnosticSeverity {

@@ -1,6 +1,6 @@
 import { nestedMapEntries } from "../../../common/defaultMap";
 import { Position, gtEqPos } from "../../../parser";
-import { TypedModule, TypedTypeAst, typeToString } from "../../../typecheck";
+import { TypedModule, typeToString } from "../../../typecheck";
 import { TypedProject } from "../../../typecheck/project";
 
 export type Variant = {
@@ -38,13 +38,14 @@ export function makeProjectDoc(
   package_: string,
   version: string,
   typedProject: TypedProject,
+  exposedModules: Set<string>,
 ): ProjectDoc {
   const modules: ProjectDoc["modules"] = {};
 
   for (const [moduleId, modulePackage, [typedModule]] of nestedMapEntries(
     typedProject,
   )) {
-    if (package_ !== modulePackage) {
+    if (package_ !== modulePackage || !exposedModules.has(moduleId)) {
       continue;
     }
     modules[moduleId] = makeModuleDoc(moduleId, typedModule);
@@ -101,7 +102,7 @@ export function makeModuleDoc(
     ) {
       item.variants = typeDecl.variants.map((variant) => ({
         name: variant.name,
-        args: variant.args.map(typeAstToString),
+        args: variant.args.map((arg) => typeToString(arg.$type)),
       }));
     }
 
@@ -126,25 +127,4 @@ export function makeModuleDoc(
   }
 
   return moduleDoc;
-}
-
-function typeAstToString(typeAst: TypedTypeAst): string {
-  switch (typeAst.type) {
-    case "any":
-      throw new Error("[unreachable]");
-    case "var":
-      return typeAst.ident;
-    case "named": {
-      const args =
-        typeAst.args.length === 0
-          ? ""
-          : `<${typeAst.args.map(typeAstToString).join(", ")}>`;
-      return `${typeAst.name}${args}`;
-    }
-    case "fn": {
-      const args = typeAst.args.map(typeAstToString).join(", ");
-      const ret = typeAstToString(typeAst.return);
-      return `Fn(${args}) -> ${ret}`;
-    }
-  }
 }

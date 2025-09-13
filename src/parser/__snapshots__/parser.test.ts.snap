@@ -4,6 +4,7 @@ exports[`+ is left-associative 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -17,8 +18,6 @@ exports[`+ is left-associative 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -121,6 +120,7 @@ exports[`Comments > doc comments 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "x",
         "range": {
@@ -137,8 +137,6 @@ exports[`Comments > doc comments 1`] = `
       "docComment": " first line
  second line
 ",
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -208,62 +206,90 @@ exports[`Comments > doc comments on externs 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "polytype": {
+            "mono": {
+              "args": [],
+              "name": "X",
+              "range": {
+                "end": {
+                  "character": 11,
+                  "line": 3,
+                },
+                "start": {
+                  "character": 10,
+                  "line": 3,
+                },
+              },
+              "type": "named",
+            },
+            "range": {
+              "end": {
+                "character": 11,
+                "line": 3,
+              },
+              "start": {
+                "character": 10,
+                "line": 3,
+              },
+            },
+            "where": [],
+          },
+          "range": {
+            "end": {
+              "character": 11,
+              "line": 3,
+            },
+            "start": {
+              "character": 4,
+              "line": 3,
+            },
+          },
+          "type": "@type",
+        },
+        {
+          "range": {
+            "end": {
+              "character": 11,
+              "line": 4,
+            },
+            "start": {
+              "character": 4,
+              "line": 4,
+            },
+          },
+          "type": "@extern",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 16,
-            "line": 3,
+            "character": 9,
+            "line": 5,
           },
           "start": {
-            "character": 15,
-            "line": 3,
+            "character": 8,
+            "line": 5,
           },
         },
       },
       "docComment": " first line
  second line
 ",
-      "extern": true,
       "pub": false,
       "range": {
         "end": {
-          "character": 19,
-          "line": 3,
+          "character": 9,
+          "line": 5,
         },
         "start": {
           "character": 4,
           "line": 1,
         },
       },
-      "typeHint": {
-        "mono": {
-          "args": [],
-          "name": "X",
-          "range": {
-            "end": {
-              "character": 19,
-              "line": 3,
-            },
-            "start": {
-              "character": 18,
-              "line": 3,
-            },
-          },
-          "type": "named",
-        },
-        "range": {
-          "end": {
-            "character": 19,
-            "line": 3,
-          },
-          "start": {
-            "character": 18,
-            "line": 3,
-          },
-        },
-        "where": [],
-      },
+      "value": undefined,
     },
   ],
   "imports": [],
@@ -306,6 +332,7 @@ exports[`Comments > doc comments with many declrs 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "x",
         "range": {
@@ -319,8 +346,6 @@ exports[`Comments > doc comments with many declrs 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -351,6 +376,7 @@ exports[`Comments > doc comments with many declrs 1`] = `
       },
     },
     {
+      "attributes": [],
       "binding": {
         "name": "y",
         "range": {
@@ -366,8 +392,6 @@ exports[`Comments > doc comments with many declrs 1`] = `
       },
       "docComment": " comment
 ",
-      "extern": false,
-      "inline": false,
       "pub": true,
       "range": {
         "end": {
@@ -408,6 +432,7 @@ exports[`Comments > moduledoc comments 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "x",
         "range": {
@@ -421,8 +446,6 @@ exports[`Comments > moduledoc comments 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -466,6 +489,21 @@ exports[`Decorators > inline decorator 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "range": {
+            "end": {
+              "character": 7,
+              "line": 0,
+            },
+            "start": {
+              "character": 0,
+              "line": 0,
+            },
+          },
+          "type": "@inline",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
@@ -479,8 +517,6 @@ exports[`Decorators > inline decorator 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": true,
       "pub": true,
       "range": {
         "end": {
@@ -521,6 +557,7 @@ exports[`Fault tolerance > dot notation in struct 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "x",
         "range": {
@@ -534,8 +571,6 @@ exports[`Fault tolerance > dot notation in struct 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -601,6 +636,7 @@ exports[`Fault tolerance > faulty decl 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "x",
         "range": {
@@ -614,8 +650,6 @@ exports[`Fault tolerance > faulty decl 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -656,6 +690,7 @@ exports[`Fault tolerance > faulty infix 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "x",
         "range": {
@@ -669,8 +704,6 @@ exports[`Fault tolerance > faulty infix 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -738,6 +771,7 @@ exports[`Fault tolerance > missing expr 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "x",
         "range": {
@@ -751,8 +785,6 @@ exports[`Fault tolerance > missing expr 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -789,6 +821,7 @@ exports[`Fault tolerance > missing string lit termination 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "x",
         "range": {
@@ -802,8 +835,6 @@ exports[`Fault tolerance > missing string lit termination 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -836,63 +867,160 @@ exports[`Fault tolerance > missing string lit termination 1`] = `
 }
 `;
 
+exports[`cons list after a single elem 1`] = `
+{
+  "declarations": [
+    {
+      "attributes": [],
+      "binding": {
+        "name": "_",
+        "range": {
+          "end": {
+            "character": 5,
+            "line": 0,
+          },
+          "start": {
+            "character": 4,
+            "line": 0,
+          },
+        },
+      },
+      "pub": false,
+      "range": {
+        "end": {
+          "character": 18,
+          "line": 0,
+        },
+        "start": {
+          "character": 0,
+          "line": 0,
+        },
+      },
+      "value": {
+        "range": {
+          "end": {
+            "character": 18,
+            "line": 0,
+          },
+          "start": {
+            "character": 8,
+            "line": 0,
+          },
+        },
+        "tail": {
+          "name": "tl",
+          "namespace": undefined,
+          "range": {
+            "end": {
+              "character": 17,
+              "line": 0,
+            },
+            "start": {
+              "character": 15,
+              "line": 0,
+            },
+          },
+          "type": "identifier",
+        },
+        "type": "list-literal",
+        "values": [
+          {
+            "name": "xs",
+            "namespace": undefined,
+            "range": {
+              "end": {
+                "character": 11,
+                "line": 0,
+              },
+              "start": {
+                "character": 9,
+                "line": 0,
+              },
+            },
+            "type": "identifier",
+          },
+        ],
+      },
+    },
+  ],
+  "imports": [],
+  "lineComments": [],
+  "typeDeclarations": [],
+}
+`;
+
 exports[`extern bindings > let decls 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "polytype": {
+            "mono": {
+              "args": [],
+              "name": "Int",
+              "range": {
+                "end": {
+                  "character": 15,
+                  "line": 1,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 1,
+                },
+              },
+              "type": "named",
+            },
+            "range": {
+              "end": {
+                "character": 15,
+                "line": 1,
+              },
+              "start": {
+                "character": 12,
+                "line": 1,
+              },
+            },
+            "where": [],
+          },
+          "range": {
+            "end": {
+              "character": 15,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 18,
-            "line": 1,
+            "character": 11,
+            "line": 2,
           },
           "start": {
-            "character": 17,
-            "line": 1,
+            "character": 10,
+            "line": 2,
           },
         },
       },
-      "extern": true,
       "pub": false,
       "range": {
         "end": {
-          "character": 23,
-          "line": 1,
+          "character": 11,
+          "line": 2,
         },
         "start": {
           "character": 6,
           "line": 1,
         },
       },
-      "typeHint": {
-        "mono": {
-          "args": [],
-          "name": "Int",
-          "range": {
-            "end": {
-              "character": 23,
-              "line": 1,
-            },
-            "start": {
-              "character": 20,
-              "line": 1,
-            },
-          },
-          "type": "named",
-        },
-        "range": {
-          "end": {
-            "character": 23,
-            "line": 1,
-          },
-          "start": {
-            "character": 20,
-            "line": 1,
-          },
-        },
-        "where": [],
-      },
+      "value": undefined,
     },
   ],
   "imports": [],
@@ -905,59 +1033,46 @@ exports[`extern bindings > let decls defining infix operators 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "range": {
+            "end": {
+              "character": 13,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@extern",
+        },
+      ],
       "binding": {
         "name": ">=>",
         "range": {
           "end": {
-            "character": 22,
-            "line": 1,
+            "character": 15,
+            "line": 2,
           },
           "start": {
-            "character": 17,
-            "line": 1,
+            "character": 10,
+            "line": 2,
           },
         },
       },
-      "extern": true,
       "pub": false,
       "range": {
         "end": {
-          "character": 35,
-          "line": 1,
+          "character": 15,
+          "line": 2,
         },
         "start": {
           "character": 6,
           "line": 1,
         },
       },
-      "typeHint": {
-        "mono": {
-          "args": [],
-          "name": "ExampleType",
-          "range": {
-            "end": {
-              "character": 35,
-              "line": 1,
-            },
-            "start": {
-              "character": 24,
-              "line": 1,
-            },
-          },
-          "type": "named",
-        },
-        "range": {
-          "end": {
-            "character": 35,
-            "line": 1,
-          },
-          "start": {
-            "character": 24,
-            "line": 1,
-          },
-        },
-        "where": [],
-      },
+      "value": undefined,
     },
   ],
   "imports": [],
@@ -996,6 +1111,7 @@ exports[`ignoring comments 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -1009,8 +1125,6 @@ exports[`ignoring comments 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -1065,6 +1179,7 @@ exports[`imports > identifiers can be qualified 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "x",
         "range": {
@@ -1078,8 +1193,6 @@ exports[`imports > identifiers can be qualified 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -1166,6 +1279,7 @@ exports[`imports > parse pub modifier 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -1179,8 +1293,6 @@ exports[`imports > parse pub modifier 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": true,
       "range": {
         "end": {
@@ -1247,24 +1359,79 @@ exports[`imports > parse pub modifier on extern values 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "range": {
+            "end": {
+              "character": 7,
+              "line": 0,
+            },
+            "start": {
+              "character": 0,
+              "line": 0,
+            },
+          },
+          "type": "@extern",
+        },
+        {
+          "polytype": {
+            "mono": {
+              "args": [],
+              "name": "Int",
+              "range": {
+                "end": {
+                  "character": 17,
+                  "line": 0,
+                },
+                "start": {
+                  "character": 14,
+                  "line": 0,
+                },
+              },
+              "type": "named",
+            },
+            "range": {
+              "end": {
+                "character": 17,
+                "line": 0,
+              },
+              "start": {
+                "character": 14,
+                "line": 0,
+              },
+            },
+            "where": [],
+          },
+          "range": {
+            "end": {
+              "character": 17,
+              "line": 0,
+            },
+            "start": {
+              "character": 8,
+              "line": 0,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "_",
         "range": {
           "end": {
-            "character": 16,
+            "character": 27,
             "line": 0,
           },
           "start": {
-            "character": 15,
+            "character": 26,
             "line": 0,
           },
         },
       },
-      "extern": true,
       "pub": true,
       "range": {
         "end": {
-          "character": 21,
+          "character": 27,
           "line": 0,
         },
         "start": {
@@ -1272,34 +1439,7 @@ exports[`imports > parse pub modifier on extern values 1`] = `
           "line": 0,
         },
       },
-      "typeHint": {
-        "mono": {
-          "args": [],
-          "name": "Int",
-          "range": {
-            "end": {
-              "character": 21,
-              "line": 0,
-            },
-            "start": {
-              "character": 18,
-              "line": 0,
-            },
-          },
-          "type": "named",
-        },
-        "range": {
-          "end": {
-            "character": 21,
-            "line": 0,
-          },
-          "start": {
-            "character": 18,
-            "line": 0,
-          },
-        },
-        "where": [],
-      },
+      "value": undefined,
     },
   ],
   "imports": [],
@@ -1366,6 +1506,7 @@ exports[`imports > type constructors can be qualified 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "x",
         "range": {
@@ -1379,8 +1520,6 @@ exports[`imports > type constructors can be qualified 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -1419,60 +1558,88 @@ exports[`imports > type defs can be qualified 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "range": {
+            "end": {
+              "character": 13,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@extern",
+        },
+        {
+          "polytype": {
+            "mono": {
+              "args": [],
+              "name": "MyType",
+              "namespace": "A/B",
+              "range": {
+                "end": {
+                  "character": 22,
+                  "line": 2,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 2,
+                },
+              },
+              "type": "named",
+            },
+            "range": {
+              "end": {
+                "character": 22,
+                "line": 2,
+              },
+              "start": {
+                "character": 12,
+                "line": 2,
+              },
+            },
+            "where": [],
+          },
+          "range": {
+            "end": {
+              "character": 22,
+              "line": 2,
+            },
+            "start": {
+              "character": 6,
+              "line": 2,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 12,
-            "line": 0,
+            "character": 11,
+            "line": 3,
           },
           "start": {
-            "character": 11,
-            "line": 0,
+            "character": 10,
+            "line": 3,
           },
         },
       },
-      "extern": true,
       "pub": false,
       "range": {
         "end": {
-          "character": 24,
-          "line": 0,
+          "character": 11,
+          "line": 3,
         },
         "start": {
-          "character": 0,
-          "line": 0,
+          "character": 6,
+          "line": 1,
         },
       },
-      "typeHint": {
-        "mono": {
-          "args": [],
-          "name": "MyType",
-          "namespace": "A/B",
-          "range": {
-            "end": {
-              "character": 24,
-              "line": 0,
-            },
-            "start": {
-              "character": 14,
-              "line": 0,
-            },
-          },
-          "type": "named",
-        },
-        "range": {
-          "end": {
-            "character": 24,
-            "line": 0,
-          },
-          "start": {
-            "character": 14,
-            "line": 0,
-          },
-        },
-        "where": [],
-      },
+      "value": undefined,
     },
   ],
   "imports": [],
@@ -1725,6 +1892,7 @@ exports[`it should be possible to mix pipe with infix 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -1738,8 +1906,6 @@ exports[`it should be possible to mix pipe with infix 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -1895,6 +2061,7 @@ exports[`monadic let syntax sugar 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -1908,8 +2075,6 @@ exports[`monadic let syntax sugar 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -2020,6 +2185,7 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -2033,8 +2199,6 @@ exports[`monadic let syntax sugar should handle qualified names 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -2145,6 +2309,7 @@ exports[`parse * expr 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -2158,8 +2323,6 @@ exports[`parse * expr 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -2231,6 +2394,7 @@ exports[`parse + and * prec 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -2244,8 +2408,6 @@ exports[`parse + and * prec 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -2348,6 +2510,7 @@ exports[`parse + and * prec with parens 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -2361,8 +2524,6 @@ exports[`parse + and * prec with parens 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -2465,6 +2626,7 @@ exports[`parse + expr 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -2478,8 +2640,6 @@ exports[`parse + expr 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -2551,6 +2711,7 @@ exports[`parse +. expr 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -2564,8 +2725,6 @@ exports[`parse +. expr 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -2637,6 +2796,7 @@ exports[`parse <= and && prec 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -2650,8 +2810,6 @@ exports[`parse <= and && prec 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -2748,6 +2906,7 @@ exports[`parse - expr 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -2761,8 +2920,6 @@ exports[`parse - expr 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -2834,6 +2991,7 @@ exports[`parse appl with 1 arg 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -2847,8 +3005,6 @@ exports[`parse appl with 1 arg 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -2917,6 +3073,7 @@ exports[`parse appl with 3 args 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -2930,8 +3087,6 @@ exports[`parse appl with 3 args 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -3030,6 +3185,7 @@ exports[`parse appl with nested expr 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -3043,8 +3199,6 @@ exports[`parse appl with nested expr 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -3146,6 +3300,7 @@ exports[`parse appl with nested parens 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -3159,8 +3314,6 @@ exports[`parse appl with nested parens 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -3231,6 +3384,7 @@ exports[`parse appl with no args 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -3244,8 +3398,6 @@ exports[`parse appl with no args 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -3298,6 +3450,7 @@ exports[`parse appl with trailing comma 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -3311,8 +3464,6 @@ exports[`parse appl with trailing comma 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -3396,6 +3547,7 @@ exports[`parse block with no let 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -3409,8 +3561,6 @@ exports[`parse block with no let 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -3465,6 +3615,7 @@ exports[`parse chars 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -3478,8 +3629,6 @@ exports[`parse chars 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -3516,251 +3665,11 @@ exports[`parse chars 1`] = `
 }
 `;
 
-exports[`parse cons operator is right-associative 1`] = `
-{
-  "declarations": [
-    {
-      "binding": {
-        "name": "_",
-        "range": {
-          "end": {
-            "character": 5,
-            "line": 0,
-          },
-          "start": {
-            "character": 4,
-            "line": 0,
-          },
-        },
-      },
-      "extern": false,
-      "inline": false,
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 21,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
-        },
-      },
-      "value": {
-        "args": [
-          {
-            "name": "a",
-            "namespace": undefined,
-            "range": {
-              "end": {
-                "character": 9,
-                "line": 0,
-              },
-              "start": {
-                "character": 8,
-                "line": 0,
-              },
-            },
-            "type": "identifier",
-          },
-          {
-            "args": [
-              {
-                "name": "b",
-                "namespace": undefined,
-                "range": {
-                  "end": {
-                    "character": 14,
-                    "line": 0,
-                  },
-                  "start": {
-                    "character": 13,
-                    "line": 0,
-                  },
-                },
-                "type": "identifier",
-              },
-              {
-                "name": "nil",
-                "namespace": undefined,
-                "range": {
-                  "end": {
-                    "character": 21,
-                    "line": 0,
-                  },
-                  "start": {
-                    "character": 18,
-                    "line": 0,
-                  },
-                },
-                "type": "identifier",
-              },
-            ],
-            "caller": {
-              "name": "Cons",
-              "namespace": "List",
-              "range": {
-                "end": {
-                  "character": 17,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 15,
-                  "line": 0,
-                },
-              },
-              "type": "identifier",
-            },
-            "range": {
-              "end": {
-                "character": 21,
-                "line": 0,
-              },
-              "start": {
-                "character": 13,
-                "line": 0,
-              },
-            },
-            "type": "application",
-          },
-        ],
-        "caller": {
-          "name": "Cons",
-          "namespace": "List",
-          "range": {
-            "end": {
-              "character": 12,
-              "line": 0,
-            },
-            "start": {
-              "character": 10,
-              "line": 0,
-            },
-          },
-          "type": "identifier",
-        },
-        "range": {
-          "end": {
-            "character": 21,
-            "line": 0,
-          },
-          "start": {
-            "character": 8,
-            "line": 0,
-          },
-        },
-        "type": "application",
-      },
-    },
-  ],
-  "imports": [],
-  "lineComments": [],
-  "typeDeclarations": [],
-}
-`;
-
-exports[`parse conslist sugar 1`] = `
-{
-  "declarations": [
-    {
-      "binding": {
-        "name": "_",
-        "range": {
-          "end": {
-            "character": 5,
-            "line": 0,
-          },
-          "start": {
-            "character": 4,
-            "line": 0,
-          },
-        },
-      },
-      "extern": false,
-      "inline": false,
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 16,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
-        },
-      },
-      "value": {
-        "args": [
-          {
-            "name": "hd",
-            "namespace": undefined,
-            "range": {
-              "end": {
-                "character": 10,
-                "line": 0,
-              },
-              "start": {
-                "character": 8,
-                "line": 0,
-              },
-            },
-            "type": "identifier",
-          },
-          {
-            "name": "tl",
-            "namespace": undefined,
-            "range": {
-              "end": {
-                "character": 16,
-                "line": 0,
-              },
-              "start": {
-                "character": 14,
-                "line": 0,
-              },
-            },
-            "type": "identifier",
-          },
-        ],
-        "caller": {
-          "name": "Cons",
-          "namespace": "List",
-          "range": {
-            "end": {
-              "character": 13,
-              "line": 0,
-            },
-            "start": {
-              "character": 11,
-              "line": 0,
-            },
-          },
-          "type": "identifier",
-        },
-        "range": {
-          "end": {
-            "character": 16,
-            "line": 0,
-          },
-          "start": {
-            "character": 8,
-            "line": 0,
-          },
-        },
-        "type": "application",
-      },
-    },
-  ],
-  "imports": [],
-  "lineComments": [],
-  "typeDeclarations": [],
-}
-`;
-
 exports[`parse empty list sugar 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -3774,8 +3683,6 @@ exports[`parse empty list sugar 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -3798,6 +3705,7 @@ exports[`parse empty list sugar 1`] = `
             "line": 0,
           },
         },
+        "tail": undefined,
         "type": "list-literal",
         "values": [],
       },
@@ -3813,6 +3721,7 @@ exports[`parse empty strings 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -3826,8 +3735,6 @@ exports[`parse empty strings 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -3868,6 +3775,7 @@ exports[`parse float 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -3881,8 +3789,6 @@ exports[`parse float 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -3923,6 +3829,7 @@ exports[`parse fn with 1 arg 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -3936,8 +3843,6 @@ exports[`parse fn with 1 arg 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -4021,6 +3926,7 @@ exports[`parse fn with 2 args 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -4034,8 +3940,6 @@ exports[`parse fn with 2 args 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -4133,6 +4037,7 @@ exports[`parse fn with let 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -4146,8 +4051,6 @@ exports[`parse fn with let 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -4261,6 +4164,7 @@ exports[`parse fn with no args 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -4274,8 +4178,6 @@ exports[`parse fn with no args 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -4344,6 +4246,7 @@ exports[`parse ident 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -4357,8 +4260,6 @@ exports[`parse ident 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -4397,6 +4298,7 @@ exports[`parse if expr 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -4410,8 +4312,6 @@ exports[`parse if expr 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -4525,6 +4425,7 @@ exports[`parse if expr with a let expr 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -4538,8 +4439,6 @@ exports[`parse if expr with a let expr 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -4696,6 +4595,7 @@ exports[`parse let block with one let 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -4709,8 +4609,6 @@ exports[`parse let block with one let 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -4810,6 +4708,7 @@ exports[`parse let block with two let stmts 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -4823,8 +4722,6 @@ exports[`parse let block with two let stmts 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -4968,6 +4865,7 @@ exports[`parse list sugar with many values 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -4981,8 +4879,6 @@ exports[`parse list sugar with many values 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -5005,6 +4901,7 @@ exports[`parse list sugar with many values 1`] = `
             "line": 0,
           },
         },
+        "tail": undefined,
         "type": "list-literal",
         "values": [
           {
@@ -5072,6 +4969,7 @@ exports[`parse nonempty strings 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5085,8 +4983,6 @@ exports[`parse nonempty strings 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -5127,6 +5023,7 @@ exports[`parse singleton list sugar 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5140,8 +5037,6 @@ exports[`parse singleton list sugar 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -5164,6 +5059,7 @@ exports[`parse singleton list sugar 1`] = `
             "line": 0,
           },
         },
+        "tail": undefined,
         "type": "list-literal",
         "values": [
           {
@@ -5197,6 +5093,7 @@ exports[`parse strings with escaped quotes 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5210,8 +5107,6 @@ exports[`parse strings with escaped quotes 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -5252,6 +5147,7 @@ exports[`parse strings with newlines 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5265,8 +5161,6 @@ exports[`parse strings with newlines 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -5307,6 +5201,7 @@ exports[`parse tuple sugar 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5320,8 +5215,6 @@ exports[`parse tuple sugar 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -5409,6 +5302,7 @@ exports[`parse unary ! expr 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5422,8 +5316,6 @@ exports[`parse unary ! expr 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -5491,6 +5383,7 @@ exports[`pattern matching > binding with identifier 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5504,8 +5397,6 @@ exports[`pattern matching > binding with identifier 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -5590,6 +5481,7 @@ exports[`pattern matching > empty match expression 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5603,8 +5495,6 @@ exports[`pattern matching > empty match expression 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -5657,6 +5547,7 @@ exports[`pattern matching > matching char literals 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5670,8 +5561,6 @@ exports[`pattern matching > matching char literals 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -5687,10 +5576,6 @@ exports[`pattern matching > matching char literals 1`] = `
         "clauses": [
           [
             {
-              "literal": {
-                "type": "char",
-                "value": "a",
-              },
               "range": {
                 "end": {
                   "character": 21,
@@ -5701,7 +5586,11 @@ exports[`pattern matching > matching char literals 1`] = `
                   "line": 0,
                 },
               },
-              "type": "lit",
+              "type": "constant",
+              "value": {
+                "type": "char",
+                "value": "a",
+              },
             },
             {
               "name": "res",
@@ -5759,6 +5648,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5772,12 +5662,10 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
-          "character": 35,
+          "character": 37,
           "line": 0,
         },
         "start": {
@@ -5794,11 +5682,11 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
                   "name": "hd",
                   "range": {
                     "end": {
-                      "character": 20,
+                      "character": 21,
                       "line": 0,
                     },
                     "start": {
-                      "character": 18,
+                      "character": 19,
                       "line": 0,
                     },
                   },
@@ -5808,11 +5696,11 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
                   "name": "tl",
                   "range": {
                     "end": {
-                      "character": 26,
+                      "character": 27,
                       "line": 0,
                     },
                     "start": {
-                      "character": 24,
+                      "character": 25,
                       "line": 0,
                     },
                   },
@@ -5823,7 +5711,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
               "namespace": "List",
               "range": {
                 "end": {
-                  "character": 26,
+                  "character": 28,
                   "line": 0,
                 },
                 "start": {
@@ -5838,11 +5726,11 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 33,
+                  "character": 35,
                   "line": 0,
                 },
                 "start": {
-                  "character": 30,
+                  "character": 32,
                   "line": 0,
                 },
               },
@@ -5867,7 +5755,7 @@ exports[`pattern matching > matching cons literal (syntax sugar) 1`] = `
         },
         "range": {
           "end": {
-            "character": 35,
+            "character": 37,
             "line": 0,
           },
           "start": {
@@ -5889,6 +5777,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -5902,12 +5791,10 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
-          "character": 42,
+          "character": 46,
           "line": 0,
         },
         "start": {
@@ -5921,61 +5808,61 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
             {
               "args": [
                 {
-                  "name": "hd",
-                  "range": {
-                    "end": {
-                      "character": 20,
-                      "line": 0,
-                    },
-                    "start": {
-                      "character": 18,
-                      "line": 0,
-                    },
-                  },
-                  "type": "identifier",
-                },
-                {
                   "args": [
                     {
-                      "name": "tl",
+                      "name": "hd",
                       "range": {
                         "end": {
-                          "character": 26,
+                          "character": 22,
                           "line": 0,
                         },
                         "start": {
-                          "character": 24,
+                          "character": 20,
                           "line": 0,
                         },
                       },
                       "type": "identifier",
                     },
                     {
-                      "args": [],
-                      "name": "Nil",
-                      "namespace": undefined,
+                      "name": "tl",
                       "range": {
                         "end": {
-                          "character": 33,
+                          "character": 28,
                           "line": 0,
                         },
                         "start": {
-                          "character": 30,
+                          "character": 26,
                           "line": 0,
                         },
                       },
-                      "type": "constructor",
+                      "type": "identifier",
                     },
                   ],
                   "name": "Cons",
                   "namespace": "List",
                   "range": {
                     "end": {
-                      "character": 33,
+                      "character": 29,
                       "line": 0,
                     },
                     "start": {
-                      "character": 24,
+                      "character": 19,
+                      "line": 0,
+                    },
+                  },
+                  "type": "constructor",
+                },
+                {
+                  "args": [],
+                  "name": "Nil",
+                  "namespace": undefined,
+                  "range": {
+                    "end": {
+                      "character": 36,
+                      "line": 0,
+                    },
+                    "start": {
+                      "character": 33,
                       "line": 0,
                     },
                   },
@@ -5986,7 +5873,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
               "namespace": "List",
               "range": {
                 "end": {
-                  "character": 33,
+                  "character": 37,
                   "line": 0,
                 },
                 "start": {
@@ -6001,11 +5888,11 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 40,
+                  "character": 44,
                   "line": 0,
                 },
                 "start": {
-                  "character": 37,
+                  "character": 41,
                   "line": 0,
                 },
               },
@@ -6030,7 +5917,7 @@ exports[`pattern matching > matching cons literal is right assoc 1`] = `
         },
         "range": {
           "end": {
-            "character": 42,
+            "character": 46,
             "line": 0,
           },
           "start": {
@@ -6052,6 +5939,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -6065,12 +5953,10 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
-          "character": 41,
+          "character": 43,
           "line": 0,
         },
         "start": {
@@ -6089,11 +5975,11 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                       "name": "hd",
                       "range": {
                         "end": {
-                          "character": 21,
+                          "character": 22,
                           "line": 0,
                         },
                         "start": {
-                          "character": 19,
+                          "character": 20,
                           "line": 0,
                         },
                       },
@@ -6105,11 +5991,11 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                       "namespace": undefined,
                       "range": {
                         "end": {
-                          "character": 28,
+                          "character": 29,
                           "line": 0,
                         },
                         "start": {
-                          "character": 25,
+                          "character": 26,
                           "line": 0,
                         },
                       },
@@ -6120,7 +6006,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                   "namespace": "List",
                   "range": {
                     "end": {
-                      "character": 28,
+                      "character": 30,
                       "line": 0,
                     },
                     "start": {
@@ -6134,11 +6020,11 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
                   "name": "y",
                   "range": {
                     "end": {
-                      "character": 31,
+                      "character": 33,
                       "line": 0,
                     },
                     "start": {
-                      "character": 30,
+                      "character": 32,
                       "line": 0,
                     },
                   },
@@ -6149,7 +6035,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
               "namespace": "Tuple",
               "range": {
                 "end": {
-                  "character": 32,
+                  "character": 34,
                   "line": 0,
                 },
                 "start": {
@@ -6164,11 +6050,11 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 39,
+                  "character": 41,
                   "line": 0,
                 },
                 "start": {
-                  "character": 36,
+                  "character": 38,
                   "line": 0,
                 },
               },
@@ -6193,7 +6079,7 @@ exports[`pattern matching > matching cons nested in tuple 1`] = `
         },
         "range": {
           "end": {
-            "character": 41,
+            "character": 43,
             "line": 0,
           },
           "start": {
@@ -6215,6 +6101,7 @@ exports[`pattern matching > matching constructor with no args 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -6228,8 +6115,6 @@ exports[`pattern matching > matching constructor with no args 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -6316,6 +6201,7 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -6329,8 +6215,6 @@ exports[`pattern matching > matching constructor with one arg 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -6432,6 +6316,7 @@ exports[`pattern matching > matching float literals 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -6445,8 +6330,6 @@ exports[`pattern matching > matching float literals 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -6462,10 +6345,6 @@ exports[`pattern matching > matching float literals 1`] = `
         "clauses": [
           [
             {
-              "literal": {
-                "type": "float",
-                "value": 1.1,
-              },
               "range": {
                 "end": {
                   "character": 21,
@@ -6476,7 +6355,11 @@ exports[`pattern matching > matching float literals 1`] = `
                   "line": 0,
                 },
               },
-              "type": "lit",
+              "type": "constant",
+              "value": {
+                "type": "float",
+                "value": 1.1,
+              },
             },
             {
               "name": "res",
@@ -6534,6 +6417,7 @@ exports[`pattern matching > matching int literals 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -6547,8 +6431,6 @@ exports[`pattern matching > matching int literals 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -6564,10 +6446,6 @@ exports[`pattern matching > matching int literals 1`] = `
         "clauses": [
           [
             {
-              "literal": {
-                "type": "int",
-                "value": 42,
-              },
               "range": {
                 "end": {
                   "character": 20,
@@ -6578,7 +6456,11 @@ exports[`pattern matching > matching int literals 1`] = `
                   "line": 0,
                 },
               },
-              "type": "lit",
+              "type": "constant",
+              "value": {
+                "type": "int",
+                "value": 42,
+              },
             },
             {
               "name": "res",
@@ -6636,6 +6518,7 @@ exports[`pattern matching > matching many clauses, with trailing comma 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -6649,8 +6532,6 @@ exports[`pattern matching > matching many clauses, with trailing comma 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -6766,6 +6647,7 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -6779,8 +6661,6 @@ exports[`pattern matching > matching many clauses, without trailing comma 1`] = 
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -6896,6 +6776,7 @@ exports[`pattern matching > matching pattern in fn param 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -6909,8 +6790,6 @@ exports[`pattern matching > matching pattern in fn param 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -7025,6 +6904,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -7038,12 +6918,10 @@ exports[`pattern matching > matching pattern in let 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
-          "character": 37,
+          "character": 39,
           "line": 0,
         },
         "start": {
@@ -7054,7 +6932,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
       "value": {
         "range": {
           "end": {
-            "character": 37,
+            "character": 39,
             "line": 0,
           },
           "start": {
@@ -7067,11 +6945,11 @@ exports[`pattern matching > matching pattern in let 1`] = `
           "namespace": undefined,
           "range": {
             "end": {
-              "character": 35,
+              "character": 37,
               "line": 0,
             },
             "start": {
-              "character": 32,
+              "character": 34,
               "line": 0,
             },
           },
@@ -7101,11 +6979,11 @@ exports[`pattern matching > matching pattern in let 1`] = `
                       "name": "b",
                       "range": {
                         "end": {
-                          "character": 20,
+                          "character": 21,
                           "line": 0,
                         },
                         "start": {
-                          "character": 19,
+                          "character": 20,
                           "line": 0,
                         },
                       },
@@ -7115,11 +6993,11 @@ exports[`pattern matching > matching pattern in let 1`] = `
                       "name": "c",
                       "range": {
                         "end": {
-                          "character": 25,
+                          "character": 26,
                           "line": 0,
                         },
                         "start": {
-                          "character": 24,
+                          "character": 25,
                           "line": 0,
                         },
                       },
@@ -7130,7 +7008,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
                   "namespace": "List",
                   "range": {
                     "end": {
-                      "character": 25,
+                      "character": 27,
                       "line": 0,
                     },
                     "start": {
@@ -7145,7 +7023,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 26,
+                  "character": 28,
                   "line": 0,
                 },
                 "start": {
@@ -7157,7 +7035,7 @@ exports[`pattern matching > matching pattern in let 1`] = `
             },
             "range": {
               "end": {
-                "character": 31,
+                "character": 33,
                 "line": 0,
               },
               "start": {
@@ -7171,11 +7049,11 @@ exports[`pattern matching > matching pattern in let 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 30,
+                  "character": 32,
                   "line": 0,
                 },
                 "start": {
-                  "character": 29,
+                  "character": 31,
                   "line": 0,
                 },
               },
@@ -7197,6 +7075,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -7210,12 +7089,10 @@ exports[`pattern matching > matching pattern in let# 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
-          "character": 43,
+          "character": 45,
           "line": 0,
         },
         "start": {
@@ -7226,7 +7103,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
       "value": {
         "range": {
           "end": {
-            "character": 43,
+            "character": 45,
             "line": 0,
           },
           "start": {
@@ -7239,11 +7116,11 @@ exports[`pattern matching > matching pattern in let# 1`] = `
           "namespace": undefined,
           "range": {
             "end": {
-              "character": 41,
+              "character": 43,
               "line": 0,
             },
             "start": {
-              "character": 38,
+              "character": 40,
               "line": 0,
             },
           },
@@ -7288,11 +7165,11 @@ exports[`pattern matching > matching pattern in let# 1`] = `
                       "name": "b",
                       "range": {
                         "end": {
-                          "character": 26,
+                          "character": 27,
                           "line": 0,
                         },
                         "start": {
-                          "character": 25,
+                          "character": 26,
                           "line": 0,
                         },
                       },
@@ -7302,11 +7179,11 @@ exports[`pattern matching > matching pattern in let# 1`] = `
                       "name": "c",
                       "range": {
                         "end": {
-                          "character": 31,
+                          "character": 32,
                           "line": 0,
                         },
                         "start": {
-                          "character": 30,
+                          "character": 31,
                           "line": 0,
                         },
                       },
@@ -7317,7 +7194,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
                   "namespace": "List",
                   "range": {
                     "end": {
-                      "character": 31,
+                      "character": 33,
                       "line": 0,
                     },
                     "start": {
@@ -7332,7 +7209,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 32,
+                  "character": 34,
                   "line": 0,
                 },
                 "start": {
@@ -7344,7 +7221,7 @@ exports[`pattern matching > matching pattern in let# 1`] = `
             },
             "range": {
               "end": {
-                "character": 37,
+                "character": 39,
                 "line": 0,
               },
               "start": {
@@ -7358,11 +7235,11 @@ exports[`pattern matching > matching pattern in let# 1`] = `
               "namespace": undefined,
               "range": {
                 "end": {
-                  "character": 36,
+                  "character": 38,
                   "line": 0,
                 },
                 "start": {
-                  "character": 35,
+                  "character": 37,
                   "line": 0,
                 },
               },
@@ -7384,6 +7261,7 @@ exports[`pattern matching > matching qualified constructors 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -7397,8 +7275,6 @@ exports[`pattern matching > matching qualified constructors 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -7516,6 +7392,7 @@ exports[`pattern matching > matching str literals 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -7529,8 +7406,6 @@ exports[`pattern matching > matching str literals 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -7546,10 +7421,6 @@ exports[`pattern matching > matching str literals 1`] = `
         "clauses": [
           [
             {
-              "literal": {
-                "type": "string",
-                "value": "abc",
-              },
               "range": {
                 "end": {
                   "character": 23,
@@ -7560,7 +7431,11 @@ exports[`pattern matching > matching str literals 1`] = `
                   "line": 0,
                 },
               },
-              "type": "lit",
+              "type": "constant",
+              "value": {
+                "type": "string",
+                "value": "abc",
+              },
             },
             {
               "name": "res",
@@ -7618,6 +7493,7 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -7631,8 +7507,6 @@ exports[`pattern matching > matching tuples literal (syntax sugar) 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -7748,6 +7622,7 @@ exports[`pipe syntax sugar 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -7761,8 +7636,6 @@ exports[`pipe syntax sugar 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -7874,6 +7747,7 @@ exports[`pipe syntax sugar should be chainable 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -7887,8 +7761,6 @@ exports[`pipe syntax sugar should be chainable 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -8011,6 +7883,7 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -8024,8 +7897,6 @@ exports[`pipe syntax sugar should handle qualified names 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -8137,6 +8008,7 @@ exports[`structs > construct fields with many fields 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -8150,8 +8022,6 @@ exports[`structs > construct fields with many fields 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -8288,6 +8158,7 @@ exports[`structs > construct fields with no fields 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -8301,8 +8172,6 @@ exports[`structs > construct fields with no fields 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -8365,7 +8234,7 @@ exports[`structs > doc comments 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 28,
+          "character": 23,
           "line": 2,
         },
         "start": {
@@ -8392,7 +8261,7 @@ exports[`structs > empty struct 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 22,
+          "character": 17,
           "line": 0,
         },
         "start": {
@@ -8418,11 +8287,11 @@ exports[`structs > field 1`] = `
           "name": "age",
           "range": {
             "end": {
-              "character": 29,
+              "character": 24,
               "line": 0,
             },
             "start": {
-              "character": 21,
+              "character": 16,
               "line": 0,
             },
           },
@@ -8431,11 +8300,11 @@ exports[`structs > field 1`] = `
             "name": "Int",
             "range": {
               "end": {
-                "character": 29,
+                "character": 24,
                 "line": 0,
               },
               "start": {
-                "character": 26,
+                "character": 21,
                 "line": 0,
               },
             },
@@ -8448,7 +8317,7 @@ exports[`structs > field 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 31,
+          "character": 26,
           "line": 0,
         },
         "start": {
@@ -8466,6 +8335,7 @@ exports[`structs > field access 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -8479,8 +8349,6 @@ exports[`structs > field access 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -8637,7 +8505,7 @@ exports[`structs > pub modifier 1`] = `
       "pub": true,
       "range": {
         "end": {
-          "character": 26,
+          "character": 21,
           "line": 0,
         },
         "start": {
@@ -8664,7 +8532,7 @@ exports[`structs > pub(..) modifier 1`] = `
       "pub": "..",
       "range": {
         "end": {
-          "character": 30,
+          "character": 25,
           "line": 0,
         },
         "start": {
@@ -8682,6 +8550,7 @@ exports[`structs > qualified field access 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -8695,8 +8564,6 @@ exports[`structs > qualified field access 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -8772,11 +8639,11 @@ exports[`structs > type params 1`] = `
           "name": "a",
           "range": {
             "end": {
-              "character": 13,
+              "character": 15,
               "line": 0,
             },
             "start": {
-              "character": 12,
+              "character": 14,
               "line": 0,
             },
           },
@@ -8785,11 +8652,11 @@ exports[`structs > type params 1`] = `
           "name": "b",
           "range": {
             "end": {
-              "character": 16,
+              "character": 18,
               "line": 0,
             },
             "start": {
-              "character": 15,
+              "character": 17,
               "line": 0,
             },
           },
@@ -8798,7 +8665,7 @@ exports[`structs > type params 1`] = `
       "pub": false,
       "range": {
         "end": {
-          "character": 28,
+          "character": 23,
           "line": 0,
         },
         "start": {
@@ -8816,6 +8683,7 @@ exports[`structs > update a struct 1`] = `
 {
   "declarations": [
     {
+      "attributes": [],
       "binding": {
         "name": "_",
         "range": {
@@ -8829,8 +8697,6 @@ exports[`structs > update a struct 1`] = `
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
@@ -8981,66 +8847,94 @@ exports[`traits > parses many traits in a polytype for the same tvar 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "range": {
+            "end": {
+              "character": 13,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@extern",
+        },
+        {
+          "polytype": {
+            "mono": {
+              "ident": "a",
+              "range": {
+                "end": {
+                  "character": 13,
+                  "line": 2,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 2,
+                },
+              },
+              "type": "var",
+            },
+            "range": {
+              "end": {
+                "character": 31,
+                "line": 2,
+              },
+              "start": {
+                "character": 12,
+                "line": 2,
+              },
+            },
+            "where": [
+              {
+                "traits": [
+                  "Ord",
+                  "Eq",
+                ],
+                "typeVar": "a",
+              },
+            ],
+          },
+          "range": {
+            "end": {
+              "character": 31,
+              "line": 2,
+            },
+            "start": {
+              "character": 6,
+              "line": 2,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 12,
-            "line": 0,
+            "character": 11,
+            "line": 3,
           },
           "start": {
-            "character": 11,
-            "line": 0,
+            "character": 10,
+            "line": 3,
           },
         },
       },
-      "extern": true,
       "pub": false,
       "range": {
         "end": {
-          "character": 33,
-          "line": 0,
+          "character": 11,
+          "line": 3,
         },
         "start": {
-          "character": 0,
-          "line": 0,
+          "character": 6,
+          "line": 1,
         },
       },
-      "typeHint": {
-        "mono": {
-          "ident": "a",
-          "range": {
-            "end": {
-              "character": 15,
-              "line": 0,
-            },
-            "start": {
-              "character": 14,
-              "line": 0,
-            },
-          },
-          "type": "var",
-        },
-        "range": {
-          "end": {
-            "character": 15,
-            "line": 0,
-          },
-          "start": {
-            "character": 14,
-            "line": 0,
-          },
-        },
-        "where": [
-          {
-            "traits": [
-              "Ord",
-              "Eq",
-            ],
-            "typeVar": "a",
-          },
-        ],
-      },
+      "value": undefined,
     },
   ],
   "imports": [],
@@ -9053,102 +8947,130 @@ exports[`traits > parses traits for many vars 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "range": {
+            "end": {
+              "character": 13,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@extern",
+        },
+        {
+          "polytype": {
+            "mono": {
+              "args": [
+                {
+                  "ident": "a",
+                  "range": {
+                    "end": {
+                      "character": 14,
+                      "line": 2,
+                    },
+                    "start": {
+                      "character": 13,
+                      "line": 2,
+                    },
+                  },
+                  "type": "var",
+                },
+                {
+                  "ident": "b",
+                  "range": {
+                    "end": {
+                      "character": 17,
+                      "line": 2,
+                    },
+                    "start": {
+                      "character": 16,
+                      "line": 2,
+                    },
+                  },
+                  "type": "var",
+                },
+              ],
+              "name": "Tuple2",
+              "namespace": "Tuple",
+              "range": {
+                "end": {
+                  "character": 18,
+                  "line": 2,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 2,
+                },
+              },
+              "type": "named",
+            },
+            "range": {
+              "end": {
+                "character": 40,
+                "line": 2,
+              },
+              "start": {
+                "character": 12,
+                "line": 2,
+              },
+            },
+            "where": [
+              {
+                "traits": [
+                  "Ord",
+                ],
+                "typeVar": "a",
+              },
+              {
+                "traits": [
+                  "Show",
+                ],
+                "typeVar": "b",
+              },
+            ],
+          },
+          "range": {
+            "end": {
+              "character": 40,
+              "line": 2,
+            },
+            "start": {
+              "character": 6,
+              "line": 2,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 12,
-            "line": 0,
+            "character": 11,
+            "line": 3,
           },
           "start": {
-            "character": 11,
-            "line": 0,
+            "character": 10,
+            "line": 3,
           },
         },
       },
-      "extern": true,
       "pub": false,
       "range": {
         "end": {
-          "character": 42,
-          "line": 0,
+          "character": 11,
+          "line": 3,
         },
         "start": {
-          "character": 0,
-          "line": 0,
+          "character": 6,
+          "line": 1,
         },
       },
-      "typeHint": {
-        "mono": {
-          "args": [
-            {
-              "ident": "a",
-              "range": {
-                "end": {
-                  "character": 16,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 15,
-                  "line": 0,
-                },
-              },
-              "type": "var",
-            },
-            {
-              "ident": "b",
-              "range": {
-                "end": {
-                  "character": 19,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 18,
-                  "line": 0,
-                },
-              },
-              "type": "var",
-            },
-          ],
-          "name": "Tuple2",
-          "namespace": "Tuple",
-          "range": {
-            "end": {
-              "character": 20,
-              "line": 0,
-            },
-            "start": {
-              "character": 14,
-              "line": 0,
-            },
-          },
-          "type": "named",
-        },
-        "range": {
-          "end": {
-            "character": 20,
-            "line": 0,
-          },
-          "start": {
-            "character": 14,
-            "line": 0,
-          },
-        },
-        "where": [
-          {
-            "traits": [
-              "Ord",
-            ],
-            "typeVar": "a",
-          },
-          {
-            "traits": [
-              "Show",
-            ],
-            "typeVar": "b",
-          },
-        ],
-      },
+      "value": undefined,
     },
   ],
   "imports": [],
@@ -9161,65 +9083,93 @@ exports[`traits > parses traits in a polytype 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "range": {
+            "end": {
+              "character": 13,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@extern",
+        },
+        {
+          "polytype": {
+            "mono": {
+              "ident": "a",
+              "range": {
+                "end": {
+                  "character": 13,
+                  "line": 2,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 2,
+                },
+              },
+              "type": "var",
+            },
+            "range": {
+              "end": {
+                "character": 26,
+                "line": 2,
+              },
+              "start": {
+                "character": 12,
+                "line": 2,
+              },
+            },
+            "where": [
+              {
+                "traits": [
+                  "Ord",
+                ],
+                "typeVar": "a",
+              },
+            ],
+          },
+          "range": {
+            "end": {
+              "character": 26,
+              "line": 2,
+            },
+            "start": {
+              "character": 6,
+              "line": 2,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 12,
-            "line": 0,
+            "character": 11,
+            "line": 3,
           },
           "start": {
-            "character": 11,
-            "line": 0,
+            "character": 10,
+            "line": 3,
           },
         },
       },
-      "extern": true,
       "pub": false,
       "range": {
         "end": {
-          "character": 28,
-          "line": 0,
+          "character": 11,
+          "line": 3,
         },
         "start": {
-          "character": 0,
-          "line": 0,
+          "character": 6,
+          "line": 1,
         },
       },
-      "typeHint": {
-        "mono": {
-          "ident": "a",
-          "range": {
-            "end": {
-              "character": 15,
-              "line": 0,
-            },
-            "start": {
-              "character": 14,
-              "line": 0,
-            },
-          },
-          "type": "var",
-        },
-        "range": {
-          "end": {
-            "character": 15,
-            "line": 0,
-          },
-          "start": {
-            "character": 14,
-            "line": 0,
-          },
-        },
-        "where": [
-          {
-            "traits": [
-              "Ord",
-            ],
-            "typeVar": "a",
-          },
-        ],
-      },
+      "value": undefined,
     },
   ],
   "imports": [],
@@ -9417,65 +9367,67 @@ exports[`type declarations > type with a variant with complex args 1`] = `
         {
           "args": [
             {
-              "args": [
-                {
-                  "ident": "a",
-                  "range": {
-                    "end": {
-                      "character": 19,
-                      "line": 2,
-                    },
-                    "start": {
-                      "character": 18,
-                      "line": 2,
-                    },
-                  },
-                  "type": "var",
-                },
-                {
-                  "args": [
-                    {
-                      "args": [],
-                      "name": "Int",
-                      "range": {
-                        "end": {
-                          "character": 31,
-                          "line": 2,
-                        },
-                        "start": {
-                          "character": 28,
-                          "line": 2,
-                        },
+              "ast": {
+                "args": [
+                  {
+                    "ident": "a",
+                    "range": {
+                      "end": {
+                        "character": 19,
+                        "line": 2,
                       },
-                      "type": "named",
+                      "start": {
+                        "character": 18,
+                        "line": 2,
+                      },
                     },
-                  ],
-                  "name": "Nested",
-                  "range": {
-                    "end": {
-                      "character": 32,
-                      "line": 2,
-                    },
-                    "start": {
-                      "character": 21,
-                      "line": 2,
-                    },
+                    "type": "var",
                   },
-                  "type": "named",
+                  {
+                    "args": [
+                      {
+                        "args": [],
+                        "name": "Int",
+                        "range": {
+                          "end": {
+                            "character": 31,
+                            "line": 2,
+                          },
+                          "start": {
+                            "character": 28,
+                            "line": 2,
+                          },
+                        },
+                        "type": "named",
+                      },
+                    ],
+                    "name": "Nested",
+                    "range": {
+                      "end": {
+                        "character": 32,
+                        "line": 2,
+                      },
+                      "start": {
+                        "character": 21,
+                        "line": 2,
+                      },
+                    },
+                    "type": "named",
+                  },
+                ],
+                "name": "Example",
+                "range": {
+                  "end": {
+                    "character": 33,
+                    "line": 2,
+                  },
+                  "start": {
+                    "character": 10,
+                    "line": 2,
+                  },
                 },
-              ],
-              "name": "Example",
-              "range": {
-                "end": {
-                  "character": 33,
-                  "line": 2,
-                },
-                "start": {
-                  "character": 10,
-                  "line": 2,
-                },
+                "type": "named",
               },
-              "type": "named",
             },
           ],
           "name": "C",
@@ -9521,34 +9473,38 @@ exports[`type declarations > type with a variant with many args 1`] = `
         {
           "args": [
             {
-              "args": [],
-              "name": "A",
-              "range": {
-                "end": {
-                  "character": 12,
-                  "line": 0,
+              "ast": {
+                "args": [],
+                "name": "A",
+                "range": {
+                  "end": {
+                    "character": 12,
+                    "line": 0,
+                  },
+                  "start": {
+                    "character": 11,
+                    "line": 0,
+                  },
                 },
-                "start": {
-                  "character": 11,
-                  "line": 0,
-                },
+                "type": "named",
               },
-              "type": "named",
             },
             {
-              "args": [],
-              "name": "B",
-              "range": {
-                "end": {
-                  "character": 15,
-                  "line": 0,
+              "ast": {
+                "args": [],
+                "name": "B",
+                "range": {
+                  "end": {
+                    "character": 15,
+                    "line": 0,
+                  },
+                  "start": {
+                    "character": 14,
+                    "line": 0,
+                  },
                 },
-                "start": {
-                  "character": 14,
-                  "line": 0,
-                },
+                "type": "named",
               },
-              "type": "named",
             },
           ],
           "name": "C",
@@ -9636,19 +9592,21 @@ exports[`type declarations > type with a variant with one arg 1`] = `
         {
           "args": [
             {
-              "args": [],
-              "name": "Arg",
-              "range": {
-                "end": {
-                  "character": 14,
-                  "line": 0,
+              "ast": {
+                "args": [],
+                "name": "Arg",
+                "range": {
+                  "end": {
+                    "character": 14,
+                    "line": 0,
+                  },
+                  "start": {
+                    "character": 11,
+                    "line": 0,
+                  },
                 },
-                "start": {
-                  "character": 11,
-                  "line": 0,
-                },
+                "type": "named",
               },
-              "type": "named",
             },
           ],
           "name": "C",
@@ -9756,114 +9714,127 @@ exports[`type hints > parses Fn type with args 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "polytype": {
+            "mono": {
+              "args": [
+                {
+                  "args": [],
+                  "name": "X",
+                  "range": {
+                    "end": {
+                      "character": 14,
+                      "line": 1,
+                    },
+                    "start": {
+                      "character": 13,
+                      "line": 1,
+                    },
+                  },
+                  "type": "named",
+                },
+                {
+                  "args": [],
+                  "name": "Y",
+                  "range": {
+                    "end": {
+                      "character": 17,
+                      "line": 1,
+                    },
+                    "start": {
+                      "character": 16,
+                      "line": 1,
+                    },
+                  },
+                  "type": "named",
+                },
+              ],
+              "range": {
+                "end": {
+                  "character": 23,
+                  "line": 1,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 1,
+                },
+              },
+              "return": {
+                "args": [],
+                "name": "Z",
+                "range": {
+                  "end": {
+                    "character": 23,
+                    "line": 1,
+                  },
+                  "start": {
+                    "character": 22,
+                    "line": 1,
+                  },
+                },
+                "type": "named",
+              },
+              "type": "fn",
+            },
+            "range": {
+              "end": {
+                "character": 23,
+                "line": 1,
+              },
+              "start": {
+                "character": 12,
+                "line": 1,
+              },
+            },
+            "where": [],
+          },
+          "range": {
+            "end": {
+              "character": 23,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 5,
-            "line": 0,
+            "character": 11,
+            "line": 2,
           },
           "start": {
-            "character": 4,
-            "line": 0,
+            "character": 10,
+            "line": 2,
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
-          "character": 25,
-          "line": 0,
+          "character": 15,
+          "line": 2,
         },
         "start": {
-          "character": 0,
-          "line": 0,
+          "character": 6,
+          "line": 1,
         },
-      },
-      "typeHint": {
-        "mono": {
-          "args": [
-            {
-              "args": [],
-              "name": "X",
-              "range": {
-                "end": {
-                  "character": 12,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 11,
-                  "line": 0,
-                },
-              },
-              "type": "named",
-            },
-            {
-              "args": [],
-              "name": "Y",
-              "range": {
-                "end": {
-                  "character": 15,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 14,
-                  "line": 0,
-                },
-              },
-              "type": "named",
-            },
-          ],
-          "range": {
-            "end": {
-              "character": 21,
-              "line": 0,
-            },
-            "start": {
-              "character": 8,
-              "line": 0,
-            },
-          },
-          "return": {
-            "args": [],
-            "name": "Z",
-            "range": {
-              "end": {
-                "character": 21,
-                "line": 0,
-              },
-              "start": {
-                "character": 20,
-                "line": 0,
-              },
-            },
-            "type": "named",
-          },
-          "type": "fn",
-        },
-        "range": {
-          "end": {
-            "character": 21,
-            "line": 0,
-          },
-          "start": {
-            "character": 8,
-            "line": 0,
-          },
-        },
-        "where": [],
       },
       "value": {
         "range": {
           "end": {
-            "character": 25,
-            "line": 0,
+            "character": 15,
+            "line": 2,
           },
           "start": {
-            "character": 24,
-            "line": 0,
+            "character": 14,
+            "line": 2,
           },
         },
         "type": "constant",
@@ -9884,83 +9855,96 @@ exports[`type hints > parses Fn type with no args 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "polytype": {
+            "mono": {
+              "args": [],
+              "range": {
+                "end": {
+                  "character": 21,
+                  "line": 1,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 1,
+                },
+              },
+              "return": {
+                "args": [],
+                "name": "Int",
+                "range": {
+                  "end": {
+                    "character": 21,
+                    "line": 1,
+                  },
+                  "start": {
+                    "character": 18,
+                    "line": 1,
+                  },
+                },
+                "type": "named",
+              },
+              "type": "fn",
+            },
+            "range": {
+              "end": {
+                "character": 21,
+                "line": 1,
+              },
+              "start": {
+                "character": 12,
+                "line": 1,
+              },
+            },
+            "where": [],
+          },
+          "range": {
+            "end": {
+              "character": 21,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 5,
-            "line": 0,
+            "character": 11,
+            "line": 2,
           },
           "start": {
-            "character": 4,
-            "line": 0,
+            "character": 10,
+            "line": 2,
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
-          "character": 23,
-          "line": 0,
+          "character": 16,
+          "line": 2,
         },
         "start": {
-          "character": 0,
-          "line": 0,
+          "character": 6,
+          "line": 1,
         },
-      },
-      "typeHint": {
-        "mono": {
-          "args": [],
-          "range": {
-            "end": {
-              "character": 19,
-              "line": 0,
-            },
-            "start": {
-              "character": 8,
-              "line": 0,
-            },
-          },
-          "return": {
-            "args": [],
-            "name": "Int",
-            "range": {
-              "end": {
-                "character": 19,
-                "line": 0,
-              },
-              "start": {
-                "character": 16,
-                "line": 0,
-              },
-            },
-            "type": "named",
-          },
-          "type": "fn",
-        },
-        "range": {
-          "end": {
-            "character": 19,
-            "line": 0,
-          },
-          "start": {
-            "character": 8,
-            "line": 0,
-          },
-        },
-        "where": [],
       },
       "value": {
         "range": {
           "end": {
-            "character": 23,
-            "line": 0,
+            "character": 16,
+            "line": 2,
           },
           "start": {
-            "character": 22,
-            "line": 0,
+            "character": 15,
+            "line": 2,
           },
         },
         "type": "constant",
@@ -9981,142 +9965,87 @@ exports[`type hints > parses a concrete type with no args as a type hint (extern
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "range": {
+            "end": {
+              "character": 13,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@extern",
+        },
+        {
+          "polytype": {
+            "mono": {
+              "args": [],
+              "name": "Int",
+              "range": {
+                "end": {
+                  "character": 15,
+                  "line": 2,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 2,
+                },
+              },
+              "type": "named",
+            },
+            "range": {
+              "end": {
+                "character": 15,
+                "line": 2,
+              },
+              "start": {
+                "character": 12,
+                "line": 2,
+              },
+            },
+            "where": [],
+          },
+          "range": {
+            "end": {
+              "character": 15,
+              "line": 2,
+            },
+            "start": {
+              "character": 6,
+              "line": 2,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 12,
-            "line": 0,
-          },
-          "start": {
             "character": 11,
-            "line": 0,
-          },
-        },
-      },
-      "extern": true,
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 17,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
-        },
-      },
-      "typeHint": {
-        "mono": {
-          "args": [],
-          "name": "Int",
-          "range": {
-            "end": {
-              "character": 17,
-              "line": 0,
-            },
-            "start": {
-              "character": 14,
-              "line": 0,
-            },
-          },
-          "type": "named",
-        },
-        "range": {
-          "end": {
-            "character": 17,
-            "line": 0,
+            "line": 3,
           },
           "start": {
-            "character": 14,
-            "line": 0,
-          },
-        },
-        "where": [],
-      },
-    },
-  ],
-  "imports": [],
-  "lineComments": [],
-  "typeDeclarations": [],
-}
-`;
-
-exports[`type hints > parses a concrete type with no args as a type hint (no whitespace after binding) 1`] = `
-{
-  "declarations": [
-    {
-      "binding": {
-        "name": "x",
-        "range": {
-          "end": {
-            "character": 5,
-            "line": 0,
-          },
-          "start": {
-            "character": 4,
-            "line": 0,
-          },
-        },
-      },
-      "extern": false,
-      "inline": false,
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 14,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
-        },
-      },
-      "typeHint": {
-        "mono": {
-          "args": [],
-          "name": "Int",
-          "range": {
-            "end": {
-              "character": 10,
-              "line": 0,
-            },
-            "start": {
-              "character": 7,
-              "line": 0,
-            },
-          },
-          "type": "named",
-        },
-        "range": {
-          "end": {
             "character": 10,
-            "line": 0,
+            "line": 3,
           },
-          "start": {
-            "character": 7,
-            "line": 0,
-          },
-        },
-        "where": [],
-      },
-      "value": {
-        "range": {
-          "end": {
-            "character": 14,
-            "line": 0,
-          },
-          "start": {
-            "character": 13,
-            "line": 0,
-          },
-        },
-        "type": "constant",
-        "value": {
-          "type": "int",
-          "value": 0,
         },
       },
+      "pub": false,
+      "range": {
+        "end": {
+          "character": 11,
+          "line": 3,
+        },
+        "start": {
+          "character": 6,
+          "line": 1,
+        },
+      },
+      "value": undefined,
     },
   ],
   "imports": [],
@@ -10129,69 +10058,82 @@ exports[`type hints > parses a concrete type with no args as a type hint 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "polytype": {
+            "mono": {
+              "args": [],
+              "name": "Int",
+              "range": {
+                "end": {
+                  "character": 15,
+                  "line": 1,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 1,
+                },
+              },
+              "type": "named",
+            },
+            "range": {
+              "end": {
+                "character": 15,
+                "line": 1,
+              },
+              "start": {
+                "character": 12,
+                "line": 1,
+              },
+            },
+            "where": [],
+          },
+          "range": {
+            "end": {
+              "character": 15,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 5,
-            "line": 0,
+            "character": 11,
+            "line": 2,
           },
           "start": {
-            "character": 4,
-            "line": 0,
+            "character": 10,
+            "line": 2,
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
           "character": 15,
-          "line": 0,
+          "line": 2,
         },
         "start": {
-          "character": 0,
-          "line": 0,
+          "character": 6,
+          "line": 1,
         },
-      },
-      "typeHint": {
-        "mono": {
-          "args": [],
-          "name": "Int",
-          "range": {
-            "end": {
-              "character": 11,
-              "line": 0,
-            },
-            "start": {
-              "character": 8,
-              "line": 0,
-            },
-          },
-          "type": "named",
-        },
-        "range": {
-          "end": {
-            "character": 11,
-            "line": 0,
-          },
-          "start": {
-            "character": 8,
-            "line": 0,
-          },
-        },
-        "where": [],
       },
       "value": {
         "range": {
           "end": {
             "character": 15,
-            "line": 0,
+            "line": 2,
           },
           "start": {
             "character": 14,
-            "line": 0,
+            "line": 2,
           },
         },
         "type": "constant",
@@ -10212,85 +10154,98 @@ exports[`type hints > parses concrete type with 1 arg 1`] = `
 {
   "declarations": [
     {
-      "binding": {
-        "name": "x",
-        "range": {
-          "end": {
-            "character": 5,
-            "line": 0,
-          },
-          "start": {
-            "character": 4,
-            "line": 0,
-          },
-        },
-      },
-      "extern": false,
-      "inline": false,
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 23,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
-        },
-      },
-      "typeHint": {
-        "mono": {
-          "args": [
-            {
-              "args": [],
-              "name": "Int",
+      "attributes": [
+        {
+          "polytype": {
+            "mono": {
+              "args": [
+                {
+                  "args": [],
+                  "name": "Int",
+                  "range": {
+                    "end": {
+                      "character": 20,
+                      "line": 1,
+                    },
+                    "start": {
+                      "character": 17,
+                      "line": 1,
+                    },
+                  },
+                  "type": "named",
+                },
+              ],
+              "name": "Option",
               "range": {
                 "end": {
-                  "character": 18,
-                  "line": 0,
+                  "character": 21,
+                  "line": 1,
                 },
                 "start": {
-                  "character": 15,
-                  "line": 0,
+                  "character": 10,
+                  "line": 1,
                 },
               },
               "type": "named",
             },
-          ],
-          "name": "Option",
+            "range": {
+              "end": {
+                "character": 21,
+                "line": 1,
+              },
+              "start": {
+                "character": 10,
+                "line": 1,
+              },
+            },
+            "where": [],
+          },
           "range": {
             "end": {
-              "character": 19,
-              "line": 0,
+              "character": 21,
+              "line": 1,
             },
             "start": {
-              "character": 8,
-              "line": 0,
+              "character": 4,
+              "line": 1,
             },
           },
-          "type": "named",
+          "type": "@type",
         },
+      ],
+      "binding": {
+        "name": "x",
         "range": {
           "end": {
-            "character": 19,
-            "line": 0,
+            "character": 9,
+            "line": 2,
           },
           "start": {
             "character": 8,
-            "line": 0,
+            "line": 2,
           },
         },
-        "where": [],
+      },
+      "pub": false,
+      "range": {
+        "end": {
+          "character": 13,
+          "line": 2,
+        },
+        "start": {
+          "character": 4,
+          "line": 1,
+        },
       },
       "value": {
         "range": {
           "end": {
-            "character": 23,
-            "line": 0,
+            "character": 13,
+            "line": 2,
           },
           "start": {
-            "character": 22,
-            "line": 0,
+            "character": 12,
+            "line": 2,
           },
         },
         "type": "constant",
@@ -10311,100 +10266,113 @@ exports[`type hints > parses concrete type with 2 args 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "polytype": {
+            "mono": {
+              "args": [
+                {
+                  "args": [],
+                  "name": "Int",
+                  "range": {
+                    "end": {
+                      "character": 22,
+                      "line": 1,
+                    },
+                    "start": {
+                      "character": 19,
+                      "line": 1,
+                    },
+                  },
+                  "type": "named",
+                },
+                {
+                  "args": [],
+                  "name": "Bool",
+                  "range": {
+                    "end": {
+                      "character": 28,
+                      "line": 1,
+                    },
+                    "start": {
+                      "character": 24,
+                      "line": 1,
+                    },
+                  },
+                  "type": "named",
+                },
+              ],
+              "name": "Result",
+              "range": {
+                "end": {
+                  "character": 29,
+                  "line": 1,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 1,
+                },
+              },
+              "type": "named",
+            },
+            "range": {
+              "end": {
+                "character": 29,
+                "line": 1,
+              },
+              "start": {
+                "character": 12,
+                "line": 1,
+              },
+            },
+            "where": [],
+          },
+          "range": {
+            "end": {
+              "character": 29,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 5,
-            "line": 0,
+            "character": 11,
+            "line": 2,
           },
           "start": {
-            "character": 4,
-            "line": 0,
+            "character": 10,
+            "line": 2,
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
-          "character": 29,
-          "line": 0,
+          "character": 16,
+          "line": 2,
         },
         "start": {
-          "character": 0,
-          "line": 0,
+          "character": 6,
+          "line": 1,
         },
-      },
-      "typeHint": {
-        "mono": {
-          "args": [
-            {
-              "args": [],
-              "name": "Int",
-              "range": {
-                "end": {
-                  "character": 18,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 15,
-                  "line": 0,
-                },
-              },
-              "type": "named",
-            },
-            {
-              "args": [],
-              "name": "Bool",
-              "range": {
-                "end": {
-                  "character": 24,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 20,
-                  "line": 0,
-                },
-              },
-              "type": "named",
-            },
-          ],
-          "name": "Result",
-          "range": {
-            "end": {
-              "character": 25,
-              "line": 0,
-            },
-            "start": {
-              "character": 8,
-              "line": 0,
-            },
-          },
-          "type": "named",
-        },
-        "range": {
-          "end": {
-            "character": 25,
-            "line": 0,
-          },
-          "start": {
-            "character": 8,
-            "line": 0,
-          },
-        },
-        "where": [],
       },
       "value": {
         "range": {
           "end": {
-            "character": 29,
-            "line": 0,
+            "character": 16,
+            "line": 2,
           },
           "start": {
-            "character": 28,
-            "line": 0,
+            "character": 15,
+            "line": 2,
           },
         },
         "type": "constant",
@@ -10425,117 +10393,130 @@ exports[`type hints > parses tuple type syntax sugar 1`] = `
 {
   "declarations": [
     {
-      "binding": {
-        "name": "x",
-        "range": {
-          "end": {
-            "character": 5,
-            "line": 0,
-          },
-          "start": {
-            "character": 4,
-            "line": 0,
-          },
-        },
-      },
-      "extern": false,
-      "inline": false,
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 29,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
-        },
-      },
-      "typeHint": {
-        "mono": {
-          "args": [
-            {
-              "args": [],
-              "name": "Int",
-              "range": {
-                "end": {
-                  "character": 12,
-                  "line": 0,
-                },
-                "start": {
-                  "character": 9,
-                  "line": 0,
-                },
-              },
-              "type": "named",
-            },
-            {
+      "attributes": [
+        {
+          "polytype": {
+            "mono": {
               "args": [
                 {
                   "args": [],
                   "name": "Int",
                   "range": {
                     "end": {
-                      "character": 23,
-                      "line": 0,
+                      "character": 15,
+                      "line": 1,
                     },
                     "start": {
-                      "character": 20,
-                      "line": 0,
+                      "character": 12,
+                      "line": 1,
+                    },
+                  },
+                  "type": "named",
+                },
+                {
+                  "args": [
+                    {
+                      "args": [],
+                      "name": "Int",
+                      "range": {
+                        "end": {
+                          "character": 26,
+                          "line": 1,
+                        },
+                        "start": {
+                          "character": 23,
+                          "line": 1,
+                        },
+                      },
+                      "type": "named",
+                    },
+                  ],
+                  "name": "Maybe",
+                  "range": {
+                    "end": {
+                      "character": 27,
+                      "line": 1,
+                    },
+                    "start": {
+                      "character": 17,
+                      "line": 1,
                     },
                   },
                   "type": "named",
                 },
               ],
-              "name": "Maybe",
+              "name": "Tuple2",
+              "namespace": "Tuple",
               "range": {
                 "end": {
-                  "character": 24,
-                  "line": 0,
+                  "character": 28,
+                  "line": 1,
                 },
                 "start": {
-                  "character": 14,
-                  "line": 0,
+                  "character": 11,
+                  "line": 1,
                 },
               },
               "type": "named",
             },
-          ],
-          "name": "Tuple2",
-          "namespace": "Tuple",
+            "range": {
+              "end": {
+                "character": 28,
+                "line": 1,
+              },
+              "start": {
+                "character": 11,
+                "line": 1,
+              },
+            },
+            "where": [],
+          },
           "range": {
             "end": {
-              "character": 25,
-              "line": 0,
+              "character": 28,
+              "line": 1,
             },
             "start": {
-              "character": 8,
-              "line": 0,
+              "character": 6,
+              "line": 1,
             },
           },
-          "type": "named",
+          "type": "@type",
         },
+      ],
+      "binding": {
+        "name": "x",
         "range": {
           "end": {
-            "character": 25,
-            "line": 0,
+            "character": 11,
+            "line": 2,
           },
           "start": {
-            "character": 8,
-            "line": 0,
+            "character": 10,
+            "line": 2,
           },
         },
-        "where": [],
+      },
+      "pub": false,
+      "range": {
+        "end": {
+          "character": 15,
+          "line": 2,
+        },
+        "start": {
+          "character": 6,
+          "line": 1,
+        },
       },
       "value": {
         "range": {
           "end": {
-            "character": 29,
-            "line": 0,
+            "character": 15,
+            "line": 2,
           },
           "start": {
-            "character": 28,
-            "line": 0,
+            "character": 14,
+            "line": 2,
           },
         },
         "type": "constant",
@@ -10556,68 +10537,81 @@ exports[`type hints > parses type vars hints 1`] = `
 {
   "declarations": [
     {
+      "attributes": [
+        {
+          "polytype": {
+            "mono": {
+              "ident": "a",
+              "range": {
+                "end": {
+                  "character": 13,
+                  "line": 1,
+                },
+                "start": {
+                  "character": 12,
+                  "line": 1,
+                },
+              },
+              "type": "var",
+            },
+            "range": {
+              "end": {
+                "character": 13,
+                "line": 1,
+              },
+              "start": {
+                "character": 12,
+                "line": 1,
+              },
+            },
+            "where": [],
+          },
+          "range": {
+            "end": {
+              "character": 13,
+              "line": 1,
+            },
+            "start": {
+              "character": 6,
+              "line": 1,
+            },
+          },
+          "type": "@type",
+        },
+      ],
       "binding": {
         "name": "x",
         "range": {
           "end": {
-            "character": 5,
-            "line": 0,
+            "character": 11,
+            "line": 2,
           },
           "start": {
-            "character": 4,
-            "line": 0,
+            "character": 10,
+            "line": 2,
           },
         },
       },
-      "extern": false,
-      "inline": false,
       "pub": false,
       "range": {
         "end": {
-          "character": 13,
-          "line": 0,
+          "character": 15,
+          "line": 2,
         },
         "start": {
-          "character": 0,
-          "line": 0,
+          "character": 6,
+          "line": 1,
         },
-      },
-      "typeHint": {
-        "mono": {
-          "ident": "a",
-          "range": {
-            "end": {
-              "character": 9,
-              "line": 0,
-            },
-            "start": {
-              "character": 8,
-              "line": 0,
-            },
-          },
-          "type": "var",
-        },
-        "range": {
-          "end": {
-            "character": 9,
-            "line": 0,
-          },
-          "start": {
-            "character": 8,
-            "line": 0,
-          },
-        },
-        "where": [],
       },
       "value": {
         "range": {
           "end": {
-            "character": 13,
-            "line": 0,
+            "character": 15,
+            "line": 2,
           },
           "start": {
-            "character": 12,
-            "line": 0,
+            "character": 14,
+            "line": 2,
           },
         },
         "type": "constant",
@@ -10638,59 +10632,49 @@ exports[`type hints > parses underscore type 1`] = `
 {
   "declarations": [
     {
-      "binding": {
-        "name": "x",
-        "range": {
-          "end": {
-            "character": 5,
-            "line": 0,
+      "attributes": [
+        {
+          "polytype": {
+            "mono": {
+              "range": {
+                "end": {
+                  "character": 7,
+                  "line": 0,
+                },
+                "start": {
+                  "character": 6,
+                  "line": 0,
+                },
+              },
+              "type": "any",
+            },
+            "range": {
+              "end": {
+                "character": 7,
+                "line": 0,
+              },
+              "start": {
+                "character": 6,
+                "line": 0,
+              },
+            },
+            "where": [],
           },
-          "start": {
-            "character": 4,
-            "line": 0,
-          },
-        },
-      },
-      "extern": false,
-      "inline": false,
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 13,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
-        },
-      },
-      "typeHint": {
-        "mono": {
           "range": {
             "end": {
-              "character": 9,
+              "character": 7,
               "line": 0,
             },
             "start": {
-              "character": 8,
+              "character": 0,
               "line": 0,
             },
           },
-          "type": "any",
+          "type": "@type",
         },
-        "range": {
-          "end": {
-            "character": 9,
-            "line": 0,
-          },
-          "start": {
-            "character": 8,
-            "line": 0,
-          },
-        },
-        "where": [],
-      },
-      "value": {
+      ],
+      "binding": {
+        "name": "x",
         "range": {
           "end": {
             "character": 13,
@@ -10698,6 +10682,29 @@ exports[`type hints > parses underscore type 1`] = `
           },
           "start": {
             "character": 12,
+            "line": 0,
+          },
+        },
+      },
+      "pub": false,
+      "range": {
+        "end": {
+          "character": 17,
+          "line": 0,
+        },
+        "start": {
+          "character": 0,
+          "line": 0,
+        },
+      },
+      "value": {
+        "range": {
+          "end": {
+            "character": 17,
+            "line": 0,
+          },
+          "start": {
+            "character": 16,
             "line": 0,
           },
         },

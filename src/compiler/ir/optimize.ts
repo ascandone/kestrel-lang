@@ -38,6 +38,67 @@ export const betaReduction: Rule = (expr) => {
 };
 
 /**
+ * Evaluate a pattern when the constructor is called inline. For example:
+ * ```kestrel
+ * match Ok(1, 2) {
+ *   Ok(a, b) => a + b,
+ *   Err(e) => e,
+ * }
+ * ```
+ *
+ * would become:
+ * ```kestrel
+ * {
+ *   let a = 1;
+ *   let b = 2;
+ *   a + b
+ * }
+ * ```
+ */
+export const foldMatch: Rule = (expr) => {
+  if (
+    expr.type !== "match" ||
+    expr.expr.type !== "application" ||
+    expr.expr.caller.type !== "identifier" ||
+    expr.expr.caller.ident.type !== "constructor"
+  ) {
+    return expr;
+  }
+
+  for (const [pat, ret] of expr.clauses) {
+    if (
+      pat.type !== "constructor" ||
+      pat.typeName.name !== expr.expr.caller.ident.name
+    ) {
+      continue;
+    }
+
+    // TODO when we'll compile pattern match into the IR, we'll get rid of this bit
+    const idents = pat.args.flatMap((pat) =>
+      pat.type === "identifier" ? [pat] : [],
+    );
+    if (idents.length !== pat.args.length) {
+      return expr;
+    }
+
+    // Found matching clause: returning
+
+    const args = expr.expr.args;
+    return idents.reduceRight((prev, curr, index) => {
+      const matchingArg = args[index]!;
+
+      return ir.desugarLet({
+        binding: curr.ident,
+        value: matchingArg,
+        body: prev,
+      });
+    }, ret);
+  }
+
+  return expr;
+};
+
+/**
  * inline the let binding if one of the 2 things happen:
  *
  * 1. the value is a simple expression: an identifier or a literal
@@ -85,6 +146,11 @@ export const inlineLet: Rule = (expr_) => {
       return substitute(expr.body, expr.binding, expr.value);
   }
 
+  const isRecursive = bindingOccursIn(expr.value, expr.binding);
+  if (isRecursive) {
+    return expr_;
+  }
+
   // else, check occurrences
   const isJustOneOcc = bindingAppearsAtMostOnce(expr.body, expr.binding);
   if (isJustOneOcc) {
@@ -127,13 +193,39 @@ const bindingAppearsAtMostOnce = (
   return returnValue;
 };
 
+const bindingOccursIn = (
+  expr: ir.Expr,
+  binding: ir.Ident & { type: "local" },
+) => {
+  let appears = false;
+
+  lazyVisit(expr, (expr, next) => {
+    if (
+      expr.type === "identifier" &&
+      expr.ident.type === "local" &&
+      ir.localIdentEq(expr.ident, binding)
+    ) {
+      appears = true;
+      return;
+    }
+
+    next();
+  });
+
+  return appears;
+};
+
 /**
  * Rules composition: evaluates rules one at a time once, over the result of the previous rule
  * */
 export const composeRules = (rules: Rule[]): Rule =>
   rules.reduce((prev, next) => (expr, ctx) => next(prev(expr, ctx), ctx));
 
-export const allOptimizations = composeRules([betaReduction]);
+export const allOptimizations = composeRules([
+  betaReduction,
+  inlineLet,
+  foldMatch,
+]);
 
 /**
  * An higher-order rule that evaluates the given rule until it reaches a fixedpoint

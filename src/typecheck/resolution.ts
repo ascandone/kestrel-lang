@@ -5,7 +5,7 @@ import {
   ModuleInterface,
   TypeResolution,
   TypedBinding,
-  TypedDeclaration,
+  TypedValueDeclaration,
   TypedExposedValue,
   TypedExpr,
   TypedImport,
@@ -14,7 +14,6 @@ import {
   TypedTypeAst,
   TypedTypeDeclaration,
 } from "./typedAst";
-import { TVar } from "../type";
 import { ErrorInfo } from "./errors";
 import * as err from "./errors";
 import { Annotator } from "./Annotator";
@@ -113,12 +112,12 @@ class Resolver {
    * we can typecheck a strongly connected set of declarations before generalization
    */
   private readonly indirectCallGraph = new Map<
-    TypedDeclaration,
-    TypedDeclaration[]
+    TypedValueDeclaration,
+    TypedValueDeclaration[]
   >();
   private readonly directCallGraph = new Map<
-    TypedDeclaration,
-    TypedDeclaration[]
+    TypedValueDeclaration,
+    TypedValueDeclaration[]
   >();
   private isThunk = false;
 
@@ -153,7 +152,7 @@ class Resolver {
 
   // --- unused checks
   private unusedLocals = new Set<TypedBinding>();
-  private unusedGlobals = new Set<TypedDeclaration>();
+  private unusedGlobals = new Set<TypedValueDeclaration>();
   private unusedImports = new Map<string, TypedImport>();
   private unusedExposings = new Set<TypedExposedValue>();
 
@@ -381,7 +380,7 @@ class Resolver {
 
   private onResolveIdentifier(
     expr: TypedExpr & { type: "identifier" },
-    currentDeclaration: TypedDeclaration,
+    currentDeclaration: TypedValueDeclaration,
   ) {
     if (expr.namespace === undefined) {
       expr.$resolution =
@@ -457,7 +456,7 @@ class Resolver {
 
   private resolveExpression(
     expr: TypedExpr,
-    currentDeclaration: TypedDeclaration,
+    currentDeclaration: TypedValueDeclaration,
   ) {
     visitor.visitExpr(expr, {
       onPatternIdentifier: (ident) => {
@@ -633,7 +632,7 @@ class Resolver {
    * add global declarations to scope and mark them as unused
    * runs type ast resolution (but no expressions resolution yet)
    */
-  private loadValueDeclarations(declarations: TypedDeclaration[]) {
+  private loadValueDeclarations(declarations: TypedValueDeclaration[]) {
     for (const declaration of declarations) {
       if (this.importedValues.has(declaration.binding.name)) {
         this.errors.push({
@@ -656,8 +655,19 @@ class Resolver {
         namespace: this.ns,
       });
 
-      if (declaration.typeHint !== undefined) {
-        this.resolveTypeAst(declaration.typeHint.mono);
+      for (const attr of declaration.attributes) {
+        switch (attr.type) {
+          case "@type":
+            this.resolveTypeAst(attr.polytype.mono);
+            break;
+
+          case "@extern":
+          case "@inline":
+            break;
+
+          default:
+            attr satisfies never;
+        }
       }
 
       if (!declaration.pub) {
@@ -737,9 +747,9 @@ class Resolver {
     }
   }
 
-  private resolveValueDeclarations(declarations: TypedDeclaration[]) {
+  private resolveValueDeclarations(declarations: TypedValueDeclaration[]) {
     for (const declaration of declarations) {
-      if (declaration.extern) {
+      if (declaration.value === undefined) {
         continue;
       }
 
@@ -748,7 +758,9 @@ class Resolver {
     }
   }
 
-  private emitCyclicDependenciesErrors(typeDeclarations: TypedDeclaration[]) {
+  private emitCyclicDependenciesErrors(
+    typeDeclarations: TypedValueDeclaration[],
+  ) {
     const g = buildGraph(this.directCallGraph, typeDeclarations);
 
     const cycle = graph.detectCycles(g);
@@ -768,7 +780,7 @@ class Resolver {
         case "adt":
           for (const variant of declaration.variants) {
             for (const arg of variant.args) {
-              this.resolveTypeAst(arg);
+              this.resolveTypeAst(arg.ast);
             }
           }
           break;
@@ -782,8 +794,6 @@ class Resolver {
   }
 
   run(module: UntypedModule, implicitImports: Import[]): TypedModule {
-    TVar.resetId();
-
     const annotator = new Annotator();
     const annotatedModule = annotator.annotateModule(module);
 
@@ -898,9 +908,9 @@ function mapPush<K, V>(map: Map<K, V[]>, k: K, v: V) {
 }
 
 function buildGraph(
-  repr: Map<TypedDeclaration, TypedDeclaration[]>,
-  nodes: Iterable<TypedDeclaration>,
-): graph.DirectedGraph<TypedDeclaration> {
+  repr: Map<TypedValueDeclaration, TypedValueDeclaration[]>,
+  nodes: Iterable<TypedValueDeclaration>,
+): graph.DirectedGraph<TypedValueDeclaration> {
   return {
     toKey(node) {
       return node.binding.name;

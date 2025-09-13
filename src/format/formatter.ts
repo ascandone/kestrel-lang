@@ -7,12 +7,13 @@ import {
   PolyTypeAst,
   RangeMeta,
   TypeAst,
-  Declaration,
+  ValueDeclaration,
   Expr,
   Import,
   UntypedModule,
   TypeDeclaration,
   TypeVariant,
+  ValueDeclarationAttribute,
 } from "../parser";
 import {
   Doc,
@@ -54,7 +55,6 @@ const ORDERED_INFIX_SYMBOLS = [
   ["^"],
   ["*", "*.", "/", "/.", "%"],
   ["+", "-", "+.", "-.", "++"],
-  ["::"],
   ["==", "!="],
   ["<", "<=", ">", ">="],
   ["||"],
@@ -239,8 +239,19 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
               ),
             ),
           ],
-          ",",
+          ast.tail === undefined ? "," : "",
         ),
+
+        ast.tail === undefined
+          ? nil
+          : concat(
+              //
+              text(","),
+              break_(),
+              text(".."),
+              exprToDoc(ast.tail, block),
+            ),
+
         text("]"),
       );
 
@@ -424,19 +435,53 @@ function exprToDoc(ast: Expr, block: boolean): Doc {
   }
 }
 
+function formatListPattern(
+  patterns: MatchPattern[],
+  tail: MatchPattern | undefined,
+): Doc {
+  return group(
+    text("["),
+
+    indentWithSpaceBreak(
+      [
+        sepBy(
+          concat(text(","), break_()),
+          patterns.map((pattern) => patternToDoc(pattern)),
+        ),
+      ],
+      tail === undefined ? "," : "",
+    ),
+
+    tail === undefined
+      ? nil
+      : concat(
+          //
+          text(","),
+          break_(),
+          text(".."),
+          patternToDoc(tail),
+        ),
+
+    text("]"),
+  );
+}
+
 function patternToDoc(pattern: MatchPattern): Doc {
   switch (pattern.type) {
     case "identifier":
       return text(pattern.name);
 
-    case "lit":
-      return constToDoc(pattern.literal);
+    case "constant":
+      return constToDoc(pattern.value);
 
     case "constructor": {
       if (pattern.name === "Cons" && pattern.args.length === 2) {
         const left = pattern.args[0]!;
         const right = pattern.args[1]!;
-        return concat(patternToDoc(left), text(" :: "), patternToDoc(right));
+        return formatListPattern([left], right);
+      }
+      if (pattern.name === "Nil") {
+        return formatListPattern([], undefined);
       }
 
       if (pattern.args.length === 0) {
@@ -511,7 +556,7 @@ function typeAstToDoc(typeAst: TypeAst): Doc {
 
     case "fn":
       return concat(
-        text("Fn("),
+        text("("),
         sepByString(", ", typeAst.args.map(typeAstToDoc)),
         text(") -> "),
         typeAstToDoc(typeAst.return),
@@ -554,7 +599,21 @@ function declarationValueToDoc(expr: Expr): Doc {
   }
 }
 
-function declToDoc(ast: Declaration): Doc {
+function attrToDoc(ast: ValueDeclarationAttribute): Doc {
+  switch (ast.type) {
+    case "@type":
+      return concat(text(ast.type), text(" "), typeHintToDoc(ast.polytype));
+
+    case "@inline":
+    case "@extern":
+      return text(ast.type);
+
+    default:
+      return ast satisfies never;
+  }
+}
+
+function declToDoc(ast: ValueDeclaration): Doc {
   const name =
     isInfix(ast.binding.name) || isPrefix(ast.binding.name)
       ? `(${ast.binding.name})`
@@ -562,14 +621,15 @@ function declToDoc(ast: Declaration): Doc {
 
   return concat(
     ast.docComment === undefined ? nil : handleDocComment(ast.docComment),
-    !ast.extern && ast.inline ? concat(text("@inline"), lines()) : nil,
-    ast.extern ? text("extern ") : nil,
+
+    ...ast.attributes.map((a) => concat(attrToDoc(a), lines())),
+
     ast.pub ? text("pub ") : nil,
     text(`let ${name}`),
-    ast.typeHint === undefined
+
+    ast.value === undefined
       ? nil
-      : concat(text(": "), typeHintToDoc(ast.typeHint)),
-    ast.extern ? nil : concat(text(" ="), declarationValueToDoc(ast.value)),
+      : concat(text(" ="), declarationValueToDoc(ast.value)),
   );
 }
 
@@ -611,7 +671,7 @@ function typeDeclToDoc(tDecl: TypeDeclaration): Doc {
       return concat(
         docComment,
         tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
-        text("type "),
+        text("enum "),
         text(tDecl.name),
         params,
         text(" "),
@@ -635,10 +695,10 @@ function typeDeclToDoc(tDecl: TypeDeclaration): Doc {
       return concat(
         docComment,
         tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
-        text("type "),
+        text("struct "),
         text(tDecl.name),
         params,
-        text(" struct "),
+        text(" "),
         tDecl.fields.length === 0 ? text("{ }") : block_(fields),
       );
     }
@@ -651,7 +711,10 @@ function variantToDoc(variant: TypeVariant): Doc {
       ? []
       : [
           text("("),
-          sepByString(", ", variant.args.map(typeAstToDoc)),
+          sepByString(
+            ", ",
+            variant.args.map((arg) => typeAstToDoc(arg.ast)),
+          ),
           text(")"),
         ];
 
@@ -682,7 +745,7 @@ function importToDoc(import_: Import): Doc {
 }
 
 type Statement =
-  | { type: "decl"; decl: Declaration }
+  | { type: "decl"; decl: ValueDeclaration }
   | { type: "type"; decl: TypeDeclaration };
 
 export function format(ast: UntypedModule): string {

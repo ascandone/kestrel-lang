@@ -10,7 +10,10 @@ class ExprEmitter {
     private readonly namespace: string,
     private readonly currentDecl: ir.QualifiedIdentifier,
     private readonly knownImplicitArities: Map<string, ir.ImplicitParam[]>,
-    private readonly getDependency: (ns: string) => undefined | ir.Program,
+    private readonly getDependency: (
+      package_: string,
+      moduleId: string,
+    ) => undefined | ir.Program,
   ) {}
 
   private readonly uniques = new Map<string, number>();
@@ -136,10 +139,10 @@ class ExprEmitter {
 
   private lowerPattern(expr: typed.TypedMatchPattern): ir.MatchPattern {
     switch (expr.type) {
-      case "lit":
+      case "constant":
         return {
-          type: "lit",
-          literal: expr.literal,
+          type: "constant",
+          value: expr.value,
         };
 
       case "identifier":
@@ -314,7 +317,7 @@ class ExprEmitter {
       case "list-literal":
         return expr.values.reduceRight(
           (acc, expr): ir.Expr => CONS(this.lowerExpr(expr), acc),
-          NIL,
+          expr.tail === undefined ? NIL : this.lowerExpr(expr.tail),
         );
 
       case "match":
@@ -346,7 +349,7 @@ class ExprEmitter {
 
       case "constructor":
         if (resolution.namespace !== this.namespace) {
-          this.getDependency(resolution.namespace);
+          this.getDependency(resolution.package_, resolution.namespace);
         }
 
         return {
@@ -361,7 +364,7 @@ class ExprEmitter {
 
       case "global-variable": {
         if (resolution.namespace !== this.namespace) {
-          this.getDependency(resolution.namespace);
+          this.getDependency(resolution.package_, resolution.namespace);
         }
 
         const glbVarId = new ir.QualifiedIdentifier(
@@ -454,16 +457,16 @@ export function lowerProgram(
   /** TODO look up in deps instead */
   knownImplicitArities = new Map<string, ir.ImplicitParam[]>(),
   /** TODO make getDependency's return not optional */
-  getDependency: (ns: string) => undefined | ir.Program,
+  getDependency: (package_: string, moduleId: string) => undefined | ir.Program,
 ): ir.Program {
-  const namespace = module.moduleInterface.ns;
+  const rootModuleId = module.moduleInterface.ns;
   const package_ = module.moduleInterface.package_;
 
   const mkIdent = (name: string) =>
-    new ir.QualifiedIdentifier(package_, namespace, name);
+    new ir.QualifiedIdentifier(package_, rootModuleId, name);
 
   return {
-    namespace,
+    namespace: rootModuleId,
     package_,
     adts: module.typeDeclarations.flatMap((decl): ir.Adt[] => {
       if (decl.type !== "adt") {
@@ -479,7 +482,7 @@ export function lowerProgram(
             (ctor): ir.AdtConstructor => ({
               name: mkIdent(ctor.name),
               arity: ctor.args.length,
-              args: ctor.args,
+              args: ctor.args.map((a) => a.ast),
             }),
           ),
         },
@@ -509,17 +512,17 @@ export function lowerProgram(
         const implArity = makeImplicitArity(decl, decl.$traitsConstraints);
         knownImplicitArities.set(ident.toString(), implArity);
 
-        if (decl.extern) {
-          visitReferencedTypes(decl.binding.$type, (ns) => {
-            if (ns !== namespace) {
-              getDependency(ns);
+        if (decl.value === undefined) {
+          visitReferencedTypes(decl.binding.$type, (package_, moduleId) => {
+            if (moduleId !== rootModuleId) {
+              getDependency(package_, moduleId);
             }
           });
           return [];
         }
 
         const emitter = new ExprEmitter(
-          namespace,
+          rootModuleId,
           ident,
           knownImplicitArities,
           getDependency,
@@ -529,7 +532,7 @@ export function lowerProgram(
           {
             name: ident,
             value: emitter.lowerExpr(decl.value),
-            inline: decl.inline,
+            inline: decl.attributes.some((a) => a.type === "@inline"),
             implicitTraitParams: implArity,
           },
         ];
@@ -578,7 +581,7 @@ const CONS = (hd: ir.Expr, tl: ir.Expr): ir.Expr => ({
  * Traverse the type of a declaration to find the implicit arity (the trait dicts to pass)
  * */
 function makeImplicitArity(
-  decl: typed.TypedDeclaration,
+  decl: typed.TypedValueDeclaration,
   traitsBounds: RigidVarsCtx,
 ): ir.ImplicitParam[] {
   const alreadySeen = new Set<string>();
@@ -653,7 +656,7 @@ export class ProjectLowering {
     const lowered = lowerProgram(
       module[0],
       this.knownImplicitArities,
-      (dependencyNs) => this.visit(package_, dependencyNs),
+      (package_, dependencyNs) => this.visit(package_, dependencyNs),
     );
 
     this.sortedVisited.push(lowered);
@@ -663,14 +666,17 @@ export class ProjectLowering {
   }
 }
 
-function visitReferencedTypes(t: typed.Type, visit: (ns: string) => void) {
+function visitReferencedTypes(
+  t: typed.Type,
+  visit: (package_: string, moduleId: string) => void,
+) {
   const r = resolveType(t);
   switch (r.type) {
     case "unbound":
       return;
 
     case "named":
-      visit(r.module);
+      visit(r.package_, r.module);
       for (const arg of r.args) {
         visitReferencedTypes(arg, visit);
       }

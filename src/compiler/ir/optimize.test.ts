@@ -214,7 +214,7 @@ describe("inline let", () => {
 });
 
 describe("mixed rules", () => {
-  test.todo("apply recursively twice", () => {
+  test("apply recursively twice", () => {
     const out = applyRule(
       optimize.allOptimizations,
       `
@@ -227,12 +227,51 @@ describe("mixed rules", () => {
     `,
     );
 
+    expect(out).toMatchInlineSnapshot(`"let pkg:Main.x = 42"`);
+  });
+
+  test("skip opt when recursive def", () => {
+    const out = applyRule(
+      optimize.allOptimizations,
+      `
+        let x = {
+          let f = fn arg {
+            f(arg)
+          };
+          f(0)
+        }
+    `,
+    );
+
     expect(out).toMatchInlineSnapshot(`
-      "(:def x
-          (:let (x#0
-                  (:let (y#0 42)
-                      y#0))
-              x#0))"
+      "let pkg:Main.x = {
+        let f#0 = fn arg#0 {
+          f#0(arg#0)
+        };
+        f#0(0)
+      }"
+    `);
+  });
+
+  test("fold match", () => {
+    const out = applyRule(
+      optimize.foldMatch,
+      `
+        enum Box<a> { Box(a) }
+
+        let x = {
+          match Box(0) {
+            Box(x) => x
+          }
+        }
+    `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.x = {
+        let x#0 = 0;
+        x#0
+      }"
     `);
   });
 });

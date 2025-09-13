@@ -1,8 +1,5 @@
-import { readConfig } from "../config";
-import { fetchDeps } from "../deps";
+import { install } from "../package-manager/install";
 
 export async function depsInstall() {
-  const path = process.cwd();
-  const config = await readConfig(path);
-  fetchDeps(path, config);
+  await install();
 }

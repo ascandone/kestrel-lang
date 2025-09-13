@@ -602,8 +602,8 @@ export class Compiler {
         ];
       }
 
-      case "lit":
-        switch (pattern.literal.type) {
+      case "constant":
+        switch (pattern.value.type) {
           // As of now, literals are always checked via the === operator
           // keep the switch to enforce match on future variants
           case "string":
@@ -615,7 +615,7 @@ export class Compiler {
                 type: "BinaryExpression",
                 operator: "===",
                 left: matchedExpr,
-                right: compileConst(pattern.literal),
+                right: compileConst(pattern.value),
               },
             ];
         }
@@ -1130,7 +1130,7 @@ function isUnboxedCtor(
     switch (ctor.type) {
       case "identifier":
         return ctor.ident;
-      case "lit":
+      case "constant":
         return undefined;
       case "constructor":
         if (ctor.args.length !== 1) {

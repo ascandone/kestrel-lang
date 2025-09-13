@@ -447,7 +447,7 @@ class TypePrinter {
 
       case "fn": {
         const args = t.args.map((arg) => this.typeToString(arg)).join(", ");
-        return `Fn(${args}) -> ${this.typeToString(t.return)}`;
+        return `(${args}) -> ${this.typeToString(t.return)}`;
       }
 
       case "named": {

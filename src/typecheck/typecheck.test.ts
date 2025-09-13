@@ -100,7 +100,7 @@ describe("basic constructs inference", () => {
 
     expect(errors).toEqual([]);
     expect(types).toEqual({
-      f: "Fn() -> Int",
+      f: "() -> Int",
     });
   });
 
@@ -108,7 +108,11 @@ describe("basic constructs inference", () => {
     const [types, errors] = tc(
       `
     extern type Bool
-    extern pub let (>): Fn(a, a) -> Bool
+
+    @extern
+    @type (a, a) -> Bool
+    let (>)
+
     pub let x = 1 > 2
   `,
     );
@@ -123,10 +127,13 @@ describe("basic constructs inference", () => {
 
   test("application args should be typechecked", () => {
     const src = `
-    type T { C }
-    type Ret {}
+    enum T { C }
+    enum Ret {}
 
-    extern pub let f: Fn(T, T) -> Ret
+
+    @extern
+    @type (T, T) -> Ret
+    pub let f
     pub let x = f(42, C)
   `;
 
@@ -138,11 +145,14 @@ describe("basic constructs inference", () => {
   test("application (pipe operator)", () => {
     const [types, errors] = tc(
       `
-    type T { C }
-    type T1 { C1 }
-    type Ret {}
+    enum T { C }
+    enum T1 { C1 }
+    enum Ret {}
 
-    extern let f: Fn(T, T1) -> Ret
+    
+    @extern
+    @type (T, T1) -> Ret
+    let f
     pub let x = C |> f(C1)
   `,
     );
@@ -169,14 +179,17 @@ describe("basic constructs inference", () => {
       `
     extern type Int
     extern type Bool
-    extern pub let (>): Fn(Int, Int) -> Bool
+
+    @extern
+    @type (Int, Int) -> Bool
+    pub let (>)
     pub let f = fn x, y { x > y }
   `,
     );
 
     expect(types).toEqual(
       expect.objectContaining({
-        f: "Fn(Int, Int) -> Bool",
+        f: "(Int, Int) -> Bool",
       }),
     );
   });
@@ -184,7 +197,7 @@ describe("basic constructs inference", () => {
   test("typecheck if ret value", () => {
     const [types] = tc(
       `
-    type Bool { True }
+    enum Bool { True }
     pub let f =
       if True {
         0
@@ -202,7 +215,7 @@ describe("basic constructs inference", () => {
   test("unify if clauses", () => {
     const [types] = tc(
       `
-    type Bool { True }
+    enum Bool { True }
     pub let f = fn x {
       if True {
         0
@@ -214,7 +227,7 @@ describe("basic constructs inference", () => {
     );
 
     expect(types).toEqual({
-      f: "Fn(Int) -> Int",
+      f: "(Int) -> Int",
     });
   });
 
@@ -232,7 +245,7 @@ describe("basic constructs inference", () => {
     );
 
     expect(types).toEqual({
-      f: "Fn(Bool) -> Int",
+      f: "(Bool) -> Int",
     });
   });
 
@@ -261,7 +274,7 @@ describe("basic constructs inference", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      id: "Fn(a) -> a",
+      id: "(a) -> a",
     });
   });
 
@@ -275,7 +288,7 @@ describe("basic constructs inference", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      id: "Fn(a) -> a",
+      id: "(a) -> a",
       v: "Int",
     });
   });
@@ -316,8 +329,8 @@ describe("basic constructs inference", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f1: "Fn(Bool) -> Int",
-      f2: "Fn(Bool) -> Int",
+      f1: "(Bool) -> Int",
+      f2: "(Bool) -> Int",
     });
   });
 
@@ -333,7 +346,7 @@ describe("basic constructs inference", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(Int) -> a",
+      f: "(Int) -> a",
     });
   });
 
@@ -346,7 +359,7 @@ describe("basic constructs inference", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(Int) -> a",
+      f: "(Int) -> a",
     });
   });
 
@@ -467,7 +480,7 @@ describe("let# sugar", () => {
     expect(correctErrors).toEqual([]);
     expect(correctTypes).toMatchInlineSnapshot(`
       {
-        "f": "Fn(Fn(a, Fn(b) -> c) -> d, a, Fn(b) -> c) -> d",
+        "f": "((a, (b) -> c) -> d, a, (b) -> c) -> d",
       }
     `);
 
@@ -519,6 +532,15 @@ describe("list literal", () => {
       lst: "List<Int>",
     });
   });
+
+  test("infers tail type", () => {
+    const [types, errs] = tc(`pub let cons = fn a, b { [a, ..b] }`);
+
+    expect(errs).toEqual([]);
+    expect(types).toEqual({
+      cons: "(a, List<a>) -> List<a>",
+    });
+  });
 });
 
 describe("type hints", () => {
@@ -526,7 +548,8 @@ describe("type hints", () => {
     const [types, errs] = tc(
       `
         extern type Int
-        pub let x: Int = 1.1
+        @type Int
+        pub let x = 1.1
       `,
     );
     expect(errs).toHaveLength(1);
@@ -539,15 +562,16 @@ describe("type hints", () => {
   test("type hints of fns are used by typechecker", () => {
     const [types, errs] = tc(
       `
-        type T { C }
-        pub let x: Fn() -> T = fn { 42 }
+        enum T { C }
+        @type () -> T
+        pub let x = fn { 42 }
         `,
     );
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toBeInstanceOf(err.TypeMismatch);
     expect(types).toEqual(
       expect.objectContaining({
-        x: "Fn() -> T",
+        x: "() -> T",
       }),
     );
   });
@@ -557,15 +581,20 @@ describe("type hints", () => {
       `
       extern type Bool
       extern type Int
-      extern pub let (!): Fn(Bool) -> Bool
-      pub let x: Fn(Bool) -> Int = fn x { !x }
+
+      @extern
+      @type (Bool) -> Bool
+      pub let (!)
+
+      @type (Bool) -> Int
+      pub let x = fn x { !x }
       `,
     );
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toBeInstanceOf(err.TypeMismatch);
     expect(types).toEqual(
       expect.objectContaining({
-        x: "Fn(Bool) -> Int",
+        x: "(Bool) -> Int",
       }),
     );
   });
@@ -574,7 +603,8 @@ describe("type hints", () => {
     const [types, errs] = tc(
       `
       extern type Int
-      pub let x: _ = 1`,
+      @type _
+      pub let x = 1`,
     );
     expect(errs).toEqual([]);
     expect(types).toEqual({
@@ -583,7 +613,10 @@ describe("type hints", () => {
   });
 
   test("vars type hints should be generalized", () => {
-    const [types, errs] = tc("pub let x: a = 0");
+    const [types, errs] = tc(`
+      @type a
+      pub let x = 0
+    `);
 
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toBeInstanceOf(err.TypeMismatch);
@@ -594,36 +627,45 @@ describe("type hints", () => {
   });
 
   test("unify generalized values", () => {
-    const [types, errs] = tc("pub let f: Fn(ta) -> tb = fn x { x }");
+    const [types, errs] = tc(`
+      @type (ta) -> tb 
+      pub let f = fn x { x }
+    `);
     expect(errs[0]!.description).toBeInstanceOf(err.TypeMismatch);
     expect(types).toEqual({
-      f: "Fn(ta) -> tb",
+      f: "(ta) -> tb",
     });
   });
 
   test("vars type hints are used by typechecker", () => {
-    const [types, errs] = tc(
-      "pub let eq: Fn(a, a, b) -> a = fn x, _y, _z { x }",
-    );
+    const [types, errs] = tc(`
+      @type (a, a, b) -> a
+      pub let eq = fn x, _y, _z { x }
+    `);
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      eq: "Fn(a, a, b) -> a",
+      eq: "(a, a, b) -> a",
     });
   });
 
   test("type hints instantiate polytypes", () => {
     const [types, errs] = tc(`
       extern type Int
-      pub let f: Fn(Int) -> Int = fn x { x }
+
+      @type (Int) -> Int
+      pub let f = fn x { x }
     `);
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(Int) -> Int",
+      f: "(Int) -> Int",
     });
   });
 
   test("unknown types are ignored", () => {
-    const [types, errs] = tc("pub let x: NotFound = 1");
+    const [types, errs] = tc(`
+      @type NotFound
+      pub let x = 1
+    `);
 
     expect(errs).toHaveLength(1);
 
@@ -639,12 +681,15 @@ describe("traits", () => {
     const [types, errs] = tc(
       `
         extern type String
-        extern pub let show: Fn(a) -> String where a: Show
+
+        @extern
+        @type (a) -> String where a: Show
+        pub let show
         pub let x = show(42) // note that 'Int' doesn't implement 'Show' in this test
       `,
     );
     expect(types).toEqual({
-      show: "Fn(a) -> String where a: Show",
+      show: "(a) -> String where a: Show",
       x: "String",
     });
     expect(errs).toHaveLength(1);
@@ -654,7 +699,10 @@ describe("traits", () => {
     const [, errs] = tc(
       `
         extern type String
-        extern pub let show: Fn(a) -> String where a: Show
+
+        @extern
+        @type (a) -> String where a: Show
+        pub let show
         pub let x = show(42)
       `,
       {},
@@ -668,7 +716,10 @@ describe("traits", () => {
     const [types, errs] = tc(
       `
         extern type String
-        extern pub let show: Fn(a) -> String where a: Show
+
+        @extern
+        @type (a) -> String where a: Show
+        pub let show
 
         pub let use_show = fn value {
           show(value)
@@ -677,8 +728,8 @@ describe("traits", () => {
     );
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      show: "Fn(a) -> String where a: Show",
-      use_show: "Fn(a) -> String where a: Show",
+      show: "(a) -> String where a: Show",
+      use_show: "(a) -> String where a: Show",
     });
   });
 
@@ -686,10 +737,16 @@ describe("traits", () => {
     const [, errs] = tc(
       `
         extern type String
-        extern let show: Fn(a) -> String where a: Show
+        
+        @extern
+        @type (a) -> String where a: Show
+        let show
 
         extern type Int
-        extern pub let (+): Fn(Int, Int) -> Int
+
+        @extern
+        @type (Int, Int) -> Int
+        pub let (+)
         pub let f = fn x {
           let _ = show(x);
           x + 1
@@ -703,8 +760,14 @@ describe("traits", () => {
     const [types, errs] = tc(
       `
         extern type Unit
-        extern let show: Fn(a) -> Unit where a: Show
-        extern let eq: Fn(a) -> Unit where a: Eq
+        
+        @extern
+        @type (a) -> Unit where a: Show
+        let show
+        
+        @extern
+        @type (a) -> Unit where a: Eq
+        let eq
 
         pub let f = fn x {
           let _ = show(x);
@@ -715,7 +778,7 @@ describe("traits", () => {
     expect(errs).toEqual([]);
     expect(types).toEqual(
       expect.objectContaining({
-        f: "Fn(a) -> Unit where a: Eq + Show",
+        f: "(a) -> Unit where a: Eq + Show",
       }),
     );
   });
@@ -724,8 +787,14 @@ describe("traits", () => {
     const [types, errs] = tc(
       `
         extern type Unit
-        extern pub let show: Fn(a) -> Unit where a: Show
-        extern pub let eq: Fn(a) -> Unit where a: Eq
+
+        @extern
+        @type (a) -> Unit where a: Show
+        pub let show
+
+        @extern
+        @type (a) -> Unit where a: Eq
+        pub let eq
 
         pub let f = fn x {
           let _ = show(x);
@@ -737,8 +806,8 @@ describe("traits", () => {
     expect(errs).toEqual([]);
     expect(types).toEqual(
       expect.objectContaining({
-        eq: "Fn(a) -> Unit where a: Eq",
-        show: "Fn(a) -> Unit where a: Show",
+        eq: "(a) -> Unit where a: Eq",
+        show: "(a) -> Unit where a: Show",
       }),
     );
   });
@@ -746,8 +815,11 @@ describe("traits", () => {
   test("is able to derive Eq trait in ADTs with only a singleton", () => {
     const [, errs] = tc(
       `
-        extern let take_eq: Fn(a) -> a where a: Eq
-        type MyType {
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
+        enum MyType {
           Singleton
         }
 
@@ -762,9 +834,12 @@ describe("traits", () => {
     const [, errs] = tc(
       `
         extern type NotEq
-        extern let take_eq: Fn(a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
-        pub(..) type MyType {
+        pub(..) enum MyType {
           Singleton,
           Box(NotEq)
         }
@@ -780,11 +855,13 @@ describe("traits", () => {
   test("derives Eq even when constructors have arguments that derive Eq", () => {
     const [, errs] = tc(
       `
-        type EqType { }
+        enum EqType { }
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
-        extern let take_eq: Fn(a) -> a where a: Eq
-
-        pub(..) type MyType {
+        pub(..) enum MyType {
           Singleton,
           Box(EqType)
         }
@@ -799,14 +876,20 @@ describe("traits", () => {
   test("requires deps to derive Eq in order to derive Eq", () => {
     const [, errs] = tc(
       `
-        extern let take_eq: Fn(a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
-        pub(..) type MyType<a> {
+        pub(..) enum MyType<a> {
           Box(a)
         }
 
         extern type NotEq
-        extern let my_type: MyType<NotEq>
+        
+        @extern
+        @type MyType<NotEq>
+        let my_type
 
         pub let example = take_eq(my_type)
       `,
@@ -818,16 +901,22 @@ describe("traits", () => {
   test("derives Eq when dependencies derive Eq", () => {
     const [, errs] = tc(
       `
-        extern let take_eq: Fn(a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
-        type IsEq { }
+        enum IsEq { }
 
-        pub(..) type Option<a> {
+        pub(..) enum Option<a> {
           Some(a),
           None,
         }
 
-        extern let is_eq: Option<IsEq>
+        
+        @extern
+        @type Option<IsEq>
+        let is_eq
 
         pub let example = take_eq(is_eq)
       `,
@@ -839,9 +928,12 @@ describe("traits", () => {
   test("derives in self-recursive types", () => {
     const [, errs] = tc(
       `
-        extern let take_eq: Fn(a) -> a where a: Eq
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
-        pub(..) type Rec<a> {
+        pub(..) enum Rec<a> {
           End,
           Nest(Rec<a>),
         }
@@ -856,10 +948,13 @@ describe("traits", () => {
   test("derives in self-recursive types (nested)", () => {
     const [, errs] = tc(
       `
-        type Box<a> { Box(a) }
-        extern let take_eq: Fn(a) -> a where a: Eq
+        enum Box<a> { Box(a) }
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
-        pub(..) type Rec<a> {
+        pub(..) enum Rec<a> {
           End,
           Nest(Box<Rec<a>>),
         }
@@ -875,9 +970,12 @@ describe("traits", () => {
     test("is able to derive Eq in empty structs", () => {
       const [, errs] = tc(
         `
-          extern let take_eq: Fn(a) -> a where a: Eq
+          
+          @extern
+          @type (a) -> a where a: Eq
+          let take_eq
   
-          type MyType struct { }
+          struct MyType { }
   
           pub let example = take_eq(MyType { })
         `,
@@ -889,9 +987,12 @@ describe("traits", () => {
     test("is able to derive Show in empty structs", () => {
       const [, errs] = tc(
         `
-          extern let take_shoq: Fn(a) -> a where a: Show
+          
+          @extern
+          @type (a) -> a where a: Show
+          let take_shoq
   
-          type MyType struct { }
+          struct MyType { }
   
           pub let example = take_shoq(MyType { })
         `,
@@ -903,10 +1004,13 @@ describe("traits", () => {
     test("is able to derive Eq in structs where all the fields are Eq", () => {
       const [, errs] = tc(
         `
-          extern let take_eq: Fn(a) -> a where a: Eq
-          type EqT { EqT }
+          
+          @extern
+          @type (a) -> a where a: Eq
+          let take_eq
+          enum EqT { EqT }
   
-          type MyType struct {
+          struct MyType {
             x: EqT
           }
   
@@ -920,12 +1024,18 @@ describe("traits", () => {
     test("is not able to derive Eq in structs where at least a fields is not Eq", () => {
       const [, errs] = tc(
         `
-          extern let take_eq: Fn(a) -> a where a: Eq
+          
+          @extern
+          @type (a) -> a where a: Eq
+          let take_eq
   
           extern type NotEq
-          extern let x: NotEq
+          
+          @extern
+          @type NotEq
+          let x
   
-          type MyType struct {
+          struct MyType {
             x: NotEq
           }
   
@@ -940,9 +1050,12 @@ describe("traits", () => {
     test("requires struct params to be Eq when they appear in struct, for it to be derived", () => {
       const [types, errs] = tc(
         `
-          extern pub let take_eq: Fn(a) -> a where a: Eq
+
+          @extern
+          @type (a) -> a where a: Eq
+          pub let take_eq
   
-          type MyType<a, b> struct {
+          struct MyType<a, b> {
             x: b,
           }
   
@@ -954,8 +1067,8 @@ describe("traits", () => {
 
       expect(errs).toEqual([]);
       expect(types).toEqual({
-        example: "Fn(a) -> MyType<b, a> where a: Eq",
-        take_eq: "Fn(a) -> a where a: Eq",
+        example: "(a) -> MyType<b, a> where a: Eq",
+        take_eq: "(a) -> a where a: Eq",
       });
     });
 
@@ -963,11 +1076,14 @@ describe("traits", () => {
       // TODO assertion
       const [, errs] = tc(
         `
-          type Option<a> { None, Some(a) }
+          enum Option<a> { None, Some(a) }
 
-          extern let take_eq: Fn(a) -> a where a: Eq
+          
+          @extern
+          @type (a) -> a where a: Eq
+          let take_eq
   
-          type Rec<a> struct {
+          struct Rec<a> {
             field: Option<Rec<a>>,
           }
 
@@ -988,11 +1104,14 @@ describe("traits", () => {
   test("fails to derives in self-recursive types when not derivable (nested)", () => {
     const [, errs] = tc(
       `
-        type Box<a> { Box(a) }
-        extern let take_eq: Fn(a) -> a where a: Eq
+        enum Box<a> { Box(a) }
+        
+        @extern
+        @type (a) -> a where a: Eq
+        let take_eq
 
         extern type NotEq
-        pub(..) type Rec<a> {
+        pub(..) enum Rec<a> {
           End,
           Nest(Box<Rec<a>>, NotEq),
         }
@@ -1006,22 +1125,31 @@ describe("traits", () => {
 
   test("forbid ambiguous instantiations (1)", () => {
     const [, errs] = tc(`
-    extern let take_default: Fn(a) -> x where a: Default
-    extern let default: a where a: Default
+    
+    @extern
+    @type (a) -> x where a: Default
+    let take_default
+    
+    @extern
+    @type a where a: Default
+    let default
     pub let forbidden = take_default(default)
 `);
 
     expect(errs).not.toEqual([]);
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toEqual(
-      new err.AmbiguousTypeVar("Default", "Fn(a) -> b where a: Default"),
+      new err.AmbiguousTypeVar("Default", "(a) -> b where a: Default"),
     );
   });
 
   test("forbid ambiguous instantiations (2)", () => {
     const [, errs] = tc(`
-      type String {}
-      extern let show: Fn(a) -> String where a: Show
+      enum String {}
+      
+      @extern
+      @type (a) -> String where a: Show
+      let show
 
       pub let f = {
         let _nested = fn x { show(x) };
@@ -1033,7 +1161,7 @@ describe("traits", () => {
 
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toEqual(
-      new err.AmbiguousTypeVar("Show", "Fn(a) -> String where a: Show"),
+      new err.AmbiguousTypeVar("Show", "(a) -> String where a: Show"),
     );
   });
 
@@ -1042,8 +1170,14 @@ describe("traits", () => {
       `
     extern type X
 
-    extern let take_x: Fn(X) -> X
-    extern let default: a where a: Default
+    
+    @extern
+    @type (X) -> X
+    let take_x
+    
+    @extern
+    @type a where a: Default
+    let default
     pub let forbidden = take_x(default)
 `,
       {},
@@ -1058,9 +1192,13 @@ describe("traits", () => {
     const [, errs] = tc(
       `
     extern type X
-    extern let default: a where a: Default
+    
+    @extern
+    @type a where a: Default
+    let default
 
-    pub let legal: X = default
+    @type X
+    pub let legal = default
 `,
       {},
       [],
@@ -1073,13 +1211,19 @@ describe("traits", () => {
   test("repro", () => {
     const [, errs] = tc(
       `
-      type List<a> { Nil, Cons(a, List<a>) }
+      enum List<a> { Nil, Cons(a, List<a>) }
 
-      type Bool { True, False }
-      type Option<a> { None, Some(a) }
+      enum Bool { True, False }
+      enum Option<a> { None, Some(a) }
 
-      extern let find: Fn(List<a>, Fn(a) -> Bool) -> Option<a>
-      extern let (==): Fn(a, a) -> Bool where a: Eq
+      
+      @extern
+      @type (List<a>, (a) -> Bool) -> Option<a>
+      let find
+      
+      @extern
+      @type (a, a) -> Bool where a: Eq
+      let (==)
 
       pub let res = None == find(Nil, fn _ {
         False
@@ -1095,8 +1239,14 @@ describe("traits", () => {
     const [, errs] = tc(
       `
       extern type String
-      extern let show: Fn(a) -> String where a: Show
-      extern let showable: a where a: Show
+      
+      @extern
+      @type (a) -> String where a: Show
+      let show
+      
+      @extern
+      @type a where a: Show
+      let showable
 
       pub let e = {
         let showable1 = showable;
@@ -1114,7 +1264,10 @@ describe("traits", () => {
     const [, errs] = tc(
       `
     extern type X
-    extern let show: Fn(a) -> X where a: Default
+    
+    @extern
+    @type (a) -> X where a: Default
+    let show
 
     pub let x = show(unbound_var)
 `,
@@ -1131,8 +1284,13 @@ describe("traits", () => {
     const [, errs] = tc(
       `
       extern type Option<a>
-      extern let default: a where a: Default
-      pub let forbidden: Option<a> = default
+      
+      @extern
+      @type a where a: Default
+      let default
+
+      @type Option<a>
+      pub let forbidden = default
   `,
       {},
       [],
@@ -1157,8 +1315,13 @@ describe("traits", () => {
     const [, errs] = tc(
       `
       extern type Option<a>
-      extern let default: a where a: Default
-      pub let forbidden: Option<a> where a: Default = default
+      
+      @extern
+      @type a where a: Default
+      let default
+
+      @type Option<a> where a: Default
+      pub let forbidden = default
   `,
       {},
       [],
@@ -1179,8 +1342,13 @@ describe("traits", () => {
     const [, errs] = tc(
       `
       extern type String
-      extern let default: a where a: Default
-      pub let forbidden: String = default
+      
+      @extern
+      @type a where a: Default
+      let default
+
+      @type String
+      pub let forbidden = default
   `,
       {},
       [],
@@ -1202,23 +1370,27 @@ describe("custom types", () => {
     const [types, errs] = tc(
       `
     extern type X
-    extern pub let x: X
 
-    type T { }
-    pub let f: Fn(T) -> X = fn _ { x }
+    @extern
+    @type X
+    pub let x
+
+    enum T { }
+    @type (T) -> X 
+    pub let f = fn _ { x }
   `,
     );
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(T) -> X",
+      f: "(T) -> X",
       x: "X",
     });
   });
 
   test("handles constructor without args nor params", () => {
     const [types, errs] = tc(`
-    type T { C }
+    enum T { C }
     pub let c = C
   `);
 
@@ -1231,7 +1403,7 @@ describe("custom types", () => {
   test("generalize type constructors", () => {
     const [types, errs] = tc(
       `
-      type Box<a> {
+      enum Box<a> {
         Box(a),
         Nested(Box<a>)
       }
@@ -1252,14 +1424,14 @@ describe("custom types", () => {
     const [types, errs] = tc(
       `
     extern type Int
-    type T { C(Int) }
+    enum T { C(Int) }
     pub let c = C
   `,
     );
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      c: "Fn(Int) -> T",
+      c: "(Int) -> T",
     });
   });
 
@@ -1267,8 +1439,8 @@ describe("custom types", () => {
     const [types, errs] = tc(
       `
     extern type Int
-    type Option<a> { }
-    type T {
+    enum Option<a> { }
+    enum T {
       C(Option<Int>, Int)
     }
     pub let c = C
@@ -1277,18 +1449,18 @@ describe("custom types", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      c: "Fn(Option<Int>, Int) -> T",
+      c: "(Option<Int>, Int) -> T",
     });
   });
 
   test("handles constructor wrapping a function", () => {
     const [types, errs] = tc(
       `
-    type A {}
-    type B {}
-    type C {}
-    type T {
-      C(Fn(A, B) -> C)
+    enum A {}
+    enum B {}
+    enum C {}
+    enum T {
+      C((A, B) -> C)
     }
     pub let c = C
   `,
@@ -1296,14 +1468,14 @@ describe("custom types", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      c: "Fn(Fn(A, B) -> C) -> T",
+      c: "((A, B) -> C) -> T",
     });
   });
 
   test("handles types that do not exist", () => {
     const [, errs] = tc(
       `
-    type T {
+    enum T {
       C(NotFound)
     }
   `,
@@ -1316,9 +1488,9 @@ describe("custom types", () => {
   test("checks arity in constructors", () => {
     const [, errs] = tc(
       `  
-      type T<a> { }
+      enum T<a> { }
 
-      type T1<a, b> {
+      enum T1<a, b> {
         C(T<a, b>)
       }
     `,
@@ -1335,8 +1507,8 @@ describe("custom types", () => {
   test("add types to the type pool", () => {
     const [, errs] = tc(
       `
-      type A {}
-      type B { C(A) }
+      enum A {}
+      enum B { C(A) }
   `,
     );
 
@@ -1346,7 +1518,7 @@ describe("custom types", () => {
   test("handles parametric types", () => {
     const [types, errs] = tc(
       `
-        type Box<a, b> { C }
+        enum Box<a, b> { C }
         pub let a = C
   `,
     );
@@ -1360,7 +1532,7 @@ describe("custom types", () => {
   test("allows using parametric types in constructors", () => {
     const [types, errs] = tc(
       `
-        type T<a, b> { C(b) }
+        enum T<a, b> { C(b) }
         pub let a = C
         pub let b = C(1)
   `,
@@ -1368,7 +1540,7 @@ describe("custom types", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      a: "Fn(a) -> T<b, a>",
+      a: "(a) -> T<b, a>",
       b: "T<a, Int>",
     });
   });
@@ -1376,7 +1548,7 @@ describe("custom types", () => {
   test("forbids unbound type params", () => {
     const [, errs] = tc(
       `
-        type T { C(a) }
+        enum T { C(a) }
   `,
     );
 
@@ -1387,7 +1559,7 @@ describe("custom types", () => {
   test("doesn't allow shadowing type params", () => {
     const [, errs] = tc(
       `
-        type Box<a, a> { }
+        enum Box<a, a> { }
   `,
     );
 
@@ -1398,7 +1570,7 @@ describe("custom types", () => {
   test("prevents catchall to be used in type args", () => {
     const [, errs] = tc(
       `
-        type T { C(_) }
+        enum T { C(_) }
   `,
     );
 
@@ -1409,7 +1581,7 @@ describe("custom types", () => {
   test("allows self-recursive type", () => {
     const [, errs] = tc(
       `
-        type T { C(T) }
+        enum T { C(T) }
       `,
     );
 
@@ -1419,8 +1591,8 @@ describe("custom types", () => {
   test("allows mutually recursive type", () => {
     const [, errs] = tc(
       `
-        type A { A(B) }
-        type B { B(A) }
+        enum A { A(B) }
+        enum B { B(A) }
       `,
     );
 
@@ -1431,9 +1603,12 @@ describe("custom types", () => {
 describe("struct", () => {
   test("allow creating types", () => {
     const [, errs] = tc(`
-      type Person struct { }
+      struct Person { }
 
-      extern pub let p: Person
+
+      @extern
+      @type Person
+      pub let p
     `);
 
     expect(errs).toHaveLength(0);
@@ -1442,7 +1617,7 @@ describe("struct", () => {
   test("allow recursive types", () => {
     const [, errs] = tc(`
       extern type List<a>
-      type Person struct {
+      struct Person {
         friends: List<Person>,
       }
     `);
@@ -1454,11 +1629,14 @@ describe("struct", () => {
     const [types, errs] = tc(`
       extern type String
 
-      type Person struct {
+      struct Person {
         name: String
       }
 
-      extern let p: Person
+      
+      @extern
+      @type Person
+      let p
 
       pub let p_name = p.name
     `);
@@ -1472,11 +1650,15 @@ describe("struct", () => {
   test("do not allow invalid field access", () => {
     const [types, errs] = tc(`
       extern type String
-      type Person struct {
+      struct Person {
         name: String
       }
 
-      extern let p: Person
+      
+      @extern
+      @type Person
+      let p
+
       pub let invalid = p.invalid_field
     `);
 
@@ -1494,7 +1676,7 @@ describe("struct", () => {
       "Person",
       `
       extern type String
-      pub(..) type Person struct {
+      pub(..) struct Person {
         name: String
       }
     `,
@@ -1503,14 +1685,15 @@ describe("struct", () => {
     const [types, errs] = tc(
       `
       import Person.{Person}
-      pub let name: Fn(Person) -> _ = fn p { p.name }
+      @type (Person) -> _
+      pub let name = fn p { p.name }
     `,
       { Person },
     );
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      name: "Fn(Person) -> String",
+      name: "(Person) -> String",
     });
   });
 
@@ -1528,7 +1711,7 @@ describe("struct", () => {
       "Person",
       `
       extern type String
-      pub(..) type Person struct {
+      pub(..) struct Person {
         name: String
       }
     `,
@@ -1538,7 +1721,10 @@ describe("struct", () => {
       `
       import Person.{Person}
 
-      extern pub let x: Person // <- this prevents UnusedExposing err
+
+      @extern
+      @type Person
+      pub let x // <- this prevents UnusedExposing err
 
       pub let name = fn p { p.name }
     `,
@@ -1549,14 +1735,35 @@ describe("struct", () => {
     expect(errs[0]?.description).toBeInstanceOf(err.InvalidField);
   });
 
-  test.todo("emit bad import if trying to import(..) private fields");
+  test.todo("emit bad import if trying to import(..) a struct", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      pub(..) struct Person<a> {
+        name: a
+      }
+    `,
+    );
+
+    const [, errs] = tc(
+      `
+      import Person.{Person(..)}
+
+      pub let a = Person { name: 0 }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toBeInstanceOf(err.BadImport);
+  });
 
   test("allow accessing fields in other modules if public", () => {
     const [Person] = tcProgram(
       "Person",
       `
       extern type String
-      pub(..) type Person struct {
+      pub(..) struct Person {
         name: String
       }
     `,
@@ -1566,7 +1773,10 @@ describe("struct", () => {
       `
       import Person.{Person}
 
-      extern pub let p: Person
+
+      @extern
+      @type Person
+      pub let p
 
       pub let name = p.name 
     `,
@@ -1580,143 +1790,12 @@ describe("struct", () => {
     });
   });
 
-  describe.todo("qualified fields", () => {
-    test("allow accessing fields in same module with qualified field syntax", () => {
-      const [types, errs] = tc(
-        `
-        extern type String
-        type Person struct {
-          name: String
-        }
-
-        pub let name = fn p {
-          p.Person#name
-        }
-    `,
-      );
-
-      expect(errs).toEqual([]);
-      expect(types).toEqual({
-        name: "Fn(Person) -> String",
-      });
-    });
-
-    test("emit err when field accessed with qualified syntax is invalid", () => {
-      const [, errs] = tc(
-        `
-        type Person struct { }
-
-        pub let name = fn p {
-          p.Person#invalid_field
-        }
-    `,
-      );
-
-      expect(errs).toHaveLength(1);
-      expect(errs[0]?.description).toEqual(
-        new err.InvalidField("Person", "invalid_field"),
-      );
-    });
-
-    test("allow accessing fields in other modules with qualified field syntax", () => {
-      const [Person] = tcProgram(
-        "Person",
-        `
-      extern type String
-      pub(..) type Person struct {
-        name: String
-      }
-    `,
-      );
-
-      const [types, errs] = tc(
-        `
-      import Person.{Person}
-
-      pub let name = fn p {
-        p.Person#name
-      }
-    `,
-        { Person },
-      );
-
-      expect(errs).toEqual([]);
-      expect(types).toEqual({
-        name: "Fn(Person) -> String",
-      });
-    });
-
-    test("emit error when struct of qualified field does not exist", () => {
-      const [, errs] = tc(
-        `
-      pub let name = fn p {
-        p.InvalidType#name
-      }
-    `,
-      );
-
-      expect(errs).toHaveLength(1);
-      expect(errs[0]?.description).toEqual(new err.UnboundType("InvalidType"));
-    });
-
-    test("emit error when qualified field does not exist", () => {
-      const [Person] = tcProgram(
-        "Person",
-        `
-        pub(..) type Person struct {}
-  `,
-      );
-
-      const [, errs] = tc(
-        `
-      import Person.{Person}
-      pub let name = fn p {
-        p.Person#invalid_field
-      }
-    `,
-        { Person },
-      );
-
-      expect(errs).toHaveLength(1);
-      expect(errs[0]?.description).toEqual(
-        new err.InvalidField("Person", "invalid_field"),
-      );
-    });
-
-    test("emit error when qualified field is private", () => {
-      const [Person] = tcProgram(
-        "Person",
-        `
-        extern type Int
-        pub type Person struct {
-          private_field: Int
-        }
-  `,
-      );
-
-      const [, errs] = tc(
-        `
-      import Person.{Person}
-      pub let name = fn p {
-        p.Person#private_field
-      }
-    `,
-        { Person },
-      );
-
-      expect(errs).toHaveLength(1);
-      expect(errs[0]?.description).toEqual(
-        new err.InvalidField("Person", "private_field"),
-      );
-    });
-  });
-
   test("emit InvalidField if trying to access private fields", () => {
     const [Person] = tcProgram(
       "Person",
       `
       extern type String
-      pub type Person struct { // note fields are  private
+      pub struct Person { // note fields are  private
         name: String
       }
     `,
@@ -1726,7 +1805,10 @@ describe("struct", () => {
       `
       import Person.{Person}
 
-      extern pub let p: Person
+
+      @extern
+      @type Person
+      pub let p
 
       pub let name = p.name 
     `,
@@ -1740,9 +1822,9 @@ describe("struct", () => {
   test("allow creating structs", () => {
     const [types, errs] = tc(
       `
-        type X { X }
+        enum X { X }
 
-        pub type Struct struct {
+        pub struct Struct {
           x: X
         }
 
@@ -1761,8 +1843,11 @@ describe("struct", () => {
   test("typecheck params in struct types", () => {
     const [types, errs] = tc(
       `
-        type Person<a, b, c> struct { }
-        extern pub let p: Person
+        struct Person<a, b, c> { }
+
+        @extern
+        @type Person
+        pub let p
     `,
     );
 
@@ -1776,12 +1861,15 @@ describe("struct", () => {
   test("handling params in dot access", () => {
     const [types, errs] = tc(
       `
-        type Box<a> struct {
+        struct Box<a> {
           field: a
         }
 
         extern type Int
-        extern pub let box: Box<Int>
+
+        @extern
+        @type Box<Int>
+        pub let box
 
         pub let field = box.field
     `,
@@ -1798,26 +1886,29 @@ describe("struct", () => {
     const [types, errs] = tc(
       `
       extern type Int
-      type Box<a> struct {
+      struct Box<a> {
         field: a
       }
 
-      pub let get_field_1: Fn(Box<Int>) -> Int = fn box { box.field }
-      pub let get_field_2: Fn(Box<_>) -> _ = fn box { box.field }
+      @type (Box<Int>) -> Int
+      pub let get_field_1 = fn box { box.field }
+
+      @type (Box<_>) -> _
+      pub let get_field_2 = fn box { box.field }
   `,
     );
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      get_field_1: "Fn(Box<Int>) -> Int",
-      get_field_2: "Fn(Box<a>) -> a",
+      get_field_1: "(Box<Int>) -> Int",
+      get_field_2: "(Box<a>) -> a",
     });
   });
 
   test("handling params in struct definition (phantom types)", () => {
     const [types, errs] = tc(
       `
-        type Box<a, b> struct { }
+        struct Box<a, b> { }
 
         pub let box = Box { }
     `,
@@ -1832,7 +1923,7 @@ describe("struct", () => {
   test("typecheck extra fields", () => {
     const [types, errs] = tc(
       `
-        type Struct struct {}
+        struct Struct {}
 
         pub let s = Struct {
           extra: 42
@@ -1854,7 +1945,7 @@ describe("struct", () => {
     const [types, errs] = tc(
       `
         extern type String
-        type Person struct {
+        struct Person {
           name: String,
           second_name: String,
         }
@@ -1873,13 +1964,33 @@ describe("struct", () => {
     });
   });
 
-  test.todo("prevent from creating structs with private fields");
+  test.todo("prevent from creating structs with private fields", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      pub struct Person<a> {
+        name: a
+      }
+    `,
+    );
+
+    const [, errs] = tc(
+      `
+      import Person.{Person}
+
+      pub let a = Person { name: 0 }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(1);
+  });
 
   test("typecheck fields of wrong type", () => {
     const [types, errs] = tc(
       `
-        type X {  }
-        type Struct struct {
+        enum X {  }
+        struct Struct {
           field: X,
         }
 
@@ -1900,7 +2011,7 @@ describe("struct", () => {
   test("handling params in struct definition when fields are bound to params", () => {
     const [types, errs] = tc(
       `
-      type Box<a, b> struct {
+      struct Box<a, b> {
         a: a,
         b: b,
       }
@@ -1921,7 +2032,7 @@ describe("struct", () => {
   test("instantiated fresh vars when creating structs", () => {
     const [types, errs] = tc(
       `
-      type Box<a> struct { a: a }
+      struct Box<a> { a: a }
 
       pub let str_box = Box { a: "abc" }
       pub let int_box = Box { a: 42 }
@@ -1938,7 +2049,7 @@ describe("struct", () => {
   test("updating a infers the spread arg", () => {
     const [types, errs] = tc(
       `
-      type Box<a> struct { a: a }
+      struct Box<a> { a: a }
 
       pub let set_a = fn box {
         Box {
@@ -1951,14 +2062,14 @@ describe("struct", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      set_a: "Fn(Box<Int>) -> Box<Int>",
+      set_a: "(Box<Int>) -> Box<Int>",
     });
   });
 
   test("allow to specify a subset of the fields when update another struct", () => {
     const [, errs] = tc(
       `
-      type Str<a, b> struct {
+      struct Str<a, b> {
         a: a,
         b: b
       }
@@ -1976,12 +2087,28 @@ describe("struct", () => {
     expect(errs).toEqual([]);
   });
 
-  test.todo("namespaced struct names");
+  test.todo("qualified struct names", () => {
+    const [, errs] = tc(
+      `
+      struct Str<a> {
+        a: a,
+      }
+
+      pub let x = Main.Str {
+        a: 0
+      }
+      
+      
+  `,
+    );
+
+    expect(errs).toEqual([]);
+  });
 });
 
 describe("pattern matching", () => {
   test("typechecks matched expressions", () => {
-    const [, errs] = tc(`pub let v = match unbound { }`);
+    const [, errs] = tc(`pub let v = match unbound { _ => 0 }`);
     expect(errs).toHaveLength(1);
     expect(errs[0]!.description).toBeInstanceOf(err.UnboundVariable);
   });
@@ -2018,19 +2145,20 @@ describe("pattern matching", () => {
     pub let f = fn x {
         match x {
           42 => 0,
+          _ => 0,
         }
       }
     `);
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(Int) -> Int",
+      f: "(Int) -> Int",
     });
   });
 
   test("infers matched type when there are no args", () => {
     const [types, errs] = tc(`
-      type T { C }
+      enum T { C }
 
       pub let f = fn x {
         match x {
@@ -2040,7 +2168,7 @@ describe("pattern matching", () => {
     `);
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(T) -> Int",
+      f: "(T) -> Int",
     });
   });
 
@@ -2048,7 +2176,7 @@ describe("pattern matching", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub(..) type T { T }
+      pub(..) enum T { T }
     `,
     );
 
@@ -2069,15 +2197,15 @@ describe("pattern matching", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(T) -> Int",
+      f: "(T) -> Int",
     });
   });
 
   test("infers matched type when there are concrete args", () => {
     const [types, errs] = tc(
       `
-      type Bool { }
-      type T { C(Bool) }
+      enum Bool { }
+      enum T { C(Bool) }
 
       pub let f = fn x {
         match x {
@@ -2089,14 +2217,14 @@ describe("pattern matching", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(T) -> Int",
+      f: "(T) -> Int",
     });
   });
 
   test("typechecks constructor args", () => {
     const [, errs] = tc(
       `
-      type T<a> { C(a, a, a) }
+      enum T<a> { C(a, a, a) }
 
       pub let f = fn x {
         match x {
@@ -2116,11 +2244,11 @@ describe("pattern matching", () => {
   test("infers nested types in p match", () => {
     const [types, errs] = tc(
       `
-      type Bool {
+      enum Bool {
         True,
       }
 
-      type Box<a> {
+      enum Box<a> {
         Make(a),
       }
 
@@ -2134,7 +2262,7 @@ describe("pattern matching", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(Box<Bool>) -> Int",
+      f: "(Box<Bool>) -> Int",
     });
   });
 
@@ -2142,7 +2270,7 @@ describe("pattern matching", () => {
     const [types, errs] = tc(
       `
 
-      type Option<a> {
+      enum Option<a> {
         None,
         Some(a),
       }
@@ -2158,15 +2286,15 @@ describe("pattern matching", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(Option<a>) -> Int",
+      f: "(Option<a>) -> Int",
     });
   });
 
   test("does not allow a type to be defined twice in the same module", () => {
     const [, errs] = tc(
       `
-      type T {}
-      type T {}
+      enum T {}
+      enum T {}
     `,
     );
 
@@ -2180,8 +2308,8 @@ describe("pattern matching", () => {
   test("does not allow duplicate constructor", () => {
     const [, errs] = tc(
       `
-      type T1 { X }
-      type T2 { X }
+      enum T1 { X }
+      enum T2 { X }
     `,
     );
 
@@ -2197,14 +2325,14 @@ describe("pattern matching", () => {
       "pkg",
       "T1",
       unsafeParse(`
-        pub(..) type T1 { X }
+        pub(..) enum T1 { X }
       `),
     );
 
     const [, errs] = tc(
       `
       import T1.{T1(..)}
-      type T2 { X }
+      enum T2 { X }
     `,
       { T1 },
     );
@@ -2223,7 +2351,7 @@ describe("pattern matching", () => {
       "pkg",
       "T1",
       unsafeParse(`
-        pub(..) type T1 { X }
+        pub(..) enum T1 { X }
       `),
     );
 
@@ -2259,7 +2387,7 @@ describe("pattern matching", () => {
 
   test("use pattern matching bound vars in nested types", () => {
     const [types, errs] = tc(`
-      type Boxed<a> { Boxed(a) }
+      enum Boxed<a> { Boxed(a) }
 
       pub let x = match Boxed(42) {
         Boxed(a) => a
@@ -2274,7 +2402,7 @@ describe("pattern matching", () => {
 
   test("return error on wrong matched type", () => {
     const [, errs] = tc(`
-      type X { X }
+      enum X { X }
       pub let v = match 42 {
         X => 0
       }
@@ -2300,21 +2428,21 @@ describe("pattern matching", () => {
   test("infers fn match param type", () => {
     const [types, errs] = tc(`
     extern type T
-    type Box { Boxed(T) }
+    enum Box { Boxed(T) }
 
     pub let f = fn Boxed(n) { n }
   `);
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(Box) -> T",
+      f: "(Box) -> T",
     });
   });
 
   test("infers let match type", () => {
     const [types, errs] = tc(`
     extern type T
-    type Box { Boxed(T) }
+    enum Box { Boxed(T) }
 
     pub let f = fn box {
       let Boxed(n) = box;
@@ -2324,7 +2452,7 @@ describe("pattern matching", () => {
 
     expect(errs).toEqual([]);
     expect(types).toEqual({
-      f: "Fn(Box) -> T",
+      f: "(Box) -> T",
     });
   });
 
@@ -2347,7 +2475,7 @@ describe("pattern matching", () => {
 
   test("force exhaustive match in let binding when there are many constructors", () => {
     const [, errs] = tc(`
-    type Union { A, B }
+    enum Union { A, B }
 
     pub let f = {
       let A = A;
@@ -2361,7 +2489,7 @@ describe("pattern matching", () => {
 
   test("force exhaustive match in fns binding when there are many constructors", () => {
     const [, errs] = tc(`
-    type Union { A, B }
+    enum Union { A, B }
 
     pub let f = fn A { 0 }
   `);
@@ -2373,7 +2501,7 @@ describe("pattern matching", () => {
   describe("exhastivness check", () => {
     test("simple", () => {
       const [, errs] = tc(`
-      type Union { A, B }
+      enum Union { A, B }
 
       pub let f = match A {
         A => 0,
@@ -2384,10 +2512,65 @@ describe("pattern matching", () => {
       expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
     });
 
+    test("wildcard makes it exhaustive", () => {
+      const [, errs] = tc(`
+      enum Union { A, B, C, D }
+
+      pub let f = match A {
+        A => 0,
+        _ => 1,
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
+    test("simple exhaustive pattern", () => {
+      const [, errs] = tc(`
+      enum Opt<a> { Some(a), None }
+
+      pub let f = match None {
+        Some(_a) => 0,
+        None => 0,
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
+    test("nested exhaustive pattern", () => {
+      const [, errs] = tc(`
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
+      enum Union { A, B, C, D }
+
+      pub let f = match Pair(0, None) {
+        Pair(_x, Some(_y)) => 0,
+        _z => 0,
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
+    test("fn pat with catchall", () => {
+      const [, errs] = tc(`
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
+      enum Union { A }
+
+      pub let f = fn _, Pair(A, a) {
+        a
+      }
+    `);
+
+      expect(errs).toEqual([]);
+    });
+
     test("with params (non exhaustive)", () => {
       const [, errs] = tc(`
-      type Union { A, B }
-      type Opt<a> { Some(a), None }
+      enum Union { A, B }
+      enum Opt<a> { Some(a), None }
 
       pub let f = match None {
         Some(A) => 0,
@@ -2401,8 +2584,8 @@ describe("pattern matching", () => {
 
     test("with params (exhaustive)", () => {
       const [, errs] = tc(`
-      type Union { A, B }
-      type Opt<a> { Some(a), None }
+      enum Union { A, B }
+      enum Opt<a> { Some(a), None }
 
       pub let f = match None {
         Some(A) => 0,
@@ -2416,8 +2599,8 @@ describe("pattern matching", () => {
 
     test("catchall prevens exhastive match err", () => {
       const [, errs] = tc(`
-      type Union { A, B }
-      type Opt<a> { Some(a), None }
+      enum Union { A, B }
+      enum Opt<a> { Some(a), None }
  
       pub let f = match None {
         Some(A) => 0,
@@ -2431,9 +2614,9 @@ describe("pattern matching", () => {
 
     test("on pair (non-exhaustive)", () => {
       const [, errs] = tc(`
-      type Union { A, B }
-      type Opt<a> { Some(a), None }
-      type Pair<a, b> { Pair(a, b) }
+      enum Union { A, B }
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
  
       pub let f = fn pair {
         match pair {
@@ -2450,9 +2633,9 @@ describe("pattern matching", () => {
 
     test("on pair (exhaustive)", () => {
       const [, errs] = tc(`
-      type Union { A, B }
-      type Opt<a> { Some(a), None }
-      type Pair<a, b> { Pair(a, b) }
+      enum Union { A, B }
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
  
       pub let f = fn pair {
         match pair {
@@ -2513,8 +2696,8 @@ describe("pattern matching", () => {
 
       const [, errs] = tc(
         `
-      type Opt<a> { Some(a), None }
-      type Pair<a, b> { Pair(a, b) }
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
       pub let f = fn pair {
         match pair {
           Pair(0, Some(_)) => "a",
@@ -2529,8 +2712,7 @@ describe("pattern matching", () => {
         { Int },
       );
 
-      expect(errs).toHaveLength(1);
-      expect(errs[0]?.description).toBeInstanceOf(err.NonExhaustiveMatch);
+      expect(errs).toEqual([]);
     });
 
     test("on literals (not exhastive on the wildcard specialization)", () => {
@@ -2538,8 +2720,8 @@ describe("pattern matching", () => {
 
       const [, errs] = tc(
         `
-      type Opt<a> { Some(a), None }
-      type Pair<a, b> { Pair(a, b) }
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
       pub let f = fn pair {
         match pair {
           Pair(0, Some(_)) => "a",
@@ -2561,8 +2743,8 @@ describe("pattern matching", () => {
 
       const [, errs] = tc(
         `
-      type Opt<a> { Some(a), None }
-      type Pair<a, b> { Pair(a, b) }
+      enum Opt<a> { Some(a), None }
+      enum Pair<a, b> { Pair(a, b) }
       pub let f = fn pair {
         match pair {
           Pair(0, Some(_)) => "a",
@@ -2586,7 +2768,8 @@ describe("pattern matching", () => {
 describe("prelude", () => {
   test("intrinsics' types are not visible by default", () => {
     const [, errs] = tc(`
-     pub let x : Int = 0
+      @type Int
+      pub let x = 0
     `);
 
     expect(errs).toHaveLength(1);
@@ -2596,8 +2779,13 @@ describe("prelude", () => {
   test("checks extern types", () => {
     const [, errs] = tc(`
      extern type ExtType
-     extern pub let x : ExtType
-     pub let y: ExtType = x
+
+     @extern
+     @type ExtType
+     pub let x
+
+     @type ExtType 
+     pub let y = x
     `);
 
     expect(errs).toEqual([]);
@@ -2606,8 +2794,12 @@ describe("prelude", () => {
   test("typechecks extern values", () => {
     const [types, errs] = tc(
       `
-     type Unit { }
-     extern pub let x : Unit
+     enum Unit { }
+
+     @extern
+     @type Unit
+     pub let x
+
      pub let y = x
     `,
     );
@@ -2708,7 +2900,7 @@ describe("modules", () => {
       "pkg",
       "T1",
       unsafeParse(`
-        pub(..) type T1 { X }
+        pub(..) enum T1 { X }
       `),
     );
 
@@ -2734,14 +2926,17 @@ describe("modules", () => {
       "pkg",
       "T1",
       unsafeParse(`
-        pub(..) type T1 { X }
+        pub(..) enum T1 { X }
       `),
     );
 
     const [, errs] = tc(
       `
       import T1.{T1, T1}
-      extern pub let t: T1
+
+      @extern
+      @type T1
+      pub let t
     `,
       { T1 },
     );
@@ -2758,16 +2953,19 @@ describe("modules", () => {
       "pkg",
       "T1",
       unsafeParse(`
-        pub(..) type T1 { X }
+        pub(..) enum T1 { X }
       `),
     );
 
     const [, errs] = tc(
       `
       import T1.{T1(..)}
-      type T1 {}
+      enum T1 {}
 
-      extern pub let t: T1
+
+      @extern
+      @type T1
+      pub let t
     `,
       { T1 },
     );
@@ -2810,7 +3008,7 @@ describe("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub(..) type Box { X }
+      pub(..) enum Box { X }
       pub let x = 42
     `,
     );
@@ -2843,13 +3041,14 @@ describe("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub type MyType {}
+      pub enum MyType {}
     `,
     );
 
     const [, errs] = tc(
       `
-      let x: Fn(MyType) -> MyType = fn x { x }
+      @type (MyType) -> MyType
+      let x = fn x { x }
     `,
       { A },
       [
@@ -2874,7 +3073,7 @@ describe("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub(..) type MyType { A }
+      pub(..) enum MyType { A }
     `,
     );
 
@@ -2908,8 +3107,8 @@ describe("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub(..) type T { T }
-      pub(..) type Boxed { Boxed(T) }
+      pub(..) enum T { T }
+      pub(..) enum Boxed { Boxed(T) }
     `,
     );
 
@@ -2943,7 +3142,7 @@ describe("modules", () => {
   });
 
   test("detects unused types", () => {
-    const [A] = tcProgram("A", `pub type T { }`);
+    const [A] = tcProgram("A", `pub enum T { }`);
     const [, errs] = tc(`import A.{T}`, { A });
 
     expect(errs).toHaveLength(1);
@@ -2954,7 +3153,7 @@ describe("modules", () => {
     const [A] = tcProgram(
       "A",
       `
-      pub(..) type MyType { Constr }
+      pub(..) enum MyType { Constr }
     `,
     );
 
@@ -2995,12 +3194,15 @@ describe("modules", () => {
   });
 
   test("allow importing types (unqualified)", () => {
-    const [Mod] = tcProgram("Mod", `pub type Example { }`);
+    const [Mod] = tcProgram("Mod", `pub enum Example { }`);
 
     const [types, errs] = tc(
       `
       import Mod.{Example}
-      extern pub let x: Example
+
+      @extern
+      @type Example
+      pub let x
     `,
       { Mod },
     );
@@ -3012,11 +3214,14 @@ describe("modules", () => {
   });
 
   test("allow importing types (qualified)", () => {
-    const [Mod] = tcProgram("Mod", `pub type Example { }`);
+    const [Mod] = tcProgram("Mod", `pub enum Example { }`);
     const [types, errs] = tc(
       `
       import Mod
-      extern pub let x: Mod.Example
+
+      @extern
+      @type Mod.Example
+      pub let x
     `,
       { Mod },
     );
@@ -3028,7 +3233,7 @@ describe("modules", () => {
   });
 
   test("allow using imported types in match patterns", () => {
-    const [Mod] = tcProgram("Mod", `pub(..) type T { Constr }`);
+    const [Mod] = tcProgram("Mod", `pub(..) enum T { Constr }`);
     const [, errs] = tc(
       `
       import Mod.{T(..)}
@@ -3064,7 +3269,7 @@ describe("modules", () => {
   });
 
   test("error when importing a type the is not pub", () => {
-    const [Mod] = tcProgram("Mod", `type PrivateType {}`);
+    const [Mod] = tcProgram("Mod", `enum PrivateType {}`);
     const [, errs] = tc(`import Mod.{PrivateType}`, { Mod });
 
     expect(errs).toEqual([
@@ -3109,7 +3314,7 @@ describe("modules", () => {
   });
 
   test("qualified imports should not work on priv constructors", () => {
-    const [Mod] = tcProgram("Mod", `pub type T { A }`);
+    const [Mod] = tcProgram("Mod", `pub enum T { A }`);
     const [, errs] = tc(
       `
       import Mod
@@ -3123,11 +3328,14 @@ describe("modules", () => {
   });
 
   test("qualified imports should not work on priv types", () => {
-    const [Mod] = tcProgram("Mod", `type PrivateType {}`);
+    const [Mod] = tcProgram("Mod", `enum PrivateType {}`);
     const [, errs] = tc(
       `
       import Mod
-      extern pub let x: Mod.PrivateType
+
+      @extern
+      @type Mod.PrivateType
+      pub let x
     `,
       { Mod },
     );
@@ -3149,7 +3357,7 @@ describe("modules", () => {
 
   test("error when expose impl is run on a opaque type", () => {
     // Note it is `pub` instead of `pub(..)`
-    const [Mod] = tcProgram("Mod", `pub type T {}`);
+    const [Mod] = tcProgram("Mod", `pub enum T {}`);
     const [, errs] = tc(`import Mod.{T(..)}`, { Mod });
 
     expect(errs).toEqual([
@@ -3170,12 +3378,14 @@ describe("modules", () => {
   });
 
   test("types from different modules with the same name aren't treated the same", () => {
-    const [Mod] = tcProgram("Mod", `pub(..) type T { Constr }`);
+    const [Mod] = tcProgram("Mod", `pub(..) enum T { Constr }`);
     const [, errs] = tc(
       `
       import Mod
-      type T { Constr }
-      pub let t: T = Mod.Constr
+      enum T { Constr }
+
+      @type T
+      pub let t = Mod.Constr
     `,
       { Mod },
     );

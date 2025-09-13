@@ -2,7 +2,7 @@
 
 exports[`snapshot when hovering on a constructor 1`] = `
 "\`\`\`
-Constr: Fn(content) -> T<content>
+Constr: (content) -> T<content>
 \`\`\`
 type constructor
 "
@@ -10,7 +10,7 @@ type constructor
 
 exports[`snapshot when hovering on a constructor reference 1`] = `
 "\`\`\`
-Constr: Fn(content) -> T<content>
+Constr: (content) -> T<content>
 \`\`\`
 type constructor
 "
@@ -18,7 +18,7 @@ type constructor
 
 exports[`snapshot when hovering on a local fn 1`] = `
 "\`\`\`
-closure: Fn(a) -> b
+closure: (a) -> b
 \`\`\`
 local declaration
 "
@@ -26,7 +26,7 @@ local declaration
 
 exports[`snapshot when hovering on an extern type 1`] = `
 "\`\`\`
-glb: Fn(x) -> x
+glb: (x) -> x
 \`\`\`
 
 "
@@ -34,7 +34,7 @@ glb: Fn(x) -> x
 
 exports[`snapshot when hovering on an extern type reference 1`] = `
 "\`\`\`
-glb: Fn(x) -> x
+glb: (x) -> x
 \`\`\`
 
 "
@@ -42,7 +42,7 @@ glb: Fn(x) -> x
 
 exports[`snapshot when hovering on global fn 1`] = `
 "\`\`\`
-glb: Fn(a, b) -> b
+glb: (a, b) -> b
 \`\`\`
 
 "

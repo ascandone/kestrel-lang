@@ -69,7 +69,7 @@ export function visitPattern(
   opts: VisitOptions,
 ): void {
   switch (expr.type) {
-    case "lit":
+    case "constant":
       return;
 
     case "identifier":
@@ -177,6 +177,9 @@ export function visitExpr(expr: TypedExpr, opts: VisitOptions): void {
     case "list-literal":
       for (const subExpr of expr.values) {
         visitExpr(subExpr, opts);
+      }
+      if (expr.tail !== undefined) {
+        visitExpr(expr.tail, opts);
       }
       return;
 

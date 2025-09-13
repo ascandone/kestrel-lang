@@ -21,7 +21,7 @@ export class Finder<T> {
   private visitPattern_(expr: TypedMatchPattern): T | undefined {
     switch (expr.type) {
       case "identifier":
-      case "lit":
+      case "constant":
         return undefined;
 
       case "constructor":
@@ -81,7 +81,10 @@ export class Finder<T> {
         );
 
       case "list-literal":
-        return firstBy(expr.values, (v) => this.visitExpr(v));
+        return (
+          firstBy(expr.values, (v) => this.visitExpr(v)) ??
+          (expr.tail === undefined ? undefined : this.visitExpr(expr.tail))
+        );
 
       case "field-access":
         return this.visitExpr(expr.struct);

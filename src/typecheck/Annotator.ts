@@ -1,17 +1,17 @@
 import {
-  Declaration,
+  ValueDeclaration,
   Expr,
   Import,
   MatchPattern,
   TypeAst,
   TypeDeclaration,
   UntypedModule,
+  ValueDeclarationAttribute,
 } from "../parser";
 import { TVar } from "../type";
 import {
-  TypedBinding,
   TypedBlockStatement,
-  TypedDeclaration,
+  TypedValueDeclaration,
   TypedExposedValue,
   TypedExpr,
   TypedImport,
@@ -21,6 +21,7 @@ import {
   TypedStructField,
   TypedTypeAst,
   TypedTypeDeclaration,
+  TypedValueDeclarationAttribute,
 } from "./typedAst";
 
 // TODO instead of traversing tree, mark fields as optional in the raw tree and use structuredClone to mutate freely
@@ -45,6 +46,7 @@ export class Annotator {
     switch (typeDecl.type) {
       case "extern":
         return {
+          $type: TVar.freshType(),
           $traits: new Map(),
           ...typeDecl,
         };
@@ -52,12 +54,16 @@ export class Annotator {
       case "adt":
         return {
           ...typeDecl,
+          $type: TVar.freshType(),
           $traits: new Map(),
           variants: typeDecl.variants.map((variant) => ({
             ...variant,
             $scheme: {},
             $type: TVar.freshType(),
-            args: variant.args.map((arg) => this.annotateTypeAst(arg)),
+            args: variant.args.map((arg) => ({
+              $type: TVar.freshType(),
+              ast: this.annotateTypeAst(arg.ast),
+            })),
           })),
         };
 
@@ -111,44 +117,43 @@ export class Annotator {
     };
   }
 
-  private annotateDeclaration(decl: Declaration): TypedDeclaration {
-    const binding: TypedBinding = {
-      ...decl.binding,
-      $type: TVar.freshType(),
+  private annotateAttribute(
+    attr: ValueDeclarationAttribute,
+  ): TypedValueDeclarationAttribute {
+    switch (attr.type) {
+      case "@type":
+        return {
+          ...attr,
+          polytype: {
+            ...attr.polytype,
+            mono: this.annotateTypeAst(attr.polytype.mono),
+          },
+        };
+
+      case "@inline":
+      case "@extern":
+        return attr;
+    }
+  }
+
+  private annotateDeclaration(decl: ValueDeclaration): TypedValueDeclaration {
+    return {
+      ...decl,
+
+      attributes: decl.attributes.map((a) => this.annotateAttribute(a)),
+      binding: {
+        ...decl.binding,
+        $type: TVar.freshType(),
+      },
+      value:
+        decl.value === undefined ? undefined : this.annotateExpr(decl.value),
+      $traitsConstraints: {},
     };
-
-    let tDecl: TypedDeclaration;
-    if (decl.extern) {
-      tDecl = {
-        ...decl,
-        $traitsConstraints: {},
-        binding,
-        typeHint: undefined!,
-      };
-    } else {
-      tDecl = {
-        ...decl,
-        $traitsConstraints: {},
-        binding,
-        typeHint: undefined!,
-        value: this.annotateExpr(decl.value),
-      };
-    }
-
-    if (decl.typeHint !== undefined) {
-      tDecl.typeHint = {
-        mono: this.annotateTypeAst(decl.typeHint.mono),
-        range: decl.typeHint.range,
-        where: decl.typeHint.where,
-      };
-    }
-
-    return tDecl;
   }
 
   private annotateMatchPattern(ast: MatchPattern): TypedMatchPattern {
     switch (ast.type) {
-      case "lit":
+      case "constant":
       case "identifier":
         return {
           ...ast,
@@ -250,6 +255,8 @@ export class Annotator {
           ...ast,
           values: ast.values.map((v) => this.annotateExpr(v)),
           $type: TVar.freshType(),
+          tail:
+            ast.tail === undefined ? undefined : this.annotateExpr(ast.tail),
         };
 
       case "identifier":

@@ -17,6 +17,42 @@ import {
 } from "../../format/pretty";
 import * as ir from "../ir";
 
+type LetSugar = {
+  type: "let";
+  clauses: Array<{
+    binding: ir.Ident & { type: "local" };
+    value: ir.Expr;
+  }>;
+  body: ir.Expr;
+};
+
+function tryWrappingLet(expr: ir.Expr): ir.Expr | LetSugar {
+  if (expr.type !== "match" || expr.clauses.length !== 1) {
+    return expr;
+  }
+
+  const [pat, body] = expr.clauses[0]!;
+  if (pat.type !== "identifier") {
+    return expr;
+  }
+
+  const clause = { binding: pat.ident, value: expr.expr } as const;
+  const inner = tryWrappingLet(body);
+  if (inner.type === "let") {
+    return {
+      type: "let",
+      clauses: [clause, ...inner.clauses],
+      body: inner.body,
+    };
+  }
+
+  return {
+    type: "let",
+    clauses: [clause],
+    body,
+  };
+}
+
 export class ExprPrinter {
   constructor(
     private readonly declaration: string = "glb",
@@ -35,7 +71,9 @@ export class ExprPrinter {
     }
   }
 
-  public exprToDoc(expr: ir.Expr): Doc {
+  public exprToDoc(expr_: ir.Expr, withinBlock = false): Doc {
+    const expr = tryWrappingLet(expr_);
+
     switch (expr.type) {
       case "constant":
         return constToDoc(expr.value);
@@ -82,7 +120,26 @@ export class ExprPrinter {
           text("fn"),
           sepByString(",", params),
           text(" "),
-          block_(this.exprToDoc(expr.body)),
+          block_(this.exprToDoc(expr.body, true)),
+        );
+      }
+
+      case "let": {
+        const block__ = withinBlock ? concat : block_;
+
+        return block__(
+          sepBy(
+            break_("", ""),
+            expr.clauses.map((clause) =>
+              concat(
+                text("let ", this.identToString(clause.binding), " = "),
+                this.exprToDoc(clause.value),
+                text(";"),
+              ),
+            ),
+          ),
+          break_(),
+          this.exprToDoc(expr.body),
         );
       }
 
@@ -220,20 +277,10 @@ export class ExprPrinter {
       case "identifier":
         return text(this.identToString(pattern.ident));
 
-      case "lit":
-        return constToDoc(pattern.literal);
+      case "constant":
+        return constToDoc(pattern.value);
 
       case "constructor": {
-        if (pattern.name === "Cons" && pattern.args.length === 2) {
-          const left = pattern.args[0]!;
-          const right = pattern.args[1]!;
-          return concat(
-            this.patternToDoc(left),
-            text(" :: "),
-            this.patternToDoc(right),
-          );
-        }
-
         if (pattern.args.length === 0) {
           return text(pattern.name);
         }
