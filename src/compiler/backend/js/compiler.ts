@@ -836,7 +836,9 @@ export class Compiler {
   private compileLetAsExpr(src: ir.LetSugar): t.Expression {
     const compiledValue = this.compileExprAsJsExpr(src.value);
     if (compiledValue.type === "Identifier") {
-      return compiledValue;
+      const ident = compileLocalIdent(src.binding);
+      this.substitutedIdents.set(ident.name, compiledValue);
+      return this.compileExprAsJsExpr(src.body);
     }
 
     this.statementsBuf.push({
