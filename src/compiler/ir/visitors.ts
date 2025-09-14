@@ -27,6 +27,10 @@ export function foldTree(expr: ir.Expr, f: (expr: ir.Expr) => ir.Expr) {
           type: "match",
           expr: fold(expr.expr),
           clauses: expr.clauses.map(([pat, clause]) => [pat, fold(clause)]),
+          default:
+            expr.default === undefined
+              ? undefined
+              : [expr.default[0], fold(expr.default[1])],
         };
 
       case "field-access":
@@ -81,6 +85,9 @@ export function lazyVisit(
         fold(expr.expr);
         for (const [, clause] of expr.clauses) {
           fold(clause);
+        }
+        if (expr.default !== undefined) {
+          fold(expr.default[1]);
         }
         return;
 

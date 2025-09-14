@@ -110,48 +110,19 @@ class ExprEmitter {
                 getDecisionTree(stmt),
               ),
             },
-
-            // this.lowerFn({
-            //   params: [stmt.pattern],
-            //   getBody: this.lowerBlock(statementsLeft, returning),
-            //   $decisionTree: stmt.$decisionTree,
-            // }),
           ],
         };
-
-        // const ident = this.genIdent();
-
-        // return {
-        //   type: "application",
-        //   caller: this.lowerExpr(stmt.mapper),
-        //   args: [
-        //     this.lowerExpr(stmt.value),
-        //     {
-        //       type: "fn",
-        //       bindings: [ident],
-        //       body: {
-        //         type: "match",
-        //         expr: { type: "identifier", ident },
-        //         clauses: [
-        //           [
-        //             this.lowerPattern_(stmt.pattern),
-        //             this.lowerBlock(statementsLeft, returning),
-        //           ],
-        //         ],
-        //       },
-        //     },
-        //   ],
-        // };
       }
 
       case "let": {
         if (stmt.pattern.type === "identifier") {
+          const ident = this.mkIdent(stmt.pattern);
           return {
             type: "match",
             clauses: [],
             expr: this.lowerExpr(stmt.value),
             default: [
-              this.mkIdent(stmt.pattern),
+              ident,
               this.lowerMatch(
                 {
                   0: () => this.lowerBlock(statementsLeft, returning),
