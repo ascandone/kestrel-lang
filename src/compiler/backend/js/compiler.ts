@@ -614,6 +614,7 @@ export class Compiler {
     }
 
     const [firstPat, firstReturning] = src.clauses[0]!;
+
     // --- unwrap unboxed match
     if (
       src.clauses.length === 1 &&
@@ -833,6 +834,11 @@ export class Compiler {
   }
 
   private compileLetAsExpr(src: ir.LetSugar): t.Expression {
+    const compiledValue = this.compileExprAsJsExpr(src.value);
+    if (compiledValue.type === "Identifier") {
+      return compiledValue;
+    }
+
     this.statementsBuf.push({
       type: "VariableDeclaration",
       kind: "const",

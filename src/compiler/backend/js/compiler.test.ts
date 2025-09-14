@@ -2173,13 +2173,14 @@ describe("pattern matching", () => {
         $: 1
       };
       const Main$f = Main$f$x => {
-        if (Main$f$x.$ === 0) {
-          const Main$f$a = Main$f$x._0 + Main$f$x._1;
-          return Main$f$a + 1;
-        } else if (Main$f$x.$ === 1) {
-          return 100;
-        } else {
-          throw new Error("[non exhaustive match]");
+        switch (Main$f$x.$) {
+          case 0:
+            const Main$f$a = Main$f$x._0 + Main$f$x._1;
+            return Main$f$a + 1;
+            break;
+          case 1:
+            return 100;
+            break;
         }
       };"
     `);
