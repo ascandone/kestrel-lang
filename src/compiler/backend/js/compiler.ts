@@ -609,25 +609,14 @@ export class Compiler {
       return;
     }
 
-    const [firstPat] = src.clauses[0]!;
-
     //  --- if-like match
-    const isBool =
-      firstPat.type === "constructor" &&
-      firstPat.typeName.package_ === CORE_PACKAGE &&
-      firstPat.typeName.name === "Bool";
-    if (isBool) {
-      const findExpr = (name: string): ir.Expr =>
-        src.clauses.find(
-          (c) => c[0].type === "constructor" && c[0].name === name,
-        )?.[1] ?? src.default![1]!;
-
-      const then_: ir.Expr = findExpr("True");
-      const else_: ir.Expr = findExpr("False");
-
-      this.compileMatchAsIf(src.expr, as, then_, else_);
+    const ifSugar = isMatchIfLike(src);
+    if (ifSugar !== undefined) {
+      this.compileMatchAsIf(src.expr, as, ifSugar.then, ifSugar.else);
       return;
     }
+
+    const [firstPat] = src.clauses[0]!;
 
     //  --- switch-like match (lit)
     if (firstPat.type === "constant") {
@@ -1071,6 +1060,42 @@ function buildCtorCall(tagIndex: number, args: t.Expression[]): t.Expression {
         }),
       ),
     ],
+  };
+}
+
+type IfSugar = {
+  condition: ir.Expr;
+  then: ir.Expr;
+  else: ir.Expr;
+};
+
+function isMatchIfLike(src: ir.Expr & { type: "match" }): IfSugar | undefined {
+  if (src.clauses.length === 0) {
+    return undefined;
+  }
+
+  const [firstPat] = src.clauses[0]!;
+
+  const isBool =
+    firstPat.type === "constructor" &&
+    firstPat.typeName.package_ === CORE_PACKAGE &&
+    firstPat.typeName.name === "Bool";
+  if (!isBool) {
+    return undefined;
+  }
+
+  const findExpr = (name: string): ir.Expr =>
+    src.clauses.find(
+      (c) => c[0].type === "constructor" && c[0].name === name,
+    )?.[1] ?? src.default![1]!;
+
+  const then_: ir.Expr = findExpr("True");
+  const else_: ir.Expr = findExpr("False");
+
+  return {
+    condition: src.expr,
+    then: then_,
+    else: else_,
   };
 }
 
