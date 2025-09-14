@@ -602,34 +602,14 @@ export class Compiler {
     as: CompilationMode,
   ): void {
     // ---  let-like match
-    if (src.clauses.length === 0) {
-      const [binding, body] = src.default!;
-      const compiledExpr = this.compileLetAsExpr({
-        binding,
-        body,
-        value: src.expr,
-      });
+    const letSugar = isMatchLetLike(src);
+    if (letSugar !== undefined) {
+      const compiledExpr = this.compileLetAsExpr(letSugar);
       this.castExprToStmt(compiledExpr, as);
       return;
     }
 
-    const [firstPat, firstReturning] = src.clauses[0]!;
-
-    // --- unwrap unboxed match
-    if (
-      src.clauses.length === 1 &&
-      src.default === undefined &&
-      firstPat.type === "constructor" &&
-      firstPat.args.length === 1
-    ) {
-      const compiledExpr = this.compileLetAsExpr({
-        binding: firstPat.args[0]!,
-        body: firstReturning,
-        value: src.expr,
-      });
-      this.castExprToStmt(compiledExpr, as);
-      return;
-    }
+    const [firstPat] = src.clauses[0]!;
 
     //  --- if-like match
     const isBool =
@@ -1097,6 +1077,18 @@ function buildCtorCall(tagIndex: number, args: t.Expression[]): t.Expression {
 function isMatchLetLike(
   src: ir.Expr & { type: "match" },
 ): ir.LetSugar | undefined {
+  // -- unboxed repr
+  if (src.clauses.length === 1 && src.default === undefined) {
+    const [firstPat, returning] = src.clauses[0]!;
+    if (firstPat.type === "constructor" && firstPat.args.length === 1) {
+      return {
+        binding: firstPat.args[0]!,
+        body: returning,
+        value: src.expr,
+      };
+    }
+  }
+
   if (src.clauses.length !== 0) {
     return undefined;
   }
@@ -1108,20 +1100,6 @@ function isMatchLetLike(
     body,
     value: src.expr,
   };
-}
-
-function isUnboxedCtor(
-  ctor: ir.MatchPattern,
-): (ir.Ident & { type: "local" }) | undefined {
-  switch (ctor.type) {
-    case "constant":
-      return undefined;
-    case "constructor":
-      if (ctor.args.length !== 1) {
-        return undefined;
-      }
-      return ctor.args[0]!;
-  }
 }
 
 function makeImplicitParamVarIdent(

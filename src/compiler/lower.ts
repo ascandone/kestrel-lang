@@ -1,7 +1,6 @@
 import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 import { RigidVarsCtx, resolveType } from "../type";
 import * as typed from "../typecheck";
-import { dbgTree } from "../typecheck/__test__/dbtDecisionTree";
 import { CORE_PACKAGE } from "../typecheck/core_package";
 import {
   DecisionTree,
@@ -347,7 +346,6 @@ class ExprEmitter {
 
       case "match": {
         const tree = getDecisionTree(expr);
-        dbgTree(tree);
         if (tree.type === "leaf") {
           const [pat, returning] = expr.clauses[tree.action]!;
           if (pat.type !== "identifier") {

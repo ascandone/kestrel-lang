@@ -1666,8 +1666,8 @@ describe("pattern matching", () => {
     `);
   });
 
-  // TODO fix decision tree
   test("avoid redundant checks", () => {
+    // this has a weird compilation because there's a redundant check. The semantics are technically correct
     const out = compileSrc(`
     let x = match 0 {
       0 => "0",
@@ -1678,11 +1678,16 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const $0 = 0;
-      if ($0 === 0) {
-        Main$x = \`0\`;
-      } else {
-        Main$x = \`any\`;
+      switch (0) {
+        case 0:
+          Main$x = \`0\`;
+          break;
+        case 1:
+          Main$x = \`any\`;
+          break;
+        default:
+          Main$x = \`any\`;
+          break;
       }"
     `);
   });
