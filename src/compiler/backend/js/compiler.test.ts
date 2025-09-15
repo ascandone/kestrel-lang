@@ -670,13 +670,13 @@ describe("if expressions", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "let $0;
+      "let _GEN_0;
       if (Main$eq(0, 1)) {
-        $0 = \`a\`;
+        _GEN_0 = \`a\`;
       } else {
-        $0 = \`b\`;
+        _GEN_0 = \`b\`;
       }
-      const Main$x = Main$f($0);"
+      const Main$x = Main$f(_GEN_0);"
     `);
   });
 });
@@ -1299,11 +1299,11 @@ describe("structs", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const $0 = Main$get_original();
+      "const _GEN_0 = Main$get_original();
       const Main$update_y = {
-        x: $0.x,
+        x: _GEN_0.x,
         y: 42,
-        z: $0.z
+        z: _GEN_0.z
       };"
     `);
   });
@@ -1632,12 +1632,12 @@ describe("pattern matching", () => {
         $: 1,
         _0
       });
-      const $0 = {
+      const _GEN_0 = {
         $: 1,
         _0: 42
       };
       let Main$x;
-      switch ($0.$) {
+      switch (_GEN_0.$) {
         case 0:
           Main$x = 0;
           break;
@@ -1898,12 +1898,12 @@ describe("pattern matching", () => {
         _0,
         _1
       });
-      const $0 = {
+      const _GEN_0 = {
         $: 0,
         _0: 1,
         _1: 2
       };
-      const Main$x = $0._0;"
+      const Main$x = _GEN_0._0;"
     `);
   });
 
@@ -1942,14 +1942,14 @@ describe("pattern matching", () => {
       const Main$D = {
         $: 1
       };
-      const $0 = {
+      const _GEN_0 = {
         $: 0,
         _0: true
       };
       let Main$x;
-      switch ($0.$) {
+      switch (_GEN_0.$) {
         case 0:
-          if ($0._0) {
+          if (_GEN_0._0) {
             Main$x = 0;
           } else {
             Main$x = 1;
@@ -1978,12 +1978,75 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$C = _0 => _0;
-      const $0 = true;
-      let Main$x;
-      if ($0) {
-        Main$x = 0;
+      const Main$x$_MATCH_GEN$1 = true;
+      let _GEN_0;
+      if (Main$x$_MATCH_GEN$1) {
+        _GEN_0 = 0;
       } else {
-        Main$x = 1;
+        _GEN_0 = 1;
+      }
+      const Main$x = _GEN_0;"
+    `);
+  });
+
+  test("nest match", () => {
+    const out = compileSrc(
+      `
+  enum Box<a> {
+    Box(a),
+    Other,
+  }
+
+  let x = match Other {
+    Box(Box(a)) => match a {
+      Box(Box(b)) => a,
+      _ => 1,
+    },
+    _ => 2,
+  }
+`,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Box = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$Other = {
+        $: 1
+      };
+      let Main$x;
+      switch (Main$Other.$) {
+        case 0:
+          const _GEN_0 = Main$Other._0;
+          switch (_GEN_0.$) {
+            case 0:
+              const _GEN_1 = _GEN_0._0;
+              switch (_GEN_1.$) {
+                case 0:
+                  const _GEN_2 = _GEN_1._0;
+                  switch (_GEN_2.$) {
+                    case 0:
+                      Main$x = _GEN_0._0;
+                      break;
+                    default:
+                      Main$x = 1;
+                      break;
+                  }
+                  break;
+                default:
+                  Main$x = 1;
+                  break;
+              }
+              break;
+            default:
+              Main$x = 2;
+              break;
+          }
+          break;
+        default:
+          Main$x = 2;
+          break;
       }"
     `);
   });
@@ -2164,8 +2227,8 @@ describe("pattern matching", () => {
         _1
       });
       const Main$f = Main$f$b => {
-        const $0 = Main$f$b._1;
-        return $0._0;
+        const _GEN_0 = Main$f$b._1;
+        return _GEN_0._0;
       };"
     `);
   });

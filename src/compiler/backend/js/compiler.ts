@@ -512,7 +512,7 @@ export class Compiler {
   private genCompilerIdent(): t.Identifier {
     return {
       type: "Identifier",
-      name: `$${this.currentCompilerId++}`,
+      name: `_GEN_${this.currentCompilerId++}`,
     };
   }
 

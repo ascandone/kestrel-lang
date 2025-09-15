@@ -464,6 +464,29 @@ describe("pattern matching", () => {
       }"
     `);
   });
+
+  test("pattern matching nested", () => {
+    const ir = toSexpr(`
+    pub enum Bool { True, False }
+    enum T {
+      C(Bool),
+    }
+
+    pub let x = match C(True) {
+      C(True) => 0,
+      _ => 1,
+    }
+  `);
+
+    expect(ir).toMatchInlineSnapshot(`
+      "let pkg:Main.x = match C(True) {
+        C(GEN#1) => match GEN#1 {
+          True => 0,
+          _#0 => 1,
+        },
+      }"
+    `);
+  });
 });
 
 describe("traits", () => {

@@ -45,14 +45,12 @@ class ExprEmitter {
   }
 
   private mkUnique(id: number): ir.Ident & { type: "local" } {
-    const ident: ir.Ident & { type: "local" } = {
+    return {
       type: "local",
-      name: `GEN`,
+      name: "_MATCH_GEN",
       declaration: this.currentDecl,
       unique: id,
     };
-
-    return ident;
   }
 
   private lowerPatternBinding(
