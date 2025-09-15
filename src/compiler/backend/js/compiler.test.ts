@@ -1979,13 +1979,12 @@ describe("pattern matching", () => {
     expect(out).toMatchInlineSnapshot(`
       "const Main$C = _0 => _0;
       const Main$x$_MATCH_GEN$1 = true;
-      let _GEN_0;
+      let Main$x;
       if (Main$x$_MATCH_GEN$1) {
-        _GEN_0 = 0;
+        Main$x = 0;
       } else {
-        _GEN_0 = 1;
-      }
-      const Main$x = _GEN_0;"
+        Main$x = 1;
+      }"
     `);
   });
 

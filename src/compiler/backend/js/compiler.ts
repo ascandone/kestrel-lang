@@ -25,6 +25,8 @@ type CompilationMode =
       ident: t.Identifier;
       declare: boolean;
       dictParams: t.Identifier[];
+
+      isGlobal: boolean;
     }
   | { type: "return" };
 
@@ -112,6 +114,7 @@ export class Compiler {
       declare: true,
       ident: compileGlobalIdent(decl.name),
       dictParams: decl.implicitTraitParams.map(makeImplicitParamVarIdent),
+      isGlobal: true,
     });
 
     const stms = this.statementsBuf;
@@ -127,6 +130,11 @@ export class Compiler {
     switch (as.type) {
       case "assign_var":
         if (as.declare) {
+          if (!as.isGlobal && isSimpleJsExpr(expr)) {
+            this.substitutedIdents.set(as.ident.name, expr);
+            return;
+          }
+
           const exprsWithDictParams: t.Expression =
             as.dictParams.length === 0
               ? expr
@@ -175,25 +183,11 @@ export class Compiler {
     switch (src.type) {
       case "application": {
         const isTailcall = this.tailCalls?.has(src) ?? false;
-        if (!isTailcall) {
-          break;
+        if (isTailcall) {
+          this.compileTailcall(src);
+          return;
         }
-
-        // const tailCallIdent = this.makeFreshIdent();
-        // this.tailCallIdent = tailCallIdent;
-        for (let i = 0; i < src.args.length; i++) {
-          const expr = this.compileExprAsJsExpr(src.args[i]!);
-          this.statementsBuf.push({
-            type: "ExpressionStatement",
-            expression: {
-              type: "AssignmentExpression",
-              operator: "=",
-              left: { type: "Identifier", name: `GEN_TC__${i}` },
-              right: expr,
-            },
-          });
-        }
-        return;
+        break;
       }
 
       case "match":
@@ -220,6 +214,21 @@ export class Compiler {
     return this.castExprToStmt(expr, as);
   }
 
+  private compileTailcall(src: ir.Expr & { type: "application" }) {
+    for (let i = 0; i < src.args.length; i++) {
+      const expr = this.compileExprAsJsExpr(src.args[i]!);
+      this.statementsBuf.push({
+        type: "ExpressionStatement",
+        expression: {
+          type: "AssignmentExpression",
+          operator: "=",
+          left: { type: "Identifier", name: `GEN_TC__${i}` },
+          right: expr,
+        },
+      });
+    }
+  }
+
   private compileExprAsJsExpr(src: ir.Expr): t.Expression {
     switch (src.type) {
       case "constant":
@@ -229,6 +238,7 @@ export class Compiler {
         return this.compileIdentifierAsExpr(src);
 
       case "application":
+        // Careful: TCO doesn't apply here
         return this.compileApplicationAsExpr(src);
 
       case "fn":
@@ -604,8 +614,7 @@ export class Compiler {
     // ---  let-like match
     const letSugar = isMatchLetLike(src);
     if (letSugar !== undefined) {
-      const compiledExpr = this.compileLetAsExpr(letSugar);
-      this.castExprToStmt(compiledExpr, as);
+      this.compileLetAsStmts(letSugar, as);
       return;
     }
 
@@ -742,6 +751,7 @@ export class Compiler {
       ident,
       declare: true,
       dictParams: [],
+      isGlobal: false,
     });
     return ident;
   }
@@ -823,25 +833,27 @@ export class Compiler {
     };
   }
 
-  private compileLetAsExpr(src: ir.LetSugar): t.Expression {
-    const compiledValue = this.compileExprAsJsExpr(src.value);
-    if (compiledValue.type === "Identifier") {
-      const ident = compileLocalIdent(src.binding);
-      this.substitutedIdents.set(ident.name, compiledValue);
-      return this.compileExprAsJsExpr(src.body);
-    }
-
-    this.statementsBuf.push({
-      type: "VariableDeclaration",
-      kind: "const",
-      declarations: [
-        {
-          type: "VariableDeclarator",
-          id: compileLocalIdent(src.binding),
-          init: compiledValue,
-        },
-      ],
+  private compileLetAsStmts(src: ir.LetSugar, as: CompilationMode): void {
+    this.compileExprAsJsStms(src.value, {
+      type: "assign_var",
+      declare: true,
+      ident: compileLocalIdent(src.binding),
+      dictParams: [],
+      isGlobal: false,
     });
+
+    this.compileExprAsJsStms(src.body, as);
+  }
+
+  private compileLetAsExpr(src: ir.LetSugar): t.Expression {
+    this.compileExprAsJsStms(src.value, {
+      type: "assign_var",
+      declare: true,
+      ident: compileLocalIdent(src.binding),
+      dictParams: [],
+      isGlobal: false,
+    });
+
     return this.compileExprAsJsExpr(src.body);
   }
 
@@ -1276,4 +1288,14 @@ function tcIdents(binding: ir.QualifiedIdentifier, expr: ir.Expr) {
   helper(expr);
 
   return tailCalls;
+}
+
+function isSimpleJsExpr(expr: t.Expression) {
+  switch (expr.type) {
+    case "Identifier":
+      return true;
+
+    default:
+      return false;
+  }
 }
