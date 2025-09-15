@@ -76,6 +76,33 @@ test("local value count resets on new declrs", () => {
   `);
 });
 
+test("local value (nested)", () => {
+  const ir = toSexpr(`
+    let f = fn a, b { a }
+
+    pub let x = {
+      let local = {
+        let nested = 0;
+        f(nested, 1)
+      };
+      f(local, 2)
+    }
+  `);
+  expect(ir).toMatchInlineSnapshot(`
+    "let pkg:Main.f = fn a#0, b#0 {
+      a#0
+    }
+
+    let pkg:Main.x = {
+      let local#0 = {
+        let nested#0 = 0;
+        f(nested#0, 1)
+      };
+      f(local#0, 2)
+    }"
+  `);
+});
+
 test("local value (shadowing)", () => {
   const ir = toSexpr(`
     pub let glb = {
@@ -342,7 +369,7 @@ describe("pattern matching", () => {
       "let pkg:Main.m = fn x#0, f#0 {
         match f#0(x#0) {
           None => 0,
-          Some(GEN#1) => match GEN#1 {
+          Some(_MATCH_GEN#1) => match _MATCH_GEN#1 {
             0 => x#0,
             x#1 => x#1,
           },
@@ -372,7 +399,7 @@ describe("pattern matching", () => {
       "let pkg:Main.opt = Some(Some(0))
 
       let pkg:Main.m = match opt {
-        Some(GEN#1) => match GEN#1 {
+        Some(_MATCH_GEN#1) => match _MATCH_GEN#1 {
           Some(x#0) => x#0,
           _#0 => 0,
         },
@@ -480,7 +507,7 @@ describe("pattern matching", () => {
 
     expect(ir).toMatchInlineSnapshot(`
       "let pkg:Main.x = match C(True) {
-        C(GEN#1) => match GEN#1 {
+        C(_MATCH_GEN#1) => match _MATCH_GEN#1 {
           True => 0,
           _#0 => 1,
         },

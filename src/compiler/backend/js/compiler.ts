@@ -838,7 +838,7 @@ export class Compiler {
         {
           type: "VariableDeclarator",
           id: compileLocalIdent(src.binding),
-          init: this.compileExprAsJsExpr(src.value),
+          init: compiledValue,
         },
       ],
     });
