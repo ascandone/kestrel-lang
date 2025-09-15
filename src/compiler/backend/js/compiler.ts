@@ -616,7 +616,7 @@ export class Compiler {
       return;
     }
 
-    const [firstPat] = src.clauses[0]!;
+    const [firstPat, firstReturning] = src.clauses[0]!;
 
     //  --- switch-like match (lit)
     if (firstPat.type === "constant") {
@@ -632,6 +632,29 @@ export class Compiler {
 
         [undefined, src.default![1]],
       ]);
+      return;
+    }
+
+    // -- unwrapping single ctor
+    if (
+      src.clauses.length === 1 &&
+      firstPat.type === "constructor" &&
+      src.default === undefined
+    ) {
+      // TODO handle unboxed repr
+      // TODO dedup
+      const precomputed = this.precomputeValue(src.expr);
+      firstPat.args.forEach((arg, index) => {
+        const ident = compileLocalIdent(arg);
+        this.substitutedIdents.set(ident.name, {
+          type: "MemberExpression",
+          computed: false,
+          object: precomputed,
+          property: { type: "Identifier", name: `_${index}` },
+        });
+      });
+      this.compileExprAsJsStms(firstReturning, as);
+
       return;
     }
 
@@ -730,9 +753,7 @@ export class Compiler {
     // TODO would it be possible to have a simplier repr for fn params? it probably shoudn't involve the IR lowering
     // maybe by keeping a scope with the locals defined as params? and converting to simple names
     const [{ params }, stms] = this.wrapStatements(() => {
-      const params = src.bindings.map((param): t.Identifier => {
-        return compileLocalIdent(param);
-      });
+      const params = src.bindings.map(compileLocalIdent);
       this.compileExprAsJsStms(src.body, {
         type: "return",
       });
@@ -1234,6 +1255,9 @@ function tcIdents(binding: ir.QualifiedIdentifier, expr: ir.Expr) {
       case "match":
         for (const [, clause] of expr.clauses) {
           helper(clause);
+        }
+        if (expr.default !== undefined) {
+          helper(expr.default[1]);
         }
         return;
 

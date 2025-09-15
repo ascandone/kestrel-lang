@@ -247,7 +247,7 @@ describe("let expressions", () => {
       `);
   });
 
-  test.skip("nested let exprs", () => {
+  test("nested let exprs", () => {
     const out = compileSrc(`
         let x = {
           let local = {
@@ -1877,8 +1877,33 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Unit = 0;
-      let Main$x;
-      Main$x = 0;"
+      const Main$x = 0;"
+    `);
+  });
+
+  test("pattern matching singleton values", () => {
+    const out = compileSrc(
+      `
+
+    enum Tuple { Tuple(a, b) }
+    let x = match Tuple(1, 2) {
+      Tuple(a, b) => a,
+    }
+  `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Tuple = (_0, _1) => ({
+        $: 0,
+        _0,
+        _1
+      });
+      const $0 = {
+        $: 0,
+        _0: 1,
+        _1: 2
+      };
+      const Main$x = $0._0;"
     `);
   });
 
@@ -2121,7 +2146,8 @@ describe("pattern matching", () => {
     `);
   });
 
-  test.skip("compiling nested let match", () => {
+  // TODO this could be Main$f$b._1._0
+  test("compiling nested let match", () => {
     const out = compileSrc(`
     enum Pair { Pair(Int, Int) }
 
@@ -2137,11 +2163,14 @@ describe("pattern matching", () => {
         _0,
         _1
       });
-      const Main$f = Main$f$b => Main$f$b._1._0;"
+      const Main$f = Main$f$b => {
+        const $0 = Main$f$b._1;
+        return $0._0;
+      };"
     `);
   });
 
-  test.skip("compiling fn match", () => {
+  test("compiling fn match", () => {
     const out = compileSrc(`
     enum Box { Box(Int) }
 
