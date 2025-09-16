@@ -729,6 +729,9 @@ export class Compiler {
     );
 
     if (src.default !== undefined) {
+      const ident = src.default[0];
+      const compiledIdent = compileLocalIdent(ident);
+      this.substitutedIdents.set(compiledIdent.name, precomputed);
       clauses.push([undefined, src.default[1]]);
     }
 
