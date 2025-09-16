@@ -17,6 +17,7 @@ export type DecisionTreeBinding =
     }
   | {
       type: "generated";
+      bindings: Set<typedAst.TypedBinding>;
       id: number;
     };
 
@@ -160,7 +161,11 @@ function specialize(
               };
             }
 
-            return genDecisionTreeBinding();
+            const idents = matchingCtors
+              .map((c) => c.args[argIndex]!)
+              .filter((p) => p.type === "identifier");
+
+            return genDecisionTreeBinding(new Set(idents));
           }),
         });
         break;
@@ -267,11 +272,6 @@ function specialize(
       return specializedCol.type === "identifier";
     });
 
-    const subTree = checkPatternsMatrix(
-      [...fringePrefix, genDecisionTreeBinding(), ...fringePostfix],
-      specializedMatrix,
-    );
-
     const patterns = specializedMatrix.map(
       (clause) =>
         clause.patterns[columnIndex]! as typedAst.TypedMatchPattern & {
@@ -279,10 +279,17 @@ function specialize(
         },
     );
 
+    const bindings = new Set<typedAst.TypedBinding>(patterns);
+
+    const subTree = checkPatternsMatrix(
+      [...fringePrefix, genDecisionTreeBinding(bindings), ...fringePostfix],
+      specializedMatrix,
+    );
+
     const binding: DecisionTreeBinding =
       patterns.length === 1
         ? { type: "identifier", binding: patterns[0]! }
-        : genDecisionTreeBinding();
+        : genDecisionTreeBinding(bindings);
 
     // TODO reuse binding from patterns if unique
     switchTree.default = [binding, subTree];
@@ -332,8 +339,10 @@ function patToCtorKey(pat: typedAst.TypedMatchPattern): string {
 }
 
 let nextUniqueDecisionTreeId = 0;
-function genDecisionTreeBinding(): DecisionTreeBinding {
-  return { type: "generated", id: nextUniqueDecisionTreeId++ };
+function genDecisionTreeBinding(
+  bindings: Set<typedAst.TypedBinding>,
+): DecisionTreeBinding {
+  return { type: "generated", id: nextUniqueDecisionTreeId++, bindings };
 }
 
 export function runExhaustivenessCheck(rows: typedAst.TypedMatchPattern[][]) {
@@ -346,7 +355,11 @@ export function runExhaustivenessCheck(rows: typedAst.TypedMatchPattern[][]) {
   const fringe =
     matrix[0] === undefined
       ? []
-      : matrix[0].patterns.map(() => genDecisionTreeBinding());
+      : matrix[0].patterns.map((pat): DecisionTreeBinding => {
+          return genDecisionTreeBinding(
+            new Set(pat.type === "identifier" ? [pat] : []),
+          );
+        });
 
   return checkPatternsMatrix(fringe, matrix);
 }

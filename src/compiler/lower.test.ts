@@ -5,6 +5,7 @@ import { lowerProgram } from "./lower";
 import { formatIR } from "./__test__/format-ir";
 import { typecheckSource_ } from "./__test__/prelude";
 import { defaultTraitImpls } from "../typecheck/defaultImports";
+import { CORE_PACKAGE } from "../typecheck/core_package";
 
 test("global value of same module", () => {
   const ir = toSexpr(`
@@ -514,6 +515,48 @@ describe("pattern matching", () => {
       }"
     `);
   });
+
+  test("pattern matching list", () => {
+    const ir = toSexpr(
+      `
+    extern type String
+    
+    pub(..) enum List<a> {
+      Nil,
+      Cons(a, List<a>),
+    }
+
+    pub enum Expectation {
+      Pass,
+      Fail,
+    }
+
+   pub let all = fn expectations {
+      match expectations {
+        [Pass, ..expectations] => all(expectations),
+        [failure, ..another] => all(another),
+        [] => Pass,
+      }
+    }
+  `,
+      {
+        package_: CORE_PACKAGE,
+        moduleId: "List",
+      },
+    );
+
+    expect(ir).toMatchInlineSnapshot(`
+      "let kestrel_core:List.all = fn expectations#0 {
+        match expectations#0 {
+          Cons(_MATCH_GEN#1, _MATCH_GEN#2) => match _MATCH_GEN#1 {
+            Pass => all(_MATCH_GEN#2),
+            failure#0 => all(_MATCH_GEN#2),
+          },
+          Nil => Pass,
+        }
+      }"
+    `);
+  });
 });
 
 describe("traits", () => {
@@ -789,11 +832,19 @@ describe("traits", () => {
   });
 });
 
-function getIR(src: string) {
+function getIR(
+  src: string,
+  options: { package_?: string; moduleId?: string } = {},
+) {
   const untypedMod = unsafeParse(src);
-  const [tc, errors] = typecheck("pkg", "Main", untypedMod, {
-    implicitImports: [],
-  });
+  const [tc, errors] = typecheck(
+    options.package_ ?? "pkg",
+    options.moduleId ?? "Main",
+    untypedMod,
+    {
+      implicitImports: [],
+    },
+  );
   expect(errors.filter((e) => e.description.severity === "error")).toEqual([]);
   return lowerProgram(tc, new Map(), () => {
     // TODO fix this
@@ -801,8 +852,11 @@ function getIR(src: string) {
   });
 }
 
-function toSexpr(src: string) {
-  const ir = getIR(src);
+function toSexpr(
+  src: string,
+  options: { package_?: string; moduleId?: string } = {},
+) {
+  const ir = getIR(src, options);
   return formatIR(ir);
 }
 

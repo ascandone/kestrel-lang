@@ -59,8 +59,13 @@ class ExprEmitter {
     switch (arg.type) {
       case "identifier":
         return this.mkIdent(arg.binding);
-      case "generated":
-        return this.mkUnique(arg.id);
+      case "generated": {
+        const unique = this.mkUnique(arg.id);
+        for (const pat of arg.bindings) {
+          this.loweredIdents.set(pat, unique);
+        }
+        return unique;
+      }
     }
   }
 
