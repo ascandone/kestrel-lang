@@ -220,11 +220,19 @@ export type TypedValueDeclaration = ast.RangeMeta & {
   $traitsConstraints: RigidVarsCtx;
 };
 
+assertSubtype<ast.ValueDeclarationAttribute, TypedValueDeclarationAttribute>;
+export type TypedTypeDeclarationAttribute = ast.RangeMeta &
+  (
+    | { type: "@deriving"; args: Array<ast.RangeMeta & { name: string }> }
+    | { type: "@extern" }
+  );
+
 assertSubtype<ast.TypeDeclaration, TypedTypeDeclaration>;
 export type TypedTypeDeclaration = ast.RangeMeta & {
   name: string;
   params: Array<{ name: string } & ast.RangeMeta>;
   docComment?: string;
+  attributes: TypedTypeDeclarationAttribute[];
 
   $type: Type;
   $traits: Map<string, Set<string>[]>;
