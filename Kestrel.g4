@@ -57,13 +57,20 @@ letDeclaration_:
 	(valueAttribute*)
 	(pub = 'pub'?) 'let' binding=(INFIX_ID | ID) ('=' expr)?;
 
+typeAttribute
+	: '@extern' #typeAttrExtern
+	| '@deriving' '(' (TYPE_ID (',' TYPE_ID)*)? ')' #typeAttDeriving
+	;
+
 typeDeclaration_:
 	(doc = DOC_COMMENT_LINE*)
+	typeAttribute*
 	pub=pubExposing? 'enum' name=TYPE_ID paramsList?
 	'{' typeVariants? '}';
 
 structDeclaration_:
 	(doc = DOC_COMMENT_LINE*)
+	typeAttribute*
 	pub=pubExposing?
 	'struct' name=TYPE_ID paramsList?
 	'{' declarationFields? '}'

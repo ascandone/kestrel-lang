@@ -180,6 +180,7 @@ exports[`Comments > doc comments on extern types 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "docComment": " first line
  second line
 ",
@@ -305,6 +306,7 @@ exports[`Comments > doc comments on types 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "docComment": " first line
  second line
 ",
@@ -1088,6 +1090,7 @@ exports[`extern bindings > types 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [],
       "pub": false,
@@ -1275,6 +1278,76 @@ exports[`imports > import single module 1`] = `
 }
 `;
 
+exports[`imports > parse deriving attribute 1`] = `
+{
+  "declarations": [],
+  "imports": [],
+  "lineComments": [],
+  "typeDeclarations": [
+    {
+      "attributes": [
+        {
+          "args": [
+            {
+              "name": "Json",
+              "range": {
+                "end": {
+                  "character": 14,
+                  "line": 0,
+                },
+                "start": {
+                  "character": 10,
+                  "line": 0,
+                },
+              },
+            },
+            {
+              "name": "Eq",
+              "range": {
+                "end": {
+                  "character": 18,
+                  "line": 0,
+                },
+                "start": {
+                  "character": 16,
+                  "line": 0,
+                },
+              },
+            },
+          ],
+          "range": {
+            "end": {
+              "character": 19,
+              "line": 0,
+            },
+            "start": {
+              "character": 0,
+              "line": 0,
+            },
+          },
+          "type": "@deriving",
+        },
+      ],
+      "name": "T",
+      "params": [],
+      "pub": true,
+      "range": {
+        "end": {
+          "character": 34,
+          "line": 0,
+        },
+        "start": {
+          "character": 0,
+          "line": 0,
+        },
+      },
+      "type": "adt",
+      "variants": [],
+    },
+  ],
+}
+`;
+
 exports[`imports > parse pub modifier 1`] = `
 {
   "declarations": [
@@ -1336,6 +1409,7 @@ exports[`imports > parse pub modifier on extern types 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [],
       "pub": true,
@@ -1455,6 +1529,7 @@ exports[`imports > parse pub modifier on types 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [],
       "pub": true,
@@ -1482,6 +1557,7 @@ exports[`imports > parse pub(..) modifier on types 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [],
       "pub": "..",
@@ -8226,6 +8302,7 @@ exports[`structs > doc comments 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "docComment": " example docs
 ",
       "fields": [],
@@ -8255,6 +8332,7 @@ exports[`structs > empty struct 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "fields": [],
       "name": "Person",
       "params": [],
@@ -8282,6 +8360,7 @@ exports[`structs > field 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "fields": [
         {
           "name": "age",
@@ -8417,6 +8496,7 @@ exports[`structs > many fields 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "fields": [
         {
           "name": "name",
@@ -8499,6 +8579,7 @@ exports[`structs > pub modifier 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "fields": [],
       "name": "Person",
       "params": [],
@@ -8526,6 +8607,7 @@ exports[`structs > pub(..) modifier 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "fields": [],
       "name": "Person",
       "params": [],
@@ -8632,6 +8714,7 @@ exports[`structs > type params 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "fields": [],
       "name": "Person",
       "params": [
@@ -9185,6 +9268,7 @@ exports[`type declarations > many type params 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [
         {
@@ -9252,6 +9336,7 @@ exports[`type declarations > single type param 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [
         {
@@ -9293,6 +9378,7 @@ exports[`type declarations > trailing comma after variants 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [],
       "pub": false,
@@ -9349,6 +9435,7 @@ exports[`type declarations > type with a variant with complex args 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [],
       "pub": false,
@@ -9455,6 +9542,7 @@ exports[`type declarations > type with a variant with many args 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [],
       "pub": false,
@@ -9532,6 +9620,7 @@ exports[`type declarations > type with a variant with no args 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [],
       "pub": false,
@@ -9574,6 +9663,7 @@ exports[`type declarations > type with a variant with one arg 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [],
       "pub": false,
@@ -9634,6 +9724,7 @@ exports[`type declarations > type with many variants 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "T",
       "params": [],
       "pub": false,
@@ -9690,6 +9781,7 @@ exports[`type declarations > type with no variants 1`] = `
   "lineComments": [],
   "typeDeclarations": [
     {
+      "attributes": [],
       "name": "Never",
       "params": [],
       "pub": false,

@@ -690,6 +690,11 @@ describe("imports", () => {
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
+  test("parse deriving attribute", () => {
+    const src = "@deriving(Json, Eq) pub enum T { }";
+    expect(unsafeParse(src)).toMatchSnapshot();
+  });
+
   test("parse pub(..) modifier on types", () => {
     const src = "pub(..) enum T { }";
     expect(unsafeParse(src)).toMatchSnapshot();

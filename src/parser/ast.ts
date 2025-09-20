@@ -184,10 +184,17 @@ export type ValueDeclaration = RangeMeta & {
   value?: Expr;
 };
 
+export type TypeDeclarationAttribute = RangeMeta &
+  (
+    | { type: "@deriving"; args: Array<RangeMeta & { name: string }> }
+    | { type: "@extern" }
+  );
+
 export type TypeDeclaration = RangeMeta & {
   name: string;
   params: Array<{ name: string } & RangeMeta>;
   docComment?: string;
+  attributes: TypeDeclarationAttribute[];
 } & (
     | {
         type: "adt";

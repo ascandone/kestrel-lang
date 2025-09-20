@@ -60,6 +60,7 @@ import {
   TypeDeclaration,
   BlockStatement,
   ValueDeclarationAttribute,
+  TypeDeclarationAttribute,
 } from "./ast";
 
 const COMMENTS_CHANNEL = 1;
@@ -110,6 +111,26 @@ class ValueDeclarationAttributeVisitor extends Visitor<ValueDeclarationAttribute
   visitAttrExtern = (
     ctx: parser.AttrExternContext,
   ): ValueDeclarationAttribute => ({
+    type: "@extern",
+    range: rangeOfCtx(ctx),
+  });
+}
+
+class TypeDeclarationAttributeVisitor extends Visitor<TypeDeclarationAttribute> {
+  visitTypeAttDeriving = (
+    ctx: parser.TypeAttDerivingContext,
+  ): TypeDeclarationAttribute => ({
+    type: "@deriving",
+    range: rangeOfCtx(ctx),
+    args: ctx.TYPE_ID_list().map((tk) => ({
+      name: tk.getText(),
+      range: rangeOfTerminalNode(tk),
+    })),
+  });
+
+  visitTypeAttrExtern = (
+    ctx: parser.TypeAttrExternContext,
+  ): TypeDeclarationAttribute => ({
     type: "@extern",
     range: rangeOfCtx(ctx),
   });
@@ -571,6 +592,9 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
     return {
       type: "type",
       decl: {
+        attributes: ctx
+          .typeAttribute_list()
+          .map((a) => new TypeDeclarationAttributeVisitor().visit(a)),
         type: "adt",
         pub:
           ctx._pub === undefined
@@ -619,6 +643,9 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       type: "type",
       decl: {
         type: "struct",
+        attributes: ctx
+          .typeAttribute_list()
+          .map((a) => new TypeDeclarationAttributeVisitor().visit(a)),
         fields:
           ctx
             .declarationFields()
@@ -664,6 +691,7 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       type: "type",
       decl: {
         type: "extern",
+        attributes: [],
         pub: ctx._pub !== undefined,
         name: ctx._name.text,
 

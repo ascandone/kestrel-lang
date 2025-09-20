@@ -71,23 +71,24 @@ export default class KestrelParser extends Parser {
 	public static readonly T__48 = 49;
 	public static readonly T__49 = 50;
 	public static readonly T__50 = 51;
-	public static readonly SLASH_4 = 52;
-	public static readonly SLASH_3 = 53;
-	public static readonly SLASH_2 = 54;
-	public static readonly LINE_COMMENT = 55;
-	public static readonly EXPOSING_NESTED = 56;
-	public static readonly INFIX_ID = 57;
-	public static readonly ID = 58;
-	public static readonly TYPE_ID = 59;
-	public static readonly INT = 60;
-	public static readonly CHAR = 61;
-	public static readonly STRING = 62;
-	public static readonly FLOAT = 63;
-	public static readonly NEWLINE = 64;
-	public static readonly WS = 65;
-	public static readonly MODULEDOC_COMMENT_LINE = 66;
-	public static readonly DOC_COMMENT_LINE = 67;
-	public static readonly INFIX_CHAR = 68;
+	public static readonly T__51 = 52;
+	public static readonly SLASH_4 = 53;
+	public static readonly SLASH_3 = 54;
+	public static readonly SLASH_2 = 55;
+	public static readonly LINE_COMMENT = 56;
+	public static readonly EXPOSING_NESTED = 57;
+	public static readonly INFIX_ID = 58;
+	public static readonly ID = 59;
+	public static readonly TYPE_ID = 60;
+	public static readonly INT = 61;
+	public static readonly CHAR = 62;
+	public static readonly STRING = 63;
+	public static readonly FLOAT = 64;
+	public static readonly NEWLINE = 65;
+	public static readonly WS = 66;
+	public static readonly MODULEDOC_COMMENT_LINE = 67;
+	public static readonly DOC_COMMENT_LINE = 68;
+	public static readonly INFIX_CHAR = 69;
 	public static override readonly EOF = Token.EOF;
 	public static readonly RULE_moduleNamespace = 0;
 	public static readonly RULE_program = 1;
@@ -96,29 +97,30 @@ export default class KestrelParser extends Parser {
 	public static readonly RULE_declaration = 4;
 	public static readonly RULE_valueAttribute = 5;
 	public static readonly RULE_letDeclaration_ = 6;
-	public static readonly RULE_typeDeclaration_ = 7;
-	public static readonly RULE_structDeclaration_ = 8;
-	public static readonly RULE_externTypeDeclaration_ = 9;
-	public static readonly RULE_pubExposing = 10;
-	public static readonly RULE_paramsList = 11;
-	public static readonly RULE_typeVariants = 12;
-	public static readonly RULE_fieldDecl = 13;
-	public static readonly RULE_declarationFields = 14;
-	public static readonly RULE_polyType = 15;
-	public static readonly RULE_traitImplClause = 16;
-	public static readonly RULE_type = 17;
-	public static readonly RULE_fnTypeParams = 18;
-	public static readonly RULE_typeConstructorDecl = 19;
-	public static readonly RULE_qualifiedId = 20;
-	public static readonly RULE_structField = 21;
-	public static readonly RULE_structFields = 22;
-	public static readonly RULE_expr = 23;
-	public static readonly RULE_listElems = 24;
-	public static readonly RULE_matchClause = 25;
-	public static readonly RULE_blockStatement = 26;
-	public static readonly RULE_block = 27;
-	public static readonly RULE_matchPattern = 28;
-	public static readonly RULE_listPatterns = 29;
+	public static readonly RULE_typeAttribute = 7;
+	public static readonly RULE_typeDeclaration_ = 8;
+	public static readonly RULE_structDeclaration_ = 9;
+	public static readonly RULE_externTypeDeclaration_ = 10;
+	public static readonly RULE_pubExposing = 11;
+	public static readonly RULE_paramsList = 12;
+	public static readonly RULE_typeVariants = 13;
+	public static readonly RULE_fieldDecl = 14;
+	public static readonly RULE_declarationFields = 15;
+	public static readonly RULE_polyType = 16;
+	public static readonly RULE_traitImplClause = 17;
+	public static readonly RULE_type = 18;
+	public static readonly RULE_fnTypeParams = 19;
+	public static readonly RULE_typeConstructorDecl = 20;
+	public static readonly RULE_qualifiedId = 21;
+	public static readonly RULE_structField = 22;
+	public static readonly RULE_structFields = 23;
+	public static readonly RULE_expr = 24;
+	public static readonly RULE_listElems = 25;
+	public static readonly RULE_matchClause = 26;
+	public static readonly RULE_blockStatement = 27;
+	public static readonly RULE_block = 28;
+	public static readonly RULE_matchPattern = 29;
+	public static readonly RULE_listPatterns = 30;
 	public static readonly literalNames: (string | null)[] = [ null, "'/'", 
                                                             "'import'", 
                                                             "'.'", "'{'", 
@@ -126,13 +128,13 @@ export default class KestrelParser extends Parser {
                                                             "'@type'", "'@inline'", 
                                                             "'@extern'", 
                                                             "'pub'", "'let'", 
-                                                            "'='", "'enum'", 
-                                                            "'struct'", 
+                                                            "'='", "'@deriving'", 
+                                                            "'('", "')'", 
+                                                            "'enum'", "'struct'", 
                                                             "'extern'", 
                                                             "'type'", "'<'", 
                                                             "'>'", "':'", 
                                                             "'where'", "'+'", 
-                                                            "'('", "')'", 
                                                             "'->'", "'#'", 
                                                             "'!'", "'..'", 
                                                             "'*'", "'*.'", 
@@ -175,7 +177,7 @@ export default class KestrelParser extends Parser {
                                                              null, null, 
                                                              null, null, 
                                                              null, null, 
-                                                             "SLASH_4", 
+                                                             null, "SLASH_4", 
                                                              "SLASH_3", 
                                                              "SLASH_2", 
                                                              "LINE_COMMENT", 
@@ -191,12 +193,12 @@ export default class KestrelParser extends Parser {
 	// tslint:disable:no-trailing-whitespace
 	public static readonly ruleNames: string[] = [
 		"moduleNamespace", "program", "import_", "importExposing", "declaration", 
-		"valueAttribute", "letDeclaration_", "typeDeclaration_", "structDeclaration_", 
-		"externTypeDeclaration_", "pubExposing", "paramsList", "typeVariants", 
-		"fieldDecl", "declarationFields", "polyType", "traitImplClause", "type", 
-		"fnTypeParams", "typeConstructorDecl", "qualifiedId", "structField", "structFields", 
-		"expr", "listElems", "matchClause", "blockStatement", "block", "matchPattern", 
-		"listPatterns",
+		"valueAttribute", "letDeclaration_", "typeAttribute", "typeDeclaration_", 
+		"structDeclaration_", "externTypeDeclaration_", "pubExposing", "paramsList", 
+		"typeVariants", "fieldDecl", "declarationFields", "polyType", "traitImplClause", 
+		"type", "fnTypeParams", "typeConstructorDecl", "qualifiedId", "structField", 
+		"structFields", "expr", "listElems", "matchClause", "blockStatement", 
+		"block", "matchPattern", "listPatterns",
 	];
 	public get grammarFileName(): string { return "Kestrel.g4"; }
 	public get literalNames(): (string | null)[] { return KestrelParser.literalNames; }
@@ -220,21 +222,21 @@ export default class KestrelParser extends Parser {
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 60;
+			this.state = 62;
 			this.match(KestrelParser.TYPE_ID);
-			this.state = 65;
+			this.state = 67;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la===1) {
 				{
 				{
-				this.state = 61;
+				this.state = 63;
 				this.match(KestrelParser.T__0);
-				this.state = 62;
+				this.state = 64;
 				this.match(KestrelParser.TYPE_ID);
 				}
 				}
-				this.state = 67;
+				this.state = 69;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -263,50 +265,50 @@ export default class KestrelParser extends Parser {
 			this.enterOuterAlt(localctx, 1);
 			{
 			{
-			this.state = 71;
+			this.state = 73;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la===66) {
+			while (_la===67) {
 				{
 				{
-				this.state = 68;
+				this.state = 70;
 				localctx._doc = this.match(KestrelParser.MODULEDOC_COMMENT_LINE);
 				}
 				}
-				this.state = 73;
+				this.state = 75;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
 			}
-			this.state = 77;
+			this.state = 79;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la===2) {
 				{
 				{
-				this.state = 74;
+				this.state = 76;
 				this.import_();
 				}
 				}
-				this.state = 79;
+				this.state = 81;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 83;
+			this.state = 85;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 61312) !== 0) || _la===67) {
+			while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 470912) !== 0) || _la===68) {
 				{
 				{
-				this.state = 80;
+				this.state = 82;
 				this.declaration();
 				}
 				}
-				this.state = 85;
+				this.state = 87;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 86;
+			this.state = 88;
 			this.match(KestrelParser.EOF);
 			}
 		}
@@ -332,38 +334,38 @@ export default class KestrelParser extends Parser {
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 88;
+			this.state = 90;
 			this.match(KestrelParser.T__1);
-			this.state = 89;
+			this.state = 91;
 			this.moduleNamespace();
-			this.state = 102;
+			this.state = 104;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la===3) {
 				{
-				this.state = 90;
-				this.match(KestrelParser.T__2);
-				this.state = 91;
-				this.match(KestrelParser.T__3);
 				this.state = 92;
+				this.match(KestrelParser.T__2);
+				this.state = 93;
+				this.match(KestrelParser.T__3);
+				this.state = 94;
 				this.importExposing();
-				this.state = 97;
+				this.state = 99;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la===5) {
 					{
 					{
-					this.state = 93;
+					this.state = 95;
 					this.match(KestrelParser.T__4);
-					this.state = 94;
+					this.state = 96;
 					this.importExposing();
 					}
 					}
-					this.state = 99;
+					this.state = 101;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 100;
+				this.state = 102;
 				this.match(KestrelParser.T__5);
 				}
 			}
@@ -390,18 +392,18 @@ export default class KestrelParser extends Parser {
 		this.enterRule(localctx, 6, KestrelParser.RULE_importExposing);
 		let _la: number;
 		try {
-			this.state = 109;
+			this.state = 111;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case 57:
 			case 58:
+			case 59:
 				localctx = new ValueExposingContext(this, localctx);
 				this.enterOuterAlt(localctx, 1);
 				{
-				this.state = 104;
+				this.state = 106;
 				(localctx as ValueExposingContext)._name = this._input.LT(1);
 				_la = this._input.LA(1);
-				if(!(_la===57 || _la===58)) {
+				if(!(_la===58 || _la===59)) {
 				    (localctx as ValueExposingContext)._name = this._errHandler.recoverInline(this);
 				}
 				else {
@@ -410,18 +412,18 @@ export default class KestrelParser extends Parser {
 				}
 				}
 				break;
-			case 59:
+			case 60:
 				localctx = new TypeExposingContext(this, localctx);
 				this.enterOuterAlt(localctx, 2);
 				{
-				this.state = 105;
-				(localctx as TypeExposingContext)._name = this.match(KestrelParser.TYPE_ID);
 				this.state = 107;
+				(localctx as TypeExposingContext)._name = this.match(KestrelParser.TYPE_ID);
+				this.state = 109;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la===56) {
+				if (_la===57) {
 					{
-					this.state = 106;
+					this.state = 108;
 					this.match(KestrelParser.EXPOSING_NESTED);
 					}
 				}
@@ -451,14 +453,14 @@ export default class KestrelParser extends Parser {
 		let localctx: DeclarationContext = new DeclarationContext(this, this._ctx, this.state);
 		this.enterRule(localctx, 8, KestrelParser.RULE_declaration);
 		try {
-			this.state = 115;
+			this.state = 117;
 			this._errHandler.sync(this);
 			switch ( this._interp.adaptivePredict(this._input, 8, this._ctx) ) {
 			case 1:
 				localctx = new LetDeclarationContext(this, localctx);
 				this.enterOuterAlt(localctx, 1);
 				{
-				this.state = 111;
+				this.state = 113;
 				this.letDeclaration_();
 				}
 				break;
@@ -466,7 +468,7 @@ export default class KestrelParser extends Parser {
 				localctx = new TypeDeclarationContext(this, localctx);
 				this.enterOuterAlt(localctx, 2);
 				{
-				this.state = 112;
+				this.state = 114;
 				this.typeDeclaration_();
 				}
 				break;
@@ -474,7 +476,7 @@ export default class KestrelParser extends Parser {
 				localctx = new StructDeclarationContext(this, localctx);
 				this.enterOuterAlt(localctx, 3);
 				{
-				this.state = 113;
+				this.state = 115;
 				this.structDeclaration_();
 				}
 				break;
@@ -482,7 +484,7 @@ export default class KestrelParser extends Parser {
 				localctx = new ExternTypeDeclarationContext(this, localctx);
 				this.enterOuterAlt(localctx, 4);
 				{
-				this.state = 114;
+				this.state = 116;
 				this.externTypeDeclaration_();
 				}
 				break;
@@ -507,16 +509,16 @@ export default class KestrelParser extends Parser {
 		let localctx: ValueAttributeContext = new ValueAttributeContext(this, this._ctx, this.state);
 		this.enterRule(localctx, 10, KestrelParser.RULE_valueAttribute);
 		try {
-			this.state = 121;
+			this.state = 123;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
 			case 7:
 				localctx = new AttrTypeContext(this, localctx);
 				this.enterOuterAlt(localctx, 1);
 				{
-				this.state = 117;
+				this.state = 119;
 				this.match(KestrelParser.T__6);
-				this.state = 118;
+				this.state = 120;
 				this.polyType();
 				}
 				break;
@@ -524,7 +526,7 @@ export default class KestrelParser extends Parser {
 				localctx = new AttrInlineContext(this, localctx);
 				this.enterOuterAlt(localctx, 2);
 				{
-				this.state = 119;
+				this.state = 121;
 				this.match(KestrelParser.T__7);
 				}
 				break;
@@ -532,7 +534,7 @@ export default class KestrelParser extends Parser {
 				localctx = new AttrExternContext(this, localctx);
 				this.enterOuterAlt(localctx, 3);
 				{
-				this.state = 120;
+				this.state = 122;
 				this.match(KestrelParser.T__8);
 				}
 				break;
@@ -563,69 +565,69 @@ export default class KestrelParser extends Parser {
 			this.enterOuterAlt(localctx, 1);
 			{
 			{
-			this.state = 126;
+			this.state = 128;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la===67) {
+			while (_la===68) {
 				{
 				{
-				this.state = 123;
+				this.state = 125;
 				localctx._doc = this.match(KestrelParser.DOC_COMMENT_LINE);
 				}
 				}
-				this.state = 128;
+				this.state = 130;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
 			}
 			{
-			this.state = 132;
+			this.state = 134;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 896) !== 0)) {
 				{
 				{
-				this.state = 129;
+				this.state = 131;
 				this.valueAttribute();
 				}
 				}
-				this.state = 134;
+				this.state = 136;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
 			}
 			{
-			this.state = 136;
+			this.state = 138;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la===10) {
 				{
-				this.state = 135;
+				this.state = 137;
 				localctx._pub = this.match(KestrelParser.T__9);
 				}
 			}
 
 			}
-			this.state = 138;
+			this.state = 140;
 			this.match(KestrelParser.T__10);
-			this.state = 139;
+			this.state = 141;
 			localctx._binding = this._input.LT(1);
 			_la = this._input.LA(1);
-			if(!(_la===57 || _la===58)) {
+			if(!(_la===58 || _la===59)) {
 			    localctx._binding = this._errHandler.recoverInline(this);
 			}
 			else {
 				this._errHandler.reportMatch(this);
 			    this.consume();
 			}
-			this.state = 142;
+			this.state = 144;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la===12) {
 				{
-				this.state = 140;
+				this.state = 142;
 				this.match(KestrelParser.T__11);
-				this.state = 141;
+				this.state = 143;
 				this.expr(0);
 				}
 			}
@@ -647,66 +649,153 @@ export default class KestrelParser extends Parser {
 		return localctx;
 	}
 	// @RuleVersion(0)
+	public typeAttribute(): TypeAttributeContext {
+		let localctx: TypeAttributeContext = new TypeAttributeContext(this, this._ctx, this.state);
+		this.enterRule(localctx, 14, KestrelParser.RULE_typeAttribute);
+		let _la: number;
+		try {
+			this.state = 160;
+			this._errHandler.sync(this);
+			switch (this._input.LA(1)) {
+			case 9:
+				localctx = new TypeAttrExternContext(this, localctx);
+				this.enterOuterAlt(localctx, 1);
+				{
+				this.state = 146;
+				this.match(KestrelParser.T__8);
+				}
+				break;
+			case 13:
+				localctx = new TypeAttDerivingContext(this, localctx);
+				this.enterOuterAlt(localctx, 2);
+				{
+				this.state = 147;
+				this.match(KestrelParser.T__12);
+				this.state = 148;
+				this.match(KestrelParser.T__13);
+				this.state = 157;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+				if (_la===60) {
+					{
+					this.state = 149;
+					this.match(KestrelParser.TYPE_ID);
+					this.state = 154;
+					this._errHandler.sync(this);
+					_la = this._input.LA(1);
+					while (_la===5) {
+						{
+						{
+						this.state = 150;
+						this.match(KestrelParser.T__4);
+						this.state = 151;
+						this.match(KestrelParser.TYPE_ID);
+						}
+						}
+						this.state = 156;
+						this._errHandler.sync(this);
+						_la = this._input.LA(1);
+					}
+					}
+				}
+
+				this.state = 159;
+				this.match(KestrelParser.T__14);
+				}
+				break;
+			default:
+				throw new NoViableAltException(this);
+			}
+		}
+		catch (re) {
+			if (re instanceof RecognitionException) {
+				localctx.exception = re;
+				this._errHandler.reportError(this, re);
+				this._errHandler.recover(this, re);
+			} else {
+				throw re;
+			}
+		}
+		finally {
+			this.exitRule();
+		}
+		return localctx;
+	}
+	// @RuleVersion(0)
 	public typeDeclaration_(): TypeDeclaration_Context {
 		let localctx: TypeDeclaration_Context = new TypeDeclaration_Context(this, this._ctx, this.state);
-		this.enterRule(localctx, 14, KestrelParser.RULE_typeDeclaration_);
+		this.enterRule(localctx, 16, KestrelParser.RULE_typeDeclaration_);
 		let _la: number;
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
 			{
-			this.state = 147;
+			this.state = 165;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la===67) {
+			while (_la===68) {
 				{
 				{
-				this.state = 144;
+				this.state = 162;
 				localctx._doc = this.match(KestrelParser.DOC_COMMENT_LINE);
 				}
 				}
-				this.state = 149;
+				this.state = 167;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
 			}
-			this.state = 151;
+			this.state = 171;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			while (_la===9 || _la===13) {
+				{
+				{
+				this.state = 168;
+				this.typeAttribute();
+				}
+				}
+				this.state = 173;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+			}
+			this.state = 175;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la===10) {
 				{
-				this.state = 150;
+				this.state = 174;
 				localctx._pub = this.pubExposing();
 				}
 			}
 
-			this.state = 153;
-			this.match(KestrelParser.T__12);
-			this.state = 154;
+			this.state = 177;
+			this.match(KestrelParser.T__15);
+			this.state = 178;
 			localctx._name = this.match(KestrelParser.TYPE_ID);
-			this.state = 156;
+			this.state = 180;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (_la===17) {
+			if (_la===20) {
 				{
-				this.state = 155;
+				this.state = 179;
 				this.paramsList();
 				}
 			}
 
-			this.state = 158;
+			this.state = 182;
 			this.match(KestrelParser.T__3);
-			this.state = 160;
+			this.state = 184;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (_la===59) {
+			if (_la===60) {
 				{
-				this.state = 159;
+				this.state = 183;
 				this.typeVariants();
 				}
 			}
 
-			this.state = 162;
+			this.state = 186;
 			this.match(KestrelParser.T__5);
 			}
 		}
@@ -727,64 +816,78 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public structDeclaration_(): StructDeclaration_Context {
 		let localctx: StructDeclaration_Context = new StructDeclaration_Context(this, this._ctx, this.state);
-		this.enterRule(localctx, 16, KestrelParser.RULE_structDeclaration_);
+		this.enterRule(localctx, 18, KestrelParser.RULE_structDeclaration_);
 		let _la: number;
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
 			{
-			this.state = 167;
+			this.state = 191;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la===67) {
+			while (_la===68) {
 				{
 				{
-				this.state = 164;
+				this.state = 188;
 				localctx._doc = this.match(KestrelParser.DOC_COMMENT_LINE);
 				}
 				}
-				this.state = 169;
+				this.state = 193;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
 			}
-			this.state = 171;
+			this.state = 197;
+			this._errHandler.sync(this);
+			_la = this._input.LA(1);
+			while (_la===9 || _la===13) {
+				{
+				{
+				this.state = 194;
+				this.typeAttribute();
+				}
+				}
+				this.state = 199;
+				this._errHandler.sync(this);
+				_la = this._input.LA(1);
+			}
+			this.state = 201;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la===10) {
 				{
-				this.state = 170;
+				this.state = 200;
 				localctx._pub = this.pubExposing();
 				}
 			}
 
-			this.state = 173;
-			this.match(KestrelParser.T__13);
-			this.state = 174;
+			this.state = 203;
+			this.match(KestrelParser.T__16);
+			this.state = 204;
 			localctx._name = this.match(KestrelParser.TYPE_ID);
-			this.state = 176;
+			this.state = 206;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (_la===17) {
+			if (_la===20) {
 				{
-				this.state = 175;
+				this.state = 205;
 				this.paramsList();
 				}
 			}
 
-			this.state = 178;
+			this.state = 208;
 			this.match(KestrelParser.T__3);
-			this.state = 180;
+			this.state = 210;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (_la===58) {
+			if (_la===59) {
 				{
-				this.state = 179;
+				this.state = 209;
 				this.declarationFields();
 				}
 			}
 
-			this.state = 182;
+			this.state = 212;
 			this.match(KestrelParser.T__5);
 			}
 		}
@@ -805,49 +908,49 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public externTypeDeclaration_(): ExternTypeDeclaration_Context {
 		let localctx: ExternTypeDeclaration_Context = new ExternTypeDeclaration_Context(this, this._ctx, this.state);
-		this.enterRule(localctx, 18, KestrelParser.RULE_externTypeDeclaration_);
+		this.enterRule(localctx, 20, KestrelParser.RULE_externTypeDeclaration_);
 		let _la: number;
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
 			{
-			this.state = 187;
+			this.state = 217;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la===67) {
+			while (_la===68) {
 				{
 				{
-				this.state = 184;
+				this.state = 214;
 				localctx._doc = this.match(KestrelParser.DOC_COMMENT_LINE);
 				}
 				}
-				this.state = 189;
+				this.state = 219;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
 			}
-			this.state = 190;
-			this.match(KestrelParser.T__14);
-			this.state = 192;
+			this.state = 220;
+			this.match(KestrelParser.T__17);
+			this.state = 222;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la===10) {
 				{
-				this.state = 191;
+				this.state = 221;
 				localctx._pub = this.match(KestrelParser.T__9);
 				}
 			}
 
-			this.state = 194;
-			this.match(KestrelParser.T__15);
-			this.state = 195;
+			this.state = 224;
+			this.match(KestrelParser.T__18);
+			this.state = 225;
 			localctx._name = this.match(KestrelParser.TYPE_ID);
-			this.state = 197;
+			this.state = 227;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (_la===17) {
+			if (_la===20) {
 				{
-				this.state = 196;
+				this.state = 226;
 				this.paramsList();
 				}
 			}
@@ -871,19 +974,19 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public pubExposing(): PubExposingContext {
 		let localctx: PubExposingContext = new PubExposingContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 20, KestrelParser.RULE_pubExposing);
+		this.enterRule(localctx, 22, KestrelParser.RULE_pubExposing);
 		let _la: number;
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 199;
+			this.state = 229;
 			this.match(KestrelParser.T__9);
-			this.state = 201;
+			this.state = 231;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (_la===56) {
+			if (_la===57) {
 				{
-				this.state = 200;
+				this.state = 230;
 				this.match(KestrelParser.EXPOSING_NESTED);
 				}
 			}
@@ -907,33 +1010,33 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public paramsList(): ParamsListContext {
 		let localctx: ParamsListContext = new ParamsListContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 22, KestrelParser.RULE_paramsList);
+		this.enterRule(localctx, 24, KestrelParser.RULE_paramsList);
 		let _la: number;
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 203;
-			this.match(KestrelParser.T__16);
-			this.state = 204;
+			this.state = 233;
+			this.match(KestrelParser.T__19);
+			this.state = 234;
 			this.match(KestrelParser.ID);
-			this.state = 209;
+			this.state = 239;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			while (_la===5) {
 				{
 				{
-				this.state = 205;
+				this.state = 235;
 				this.match(KestrelParser.T__4);
-				this.state = 206;
+				this.state = 236;
 				this.match(KestrelParser.ID);
 				}
 				}
-				this.state = 211;
+				this.state = 241;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 212;
-			this.match(KestrelParser.T__17);
+			this.state = 242;
+			this.match(KestrelParser.T__20);
 			}
 		}
 		catch (re) {
@@ -953,38 +1056,38 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public typeVariants(): TypeVariantsContext {
 		let localctx: TypeVariantsContext = new TypeVariantsContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 24, KestrelParser.RULE_typeVariants);
+		this.enterRule(localctx, 26, KestrelParser.RULE_typeVariants);
 		let _la: number;
 		try {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 214;
+			this.state = 244;
 			this.typeConstructorDecl();
-			this.state = 219;
+			this.state = 249;
 			this._errHandler.sync(this);
-			_alt = this._interp.adaptivePredict(this._input, 27, this._ctx);
+			_alt = this._interp.adaptivePredict(this._input, 32, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 				if (_alt === 1) {
 					{
 					{
-					this.state = 215;
+					this.state = 245;
 					this.match(KestrelParser.T__4);
-					this.state = 216;
+					this.state = 246;
 					this.typeConstructorDecl();
 					}
 					}
 				}
-				this.state = 221;
+				this.state = 251;
 				this._errHandler.sync(this);
-				_alt = this._interp.adaptivePredict(this._input, 27, this._ctx);
+				_alt = this._interp.adaptivePredict(this._input, 32, this._ctx);
 			}
-			this.state = 223;
+			this.state = 253;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la===5) {
 				{
-				this.state = 222;
+				this.state = 252;
 				this.match(KestrelParser.T__4);
 				}
 			}
@@ -1008,15 +1111,15 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public fieldDecl(): FieldDeclContext {
 		let localctx: FieldDeclContext = new FieldDeclContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 26, KestrelParser.RULE_fieldDecl);
+		this.enterRule(localctx, 28, KestrelParser.RULE_fieldDecl);
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 225;
+			this.state = 255;
 			this.match(KestrelParser.ID);
-			this.state = 226;
-			this.match(KestrelParser.T__18);
-			this.state = 227;
+			this.state = 256;
+			this.match(KestrelParser.T__21);
+			this.state = 257;
 			this.type_();
 			}
 		}
@@ -1037,38 +1140,38 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public declarationFields(): DeclarationFieldsContext {
 		let localctx: DeclarationFieldsContext = new DeclarationFieldsContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 28, KestrelParser.RULE_declarationFields);
+		this.enterRule(localctx, 30, KestrelParser.RULE_declarationFields);
 		let _la: number;
 		try {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 229;
+			this.state = 259;
 			this.fieldDecl();
-			this.state = 234;
+			this.state = 264;
 			this._errHandler.sync(this);
-			_alt = this._interp.adaptivePredict(this._input, 29, this._ctx);
+			_alt = this._interp.adaptivePredict(this._input, 34, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 				if (_alt === 1) {
 					{
 					{
-					this.state = 230;
+					this.state = 260;
 					this.match(KestrelParser.T__4);
-					this.state = 231;
+					this.state = 261;
 					this.fieldDecl();
 					}
 					}
 				}
-				this.state = 236;
+				this.state = 266;
 				this._errHandler.sync(this);
-				_alt = this._interp.adaptivePredict(this._input, 29, this._ctx);
+				_alt = this._interp.adaptivePredict(this._input, 34, this._ctx);
 			}
-			this.state = 238;
+			this.state = 268;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la===5) {
 				{
-				this.state = 237;
+				this.state = 267;
 				this.match(KestrelParser.T__4);
 				}
 			}
@@ -1092,35 +1195,35 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public polyType(): PolyTypeContext {
 		let localctx: PolyTypeContext = new PolyTypeContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 30, KestrelParser.RULE_polyType);
+		this.enterRule(localctx, 32, KestrelParser.RULE_polyType);
 		let _la: number;
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 240;
+			this.state = 270;
 			this.type_();
-			this.state = 250;
+			this.state = 280;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (_la===20) {
+			if (_la===23) {
 				{
-				this.state = 241;
-				this.match(KestrelParser.T__19);
-				this.state = 242;
+				this.state = 271;
+				this.match(KestrelParser.T__22);
+				this.state = 272;
 				this.traitImplClause();
-				this.state = 247;
+				this.state = 277;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la===5) {
 					{
 					{
-					this.state = 243;
+					this.state = 273;
 					this.match(KestrelParser.T__4);
-					this.state = 244;
+					this.state = 274;
 					this.traitImplClause();
 					}
 					}
-					this.state = 249;
+					this.state = 279;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
@@ -1146,31 +1249,31 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public traitImplClause(): TraitImplClauseContext {
 		let localctx: TraitImplClauseContext = new TraitImplClauseContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 32, KestrelParser.RULE_traitImplClause);
+		this.enterRule(localctx, 34, KestrelParser.RULE_traitImplClause);
 		let _la: number;
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 252;
+			this.state = 282;
 			this.match(KestrelParser.ID);
-			this.state = 253;
-			this.match(KestrelParser.T__18);
+			this.state = 283;
+			this.match(KestrelParser.T__21);
 			{
-			this.state = 254;
+			this.state = 284;
 			this.match(KestrelParser.TYPE_ID);
-			this.state = 259;
+			this.state = 289;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la===21) {
+			while (_la===24) {
 				{
 				{
-				this.state = 255;
-				this.match(KestrelParser.T__20);
-				this.state = 256;
+				this.state = 285;
+				this.match(KestrelParser.T__23);
+				this.state = 286;
 				this.match(KestrelParser.TYPE_ID);
 				}
 				}
-				this.state = 261;
+				this.state = 291;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
@@ -1194,57 +1297,57 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public type_(): TypeContext {
 		let localctx: TypeContext = new TypeContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 34, KestrelParser.RULE_type);
+		this.enterRule(localctx, 36, KestrelParser.RULE_type);
 		let _la: number;
 		try {
-			this.state = 302;
+			this.state = 332;
 			this._errHandler.sync(this);
-			switch ( this._interp.adaptivePredict(this._input, 39, this._ctx) ) {
+			switch ( this._interp.adaptivePredict(this._input, 44, this._ctx) ) {
 			case 1:
 				localctx = new NamedTypeContext(this, localctx);
 				this.enterOuterAlt(localctx, 1);
 				{
-				this.state = 265;
+				this.state = 295;
 				this._errHandler.sync(this);
-				switch ( this._interp.adaptivePredict(this._input, 34, this._ctx) ) {
+				switch ( this._interp.adaptivePredict(this._input, 39, this._ctx) ) {
 				case 1:
 					{
-					this.state = 262;
+					this.state = 292;
 					this.moduleNamespace();
-					this.state = 263;
+					this.state = 293;
 					this.match(KestrelParser.T__2);
 					}
 					break;
 				}
-				this.state = 267;
+				this.state = 297;
 				(localctx as NamedTypeContext)._name = this.match(KestrelParser.TYPE_ID);
-				this.state = 279;
+				this.state = 309;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la===17) {
+				if (_la===20) {
 					{
-					this.state = 268;
-					this.match(KestrelParser.T__16);
-					this.state = 269;
+					this.state = 298;
+					this.match(KestrelParser.T__19);
+					this.state = 299;
 					this.type_();
-					this.state = 274;
+					this.state = 304;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					while (_la===5) {
 						{
 						{
-						this.state = 270;
+						this.state = 300;
 						this.match(KestrelParser.T__4);
-						this.state = 271;
+						this.state = 301;
 						this.type_();
 						}
 						}
-						this.state = 276;
+						this.state = 306;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
 					}
-					this.state = 277;
-					this.match(KestrelParser.T__17);
+					this.state = 307;
+					this.match(KestrelParser.T__20);
 					}
 				}
 
@@ -1254,23 +1357,23 @@ export default class KestrelParser extends Parser {
 				localctx = new FnTypeContext(this, localctx);
 				this.enterOuterAlt(localctx, 2);
 				{
-				this.state = 281;
-				this.match(KestrelParser.T__21);
-				this.state = 283;
+				this.state = 311;
+				this.match(KestrelParser.T__13);
+				this.state = 313;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la===22 || _la===58 || _la===59) {
+				if (_la===14 || _la===59 || _la===60) {
 					{
-					this.state = 282;
+					this.state = 312;
 					this.fnTypeParams();
 					}
 				}
 
-				this.state = 285;
-				this.match(KestrelParser.T__22);
-				this.state = 286;
-				this.match(KestrelParser.T__23);
-				this.state = 287;
+				this.state = 315;
+				this.match(KestrelParser.T__14);
+				this.state = 316;
+				this.match(KestrelParser.T__24);
+				this.state = 317;
 				(localctx as FnTypeContext)._ret = this.type_();
 				}
 				break;
@@ -1278,7 +1381,7 @@ export default class KestrelParser extends Parser {
 				localctx = new GenericTypeContext(this, localctx);
 				this.enterOuterAlt(localctx, 3);
 				{
-				this.state = 288;
+				this.state = 318;
 				this.match(KestrelParser.ID);
 				}
 				break;
@@ -1286,32 +1389,32 @@ export default class KestrelParser extends Parser {
 				localctx = new TupleTypeContext(this, localctx);
 				this.enterOuterAlt(localctx, 4);
 				{
-				this.state = 289;
-				this.match(KestrelParser.T__21);
-				this.state = 290;
+				this.state = 319;
+				this.match(KestrelParser.T__13);
+				this.state = 320;
 				this.type_();
-				this.state = 291;
+				this.state = 321;
 				this.match(KestrelParser.T__4);
-				this.state = 292;
+				this.state = 322;
 				this.type_();
-				this.state = 297;
+				this.state = 327;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la===5) {
 					{
 					{
-					this.state = 293;
+					this.state = 323;
 					this.match(KestrelParser.T__4);
-					this.state = 294;
+					this.state = 324;
 					this.type_();
 					}
 					}
-					this.state = 299;
+					this.state = 329;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 300;
-				this.match(KestrelParser.T__22);
+				this.state = 330;
+				this.match(KestrelParser.T__14);
 				}
 				break;
 			}
@@ -1333,39 +1436,39 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public fnTypeParams(): FnTypeParamsContext {
 		let localctx: FnTypeParamsContext = new FnTypeParamsContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 36, KestrelParser.RULE_fnTypeParams);
+		this.enterRule(localctx, 38, KestrelParser.RULE_fnTypeParams);
 		let _la: number;
 		try {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
 			{
-			this.state = 304;
+			this.state = 334;
 			this.type_();
-			this.state = 309;
+			this.state = 339;
 			this._errHandler.sync(this);
-			_alt = this._interp.adaptivePredict(this._input, 40, this._ctx);
+			_alt = this._interp.adaptivePredict(this._input, 45, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 				if (_alt === 1) {
 					{
 					{
-					this.state = 305;
+					this.state = 335;
 					this.match(KestrelParser.T__4);
-					this.state = 306;
+					this.state = 336;
 					this.type_();
 					}
 					}
 				}
-				this.state = 311;
+				this.state = 341;
 				this._errHandler.sync(this);
-				_alt = this._interp.adaptivePredict(this._input, 40, this._ctx);
+				_alt = this._interp.adaptivePredict(this._input, 45, this._ctx);
 			}
-			this.state = 313;
+			this.state = 343;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la===5) {
 				{
-				this.state = 312;
+				this.state = 342;
 				this.match(KestrelParser.T__4);
 				}
 			}
@@ -1390,40 +1493,40 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public typeConstructorDecl(): TypeConstructorDeclContext {
 		let localctx: TypeConstructorDeclContext = new TypeConstructorDeclContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 38, KestrelParser.RULE_typeConstructorDecl);
+		this.enterRule(localctx, 40, KestrelParser.RULE_typeConstructorDecl);
 		let _la: number;
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 315;
+			this.state = 345;
 			localctx._name = this.match(KestrelParser.TYPE_ID);
-			this.state = 327;
+			this.state = 357;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			if (_la===22) {
+			if (_la===14) {
 				{
-				this.state = 316;
-				this.match(KestrelParser.T__21);
-				this.state = 317;
+				this.state = 346;
+				this.match(KestrelParser.T__13);
+				this.state = 347;
 				this.type_();
-				this.state = 322;
+				this.state = 352;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la===5) {
 					{
 					{
-					this.state = 318;
+					this.state = 348;
 					this.match(KestrelParser.T__4);
-					this.state = 319;
+					this.state = 349;
 					this.type_();
 					}
 					}
-					this.state = 324;
+					this.state = 354;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 325;
-				this.match(KestrelParser.T__22);
+				this.state = 355;
+				this.match(KestrelParser.T__14);
 				}
 			}
 
@@ -1446,28 +1549,28 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public qualifiedId(): QualifiedIdContext {
 		let localctx: QualifiedIdContext = new QualifiedIdContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 40, KestrelParser.RULE_qualifiedId);
+		this.enterRule(localctx, 42, KestrelParser.RULE_qualifiedId);
 		let _la: number;
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 332;
+			this.state = 362;
 			this._errHandler.sync(this);
-			switch ( this._interp.adaptivePredict(this._input, 44, this._ctx) ) {
+			switch ( this._interp.adaptivePredict(this._input, 49, this._ctx) ) {
 			case 1:
 				{
-				this.state = 329;
+				this.state = 359;
 				this.moduleNamespace();
-				this.state = 330;
+				this.state = 360;
 				this.match(KestrelParser.T__2);
 				}
 				break;
 			}
 			{
-			this.state = 334;
+			this.state = 364;
 			localctx._name = this._input.LT(1);
 			_la = this._input.LA(1);
-			if(!(_la===58 || _la===59)) {
+			if(!(_la===59 || _la===60)) {
 			    localctx._name = this._errHandler.recoverInline(this);
 			}
 			else {
@@ -1494,15 +1597,15 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public structField(): StructFieldContext {
 		let localctx: StructFieldContext = new StructFieldContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 42, KestrelParser.RULE_structField);
+		this.enterRule(localctx, 44, KestrelParser.RULE_structField);
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 336;
+			this.state = 366;
 			this.match(KestrelParser.ID);
-			this.state = 337;
-			this.match(KestrelParser.T__18);
-			this.state = 338;
+			this.state = 367;
+			this.match(KestrelParser.T__21);
+			this.state = 368;
 			this.expr(0);
 			}
 		}
@@ -1523,38 +1626,38 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public structFields(): StructFieldsContext {
 		let localctx: StructFieldsContext = new StructFieldsContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 44, KestrelParser.RULE_structFields);
+		this.enterRule(localctx, 46, KestrelParser.RULE_structFields);
 		let _la: number;
 		try {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 340;
+			this.state = 370;
 			this.structField();
-			this.state = 345;
+			this.state = 375;
 			this._errHandler.sync(this);
-			_alt = this._interp.adaptivePredict(this._input, 45, this._ctx);
+			_alt = this._interp.adaptivePredict(this._input, 50, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 				if (_alt === 1) {
 					{
 					{
-					this.state = 341;
+					this.state = 371;
 					this.match(KestrelParser.T__4);
-					this.state = 342;
+					this.state = 372;
 					this.structField();
 					}
 					}
 				}
-				this.state = 347;
+				this.state = 377;
 				this._errHandler.sync(this);
-				_alt = this._interp.adaptivePredict(this._input, 45, this._ctx);
+				_alt = this._interp.adaptivePredict(this._input, 50, this._ctx);
 			}
-			this.state = 349;
+			this.state = 379;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
 			if (_la===5) {
 				{
-				this.state = 348;
+				this.state = 378;
 				this.match(KestrelParser.T__4);
 				}
 			}
@@ -1588,23 +1691,23 @@ export default class KestrelParser extends Parser {
 		let _parentState: number = this.state;
 		let localctx: ExprContext = new ExprContext(this, this._ctx, _parentState);
 		let _prevctx: ExprContext = localctx;
-		let _startState: number = 46;
-		this.enterRecursionRule(localctx, 46, KestrelParser.RULE_expr, _p);
+		let _startState: number = 48;
+		this.enterRecursionRule(localctx, 48, KestrelParser.RULE_expr, _p);
 		let _la: number;
 		try {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 439;
+			this.state = 469;
 			this._errHandler.sync(this);
-			switch ( this._interp.adaptivePredict(this._input, 59, this._ctx) ) {
+			switch ( this._interp.adaptivePredict(this._input, 64, this._ctx) ) {
 			case 1:
 				{
 				localctx = new IntContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
 
-				this.state = 352;
+				this.state = 382;
 				this.match(KestrelParser.INT);
 				}
 				break;
@@ -1613,7 +1716,7 @@ export default class KestrelParser extends Parser {
 				localctx = new FloatContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 353;
+				this.state = 383;
 				this.match(KestrelParser.FLOAT);
 				}
 				break;
@@ -1622,7 +1725,7 @@ export default class KestrelParser extends Parser {
 				localctx = new CharContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 354;
+				this.state = 384;
 				this.match(KestrelParser.CHAR);
 				}
 				break;
@@ -1631,7 +1734,7 @@ export default class KestrelParser extends Parser {
 				localctx = new StringContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 355;
+				this.state = 385;
 				this.match(KestrelParser.STRING);
 				}
 				break;
@@ -1640,7 +1743,7 @@ export default class KestrelParser extends Parser {
 				localctx = new IdContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 356;
+				this.state = 386;
 				this.qualifiedId();
 				}
 				break;
@@ -1649,9 +1752,9 @@ export default class KestrelParser extends Parser {
 				localctx = new BoolNotContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 357;
-				(localctx as BoolNotContext)._op = this.match(KestrelParser.T__25);
-				this.state = 358;
+				this.state = 387;
+				(localctx as BoolNotContext)._op = this.match(KestrelParser.T__26);
+				this.state = 388;
 				this.expr(17);
 				}
 				break;
@@ -1660,33 +1763,33 @@ export default class KestrelParser extends Parser {
 				localctx = new StructLitContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 359;
+				this.state = 389;
 				this.match(KestrelParser.TYPE_ID);
-				this.state = 360;
+				this.state = 390;
 				this.match(KestrelParser.T__3);
-				this.state = 362;
+				this.state = 392;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la===58) {
+				if (_la===59) {
 					{
-					this.state = 361;
+					this.state = 391;
 					this.structFields();
 					}
 				}
 
-				this.state = 366;
+				this.state = 396;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la===27) {
+				if (_la===28) {
 					{
-					this.state = 364;
-					this.match(KestrelParser.T__26);
-					this.state = 365;
+					this.state = 394;
+					this.match(KestrelParser.T__27);
+					this.state = 395;
 					(localctx as StructLitContext)._spread = this.expr(0);
 					}
 				}
 
-				this.state = 368;
+				this.state = 398;
 				this.match(KestrelParser.T__5);
 				}
 				break;
@@ -1695,32 +1798,32 @@ export default class KestrelParser extends Parser {
 				localctx = new TupleContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 369;
-				this.match(KestrelParser.T__21);
-				this.state = 370;
+				this.state = 399;
+				this.match(KestrelParser.T__13);
+				this.state = 400;
 				this.expr(0);
-				this.state = 371;
+				this.state = 401;
 				this.match(KestrelParser.T__4);
-				this.state = 372;
+				this.state = 402;
 				this.expr(0);
-				this.state = 377;
+				this.state = 407;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la===5) {
 					{
 					{
-					this.state = 373;
+					this.state = 403;
 					this.match(KestrelParser.T__4);
-					this.state = 374;
+					this.state = 404;
 					this.expr(0);
 					}
 					}
-					this.state = 379;
+					this.state = 409;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 380;
-				this.match(KestrelParser.T__22);
+				this.state = 410;
+				this.match(KestrelParser.T__14);
 				}
 				break;
 			case 9:
@@ -1728,12 +1831,12 @@ export default class KestrelParser extends Parser {
 				localctx = new ParensContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 382;
-				this.match(KestrelParser.T__21);
-				this.state = 383;
+				this.state = 412;
+				this.match(KestrelParser.T__13);
+				this.state = 413;
 				this.expr(0);
-				this.state = 384;
-				this.match(KestrelParser.T__22);
+				this.state = 414;
+				this.match(KestrelParser.T__14);
 				}
 				break;
 			case 10:
@@ -1741,7 +1844,7 @@ export default class KestrelParser extends Parser {
 				localctx = new BlockExprContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 386;
+				this.state = 416;
 				this.block();
 				}
 				break;
@@ -1750,39 +1853,39 @@ export default class KestrelParser extends Parser {
 				localctx = new FnContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 387;
-				this.match(KestrelParser.T__41);
-				this.state = 399;
+				this.state = 417;
+				this.match(KestrelParser.T__42);
+				this.state = 429;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la===22 || ((((_la - 46)) & ~0x1F) === 0 && ((1 << (_la - 46)) & 258049) !== 0)) {
+				if (_la===14 || ((((_la - 47)) & ~0x1F) === 0 && ((1 << (_la - 47)) & 258049) !== 0)) {
 					{
-					this.state = 388;
+					this.state = 418;
 					this.matchPattern();
-					this.state = 393;
+					this.state = 423;
 					this._errHandler.sync(this);
-					_alt = this._interp.adaptivePredict(this._input, 50, this._ctx);
+					_alt = this._interp.adaptivePredict(this._input, 55, this._ctx);
 					while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 						if (_alt === 1) {
 							{
 							{
-							this.state = 389;
+							this.state = 419;
 							this.match(KestrelParser.T__4);
-							this.state = 390;
+							this.state = 420;
 							this.matchPattern();
 							}
 							}
 						}
-						this.state = 395;
+						this.state = 425;
 						this._errHandler.sync(this);
-						_alt = this._interp.adaptivePredict(this._input, 50, this._ctx);
+						_alt = this._interp.adaptivePredict(this._input, 55, this._ctx);
 					}
-					this.state = 397;
+					this.state = 427;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					if (_la===5) {
 						{
-						this.state = 396;
+						this.state = 426;
 						this.match(KestrelParser.T__4);
 						}
 					}
@@ -1790,7 +1893,7 @@ export default class KestrelParser extends Parser {
 					}
 				}
 
-				this.state = 401;
+				this.state = 431;
 				this.block();
 				}
 				break;
@@ -1799,15 +1902,15 @@ export default class KestrelParser extends Parser {
 				localctx = new IfContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 402;
-				this.match(KestrelParser.T__42);
-				this.state = 403;
-				(localctx as IfContext)._condition = this.expr(0);
-				this.state = 404;
-				(localctx as IfContext)._then = this.block();
-				this.state = 405;
+				this.state = 432;
 				this.match(KestrelParser.T__43);
-				this.state = 406;
+				this.state = 433;
+				(localctx as IfContext)._condition = this.expr(0);
+				this.state = 434;
+				(localctx as IfContext)._then = this.block();
+				this.state = 435;
+				this.match(KestrelParser.T__44);
+				this.state = 436;
 				(localctx as IfContext)._else_ = this.block();
 				}
 				break;
@@ -1816,51 +1919,51 @@ export default class KestrelParser extends Parser {
 				localctx = new MatchContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 408;
-				this.match(KestrelParser.T__44);
-				this.state = 409;
+				this.state = 438;
+				this.match(KestrelParser.T__45);
+				this.state = 439;
 				(localctx as MatchContext)._matched = this.expr(0);
-				this.state = 410;
+				this.state = 440;
 				this.match(KestrelParser.T__3);
-				this.state = 419;
+				this.state = 449;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la===22 || ((((_la - 46)) & ~0x1F) === 0 && ((1 << (_la - 46)) & 258049) !== 0)) {
+				if (_la===14 || ((((_la - 47)) & ~0x1F) === 0 && ((1 << (_la - 47)) & 258049) !== 0)) {
 					{
-					this.state = 411;
+					this.state = 441;
 					this.matchClause();
-					this.state = 416;
+					this.state = 446;
 					this._errHandler.sync(this);
-					_alt = this._interp.adaptivePredict(this._input, 53, this._ctx);
+					_alt = this._interp.adaptivePredict(this._input, 58, this._ctx);
 					while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 						if (_alt === 1) {
 							{
 							{
-							this.state = 412;
+							this.state = 442;
 							this.match(KestrelParser.T__4);
-							this.state = 413;
+							this.state = 443;
 							this.matchClause();
 							}
 							}
 						}
-						this.state = 418;
+						this.state = 448;
 						this._errHandler.sync(this);
-						_alt = this._interp.adaptivePredict(this._input, 53, this._ctx);
+						_alt = this._interp.adaptivePredict(this._input, 58, this._ctx);
 					}
 					}
 				}
 
-				this.state = 422;
+				this.state = 452;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				if (_la===5) {
 					{
-					this.state = 421;
+					this.state = 451;
 					this.match(KestrelParser.T__4);
 					}
 				}
 
-				this.state = 424;
+				this.state = 454;
 				this.match(KestrelParser.T__5);
 				}
 				break;
@@ -1869,35 +1972,35 @@ export default class KestrelParser extends Parser {
 				localctx = new ListLitContext(this, localctx);
 				this._ctx = localctx;
 				_prevctx = localctx;
-				this.state = 426;
-				this.match(KestrelParser.T__45);
-				this.state = 436;
+				this.state = 456;
+				this.match(KestrelParser.T__46);
+				this.state = 466;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 71303184) !== 0) || ((((_la - 42)) & ~0x1F) === 0 && ((1 << (_la - 42)) & 4128795) !== 0)) {
+				if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 134234128) !== 0) || ((((_la - 43)) & ~0x1F) === 0 && ((1 << (_la - 43)) & 4128795) !== 0)) {
 					{
-					this.state = 427;
+					this.state = 457;
 					this.listElems();
-					this.state = 431;
+					this.state = 461;
 					this._errHandler.sync(this);
-					switch ( this._interp.adaptivePredict(this._input, 56, this._ctx) ) {
+					switch ( this._interp.adaptivePredict(this._input, 61, this._ctx) ) {
 					case 1:
 						{
-						this.state = 428;
+						this.state = 458;
 						this.match(KestrelParser.T__4);
-						this.state = 429;
-						this.match(KestrelParser.T__26);
-						this.state = 430;
+						this.state = 459;
+						this.match(KestrelParser.T__27);
+						this.state = 460;
 						(localctx as ListLitContext)._tail = this.expr(0);
 						}
 						break;
 					}
-					this.state = 434;
+					this.state = 464;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					if (_la===5) {
 						{
-						this.state = 433;
+						this.state = 463;
 						this.match(KestrelParser.T__4);
 						}
 					}
@@ -1905,15 +2008,15 @@ export default class KestrelParser extends Parser {
 					}
 				}
 
-				this.state = 438;
-				this.match(KestrelParser.T__46);
+				this.state = 468;
+				this.match(KestrelParser.T__47);
 				}
 				break;
 			}
 			this._ctx.stop = this._input.LT(-1);
-			this.state = 487;
+			this.state = 517;
 			this._errHandler.sync(this);
-			_alt = this._interp.adaptivePredict(this._input, 65, this._ctx);
+			_alt = this._interp.adaptivePredict(this._input, 70, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 				if (_alt === 1) {
 					if (this._parseListeners != null) {
@@ -1921,28 +2024,28 @@ export default class KestrelParser extends Parser {
 					}
 					_prevctx = localctx;
 					{
-					this.state = 485;
+					this.state = 515;
 					this._errHandler.sync(this);
-					switch ( this._interp.adaptivePredict(this._input, 64, this._ctx) ) {
+					switch ( this._interp.adaptivePredict(this._input, 69, this._ctx) ) {
 					case 1:
 						{
 						localctx = new MulDivContext(this, new ExprContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, KestrelParser.RULE_expr);
-						this.state = 441;
+						this.state = 471;
 						if (!(this.precpred(this._ctx, 14))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 14)");
 						}
-						this.state = 442;
+						this.state = 472;
 						(localctx as MulDivContext)._op = this._input.LT(1);
 						_la = this._input.LA(1);
-						if(!((((_la) & ~0x1F) === 0 && ((1 << _la) & 4026531842) !== 0))) {
+						if(!(((((_la - 1)) & ~0x1F) === 0 && ((1 << (_la - 1)) & 4026531841) !== 0))) {
 						    (localctx as MulDivContext)._op = this._errHandler.recoverInline(this);
 						}
 						else {
 							this._errHandler.reportMatch(this);
 						    this.consume();
 						}
-						this.state = 443;
+						this.state = 473;
 						this.expr(15);
 						}
 						break;
@@ -1950,21 +2053,21 @@ export default class KestrelParser extends Parser {
 						{
 						localctx = new AddSubContext(this, new ExprContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, KestrelParser.RULE_expr);
-						this.state = 444;
+						this.state = 474;
 						if (!(this.precpred(this._ctx, 13))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 13)");
 						}
-						this.state = 445;
+						this.state = 475;
 						(localctx as AddSubContext)._op = this._input.LT(1);
 						_la = this._input.LA(1);
-						if(!(((((_la - 21)) & ~0x1F) === 0 && ((1 << (_la - 21)) & 30721) !== 0))) {
+						if(!(((((_la - 24)) & ~0x1F) === 0 && ((1 << (_la - 24)) & 7681) !== 0))) {
 						    (localctx as AddSubContext)._op = this._errHandler.recoverInline(this);
 						}
 						else {
 							this._errHandler.reportMatch(this);
 						    this.consume();
 						}
-						this.state = 446;
+						this.state = 476;
 						this.expr(14);
 						}
 						break;
@@ -1972,21 +2075,21 @@ export default class KestrelParser extends Parser {
 						{
 						localctx = new EqContext(this, new ExprContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, KestrelParser.RULE_expr);
-						this.state = 447;
+						this.state = 477;
 						if (!(this.precpred(this._ctx, 12))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 12)");
 						}
-						this.state = 448;
+						this.state = 478;
 						(localctx as EqContext)._op = this._input.LT(1);
 						_la = this._input.LA(1);
-						if(!(_la===36 || _la===37)) {
+						if(!(_la===37 || _la===38)) {
 						    (localctx as EqContext)._op = this._errHandler.recoverInline(this);
 						}
 						else {
 							this._errHandler.reportMatch(this);
 						    this.consume();
 						}
-						this.state = 449;
+						this.state = 479;
 						this.expr(13);
 						}
 						break;
@@ -1994,21 +2097,21 @@ export default class KestrelParser extends Parser {
 						{
 						localctx = new CompContext(this, new ExprContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, KestrelParser.RULE_expr);
-						this.state = 450;
+						this.state = 480;
 						if (!(this.precpred(this._ctx, 11))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 11)");
 						}
-						this.state = 451;
+						this.state = 481;
 						(localctx as CompContext)._op = this._input.LT(1);
 						_la = this._input.LA(1);
-						if(!(((((_la - 17)) & ~0x1F) === 0 && ((1 << (_la - 17)) & 6291459) !== 0))) {
+						if(!(((((_la - 20)) & ~0x1F) === 0 && ((1 << (_la - 20)) & 1572867) !== 0))) {
 						    (localctx as CompContext)._op = this._errHandler.recoverInline(this);
 						}
 						else {
 							this._errHandler.reportMatch(this);
 						    this.consume();
 						}
-						this.state = 452;
+						this.state = 482;
 						this.expr(12);
 						}
 						break;
@@ -2016,13 +2119,13 @@ export default class KestrelParser extends Parser {
 						{
 						localctx = new BoolOrContext(this, new ExprContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, KestrelParser.RULE_expr);
-						this.state = 453;
+						this.state = 483;
 						if (!(this.precpred(this._ctx, 10))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 10)");
 						}
-						this.state = 454;
-						(localctx as BoolOrContext)._op = this.match(KestrelParser.T__39);
-						this.state = 455;
+						this.state = 484;
+						(localctx as BoolOrContext)._op = this.match(KestrelParser.T__40);
+						this.state = 485;
 						this.expr(11);
 						}
 						break;
@@ -2030,13 +2133,13 @@ export default class KestrelParser extends Parser {
 						{
 						localctx = new BoolAndContext(this, new ExprContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, KestrelParser.RULE_expr);
-						this.state = 456;
+						this.state = 486;
 						if (!(this.precpred(this._ctx, 9))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 9)");
 						}
-						this.state = 457;
-						(localctx as BoolAndContext)._op = this.match(KestrelParser.T__40);
-						this.state = 458;
+						this.state = 487;
+						(localctx as BoolAndContext)._op = this.match(KestrelParser.T__41);
+						this.state = 488;
 						this.expr(10);
 						}
 						break;
@@ -2044,13 +2147,13 @@ export default class KestrelParser extends Parser {
 						{
 						localctx = new PipeContext(this, new ExprContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, KestrelParser.RULE_expr);
-						this.state = 459;
+						this.state = 489;
 						if (!(this.precpred(this._ctx, 1))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 1)");
 						}
-						this.state = 460;
-						(localctx as PipeContext)._op = this.match(KestrelParser.T__47);
-						this.state = 461;
+						this.state = 490;
+						(localctx as PipeContext)._op = this.match(KestrelParser.T__48);
+						this.state = 491;
 						this.expr(2);
 						}
 						break;
@@ -2058,25 +2161,25 @@ export default class KestrelParser extends Parser {
 						{
 						localctx = new FieldAccessContext(this, new ExprContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, KestrelParser.RULE_expr);
-						this.state = 462;
+						this.state = 492;
 						if (!(this.precpred(this._ctx, 19))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 19)");
 						}
-						this.state = 463;
+						this.state = 493;
 						this.match(KestrelParser.T__2);
-						this.state = 466;
+						this.state = 496;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
-						if (_la===59) {
+						if (_la===60) {
 							{
-							this.state = 464;
+							this.state = 494;
 							(localctx as FieldAccessContext)._structName = this.match(KestrelParser.TYPE_ID);
-							this.state = 465;
-							this.match(KestrelParser.T__24);
+							this.state = 495;
+							this.match(KestrelParser.T__25);
 							}
 						}
 
-						this.state = 468;
+						this.state = 498;
 						this.match(KestrelParser.ID);
 						}
 						break;
@@ -2084,43 +2187,43 @@ export default class KestrelParser extends Parser {
 						{
 						localctx = new CallContext(this, new ExprContext(this, _parentctx, _parentState));
 						this.pushNewRecursionContext(localctx, _startState, KestrelParser.RULE_expr);
-						this.state = 469;
+						this.state = 499;
 						if (!(this.precpred(this._ctx, 15))) {
 							throw this.createFailedPredicateException("this.precpred(this._ctx, 15)");
 						}
-						this.state = 470;
-						this.match(KestrelParser.T__21);
-						this.state = 482;
+						this.state = 500;
+						this.match(KestrelParser.T__13);
+						this.state = 512;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
-						if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 71303184) !== 0) || ((((_la - 42)) & ~0x1F) === 0 && ((1 << (_la - 42)) & 4128795) !== 0)) {
+						if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 134234128) !== 0) || ((((_la - 43)) & ~0x1F) === 0 && ((1 << (_la - 43)) & 4128795) !== 0)) {
 							{
-							this.state = 471;
+							this.state = 501;
 							this.expr(0);
-							this.state = 476;
+							this.state = 506;
 							this._errHandler.sync(this);
-							_alt = this._interp.adaptivePredict(this._input, 61, this._ctx);
+							_alt = this._interp.adaptivePredict(this._input, 66, this._ctx);
 							while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 								if (_alt === 1) {
 									{
 									{
-									this.state = 472;
+									this.state = 502;
 									this.match(KestrelParser.T__4);
-									this.state = 473;
+									this.state = 503;
 									this.expr(0);
 									}
 									}
 								}
-								this.state = 478;
+								this.state = 508;
 								this._errHandler.sync(this);
-								_alt = this._interp.adaptivePredict(this._input, 61, this._ctx);
+								_alt = this._interp.adaptivePredict(this._input, 66, this._ctx);
 							}
-							this.state = 480;
+							this.state = 510;
 							this._errHandler.sync(this);
 							_la = this._input.LA(1);
 							if (_la===5) {
 								{
-								this.state = 479;
+								this.state = 509;
 								this.match(KestrelParser.T__4);
 								}
 							}
@@ -2128,16 +2231,16 @@ export default class KestrelParser extends Parser {
 							}
 						}
 
-						this.state = 484;
-						this.match(KestrelParser.T__22);
+						this.state = 514;
+						this.match(KestrelParser.T__14);
 						}
 						break;
 					}
 					}
 				}
-				this.state = 489;
+				this.state = 519;
 				this._errHandler.sync(this);
-				_alt = this._interp.adaptivePredict(this._input, 65, this._ctx);
+				_alt = this._interp.adaptivePredict(this._input, 70, this._ctx);
 			}
 			}
 		}
@@ -2158,30 +2261,30 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public listElems(): ListElemsContext {
 		let localctx: ListElemsContext = new ListElemsContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 48, KestrelParser.RULE_listElems);
+		this.enterRule(localctx, 50, KestrelParser.RULE_listElems);
 		try {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 490;
+			this.state = 520;
 			this.expr(0);
-			this.state = 495;
+			this.state = 525;
 			this._errHandler.sync(this);
-			_alt = this._interp.adaptivePredict(this._input, 66, this._ctx);
+			_alt = this._interp.adaptivePredict(this._input, 71, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 				if (_alt === 1) {
 					{
 					{
-					this.state = 491;
+					this.state = 521;
 					this.match(KestrelParser.T__4);
-					this.state = 492;
+					this.state = 522;
 					this.expr(0);
 					}
 					}
 				}
-				this.state = 497;
+				this.state = 527;
 				this._errHandler.sync(this);
-				_alt = this._interp.adaptivePredict(this._input, 66, this._ctx);
+				_alt = this._interp.adaptivePredict(this._input, 71, this._ctx);
 			}
 			}
 		}
@@ -2202,15 +2305,15 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public matchClause(): MatchClauseContext {
 		let localctx: MatchClauseContext = new MatchClauseContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 50, KestrelParser.RULE_matchClause);
+		this.enterRule(localctx, 52, KestrelParser.RULE_matchClause);
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 498;
+			this.state = 528;
 			this.matchPattern();
-			this.state = 499;
-			this.match(KestrelParser.T__48);
-			this.state = 500;
+			this.state = 529;
+			this.match(KestrelParser.T__49);
+			this.state = 530;
 			this.expr(0);
 			}
 		}
@@ -2231,43 +2334,43 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public blockStatement(): BlockStatementContext {
 		let localctx: BlockStatementContext = new BlockStatementContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 52, KestrelParser.RULE_blockStatement);
+		this.enterRule(localctx, 54, KestrelParser.RULE_blockStatement);
 		try {
-			this.state = 515;
+			this.state = 545;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case 50:
+			case 51:
 				localctx = new BlockLetHashContext(this, localctx);
 				this.enterOuterAlt(localctx, 1);
 				{
-				this.state = 502;
-				this.match(KestrelParser.T__49);
-				this.state = 503;
-				(localctx as BlockLetHashContext)._mapper = this.qualifiedId();
-				this.state = 504;
-				(localctx as BlockLetHashContext)._pattern = this.matchPattern();
-				this.state = 505;
-				this.match(KestrelParser.T__11);
-				this.state = 506;
-				(localctx as BlockLetHashContext)._value = this.expr(0);
-				this.state = 507;
+				this.state = 532;
 				this.match(KestrelParser.T__50);
+				this.state = 533;
+				(localctx as BlockLetHashContext)._mapper = this.qualifiedId();
+				this.state = 534;
+				(localctx as BlockLetHashContext)._pattern = this.matchPattern();
+				this.state = 535;
+				this.match(KestrelParser.T__11);
+				this.state = 536;
+				(localctx as BlockLetHashContext)._value = this.expr(0);
+				this.state = 537;
+				this.match(KestrelParser.T__51);
 				}
 				break;
 			case 11:
 				localctx = new BlockLetContext(this, localctx);
 				this.enterOuterAlt(localctx, 2);
 				{
-				this.state = 509;
+				this.state = 539;
 				this.match(KestrelParser.T__10);
-				this.state = 510;
+				this.state = 540;
 				(localctx as BlockLetContext)._pattern = this.matchPattern();
-				this.state = 511;
+				this.state = 541;
 				this.match(KestrelParser.T__11);
-				this.state = 512;
+				this.state = 542;
 				(localctx as BlockLetContext)._value = this.expr(0);
-				this.state = 513;
-				this.match(KestrelParser.T__50);
+				this.state = 543;
+				this.match(KestrelParser.T__51);
 				}
 				break;
 			default:
@@ -2291,30 +2394,30 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public block(): BlockContext {
 		let localctx: BlockContext = new BlockContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 54, KestrelParser.RULE_block);
+		this.enterRule(localctx, 56, KestrelParser.RULE_block);
 		let _la: number;
 		try {
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 517;
+			this.state = 547;
 			this.match(KestrelParser.T__3);
-			this.state = 521;
+			this.state = 551;
 			this._errHandler.sync(this);
 			_la = this._input.LA(1);
-			while (_la===11 || _la===50) {
+			while (_la===11 || _la===51) {
 				{
 				{
-				this.state = 518;
+				this.state = 548;
 				this.blockStatement();
 				}
 				}
-				this.state = 523;
+				this.state = 553;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 			}
-			this.state = 524;
+			this.state = 554;
 			this.expr(0);
-			this.state = 525;
+			this.state = 555;
 			this.match(KestrelParser.T__5);
 			}
 		}
@@ -2335,135 +2438,135 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public matchPattern(): MatchPatternContext {
 		let localctx: MatchPatternContext = new MatchPatternContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 56, KestrelParser.RULE_matchPattern);
+		this.enterRule(localctx, 58, KestrelParser.RULE_matchPattern);
 		let _la: number;
 		try {
-			this.state = 577;
+			this.state = 607;
 			this._errHandler.sync(this);
 			switch (this._input.LA(1)) {
-			case 58:
+			case 59:
 				localctx = new MatchIdentContext(this, localctx);
 				this.enterOuterAlt(localctx, 1);
 				{
-				this.state = 527;
+				this.state = 557;
 				this.match(KestrelParser.ID);
 				}
 				break;
-			case 59:
+			case 60:
 				localctx = new ConstructorContext(this, localctx);
 				this.enterOuterAlt(localctx, 2);
 				{
-				this.state = 531;
+				this.state = 561;
 				this._errHandler.sync(this);
-				switch ( this._interp.adaptivePredict(this._input, 69, this._ctx) ) {
+				switch ( this._interp.adaptivePredict(this._input, 74, this._ctx) ) {
 				case 1:
 					{
-					this.state = 528;
+					this.state = 558;
 					this.moduleNamespace();
-					this.state = 529;
+					this.state = 559;
 					this.match(KestrelParser.T__2);
 					}
 					break;
 				}
-				this.state = 533;
+				this.state = 563;
 				(localctx as ConstructorContext)._name = this.match(KestrelParser.TYPE_ID);
-				this.state = 545;
+				this.state = 575;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la===22) {
+				if (_la===14) {
 					{
-					this.state = 534;
-					this.match(KestrelParser.T__21);
-					this.state = 535;
+					this.state = 564;
+					this.match(KestrelParser.T__13);
+					this.state = 565;
 					this.matchPattern();
-					this.state = 540;
+					this.state = 570;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					while (_la===5) {
 						{
 						{
-						this.state = 536;
+						this.state = 566;
 						this.match(KestrelParser.T__4);
-						this.state = 537;
+						this.state = 567;
 						this.matchPattern();
 						}
 						}
-						this.state = 542;
+						this.state = 572;
 						this._errHandler.sync(this);
 						_la = this._input.LA(1);
 					}
-					this.state = 543;
-					this.match(KestrelParser.T__22);
+					this.state = 573;
+					this.match(KestrelParser.T__14);
 					}
 				}
 
 				}
 				break;
-			case 60:
+			case 61:
 				localctx = new IntPatternContext(this, localctx);
 				this.enterOuterAlt(localctx, 3);
 				{
-				this.state = 547;
+				this.state = 577;
 				this.match(KestrelParser.INT);
 				}
 				break;
-			case 63:
+			case 64:
 				localctx = new FloatPatternContext(this, localctx);
 				this.enterOuterAlt(localctx, 4);
 				{
-				this.state = 548;
+				this.state = 578;
 				this.match(KestrelParser.FLOAT);
 				}
 				break;
-			case 61:
+			case 62:
 				localctx = new CharPatternContext(this, localctx);
 				this.enterOuterAlt(localctx, 5);
 				{
-				this.state = 549;
+				this.state = 579;
 				this.match(KestrelParser.CHAR);
 				}
 				break;
-			case 62:
+			case 63:
 				localctx = new StringPatternContext(this, localctx);
 				this.enterOuterAlt(localctx, 6);
 				{
-				this.state = 550;
+				this.state = 580;
 				this.match(KestrelParser.STRING);
 				}
 				break;
-			case 46:
+			case 47:
 				localctx = new ListPatternContext(this, localctx);
 				this.enterOuterAlt(localctx, 7);
 				{
-				this.state = 551;
-				this.match(KestrelParser.T__45);
-				this.state = 561;
+				this.state = 581;
+				this.match(KestrelParser.T__46);
+				this.state = 591;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
-				if (_la===22 || ((((_la - 46)) & ~0x1F) === 0 && ((1 << (_la - 46)) & 258049) !== 0)) {
+				if (_la===14 || ((((_la - 47)) & ~0x1F) === 0 && ((1 << (_la - 47)) & 258049) !== 0)) {
 					{
-					this.state = 552;
+					this.state = 582;
 					this.listPatterns();
-					this.state = 556;
+					this.state = 586;
 					this._errHandler.sync(this);
-					switch ( this._interp.adaptivePredict(this._input, 72, this._ctx) ) {
+					switch ( this._interp.adaptivePredict(this._input, 77, this._ctx) ) {
 					case 1:
 						{
-						this.state = 553;
+						this.state = 583;
 						this.match(KestrelParser.T__4);
-						this.state = 554;
-						this.match(KestrelParser.T__26);
-						this.state = 555;
+						this.state = 584;
+						this.match(KestrelParser.T__27);
+						this.state = 585;
 						(localctx as ListPatternContext)._tail = this.matchPattern();
 						}
 						break;
 					}
-					this.state = 559;
+					this.state = 589;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 					if (_la===5) {
 						{
-						this.state = 558;
+						this.state = 588;
 						this.match(KestrelParser.T__4);
 						}
 					}
@@ -2471,40 +2574,40 @@ export default class KestrelParser extends Parser {
 					}
 				}
 
-				this.state = 563;
-				this.match(KestrelParser.T__46);
+				this.state = 593;
+				this.match(KestrelParser.T__47);
 				}
 				break;
-			case 22:
+			case 14:
 				localctx = new TuplePatternContext(this, localctx);
 				this.enterOuterAlt(localctx, 8);
 				{
-				this.state = 564;
-				this.match(KestrelParser.T__21);
-				this.state = 565;
+				this.state = 594;
+				this.match(KestrelParser.T__13);
+				this.state = 595;
 				this.matchPattern();
-				this.state = 566;
+				this.state = 596;
 				this.match(KestrelParser.T__4);
-				this.state = 567;
+				this.state = 597;
 				this.matchPattern();
-				this.state = 572;
+				this.state = 602;
 				this._errHandler.sync(this);
 				_la = this._input.LA(1);
 				while (_la===5) {
 					{
 					{
-					this.state = 568;
+					this.state = 598;
 					this.match(KestrelParser.T__4);
-					this.state = 569;
+					this.state = 599;
 					this.matchPattern();
 					}
 					}
-					this.state = 574;
+					this.state = 604;
 					this._errHandler.sync(this);
 					_la = this._input.LA(1);
 				}
-				this.state = 575;
-				this.match(KestrelParser.T__22);
+				this.state = 605;
+				this.match(KestrelParser.T__14);
 				}
 				break;
 			default:
@@ -2528,30 +2631,30 @@ export default class KestrelParser extends Parser {
 	// @RuleVersion(0)
 	public listPatterns(): ListPatternsContext {
 		let localctx: ListPatternsContext = new ListPatternsContext(this, this._ctx, this.state);
-		this.enterRule(localctx, 58, KestrelParser.RULE_listPatterns);
+		this.enterRule(localctx, 60, KestrelParser.RULE_listPatterns);
 		try {
 			let _alt: number;
 			this.enterOuterAlt(localctx, 1);
 			{
-			this.state = 579;
+			this.state = 609;
 			this.matchPattern();
-			this.state = 584;
+			this.state = 614;
 			this._errHandler.sync(this);
-			_alt = this._interp.adaptivePredict(this._input, 77, this._ctx);
+			_alt = this._interp.adaptivePredict(this._input, 82, this._ctx);
 			while (_alt !== 2 && _alt !== ATN.INVALID_ALT_NUMBER) {
 				if (_alt === 1) {
 					{
 					{
-					this.state = 580;
+					this.state = 610;
 					this.match(KestrelParser.T__4);
-					this.state = 581;
+					this.state = 611;
 					this.matchPattern();
 					}
 					}
 				}
-				this.state = 586;
+				this.state = 616;
 				this._errHandler.sync(this);
-				_alt = this._interp.adaptivePredict(this._input, 77, this._ctx);
+				_alt = this._interp.adaptivePredict(this._input, 82, this._ctx);
 			}
 			}
 		}
@@ -2572,7 +2675,7 @@ export default class KestrelParser extends Parser {
 
 	public sempred(localctx: RuleContext, ruleIndex: number, predIndex: number): boolean {
 		switch (ruleIndex) {
-		case 23:
+		case 24:
 			return this.expr_sempred(localctx as ExprContext, predIndex);
 		}
 		return true;
@@ -2601,209 +2704,219 @@ export default class KestrelParser extends Parser {
 		return true;
 	}
 
-	public static readonly _serializedATN: number[] = [4,1,68,588,2,0,7,0,2,
+	public static readonly _serializedATN: number[] = [4,1,69,618,2,0,7,0,2,
 	1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,7,7,7,2,8,7,8,2,9,7,9,2,
 	10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,2,14,7,14,2,15,7,15,2,16,7,16,2,17,
 	7,17,2,18,7,18,2,19,7,19,2,20,7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,
-	24,2,25,7,25,2,26,7,26,2,27,7,27,2,28,7,28,2,29,7,29,1,0,1,0,1,0,5,0,64,
-	8,0,10,0,12,0,67,9,0,1,1,5,1,70,8,1,10,1,12,1,73,9,1,1,1,5,1,76,8,1,10,
-	1,12,1,79,9,1,1,1,5,1,82,8,1,10,1,12,1,85,9,1,1,1,1,1,1,2,1,2,1,2,1,2,1,
-	2,1,2,1,2,5,2,96,8,2,10,2,12,2,99,9,2,1,2,1,2,3,2,103,8,2,1,3,1,3,1,3,3,
-	3,108,8,3,3,3,110,8,3,1,4,1,4,1,4,1,4,3,4,116,8,4,1,5,1,5,1,5,1,5,3,5,122,
-	8,5,1,6,5,6,125,8,6,10,6,12,6,128,9,6,1,6,5,6,131,8,6,10,6,12,6,134,9,6,
-	1,6,3,6,137,8,6,1,6,1,6,1,6,1,6,3,6,143,8,6,1,7,5,7,146,8,7,10,7,12,7,149,
-	9,7,1,7,3,7,152,8,7,1,7,1,7,1,7,3,7,157,8,7,1,7,1,7,3,7,161,8,7,1,7,1,7,
-	1,8,5,8,166,8,8,10,8,12,8,169,9,8,1,8,3,8,172,8,8,1,8,1,8,1,8,3,8,177,8,
-	8,1,8,1,8,3,8,181,8,8,1,8,1,8,1,9,5,9,186,8,9,10,9,12,9,189,9,9,1,9,1,9,
-	3,9,193,8,9,1,9,1,9,1,9,3,9,198,8,9,1,10,1,10,3,10,202,8,10,1,11,1,11,1,
-	11,1,11,5,11,208,8,11,10,11,12,11,211,9,11,1,11,1,11,1,12,1,12,1,12,5,12,
-	218,8,12,10,12,12,12,221,9,12,1,12,3,12,224,8,12,1,13,1,13,1,13,1,13,1,
-	14,1,14,1,14,5,14,233,8,14,10,14,12,14,236,9,14,1,14,3,14,239,8,14,1,15,
-	1,15,1,15,1,15,1,15,5,15,246,8,15,10,15,12,15,249,9,15,3,15,251,8,15,1,
-	16,1,16,1,16,1,16,1,16,5,16,258,8,16,10,16,12,16,261,9,16,1,17,1,17,1,17,
-	3,17,266,8,17,1,17,1,17,1,17,1,17,1,17,5,17,273,8,17,10,17,12,17,276,9,
-	17,1,17,1,17,3,17,280,8,17,1,17,1,17,3,17,284,8,17,1,17,1,17,1,17,1,17,
-	1,17,1,17,1,17,1,17,1,17,1,17,5,17,296,8,17,10,17,12,17,299,9,17,1,17,1,
-	17,3,17,303,8,17,1,18,1,18,1,18,5,18,308,8,18,10,18,12,18,311,9,18,1,18,
-	3,18,314,8,18,1,19,1,19,1,19,1,19,1,19,5,19,321,8,19,10,19,12,19,324,9,
-	19,1,19,1,19,3,19,328,8,19,1,20,1,20,1,20,3,20,333,8,20,1,20,1,20,1,21,
-	1,21,1,21,1,21,1,22,1,22,1,22,5,22,344,8,22,10,22,12,22,347,9,22,1,22,3,
-	22,350,8,22,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,3,23,
-	363,8,23,1,23,1,23,3,23,367,8,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,5,23,
-	376,8,23,10,23,12,23,379,9,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,
-	23,1,23,1,23,5,23,392,8,23,10,23,12,23,395,9,23,1,23,3,23,398,8,23,3,23,
-	400,8,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,
-	23,5,23,415,8,23,10,23,12,23,418,9,23,3,23,420,8,23,1,23,3,23,423,8,23,
-	1,23,1,23,1,23,1,23,1,23,1,23,1,23,3,23,432,8,23,1,23,3,23,435,8,23,3,23,
-	437,8,23,1,23,3,23,440,8,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,
-	1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,23,1,
-	23,1,23,3,23,467,8,23,1,23,1,23,1,23,1,23,1,23,1,23,5,23,475,8,23,10,23,
-	12,23,478,9,23,1,23,3,23,481,8,23,3,23,483,8,23,1,23,5,23,486,8,23,10,23,
-	12,23,489,9,23,1,24,1,24,1,24,5,24,494,8,24,10,24,12,24,497,9,24,1,25,1,
-	25,1,25,1,25,1,26,1,26,1,26,1,26,1,26,1,26,1,26,1,26,1,26,1,26,1,26,1,26,
-	1,26,3,26,516,8,26,1,27,1,27,5,27,520,8,27,10,27,12,27,523,9,27,1,27,1,
-	27,1,27,1,28,1,28,1,28,1,28,3,28,532,8,28,1,28,1,28,1,28,1,28,1,28,5,28,
-	539,8,28,10,28,12,28,542,9,28,1,28,1,28,3,28,546,8,28,1,28,1,28,1,28,1,
-	28,1,28,1,28,1,28,1,28,1,28,3,28,557,8,28,1,28,3,28,560,8,28,3,28,562,8,
-	28,1,28,1,28,1,28,1,28,1,28,1,28,1,28,5,28,571,8,28,10,28,12,28,574,9,28,
-	1,28,1,28,3,28,578,8,28,1,29,1,29,1,29,5,29,583,8,29,10,29,12,29,586,9,
-	29,1,29,0,1,46,30,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,
-	40,42,44,46,48,50,52,54,56,58,0,6,1,0,57,58,1,0,58,59,2,0,1,1,28,31,2,0,
-	21,21,32,35,1,0,36,37,2,0,17,18,38,39,665,0,60,1,0,0,0,2,71,1,0,0,0,4,88,
-	1,0,0,0,6,109,1,0,0,0,8,115,1,0,0,0,10,121,1,0,0,0,12,126,1,0,0,0,14,147,
-	1,0,0,0,16,167,1,0,0,0,18,187,1,0,0,0,20,199,1,0,0,0,22,203,1,0,0,0,24,
-	214,1,0,0,0,26,225,1,0,0,0,28,229,1,0,0,0,30,240,1,0,0,0,32,252,1,0,0,0,
-	34,302,1,0,0,0,36,304,1,0,0,0,38,315,1,0,0,0,40,332,1,0,0,0,42,336,1,0,
-	0,0,44,340,1,0,0,0,46,439,1,0,0,0,48,490,1,0,0,0,50,498,1,0,0,0,52,515,
-	1,0,0,0,54,517,1,0,0,0,56,577,1,0,0,0,58,579,1,0,0,0,60,65,5,59,0,0,61,
-	62,5,1,0,0,62,64,5,59,0,0,63,61,1,0,0,0,64,67,1,0,0,0,65,63,1,0,0,0,65,
-	66,1,0,0,0,66,1,1,0,0,0,67,65,1,0,0,0,68,70,5,66,0,0,69,68,1,0,0,0,70,73,
-	1,0,0,0,71,69,1,0,0,0,71,72,1,0,0,0,72,77,1,0,0,0,73,71,1,0,0,0,74,76,3,
-	4,2,0,75,74,1,0,0,0,76,79,1,0,0,0,77,75,1,0,0,0,77,78,1,0,0,0,78,83,1,0,
-	0,0,79,77,1,0,0,0,80,82,3,8,4,0,81,80,1,0,0,0,82,85,1,0,0,0,83,81,1,0,0,
-	0,83,84,1,0,0,0,84,86,1,0,0,0,85,83,1,0,0,0,86,87,5,0,0,1,87,3,1,0,0,0,
-	88,89,5,2,0,0,89,102,3,0,0,0,90,91,5,3,0,0,91,92,5,4,0,0,92,97,3,6,3,0,
-	93,94,5,5,0,0,94,96,3,6,3,0,95,93,1,0,0,0,96,99,1,0,0,0,97,95,1,0,0,0,97,
-	98,1,0,0,0,98,100,1,0,0,0,99,97,1,0,0,0,100,101,5,6,0,0,101,103,1,0,0,0,
-	102,90,1,0,0,0,102,103,1,0,0,0,103,5,1,0,0,0,104,110,7,0,0,0,105,107,5,
-	59,0,0,106,108,5,56,0,0,107,106,1,0,0,0,107,108,1,0,0,0,108,110,1,0,0,0,
-	109,104,1,0,0,0,109,105,1,0,0,0,110,7,1,0,0,0,111,116,3,12,6,0,112,116,
-	3,14,7,0,113,116,3,16,8,0,114,116,3,18,9,0,115,111,1,0,0,0,115,112,1,0,
-	0,0,115,113,1,0,0,0,115,114,1,0,0,0,116,9,1,0,0,0,117,118,5,7,0,0,118,122,
-	3,30,15,0,119,122,5,8,0,0,120,122,5,9,0,0,121,117,1,0,0,0,121,119,1,0,0,
-	0,121,120,1,0,0,0,122,11,1,0,0,0,123,125,5,67,0,0,124,123,1,0,0,0,125,128,
-	1,0,0,0,126,124,1,0,0,0,126,127,1,0,0,0,127,132,1,0,0,0,128,126,1,0,0,0,
-	129,131,3,10,5,0,130,129,1,0,0,0,131,134,1,0,0,0,132,130,1,0,0,0,132,133,
-	1,0,0,0,133,136,1,0,0,0,134,132,1,0,0,0,135,137,5,10,0,0,136,135,1,0,0,
-	0,136,137,1,0,0,0,137,138,1,0,0,0,138,139,5,11,0,0,139,142,7,0,0,0,140,
-	141,5,12,0,0,141,143,3,46,23,0,142,140,1,0,0,0,142,143,1,0,0,0,143,13,1,
-	0,0,0,144,146,5,67,0,0,145,144,1,0,0,0,146,149,1,0,0,0,147,145,1,0,0,0,
-	147,148,1,0,0,0,148,151,1,0,0,0,149,147,1,0,0,0,150,152,3,20,10,0,151,150,
-	1,0,0,0,151,152,1,0,0,0,152,153,1,0,0,0,153,154,5,13,0,0,154,156,5,59,0,
-	0,155,157,3,22,11,0,156,155,1,0,0,0,156,157,1,0,0,0,157,158,1,0,0,0,158,
-	160,5,4,0,0,159,161,3,24,12,0,160,159,1,0,0,0,160,161,1,0,0,0,161,162,1,
-	0,0,0,162,163,5,6,0,0,163,15,1,0,0,0,164,166,5,67,0,0,165,164,1,0,0,0,166,
-	169,1,0,0,0,167,165,1,0,0,0,167,168,1,0,0,0,168,171,1,0,0,0,169,167,1,0,
-	0,0,170,172,3,20,10,0,171,170,1,0,0,0,171,172,1,0,0,0,172,173,1,0,0,0,173,
-	174,5,14,0,0,174,176,5,59,0,0,175,177,3,22,11,0,176,175,1,0,0,0,176,177,
-	1,0,0,0,177,178,1,0,0,0,178,180,5,4,0,0,179,181,3,28,14,0,180,179,1,0,0,
-	0,180,181,1,0,0,0,181,182,1,0,0,0,182,183,5,6,0,0,183,17,1,0,0,0,184,186,
-	5,67,0,0,185,184,1,0,0,0,186,189,1,0,0,0,187,185,1,0,0,0,187,188,1,0,0,
-	0,188,190,1,0,0,0,189,187,1,0,0,0,190,192,5,15,0,0,191,193,5,10,0,0,192,
-	191,1,0,0,0,192,193,1,0,0,0,193,194,1,0,0,0,194,195,5,16,0,0,195,197,5,
-	59,0,0,196,198,3,22,11,0,197,196,1,0,0,0,197,198,1,0,0,0,198,19,1,0,0,0,
-	199,201,5,10,0,0,200,202,5,56,0,0,201,200,1,0,0,0,201,202,1,0,0,0,202,21,
-	1,0,0,0,203,204,5,17,0,0,204,209,5,58,0,0,205,206,5,5,0,0,206,208,5,58,
-	0,0,207,205,1,0,0,0,208,211,1,0,0,0,209,207,1,0,0,0,209,210,1,0,0,0,210,
-	212,1,0,0,0,211,209,1,0,0,0,212,213,5,18,0,0,213,23,1,0,0,0,214,219,3,38,
-	19,0,215,216,5,5,0,0,216,218,3,38,19,0,217,215,1,0,0,0,218,221,1,0,0,0,
-	219,217,1,0,0,0,219,220,1,0,0,0,220,223,1,0,0,0,221,219,1,0,0,0,222,224,
-	5,5,0,0,223,222,1,0,0,0,223,224,1,0,0,0,224,25,1,0,0,0,225,226,5,58,0,0,
-	226,227,5,19,0,0,227,228,3,34,17,0,228,27,1,0,0,0,229,234,3,26,13,0,230,
-	231,5,5,0,0,231,233,3,26,13,0,232,230,1,0,0,0,233,236,1,0,0,0,234,232,1,
-	0,0,0,234,235,1,0,0,0,235,238,1,0,0,0,236,234,1,0,0,0,237,239,5,5,0,0,238,
-	237,1,0,0,0,238,239,1,0,0,0,239,29,1,0,0,0,240,250,3,34,17,0,241,242,5,
-	20,0,0,242,247,3,32,16,0,243,244,5,5,0,0,244,246,3,32,16,0,245,243,1,0,
-	0,0,246,249,1,0,0,0,247,245,1,0,0,0,247,248,1,0,0,0,248,251,1,0,0,0,249,
-	247,1,0,0,0,250,241,1,0,0,0,250,251,1,0,0,0,251,31,1,0,0,0,252,253,5,58,
-	0,0,253,254,5,19,0,0,254,259,5,59,0,0,255,256,5,21,0,0,256,258,5,59,0,0,
-	257,255,1,0,0,0,258,261,1,0,0,0,259,257,1,0,0,0,259,260,1,0,0,0,260,33,
-	1,0,0,0,261,259,1,0,0,0,262,263,3,0,0,0,263,264,5,3,0,0,264,266,1,0,0,0,
-	265,262,1,0,0,0,265,266,1,0,0,0,266,267,1,0,0,0,267,279,5,59,0,0,268,269,
-	5,17,0,0,269,274,3,34,17,0,270,271,5,5,0,0,271,273,3,34,17,0,272,270,1,
-	0,0,0,273,276,1,0,0,0,274,272,1,0,0,0,274,275,1,0,0,0,275,277,1,0,0,0,276,
-	274,1,0,0,0,277,278,5,18,0,0,278,280,1,0,0,0,279,268,1,0,0,0,279,280,1,
-	0,0,0,280,303,1,0,0,0,281,283,5,22,0,0,282,284,3,36,18,0,283,282,1,0,0,
-	0,283,284,1,0,0,0,284,285,1,0,0,0,285,286,5,23,0,0,286,287,5,24,0,0,287,
-	303,3,34,17,0,288,303,5,58,0,0,289,290,5,22,0,0,290,291,3,34,17,0,291,292,
-	5,5,0,0,292,297,3,34,17,0,293,294,5,5,0,0,294,296,3,34,17,0,295,293,1,0,
-	0,0,296,299,1,0,0,0,297,295,1,0,0,0,297,298,1,0,0,0,298,300,1,0,0,0,299,
-	297,1,0,0,0,300,301,5,23,0,0,301,303,1,0,0,0,302,265,1,0,0,0,302,281,1,
-	0,0,0,302,288,1,0,0,0,302,289,1,0,0,0,303,35,1,0,0,0,304,309,3,34,17,0,
-	305,306,5,5,0,0,306,308,3,34,17,0,307,305,1,0,0,0,308,311,1,0,0,0,309,307,
-	1,0,0,0,309,310,1,0,0,0,310,313,1,0,0,0,311,309,1,0,0,0,312,314,5,5,0,0,
-	313,312,1,0,0,0,313,314,1,0,0,0,314,37,1,0,0,0,315,327,5,59,0,0,316,317,
-	5,22,0,0,317,322,3,34,17,0,318,319,5,5,0,0,319,321,3,34,17,0,320,318,1,
-	0,0,0,321,324,1,0,0,0,322,320,1,0,0,0,322,323,1,0,0,0,323,325,1,0,0,0,324,
-	322,1,0,0,0,325,326,5,23,0,0,326,328,1,0,0,0,327,316,1,0,0,0,327,328,1,
-	0,0,0,328,39,1,0,0,0,329,330,3,0,0,0,330,331,5,3,0,0,331,333,1,0,0,0,332,
-	329,1,0,0,0,332,333,1,0,0,0,333,334,1,0,0,0,334,335,7,1,0,0,335,41,1,0,
-	0,0,336,337,5,58,0,0,337,338,5,19,0,0,338,339,3,46,23,0,339,43,1,0,0,0,
-	340,345,3,42,21,0,341,342,5,5,0,0,342,344,3,42,21,0,343,341,1,0,0,0,344,
-	347,1,0,0,0,345,343,1,0,0,0,345,346,1,0,0,0,346,349,1,0,0,0,347,345,1,0,
-	0,0,348,350,5,5,0,0,349,348,1,0,0,0,349,350,1,0,0,0,350,45,1,0,0,0,351,
-	352,6,23,-1,0,352,440,5,60,0,0,353,440,5,63,0,0,354,440,5,61,0,0,355,440,
-	5,62,0,0,356,440,3,40,20,0,357,358,5,26,0,0,358,440,3,46,23,17,359,360,
-	5,59,0,0,360,362,5,4,0,0,361,363,3,44,22,0,362,361,1,0,0,0,362,363,1,0,
-	0,0,363,366,1,0,0,0,364,365,5,27,0,0,365,367,3,46,23,0,366,364,1,0,0,0,
-	366,367,1,0,0,0,367,368,1,0,0,0,368,440,5,6,0,0,369,370,5,22,0,0,370,371,
-	3,46,23,0,371,372,5,5,0,0,372,377,3,46,23,0,373,374,5,5,0,0,374,376,3,46,
-	23,0,375,373,1,0,0,0,376,379,1,0,0,0,377,375,1,0,0,0,377,378,1,0,0,0,378,
-	380,1,0,0,0,379,377,1,0,0,0,380,381,5,23,0,0,381,440,1,0,0,0,382,383,5,
-	22,0,0,383,384,3,46,23,0,384,385,5,23,0,0,385,440,1,0,0,0,386,440,3,54,
-	27,0,387,399,5,42,0,0,388,393,3,56,28,0,389,390,5,5,0,0,390,392,3,56,28,
-	0,391,389,1,0,0,0,392,395,1,0,0,0,393,391,1,0,0,0,393,394,1,0,0,0,394,397,
-	1,0,0,0,395,393,1,0,0,0,396,398,5,5,0,0,397,396,1,0,0,0,397,398,1,0,0,0,
-	398,400,1,0,0,0,399,388,1,0,0,0,399,400,1,0,0,0,400,401,1,0,0,0,401,440,
-	3,54,27,0,402,403,5,43,0,0,403,404,3,46,23,0,404,405,3,54,27,0,405,406,
-	5,44,0,0,406,407,3,54,27,0,407,440,1,0,0,0,408,409,5,45,0,0,409,410,3,46,
-	23,0,410,419,5,4,0,0,411,416,3,50,25,0,412,413,5,5,0,0,413,415,3,50,25,
-	0,414,412,1,0,0,0,415,418,1,0,0,0,416,414,1,0,0,0,416,417,1,0,0,0,417,420,
-	1,0,0,0,418,416,1,0,0,0,419,411,1,0,0,0,419,420,1,0,0,0,420,422,1,0,0,0,
-	421,423,5,5,0,0,422,421,1,0,0,0,422,423,1,0,0,0,423,424,1,0,0,0,424,425,
-	5,6,0,0,425,440,1,0,0,0,426,436,5,46,0,0,427,431,3,48,24,0,428,429,5,5,
-	0,0,429,430,5,27,0,0,430,432,3,46,23,0,431,428,1,0,0,0,431,432,1,0,0,0,
-	432,434,1,0,0,0,433,435,5,5,0,0,434,433,1,0,0,0,434,435,1,0,0,0,435,437,
-	1,0,0,0,436,427,1,0,0,0,436,437,1,0,0,0,437,438,1,0,0,0,438,440,5,47,0,
-	0,439,351,1,0,0,0,439,353,1,0,0,0,439,354,1,0,0,0,439,355,1,0,0,0,439,356,
-	1,0,0,0,439,357,1,0,0,0,439,359,1,0,0,0,439,369,1,0,0,0,439,382,1,0,0,0,
-	439,386,1,0,0,0,439,387,1,0,0,0,439,402,1,0,0,0,439,408,1,0,0,0,439,426,
-	1,0,0,0,440,487,1,0,0,0,441,442,10,14,0,0,442,443,7,2,0,0,443,486,3,46,
-	23,15,444,445,10,13,0,0,445,446,7,3,0,0,446,486,3,46,23,14,447,448,10,12,
-	0,0,448,449,7,4,0,0,449,486,3,46,23,13,450,451,10,11,0,0,451,452,7,5,0,
-	0,452,486,3,46,23,12,453,454,10,10,0,0,454,455,5,40,0,0,455,486,3,46,23,
-	11,456,457,10,9,0,0,457,458,5,41,0,0,458,486,3,46,23,10,459,460,10,1,0,
-	0,460,461,5,48,0,0,461,486,3,46,23,2,462,463,10,19,0,0,463,466,5,3,0,0,
-	464,465,5,59,0,0,465,467,5,25,0,0,466,464,1,0,0,0,466,467,1,0,0,0,467,468,
-	1,0,0,0,468,486,5,58,0,0,469,470,10,15,0,0,470,482,5,22,0,0,471,476,3,46,
-	23,0,472,473,5,5,0,0,473,475,3,46,23,0,474,472,1,0,0,0,475,478,1,0,0,0,
-	476,474,1,0,0,0,476,477,1,0,0,0,477,480,1,0,0,0,478,476,1,0,0,0,479,481,
-	5,5,0,0,480,479,1,0,0,0,480,481,1,0,0,0,481,483,1,0,0,0,482,471,1,0,0,0,
-	482,483,1,0,0,0,483,484,1,0,0,0,484,486,5,23,0,0,485,441,1,0,0,0,485,444,
-	1,0,0,0,485,447,1,0,0,0,485,450,1,0,0,0,485,453,1,0,0,0,485,456,1,0,0,0,
-	485,459,1,0,0,0,485,462,1,0,0,0,485,469,1,0,0,0,486,489,1,0,0,0,487,485,
-	1,0,0,0,487,488,1,0,0,0,488,47,1,0,0,0,489,487,1,0,0,0,490,495,3,46,23,
-	0,491,492,5,5,0,0,492,494,3,46,23,0,493,491,1,0,0,0,494,497,1,0,0,0,495,
-	493,1,0,0,0,495,496,1,0,0,0,496,49,1,0,0,0,497,495,1,0,0,0,498,499,3,56,
-	28,0,499,500,5,49,0,0,500,501,3,46,23,0,501,51,1,0,0,0,502,503,5,50,0,0,
-	503,504,3,40,20,0,504,505,3,56,28,0,505,506,5,12,0,0,506,507,3,46,23,0,
-	507,508,5,51,0,0,508,516,1,0,0,0,509,510,5,11,0,0,510,511,3,56,28,0,511,
-	512,5,12,0,0,512,513,3,46,23,0,513,514,5,51,0,0,514,516,1,0,0,0,515,502,
-	1,0,0,0,515,509,1,0,0,0,516,53,1,0,0,0,517,521,5,4,0,0,518,520,3,52,26,
-	0,519,518,1,0,0,0,520,523,1,0,0,0,521,519,1,0,0,0,521,522,1,0,0,0,522,524,
-	1,0,0,0,523,521,1,0,0,0,524,525,3,46,23,0,525,526,5,6,0,0,526,55,1,0,0,
-	0,527,578,5,58,0,0,528,529,3,0,0,0,529,530,5,3,0,0,530,532,1,0,0,0,531,
-	528,1,0,0,0,531,532,1,0,0,0,532,533,1,0,0,0,533,545,5,59,0,0,534,535,5,
-	22,0,0,535,540,3,56,28,0,536,537,5,5,0,0,537,539,3,56,28,0,538,536,1,0,
-	0,0,539,542,1,0,0,0,540,538,1,0,0,0,540,541,1,0,0,0,541,543,1,0,0,0,542,
-	540,1,0,0,0,543,544,5,23,0,0,544,546,1,0,0,0,545,534,1,0,0,0,545,546,1,
-	0,0,0,546,578,1,0,0,0,547,578,5,60,0,0,548,578,5,63,0,0,549,578,5,61,0,
-	0,550,578,5,62,0,0,551,561,5,46,0,0,552,556,3,58,29,0,553,554,5,5,0,0,554,
-	555,5,27,0,0,555,557,3,56,28,0,556,553,1,0,0,0,556,557,1,0,0,0,557,559,
-	1,0,0,0,558,560,5,5,0,0,559,558,1,0,0,0,559,560,1,0,0,0,560,562,1,0,0,0,
-	561,552,1,0,0,0,561,562,1,0,0,0,562,563,1,0,0,0,563,578,5,47,0,0,564,565,
-	5,22,0,0,565,566,3,56,28,0,566,567,5,5,0,0,567,572,3,56,28,0,568,569,5,
-	5,0,0,569,571,3,56,28,0,570,568,1,0,0,0,571,574,1,0,0,0,572,570,1,0,0,0,
-	572,573,1,0,0,0,573,575,1,0,0,0,574,572,1,0,0,0,575,576,5,23,0,0,576,578,
-	1,0,0,0,577,527,1,0,0,0,577,531,1,0,0,0,577,547,1,0,0,0,577,548,1,0,0,0,
-	577,549,1,0,0,0,577,550,1,0,0,0,577,551,1,0,0,0,577,564,1,0,0,0,578,57,
-	1,0,0,0,579,584,3,56,28,0,580,581,5,5,0,0,581,583,3,56,28,0,582,580,1,0,
-	0,0,583,586,1,0,0,0,584,582,1,0,0,0,584,585,1,0,0,0,585,59,1,0,0,0,586,
-	584,1,0,0,0,78,65,71,77,83,97,102,107,109,115,121,126,132,136,142,147,151,
-	156,160,167,171,176,180,187,192,197,201,209,219,223,234,238,247,250,259,
-	265,274,279,283,297,302,309,313,322,327,332,345,349,362,366,377,393,397,
-	399,416,419,422,431,434,436,439,466,476,480,482,485,487,495,515,521,531,
-	540,545,556,559,561,572,577,584];
+	24,2,25,7,25,2,26,7,26,2,27,7,27,2,28,7,28,2,29,7,29,2,30,7,30,1,0,1,0,
+	1,0,5,0,66,8,0,10,0,12,0,69,9,0,1,1,5,1,72,8,1,10,1,12,1,75,9,1,1,1,5,1,
+	78,8,1,10,1,12,1,81,9,1,1,1,5,1,84,8,1,10,1,12,1,87,9,1,1,1,1,1,1,2,1,2,
+	1,2,1,2,1,2,1,2,1,2,5,2,98,8,2,10,2,12,2,101,9,2,1,2,1,2,3,2,105,8,2,1,
+	3,1,3,1,3,3,3,110,8,3,3,3,112,8,3,1,4,1,4,1,4,1,4,3,4,118,8,4,1,5,1,5,1,
+	5,1,5,3,5,124,8,5,1,6,5,6,127,8,6,10,6,12,6,130,9,6,1,6,5,6,133,8,6,10,
+	6,12,6,136,9,6,1,6,3,6,139,8,6,1,6,1,6,1,6,1,6,3,6,145,8,6,1,7,1,7,1,7,
+	1,7,1,7,1,7,5,7,153,8,7,10,7,12,7,156,9,7,3,7,158,8,7,1,7,3,7,161,8,7,1,
+	8,5,8,164,8,8,10,8,12,8,167,9,8,1,8,5,8,170,8,8,10,8,12,8,173,9,8,1,8,3,
+	8,176,8,8,1,8,1,8,1,8,3,8,181,8,8,1,8,1,8,3,8,185,8,8,1,8,1,8,1,9,5,9,190,
+	8,9,10,9,12,9,193,9,9,1,9,5,9,196,8,9,10,9,12,9,199,9,9,1,9,3,9,202,8,9,
+	1,9,1,9,1,9,3,9,207,8,9,1,9,1,9,3,9,211,8,9,1,9,1,9,1,10,5,10,216,8,10,
+	10,10,12,10,219,9,10,1,10,1,10,3,10,223,8,10,1,10,1,10,1,10,3,10,228,8,
+	10,1,11,1,11,3,11,232,8,11,1,12,1,12,1,12,1,12,5,12,238,8,12,10,12,12,12,
+	241,9,12,1,12,1,12,1,13,1,13,1,13,5,13,248,8,13,10,13,12,13,251,9,13,1,
+	13,3,13,254,8,13,1,14,1,14,1,14,1,14,1,15,1,15,1,15,5,15,263,8,15,10,15,
+	12,15,266,9,15,1,15,3,15,269,8,15,1,16,1,16,1,16,1,16,1,16,5,16,276,8,16,
+	10,16,12,16,279,9,16,3,16,281,8,16,1,17,1,17,1,17,1,17,1,17,5,17,288,8,
+	17,10,17,12,17,291,9,17,1,18,1,18,1,18,3,18,296,8,18,1,18,1,18,1,18,1,18,
+	1,18,5,18,303,8,18,10,18,12,18,306,9,18,1,18,1,18,3,18,310,8,18,1,18,1,
+	18,3,18,314,8,18,1,18,1,18,1,18,1,18,1,18,1,18,1,18,1,18,1,18,1,18,5,18,
+	326,8,18,10,18,12,18,329,9,18,1,18,1,18,3,18,333,8,18,1,19,1,19,1,19,5,
+	19,338,8,19,10,19,12,19,341,9,19,1,19,3,19,344,8,19,1,20,1,20,1,20,1,20,
+	1,20,5,20,351,8,20,10,20,12,20,354,9,20,1,20,1,20,3,20,358,8,20,1,21,1,
+	21,1,21,3,21,363,8,21,1,21,1,21,1,22,1,22,1,22,1,22,1,23,1,23,1,23,5,23,
+	374,8,23,10,23,12,23,377,9,23,1,23,3,23,380,8,23,1,24,1,24,1,24,1,24,1,
+	24,1,24,1,24,1,24,1,24,1,24,1,24,3,24,393,8,24,1,24,1,24,3,24,397,8,24,
+	1,24,1,24,1,24,1,24,1,24,1,24,1,24,5,24,406,8,24,10,24,12,24,409,9,24,1,
+	24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,5,24,422,8,24,10,24,
+	12,24,425,9,24,1,24,3,24,428,8,24,3,24,430,8,24,1,24,1,24,1,24,1,24,1,24,
+	1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,5,24,445,8,24,10,24,12,24,448,9,
+	24,3,24,450,8,24,1,24,3,24,453,8,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,
+	3,24,462,8,24,1,24,3,24,465,8,24,3,24,467,8,24,1,24,3,24,470,8,24,1,24,
+	1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,
+	24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,1,24,3,24,497,8,24,1,24,1,24,
+	1,24,1,24,1,24,1,24,5,24,505,8,24,10,24,12,24,508,9,24,1,24,3,24,511,8,
+	24,3,24,513,8,24,1,24,5,24,516,8,24,10,24,12,24,519,9,24,1,25,1,25,1,25,
+	5,25,524,8,25,10,25,12,25,527,9,25,1,26,1,26,1,26,1,26,1,27,1,27,1,27,1,
+	27,1,27,1,27,1,27,1,27,1,27,1,27,1,27,1,27,1,27,3,27,546,8,27,1,28,1,28,
+	5,28,550,8,28,10,28,12,28,553,9,28,1,28,1,28,1,28,1,29,1,29,1,29,1,29,3,
+	29,562,8,29,1,29,1,29,1,29,1,29,1,29,5,29,569,8,29,10,29,12,29,572,9,29,
+	1,29,1,29,3,29,576,8,29,1,29,1,29,1,29,1,29,1,29,1,29,1,29,1,29,1,29,3,
+	29,587,8,29,1,29,3,29,590,8,29,3,29,592,8,29,1,29,1,29,1,29,1,29,1,29,1,
+	29,1,29,5,29,601,8,29,10,29,12,29,604,9,29,1,29,1,29,3,29,608,8,29,1,30,
+	1,30,1,30,5,30,613,8,30,10,30,12,30,616,9,30,1,30,0,1,48,31,0,2,4,6,8,10,
+	12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,
+	60,0,6,1,0,58,59,1,0,59,60,2,0,1,1,29,32,2,0,24,24,33,36,1,0,37,38,2,0,
+	20,21,39,40,699,0,62,1,0,0,0,2,73,1,0,0,0,4,90,1,0,0,0,6,111,1,0,0,0,8,
+	117,1,0,0,0,10,123,1,0,0,0,12,128,1,0,0,0,14,160,1,0,0,0,16,165,1,0,0,0,
+	18,191,1,0,0,0,20,217,1,0,0,0,22,229,1,0,0,0,24,233,1,0,0,0,26,244,1,0,
+	0,0,28,255,1,0,0,0,30,259,1,0,0,0,32,270,1,0,0,0,34,282,1,0,0,0,36,332,
+	1,0,0,0,38,334,1,0,0,0,40,345,1,0,0,0,42,362,1,0,0,0,44,366,1,0,0,0,46,
+	370,1,0,0,0,48,469,1,0,0,0,50,520,1,0,0,0,52,528,1,0,0,0,54,545,1,0,0,0,
+	56,547,1,0,0,0,58,607,1,0,0,0,60,609,1,0,0,0,62,67,5,60,0,0,63,64,5,1,0,
+	0,64,66,5,60,0,0,65,63,1,0,0,0,66,69,1,0,0,0,67,65,1,0,0,0,67,68,1,0,0,
+	0,68,1,1,0,0,0,69,67,1,0,0,0,70,72,5,67,0,0,71,70,1,0,0,0,72,75,1,0,0,0,
+	73,71,1,0,0,0,73,74,1,0,0,0,74,79,1,0,0,0,75,73,1,0,0,0,76,78,3,4,2,0,77,
+	76,1,0,0,0,78,81,1,0,0,0,79,77,1,0,0,0,79,80,1,0,0,0,80,85,1,0,0,0,81,79,
+	1,0,0,0,82,84,3,8,4,0,83,82,1,0,0,0,84,87,1,0,0,0,85,83,1,0,0,0,85,86,1,
+	0,0,0,86,88,1,0,0,0,87,85,1,0,0,0,88,89,5,0,0,1,89,3,1,0,0,0,90,91,5,2,
+	0,0,91,104,3,0,0,0,92,93,5,3,0,0,93,94,5,4,0,0,94,99,3,6,3,0,95,96,5,5,
+	0,0,96,98,3,6,3,0,97,95,1,0,0,0,98,101,1,0,0,0,99,97,1,0,0,0,99,100,1,0,
+	0,0,100,102,1,0,0,0,101,99,1,0,0,0,102,103,5,6,0,0,103,105,1,0,0,0,104,
+	92,1,0,0,0,104,105,1,0,0,0,105,5,1,0,0,0,106,112,7,0,0,0,107,109,5,60,0,
+	0,108,110,5,57,0,0,109,108,1,0,0,0,109,110,1,0,0,0,110,112,1,0,0,0,111,
+	106,1,0,0,0,111,107,1,0,0,0,112,7,1,0,0,0,113,118,3,12,6,0,114,118,3,16,
+	8,0,115,118,3,18,9,0,116,118,3,20,10,0,117,113,1,0,0,0,117,114,1,0,0,0,
+	117,115,1,0,0,0,117,116,1,0,0,0,118,9,1,0,0,0,119,120,5,7,0,0,120,124,3,
+	32,16,0,121,124,5,8,0,0,122,124,5,9,0,0,123,119,1,0,0,0,123,121,1,0,0,0,
+	123,122,1,0,0,0,124,11,1,0,0,0,125,127,5,68,0,0,126,125,1,0,0,0,127,130,
+	1,0,0,0,128,126,1,0,0,0,128,129,1,0,0,0,129,134,1,0,0,0,130,128,1,0,0,0,
+	131,133,3,10,5,0,132,131,1,0,0,0,133,136,1,0,0,0,134,132,1,0,0,0,134,135,
+	1,0,0,0,135,138,1,0,0,0,136,134,1,0,0,0,137,139,5,10,0,0,138,137,1,0,0,
+	0,138,139,1,0,0,0,139,140,1,0,0,0,140,141,5,11,0,0,141,144,7,0,0,0,142,
+	143,5,12,0,0,143,145,3,48,24,0,144,142,1,0,0,0,144,145,1,0,0,0,145,13,1,
+	0,0,0,146,161,5,9,0,0,147,148,5,13,0,0,148,157,5,14,0,0,149,154,5,60,0,
+	0,150,151,5,5,0,0,151,153,5,60,0,0,152,150,1,0,0,0,153,156,1,0,0,0,154,
+	152,1,0,0,0,154,155,1,0,0,0,155,158,1,0,0,0,156,154,1,0,0,0,157,149,1,0,
+	0,0,157,158,1,0,0,0,158,159,1,0,0,0,159,161,5,15,0,0,160,146,1,0,0,0,160,
+	147,1,0,0,0,161,15,1,0,0,0,162,164,5,68,0,0,163,162,1,0,0,0,164,167,1,0,
+	0,0,165,163,1,0,0,0,165,166,1,0,0,0,166,171,1,0,0,0,167,165,1,0,0,0,168,
+	170,3,14,7,0,169,168,1,0,0,0,170,173,1,0,0,0,171,169,1,0,0,0,171,172,1,
+	0,0,0,172,175,1,0,0,0,173,171,1,0,0,0,174,176,3,22,11,0,175,174,1,0,0,0,
+	175,176,1,0,0,0,176,177,1,0,0,0,177,178,5,16,0,0,178,180,5,60,0,0,179,181,
+	3,24,12,0,180,179,1,0,0,0,180,181,1,0,0,0,181,182,1,0,0,0,182,184,5,4,0,
+	0,183,185,3,26,13,0,184,183,1,0,0,0,184,185,1,0,0,0,185,186,1,0,0,0,186,
+	187,5,6,0,0,187,17,1,0,0,0,188,190,5,68,0,0,189,188,1,0,0,0,190,193,1,0,
+	0,0,191,189,1,0,0,0,191,192,1,0,0,0,192,197,1,0,0,0,193,191,1,0,0,0,194,
+	196,3,14,7,0,195,194,1,0,0,0,196,199,1,0,0,0,197,195,1,0,0,0,197,198,1,
+	0,0,0,198,201,1,0,0,0,199,197,1,0,0,0,200,202,3,22,11,0,201,200,1,0,0,0,
+	201,202,1,0,0,0,202,203,1,0,0,0,203,204,5,17,0,0,204,206,5,60,0,0,205,207,
+	3,24,12,0,206,205,1,0,0,0,206,207,1,0,0,0,207,208,1,0,0,0,208,210,5,4,0,
+	0,209,211,3,30,15,0,210,209,1,0,0,0,210,211,1,0,0,0,211,212,1,0,0,0,212,
+	213,5,6,0,0,213,19,1,0,0,0,214,216,5,68,0,0,215,214,1,0,0,0,216,219,1,0,
+	0,0,217,215,1,0,0,0,217,218,1,0,0,0,218,220,1,0,0,0,219,217,1,0,0,0,220,
+	222,5,18,0,0,221,223,5,10,0,0,222,221,1,0,0,0,222,223,1,0,0,0,223,224,1,
+	0,0,0,224,225,5,19,0,0,225,227,5,60,0,0,226,228,3,24,12,0,227,226,1,0,0,
+	0,227,228,1,0,0,0,228,21,1,0,0,0,229,231,5,10,0,0,230,232,5,57,0,0,231,
+	230,1,0,0,0,231,232,1,0,0,0,232,23,1,0,0,0,233,234,5,20,0,0,234,239,5,59,
+	0,0,235,236,5,5,0,0,236,238,5,59,0,0,237,235,1,0,0,0,238,241,1,0,0,0,239,
+	237,1,0,0,0,239,240,1,0,0,0,240,242,1,0,0,0,241,239,1,0,0,0,242,243,5,21,
+	0,0,243,25,1,0,0,0,244,249,3,40,20,0,245,246,5,5,0,0,246,248,3,40,20,0,
+	247,245,1,0,0,0,248,251,1,0,0,0,249,247,1,0,0,0,249,250,1,0,0,0,250,253,
+	1,0,0,0,251,249,1,0,0,0,252,254,5,5,0,0,253,252,1,0,0,0,253,254,1,0,0,0,
+	254,27,1,0,0,0,255,256,5,59,0,0,256,257,5,22,0,0,257,258,3,36,18,0,258,
+	29,1,0,0,0,259,264,3,28,14,0,260,261,5,5,0,0,261,263,3,28,14,0,262,260,
+	1,0,0,0,263,266,1,0,0,0,264,262,1,0,0,0,264,265,1,0,0,0,265,268,1,0,0,0,
+	266,264,1,0,0,0,267,269,5,5,0,0,268,267,1,0,0,0,268,269,1,0,0,0,269,31,
+	1,0,0,0,270,280,3,36,18,0,271,272,5,23,0,0,272,277,3,34,17,0,273,274,5,
+	5,0,0,274,276,3,34,17,0,275,273,1,0,0,0,276,279,1,0,0,0,277,275,1,0,0,0,
+	277,278,1,0,0,0,278,281,1,0,0,0,279,277,1,0,0,0,280,271,1,0,0,0,280,281,
+	1,0,0,0,281,33,1,0,0,0,282,283,5,59,0,0,283,284,5,22,0,0,284,289,5,60,0,
+	0,285,286,5,24,0,0,286,288,5,60,0,0,287,285,1,0,0,0,288,291,1,0,0,0,289,
+	287,1,0,0,0,289,290,1,0,0,0,290,35,1,0,0,0,291,289,1,0,0,0,292,293,3,0,
+	0,0,293,294,5,3,0,0,294,296,1,0,0,0,295,292,1,0,0,0,295,296,1,0,0,0,296,
+	297,1,0,0,0,297,309,5,60,0,0,298,299,5,20,0,0,299,304,3,36,18,0,300,301,
+	5,5,0,0,301,303,3,36,18,0,302,300,1,0,0,0,303,306,1,0,0,0,304,302,1,0,0,
+	0,304,305,1,0,0,0,305,307,1,0,0,0,306,304,1,0,0,0,307,308,5,21,0,0,308,
+	310,1,0,0,0,309,298,1,0,0,0,309,310,1,0,0,0,310,333,1,0,0,0,311,313,5,14,
+	0,0,312,314,3,38,19,0,313,312,1,0,0,0,313,314,1,0,0,0,314,315,1,0,0,0,315,
+	316,5,15,0,0,316,317,5,25,0,0,317,333,3,36,18,0,318,333,5,59,0,0,319,320,
+	5,14,0,0,320,321,3,36,18,0,321,322,5,5,0,0,322,327,3,36,18,0,323,324,5,
+	5,0,0,324,326,3,36,18,0,325,323,1,0,0,0,326,329,1,0,0,0,327,325,1,0,0,0,
+	327,328,1,0,0,0,328,330,1,0,0,0,329,327,1,0,0,0,330,331,5,15,0,0,331,333,
+	1,0,0,0,332,295,1,0,0,0,332,311,1,0,0,0,332,318,1,0,0,0,332,319,1,0,0,0,
+	333,37,1,0,0,0,334,339,3,36,18,0,335,336,5,5,0,0,336,338,3,36,18,0,337,
+	335,1,0,0,0,338,341,1,0,0,0,339,337,1,0,0,0,339,340,1,0,0,0,340,343,1,0,
+	0,0,341,339,1,0,0,0,342,344,5,5,0,0,343,342,1,0,0,0,343,344,1,0,0,0,344,
+	39,1,0,0,0,345,357,5,60,0,0,346,347,5,14,0,0,347,352,3,36,18,0,348,349,
+	5,5,0,0,349,351,3,36,18,0,350,348,1,0,0,0,351,354,1,0,0,0,352,350,1,0,0,
+	0,352,353,1,0,0,0,353,355,1,0,0,0,354,352,1,0,0,0,355,356,5,15,0,0,356,
+	358,1,0,0,0,357,346,1,0,0,0,357,358,1,0,0,0,358,41,1,0,0,0,359,360,3,0,
+	0,0,360,361,5,3,0,0,361,363,1,0,0,0,362,359,1,0,0,0,362,363,1,0,0,0,363,
+	364,1,0,0,0,364,365,7,1,0,0,365,43,1,0,0,0,366,367,5,59,0,0,367,368,5,22,
+	0,0,368,369,3,48,24,0,369,45,1,0,0,0,370,375,3,44,22,0,371,372,5,5,0,0,
+	372,374,3,44,22,0,373,371,1,0,0,0,374,377,1,0,0,0,375,373,1,0,0,0,375,376,
+	1,0,0,0,376,379,1,0,0,0,377,375,1,0,0,0,378,380,5,5,0,0,379,378,1,0,0,0,
+	379,380,1,0,0,0,380,47,1,0,0,0,381,382,6,24,-1,0,382,470,5,61,0,0,383,470,
+	5,64,0,0,384,470,5,62,0,0,385,470,5,63,0,0,386,470,3,42,21,0,387,388,5,
+	27,0,0,388,470,3,48,24,17,389,390,5,60,0,0,390,392,5,4,0,0,391,393,3,46,
+	23,0,392,391,1,0,0,0,392,393,1,0,0,0,393,396,1,0,0,0,394,395,5,28,0,0,395,
+	397,3,48,24,0,396,394,1,0,0,0,396,397,1,0,0,0,397,398,1,0,0,0,398,470,5,
+	6,0,0,399,400,5,14,0,0,400,401,3,48,24,0,401,402,5,5,0,0,402,407,3,48,24,
+	0,403,404,5,5,0,0,404,406,3,48,24,0,405,403,1,0,0,0,406,409,1,0,0,0,407,
+	405,1,0,0,0,407,408,1,0,0,0,408,410,1,0,0,0,409,407,1,0,0,0,410,411,5,15,
+	0,0,411,470,1,0,0,0,412,413,5,14,0,0,413,414,3,48,24,0,414,415,5,15,0,0,
+	415,470,1,0,0,0,416,470,3,56,28,0,417,429,5,43,0,0,418,423,3,58,29,0,419,
+	420,5,5,0,0,420,422,3,58,29,0,421,419,1,0,0,0,422,425,1,0,0,0,423,421,1,
+	0,0,0,423,424,1,0,0,0,424,427,1,0,0,0,425,423,1,0,0,0,426,428,5,5,0,0,427,
+	426,1,0,0,0,427,428,1,0,0,0,428,430,1,0,0,0,429,418,1,0,0,0,429,430,1,0,
+	0,0,430,431,1,0,0,0,431,470,3,56,28,0,432,433,5,44,0,0,433,434,3,48,24,
+	0,434,435,3,56,28,0,435,436,5,45,0,0,436,437,3,56,28,0,437,470,1,0,0,0,
+	438,439,5,46,0,0,439,440,3,48,24,0,440,449,5,4,0,0,441,446,3,52,26,0,442,
+	443,5,5,0,0,443,445,3,52,26,0,444,442,1,0,0,0,445,448,1,0,0,0,446,444,1,
+	0,0,0,446,447,1,0,0,0,447,450,1,0,0,0,448,446,1,0,0,0,449,441,1,0,0,0,449,
+	450,1,0,0,0,450,452,1,0,0,0,451,453,5,5,0,0,452,451,1,0,0,0,452,453,1,0,
+	0,0,453,454,1,0,0,0,454,455,5,6,0,0,455,470,1,0,0,0,456,466,5,47,0,0,457,
+	461,3,50,25,0,458,459,5,5,0,0,459,460,5,28,0,0,460,462,3,48,24,0,461,458,
+	1,0,0,0,461,462,1,0,0,0,462,464,1,0,0,0,463,465,5,5,0,0,464,463,1,0,0,0,
+	464,465,1,0,0,0,465,467,1,0,0,0,466,457,1,0,0,0,466,467,1,0,0,0,467,468,
+	1,0,0,0,468,470,5,48,0,0,469,381,1,0,0,0,469,383,1,0,0,0,469,384,1,0,0,
+	0,469,385,1,0,0,0,469,386,1,0,0,0,469,387,1,0,0,0,469,389,1,0,0,0,469,399,
+	1,0,0,0,469,412,1,0,0,0,469,416,1,0,0,0,469,417,1,0,0,0,469,432,1,0,0,0,
+	469,438,1,0,0,0,469,456,1,0,0,0,470,517,1,0,0,0,471,472,10,14,0,0,472,473,
+	7,2,0,0,473,516,3,48,24,15,474,475,10,13,0,0,475,476,7,3,0,0,476,516,3,
+	48,24,14,477,478,10,12,0,0,478,479,7,4,0,0,479,516,3,48,24,13,480,481,10,
+	11,0,0,481,482,7,5,0,0,482,516,3,48,24,12,483,484,10,10,0,0,484,485,5,41,
+	0,0,485,516,3,48,24,11,486,487,10,9,0,0,487,488,5,42,0,0,488,516,3,48,24,
+	10,489,490,10,1,0,0,490,491,5,49,0,0,491,516,3,48,24,2,492,493,10,19,0,
+	0,493,496,5,3,0,0,494,495,5,60,0,0,495,497,5,26,0,0,496,494,1,0,0,0,496,
+	497,1,0,0,0,497,498,1,0,0,0,498,516,5,59,0,0,499,500,10,15,0,0,500,512,
+	5,14,0,0,501,506,3,48,24,0,502,503,5,5,0,0,503,505,3,48,24,0,504,502,1,
+	0,0,0,505,508,1,0,0,0,506,504,1,0,0,0,506,507,1,0,0,0,507,510,1,0,0,0,508,
+	506,1,0,0,0,509,511,5,5,0,0,510,509,1,0,0,0,510,511,1,0,0,0,511,513,1,0,
+	0,0,512,501,1,0,0,0,512,513,1,0,0,0,513,514,1,0,0,0,514,516,5,15,0,0,515,
+	471,1,0,0,0,515,474,1,0,0,0,515,477,1,0,0,0,515,480,1,0,0,0,515,483,1,0,
+	0,0,515,486,1,0,0,0,515,489,1,0,0,0,515,492,1,0,0,0,515,499,1,0,0,0,516,
+	519,1,0,0,0,517,515,1,0,0,0,517,518,1,0,0,0,518,49,1,0,0,0,519,517,1,0,
+	0,0,520,525,3,48,24,0,521,522,5,5,0,0,522,524,3,48,24,0,523,521,1,0,0,0,
+	524,527,1,0,0,0,525,523,1,0,0,0,525,526,1,0,0,0,526,51,1,0,0,0,527,525,
+	1,0,0,0,528,529,3,58,29,0,529,530,5,50,0,0,530,531,3,48,24,0,531,53,1,0,
+	0,0,532,533,5,51,0,0,533,534,3,42,21,0,534,535,3,58,29,0,535,536,5,12,0,
+	0,536,537,3,48,24,0,537,538,5,52,0,0,538,546,1,0,0,0,539,540,5,11,0,0,540,
+	541,3,58,29,0,541,542,5,12,0,0,542,543,3,48,24,0,543,544,5,52,0,0,544,546,
+	1,0,0,0,545,532,1,0,0,0,545,539,1,0,0,0,546,55,1,0,0,0,547,551,5,4,0,0,
+	548,550,3,54,27,0,549,548,1,0,0,0,550,553,1,0,0,0,551,549,1,0,0,0,551,552,
+	1,0,0,0,552,554,1,0,0,0,553,551,1,0,0,0,554,555,3,48,24,0,555,556,5,6,0,
+	0,556,57,1,0,0,0,557,608,5,59,0,0,558,559,3,0,0,0,559,560,5,3,0,0,560,562,
+	1,0,0,0,561,558,1,0,0,0,561,562,1,0,0,0,562,563,1,0,0,0,563,575,5,60,0,
+	0,564,565,5,14,0,0,565,570,3,58,29,0,566,567,5,5,0,0,567,569,3,58,29,0,
+	568,566,1,0,0,0,569,572,1,0,0,0,570,568,1,0,0,0,570,571,1,0,0,0,571,573,
+	1,0,0,0,572,570,1,0,0,0,573,574,5,15,0,0,574,576,1,0,0,0,575,564,1,0,0,
+	0,575,576,1,0,0,0,576,608,1,0,0,0,577,608,5,61,0,0,578,608,5,64,0,0,579,
+	608,5,62,0,0,580,608,5,63,0,0,581,591,5,47,0,0,582,586,3,60,30,0,583,584,
+	5,5,0,0,584,585,5,28,0,0,585,587,3,58,29,0,586,583,1,0,0,0,586,587,1,0,
+	0,0,587,589,1,0,0,0,588,590,5,5,0,0,589,588,1,0,0,0,589,590,1,0,0,0,590,
+	592,1,0,0,0,591,582,1,0,0,0,591,592,1,0,0,0,592,593,1,0,0,0,593,608,5,48,
+	0,0,594,595,5,14,0,0,595,596,3,58,29,0,596,597,5,5,0,0,597,602,3,58,29,
+	0,598,599,5,5,0,0,599,601,3,58,29,0,600,598,1,0,0,0,601,604,1,0,0,0,602,
+	600,1,0,0,0,602,603,1,0,0,0,603,605,1,0,0,0,604,602,1,0,0,0,605,606,5,15,
+	0,0,606,608,1,0,0,0,607,557,1,0,0,0,607,561,1,0,0,0,607,577,1,0,0,0,607,
+	578,1,0,0,0,607,579,1,0,0,0,607,580,1,0,0,0,607,581,1,0,0,0,607,594,1,0,
+	0,0,608,59,1,0,0,0,609,614,3,58,29,0,610,611,5,5,0,0,611,613,3,58,29,0,
+	612,610,1,0,0,0,613,616,1,0,0,0,614,612,1,0,0,0,614,615,1,0,0,0,615,61,
+	1,0,0,0,616,614,1,0,0,0,83,67,73,79,85,99,104,109,111,117,123,128,134,138,
+	144,154,157,160,165,171,175,180,184,191,197,201,206,210,217,222,227,231,
+	239,249,253,264,268,277,280,289,295,304,309,313,327,332,339,343,352,357,
+	362,375,379,392,396,407,423,427,429,446,449,452,461,464,466,469,496,506,
+	510,512,515,517,525,545,551,561,570,575,586,589,591,602,607,614];
 
 	private static __ATN: ATN;
 	public static get _ATN(): ATN {
@@ -3283,6 +3396,74 @@ export class LetDeclaration_Context extends ParserRuleContext {
 }
 
 
+export class TypeAttributeContext extends ParserRuleContext {
+	constructor(parser?: KestrelParser, parent?: ParserRuleContext, invokingState?: number) {
+		super(parent, invokingState);
+    	this.parser = parser;
+	}
+    public get ruleIndex(): number {
+    	return KestrelParser.RULE_typeAttribute;
+	}
+	public override copyFrom(ctx: TypeAttributeContext): void {
+		super.copyFrom(ctx);
+	}
+}
+export class TypeAttDerivingContext extends TypeAttributeContext {
+	constructor(parser: KestrelParser, ctx: TypeAttributeContext) {
+		super(parser, ctx.parentCtx, ctx.invokingState);
+		super.copyFrom(ctx);
+	}
+	public TYPE_ID_list(): TerminalNode[] {
+	    	return this.getTokens(KestrelParser.TYPE_ID);
+	}
+	public TYPE_ID(i: number): TerminalNode {
+		return this.getToken(KestrelParser.TYPE_ID, i);
+	}
+	public enterRule(listener: KestrelListener): void {
+	    if(listener.enterTypeAttDeriving) {
+	 		listener.enterTypeAttDeriving(this);
+		}
+	}
+	public exitRule(listener: KestrelListener): void {
+	    if(listener.exitTypeAttDeriving) {
+	 		listener.exitTypeAttDeriving(this);
+		}
+	}
+	// @Override
+	public accept<Result>(visitor: KestrelVisitor<Result>): Result {
+		if (visitor.visitTypeAttDeriving) {
+			return visitor.visitTypeAttDeriving(this);
+		} else {
+			return visitor.visitChildren(this);
+		}
+	}
+}
+export class TypeAttrExternContext extends TypeAttributeContext {
+	constructor(parser: KestrelParser, ctx: TypeAttributeContext) {
+		super(parser, ctx.parentCtx, ctx.invokingState);
+		super.copyFrom(ctx);
+	}
+	public enterRule(listener: KestrelListener): void {
+	    if(listener.enterTypeAttrExtern) {
+	 		listener.enterTypeAttrExtern(this);
+		}
+	}
+	public exitRule(listener: KestrelListener): void {
+	    if(listener.exitTypeAttrExtern) {
+	 		listener.exitTypeAttrExtern(this);
+		}
+	}
+	// @Override
+	public accept<Result>(visitor: KestrelVisitor<Result>): Result {
+		if (visitor.visitTypeAttrExtern) {
+			return visitor.visitTypeAttrExtern(this);
+		} else {
+			return visitor.visitChildren(this);
+		}
+	}
+}
+
+
 export class TypeDeclaration_Context extends ParserRuleContext {
 	public _doc!: Token;
 	public _pub!: PubExposingContext;
@@ -3293,6 +3474,12 @@ export class TypeDeclaration_Context extends ParserRuleContext {
 	}
 	public TYPE_ID(): TerminalNode {
 		return this.getToken(KestrelParser.TYPE_ID, 0);
+	}
+	public typeAttribute_list(): TypeAttributeContext[] {
+		return this.getTypedRuleContexts(TypeAttributeContext) as TypeAttributeContext[];
+	}
+	public typeAttribute(i: number): TypeAttributeContext {
+		return this.getTypedRuleContext(TypeAttributeContext, i) as TypeAttributeContext;
 	}
 	public paramsList(): ParamsListContext {
 		return this.getTypedRuleContext(ParamsListContext, 0) as ParamsListContext;
@@ -3343,6 +3530,12 @@ export class StructDeclaration_Context extends ParserRuleContext {
 	}
 	public TYPE_ID(): TerminalNode {
 		return this.getToken(KestrelParser.TYPE_ID, 0);
+	}
+	public typeAttribute_list(): TypeAttributeContext[] {
+		return this.getTypedRuleContexts(TypeAttributeContext) as TypeAttributeContext[];
+	}
+	public typeAttribute(i: number): TypeAttributeContext {
+		return this.getTypedRuleContext(TypeAttributeContext, i) as TypeAttributeContext;
 	}
 	public paramsList(): ParamsListContext {
 		return this.getTypedRuleContext(ParamsListContext, 0) as ParamsListContext;

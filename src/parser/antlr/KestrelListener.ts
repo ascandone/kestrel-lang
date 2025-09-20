@@ -16,6 +16,8 @@ import { AttrTypeContext } from "./KestrelParser.js";
 import { AttrInlineContext } from "./KestrelParser.js";
 import { AttrExternContext } from "./KestrelParser.js";
 import { LetDeclaration_Context } from "./KestrelParser.js";
+import { TypeAttrExternContext } from "./KestrelParser.js";
+import { TypeAttDerivingContext } from "./KestrelParser.js";
 import { TypeDeclaration_Context } from "./KestrelParser.js";
 import { StructDeclaration_Context } from "./KestrelParser.js";
 import { ExternTypeDeclaration_Context } from "./KestrelParser.js";
@@ -227,6 +229,30 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitLetDeclaration_?: (ctx: LetDeclaration_Context) => void;
+	/**
+	 * Enter a parse tree produced by the `typeAttrExtern`
+	 * labeled alternative in `KestrelParser.typeAttribute`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeAttrExtern?: (ctx: TypeAttrExternContext) => void;
+	/**
+	 * Exit a parse tree produced by the `typeAttrExtern`
+	 * labeled alternative in `KestrelParser.typeAttribute`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeAttrExtern?: (ctx: TypeAttrExternContext) => void;
+	/**
+	 * Enter a parse tree produced by the `typeAttDeriving`
+	 * labeled alternative in `KestrelParser.typeAttribute`.
+	 * @param ctx the parse tree
+	 */
+	enterTypeAttDeriving?: (ctx: TypeAttDerivingContext) => void;
+	/**
+	 * Exit a parse tree produced by the `typeAttDeriving`
+	 * labeled alternative in `KestrelParser.typeAttribute`.
+	 * @param ctx the parse tree
+	 */
+	exitTypeAttDeriving?: (ctx: TypeAttDerivingContext) => void;
 	/**
 	 * Enter a parse tree produced by `KestrelParser.typeDeclaration_`.
 	 * @param ctx the parse tree
