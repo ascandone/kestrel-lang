@@ -360,19 +360,17 @@ class ExpressionVisitor extends Visitor<Expr> {
     range: rangeOfCtx(ctx),
   });
 
-  visitFieldAccess = (ctx: FieldAccessContext): Expr => {
-    return {
-      type: "field-access",
-      struct: this.visit(ctx.expr()),
-      field: {
-        name: ctx.ID().getText(),
-        structName:
-          ctx._structName === undefined ? undefined : ctx._structName.text,
-        range: rangeOfTerminalNode(ctx.ID()),
-      },
-      range: rangeOfCtx(ctx),
-    };
-  };
+  visitFieldAccess = (ctx: FieldAccessContext): Expr => ({
+    type: "field-access",
+    struct: this.visit(ctx.expr()),
+    field: {
+      name: ctx.ID().getText(),
+      structName:
+        ctx._structName === undefined ? undefined : ctx._structName.text,
+      range: rangeOfTerminalNode(ctx.ID()),
+    },
+    range: rangeOfCtx(ctx),
+  });
 
   visitBoolNot = (ctx: BoolNotContext): Expr => ({
     type: "application",
