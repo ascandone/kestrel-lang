@@ -623,7 +623,9 @@ class Typechecker {
         this.unifyNode(stm, stm.$type, bodyType);
         this.unifyNode(stm, stm.pattern.$type, stm.value.$type);
         this.typecheckExpr(stm.value);
-        this.checkExhaustiveMatrix(stm.range, [[stm.pattern]]);
+        stm.$decisionTree = this.checkExhaustiveMatrix(stm.range, [
+          [stm.pattern],
+        ]);
         break;
 
       case "let#":
@@ -642,7 +644,9 @@ class Typechecker {
         this.typecheckExpr(stm.mapper);
         this.typecheckExpr(stm.value);
         this.typecheckPattern(stm.pattern);
-        this.checkExhaustiveMatrix(stm.range, [[stm.pattern]]);
+        stm.$decisionTree = this.checkExhaustiveMatrix(stm.range, [
+          [stm.pattern],
+        ]);
         break;
 
       default:
@@ -739,7 +743,11 @@ class Typechecker {
         });
 
         this.typecheckExpr(ast.body);
-        this.checkExhaustiveMatrix(ast.range, [ast.params.map((p) => p)]);
+
+        ast.$decisionTree =
+          ast.params.length === 0
+            ? { type: "leaf", action: 0 }
+            : this.checkExhaustiveMatrix(ast.range, [ast.params.map((p) => p)]);
         return;
 
       case "application":
@@ -829,7 +837,7 @@ class Typechecker {
           this.unifyExpr(ast, ast.$type, expr.$type);
           this.typecheckExpr(expr);
         }
-        this.checkExhaustiveMatrix(
+        ast.$decisionTree = this.checkExhaustiveMatrix(
           ast.range,
           ast.clauses.map(([pat]) => [pat]),
         );
@@ -923,7 +931,7 @@ class Typechecker {
 
   private checkExhaustiveMatrix(rng: Range, matrix: TypedMatchPattern[][]) {
     try {
-      runExhaustivenessCheck(matrix);
+      return runExhaustivenessCheck(matrix);
     } catch (error) {
       if (error instanceof MalformedMatrixHalt) {
         return;

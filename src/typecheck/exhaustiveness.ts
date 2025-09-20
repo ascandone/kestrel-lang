@@ -17,6 +17,7 @@ export type DecisionTreeBinding =
     }
   | {
       type: "generated";
+      bindings: Set<typedAst.TypedBinding>;
       id: number;
     };
 
@@ -40,7 +41,7 @@ export type DecisionTree =
       type: "switch";
       subject: DecisionTreeBinding;
       clauses: [pattern: DecisionTreePattern, DecisionTree][];
-      default?: DecisionTree;
+      default?: [DecisionTreeBinding, DecisionTree];
     };
 
 function checkPatternsMatrix(
@@ -59,7 +60,10 @@ function checkPatternsMatrix(
 
   if (nonWildcardColumnIndex === -1) {
     // Yield the first action
-    return { type: "leaf", action: firstRow.action };
+    return {
+      type: "leaf",
+      action: firstRow.action,
+    };
   }
 
   const col = firstRow.patterns[nonWildcardColumnIndex]!;
@@ -85,8 +89,6 @@ function specialize(
   fringe: DecisionTreeBinding[],
   matrix: PatternMatrix,
 ): DecisionTree {
-  // TODO do not return undefined
-
   const ctors = new Map<string, DecisionTreePattern>();
 
   // first, we gather all the ctors of head patterns of this col
@@ -149,24 +151,21 @@ function specialize(
           type: "constructor",
           resolution: specializedCol.$resolution,
           args: specializedCol.args.map((_, argIndex): DecisionTreeBinding => {
-            // TODO remove "!""
-            const matchingArgs = matchingCtors.flatMap((ctor) => {
-              const arg = ctor.args[argIndex]!;
-              if (arg.type === "identifier" && !arg.name.startsWith("_")) {
-                return [arg];
-              } else {
-                return [];
-              }
-            });
-
-            if (matchingArgs.length === 1) {
+            if (
+              matchingCtors.length === 1 &&
+              matchingCtors[0]!.args[argIndex]!.type === "identifier"
+            ) {
               return {
                 type: "identifier",
-                binding: matchingArgs[0]!,
+                binding: matchingCtors[0]!.args[argIndex]!,
               };
             }
 
-            return genDecisionTreeBinding();
+            const idents = matchingCtors
+              .map((c) => c.args[argIndex]!)
+              .filter((p) => p.type === "identifier");
+
+            return genDecisionTreeBinding(new Set(idents));
           }),
         });
         break;
@@ -273,10 +272,27 @@ function specialize(
       return specializedCol.type === "identifier";
     });
 
-    switchTree.default = checkPatternsMatrix(
-      [...fringePrefix, genDecisionTreeBinding(), ...fringePostfix],
+    const patterns = specializedMatrix.map(
+      (clause) =>
+        clause.patterns[columnIndex]! as typedAst.TypedMatchPattern & {
+          type: "identifier";
+        },
+    );
+
+    const bindings = new Set<typedAst.TypedBinding>(patterns);
+
+    const subTree = checkPatternsMatrix(
+      [...fringePrefix, genDecisionTreeBinding(bindings), ...fringePostfix],
       specializedMatrix,
     );
+
+    const binding: DecisionTreeBinding =
+      patterns.length === 1
+        ? { type: "identifier", binding: patterns[0]! }
+        : genDecisionTreeBinding(bindings);
+
+    // TODO reuse binding from patterns if unique
+    switchTree.default = [binding, subTree];
   }
 
   return switchTree;
@@ -323,8 +339,10 @@ function patToCtorKey(pat: typedAst.TypedMatchPattern): string {
 }
 
 let nextUniqueDecisionTreeId = 0;
-function genDecisionTreeBinding(): DecisionTreeBinding {
-  return { type: "generated", id: nextUniqueDecisionTreeId++ };
+function genDecisionTreeBinding(
+  bindings: Set<typedAst.TypedBinding>,
+): DecisionTreeBinding {
+  return { type: "generated", id: nextUniqueDecisionTreeId++, bindings };
 }
 
 export function runExhaustivenessCheck(rows: typedAst.TypedMatchPattern[][]) {
@@ -337,7 +355,11 @@ export function runExhaustivenessCheck(rows: typedAst.TypedMatchPattern[][]) {
   const fringe =
     matrix[0] === undefined
       ? []
-      : matrix[0].patterns.map(() => genDecisionTreeBinding());
+      : matrix[0].patterns.map((pat): DecisionTreeBinding => {
+          return genDecisionTreeBinding(
+            new Set(pat.type === "identifier" ? [pat] : []),
+          );
+        });
 
   return checkPatternsMatrix(fringe, matrix);
 }

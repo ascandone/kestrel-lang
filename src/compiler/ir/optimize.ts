@@ -73,22 +73,14 @@ export const foldMatch: Rule = (expr) => {
       continue;
     }
 
-    // TODO when we'll compile pattern match into the IR, we'll get rid of this bit
-    const idents = pat.args.flatMap((pat) =>
-      pat.type === "identifier" ? [pat] : [],
-    );
-    if (idents.length !== pat.args.length) {
-      return expr;
-    }
-
     // Found matching clause: returning
 
     const args = expr.expr.args;
-    return idents.reduceRight((prev, curr, index) => {
+    return pat.args.reduceRight((prev, curr, index) => {
       const matchingArg = args[index]!;
 
       return ir.desugarLet({
-        binding: curr.ident,
+        binding: curr,
         value: matchingArg,
         body: prev,
       });

@@ -1,5 +1,6 @@
 import * as ast from "../parser";
 import { Type, RigidVarsCtx } from "../type";
+import { DecisionTree } from "./exhaustiveness";
 
 // -- Common
 
@@ -64,12 +65,14 @@ export type TypedBlockStatement = (TypeMeta & ast.RangeMeta) &
         type: "let";
         pattern: TypedMatchPattern;
         value: TypedExpr;
+        $decisionTree?: DecisionTree;
       }
     | {
         type: "let#";
         mapper: TypedExpr & { type: "identifier" };
         pattern: TypedMatchPattern;
         value: TypedExpr;
+        $decisionTree?: DecisionTree;
       }
   );
 
@@ -125,6 +128,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         type: "fn";
         params: TypedMatchPattern[];
         body: TypedExpr;
+        $decisionTree?: DecisionTree;
       }
     | {
         type: "application";
@@ -160,6 +164,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         type: "match";
         expr: TypedExpr;
         clauses: Array<[TypedMatchPattern, TypedExpr]>;
+        $decisionTree?: DecisionTree;
       }
   );
 

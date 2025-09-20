@@ -140,10 +140,7 @@ test("pattern", () => {
         {
           type: "constructor",
           name: "Ctor",
-          args: [
-            { type: "constant", value: { type: "int", value: 42 } },
-            { type: "identifier", ident: mkBinding("x") },
-          ],
+          args: [mkBinding("x"), mkBinding("y")],
           typeName: ident,
         },
         mkIdent("then"),
@@ -153,7 +150,7 @@ test("pattern", () => {
 
   expect(pprint(doc)).toMatchInlineSnapshot(`
     "match value#0 {
-      Ctor(42, x#0) => then#0,
+      Ctor(x#0, y#0) => then#0,
     }"
   `);
 });

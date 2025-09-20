@@ -2,6 +2,11 @@ import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 import { RigidVarsCtx, resolveType } from "../type";
 import * as typed from "../typecheck";
 import { CORE_PACKAGE } from "../typecheck/core_package";
+import {
+  DecisionTree,
+  DecisionTreeBinding,
+  DecisionTreePattern,
+} from "../typecheck/exhaustiveness";
 import { TypedProject } from "../typecheck/project";
 import * as ir from "./ir";
 
@@ -39,6 +44,31 @@ class ExprEmitter {
     };
   }
 
+  private mkUnique(id: number): ir.Ident & { type: "local" } {
+    return {
+      type: "local",
+      name: "_MATCH_GEN",
+      declaration: this.currentDecl,
+      unique: id,
+    };
+  }
+
+  private lowerPatternBinding(
+    arg: DecisionTreeBinding,
+  ): ir.Ident & { type: "local" } {
+    switch (arg.type) {
+      case "identifier":
+        return this.mkIdent(arg.binding);
+      case "generated": {
+        const unique = this.mkUnique(arg.id);
+        for (const pat of arg.bindings) {
+          this.loweredIdents.set(pat, unique);
+        }
+        return unique;
+      }
+    }
+  }
+
   private mkIdent(pattern: typed.TypedBinding): ir.Ident & { type: "local" } {
     const ident: ir.Ident & { type: "local" } = {
       type: "local",
@@ -64,24 +94,10 @@ class ExprEmitter {
 
     switch (stmt.type) {
       case "let#": {
-        if (stmt.pattern.type === "identifier") {
-          const ident = this.mkIdent(stmt.pattern);
-
-          return {
-            type: "application",
-            caller: this.lowerExpr(stmt.mapper),
-            args: [
-              this.lowerExpr(stmt.value),
-              {
-                type: "fn",
-                bindings: [ident],
-                body: this.lowerBlock(statementsLeft, returning),
-              },
-            ],
-          };
-        }
-
-        const ident = this.genIdent();
+        const ident =
+          stmt.pattern.type === "identifier"
+            ? this.mkIdent(stmt.pattern)
+            : this.genIdent();
 
         return {
           type: "application",
@@ -91,16 +107,11 @@ class ExprEmitter {
             {
               type: "fn",
               bindings: [ident],
-              body: {
-                type: "match",
-                expr: { type: "identifier", ident },
-                clauses: [
-                  [
-                    this.lowerPattern(stmt.pattern),
-                    this.lowerBlock(statementsLeft, returning),
-                  ],
-                ],
-              },
+              body: this.lowerMatch(
+                { 0: () => this.lowerBlock(statementsLeft, returning) },
+                { 0: () => ({ type: "identifier", ident }) },
+                getDecisionTree(stmt),
+              ),
             },
           ],
         };
@@ -108,36 +119,38 @@ class ExprEmitter {
 
       case "let": {
         if (stmt.pattern.type === "identifier") {
-          // this line must be above the expr lowering
           const ident = this.mkIdent(stmt.pattern);
-
           return {
             type: "match",
+            clauses: [],
             expr: this.lowerExpr(stmt.value),
-            clauses: [
-              [
-                { type: "identifier", ident },
-                this.lowerBlock(statementsLeft, returning),
-              ],
+            default: [
+              ident,
+              this.lowerMatch(
+                {
+                  0: () => this.lowerBlock(statementsLeft, returning),
+                },
+                {}, // <- TODO double check
+                getDecisionTree(stmt),
+              ),
             ],
           };
         }
 
-        return {
-          type: "match",
-          expr: this.lowerExpr(stmt.value),
-          clauses: [
-            [
-              this.lowerPattern(stmt.pattern),
-              this.lowerBlock(statementsLeft, returning),
-            ],
-          ],
-        };
+        return this.lowerMatch(
+          {
+            0: () => this.lowerBlock(statementsLeft, returning),
+          },
+          {
+            0: () => this.lowerExpr(stmt.value),
+          },
+          getDecisionTree(stmt),
+        );
       }
     }
   }
 
-  private lowerPattern(expr: typed.TypedMatchPattern): ir.MatchPattern {
+  private lowerPattern_(expr: DecisionTreePattern): ir.MatchPattern {
     switch (expr.type) {
       case "constant":
         return {
@@ -145,14 +158,8 @@ class ExprEmitter {
           value: expr.value,
         };
 
-      case "identifier":
-        return {
-          type: "identifier",
-          ident: this.mkIdent(expr),
-        };
-
       case "constructor": {
-        const resolution = getResolution(expr);
+        const resolution = expr.resolution;
         if (resolution.type !== "constructor") {
           throw new CompilationError("wrong resolution for constructor");
         }
@@ -165,7 +172,7 @@ class ExprEmitter {
 
         return {
           type: "constructor",
-          args: expr.args.map((arg) => this.lowerPattern(arg)),
+          args: expr.args.map((arg) => this.lowerPatternBinding(arg)),
           name: resolution.variant.name,
           typeName: qualifiedIdent,
         };
@@ -195,37 +202,28 @@ class ExprEmitter {
         return this.lowerBlock(expr.statements, expr.returning);
 
       case "fn": {
-        type BindingType = {
-          param: typed.TypedMatchPattern;
-          ident: ir.Ident & { type: "local" };
-        };
-
-        const bindings = expr.params.map(
-          (param): BindingType => ({
-            param,
-            ident:
-              param.type === "identifier"
-                ? this.mkIdent(param)
-                : this.genIdent(),
-          }),
+        const params = expr.params.map((param) =>
+          param.type === "identifier" ? this.mkIdent(param) : this.genIdent(),
         );
-
-        const getBody = bindings
-          .filter((b) => b.ident.name === "")
-          .reduceRight(
-            (getExpr, { ident, param }) =>
-              (): ir.Expr => ({
-                type: "match",
-                expr: { type: "identifier", ident },
-                clauses: [[this.lowerPattern(param), getExpr()]],
-              }),
-            () => this.lowerExpr(expr.body),
-          );
 
         return {
           type: "fn",
-          bindings: bindings.map((b) => b.ident),
-          body: getBody(),
+          bindings: params,
+          body: this.lowerMatch(
+            {
+              0: () => this.lowerExpr(expr.body),
+            },
+            Object.fromEntries(
+              params.map((ident, index) => [
+                index,
+                (): ir.Expr => ({
+                  type: "identifier",
+                  ident,
+                }),
+              ]),
+            ),
+            getDecisionTree(expr),
+          ),
         };
       }
 
@@ -320,14 +318,74 @@ class ExprEmitter {
           expr.tail === undefined ? NIL : this.lowerExpr(expr.tail),
         );
 
-      case "match":
+      case "match": {
+        const tree = getDecisionTree(expr);
+        if (tree.type === "leaf") {
+          const [pat, returning] = expr.clauses[tree.action]!;
+          if (pat.type !== "identifier") {
+            throw new Error("TODO");
+          }
+
+          return {
+            type: "match",
+            expr: this.lowerExpr(expr.expr),
+            clauses: [],
+            default: [this.mkIdent(pat), this.lowerExpr(returning)],
+          };
+        }
+
+        return this.lowerMatch(
+          Object.fromEntries(
+            expr.clauses.map(([_, after], index) => [
+              index,
+              () => this.lowerExpr(after),
+            ]),
+          ),
+          { 0: () => this.lowerExpr(expr.expr) },
+          tree,
+        );
+      }
+    }
+  }
+
+  private lowerMatch(
+    actions: Record<number, () => ir.Expr>,
+    ids: Record<number, () => ir.Expr>,
+    tree: DecisionTree,
+  ): ir.Expr {
+    switch (tree.type) {
+      case "leaf": {
+        const getExpr = actions[tree.action];
+        if (getExpr === undefined) {
+          throw new CompilationError("Undefined action for decision tree");
+        }
+        return getExpr();
+      }
+
+      case "switch":
         return {
           type: "match",
-          expr: this.lowerExpr(expr.expr),
-          clauses: expr.clauses.map(
-            ([pat, then_]) =>
-              [this.lowerPattern(pat), this.lowerExpr(then_)] as const,
-          ),
+          expr:
+            tree.subject.type === "identifier"
+              ? {
+                  type: "identifier",
+                  ident: this.mkIdent(tree.subject.binding),
+                }
+              : ids[tree.subject.id]?.() ?? {
+                  type: "identifier",
+                  ident: this.mkUnique(tree.subject.id),
+                },
+          clauses: tree.clauses.map(([pat, subTree]) => [
+            this.lowerPattern_(pat),
+            this.lowerMatch(actions, ids, subTree),
+          ]),
+          default:
+            tree.default === undefined
+              ? undefined
+              : [
+                  this.lowerPatternBinding(tree.default[0]),
+                  this.lowerMatch(actions, ids, tree.default[1]),
+                ],
         };
     }
   }
@@ -549,6 +607,12 @@ function getResolution<T>(node: { $resolution?: T | undefined }): T {
   return node.$resolution;
 }
 
+function getDecisionTree(node: { $decisionTree?: DecisionTree }): DecisionTree {
+  if (node.$decisionTree === undefined) {
+    throw new CompilationError("Missing decision tree");
+  }
+  return node.$decisionTree;
+}
 const listQualifiedName = new ir.QualifiedIdentifier(
   CORE_PACKAGE,
   "List",

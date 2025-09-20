@@ -5,6 +5,7 @@ import { lowerProgram } from "./lower";
 import { formatIR } from "./__test__/format-ir";
 import { typecheckSource_ } from "./__test__/prelude";
 import { defaultTraitImpls } from "../typecheck/defaultImports";
+import { CORE_PACKAGE } from "../typecheck/core_package";
 
 test("global value of same module", () => {
   const ir = toSexpr(`
@@ -72,6 +73,33 @@ test("local value count resets on new declrs", () => {
     let pkg:Main.glb2 = {
       let loc#0 = 0;
       loc#0
+    }"
+  `);
+});
+
+test("local value (nested)", () => {
+  const ir = toSexpr(`
+    let f = fn a, b { a }
+
+    pub let x = {
+      let local = {
+        let nested = 0;
+        f(nested, 1)
+      };
+      f(local, 2)
+    }
+  `);
+  expect(ir).toMatchInlineSnapshot(`
+    "let pkg:Main.f = fn a#0, b#0 {
+      a#0
+    }
+
+    let pkg:Main.x = {
+      let local#0 = {
+        let nested#0 = 0;
+        f(nested#0, 1)
+      };
+      f(local#0, 2)
     }"
   `);
 });
@@ -298,6 +326,30 @@ test("list literal (cons)", () => {
 });
 
 describe("pattern matching", () => {
+  test("pattern with exactly one ident", () => {
+    const out = toSexpr(`
+      let id = fn e { e }
+      // let v = {
+      //   let a = 0;
+      //   id(a)
+      // }
+      let v = match 0 {
+        a => id(a)
+      }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.id = fn e#0 {
+        e#0
+      }
+
+      let pkg:Main.v = {
+        let a#0 = 0;
+        id(a#0)
+      }"
+    `);
+  });
+
   test("toplevel", () => {
     const ir = toSexpr(`
     enum Option<a> {
@@ -318,8 +370,10 @@ describe("pattern matching", () => {
       "let pkg:Main.m = fn x#0, f#0 {
         match f#0(x#0) {
           None => 0,
-          Some(0) => x#0,
-          Some(x#1) => x#1,
+          Some(_MATCH_GEN#1) => match _MATCH_GEN#1 {
+            0 => x#0,
+            x#1 => x#1,
+          },
         }
       }"
     `);
@@ -346,8 +400,11 @@ describe("pattern matching", () => {
       "let pkg:Main.opt = Some(Some(0))
 
       let pkg:Main.m = match opt {
-        Some(Some(x#0)) => x#0,
-        _#0 => 0,
+        Some(_MATCH_GEN#1) => match _MATCH_GEN#1 {
+          Some(x#0) => x#0,
+          _#0 => 0,
+        },
+        _#1 => 0,
       }"
     `);
   });
@@ -431,6 +488,71 @@ describe("pattern matching", () => {
           Box(x#0) => match #1 {
             Box(y#0) => y#0,
           },
+        }
+      }"
+    `);
+  });
+
+  test("pattern matching nested", () => {
+    const ir = toSexpr(`
+    pub enum Bool { True, False }
+    enum T {
+      C(Bool),
+    }
+
+    pub let x = match C(True) {
+      C(True) => 0,
+      _ => 1,
+    }
+  `);
+
+    expect(ir).toMatchInlineSnapshot(`
+      "let pkg:Main.x = match C(True) {
+        C(_MATCH_GEN#1) => match _MATCH_GEN#1 {
+          True => 0,
+          _#0 => 1,
+        },
+      }"
+    `);
+  });
+
+  test("pattern matching list", () => {
+    const ir = toSexpr(
+      `
+    extern type String
+    
+    pub(..) enum List<a> {
+      Nil,
+      Cons(a, List<a>),
+    }
+
+    pub enum Expectation {
+      Pass,
+      Fail,
+    }
+
+   pub let all = fn expectations {
+      match expectations {
+        [Pass, ..expectations] => all(expectations),
+        [failure, ..another] => all(another),
+        [] => Pass,
+      }
+    }
+  `,
+      {
+        package_: CORE_PACKAGE,
+        moduleId: "List",
+      },
+    );
+
+    expect(ir).toMatchInlineSnapshot(`
+      "let kestrel_core:List.all = fn expectations#0 {
+        match expectations#0 {
+          Cons(_MATCH_GEN#1, _MATCH_GEN#2) => match _MATCH_GEN#1 {
+            Pass => all(_MATCH_GEN#2),
+            failure#0 => all(_MATCH_GEN#2),
+          },
+          Nil => Pass,
         }
       }"
     `);
@@ -710,11 +832,19 @@ describe("traits", () => {
   });
 });
 
-function getIR(src: string) {
+function getIR(
+  src: string,
+  options: { package_?: string; moduleId?: string } = {},
+) {
   const untypedMod = unsafeParse(src);
-  const [tc, errors] = typecheck("pkg", "Main", untypedMod, {
-    implicitImports: [],
-  });
+  const [tc, errors] = typecheck(
+    options.package_ ?? "pkg",
+    options.moduleId ?? "Main",
+    untypedMod,
+    {
+      implicitImports: [],
+    },
+  );
   expect(errors.filter((e) => e.description.severity === "error")).toEqual([]);
   return lowerProgram(tc, new Map(), () => {
     // TODO fix this
@@ -722,8 +852,11 @@ function getIR(src: string) {
   });
 }
 
-function toSexpr(src: string) {
-  const ir = getIR(src);
+function toSexpr(
+  src: string,
+  options: { package_?: string; moduleId?: string } = {},
+) {
+  const ir = getIR(src, options);
   return formatIR(ir);
 }
 

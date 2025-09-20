@@ -670,13 +670,13 @@ describe("if expressions", () => {
 `);
 
     expect(out).toMatchInlineSnapshot(`
-      "let $0;
+      "let _GEN_0;
       if (Main$eq(0, 1)) {
-        $0 = \`a\`;
+        _GEN_0 = \`a\`;
       } else {
-        $0 = \`b\`;
+        _GEN_0 = \`b\`;
       }
-      const Main$x = Main$f($0);"
+      const Main$x = Main$f(_GEN_0);"
     `);
   });
 });
@@ -837,12 +837,13 @@ describe("TCO", () => {
       const List$to_zero = GEN_TC__0 => {
         while (true) {
           const List$to_zero$lst = GEN_TC__0;
-          if (List$to_zero$lst.$ === 0) {
-            return 0;
-          } else if (List$to_zero$lst.$ === 1) {
-            GEN_TC__0 = List$to_zero$lst._1;
-          } else {
-            throw new Error("[non exhaustive match]");
+          switch (List$to_zero$lst.$) {
+            case 0:
+              return 0;
+              break;
+            case 1:
+              GEN_TC__0 = List$to_zero$lst._1;
+              break;
           }
         }
       };"
@@ -877,14 +878,15 @@ describe("TCO", () => {
           const List$reduce$lst = GEN_TC__0;
           const List$reduce$acc = GEN_TC__1;
           const List$reduce$f = GEN_TC__2;
-          if (List$reduce$lst.$ === 0) {
-            return List$reduce$acc;
-          } else if (List$reduce$lst.$ === 1) {
-            GEN_TC__0 = List$reduce$lst;
-            GEN_TC__1 = List$reduce$f(List$reduce$acc, List$reduce$lst._0);
-            GEN_TC__2 = List$reduce$f;
-          } else {
-            throw new Error("[non exhaustive match]");
+          switch (List$reduce$lst.$) {
+            case 0:
+              return List$reduce$acc;
+              break;
+            case 1:
+              GEN_TC__0 = List$reduce$lst;
+              GEN_TC__1 = List$reduce$f(List$reduce$acc, List$reduce$lst._0);
+              GEN_TC__2 = List$reduce$f;
+              break;
           }
         }
       };"
@@ -1297,11 +1299,11 @@ describe("structs", () => {
     `);
 
     expect(out).toMatchInlineSnapshot(`
-      "const $0 = Main$get_original();
+      "const _GEN_0 = Main$get_original();
       const Main$update_y = {
-        x: $0.x,
+        x: _GEN_0.x,
         y: 42,
-        z: $0.z
+        z: _GEN_0.z
       };"
     `);
   });
@@ -1520,29 +1522,91 @@ describe("pattern matching", () => {
     `);
   });
 
+  test("pattern matching a number", () => {
+    const out = compileSrc(`
+    let x = match 42 {
+      0 => "a",
+      1 => "b",
+      _ => "c",
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "let Main$x;
+      switch (42) {
+        case 0:
+          Main$x = \`a\`;
+          break;
+        case 1:
+          Main$x = \`b\`;
+          break;
+        default:
+          Main$x = \`c\`;
+          break;
+      }"
+    `);
+  });
+
   test("pattern matching an enum repr", () => {
     const out = compileSrc(`
     enum T {
       A,
       B,
+      C,
     }
   
     let x = match B {
-      A => "a",
+      C => "c",
       B => "b",
+      A => "a",
     }
   `);
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$A = 0;
       const Main$B = 1;
+      const Main$C = 2;
       let Main$x;
-      if (Main$B === 0) {
-        Main$x = \`a\`;
-      } else if (Main$B === 1) {
-        Main$x = \`b\`;
-      } else {
-        throw new Error("[non exhaustive match]");
+      switch (Main$B) {
+        case 2:
+          Main$x = \`c\`;
+          break;
+        case 1:
+          Main$x = \`b\`;
+          break;
+        case 0:
+          Main$x = \`a\`;
+          break;
+      }"
+    `);
+  });
+
+  test("pattern matching an enum repr with default", () => {
+    const out = compileSrc(`
+    enum T {
+      A,
+      B,
+      C,
+    }
+  
+    let x = match B {
+      A => "a",
+      _ => "other",
+    }
+  `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$A = 0;
+      const Main$B = 1;
+      const Main$C = 2;
+      let Main$x;
+      switch (Main$B) {
+        case 0:
+          Main$x = \`a\`;
+          break;
+        default:
+          Main$x = \`other\`;
+          break;
       }"
     `);
   });
@@ -1568,17 +1632,18 @@ describe("pattern matching", () => {
         $: 1,
         _0
       });
-      let Main$x;
-      const $0 = {
+      const _GEN_0 = {
         $: 1,
         _0: 42
       };
-      if ($0.$ === 0) {
-        Main$x = 0;
-      } else if ($0.$ === 1) {
-        Main$x = 1;
-      } else {
-        throw new Error("[non exhaustive match]");
+      let Main$x;
+      switch (_GEN_0.$) {
+        case 0:
+          Main$x = 0;
+          break;
+        case 1:
+          Main$x = 1;
+          break;
       }"
     `);
   });
@@ -1601,8 +1666,8 @@ describe("pattern matching", () => {
     `);
   });
 
-  // TODO remove this test when exhaustive match is impl
   test("avoid redundant checks", () => {
+    // this has a weird compilation because there's a redundant check. The semantics are technically correct
     const out = compileSrc(`
     let x = match 0 {
       0 => "0",
@@ -1613,11 +1678,16 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const $0 = 0;
-      if ($0 === 0) {
-        Main$x = \`0\`;
-      } else {
-        Main$x = \`any\`;
+      switch (0) {
+        case 0:
+          Main$x = \`0\`;
+          break;
+        case 1:
+          Main$x = \`any\`;
+          break;
+        default:
+          Main$x = \`any\`;
+          break;
       }"
     `);
   });
@@ -1633,13 +1703,16 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const $0 = 0;
-      if ($0 === 0) {
-        Main$x = \`0\`;
-      } else if ($0 === 1) {
-        Main$x = \`1\`;
-      } else {
-        Main$x = \`2\`;
+      switch (0) {
+        case 0:
+          Main$x = \`0\`;
+          break;
+        case 1:
+          Main$x = \`1\`;
+          break;
+        default:
+          Main$x = \`2\`;
+          break;
       }"
     `);
   });
@@ -1649,16 +1722,20 @@ describe("pattern matching", () => {
     let v = 42
     let x = match v {
       1 => 0,
+      _ => 1,
     }
   `);
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$v = 42;
       let Main$x;
-      if (Main$v === 1) {
-        Main$x = 0;
-      } else {
-        throw new Error("[non exhaustive match]");
+      switch (Main$v) {
+        case 1:
+          Main$x = 0;
+          break;
+        default:
+          Main$x = 1;
+          break;
       }"
     `);
   });
@@ -1667,16 +1744,19 @@ describe("pattern matching", () => {
     const out = compileSrc(`
   let x = match "subject" {
     "constraint" => 0,
+    _ => 1,
   }
 `);
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const $0 = \`subject\`;
-      if ($0 === \`constraint\`) {
-        Main$x = 0;
-      } else {
-        throw new Error("[non exhaustive match]");
+      switch (\`subject\`) {
+        case \`constraint\`:
+          Main$x = 0;
+          break;
+        default:
+          Main$x = 1;
+          break;
       }"
     `);
   });
@@ -1685,16 +1765,19 @@ describe("pattern matching", () => {
     const out = compileSrc(`
   let x = match 'a' {
     'x' => 0,
+    _ => 1,
   }
 `);
 
     expect(out).toMatchInlineSnapshot(`
       "let Main$x;
-      const $0 = \`a\`;
-      if ($0 === \`x\`) {
-        Main$x = 0;
-      } else {
-        throw new Error("[non exhaustive match]");
+      switch (\`a\`) {
+        case \`x\`:
+          Main$x = 0;
+          break;
+        default:
+          Main$x = 1;
+          break;
       }"
     `);
   });
@@ -1719,6 +1802,68 @@ describe("pattern matching", () => {
     `);
   });
 
+  test("pattern matching bool values swapped", () => {
+    const out = compileSrc(
+      `
+    let x = match True {
+      False => 0,
+      True => 1,
+    }
+  `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "let Main$x;
+      if (true) {
+        Main$x = 1;
+      } else {
+        Main$x = 0;
+      }"
+    `);
+  });
+
+  test("pattern matching bool with catchall", () => {
+    const out = compileSrc(
+      `
+    let x = match True {
+      False => 0,
+      _ => 1,
+    }
+  `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "let Main$x;
+      if (true) {
+        Main$x = 1;
+      } else {
+        Main$x = 0;
+      }"
+    `);
+  });
+
+  test("pattern matching bool with redundant clause", () => {
+    const out = compileSrc(
+      `
+    let x = match True {
+      False => 0,
+      False => 999,
+      _ => 1,
+    }
+  `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "let Main$x;
+      if (true) {
+        Main$x = 1;
+      } else {
+        Main$x = 0;
+      }"
+    `);
+  });
+
+  // TODO we can impl this as a IR rewrite instead
   test("pattern matching Unit values", () => {
     const out = compileSrc(
       `
@@ -1732,8 +1877,33 @@ describe("pattern matching", () => {
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$Unit = 0;
-      let Main$x;
-      Main$x = 0;"
+      const Main$x = 0;"
+    `);
+  });
+
+  test("pattern matching singleton values", () => {
+    const out = compileSrc(
+      `
+
+    enum Tuple { Tuple(a, b) }
+    let x = match Tuple(1, 2) {
+      Tuple(a, b) => a,
+    }
+  `,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Tuple = (_0, _1) => ({
+        $: 0,
+        _0,
+        _1
+      });
+      const _GEN_0 = {
+        $: 0,
+        _0: 1,
+        _1: 2
+      };
+      const Main$x = _GEN_0._0;"
     `);
   });
 
@@ -1754,22 +1924,128 @@ describe("pattern matching", () => {
       `
   enum T {
     C(Bool),
+    D, // <- prevents unboxed repr
   }
 
   let x = match C(True) {
     C(True) => 0,
+    _ => 1,
+  }
+`,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$C = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$D = {
+        $: 1
+      };
+      const _GEN_0 = {
+        $: 0,
+        _0: true
+      };
+      let Main$x;
+      switch (_GEN_0.$) {
+        case 0:
+          if (_GEN_0._0) {
+            Main$x = 0;
+          } else {
+            Main$x = 1;
+          }
+          break;
+        default:
+          Main$x = 1;
+          break;
+      }"
+    `);
+  });
+
+  test("pattern matching nested unboxed  value", () => {
+    const out = compileSrc(
+      `
+  enum T {
+    C(Bool),
+  }
+
+  let x = match C(True) {
+    C(True) => 0,
+    _ => 1,
   }
 `,
     );
 
     expect(out).toMatchInlineSnapshot(`
       "const Main$C = _0 => _0;
+      const Main$x$_MATCH_GEN$1 = true;
       let Main$x;
-      const $0 = true;
-      if ($0) {
+      if (Main$x$_MATCH_GEN$1) {
         Main$x = 0;
       } else {
-        throw new Error("[non exhaustive match]");
+        Main$x = 1;
+      }"
+    `);
+  });
+
+  test("nest match", () => {
+    const out = compileSrc(
+      `
+  enum Box<a> {
+    Box(a),
+    Other,
+  }
+
+  let x = match Other {
+    Box(Box(a)) => match a {
+      Box(Box(b)) => a,
+      _ => 1,
+    },
+    _ => 2,
+  }
+`,
+    );
+
+    expect(out).toMatchInlineSnapshot(`
+      "const Main$Box = _0 => ({
+        $: 0,
+        _0
+      });
+      const Main$Other = {
+        $: 1
+      };
+      let Main$x;
+      switch (Main$Other.$) {
+        case 0:
+          const _GEN_0 = Main$Other._0;
+          switch (_GEN_0.$) {
+            case 0:
+              const _GEN_1 = _GEN_0._0;
+              switch (_GEN_1.$) {
+                case 0:
+                  const _GEN_2 = _GEN_1._0;
+                  switch (_GEN_2.$) {
+                    case 0:
+                      Main$x = _GEN_0._0;
+                      break;
+                    default:
+                      Main$x = 1;
+                      break;
+                  }
+                  break;
+                default:
+                  Main$x = 1;
+                  break;
+              }
+              break;
+            default:
+              Main$x = 2;
+              break;
+          }
+          break;
+        default:
+          Main$x = 2;
+          break;
       }"
     `);
   });
@@ -1851,6 +2127,7 @@ describe("pattern matching", () => {
   
       let m = match x {
         Z(Some(s1), Ok(Some(s2))) => s1 ++ s2,
+        _ => "def"
       }
     `);
 
@@ -1931,6 +2208,7 @@ describe("pattern matching", () => {
     `);
   });
 
+  // TODO this could be Main$f$b._1._0
   test("compiling nested let match", () => {
     const out = compileSrc(`
     enum Pair { Pair(Int, Int) }
@@ -1947,7 +2225,10 @@ describe("pattern matching", () => {
         _0,
         _1
       });
-      const Main$f = Main$f$b => Main$f$b._1._0;"
+      const Main$f = Main$f$b => {
+        const _GEN_0 = Main$f$b._1;
+        return _GEN_0._0;
+      };"
     `);
   });
 
@@ -1989,13 +2270,14 @@ describe("pattern matching", () => {
         $: 1
       };
       const Main$f = Main$f$x => {
-        if (Main$f$x.$ === 0) {
-          const Main$f$a = Main$f$x._0 + Main$f$x._1;
-          return Main$f$a + 1;
-        } else if (Main$f$x.$ === 1) {
-          return 100;
-        } else {
-          throw new Error("[non exhaustive match]");
+        switch (Main$f$x.$) {
+          case 0:
+            const Main$f$a = Main$f$x._0 + Main$f$x._1;
+            return Main$f$a + 1;
+            break;
+          case 1:
+            return 100;
+            break;
         }
       };"
     `);

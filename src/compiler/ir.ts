@@ -82,6 +82,7 @@ export type Expr =
       type: "match";
       expr: Expr;
       clauses: Array<[MatchPattern, Expr]>;
+      default?: [Ident & { type: "local" }, Expr];
     }
   | {
       // TODO We'll want to remove this node and represent it as pattern matching instead, when we'll have the struct match pattern
@@ -143,10 +144,6 @@ export type Program = {
 
 export type MatchPattern =
   | {
-      type: "identifier";
-      ident: Ident & { type: "local" }; // TODO simplify
-    }
-  | {
       type: "constant";
       value: ConstLiteral;
     }
@@ -154,8 +151,7 @@ export type MatchPattern =
       type: "constructor";
       name: string;
       typeName: QualifiedIdentifier;
-      // TODO we want the pattern to be already compiled in the decision tree
-      args: MatchPattern[];
+      args: (Ident & { type: "local" })[];
     };
 
 // Helpers
@@ -179,20 +175,18 @@ export function desugarLet(let_: LetSugar): Expr {
   return {
     type: "match",
     expr: let_.value,
-    clauses: [[{ type: "identifier", ident: let_.binding }, let_.body]],
+    clauses: [],
+    default: [let_.binding, let_.body],
   };
 }
 export function mkLetSugar(expr: Expr): LetSugar | undefined {
-  if (expr.type !== "match" || expr.clauses.length !== 1) {
+  if (expr.type !== "match" || expr.clauses.length !== 0) {
     return undefined;
   }
-  const [pat, body] = expr.clauses[0]!;
-  if (pat.type !== "identifier") {
-    return undefined;
-  }
+  const [binding, body] = expr.default!;
 
   return {
-    binding: pat.ident,
+    binding,
     value: expr.expr,
     body,
   };
