@@ -12,7 +12,7 @@ null
 'pub'
 'let'
 '='
-'@deriving'
+'@derive'
 '('
 ')'
 'enum'

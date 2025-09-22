@@ -120,7 +120,7 @@ class TypeDeclarationAttributeVisitor extends Visitor<TypeDeclarationAttribute> 
   visitTypeAttDeriving = (
     ctx: parser.TypeAttDerivingContext,
   ): TypeDeclarationAttribute => ({
-    type: "@deriving",
+    type: "@derive",
     range: rangeOfCtx(ctx),
     args: ctx.TYPE_ID_list().map((tk) => ({
       name: tk.getText(),

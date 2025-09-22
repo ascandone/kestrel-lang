@@ -59,7 +59,7 @@ letDeclaration_:
 
 typeAttribute
 	: '@extern' #typeAttrExtern
-	| '@deriving' '(' (TYPE_ID (',' TYPE_ID)*)? ')' #typeAttDeriving
+	| '@derive' '(' (TYPE_ID (',' TYPE_ID)*)? ')' #typeAttDeriving
 	;
 
 typeDeclaration_:

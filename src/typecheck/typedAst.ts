@@ -223,7 +223,7 @@ export type TypedValueDeclaration = ast.RangeMeta & {
 assertSubtype<ast.ValueDeclarationAttribute, TypedValueDeclarationAttribute>;
 export type TypedTypeDeclarationAttribute = ast.RangeMeta &
   (
-    | { type: "@deriving"; args: Array<ast.RangeMeta & { name: string }> }
+    | { type: "@derive"; args: Array<ast.RangeMeta & { name: string }> }
     | { type: "@extern" }
   );
 

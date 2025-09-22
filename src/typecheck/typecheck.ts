@@ -285,7 +285,7 @@ class Typechecker {
 
   checkDerivingAttribute(
     typeDecl: TypedTypeDeclaration,
-    attribute: TypedTypeDeclarationAttribute & { type: "@deriving" },
+    attribute: TypedTypeDeclarationAttribute & { type: "@derive" },
   ) {
     // TODO prevent bad traits
     // TODO emit err when trait cannot be derived
@@ -339,7 +339,7 @@ class Typechecker {
           this.checkExternAttribute(typeDecl, attr);
           break;
 
-        case "@deriving":
+        case "@derive":
           this.checkDerivingAttribute(typeDecl, attr);
           break;
 

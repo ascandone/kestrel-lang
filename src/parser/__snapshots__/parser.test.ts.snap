@@ -1292,11 +1292,11 @@ exports[`imports > parse deriving attribute 1`] = `
               "name": "Json",
               "range": {
                 "end": {
-                  "character": 14,
+                  "character": 12,
                   "line": 0,
                 },
                 "start": {
-                  "character": 10,
+                  "character": 8,
                   "line": 0,
                 },
               },
@@ -1305,11 +1305,11 @@ exports[`imports > parse deriving attribute 1`] = `
               "name": "Eq",
               "range": {
                 "end": {
-                  "character": 18,
+                  "character": 16,
                   "line": 0,
                 },
                 "start": {
-                  "character": 16,
+                  "character": 14,
                   "line": 0,
                 },
               },
@@ -1317,7 +1317,7 @@ exports[`imports > parse deriving attribute 1`] = `
           ],
           "range": {
             "end": {
-              "character": 19,
+              "character": 17,
               "line": 0,
             },
             "start": {
@@ -1325,7 +1325,7 @@ exports[`imports > parse deriving attribute 1`] = `
               "line": 0,
             },
           },
-          "type": "@deriving",
+          "type": "@derive",
         },
       ],
       "name": "T",
@@ -1333,7 +1333,7 @@ exports[`imports > parse deriving attribute 1`] = `
       "pub": true,
       "range": {
         "end": {
-          "character": 34,
+          "character": 32,
           "line": 0,
         },
         "start": {

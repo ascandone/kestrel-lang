@@ -128,7 +128,7 @@ export default class KestrelParser extends Parser {
                                                             "'@type'", "'@inline'", 
                                                             "'@extern'", 
                                                             "'pub'", "'let'", 
-                                                            "'='", "'@deriving'", 
+                                                            "'='", "'@derive'", 
                                                             "'('", "')'", 
                                                             "'enum'", "'struct'", 
                                                             "'extern'", 

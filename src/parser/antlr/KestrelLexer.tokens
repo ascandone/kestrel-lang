@@ -79,7 +79,7 @@ INFIX_CHAR=69
 'pub'=10
 'let'=11
 '='=12
-'@deriving'=13
+'@derive'=13
 '('=14
 ')'=15
 'enum'=16

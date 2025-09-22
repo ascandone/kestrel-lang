@@ -186,7 +186,7 @@ export type ValueDeclaration = RangeMeta & {
 
 export type TypeDeclarationAttribute = RangeMeta &
   (
-    | { type: "@deriving"; args: Array<RangeMeta & { name: string }> }
+    | { type: "@derive"; args: Array<RangeMeta & { name: string }> }
     | { type: "@extern" }
   );
 

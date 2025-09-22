@@ -691,7 +691,7 @@ describe("imports", () => {
   });
 
   test("parse deriving attribute", () => {
-    const src = "@deriving(Json, Eq) pub enum T { }";
+    const src = "@derive(Json, Eq) pub enum T { }";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
