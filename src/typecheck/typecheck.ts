@@ -299,9 +299,6 @@ class Typechecker {
           this.structDerive(arg.name, typeDecl);
           break;
 
-        case "extern":
-          break;
-
         default:
           typeDecl satisfies never;
       }
@@ -325,8 +322,6 @@ class Typechecker {
         break;
       case "struct":
         this.hydrateStruct(typeDecl);
-        break;
-      case "extern":
         break;
 
       default:

@@ -44,14 +44,6 @@ export class Annotator {
     typeDecl: TypeDeclaration,
   ): TypedTypeDeclaration {
     switch (typeDecl.type) {
-      case "extern":
-        return {
-          ...typeDecl,
-          $extern: false,
-          $type: TVar.freshType(),
-          $traits: new Map(),
-        };
-
       case "adt":
         return {
           ...typeDecl,

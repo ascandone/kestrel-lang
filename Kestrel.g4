@@ -43,7 +43,6 @@ declaration
 	: letDeclaration_	# letDeclaration
 	| typeDeclaration_ # typeDeclaration
 	| structDeclaration_ # structDeclaration
-	| externTypeDeclaration_ # externTypeDeclaration
 	;
 
 valueAttribute
@@ -75,9 +74,6 @@ structDeclaration_:
 	'struct' name=TYPE_ID paramsList?
 	'{' declarationFields? '}'
 	;
-
-externTypeDeclaration_:
-	(doc = DOC_COMMENT_LINE*) 'extern' pub = 'pub'? 'type' name = TYPE_ID paramsList?;
 
 pubExposing: 'pub' EXPOSING_NESTED?;
 paramsList: '<' ID (',' ID)* '>';

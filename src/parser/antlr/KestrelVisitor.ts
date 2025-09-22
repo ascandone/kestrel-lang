@@ -11,7 +11,6 @@ import { TypeExposingContext } from "./KestrelParser.js";
 import { LetDeclarationContext } from "./KestrelParser.js";
 import { TypeDeclarationContext } from "./KestrelParser.js";
 import { StructDeclarationContext } from "./KestrelParser.js";
-import { ExternTypeDeclarationContext } from "./KestrelParser.js";
 import { AttrTypeContext } from "./KestrelParser.js";
 import { AttrInlineContext } from "./KestrelParser.js";
 import { AttrExternContext } from "./KestrelParser.js";
@@ -20,7 +19,6 @@ import { TypeAttrExternContext } from "./KestrelParser.js";
 import { TypeAttDerivingContext } from "./KestrelParser.js";
 import { TypeDeclaration_Context } from "./KestrelParser.js";
 import { StructDeclaration_Context } from "./KestrelParser.js";
-import { ExternTypeDeclaration_Context } from "./KestrelParser.js";
 import { PubExposingContext } from "./KestrelParser.js";
 import { ParamsListContext } from "./KestrelParser.js";
 import { TypeVariantsContext } from "./KestrelParser.js";
@@ -138,13 +136,6 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 */
 	visitStructDeclaration?: (ctx: StructDeclarationContext) => Result;
 	/**
-	 * Visit a parse tree produced by the `externTypeDeclaration`
-	 * labeled alternative in `KestrelParser.declaration`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitExternTypeDeclaration?: (ctx: ExternTypeDeclarationContext) => Result;
-	/**
 	 * Visit a parse tree produced by the `attrType`
 	 * labeled alternative in `KestrelParser.valueAttribute`.
 	 * @param ctx the parse tree
@@ -197,12 +188,6 @@ export default class KestrelVisitor<Result> extends ParseTreeVisitor<Result> {
 	 * @return the visitor result
 	 */
 	visitStructDeclaration_?: (ctx: StructDeclaration_Context) => Result;
-	/**
-	 * Visit a parse tree produced by `KestrelParser.externTypeDeclaration_`.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	visitExternTypeDeclaration_?: (ctx: ExternTypeDeclaration_Context) => Result;
 	/**
 	 * Visit a parse tree produced by `KestrelParser.pubExposing`.
 	 * @param ctx the parse tree

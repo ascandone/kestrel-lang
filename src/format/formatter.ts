@@ -650,16 +650,6 @@ function typeDeclToDoc(tDecl: TypeDeclaration): Doc {
     tDecl.docComment === undefined ? nil : handleDocComment(tDecl.docComment);
 
   switch (tDecl.type) {
-    case "extern":
-      return concat(
-        docComment,
-        text("extern "),
-        tDecl.pub ? text("pub ") : nil,
-        text("type "),
-        text(tDecl.name),
-        params,
-      );
-
     case "adt": {
       const variants = sepBy(
         break_(),

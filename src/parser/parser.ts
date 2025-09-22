@@ -17,7 +17,6 @@ import Parser, {
   CharPatternContext,
   ConstructorContext,
   ExprContext,
-  ExternTypeDeclarationContext,
   FieldAccessContext,
   FloatContext,
   FloatPatternContext,
@@ -671,38 +670,6 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
               ? true
               : "..",
         name: ctx._name.text,
-        ...(docs === "" ? {} : { docComment: docs }),
-        range: rangeOfCtx(ctx),
-      },
-    };
-  };
-
-  visitExternTypeDeclaration = (
-    typeDecl: ExternTypeDeclarationContext,
-  ): DeclarationType => {
-    const ctx = typeDecl.externTypeDeclaration_();
-
-    const docs = ctx
-      .DOC_COMMENT_LINE_list()
-      .map((d) => d.getText().slice(3))
-      .join("");
-
-    return {
-      type: "type",
-      decl: {
-        type: "extern",
-        attributes: [],
-        pub: ctx._pub !== undefined,
-        name: ctx._name.text,
-
-        params:
-          ctx
-            .paramsList()
-            ?.ID_list()
-            .map((i) => ({
-              name: i.getText(),
-              range: rangeOfTerminalNode(i),
-            })) ?? [],
         ...(docs === "" ? {} : { docComment: docs }),
         range: rangeOfCtx(ctx),
       },

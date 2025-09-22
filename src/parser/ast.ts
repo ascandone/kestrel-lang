@@ -206,10 +206,6 @@ export type TypeDeclaration = RangeMeta & {
         fields: StructDeclarationField[];
         pub: boolean | "..";
       }
-    | {
-        type: "extern";
-        pub: boolean;
-      }
   );
 
 export type UntypedModule = {

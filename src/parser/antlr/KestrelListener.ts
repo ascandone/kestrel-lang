@@ -11,7 +11,6 @@ import { TypeExposingContext } from "./KestrelParser.js";
 import { LetDeclarationContext } from "./KestrelParser.js";
 import { TypeDeclarationContext } from "./KestrelParser.js";
 import { StructDeclarationContext } from "./KestrelParser.js";
-import { ExternTypeDeclarationContext } from "./KestrelParser.js";
 import { AttrTypeContext } from "./KestrelParser.js";
 import { AttrInlineContext } from "./KestrelParser.js";
 import { AttrExternContext } from "./KestrelParser.js";
@@ -20,7 +19,6 @@ import { TypeAttrExternContext } from "./KestrelParser.js";
 import { TypeAttDerivingContext } from "./KestrelParser.js";
 import { TypeDeclaration_Context } from "./KestrelParser.js";
 import { StructDeclaration_Context } from "./KestrelParser.js";
-import { ExternTypeDeclaration_Context } from "./KestrelParser.js";
 import { PubExposingContext } from "./KestrelParser.js";
 import { ParamsListContext } from "./KestrelParser.js";
 import { TypeVariantsContext } from "./KestrelParser.js";
@@ -172,18 +170,6 @@ export default class KestrelListener extends ParseTreeListener {
 	 */
 	exitStructDeclaration?: (ctx: StructDeclarationContext) => void;
 	/**
-	 * Enter a parse tree produced by the `externTypeDeclaration`
-	 * labeled alternative in `KestrelParser.declaration`.
-	 * @param ctx the parse tree
-	 */
-	enterExternTypeDeclaration?: (ctx: ExternTypeDeclarationContext) => void;
-	/**
-	 * Exit a parse tree produced by the `externTypeDeclaration`
-	 * labeled alternative in `KestrelParser.declaration`.
-	 * @param ctx the parse tree
-	 */
-	exitExternTypeDeclaration?: (ctx: ExternTypeDeclarationContext) => void;
-	/**
 	 * Enter a parse tree produced by the `attrType`
 	 * labeled alternative in `KestrelParser.valueAttribute`.
 	 * @param ctx the parse tree
@@ -273,16 +259,6 @@ export default class KestrelListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	exitStructDeclaration_?: (ctx: StructDeclaration_Context) => void;
-	/**
-	 * Enter a parse tree produced by `KestrelParser.externTypeDeclaration_`.
-	 * @param ctx the parse tree
-	 */
-	enterExternTypeDeclaration_?: (ctx: ExternTypeDeclaration_Context) => void;
-	/**
-	 * Exit a parse tree produced by `KestrelParser.externTypeDeclaration_`.
-	 * @param ctx the parse tree
-	 */
-	exitExternTypeDeclaration_?: (ctx: ExternTypeDeclaration_Context) => void;
 	/**
 	 * Enter a parse tree produced by `KestrelParser.pubExposing`.
 	 * @param ctx the parse tree

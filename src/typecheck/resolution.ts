@@ -775,8 +775,6 @@ class Resolver {
   private resolveTypeDeclarations(declarations: TypedTypeDeclaration[]) {
     for (const declaration of declarations) {
       switch (declaration.type) {
-        case "extern":
-          break;
         case "adt":
           for (const variant of declaration.variants) {
             for (const arg of variant.args) {

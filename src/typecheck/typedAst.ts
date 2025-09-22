@@ -248,10 +248,6 @@ export type TypedTypeDeclaration = ast.RangeMeta & {
         fields: TypedStructDeclarationField[];
         pub: boolean | "..";
       }
-    | {
-        type: "extern";
-        pub: boolean;
-      }
   );
 
 export type TypedModule = {
