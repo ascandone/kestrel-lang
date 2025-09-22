@@ -124,7 +124,7 @@ describe("basic constructs inference", () => {
   test("application return type", () => {
     const [types, errors] = tc(
       `
-    extern type Bool
+    @extern enum Bool {}
 
     @extern
     @type (a, a) -> Bool
@@ -194,8 +194,8 @@ describe("basic constructs inference", () => {
   test("typecheck fn args", () => {
     const [types] = tc(
       `
-    extern type Int
-    extern type Bool
+    @extern enum Int {}
+    @extern enum Bool {}
 
     @extern
     @type (Int, Int) -> Bool
@@ -564,7 +564,7 @@ describe("type hints", () => {
   test("type hints are used by typechecker", () => {
     const [types, errs] = tc(
       `
-        extern type Int
+        @extern enum Int {}
         @type Int
         pub let x = 1.1
       `,
@@ -596,8 +596,8 @@ describe("type hints", () => {
   test("type hints of fns are used by typechecker (args)", () => {
     const [types, errs] = tc(
       `
-      extern type Bool
-      extern type Int
+      @extern enum Bool {}
+      @extern enum Int {}
 
       @extern
       @type (Bool) -> Bool
@@ -619,7 +619,7 @@ describe("type hints", () => {
   test("_ type hints are ignored by typechecker", () => {
     const [types, errs] = tc(
       `
-      extern type Int
+      @extern enum Int {}
       @type _
       pub let x = 1`,
     );
@@ -667,7 +667,7 @@ describe("type hints", () => {
 
   test("type hints instantiate polytypes", () => {
     const [types, errs] = tc(`
-      extern type Int
+      @extern enum Int {}
 
       @type (Int) -> Int
       pub let f = fn x { x }
@@ -697,7 +697,7 @@ describe("traits", () => {
   test("fails to typecheck when a required trait is not implemented", () => {
     const [types, errs] = tc(
       `
-        extern type String
+        @extern enum String {}
 
         @extern
         @type (a) -> String where a: Show
@@ -715,7 +715,7 @@ describe("traits", () => {
   test("succeeds to typecheck when a required trait is not implemented", () => {
     const [, errs] = tc(
       `
-        extern type String
+        @extern enum String {}
 
         @extern
         @type (a) -> String where a: Show
@@ -732,7 +732,7 @@ describe("traits", () => {
   test("propagates the trait constraint", () => {
     const [types, errs] = tc(
       `
-        extern type String
+        @extern enum String {}
 
         @extern
         @type (a) -> String where a: Show
@@ -753,13 +753,13 @@ describe("traits", () => {
   test("fails to typecheck when unify occurs later", () => {
     const [, errs] = tc(
       `
-        extern type String
+        @extern enum String {}
         
         @extern
         @type (a) -> String where a: Show
         let show
 
-        extern type Int
+        @extern enum Int {}
 
         @extern
         @type (Int, Int) -> Int
@@ -776,7 +776,7 @@ describe("traits", () => {
   test("infers multiple traits", () => {
     const [types, errs] = tc(
       `
-        extern type Unit
+        @extern enum Unit {}
         
         @extern
         @type (a) -> Unit where a: Show
@@ -803,7 +803,7 @@ describe("traits", () => {
   test("does not break generalization", () => {
     const [types, errs] = tc(
       `
-        extern type Unit
+        @extern enum Unit {}
 
         @extern
         @type (a) -> Unit where a: Show
@@ -852,7 +852,7 @@ describe("traits", () => {
   test("does not derive Eq trait in ADTs when at least one argument", () => {
     const [, errs] = tc(
       `
-        extern type NotEq
+        @extern enum NotEq {}
         
         @extern
         @type (a) -> a where a: Eq
@@ -906,7 +906,7 @@ describe("traits", () => {
           Box(a)
         }
 
-        extern type NotEq
+        @extern enum NotEq {}
         
         @extern
         @type MyType<NotEq>
@@ -1060,7 +1060,7 @@ describe("traits", () => {
           @type (a) -> a where a: Eq
           let take_eq
   
-          extern type NotEq
+          @extern enum NotEq {}
           
           @extern
           @type NotEq
@@ -1144,7 +1144,7 @@ describe("traits", () => {
         @type (a) -> a where a: Eq
         let take_eq
 
-        extern type NotEq
+        @extern enum NotEq {}
         pub(..) enum Rec<a> {
           End,
           Nest(Box<Rec<a>>, NotEq),
@@ -1202,7 +1202,7 @@ describe("traits", () => {
   test("allow non-ambiguos instantiations", () => {
     const [, errs] = tc(
       `
-    extern type X
+    @extern enum X {}
 
     
     @extern
@@ -1225,7 +1225,7 @@ describe("traits", () => {
   test("allow non-ambiguous instantiations when setting let type", () => {
     const [, errs] = tc(
       `
-    extern type X
+    @extern enum X {}
     
     @extern
     @type a where a: Default
@@ -1276,7 +1276,7 @@ describe("traits", () => {
   test("do not leak allowed instantiated vars when preventing ambiguous vars", () => {
     const [, errs] = tc(
       `
-      extern type String
+      @extern enum String {}
       
       @extern
       @type (a) -> String where a: Show
@@ -1301,7 +1301,7 @@ describe("traits", () => {
   test("do not emit ambiguos type error when variable is unbound", () => {
     const [, errs] = tc(
       `
-    extern type X
+    @extern enum X {}
     
     @extern
     @type (a) -> X where a: Default
@@ -1321,7 +1321,7 @@ describe("traits", () => {
   test("forbid ambiguous instantiations within args", () => {
     const [, errs] = tc(
       `
-      extern type Option<a>
+      @extern enum Option<a> {}
       
       @extern
       @type a where a: Default
@@ -1352,7 +1352,7 @@ describe("traits", () => {
   test("allow resolution because of rigid bounds", () => {
     const [, errs] = tc(
       `
-      extern type Option<a>
+      @extern enum Option<a> {}
       
       @extern
       @type a where a: Default
@@ -1379,7 +1379,7 @@ describe("traits", () => {
   test("allow resolution because of concrete rigid", () => {
     const [, errs] = tc(
       `
-      extern type String
+      @extern enum String {}
       
       @extern
       @type a where a: Default
@@ -1407,7 +1407,7 @@ describe("custom types", () => {
   test("allows to use it as type hint", () => {
     const [types, errs] = tc(
       `
-    extern type X
+    @extern enum X {}
 
     @extern
     @type X
@@ -1461,7 +1461,7 @@ describe("custom types", () => {
   test("handles constructor with one (non-parametric) arg", () => {
     const [types, errs] = tc(
       `
-    extern type Int
+    @extern enum Int {}
     enum T { C(Int) }
     pub let c = C
   `,
@@ -1476,7 +1476,7 @@ describe("custom types", () => {
   test("handles constructor with complex arg", () => {
     const [types, errs] = tc(
       `
-    extern type Int
+    @extern enum Int {}
     enum Option<a> { }
     enum T {
       C(Option<Int>, Int)
@@ -1654,7 +1654,7 @@ describe("struct", () => {
 
   test("allow recursive types", () => {
     const [, errs] = tc(`
-      extern type List<a>
+      @extern enum List<a> {}
       struct Person {
         friends: List<Person>,
       }
@@ -1665,7 +1665,7 @@ describe("struct", () => {
 
   test("allow accessing a type's field", () => {
     const [types, errs] = tc(`
-      extern type String
+      @extern enum String {}
 
       struct Person {
         name: String
@@ -1687,7 +1687,7 @@ describe("struct", () => {
 
   test("do not allow invalid field access", () => {
     const [types, errs] = tc(`
-      extern type String
+      @extern enum String {}
       struct Person {
         name: String
       }
@@ -1713,7 +1713,7 @@ describe("struct", () => {
     const [Person] = tcProgram(
       "Person",
       `
-      extern type String
+      @extern enum String {}
       pub(..) struct Person {
         name: String
       }
@@ -1748,7 +1748,7 @@ describe("struct", () => {
     const [Person] = tcProgram(
       "Person",
       `
-      extern type String
+      @extern enum String {}
       pub(..) struct Person {
         name: String
       }
@@ -1800,7 +1800,7 @@ describe("struct", () => {
     const [Person] = tcProgram(
       "Person",
       `
-      extern type String
+      @extern enum String {}
       pub(..) struct Person {
         name: String
       }
@@ -1832,7 +1832,7 @@ describe("struct", () => {
     const [Person] = tcProgram(
       "Person",
       `
-      extern type String
+      @extern enum String {}
       pub struct Person { // note fields are  private
         name: String
       }
@@ -1903,7 +1903,7 @@ describe("struct", () => {
           field: a
         }
 
-        extern type Int
+        @extern enum Int {}
 
         @extern
         @type Box<Int>
@@ -1923,7 +1923,7 @@ describe("struct", () => {
   test("making sure field values are generalized", () => {
     const [types, errs] = tc(
       `
-      extern type Int
+      @extern enum Int {}
       struct Box<a> {
         field: a
       }
@@ -1982,7 +1982,7 @@ describe("struct", () => {
   test("typecheck missing fields", () => {
     const [types, errs] = tc(
       `
-        extern type String
+        @extern enum String {}
         struct Person {
           name: String,
           second_name: String,
@@ -2465,7 +2465,7 @@ describe("pattern matching", () => {
 
   test("infers fn match param type", () => {
     const [types, errs] = tc(`
-    extern type T
+    @extern enum T {}
     enum Box { Boxed(T) }
 
     pub let f = fn Boxed(n) { n }
@@ -2479,7 +2479,7 @@ describe("pattern matching", () => {
 
   test("infers let match type", () => {
     const [types, errs] = tc(`
-    extern type T
+    @extern enum T {}
     enum Box { Boxed(T) }
 
     pub let f = fn box {
@@ -2840,7 +2840,7 @@ describe("prelude", () => {
 
   test("checks extern types", () => {
     const [, errs] = tc(`
-     extern type ExtType
+     @extern enum ExtType {}
 
      @extern
      @type ExtType
