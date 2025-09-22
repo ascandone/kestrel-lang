@@ -60,7 +60,7 @@ const Int = typecheckSourceRaw(
   CORE_PACKAGE,
   "Int",
   `
-    extern pub type Int
+    @extern pub enum Int {}
 
     @type (Int, Int) -> Int
     @extern
@@ -93,7 +93,7 @@ const Float = typecheckSourceRaw(
   CORE_PACKAGE,
   "Float",
   `
-    extern pub type Float
+    @extern pub enum Float {}
     
     @type (Int, Int) -> Int
     @extern
@@ -117,7 +117,7 @@ const String = typecheckSourceRaw(
   CORE_PACKAGE,
   "String",
   `
-    extern pub type String
+    @extern pub enum String {}
 
     @type (String, String) -> String
     @extern

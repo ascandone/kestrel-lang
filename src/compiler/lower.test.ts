@@ -21,7 +21,8 @@ test("global value of same module", () => {
 
 test("intrinsics", () => {
   const ir = toSexpr(`
-    extern type Int
+    @extern enum Int {}
+
     @extern
     @type (Int, Int) -> Int
     let (+)
@@ -238,7 +239,7 @@ test("if expr", () => {
 
 test("struct creation and access", () => {
   const ir = toSexpr(`
-    extern type String
+    @extern enum String {}
 
     @extern
     @type String
@@ -519,7 +520,7 @@ describe("pattern matching", () => {
   test("pattern matching list", () => {
     const ir = toSexpr(
       `
-    extern type String
+    @extern enum String {}
     
     pub(..) enum List<a> {
       Nil,

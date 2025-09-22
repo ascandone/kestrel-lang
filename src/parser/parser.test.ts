@@ -647,14 +647,6 @@ describe("pattern matching", () => {
 });
 
 describe("extern bindings", () => {
-  test("types", () => {
-    const src = `
-      extern type T
-    `;
-
-    expect(unsafeParse(src)).toMatchSnapshot();
-  });
-
   test("let decls", () => {
     const src = `
       @type Int 
@@ -697,11 +689,6 @@ describe("imports", () => {
 
   test("parse pub(..) modifier on types", () => {
     const src = "pub(..) enum T { }";
-    expect(unsafeParse(src)).toMatchSnapshot();
-  });
-
-  test("parse pub modifier on extern types", () => {
-    const src = "extern pub type T";
     expect(unsafeParse(src)).toMatchSnapshot();
   });
 
@@ -796,15 +783,6 @@ describe("Comments", () => {
     /// first line
     /// second line
     enum X {}
-    `;
-    expect(unsafeParse(src)).toMatchSnapshot();
-  });
-
-  test("doc comments on extern types", () => {
-    const src = `
-    /// first line
-    /// second line
-    extern type X
     `;
     expect(unsafeParse(src)).toMatchSnapshot();
   });

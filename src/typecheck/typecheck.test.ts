@@ -2495,7 +2495,11 @@ describe("pattern matching", () => {
   });
 
   test("force exhaustive match in let binding when there are many values for a const", () => {
-    const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
+    const [Int] = typecheck(
+      "pkg",
+      "Int",
+      unsafeParse(`@extern pub enum Int {}`),
+    );
 
     const [, errs] = tc(
       `
@@ -2690,7 +2694,11 @@ describe("pattern matching", () => {
     });
 
     test("on literals (exhastive)", () => {
-      const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
+      const [Int] = typecheck(
+        "pkg",
+        "Int",
+        unsafeParse(`@extern pub enum Int {}`),
+      );
 
       const [, errs] = tc(
         `
@@ -2710,7 +2718,11 @@ describe("pattern matching", () => {
     });
 
     test("on literals (non exhastive)", () => {
-      const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
+      const [Int] = typecheck(
+        "pkg",
+        "Int",
+        unsafeParse(`@extern pub enum Int {}`),
+      );
 
       const [, errs] = tc(
         `
@@ -2730,7 +2742,11 @@ describe("pattern matching", () => {
     });
 
     test("on literals (not exhastive on the rest of the matrix)", () => {
-      const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
+      const [Int] = typecheck(
+        "pkg",
+        "Int",
+        unsafeParse(`@extern pub enum Int {}`),
+      );
 
       const [, errs] = tc(
         `
@@ -2754,7 +2770,11 @@ describe("pattern matching", () => {
     });
 
     test("on literals (not exhastive on the wildcard specialization)", () => {
-      const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
+      const [Int] = typecheck(
+        "pkg",
+        "Int",
+        unsafeParse(`@extern pub enum Int {}`),
+      );
 
       const [, errs] = tc(
         `
@@ -2777,7 +2797,11 @@ describe("pattern matching", () => {
     });
 
     test("on literals (exhastive on the rest of the matrix)", () => {
-      const [Int] = typecheck("pkg", "Int", unsafeParse(`extern pub type Int`));
+      const [Int] = typecheck(
+        "pkg",
+        "Int",
+        unsafeParse(`@extern pub enum Int {}`),
+      );
 
       const [, errs] = tc(
         `
@@ -3383,7 +3407,7 @@ describe("modules", () => {
   });
 
   test("error when expose impl is run on a extern type", () => {
-    const [Mod] = tcProgram("Mod", `extern pub type ExternType`);
+    const [Mod] = tcProgram("Mod", `@extern pub enum ExternType {}`);
     const [, errs] = tc(`import Mod.{ExternType(..)}`, { Mod });
 
     expect(errs).toEqual([

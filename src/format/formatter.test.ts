@@ -619,13 +619,6 @@ enum X { }
 `).toBeFormatted();
   });
 
-  test("doc comments on extern types", () => {
-    expect(`/// First line
-/// Second line
-extern type X
-`).toBeFormatted();
-  });
-
   test("doc comments on modules", () => {
     expect(`//// Comment
 //// Second line
@@ -739,18 +732,6 @@ let x\n`,
 });
 
 describe("type delc", () => {
-  test("extern types", () => {
-    expect(`extern type T\n`).toBeFormatted();
-  });
-
-  test("extern types with generic args", () => {
-    expect(`extern type T<p1, p2>\n`).toBeFormatted();
-  });
-
-  test("extern types pub modifier", () => {
-    expect(`extern pub type T\n`).toBeFormatted();
-  });
-
   test("adts with no construtcors", () => {
     expect(`enum T { }\n`).toBeFormatted();
   });

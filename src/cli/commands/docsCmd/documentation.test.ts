@@ -5,8 +5,8 @@ import { test, expect } from "vitest";
 
 test("Extract values documentation", () => {
   const src = `
-    extern type Bool
-    extern type Int
+    @extern enum Bool {}
+    @extern enum Int {}
 
     let priv = 0
 
@@ -41,10 +41,10 @@ test("Extract values documentation", () => {
 
 test("Extract types documentation", () => {
   const src = `
-    extern type Arg
+    @extern enum Arg {}
 
     /// Comment
-    extern pub type X
+    @extern pub enum X {}
 
     pub(..) enum Y<x, y> {
       FirstVariant,
@@ -89,7 +89,7 @@ test("order between types and values", () => {
   @type a
   pub let x
 
-  extern pub type X
+  @extern pub enum X {}
 
   @extern
   @type b

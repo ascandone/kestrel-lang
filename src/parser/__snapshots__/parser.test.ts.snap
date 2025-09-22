@@ -173,36 +173,6 @@ exports[`Comments > doc comments 1`] = `
 }
 `;
 
-exports[`Comments > doc comments on extern types 1`] = `
-{
-  "declarations": [],
-  "imports": [],
-  "lineComments": [],
-  "typeDeclarations": [
-    {
-      "attributes": [],
-      "docComment": " first line
- second line
-",
-      "name": "X",
-      "params": [],
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 17,
-          "line": 3,
-        },
-        "start": {
-          "character": 4,
-          "line": 1,
-        },
-      },
-      "type": "extern",
-    },
-  ],
-}
-`;
-
 exports[`Comments > doc comments on externs 1`] = `
 {
   "declarations": [
@@ -1083,33 +1053,6 @@ exports[`extern bindings > let decls defining infix operators 1`] = `
 }
 `;
 
-exports[`extern bindings > types 1`] = `
-{
-  "declarations": [],
-  "imports": [],
-  "lineComments": [],
-  "typeDeclarations": [
-    {
-      "attributes": [],
-      "name": "T",
-      "params": [],
-      "pub": false,
-      "range": {
-        "end": {
-          "character": 19,
-          "line": 1,
-        },
-        "start": {
-          "character": 6,
-          "line": 1,
-        },
-      },
-      "type": "extern",
-    },
-  ],
-}
-`;
-
 exports[`ignoring comments 1`] = `
 {
   "declarations": [
@@ -1399,33 +1342,6 @@ exports[`imports > parse pub modifier 1`] = `
   "imports": [],
   "lineComments": [],
   "typeDeclarations": [],
-}
-`;
-
-exports[`imports > parse pub modifier on extern types 1`] = `
-{
-  "declarations": [],
-  "imports": [],
-  "lineComments": [],
-  "typeDeclarations": [
-    {
-      "attributes": [],
-      "name": "T",
-      "params": [],
-      "pub": true,
-      "range": {
-        "end": {
-          "character": 17,
-          "line": 0,
-        },
-        "start": {
-          "character": 0,
-          "line": 0,
-        },
-      },
-      "type": "extern",
-    },
-  ],
 }
 `;
 
