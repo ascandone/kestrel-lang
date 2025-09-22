@@ -2706,9 +2706,9 @@ describe("traits compilation", () => {
   test("fn returning arg with traits", () => {
     const out = compileSrc(
       `
-      extern type Num
-      extern type Json
-      extern type Option<a>
+      @extern enum Num {}
+      @extern enum Json {}
+      @extern enum Option<a> {}
 
       @extern
       @type (Json) -> Option<a> where a: FromJson
@@ -2753,9 +2753,9 @@ describe("traits compilation", () => {
   test("fn returning arg handles params", () => {
     const out = compileSrc(
       `
-      extern type Num
-      extern type Json
-      extern type Option<a>
+      @extern enum Num {}
+      @extern enum Json {}
+      @extern enum Option<a> {}
 
       @extern
       @type (Json) -> Option<a> where a: FromJson
@@ -2796,7 +2796,7 @@ describe("deriving", () => {
     test("do not derive underivable types", () => {
       const out = compileSrc(
         `
-      extern type DoNotDerive
+      @extern enum DoNotDerive {}
       enum T { X(DoNotDerive) }
     `,
         { allowDeriving: ["Eq"] },
@@ -2834,7 +2834,7 @@ describe("deriving", () => {
     test("singleton with concrete args", () => {
       const out = compileSrc(
         `
-      extern type MyInt
+      @extern enum MyInt {}
 
       @derive(Eq)
       enum T { X(MyInt, MyInt) }
@@ -2857,7 +2857,7 @@ describe("deriving", () => {
     test("singleton with newtype repr", () => {
       const out = compileSrc(
         `
-      extern type MyInt
+      @extern enum MyInt {}
 
       @derive(Eq)
       enum T { X(MyInt) }
@@ -2890,8 +2890,8 @@ describe("deriving", () => {
     test("singleton with concrete args", () => {
       const out = compileSrc(
         `
-      extern type IntZ
-      extern type BoolZ
+      @extern enum IntZ {}
+      @extern enum BoolZ {}
 
       @derive(Eq)
       enum T { X(IntZ, BoolZ) }
@@ -2933,8 +2933,8 @@ describe("deriving", () => {
     test("type with many variants", () => {
       const out = compileSrc(
         `
-      extern type Num
-      extern type Flag
+      @extern enum Num {}
+      @extern enum Flag {}
 
       @derive(Eq)
       enum T<a> {
@@ -3047,7 +3047,7 @@ describe("deriving", () => {
     test("do not derive underivable types", () => {
       const out = compileSrc(
         `
-      extern type DoNotDerive
+      @extern enum DoNotDerive {}
       
       @derive(Eq)
       struct Struct { x: DoNotDerive }
@@ -3103,8 +3103,8 @@ describe("deriving", () => {
     test("many fields with concrete args", () => {
       const out = compileSrc(
         `
-      extern type Num
-      extern type Str
+      @extern enum Num {}
+      @extern enum Str {}
 
       @derive(Eq)
       struct T {
@@ -3172,7 +3172,7 @@ describe("deriving", () => {
     test("do not derive underivable types", () => {
       const out = compileSrc(
         `
-      extern type DoNotDerive
+      @extern enum DoNotDerive {}
       enum T { X(DoNotDerive) }
     `,
         { allowDeriving: ["Show"] },
@@ -3210,7 +3210,7 @@ describe("deriving", () => {
     test("single variant, with concrete args", () => {
       const out = compileSrc(
         `
-      extern type MyInt
+      @extern enum MyInt {}
 
       @derive(Show)
       enum T { X(MyInt, MyInt) }
@@ -3235,7 +3235,7 @@ describe("deriving", () => {
     test("single variant (unboxed repr)", () => {
       const out = compileSrc(
         `
-      extern type MyInt
+      @extern enum MyInt {}
 
       @derive(Show)
       enum T { X(MyInt) }
@@ -3255,7 +3255,7 @@ describe("deriving", () => {
     test("single variant (namespaced)", () => {
       const out = compileSrc(
         `
-      extern type MyInt
+      @extern enum MyInt {}
 
       @derive(Show)
       enum T { X(MyInt) }
@@ -3297,7 +3297,7 @@ describe("deriving", () => {
     test("many variants", () => {
       const out = compileSrc(
         `
-      extern type MyInt
+      @extern enum MyInt {}
 
       @derive(Show)
       enum T<a, b> {
@@ -3426,7 +3426,7 @@ describe("deriving", () => {
     test("do not derive underivable types", () => {
       const out = compileSrc(
         `
-      extern type DoNotDerive
+      @extern enum DoNotDerive {}
       struct T { x: DoNotDerive }
     `,
         { allowDeriving: ["Show"] },
@@ -3452,7 +3452,7 @@ describe("deriving", () => {
     test("single field with concrete args", () => {
       const out = compileSrc(
         `
-      extern type MyInt
+      @extern enum MyInt {}
 
       @derive(Show)
       struct T { field: MyInt }
@@ -3485,7 +3485,7 @@ describe("deriving", () => {
     test("many fields", () => {
       const out = compileSrc(
         `
-      extern type MyInt
+      @extern enum MyInt {}
 
       @derive(Show)
       struct T<a, b> {
