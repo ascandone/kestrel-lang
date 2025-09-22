@@ -14,6 +14,7 @@ import {
   TypeDeclaration,
   TypeVariant,
   ValueDeclarationAttribute,
+  TypeDeclarationAttribute,
 } from "../parser";
 import {
   Doc,
@@ -613,6 +614,30 @@ function attrToDoc(ast: ValueDeclarationAttribute): Doc {
   }
 }
 
+function typeAttributesToDoc(attributes: TypeDeclarationAttribute[]): Doc {
+  return concat(...attributes.map((a) => concat(typeAttrToDoc(a), lines())));
+}
+
+function typeAttrToDoc(ast: TypeDeclarationAttribute): Doc {
+  switch (ast.type) {
+    case "@extern":
+      return text(ast.type);
+
+    case "@derive":
+      return concat(
+        text("@derive("),
+        sepByString(
+          ", ",
+          ast.args.map((a) => text(a.name)),
+        ),
+        text(")"),
+      );
+
+    default:
+      return ast satisfies never;
+  }
+}
+
 function declToDoc(ast: ValueDeclaration): Doc {
   const name =
     isInfix(ast.binding.name) || isPrefix(ast.binding.name)
@@ -660,6 +685,7 @@ function typeDeclToDoc(tDecl: TypeDeclaration): Doc {
 
       return concat(
         docComment,
+        typeAttributesToDoc(tDecl.attributes),
         tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
         text("enum "),
         text(tDecl.name),
@@ -684,6 +710,7 @@ function typeDeclToDoc(tDecl: TypeDeclaration): Doc {
 
       return concat(
         docComment,
+        typeAttributesToDoc(tDecl.attributes),
         tDecl.pub === ".." ? text("pub(..) ") : tDecl.pub ? text("pub ") : nil,
         text("struct "),
         text(tDecl.name),

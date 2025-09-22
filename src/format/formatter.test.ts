@@ -94,6 +94,13 @@ describe("struct", () => {
     expect(`struct X { }\n`).toBeFormatted();
   });
 
+  test("attributes", () => {
+    expect(`/// comment
+@extern
+@derive(Eq, Show)
+struct X { }\n`).toBeFormatted();
+  });
+
   test("struct definition with many fields", () => {
     expect(`struct X {
   some_field: Int,
@@ -734,6 +741,13 @@ let x\n`,
 describe("type delc", () => {
   test("adts with no construtcors", () => {
     expect(`enum T { }\n`).toBeFormatted();
+  });
+
+  test("attributes", () => {
+    expect(`/// comment
+@extern
+@derive(Eq, Show)
+enum T { }\n`).toBeFormatted();
   });
 
   test("adts pub modifier", () => {
