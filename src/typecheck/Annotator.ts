@@ -43,17 +43,31 @@ export class Annotator {
   private annotateTypeDeclaration(
     typeDecl: TypeDeclaration,
   ): TypedTypeDeclaration {
+    const isExtern = typeDecl.attributes.some(
+      (attr) => attr.type === "@extern",
+    );
+
+    const deriving = new Set(
+      typeDecl.attributes
+        .flatMap((attr) => (attr.type === "@deriving" ? attr.args : []))
+        .map((a) => a.name),
+    );
+
     switch (typeDecl.type) {
       case "extern":
         return {
+          ...typeDecl,
+          $deriving: deriving,
+          $extern: isExtern,
           $type: TVar.freshType(),
           $traits: new Map(),
-          ...typeDecl,
         };
 
       case "adt":
         return {
           ...typeDecl,
+          $extern: isExtern,
+          $deriving: deriving,
           $type: TVar.freshType(),
           $traits: new Map(),
           variants: typeDecl.variants.map((variant) => ({
@@ -70,6 +84,8 @@ export class Annotator {
       case "struct":
         return {
           ...typeDecl,
+          $extern: isExtern,
+          $deriving: deriving,
           $traits: new Map(),
           $type: TVar.freshType(),
           fields: typeDecl.fields.map(

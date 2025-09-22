@@ -236,6 +236,8 @@ export type TypedTypeDeclaration = ast.RangeMeta & {
 
   $type: Type;
   $traits: Map<string, Set<string>[]>;
+  $extern: boolean;
+  $deriving: Set<string>;
 } & (
     | {
         type: "adt";
