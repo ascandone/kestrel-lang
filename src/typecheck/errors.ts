@@ -158,6 +158,15 @@ export class UnboundTypeParam implements ErrorDescription {
   }
 }
 
+export class InvalidExternType implements ErrorDescription {
+  constructor() {}
+  severity: Severity = "error";
+  errorName = "Invalid extern type";
+  shortDescription() {
+    return `Only enums with zero args can be marked as extern`;
+  }
+}
+
 export class InvalidCatchall implements ErrorDescription {
   errorName = "Invalid catchall";
   severity: Severity = "error";

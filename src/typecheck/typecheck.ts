@@ -17,6 +17,7 @@ import {
   TypedModule,
   TypedTypeAst,
   TypedTypeDeclaration,
+  TypedTypeDeclarationAttribute,
 } from "./typedAst";
 import { TraitImpl, defaultImports, defaultTraitImpls } from "./defaultImports";
 import {
@@ -267,28 +268,61 @@ class Typechecker {
     this.localDerives.set(`${typeDecl.name}:${trait}`, params);
   }
 
+  checkExternAttribute(
+    typeDecl: TypedTypeDeclaration,
+    attribute: TypedTypeDeclarationAttribute & { type: "@extern" },
+  ) {
+    if (typeDecl.type !== "adt" || typeDecl.variants.length !== 0) {
+      this.errors.push({
+        description: new err.InvalidExternType(),
+        range: attribute.range,
+      });
+      return;
+    }
+
+    typeDecl.$extern = true;
+  }
+
+  checkTypeDeclaration(typeDecl: TypedTypeDeclaration) {
+    for (const attr of typeDecl.attributes) {
+      switch (attr.type) {
+        case "@extern":
+          this.checkExternAttribute(typeDecl, attr);
+          break;
+
+        case "@deriving":
+          break;
+
+        default:
+          attr satisfies never;
+      }
+    }
+
+    typeDecl.$type = {
+      type: "named",
+      package_: this.package_,
+      module: this.ns,
+      name: typeDecl.name,
+      args: typeDecl.params.map(
+        (param): Type => ({ type: "rigid-var", name: param.name }),
+      ),
+    };
+
+    if (typeDecl.type === "adt") {
+      this.hydrateVariant(typeDecl);
+
+      this.adtDerive("Eq", typeDecl);
+      this.adtDerive("Show", typeDecl);
+    } else if (typeDecl.type === "struct") {
+      this.hydrateStruct(typeDecl);
+      this.structDerive("Eq", typeDecl);
+      this.structDerive("Show", typeDecl);
+    }
+  }
+
   run(): [TypedModule, err.ErrorInfo[]] {
     for (const typeDecl of this.typedModule.typeDeclarations) {
-      typeDecl.$type = {
-        type: "named",
-        package_: this.package_,
-        module: this.ns,
-        name: typeDecl.name,
-        args: typeDecl.params.map(
-          (param): Type => ({ type: "rigid-var", name: param.name }),
-        ),
-      };
-
-      if (typeDecl.type === "adt") {
-        this.hydrateVariant(typeDecl);
-
-        this.adtDerive("Eq", typeDecl);
-        this.adtDerive("Show", typeDecl);
-      } else if (typeDecl.type === "struct") {
-        this.hydrateStruct(typeDecl);
-        this.structDerive("Eq", typeDecl);
-        this.structDerive("Show", typeDecl);
-      }
+      this.checkTypeDeclaration(typeDecl);
     }
 
     for (const group of this.typedModule.mutuallyRecursiveDeclrs) {

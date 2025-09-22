@@ -104,6 +104,23 @@ describe("basic constructs inference", () => {
     });
   });
 
+  test("prevents non-empty ADTs to be extern", () => {
+    const [, errs] = tc(
+      `
+        @extern
+        pub(..) enum T {
+          Ctor
+        }
+      `,
+    );
+
+    expect(errs).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new err.InvalidExternType(),
+      }),
+    ]);
+  });
+
   test("application return type", () => {
     const [types, errors] = tc(
       `
