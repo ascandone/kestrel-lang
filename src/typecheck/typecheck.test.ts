@@ -836,6 +836,8 @@ describe("traits", () => {
         @extern
         @type (a) -> a where a: Eq
         let take_eq
+
+        @deriving(Eq)
         enum MyType {
           Singleton
         }
@@ -872,12 +874,14 @@ describe("traits", () => {
   test("derives Eq even when constructors have arguments that derive Eq", () => {
     const [, errs] = tc(
       `
+        @deriving(Eq)
         enum EqType { }
         
         @extern
         @type (a) -> a where a: Eq
         let take_eq
 
+        @deriving(Eq)
         pub(..) enum MyType {
           Singleton,
           Box(EqType)
@@ -923,8 +927,10 @@ describe("traits", () => {
         @type (a) -> a where a: Eq
         let take_eq
 
+        @deriving(Eq)
         enum IsEq { }
 
+        @deriving(Eq)
         pub(..) enum Option<a> {
           Some(a),
           None,
@@ -950,6 +956,7 @@ describe("traits", () => {
         @type (a) -> a where a: Eq
         let take_eq
 
+        @deriving(Eq)
         pub(..) enum Rec<a> {
           End,
           Nest(Rec<a>),
@@ -965,12 +972,14 @@ describe("traits", () => {
   test("derives in self-recursive types (nested)", () => {
     const [, errs] = tc(
       `
+        @deriving(Eq)
         enum Box<a> { Box(a) }
         
         @extern
         @type (a) -> a where a: Eq
         let take_eq
 
+        @deriving(Eq)
         pub(..) enum Rec<a> {
           End,
           Nest(Box<Rec<a>>),
@@ -992,6 +1001,7 @@ describe("traits", () => {
           @type (a) -> a where a: Eq
           let take_eq
   
+          @deriving(Eq)
           struct MyType { }
   
           pub let example = take_eq(MyType { })
@@ -1009,6 +1019,7 @@ describe("traits", () => {
           @type (a) -> a where a: Show
           let take_shoq
   
+          @deriving(Show)
           struct MyType { }
   
           pub let example = take_shoq(MyType { })
@@ -1025,8 +1036,11 @@ describe("traits", () => {
           @extern
           @type (a) -> a where a: Eq
           let take_eq
+
+          @deriving(Eq)
           enum EqT { EqT }
   
+          @deriving(Eq)
           struct MyType {
             x: EqT
           }
@@ -1072,6 +1086,7 @@ describe("traits", () => {
           @type (a) -> a where a: Eq
           pub let take_eq
   
+          @deriving(Eq)
           struct MyType<a, b> {
             x: b,
           }
@@ -1093,6 +1108,7 @@ describe("traits", () => {
       // TODO assertion
       const [, errs] = tc(
         `
+          @deriving(Eq)
           enum Option<a> { None, Some(a) }
 
           
@@ -1100,6 +1116,7 @@ describe("traits", () => {
           @type (a) -> a where a: Eq
           let take_eq
   
+          @deriving(Eq)
           struct Rec<a> {
             field: Option<Rec<a>>,
           }
@@ -1228,9 +1245,13 @@ describe("traits", () => {
   test("repro", () => {
     const [, errs] = tc(
       `
+      @deriving(Eq)
       enum List<a> { Nil, Cons(a, List<a>) }
 
+      @deriving(Eq)
       enum Bool { True, False }
+
+      @deriving(Eq)
       enum Option<a> { None, Some(a) }
 
       

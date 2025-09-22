@@ -566,6 +566,7 @@ describe("traits", () => {
       @type a where a: Show
       let p
 
+      @deriving(Show)
       enum Str {}
 
       @extern
@@ -661,6 +662,7 @@ describe("traits", () => {
       let show
 
       
+      @deriving(Eq, Show)
       enum S {} // <- it derives both Eq and Show
 
       @extern
@@ -769,6 +771,7 @@ describe("traits", () => {
       @type (a) -> String where a: Show
       let show
 
+      @deriving(Show)
       enum AlwaysShow<a> { X }
       
       let x = show(X)
@@ -786,6 +789,7 @@ describe("traits", () => {
       @type (a) -> String where a: Show
       let show
 
+      @deriving(Show)
       enum Option<a, b> { Some(b) }
       
       let x = show(Some(42))

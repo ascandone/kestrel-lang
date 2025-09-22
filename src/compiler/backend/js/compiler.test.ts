@@ -2500,7 +2500,7 @@ describe("traits compilation", () => {
       @type (a) -> String where a: Show
       let show
 
-
+      @deriving(Show)
       enum AlwaysShow<a> { X }
       
       let x = show(X)
@@ -2519,7 +2519,7 @@ describe("traits compilation", () => {
       @type (a) -> String where a: Show
       let show
 
-
+      @deriving(Show)
       enum Option<a, b> { Some(b) }
       
       let x = show(Some(42))
@@ -2542,7 +2542,10 @@ describe("traits compilation", () => {
       let show
 
 
+      @deriving(Show)
       enum Tuple2<a, b> { Tuple2(a, b) }
+
+      @deriving(Show)
       enum Option<a> { Some(a) }
       
       let x = show(Tuple2(Some(42), 2))
@@ -2606,6 +2609,7 @@ describe("traits compilation", () => {
       let show
 
 
+      @deriving(Show)
       enum Option<a> {
         Some(a),
         None,
@@ -2675,14 +2679,16 @@ describe("traits compilation", () => {
     const out = compileSrc(
       `
     
+    @deriving(Eq)
     enum X { X }
 
     @extern
     @type (a, a) -> Bool where a: Eq
     let (==)
 
-
+    @deriving(Eq)
     enum T { C(X) }
+
     let f = C(X) == C(X)
 `,
       { ns: "Bool", package_: CORE_PACKAGE, allowDeriving: ["Eq"] },
@@ -2803,6 +2809,7 @@ describe("deriving", () => {
     test("no variants", () => {
       const out = compileSrc(
         `
+      @deriving(Eq)
       enum T { }
     `,
         { allowDeriving: ["Eq"] },
@@ -2813,6 +2820,7 @@ describe("deriving", () => {
     test("singleton without args", () => {
       const out = compileSrc(
         `
+      @deriving(Eq) 
       enum T { X }
     `,
         { allowDeriving: ["Eq"] },
@@ -2827,6 +2835,8 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
+
+      @deriving(Eq)
       enum T { X(MyInt, MyInt) }
     `,
         {
@@ -2848,6 +2858,8 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
+
+      @deriving(Eq)
       enum T { X(MyInt) }
     `,
         {
@@ -2864,6 +2876,7 @@ describe("deriving", () => {
     test("singleton with var args", () => {
       const out = compileSrc(
         `
+      @deriving(Eq)
       enum T<a, b, c, d> { X(b) }
     `,
         { allowDeriving: ["Eq"] },
@@ -2879,6 +2892,8 @@ describe("deriving", () => {
         `
       extern type IntZ
       extern type BoolZ
+
+      @deriving(Eq)
       enum T { X(IntZ, BoolZ) }
     `,
         {
@@ -2902,6 +2917,7 @@ describe("deriving", () => {
     test("compare unboxed when repr is enum", () => {
       const out = compileSrc(
         `
+      @deriving(Eq)
       enum T { X, Y, Z }
     `,
         { allowDeriving: ["Eq"] },
@@ -2919,6 +2935,8 @@ describe("deriving", () => {
         `
       extern type Num
       extern type Flag
+
+      @deriving(Eq)
       enum T<a> {
         A(Num),
         B(a, Num),
@@ -2966,8 +2984,10 @@ describe("deriving", () => {
     test("parametric arg", () => {
       const out = compileSrc(
         `
+      @deriving(Eq)
       enum X<a> { X(a) }
 
+      @deriving(Eq)
       enum Y<b> {
         Y(X<b>),
       }
@@ -2988,6 +3008,7 @@ describe("deriving", () => {
     test("recursive data structures", () => {
       const out = compileSrc(
         `
+      @deriving(Eq)
       enum List<a> {
         None,
         Cons(a, List<a>),
@@ -3027,6 +3048,8 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type DoNotDerive
+      
+      @deriving(Eq)
       struct Struct { x: DoNotDerive }
     `,
         { allowDeriving: ["Eq"] },
@@ -3037,6 +3060,7 @@ describe("deriving", () => {
     test("no fields", () => {
       const out = compileSrc(
         `
+      @deriving(Eq)
       struct T { }
     `,
         { allowDeriving: ["Eq"] },
@@ -3049,7 +3073,7 @@ describe("deriving", () => {
     test("single field", () => {
       const out = compileSrc(
         `
-      
+      @deriving(Eq)
       struct T { x: Int }
     `,
         {
@@ -3066,6 +3090,7 @@ describe("deriving", () => {
     test("single field with var args", () => {
       const out = compileSrc(
         `
+      @deriving(Eq)
       struct T<a, b, c, d> { field: b }
     `,
         { allowDeriving: ["Eq"] },
@@ -3080,6 +3105,8 @@ describe("deriving", () => {
         `
       extern type Num
       extern type Str
+
+      @deriving(Eq)
       struct T {
         int_field: Num,
         str_field: Str,
@@ -3101,8 +3128,10 @@ describe("deriving", () => {
     test("field with parametric arg", () => {
       const out = compileSrc(
         `
+      @deriving(Eq)
       enum X<a> { X(a) }
 
+      @deriving(Eq)
       struct Y<param> {
         field: X<param>,
       }
@@ -3122,6 +3151,7 @@ describe("deriving", () => {
     test("recursive data structures", () => {
       const out = compileSrc(
         `
+      @deriving(Eq)
       struct Struct<a> {
         x: a,
         y: Struct<a>,
@@ -3155,6 +3185,7 @@ describe("deriving", () => {
     test("no variants", () => {
       const out = compileSrc(
         `
+      @deriving(Show)
       enum T {  }
     `,
         { allowDeriving: ["Show"] },
@@ -3165,6 +3196,7 @@ describe("deriving", () => {
     test("singleton without args", () => {
       const out = compileSrc(
         `
+      @deriving(Show)
       enum T { X }
     `,
         { allowDeriving: ["Show"] },
@@ -3179,6 +3211,8 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
+
+      @deriving(Show)
       enum T { X(MyInt, MyInt) }
     `,
         {
@@ -3202,6 +3236,8 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
+
+      @deriving(Show)
       enum T { X(MyInt) }
     `,
         {
@@ -3220,6 +3256,8 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
+
+      @deriving(Show)
       enum T { X(MyInt) }
     `,
         {
@@ -3244,6 +3282,7 @@ describe("deriving", () => {
     test("single variant with var arg", () => {
       const out = compileSrc(
         `
+      @deriving(Show)
       enum T<a, b, c, d> { X(c) }
     `,
         { allowDeriving: ["Show"] },
@@ -3259,6 +3298,8 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
+
+      @deriving(Show)
       enum T<a, b> {
         A,
         B(MyInt, a),
@@ -3300,8 +3341,10 @@ describe("deriving", () => {
     test("parametric arg", () => {
       const out = compileSrc(
         `
+      @deriving(Show)
       enum X<a> { X(a) }
 
+      @deriving(Show)
       enum Y<b> {
         Y(X<b>),
       }
@@ -3322,6 +3365,7 @@ describe("deriving", () => {
     test("recursive data structures", () => {
       const out = compileSrc(
         `
+      @deriving(Show)
       enum Lst<a> {
         None,
         Cons(a, Lst<a>),
@@ -3355,6 +3399,7 @@ describe("deriving", () => {
     test("handle special tuple syntax", () => {
       const out = compileSrc(
         `
+      @deriving(Show)
       enum Tuple2<a, b> {
         Tuple2(a, b),
       }
@@ -3394,6 +3439,7 @@ describe("deriving", () => {
     test("no fields", () => {
       const out = compileSrc(
         `
+      @deriving(Show)
       struct T {  }
     `,
         { allowDeriving: ["Show"] },
@@ -3407,6 +3453,8 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
+
+      @deriving(Show)
       struct T { field: MyInt }
     `,
         {
@@ -3423,6 +3471,7 @@ describe("deriving", () => {
     test("single field with var arg", () => {
       const out = compileSrc(
         `
+      @deriving(Show)
       struct T<a, b, c, d> { field: c }
     `,
         { allowDeriving: ["Show"] },
@@ -3437,6 +3486,8 @@ describe("deriving", () => {
       const out = compileSrc(
         `
       extern type MyInt
+
+      @deriving(Show)
       struct T<a, b> {
         field_int: MyInt,
         field_a: a,
@@ -3457,8 +3508,10 @@ describe("deriving", () => {
     test("parametric arg", () => {
       const out = compileSrc(
         `
+      @deriving(Show)
       enum X<a> { X(a) }
 
+      @deriving(Show)
       struct Y<b> {
         field: X<b>,
       }
@@ -3478,6 +3531,7 @@ describe("deriving", () => {
     test("recursive data structures", () => {
       const out = compileSrc(
         `
+      @deriving(Show)
       struct Str<a> {
         field: Str<a>,
       }

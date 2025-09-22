@@ -283,21 +283,32 @@ class Typechecker {
     typeDecl.$extern = true;
   }
 
-  checkTypeDeclaration(typeDecl: TypedTypeDeclaration) {
-    for (const attr of typeDecl.attributes) {
-      switch (attr.type) {
-        case "@extern":
-          this.checkExternAttribute(typeDecl, attr);
+  checkDerivingAttribute(
+    typeDecl: TypedTypeDeclaration,
+    attribute: TypedTypeDeclarationAttribute & { type: "@deriving" },
+  ) {
+    // TODO prevent bad traits
+    // TODO emit err when trait cannot be derived
+
+    for (const arg of attribute.args) {
+      switch (typeDecl.type) {
+        case "adt":
+          this.adtDerive(arg.name, typeDecl);
+          break;
+        case "struct":
+          this.structDerive(arg.name, typeDecl);
           break;
 
-        case "@deriving":
+        case "extern":
           break;
 
         default:
-          attr satisfies never;
+          typeDecl satisfies never;
       }
     }
+  }
 
+  checkTypeDeclaration(typeDecl: TypedTypeDeclaration) {
     typeDecl.$type = {
       type: "named",
       package_: this.package_,
@@ -308,15 +319,33 @@ class Typechecker {
       ),
     };
 
-    if (typeDecl.type === "adt") {
-      this.hydrateVariant(typeDecl);
+    switch (typeDecl.type) {
+      case "adt":
+        this.hydrateVariant(typeDecl);
+        break;
+      case "struct":
+        this.hydrateStruct(typeDecl);
+        break;
+      case "extern":
+        break;
 
-      this.adtDerive("Eq", typeDecl);
-      this.adtDerive("Show", typeDecl);
-    } else if (typeDecl.type === "struct") {
-      this.hydrateStruct(typeDecl);
-      this.structDerive("Eq", typeDecl);
-      this.structDerive("Show", typeDecl);
+      default:
+        typeDecl satisfies never;
+    }
+
+    for (const attr of typeDecl.attributes) {
+      switch (attr.type) {
+        case "@extern":
+          this.checkExternAttribute(typeDecl, attr);
+          break;
+
+        case "@deriving":
+          this.checkDerivingAttribute(typeDecl, attr);
+          break;
+
+        default:
+          attr satisfies never;
+      }
     }
   }
 
