@@ -110,7 +110,8 @@ export async function lspCmd() {
   });
 
   connection.languages.inlayHint.on(async (ctx, tk) => {
-    const module = await state.getModuleByUriAsync(ctx.textDocument.uri);
+    // TODO this could be async
+    const module = state.getModuleByUriSync(ctx.textDocument.uri);
     if (module === undefined || tk.isCancellationRequested) {
       return;
     }
@@ -312,7 +313,8 @@ export async function lspCmd() {
   });
 
   connection.onCodeLens(async ({ textDocument }, ctx) => {
-    const module = await state.getModuleByUriAsync(textDocument.uri);
+    // TODO this could be async
+    const module = state.getModuleByUriSync(textDocument.uri);
     if (module === undefined || ctx.isCancellationRequested) {
       return;
     }
