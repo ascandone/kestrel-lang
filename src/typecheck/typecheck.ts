@@ -515,8 +515,16 @@ class Typechecker {
       this.unifyNode(decl.binding, decl.binding.$type, this.mainType);
     }
 
-    // TODO handle @extern
-    if (decl.value !== undefined) {
+    if (decl.value === undefined) {
+      const isExtern = decl.attributes.some((a) => a.type === "@extern");
+      if (!isExtern) {
+        this.errors.push({
+          description: new err.EmptyDeclaration(),
+          range: decl.binding.range,
+        });
+      }
+    } else {
+      // TODO handle @extern
       this.unifyExpr(decl.value, decl.binding.$type, decl.value.$type);
       this.typecheckExpr(decl.value);
     }

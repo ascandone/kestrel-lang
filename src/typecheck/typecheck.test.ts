@@ -9,6 +9,21 @@ import { ProjectTypechecker, RawProject } from "./project";
 import { nestedMapGetOrPutDefault } from "../common/defaultMap";
 
 describe("basic constructs inference", () => {
+  test("prevent empty declaration", () => {
+    const [types, errors] = tc(`
+    pub let x
+  `);
+
+    expect(errors).toEqual<ErrorInfo[]>([
+      expect.objectContaining({
+        description: new err.EmptyDeclaration(),
+      }),
+    ]);
+    expect(types).toEqual({
+      x: "a",
+    });
+  });
+
   test("infer int", () => {
     const [types, errors] = tc(`
     pub let x = 42

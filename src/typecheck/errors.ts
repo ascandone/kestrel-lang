@@ -25,6 +25,15 @@ export class ParsingError implements ErrorDescription {
   }
 }
 
+export class EmptyDeclaration implements ErrorDescription {
+  constructor() {}
+  severity: Severity = "error";
+  errorName = "Empty declaration";
+  shortDescription(): string {
+    return `The declaration value is missing`;
+  }
+}
+
 export class InvalidPipe implements ErrorDescription {
   constructor() {}
   severity: Severity = "error";
