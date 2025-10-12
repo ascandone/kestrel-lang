@@ -342,6 +342,15 @@ export class InvalidField implements ErrorDescription {
   }
 }
 
+export class InvalidStructConstructor implements ErrorDescription {
+  severity: Severity = "error";
+  errorName: string = "Invalid struct constructor";
+
+  shortDescription(): string {
+    return `This type doesn't expose field`;
+  }
+}
+
 export class MissingRequiredFields implements ErrorDescription {
   severity: Severity = "error";
   errorName: string = "Missing required fields";

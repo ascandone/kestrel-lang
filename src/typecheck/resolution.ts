@@ -75,9 +75,6 @@ class LocalFrames {
   }
 }
 
-// TODO remove this err
-class UnimplementedErr extends Error {}
-
 export function resolve(
   package_: string,
   ns: string,
@@ -468,18 +465,36 @@ class Resolver {
           this.trackUsedExposing(this.importedTypes.get(expr.struct.name));
 
         if (resolution === undefined) {
-          throw new UnimplementedErr("undefined struct resolution");
+          // imported type does not exist: we already emitted this
+          return;
         }
 
         if (resolution.declaration.type !== "struct") {
-          throw new UnimplementedErr("bad resolution for struct");
+          this.errors.push({
+            description: new err.InvalidStructConstructor(),
+            range: expr.range,
+          });
+          return;
         }
 
         expr.struct.$resolution = {
           declaration: resolution.declaration,
-          package_: this.package_,
-          namespace: this.ns,
+          package_: resolution.package_,
+          namespace: resolution.namespace,
         };
+
+        const areFieldsVisible =
+          (expr.struct.$resolution.package_ === this.package_ &&
+            expr.struct.$resolution.namespace === this.ns) ||
+          expr.struct.$resolution.declaration.pub === "..";
+
+        if (!areFieldsVisible) {
+          this.errors.push({
+            description: new err.InvalidStructConstructor(),
+            range: expr.range,
+          });
+          return;
+        }
 
         for (const field of expr.fields) {
           const fieldDefinition = resolution.declaration.fields.find(

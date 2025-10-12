@@ -2017,7 +2017,7 @@ describe("struct", () => {
     });
   });
 
-  test.todo("prevent from creating structs with private fields", () => {
+  test("prevent from creating structs with private fields", () => {
     const [Person] = tcProgram(
       "Person",
       `
@@ -2037,6 +2037,53 @@ describe("struct", () => {
     );
 
     expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(new err.InvalidStructConstructor());
+  });
+
+  test("prevent from creating structs with undefined resolution", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      struct Person<a> {
+        name: a
+      }
+    `,
+    );
+
+    const [, errs] = tc(
+      `
+      import Person.{Person}
+
+      pub let a = Person { name: 0 }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(new err.NonExistingImport("Person"));
+  });
+
+  test("prevent from creating structs if type is not a struct", () => {
+    const [Person] = tcProgram(
+      "Person",
+      `
+      pub enum Person<a> {
+        Ctor
+      }
+    `,
+    );
+
+    const [, errs] = tc(
+      `
+      import Person.{Person}
+
+      pub let a = Person { name: 0 }
+    `,
+      { Person },
+    );
+
+    expect(errs).toHaveLength(1);
+    expect(errs[0]?.description).toEqual(new err.InvalidStructConstructor());
   });
 
   test("typecheck fields of wrong type", () => {
