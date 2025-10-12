@@ -1788,7 +1788,7 @@ describe("struct", () => {
     expect(errs[0]?.description).toBeInstanceOf(err.InvalidField);
   });
 
-  test.todo("emit bad import if trying to import(..) a struct", () => {
+  test("emit bad import if trying to import(..) a struct", () => {
     const [Person] = tcProgram(
       "Person",
       `

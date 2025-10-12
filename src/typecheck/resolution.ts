@@ -192,16 +192,15 @@ class Resolver {
       return;
     }
 
-    if (exposing.$resolution.pub !== "..") {
-      this.errors.push({
-        description: new err.BadImport(),
-        range: exposing.range,
-      });
-      this.unusedExposings.delete(exposing);
-    }
-
     switch (exposing.$resolution.type) {
       case "adt":
+        if (exposing.$resolution.pub !== "..") {
+          this.errors.push({
+            description: new err.BadImport(),
+            range: exposing.range,
+          });
+          this.unusedExposings.delete(exposing);
+        }
         for (const variant of exposing.$resolution.variants) {
           this.importedValues.set(variant.name, [
             {
@@ -217,6 +216,10 @@ class Resolver {
         break;
 
       case "struct":
+        this.errors.push({
+          description: new err.BadImport(),
+          range: exposing.range,
+        });
         for (const field of exposing.$resolution.fields) {
           this.importedFields.set(field.name, [
             {
