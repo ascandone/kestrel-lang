@@ -139,10 +139,6 @@ class Resolver {
     string,
     IdentifierResolution & { type: "constructor" | "global-variable" }
   >();
-  private importedFields = new Map<
-    string,
-    [FieldResolution, TypedExposedValue]
-  >();
   private moduleFields = new Map<string, FieldResolution>();
   private localValues = new Map<
     string,
@@ -220,17 +216,6 @@ class Resolver {
           description: new err.BadImport(),
           range: exposing.range,
         });
-        for (const field of exposing.$resolution.fields) {
-          this.importedFields.set(field.name, [
-            {
-              declaration: exposing.$resolution,
-              field,
-              package_: moduleInterface.package_,
-              namespace: moduleInterface.ns,
-            },
-            exposing,
-          ]);
-        }
         break;
     }
   }
@@ -474,9 +459,7 @@ class Resolver {
         this.onResolveIdentifier(ident, currentDeclaration),
 
       onFieldAccess: (expr) => {
-        expr.$resolution =
-          this.moduleFields.get(expr.field.name) ??
-          this.trackUsedExposing(this.importedFields.get(expr.field.name));
+        expr.$resolution = this.moduleFields.get(expr.field.name);
       },
 
       onStructLiteral: (expr) => {
