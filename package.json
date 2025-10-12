@@ -14,6 +14,7 @@
   ],
   "scripts": {
     "gen:parser": "bash ./gen-parser.sh",
+    "test": "vitest",
     "test:watch": "vitest",
     "test:w": "npm run test:watch",
     "test:run": "vitest --run --coverage",
