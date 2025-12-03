@@ -99,7 +99,6 @@ type DocStack = null | {
 };
 
 function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
-  // eslint-disable-next-line no-constant-condition
   while (width >= 0) {
     if (docsStack === null) {
       return true;
@@ -107,7 +106,6 @@ function fits(width: number, nestSize: number, docsStack: DocStack): boolean {
     const { mode, indentation, doc } = docsStack;
     docsStack = docsStack.tail;
 
-    // eslint-disable-next-line no-inner-declarations
     function push(mode: Mode, indentation: number, doc: Doc) {
       docsStack = {
         indentation,
@@ -227,7 +225,6 @@ export function pprint(
     width = indentation;
   }
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     if (docsStack === null) {
       return buf.join("");

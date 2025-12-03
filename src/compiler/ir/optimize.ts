@@ -225,7 +225,6 @@ export const allOptimizations = composeRules([
 export const findFixedPoint =
   (rule: Rule): Rule =>
   (expr, ctx) => {
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const newResult = rule(expr, ctx);
       if (newResult === expr) {

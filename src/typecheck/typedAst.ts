@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import * as ast from "../parser";
 import { Type, RigidVarsCtx } from "../type";
 import { DecisionTree } from "./exhaustiveness";

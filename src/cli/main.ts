@@ -11,7 +11,7 @@ import { makeDocs, checkDocs } from "./commands/docsCmd";
 import { publishCmd } from "./commands/publishCmd";
 import { depsInstall } from "./commands/depsCmd";
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const packageJson = require("../../package.json");
 
 const cmd = new Command();

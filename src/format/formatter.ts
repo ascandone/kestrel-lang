@@ -36,7 +36,6 @@ import {
 let currentLineComments: LineComment[] = [];
 function popComments(ast: RangeMeta): Doc[] {
   const poppedComments: string[] = [];
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const comment = currentLineComments.at(-1);
 

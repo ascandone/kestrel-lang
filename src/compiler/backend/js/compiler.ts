@@ -207,7 +207,7 @@ export class Compiler {
         break;
 
       default:
-        src as never;
+        return src as never;
     }
 
     const expr = this.compileExprAsJsExpr(src);
