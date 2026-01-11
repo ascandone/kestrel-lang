@@ -146,7 +146,7 @@ export class AnalysisState {
   private makeModuleId(uri: TextDocument["uri"]) {
     return makeModuleId({
       uri,
-      currentDirectory: this.currentDirectory,
+      manifestDir: this.currentDirectory,
       sourceDirectories: this.sourceDirectories,
     });
   }
@@ -154,7 +154,7 @@ export class AnalysisState {
 
 export function makeModuleId(args: {
   uri: TextDocument["uri"];
-  currentDirectory: string;
+  manifestDir: string;
   sourceDirectories: string[];
 }): string | undefined {
   let { pathname } = new URL(args.uri);
@@ -166,7 +166,7 @@ export function makeModuleId(args: {
   pathname = pathname.slice(0, -ext.length);
 
   for (const sourceDir of args.sourceDirectories) {
-    const joined = path.join(args.currentDirectory, sourceDir);
+    const joined = path.join(args.manifestDir, sourceDir);
     const relative = path.relative(joined, pathname);
     const isPrefix = !relative.startsWith("..");
     if (isPrefix) {

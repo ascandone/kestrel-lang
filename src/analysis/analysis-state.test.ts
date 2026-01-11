@@ -5,7 +5,7 @@ describe("makeModuleId", () => {
   test("no source dirs", () => {
     const out = makeModuleId({
       uri: "file:///src/My/Mod/File.kes",
-      currentDirectory: "/",
+      manifestDir: "/",
       sourceDirectories: [],
     });
 
@@ -15,7 +15,7 @@ describe("makeModuleId", () => {
   test("single folder", () => {
     const out = makeModuleId({
       uri: "file:///Users/user/Desktop/my-project/src/My/Nested/Mod.kes",
-      currentDirectory: "/Users/user/Desktop/my-project",
+      manifestDir: "/Users/user/Desktop/my-project",
       sourceDirectories: ["user", "src"],
     });
 
