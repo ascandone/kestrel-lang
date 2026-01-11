@@ -107,6 +107,87 @@ test("emit error when dependency is not visible", () => {
   ]);
 });
 
+test("emit error when dependency is not exposed", () => {
+  const checker = prjTypechecker(
+    {
+      pkg: {
+        Main: `
+        import Dep
+        pub let x = Dep.x
+      `,
+      },
+      pkg2: {
+        Dep: `pub let x = 42`,
+      },
+    },
+    {
+      // pkg2 does not have exposed modules
+      // exposedModules: new Map([]),
+      packageDependencies: new Map(
+        Object.entries({
+          pkg: new Set(["pkg2"]),
+        }),
+      ),
+    },
+  );
+
+  const changed = checker.typecheck();
+
+  expect(changed).toEqual([
+    expect.objectContaining({
+      package_: "pkg",
+      moduleId: "Main",
+      output: [
+        expect.anything(),
+        <err.ErrorInfo[]>[
+          {
+            description: new err.UnboundModule("Dep"),
+            range: expect.anything(),
+          },
+        ],
+      ],
+    }),
+
+    expect.objectContaining({
+      package_: "pkg2",
+      moduleId: "Dep",
+    }),
+  ]);
+});
+
+test("allow to see local, unexposed module", () => {
+  const checker = prjTypechecker(
+    {
+      pkg: {
+        Main: `
+        import Dep
+        pub let x = Dep.x
+      `,
+        Dep: `pub let x = 42`,
+      },
+    },
+    {
+      // pkg2 does not have exposed modules
+      // exposedModules: new Map([]),
+    },
+  );
+
+  const changed = checker.typecheck();
+
+  expect(changed).toEqual([
+    expect.objectContaining({
+      package_: "pkg",
+      moduleId: "Dep",
+    }),
+
+    expect.objectContaining({
+      package_: "pkg",
+      moduleId: "Main",
+      output: [expect.anything(), <err.ErrorInfo[]>[]],
+    }),
+  ]);
+});
+
 test("prevent dependency cycle", () => {
   const checker = prjTypechecker({
     pkg: {
@@ -172,6 +253,12 @@ test("prevent ambiguous import", () => {
       },
     },
     {
+      exposedModules: new Map(
+        Object.entries({
+          pkg1: new Set(["Dep"]),
+          pkg2: new Set(["Dep"]),
+        }),
+      ),
       packageDependencies: new Map(
         Object.entries({
           pkg: new Set(["pkg1", "pkg2"]),
@@ -238,6 +325,49 @@ test("invalidate all the reachable inverse dependency graph on upsert", () => {
   ]);
 });
 
+test("allow to see external modules when they are exposed and listed in pkg deps", () => {
+  const checker = prjTypechecker(
+    {
+      pkg: {
+        Main: `
+        import Dep
+        pub let x = Dep.x
+      `,
+      },
+      pkg2: {
+        Dep: `pub let x = 42`,
+      },
+    },
+    {
+      exposedModules: new Map(
+        Object.entries({
+          pkg2: new Set(["Dep"]),
+        }),
+      ),
+      packageDependencies: new Map(
+        Object.entries({
+          pkg: new Set(["pkg2"]),
+        }),
+      ),
+    },
+  );
+
+  const changed = checker.typecheck();
+
+  expect(changed).toEqual([
+    expect.objectContaining({
+      package_: "pkg2",
+      moduleId: "Dep",
+    }),
+
+    expect.objectContaining({
+      package_: "pkg",
+      moduleId: "Main",
+      output: [expect.anything(), <err.ErrorInfo[]>[]],
+    }),
+  ]);
+});
+
 test("invalidate all the reachable inverse dependency graph on delete", () => {
   const checker = prjTypechecker({
     pkg: {
@@ -261,6 +391,8 @@ test("invalidate all the reachable inverse dependency graph on delete", () => {
     expect.objectContaining({ package_: "pkg", moduleId: "Main" }),
   ]);
 });
+
+test.todo("exposedPackages is honored");
 
 type RawProject = Record<string, Record<string, string>>;
 function prjTypechecker(

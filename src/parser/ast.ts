@@ -1,6 +1,6 @@
 // -- Common
 
-export type PolyTypeAst = {
+export type PolyTypeAst = RangeMeta & {
   mono: TypeAst;
   where: TraitDef[];
 };
@@ -35,9 +35,8 @@ export type MatchPattern = RangeMeta &
         name: string;
       }
     | {
-        // TODO we should call it "constant"
-        type: "lit";
-        literal: ConstLiteral;
+        type: "constant";
+        value: ConstLiteral;
       }
     | {
         type: "constructor";
@@ -85,6 +84,7 @@ export type Expr = RangeMeta &
     | {
         type: "list-literal";
         values: Expr[];
+        tail?: Expr;
       }
     | {
         type: "struct-literal";
@@ -164,30 +164,37 @@ export type Import = RangeMeta & {
 
 export type TypeVariant = RangeMeta & {
   name: string;
-  args: TypeAst[];
+  args: {
+    ast: TypeAst;
+  }[];
 };
 
-export type Declaration = RangeMeta & {
+export type ValueDeclarationAttribute = RangeMeta &
+  (
+    | { type: "@type"; polytype: PolyTypeAst }
+    | { type: "@inline" }
+    | { type: "@extern" }
+  );
+
+export type ValueDeclaration = RangeMeta & {
   pub: boolean;
   binding: Binding;
   docComment?: string;
-} & (
-    | {
-        inline: boolean;
-        extern: false;
-        typeHint?: PolyTypeAst & RangeMeta;
-        value: Expr;
-      }
-    | {
-        extern: true;
-        typeHint: PolyTypeAst & RangeMeta;
-      }
+  attributes: ValueDeclarationAttribute[];
+  value?: Expr;
+};
+
+export type TypeDeclarationAttribute = RangeMeta &
+  (
+    | { type: "@derive"; args: Array<RangeMeta & { name: string }> }
+    | { type: "@extern" }
   );
 
 export type TypeDeclaration = RangeMeta & {
   name: string;
   params: Array<{ name: string } & RangeMeta>;
   docComment?: string;
+  attributes: TypeDeclarationAttribute[];
 } & (
     | {
         type: "adt";
@@ -199,17 +206,13 @@ export type TypeDeclaration = RangeMeta & {
         fields: StructDeclarationField[];
         pub: boolean | "..";
       }
-    | {
-        type: "extern";
-        pub: boolean;
-      }
   );
 
 export type UntypedModule = {
   moduleDoc?: string;
   imports: Import[];
   typeDeclarations: TypeDeclaration[];
-  declarations: Declaration[];
+  declarations: ValueDeclaration[];
   lineComments?: LineComment[];
 };
 

@@ -140,10 +140,7 @@ test("pattern", () => {
         {
           type: "constructor",
           name: "Ctor",
-          args: [
-            { type: "lit", literal: { type: "int", value: 42 } },
-            { type: "identifier", ident: mkBinding("x") },
-          ],
+          args: [mkBinding("x"), mkBinding("y")],
           typeName: ident,
         },
         mkIdent("then"),
@@ -153,7 +150,29 @@ test("pattern", () => {
 
   expect(pprint(doc)).toMatchInlineSnapshot(`
     "match value#0 {
-      Ctor(42, x#0) => then#0,
+      Ctor(x#0, y#0) => then#0,
+    }"
+  `);
+});
+
+test("nested let sugar", () => {
+  const doc = new ExprPrinter().exprToDoc(
+    ir.desugarLet({
+      binding: mkBinding("a"),
+      value: mkIdent("x"),
+      body: ir.desugarLet({
+        binding: mkBinding("b"),
+        value: mkIdent("y"),
+        body: mkIdent("body"),
+      }),
+    }),
+  );
+
+  expect(pprint(doc)).toMatchInlineSnapshot(`
+    "{
+      let a#0 = x#0;
+      let b#0 = y#0;
+      body#0
     }"
   `);
 });

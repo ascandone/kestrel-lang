@@ -1,7 +1,7 @@
 ## Todos
 
+- refactor: model list pattern in ast
 - feat: package manager
-- breaking: syntax changes
 - refactor: compare tvars by identity instead of by id
 - feat: improve implicit imports repr
   - no dummy ranges
@@ -25,6 +25,7 @@
 
 ### Done
 
+- breaking: syntax changes
 - core: proper hints via rigid vars
 - refactor: refactor let block as list
 - feat: allow mutually recursive types

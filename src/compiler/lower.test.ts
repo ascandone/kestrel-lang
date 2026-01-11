@@ -5,6 +5,7 @@ import { lowerProgram } from "./lower";
 import { formatIR } from "./__test__/format-ir";
 import { typecheckSource_ } from "./__test__/prelude";
 import { defaultTraitImpls } from "../typecheck/defaultImports";
+import { CORE_PACKAGE } from "../typecheck/core_package";
 
 test("global value of same module", () => {
   const ir = toSexpr(`
@@ -20,8 +21,11 @@ test("global value of same module", () => {
 
 test("intrinsics", () => {
   const ir = toSexpr(`
-    extern type Int
-    extern let (+): Fn(Int, Int) -> Int
+    @extern enum Int {}
+
+    @extern
+    @type (Int, Int) -> Int
+    let (+)
 
     pub let y = fn a, b {
       a + b
@@ -42,8 +46,9 @@ test("local value", () => {
     }
   `);
   expect(ir).toMatchInlineSnapshot(`
-    "let pkg:Main.glb = match 0 {
-      loc#0 => loc#0,
+    "let pkg:Main.glb = {
+      let loc#0 = 0;
+      loc#0
     }"
   `);
 });
@@ -61,12 +66,41 @@ test("local value count resets on new declrs", () => {
     }
   `);
   expect(ir).toMatchInlineSnapshot(`
-    "let pkg:Main.glb1 = match 0 {
-      loc#0 => loc#0,
+    "let pkg:Main.glb1 = {
+      let loc#0 = 0;
+      loc#0
     }
 
-    let pkg:Main.glb2 = match 0 {
-      loc#0 => loc#0,
+    let pkg:Main.glb2 = {
+      let loc#0 = 0;
+      loc#0
+    }"
+  `);
+});
+
+test("local value (nested)", () => {
+  const ir = toSexpr(`
+    let f = fn a, b { a }
+
+    pub let x = {
+      let local = {
+        let nested = 0;
+        f(nested, 1)
+      };
+      f(local, 2)
+    }
+  `);
+  expect(ir).toMatchInlineSnapshot(`
+    "let pkg:Main.f = fn a#0, b#0 {
+      a#0
+    }
+
+    let pkg:Main.x = {
+      let local#0 = {
+        let nested#0 = 0;
+        f(nested#0, 1)
+      };
+      f(local#0, 2)
     }"
   `);
 });
@@ -82,12 +116,11 @@ test("local value (shadowing)", () => {
   `);
   expect(ir).toMatchInlineSnapshot(
     `
-    "let pkg:Main.glb = match 0 {
-      loc#0 => match loc#0 {
-        mid#0 => match mid#0 {
-          loc#1 => loc#1,
-        },
-      },
+    "let pkg:Main.glb = {
+      let loc#0 = 0;
+      let mid#0 = loc#0;
+      let loc#1 = mid#0;
+      loc#1
     }"
   `,
   );
@@ -142,10 +175,11 @@ test("shadowed fn args", () => {
   `);
   expect(ir).toMatchInlineSnapshot(
     `
-    "let pkg:Main.f = match 0 {
-      a#0 => fn a#1 {
+    "let pkg:Main.f = {
+      let a#0 = 0;
+      fn a#1 {
         a#1
-      },
+      }
     }"
   `,
   );
@@ -167,11 +201,13 @@ test("proper counting", () => {
     }
 
     let pkg:Main.glb = f(
-      match 0 {
-        x#0 => x#0,
+      {
+        let x#0 = 0;
+        x#0
       },
-      match 0 {
-        x#1 => x#1,
+      {
+        let x#1 = 0;
+        x#1
       },
     )"
   `,
@@ -203,9 +239,13 @@ test("if expr", () => {
 
 test("struct creation and access", () => {
   const ir = toSexpr(`
-    extern type String
-    extern let n: String
-    type User struct {
+    @extern enum String {}
+
+    @extern
+    @type String
+    let n
+
+    struct User {
       name: String,
       age: String,
     }
@@ -244,7 +284,7 @@ test("struct creation and access", () => {
 
 test("constructor", () => {
   const ir = toSexpr(`
-    type Option<a> {
+    enum Option<a> {
       None,
       Some(a),
     }
@@ -273,10 +313,47 @@ test("list literal", () => {
   `);
 });
 
+test("list literal (cons)", () => {
+  const ir = toSexpr(`
+    let tl = [2]
+    pub let lst = [1, ..tl]
+  `);
+
+  expect(ir).toMatchInlineSnapshot(`
+    "let pkg:Main.tl = kestrel_core:List.Cons(2, kestrel_core:List.Nil)
+
+    let pkg:Main.lst = kestrel_core:List.Cons(1, tl)"
+  `);
+});
+
 describe("pattern matching", () => {
+  test("pattern with exactly one ident", () => {
+    const out = toSexpr(`
+      let id = fn e { e }
+      // let v = {
+      //   let a = 0;
+      //   id(a)
+      // }
+      let v = match 0 {
+        a => id(a)
+      }
+    `);
+
+    expect(out).toMatchInlineSnapshot(`
+      "let pkg:Main.id = fn e#0 {
+        e#0
+      }
+
+      let pkg:Main.v = {
+        let a#0 = 0;
+        id(a#0)
+      }"
+    `);
+  });
+
   test("toplevel", () => {
     const ir = toSexpr(`
-    type Option<a> {
+    enum Option<a> {
       None,
       Some(a),
     }
@@ -294,8 +371,10 @@ describe("pattern matching", () => {
       "let pkg:Main.m = fn x#0, f#0 {
         match f#0(x#0) {
           None => 0,
-          Some(0) => x#0,
-          Some(x#1) => x#1,
+          Some(_MATCH_GEN#1) => match _MATCH_GEN#1 {
+            0 => x#0,
+            x#1 => x#1,
+          },
         }
       }"
     `);
@@ -303,7 +382,7 @@ describe("pattern matching", () => {
 
   test("nested", () => {
     const ir = toSexpr(`
-    type Option<a> {
+    enum Option<a> {
       None,
       Some(a),
     }
@@ -322,15 +401,18 @@ describe("pattern matching", () => {
       "let pkg:Main.opt = Some(Some(0))
 
       let pkg:Main.m = match opt {
-        Some(Some(x#0)) => x#0,
-        _#0 => 0,
+        Some(_MATCH_GEN#1) => match _MATCH_GEN#1 {
+          Some(x#0) => x#0,
+          _#0 => 0,
+        },
+        _#1 => 0,
       }"
     `);
   });
 
   test("pattern matching in let", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
 
@@ -349,7 +431,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in let#", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
 
@@ -372,7 +454,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in fn", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
     
@@ -392,7 +474,7 @@ describe("pattern matching", () => {
 
   test("pattern matching in fn with many args", () => {
     const ir = toSexpr(`
-    type Box<a> {
+    enum Box<a> {
       Box(a),
     }
     
@@ -411,15 +493,86 @@ describe("pattern matching", () => {
       }"
     `);
   });
+
+  test("pattern matching nested", () => {
+    const ir = toSexpr(`
+    pub enum Bool { True, False }
+    enum T {
+      C(Bool),
+    }
+
+    pub let x = match C(True) {
+      C(True) => 0,
+      _ => 1,
+    }
+  `);
+
+    expect(ir).toMatchInlineSnapshot(`
+      "let pkg:Main.x = match C(True) {
+        C(_MATCH_GEN#1) => match _MATCH_GEN#1 {
+          True => 0,
+          _#0 => 1,
+        },
+      }"
+    `);
+  });
+
+  test("pattern matching list", () => {
+    const ir = toSexpr(
+      `
+    @extern enum String {}
+    
+    pub(..) enum List<a> {
+      Nil,
+      Cons(a, List<a>),
+    }
+
+    pub enum Expectation {
+      Pass,
+      Fail,
+    }
+
+   pub let all = fn expectations {
+      match expectations {
+        [Pass, ..expectations] => all(expectations),
+        [failure, ..another] => all(another),
+        [] => Pass,
+      }
+    }
+  `,
+      {
+        package_: CORE_PACKAGE,
+        moduleId: "List",
+      },
+    );
+
+    expect(ir).toMatchInlineSnapshot(`
+      "let kestrel_core:List.all = fn expectations#0 {
+        match expectations#0 {
+          Cons(_MATCH_GEN#1, _MATCH_GEN#2) => match _MATCH_GEN#1 {
+            Pass => all(_MATCH_GEN#2),
+            failure#0 => all(_MATCH_GEN#2),
+          },
+          Nil => Pass,
+        }
+      }"
+    `);
+  });
 });
 
 describe("traits", () => {
   test("pass traits to value", () => {
     const out = dumpIR(`
-      extern let p: a where a: Show
+      @extern
+      @type a where a: Show
+      let p
 
-      type Str {}
-      extern let take_int: Fn(Str) -> a
+      @derive(Show)
+      enum Str {}
+
+      @extern
+      @type (Str) -> a
+      let take_int
 
       let x = take_int(p)
     `);
@@ -430,7 +583,9 @@ describe("traits", () => {
 
   test("unresolved traits", () => {
     const out = dumpIR(`
-      extern let p: z where z: Show
+      @extern
+      @type z where z: Show
+      let p
 
       // inferred as:
       //@type a where a: Show
@@ -441,7 +596,9 @@ describe("traits", () => {
 
   test("pass to fn", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> String where a: Show
+      @extern
+      @type (a) -> String where a: Show
+      let show
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
@@ -453,7 +610,9 @@ describe("traits", () => {
 
   test("handles recursive defs", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> String where a: Show
+      @extern
+      @type (a) -> String where a: Show
+      let show
 
       pub let rec_val = fn unresolved, unresolved2 {
         let _ = show(unresolved);
@@ -463,18 +622,18 @@ describe("traits", () => {
     `);
     expect(out).toMatchInlineSnapshot(`
       "let pkg:Main.rec_val[a:Show, b:Show] = fn unresolved#0, unresolved2#0 {
-        match show[a:Show](unresolved#0) {
-          _#0 => match show[b:Show](unresolved2#0) {
-            _#1 => rec_val[a:Show, b:Show](unresolved#0, unresolved2#0),
-          },
-        }
+        let _#0 = show[a:Show](unresolved#0);
+        let _#1 = show[b:Show](unresolved2#0);
+        rec_val[a:Show, b:Show](unresolved#0, unresolved2#0)
       }"
     `);
   });
 
   test("make sure we don't show duplicates", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> a where a: Show
+      @extern
+      @type (a) -> a where a: Show
+      let show
       let f = fn x { show(x) }
     `);
     expect(out).toMatchInlineSnapshot(`
@@ -486,7 +645,9 @@ describe("traits", () => {
 
   test("handle multiple traits", () => {
     const out = dumpIR(`
-      extern let show: Fn(a, a) -> String where a: Eq + Show
+      @extern
+      @type (a, a) -> String where a: Eq + Show
+      let show
       let f = show
     `);
     expect(out).toMatchInlineSnapshot(
@@ -497,11 +658,17 @@ describe("traits", () => {
   test("handle multiple traits when applying to concrete args", () => {
     const out = dumpIR(
       `
-      extern let show: Fn(a, a) -> String where a: Eq + Show
+      @extern
+      @type (a, a) -> String where a: Eq + Show
+      let show
 
       
-      type S {} // <- it derives both Eq and Show
-      extern let s: S
+      @derive(Eq, Show)
+      enum S {} // <- it derives both Eq and Show
+
+      @extern
+      @type S
+      let s
       
       let f = show(s, s)
     `,
@@ -515,8 +682,13 @@ describe("traits", () => {
   test("do not pass extra args", () => {
     const out = dumpIR(
       `
-      extern let inspect: Fn(u) -> String where u: Show
-      extern let eq: Fn(z, z) -> Bool where z: Eq
+      @extern
+      @type (u) -> String where u: Show
+      let inspect
+
+      @extern
+      @type (z, z) -> Bool where z: Eq
+      let eq
 
       let equal = fn x, y {
         if eq(x, y) {
@@ -541,7 +713,9 @@ describe("traits", () => {
   test("do not duplicate when there's only one var to pass", () => {
     const out = dumpIR(
       `
-      extern let show2: Fn(a, a) -> String where a: Show
+      @extern
+      @type (a, a) -> String where a: Show
+      let show2
 
       let f = fn arg {
         show2(arg, "hello")
@@ -560,7 +734,9 @@ describe("traits", () => {
   test("pass an arg twice if needed", () => {
     const out = dumpIR(
       `
-      extern let show2: Fn(a, b) -> String where a: Show, b: Show
+      @extern
+      @type (a, b) -> String where a: Show, b: Show
+      let show2
       let f = show2("a", "b")
     `,
     );
@@ -572,7 +748,9 @@ describe("traits", () => {
   test("partial application", () => {
     const out = dumpIR(
       `
-      extern let show2: Fn(k, u) -> String where k: Show, u: Show
+      @extern
+      @type (k, u) -> String where k: Show, u: Show
+      let show2
       let f = fn arg {
         show2(arg, "hello")
       }
@@ -590,9 +768,12 @@ describe("traits", () => {
 
   test("pass trait dicts for types with params when they do not have deps", () => {
     const out = dumpIR(`
-      extern let show: Fn(a) -> String where a: Show
+      @extern
+      @type (a) -> String where a: Show
+      let show
 
-      type AlwaysShow<a> { X }
+      @derive(Show)
+      enum AlwaysShow<a> { X }
       
       let x = show(X)
     `);
@@ -605,9 +786,12 @@ describe("traits", () => {
   test("pass higher order trait dicts for types with params when they do have deps", () => {
     const out = dumpIR(
       `
-      extern let show: Fn(a) -> String where a: Show
+      @extern
+      @type (a) -> String where a: Show
+      let show
 
-      type Option<a, b> { Some(b) }
+      @derive(Show)
+      enum Option<a, b> { Some(b) }
       
       let x = show(Some(42))
     `,
@@ -621,9 +805,12 @@ describe("traits", () => {
   test("rigid types sig", () => {
     const out = dumpIR(
       `
-      extern let show: Fn(a) -> String where a: Show
+      @extern
+      @type (a) -> String where a: Show
+      let show
 
-      pub let x: Fn(a) -> String where a: Show =
+      @type (a) -> String where a: Show 
+      pub let x=
         fn a { show(a) }
     `,
     );
@@ -637,8 +824,12 @@ describe("traits", () => {
 
   test("trait deps in args when param aren't traits dependencies", () => {
     const out = dumpIR(`
-      type IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
-      extern let s: IsShow<a> where a: Show
+      enum IsShow<a> { X } // IsShow does not depend on 'a' for Show trait
+
+      @extern
+      @type IsShow<a> where a: Show
+      let s
+
       let x = s
     `);
 
@@ -646,11 +837,19 @@ describe("traits", () => {
   });
 });
 
-function getIR(src: string) {
+function getIR(
+  src: string,
+  options: { package_?: string; moduleId?: string } = {},
+) {
   const untypedMod = unsafeParse(src);
-  const [tc, errors] = typecheck("pkg", "Main", untypedMod, {
-    implicitImports: [],
-  });
+  const [tc, errors] = typecheck(
+    options.package_ ?? "pkg",
+    options.moduleId ?? "Main",
+    untypedMod,
+    {
+      implicitImports: [],
+    },
+  );
   expect(errors.filter((e) => e.description.severity === "error")).toEqual([]);
   return lowerProgram(tc, new Map(), () => {
     // TODO fix this
@@ -658,8 +857,11 @@ function getIR(src: string) {
   });
 }
 
-function toSexpr(src: string) {
-  const ir = getIR(src);
+function toSexpr(
+  src: string,
+  options: { package_?: string; moduleId?: string } = {},
+) {
+  const ir = getIR(src, options);
   return formatIR(ir);
 }
 

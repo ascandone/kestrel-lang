@@ -25,6 +25,15 @@ export class ParsingError implements ErrorDescription {
   }
 }
 
+export class EmptyDeclaration implements ErrorDescription {
+  constructor() {}
+  severity: Severity = "error";
+  errorName = "Empty declaration";
+  shortDescription(): string {
+    return `The declaration value is missing`;
+  }
+}
+
 export class InvalidPipe implements ErrorDescription {
   constructor() {}
   severity: Severity = "error";
@@ -155,6 +164,15 @@ export class UnboundTypeParam implements ErrorDescription {
   errorName = "Unbound type parameter";
   shortDescription() {
     return `Cannot find type parameter "${this.param}"`;
+  }
+}
+
+export class InvalidExternType implements ErrorDescription {
+  constructor() {}
+  severity: Severity = "error";
+  errorName = "Invalid extern type";
+  shortDescription() {
+    return `Only enums with zero args can be marked as extern`;
   }
 }
 
@@ -321,6 +339,15 @@ export class InvalidField implements ErrorDescription {
 
   shortDescription(): string {
     return `The field '${this.field}' does not exist on type '${this.type}'`;
+  }
+}
+
+export class InvalidStructConstructor implements ErrorDescription {
+  severity: Severity = "error";
+  errorName: string = "Invalid struct constructor";
+
+  shortDescription(): string {
+    return `This type doesn't expose field`;
   }
 }
 

@@ -2,7 +2,7 @@ import { Position } from "vscode-languageserver";
 import {
   Identifier,
   IdentifierResolution,
-  TypedDeclaration,
+  TypedValueDeclaration,
   TypedModule,
 } from "../typecheck/typedAst";
 import { statementByOffset } from "./common";
@@ -65,7 +65,7 @@ export function findReferences(
 }
 
 function findReferencesOfDeclaration(
-  declaration: TypedDeclaration,
+  declaration: TypedValueDeclaration,
   typedProject: TypedProject,
 ): [string, Identifier][] {
   const ret: [string, Identifier][] = [];
@@ -86,12 +86,12 @@ function findReferencesOfDeclaration(
 }
 
 function findReferencesOfDeclarationInModule(
-  declaration: TypedDeclaration,
+  declaration: TypedValueDeclaration,
   module: TypedModule,
 ): Identifier[] {
   const res: Identifier[] = [];
   for (const decl of module.declarations) {
-    if (decl.extern) {
+    if (decl.value === undefined) {
       continue;
     }
 

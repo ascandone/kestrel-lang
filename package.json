@@ -14,37 +14,41 @@
   ],
   "scripts": {
     "gen:parser": "bash ./gen-parser.sh",
+    "test": "vitest",
     "test:watch": "vitest",
     "test:w": "npm run test:watch",
     "test:run": "vitest --run --coverage",
     "ts:build": "tsc --project tsconfig.build.json",
     "ts:watch": "tsc --watch --project tsconfig.json",
     "ts:check": "tsc --noEmit",
-    "format:check": "prettier --check --cache ./**/*.ts",
-    "format:write": "prettier --write --cache ./**/*.ts",
+    "format:check": "prettier --check --cache \"./**/*.ts\"",
+    "format:write": "prettier --write --cache \"./**/*.ts\"",
     "linter:check": "eslint .",
     "build": "npm run ts:build"
   },
   "dependencies": {
-    "@babel/generator": "^7.25.0",
-    "antlr4": "^4.13.1-patch-1",
+    "@babel/generator": "^7.28.5",
+    "antlr4": "^4.13.2",
     "commander": "^11.1.0",
+    "semver": "^7.7.3",
+    "tar": "^7.5.2",
     "ts-decode": "^0.0.14",
-    "vscode-languageserver": "^10.0.0-next.6",
-    "vscode-languageserver-textdocument": "^1.0.11"
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
   },
   "devDependencies": {
-    "@babel/types": "^7.25.2",
-    "@types/babel__generator": "^7.6.8",
-    "@types/node": "^20.11.5",
-    "@typescript-eslint/eslint-plugin": "^6.19.1",
-    "@typescript-eslint/parser": "^6.19.1",
-    "@vitest/coverage-v8": "^3.2.4",
-    "@vitest/ui": "^3.2.4",
-    "eslint": "^8.56.0",
-    "prettier": "^3.2.1",
-    "typescript": "^5.3.3",
-    "vitest": "^3.2.4"
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+    "@babel/types": "^7.28.5",
+    "@types/babel__generator": "^7.27.0",
+    "@types/node": "^24.10.1",
+    "@types/semver": "^7.7.1",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
+    "@typescript-eslint/parser": "^8.48.1",
+    "@vitest/coverage-v8": "^4.0.15",
+    "@vitest/ui": "^4.0.15",
+    "eslint": "^9.39.1",
+    "prettier": "^3.7.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.48.1",
+    "vitest": "^4.0.15"
+  }
 }

@@ -17,6 +17,39 @@ import {
 } from "../../format/pretty";
 import * as ir from "../ir";
 
+type LetSugar = {
+  type: "let";
+  clauses: Array<{
+    binding: ir.Ident & { type: "local" };
+    value: ir.Expr;
+  }>;
+  body: ir.Expr;
+};
+
+function tryWrappingLet(expr: ir.Expr): ir.Expr | LetSugar {
+  if (expr.type !== "match" || expr.clauses.length !== 0) {
+    return expr;
+  }
+
+  const [pat, body] = expr.default!;
+
+  const clause = { binding: pat, value: expr.expr } as const;
+  const inner = tryWrappingLet(body);
+  if (inner.type === "let") {
+    return {
+      type: "let",
+      clauses: [clause, ...inner.clauses],
+      body: inner.body,
+    };
+  }
+
+  return {
+    type: "let",
+    clauses: [clause],
+    body,
+  };
+}
+
 export class ExprPrinter {
   constructor(
     private readonly declaration: string = "glb",
@@ -35,7 +68,8 @@ export class ExprPrinter {
     }
   }
 
-  public exprToDoc(expr: ir.Expr): Doc {
+  public exprToDoc(expr_: ir.Expr, withinBlock = false): Doc {
+    const expr = tryWrappingLet(expr_);
     switch (expr.type) {
       case "constant":
         return constToDoc(expr.value);
@@ -82,7 +116,26 @@ export class ExprPrinter {
           text("fn"),
           sepByString(",", params),
           text(" "),
-          block_(this.exprToDoc(expr.body)),
+          block_(this.exprToDoc(expr.body, true)),
+        );
+      }
+
+      case "let": {
+        const block__ = withinBlock ? concat : block_;
+
+        return block__(
+          sepBy(
+            break_("", ""),
+            expr.clauses.map((clause) =>
+              concat(
+                text("let ", this.identToString(clause.binding), " = "),
+                this.exprToDoc(clause.value),
+                text(";"),
+              ),
+            ),
+          ),
+          break_(),
+          this.exprToDoc(expr.body),
         );
       }
 
@@ -102,10 +155,19 @@ export class ExprPrinter {
           clauses.length === 0
             ? text("{ }")
             : block_(
-                sepBy(
-                  break_("", ""),
-                  clauses.map((clause) => concat(clause, text(","))),
-                ),
+                sepBy(break_("", ""), [
+                  ...clauses.map((clause) => concat(clause, text(","))),
+                  ...(expr.default === undefined
+                    ? []
+                    : [
+                        concat(
+                          text(this.identToString(expr.default[0])),
+                          text(" => "),
+                          this.exprToDoc(expr.default[1]),
+                          text(","),
+                        ),
+                      ]),
+                ]),
               ),
         );
       }
@@ -217,23 +279,10 @@ export class ExprPrinter {
 
   private patternToDoc(pattern: ir.MatchPattern): Doc {
     switch (pattern.type) {
-      case "identifier":
-        return text(this.identToString(pattern.ident));
-
-      case "lit":
-        return constToDoc(pattern.literal);
+      case "constant":
+        return constToDoc(pattern.value);
 
       case "constructor": {
-        if (pattern.name === "Cons" && pattern.args.length === 2) {
-          const left = pattern.args[0]!;
-          const right = pattern.args[1]!;
-          return concat(
-            this.patternToDoc(left),
-            text(" :: "),
-            this.patternToDoc(right),
-          );
-        }
-
         if (pattern.args.length === 0) {
           return text(pattern.name);
         }
@@ -243,7 +292,7 @@ export class ExprPrinter {
           text("("),
           sepByString(
             ", ",
-            pattern.args.map((p) => this.patternToDoc(p)),
+            pattern.args.map((p) => text(this.identToString(p))),
           ),
           text(")"),
         );

@@ -8,15 +8,17 @@ import { TypedModule } from "../typecheck";
 
 test("completion of field access of a struct whose type is resolved", () => {
   const src = `
-extern type String
-extern type Int
+@extern enum String {}
+@extern enum Int {}
 
-type Person struct {
+struct Person {
   name: String,
   age: Int,
 }
 
-extern let p: Person
+@type Person
+@extern
+let p
 
 let expr = p.  
 `;
@@ -50,10 +52,10 @@ let expr = p.
 
 test("completion of field access of a struct whose type is _not_ resolved", () => {
   const src = `
-extern type String
-extern type Int
+@extern enum String {}
+@extern enum Int {}
 
-type Person struct {
+struct Person {
   name: String,
   age: Int,
 }

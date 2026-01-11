@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 import * as ast from "../parser";
 import { Type, RigidVarsCtx } from "../type";
+import { DecisionTree } from "./exhaustiveness";
 
 // -- Common
 
 assertSubtype<ast.PolyTypeAst, TypedPolyTypeAst>;
-export type TypedPolyTypeAst = {
+export type TypedPolyTypeAst = ast.RangeMeta & {
   mono: TypedTypeAst;
   where: ast.TraitDef[];
 };
@@ -41,8 +43,8 @@ export type TypedMatchPattern = (TypeMeta & ast.RangeMeta) &
         name: string;
       }
     | {
-        type: "lit";
-        literal: ast.ConstLiteral;
+        type: "constant";
+        value: ast.ConstLiteral;
       }
     | {
         type: "constructor";
@@ -64,12 +66,14 @@ export type TypedBlockStatement = (TypeMeta & ast.RangeMeta) &
         type: "let";
         pattern: TypedMatchPattern;
         value: TypedExpr;
+        $decisionTree?: DecisionTree;
       }
     | {
         type: "let#";
         mapper: TypedExpr & { type: "identifier" };
         pattern: TypedMatchPattern;
         value: TypedExpr;
+        $decisionTree?: DecisionTree;
       }
   );
 
@@ -99,6 +103,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
     | {
         type: "list-literal";
         values: TypedExpr[];
+        tail?: TypedExpr;
       }
     | {
         type: "struct-literal";
@@ -124,6 +129,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         type: "fn";
         params: TypedMatchPattern[];
         body: TypedExpr;
+        $decisionTree?: DecisionTree;
       }
     | {
         type: "application";
@@ -159,6 +165,7 @@ export type TypedExpr = (TypeMeta & ast.RangeMeta) &
         type: "match";
         expr: TypedExpr;
         clauses: Array<[TypedMatchPattern, TypedExpr]>;
+        $decisionTree?: DecisionTree;
       }
   );
 
@@ -174,7 +181,7 @@ export type TypedExposedValue = ast.RangeMeta &
     | {
         type: "value";
         name: string;
-        $resolution: TypedDeclaration | undefined;
+        $resolution: TypedValueDeclaration | undefined;
       }
   );
 
@@ -187,29 +194,38 @@ export type TypedImport = ast.RangeMeta & {
 assertSubtype<ast.TypeVariant, TypedTypeVariant>;
 export type TypedTypeVariant = ast.RangeMeta & {
   name: string;
-  args: TypedTypeAst[];
+  args: {
+    ast: TypedTypeAst;
+    $type: Type;
+  }[];
 
   $type: Type;
 };
 
-assertSubtype<ast.Declaration, TypedDeclaration>;
-export type TypedDeclaration = ast.RangeMeta & {
+assertSubtype<ast.ValueDeclarationAttribute, TypedValueDeclarationAttribute>;
+export type TypedValueDeclarationAttribute = ast.RangeMeta &
+  (
+    | { type: "@type"; polytype: TypedPolyTypeAst }
+    | { type: "@inline" }
+    | { type: "@extern" }
+  );
+
+assertSubtype<ast.ValueDeclaration, TypedValueDeclaration>;
+export type TypedValueDeclaration = ast.RangeMeta & {
   pub: boolean;
   binding: TypedBinding;
   docComment?: string;
+  attributes: TypedValueDeclarationAttribute[];
+  value?: TypedExpr;
 
   $traitsConstraints: RigidVarsCtx;
-} & (
-    | {
-        inline: boolean;
-        extern: false;
-        typeHint?: TypedPolyTypeAst & ast.RangeMeta;
-        value: TypedExpr;
-      }
-    | {
-        extern: true;
-        typeHint: TypedPolyTypeAst & ast.RangeMeta;
-      }
+};
+
+assertSubtype<ast.ValueDeclarationAttribute, TypedValueDeclarationAttribute>;
+export type TypedTypeDeclarationAttribute = ast.RangeMeta &
+  (
+    | { type: "@derive"; args: Array<ast.RangeMeta & { name: string }> }
+    | { type: "@extern" }
   );
 
 assertSubtype<ast.TypeDeclaration, TypedTypeDeclaration>;
@@ -217,8 +233,11 @@ export type TypedTypeDeclaration = ast.RangeMeta & {
   name: string;
   params: Array<{ name: string } & ast.RangeMeta>;
   docComment?: string;
+  attributes: TypedTypeDeclarationAttribute[];
 
+  $type: Type;
   $traits: Map<string, Set<string>[]>;
+  $extern: boolean;
 } & (
     | {
         type: "adt";
@@ -229,12 +248,6 @@ export type TypedTypeDeclaration = ast.RangeMeta & {
         type: "struct";
         fields: TypedStructDeclarationField[];
         pub: boolean | "..";
-
-        $type: Type;
-      }
-    | {
-        type: "extern";
-        pub: boolean;
       }
   );
 
@@ -242,11 +255,11 @@ export type TypedModule = {
   moduleDoc?: string;
   imports: TypedImport[];
   typeDeclarations: TypedTypeDeclaration[];
-  declarations: TypedDeclaration[];
+  declarations: TypedValueDeclaration[];
 
   // TODO move it outside of this struct
   moduleInterface: ModuleInterface;
-  mutuallyRecursiveDeclrs: TypedDeclaration[][];
+  mutuallyRecursiveDeclrs: TypedValueDeclaration[][];
 };
 
 // -- specific
@@ -260,7 +273,7 @@ export type ModuleInterface = {
     string,
     IdentifierResolution & { type: "constructor" }
   >;
-  publicValues: Record<string, TypedDeclaration>;
+  publicValues: Record<string, TypedValueDeclaration>;
   publicFields: Record<string, FieldResolution>;
 };
 
@@ -280,7 +293,7 @@ export type IdentifierResolution =
     }
   | {
       type: "global-variable";
-      declaration: TypedDeclaration;
+      declaration: TypedValueDeclaration;
       package_: string;
       namespace: string;
     }

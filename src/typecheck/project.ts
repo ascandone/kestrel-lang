@@ -14,6 +14,7 @@ export type ProjectOptions = Pick<
   "implicitImports" | "mainType" | "traitImpls"
 > & {
   packageDependencies: Map<string, Set<string>>;
+  exposedModules: Map<string, Set<string>>;
 };
 
 export type TypecheckResult = Array<{
@@ -115,6 +116,13 @@ export class ProjectTypechecker {
     const visibleModules = [...modules.entries()].filter(([pkg]) => {
       if (callerPackage === pkg) {
         return true;
+      }
+
+      const isModuleExposed =
+        this.projectOptions.exposedModules?.get(pkg)?.has(requestedModuleId) ??
+        false;
+      if (!isModuleExposed) {
+        return false;
       }
 
       const deps =

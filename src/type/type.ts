@@ -417,7 +417,6 @@ class TypePrinter {
   }
 
   private getFlexName(): string {
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const id = this.currentFlexId++;
       const name = counterToTypeName(id);
@@ -447,7 +446,7 @@ class TypePrinter {
 
       case "fn": {
         const args = t.args.map((arg) => this.typeToString(arg)).join(", ");
-        return `Fn(${args}) -> ${this.typeToString(t.return)}`;
+        return `(${args}) -> ${this.typeToString(t.return)}`;
       }
 
       case "named": {
@@ -549,7 +548,6 @@ class Generalizer {
   constructor(private readonly ctx: RigidVarsCtx) {}
 
   private getFlexName(): string {
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const id = this.currentFlexId++;
       const name = counterToTypeName(id);

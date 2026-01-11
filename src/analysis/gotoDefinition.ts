@@ -24,17 +24,18 @@ export function goToDefinitionOf(
 
   switch (statement.type) {
     case "declaration":
-      if (statement.declaration.typeHint !== undefined) {
-        const ret = goToDefinitionOfTypeAst(
-          statement.declaration.typeHint.mono,
-          position,
-        );
+      for (const attr of statement.declaration.attributes) {
+        if (attr.type !== "@type") {
+          continue;
+        }
+
+        const ret = goToDefinitionOfTypeAst(attr.polytype.mono, position);
         if (ret !== undefined) {
           return ret;
         }
       }
 
-      return statement.declaration.extern
+      return statement.declaration.value === undefined
         ? undefined
         : goToDefinitionOfExpr(
             statement.declaration.value,
@@ -53,7 +54,7 @@ export function goToDefinitionOf(
         }
 
         return firstBy(variant.args, (arg) =>
-          goToDefinitionOfTypeAst(arg, position),
+          goToDefinitionOfTypeAst(arg.ast, position),
         );
       });
 

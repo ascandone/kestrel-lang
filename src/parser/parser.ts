@@ -5,6 +5,7 @@ import antlr4, {
   Token,
 } from "antlr4";
 import Lexer from "./antlr/KestrelLexer";
+import * as parser from "./antlr/KestrelParser";
 import Parser, {
   BlockContext,
   BlockExprContext,
@@ -14,12 +15,8 @@ import Parser, {
   CallContext,
   CharContext,
   CharPatternContext,
-  ConsContext,
-  ConsPatternContext,
   ConstructorContext,
   ExprContext,
-  ExternLetDeclarationContext,
-  ExternTypeDeclarationContext,
   FieldAccessContext,
   FloatContext,
   FloatPatternContext,
@@ -30,7 +27,6 @@ import Parser, {
   IfContext,
   IntContext,
   IntPatternContext,
-  LetDeclarationContext,
   ListLitContext,
   MatchContext,
   MatchIdentContext,
@@ -50,7 +46,7 @@ import Parser, {
 } from "./antlr/KestrelParser";
 import Visitor from "./antlr/KestrelVisitor";
 import {
-  Declaration,
+  ValueDeclaration,
   LineComment,
   MatchPattern,
   Position,
@@ -62,6 +58,8 @@ import {
   UntypedModule,
   TypeDeclaration,
   BlockStatement,
+  ValueDeclarationAttribute,
+  TypeDeclarationAttribute,
 } from "./ast";
 
 const COMMENTS_CHANNEL = 1;
@@ -82,6 +80,60 @@ const makeInfixOp = <Ctx extends InfixExprContext>(ctx: Ctx): Expr => {
     range: rangeOfCtx(ctx),
   };
 };
+
+class ValueDeclarationAttributeVisitor extends Visitor<ValueDeclarationAttribute> {
+  visitAttrType = (ctx: parser.AttrTypeContext): ValueDeclarationAttribute => {
+    const polyCtx = ctx.polyType();
+
+    return {
+      range: rangeOfCtx(ctx),
+
+      type: "@type",
+      polytype: {
+        mono: new TypeVisitor().visit(polyCtx.type_()),
+        range: rangeOfCtx(polyCtx),
+        where: polyCtx.traitImplClause_list().map((t) => ({
+          typeVar: t.ID().getText(),
+          traits: t.TYPE_ID_list().map((t) => t.getText()),
+        })),
+      },
+    };
+  };
+
+  visitAttrInline = (
+    ctx: parser.AttrInlineContext,
+  ): ValueDeclarationAttribute => ({
+    type: "@inline",
+    range: rangeOfCtx(ctx),
+  });
+
+  visitAttrExtern = (
+    ctx: parser.AttrExternContext,
+  ): ValueDeclarationAttribute => ({
+    type: "@extern",
+    range: rangeOfCtx(ctx),
+  });
+}
+
+class TypeDeclarationAttributeVisitor extends Visitor<TypeDeclarationAttribute> {
+  visitTypeAttDeriving = (
+    ctx: parser.TypeAttDerivingContext,
+  ): TypeDeclarationAttribute => ({
+    type: "@derive",
+    range: rangeOfCtx(ctx),
+    args: ctx.TYPE_ID_list().map((tk) => ({
+      name: tk.getText(),
+      range: rangeOfTerminalNode(tk),
+    })),
+  });
+
+  visitTypeAttrExtern = (
+    ctx: parser.TypeAttrExternContext,
+  ): TypeDeclarationAttribute => ({
+    type: "@extern",
+    range: rangeOfCtx(ctx),
+  });
+}
 
 class TypeVisitor extends Visitor<TypeAst> {
   visitNamedType = (ctx: NamedTypeContext): TypeAst => {
@@ -153,36 +205,36 @@ class MatchPatternVisitor extends Visitor<MatchPattern> {
   });
 
   visitIntPattern = (ctx: IntPatternContext): MatchPattern => ({
-    type: "lit",
+    type: "constant",
     range: rangeOfCtx(ctx),
-    literal: {
+    value: {
       type: "int",
       value: Number(ctx.getText()),
     },
   });
 
   visitFloatPattern = (ctx: FloatPatternContext): MatchPattern => ({
-    type: "lit",
+    type: "constant",
     range: rangeOfCtx(ctx),
-    literal: {
+    value: {
       type: "float",
       value: Number(ctx.getText()),
     },
   });
 
   visitStringPattern = (ctx: StringPatternContext): MatchPattern => ({
-    type: "lit",
+    type: "constant",
     range: rangeOfCtx(ctx),
-    literal: {
+    value: {
       type: "string",
       value: ctx.getText().slice(1, -1),
     },
   });
 
   visitCharPattern = (ctx: CharPatternContext): MatchPattern => ({
-    type: "lit",
+    type: "constant",
     range: rangeOfCtx(ctx),
-    literal: {
+    value: {
       type: "char",
       value: ctx.getText().slice(1, -1),
     },
@@ -199,14 +251,33 @@ class MatchPatternVisitor extends Visitor<MatchPattern> {
     };
   };
 
-  visitConsPattern = (ctx: ConsPatternContext): MatchPattern => {
-    return {
-      type: "constructor",
-      range: rangeOfCtx(ctx),
-      namespace: "List",
-      name: "Cons",
-      args: [this.visit(ctx.matchPattern(0)), this.visit(ctx.matchPattern(1))],
-    };
+  visitListPattern = (ctx: parser.ListPatternContext): MatchPattern => {
+    const elems =
+      ctx
+        .listPatterns()
+        ?.matchPattern_list()
+        ?.map((e) => this.visit(e)) ?? [];
+
+    const tail = ctx._tail == null ? undefined : this.visit(ctx._tail);
+
+    return elems.reduceRight(
+      (prev, pattern) => {
+        return {
+          type: "constructor",
+          range: rangeOfCtx(ctx),
+          namespace: "List",
+          name: "Cons",
+          args: [pattern, prev],
+        };
+      },
+      tail ?? {
+        type: "constructor",
+        range: rangeOfCtx(ctx),
+        namespace: "List",
+        name: "Nil",
+        args: [],
+      },
+    );
   };
 }
 
@@ -309,19 +380,17 @@ class ExpressionVisitor extends Visitor<Expr> {
     range: rangeOfCtx(ctx),
   });
 
-  visitFieldAccess = (ctx: FieldAccessContext): Expr => {
-    return {
-      type: "field-access",
-      struct: this.visit(ctx.expr()),
-      field: {
-        name: ctx.ID().getText(),
-        structName:
-          ctx._structName === undefined ? undefined : ctx._structName.text,
-        range: rangeOfTerminalNode(ctx.ID()),
-      },
-      range: rangeOfCtx(ctx),
-    };
-  };
+  visitFieldAccess = (ctx: FieldAccessContext): Expr => ({
+    type: "field-access",
+    struct: this.visit(ctx.expr()),
+    field: {
+      name: ctx.ID().getText(),
+      structName:
+        ctx._structName === undefined ? undefined : ctx._structName.text,
+      range: rangeOfTerminalNode(ctx.ID()),
+    },
+    range: rangeOfCtx(ctx),
+  });
 
   visitBoolNot = (ctx: BoolNotContext): Expr => ({
     type: "application",
@@ -392,18 +461,6 @@ class ExpressionVisitor extends Visitor<Expr> {
   visitComp = makeInfixOp;
   visitEq = makeInfixOp;
 
-  visitCons = (ctx: ConsContext): Expr => ({
-    type: "application",
-    range: rangeOfCtx(ctx),
-    caller: {
-      type: "identifier",
-      name: "Cons",
-      namespace: "List",
-      range: rangeOfTk(ctx._op),
-    },
-    args: [this.visit(ctx.expr(0)), this.visit(ctx.expr(1))],
-  });
-
   visitTuple = (ctx: TupleContext): Expr => {
     // TODO this should be in the AST
     const args = ctx.expr_list().map((e) => this.visit(e));
@@ -454,7 +511,12 @@ class ExpressionVisitor extends Visitor<Expr> {
   visitListLit = (ctx: ListLitContext): Expr => ({
     type: "list-literal",
     range: rangeOfCtx(ctx),
-    values: ctx.expr_list().map((e) => this.visit(e)),
+    values:
+      ctx
+        .listElems()
+        ?.expr_list()
+        ?.map((e) => this.visit(e)) ?? [],
+    tail: ctx._tail == null ? undefined : this.visit(ctx._tail),
   });
 
   visitPipe = (ctx: PipeContext): Expr => ({
@@ -466,7 +528,7 @@ class ExpressionVisitor extends Visitor<Expr> {
 }
 
 type DeclarationType =
-  | { type: "value"; decl: Declaration }
+  | { type: "value"; decl: ValueDeclaration }
   | { type: "type"; decl: TypeDeclaration }
   | { type: "syntax-err" };
 
@@ -486,91 +548,32 @@ class ExposingVisitor extends Visitor<ExposedValue> {
 }
 
 class DeclarationVisitor extends Visitor<DeclarationType> {
-  visitLetDeclaration = (letDecl: LetDeclarationContext): DeclarationType => {
-    const ctx = letDecl.letDeclaration_();
-
-    const binding = ctx.ID();
-
-    const e = ctx.expr();
-
-    if (e === null) {
-      return { type: "syntax-err" };
-    }
-    const value: Expr = new ExpressionVisitor().visit(e);
-
-    const typeHint: TypeAst | undefined =
-      ctx._typeHint === undefined
-        ? undefined
-        : // @ts-ignore
-          ctx._typeHint.accept(new TypeVisitor())[0];
-
-    const docs = ctx
-      .DOC_COMMENT_LINE_list()
-      .map((d) => d.getText().slice(3))
-      .join("");
-
-    return {
-      type: "value",
-      decl: {
-        extern: false,
-        inline: ctx._inline !== undefined,
-        pub: ctx._pub !== undefined,
-        ...(docs === "" ? {} : { docComment: docs }),
-        ...(typeHint === undefined
-          ? {}
-          : {
-              typeHint: {
-                mono: typeHint,
-                range: typeHint.range,
-                where: ctx._typeHint.traitImplClause_list().map((t) => ({
-                  typeVar: t.ID().getText(),
-                  traits: t.TYPE_ID_list().map((t) => t.getText()),
-                })),
-              },
-            }),
-        binding: {
-          name: binding.getText(),
-          range: rangeOfTerminalNode(binding),
-        },
-        range: rangeOfCtx(ctx),
-        value,
-      },
-    };
-  };
-
-  visitExternLetDeclaration = (
-    letDecl: ExternLetDeclarationContext,
+  visitLetDeclaration = (
+    ctx_: parser.LetDeclarationContext,
   ): DeclarationType => {
-    const ctx = letDecl.externLetDeclaration_();
-
-    const typeHint: TypeAst =
-      // @ts-ignore
-      ctx._typeHint.accept(new TypeVisitor())[0];
+    const ctx = ctx_.letDeclaration_();
 
     const docs = ctx
       .DOC_COMMENT_LINE_list()
       .map((d) => d.getText().slice(3))
       .join("");
 
+    const expr = ctx.expr();
+
     return {
       type: "value",
       decl: {
-        extern: true,
+        attributes: ctx
+          .valueAttribute_list()
+          .map((attr) => new ValueDeclarationAttributeVisitor().visit(attr)),
+        value: expr == null ? undefined : new ExpressionVisitor().visit(expr),
         pub: ctx._pub !== undefined,
-        typeHint: {
-          mono: typeHint,
-          range: typeHint.range,
-          where: ctx._typeHint.traitImplClause_list().map((t) => ({
-            typeVar: t.ID().getText(),
-            traits: t.TYPE_ID_list().map((t) => t.getText()),
-          })),
-        },
         binding: {
           name: normalizeInfix(ctx._binding.text),
           range: rangeOfTk(ctx._binding),
         },
-        ...(docs === "" ? {} : { docComment: docs }),
         range: rangeOfCtx(ctx),
+        ...(docs === "" ? {} : { docComment: docs }),
       },
     };
   };
@@ -588,6 +591,9 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
     return {
       type: "type",
       decl: {
+        attributes: ctx
+          .typeAttribute_list()
+          .map((a) => new TypeDeclarationAttributeVisitor().visit(a)),
         type: "adt",
         pub:
           ctx._pub === undefined
@@ -603,7 +609,10 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
             .map((v) => ({
               name: v._name.text,
               range: rangeOfCtx(v),
-              args: v.type__list().map((t) => new TypeVisitor().visit(t)),
+              args: v
+                .type__list()
+                .map((t) => new TypeVisitor().visit(t))
+                .map((ast) => ({ ast })),
             })) ?? [],
         params:
           ctx
@@ -633,6 +642,9 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
       type: "type",
       decl: {
         type: "struct",
+        attributes: ctx
+          .typeAttribute_list()
+          .map((a) => new TypeDeclarationAttributeVisitor().visit(a)),
         fields:
           ctx
             .declarationFields()
@@ -658,37 +670,6 @@ class DeclarationVisitor extends Visitor<DeclarationType> {
               ? true
               : "..",
         name: ctx._name.text,
-        ...(docs === "" ? {} : { docComment: docs }),
-        range: rangeOfCtx(ctx),
-      },
-    };
-  };
-
-  visitExternTypeDeclaration = (
-    typeDecl: ExternTypeDeclarationContext,
-  ): DeclarationType => {
-    const ctx = typeDecl.externTypeDeclaration_();
-
-    const docs = ctx
-      .DOC_COMMENT_LINE_list()
-      .map((d) => d.getText().slice(3))
-      .join("");
-
-    return {
-      type: "type",
-      decl: {
-        type: "extern",
-        pub: ctx._pub !== undefined,
-        name: ctx._name.text,
-
-        params:
-          ctx
-            .paramsList()
-            ?.ID_list()
-            .map((i) => ({
-              name: i.getText(),
-              range: rangeOfTerminalNode(i),
-            })) ?? [],
         ...(docs === "" ? {} : { docComment: docs }),
         range: rangeOfCtx(ctx),
       },

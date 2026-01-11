@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as resolution from "./resolution";
 import { unsafeParse } from "../parser";
-import { TypedDeclaration } from "./typedAst";
+import { TypedValueDeclaration } from "./typedAst";
 
 describe("order of the strongly connected components", () => {
   test("empty program", () => {
@@ -57,7 +57,7 @@ describe("order of the strongly connected components", () => {
   });
 });
 
-function getBindings(arr: TypedDeclaration[][]) {
+function getBindings(arr: TypedValueDeclaration[][]) {
   return arr.map((decls) => decls.map((decl) => decl.binding.name));
 }
 

@@ -22,7 +22,7 @@ export function functionSignatureHint(
 
   switch (statement.type) {
     case "declaration":
-      if (statement.declaration.extern) {
+      if (statement.declaration.value === undefined) {
         return undefined;
       }
 

@@ -1,4 +1,4 @@
-import { TypedDeclaration, TypedModule } from "../typecheck/typedAst";
+import { TypedValueDeclaration, TypedModule } from "../typecheck/typedAst";
 import {
   CompletionItem,
   CompletionItemKind,
@@ -41,10 +41,10 @@ class ExprCompletion {
   ) {}
 
   declCompletion(
-    declaration: TypedDeclaration,
+    declaration: TypedValueDeclaration,
     position: Position,
   ): CompletionItem[] | undefined {
-    if (declaration.extern) {
+    if (declaration.value === undefined) {
       return undefined;
     }
 

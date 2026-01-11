@@ -3,7 +3,7 @@ import { typeToString } from "../type";
 import { Finder } from "../typecheck/astLookup";
 import {
   IdentifierResolution,
-  TypedDeclaration,
+  TypedValueDeclaration,
   TypedModule,
   TypedTypeAst,
   TypedTypeDeclaration,
@@ -21,7 +21,8 @@ export type Hovered = RangeMeta & { hovered: HoveredInfo };
  * TODO fix regression:
  * we need to make sure that here:
  * ```kestrel
- * let f: (a) -> a = fn a {
+ * .@type (a) -> a
+ * let f = fn a {
  *   let id = fn b { b };
  *   a
  * }
@@ -42,11 +43,12 @@ export function hoverOn(
 
   switch (statement.type) {
     case "declaration": {
-      if (statement.declaration.typeHint !== undefined) {
-        const res = hoverOnTypeAst(
-          statement.declaration.typeHint.mono,
-          position,
-        );
+      for (const attr of statement.declaration.attributes) {
+        if (attr.type !== "@type") {
+          continue;
+        }
+
+        const res = hoverOnTypeAst(attr.polytype.mono, position);
         if (res !== undefined) {
           return res;
         }
@@ -72,7 +74,7 @@ export function hoverOn(
           }
 
           const res = firstBy(variant.args, (arg) =>
-            hoverOnTypeAst(arg, position),
+            hoverOnTypeAst(arg.ast, position),
           );
           if (res !== undefined) {
             return res;
@@ -201,7 +203,7 @@ type constructor
 function hoverOnDecl(
   package_: string,
   namespace: string,
-  declaration: TypedDeclaration,
+  declaration: TypedValueDeclaration,
   position: Position,
 ): Hovered | undefined {
   if (contains(declaration.binding, position)) {
@@ -216,7 +218,10 @@ function hoverOnDecl(
     };
   }
 
-  if (!declaration.extern && contains(declaration.value, position)) {
+  if (
+    declaration.value !== undefined &&
+    contains(declaration.value, position)
+  ) {
     return hoveredFinder(position).visitExpr(declaration.value);
   }
 
