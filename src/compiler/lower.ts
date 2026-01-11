@@ -371,10 +371,10 @@ class ExprEmitter {
                   type: "identifier",
                   ident: this.mkIdent(tree.subject.binding),
                 }
-              : ids[tree.subject.id]?.() ?? {
+              : (ids[tree.subject.id]?.() ?? {
                   type: "identifier",
                   ident: this.mkUnique(tree.subject.id),
-                },
+                }),
           clauses: tree.clauses.map(([pat, subTree]) => [
             this.lowerPattern_(pat),
             this.lowerMatch(actions, ids, subTree),

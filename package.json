@@ -1,6 +1,5 @@
 {
   "name": "kestrel-lang",
-  "type": "module",
   "version": "0.0.30",
   "description": "A pure, strongly typed functional language that compiles to js",
   "license": "MIT",
@@ -22,8 +21,8 @@
     "ts:build": "tsc --project tsconfig.build.json",
     "ts:watch": "tsc --watch --project tsconfig.json",
     "ts:check": "tsc --noEmit",
-    "format:check": "prettier --check --cache ./**/*.ts",
-    "format:write": "prettier --write --cache ./**/*.ts",
+    "format:check": "prettier --check --cache \"./**/*.ts\"",
+    "format:write": "prettier --write --cache \"./**/*.ts\"",
     "linter:check": "eslint .",
     "build": "npm run ts:build"
   },
