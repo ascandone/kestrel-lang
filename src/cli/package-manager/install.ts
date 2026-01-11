@@ -1,5 +1,5 @@
 import { readFile, writeFile } from "fs/promises";
-import { KestrelJson, readConfig } from "../kestrel-json";
+import { KestrelJson, readConfigOrExit } from "../kestrel-json";
 import { solve } from "./solver";
 import { Fetcher } from "./store";
 import * as dec from "ts-decode";
@@ -12,7 +12,7 @@ import path from "path";
 const KESTREL_LOCK = "kestrel-lock.json";
 
 export async function install() {
-  const config = await readConfig();
+  const config = await readConfigOrExit();
   const resolvedLockFile = await installLockFile(config);
 
   for (const [package_, version] of Object.entries(resolvedLockFile)) {

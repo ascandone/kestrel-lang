@@ -8,20 +8,32 @@ import * as dec from "ts-decode";
 
 export const CONFIG_NAME = "kestrel.json";
 
-export async function readConfig(
+export async function tryReadingConfig(
   root: string = process.cwd(),
 ): Promise<KestrelJson> {
   try {
     const f = await readFile(join(root, CONFIG_NAME));
     const res = kestrelJsonDecoder.decode(JSON.parse(f.toString()));
     if (res.error) {
-      console.error(`Invalid config:\n${dec.reasonToXmlString(res.reason)}`);
-      exit(1);
-    } else {
-      return res.value;
+      throw new Error(`Invalid config:\n${dec.reasonToXmlString(res.reason)}`);
     }
+    return res.value;
   } catch {
-    console.error(`Config not found`);
+    throw new Error(`Config not found`);
+  }
+}
+
+export async function readConfigOrExit(
+  root: string = process.cwd(),
+): Promise<KestrelJson> {
+  try {
+    return await tryReadingConfig(root);
+  } catch (e: unknown) {
+    if (!(e instanceof Error)) {
+      throw e;
+    }
+
+    console.error(e.message);
     exit(1);
   }
 }

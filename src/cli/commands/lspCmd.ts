@@ -30,25 +30,16 @@ import {
   goToDefinitionOf,
   hoverOn,
   hoverToMarkdown,
-  AnalysisState,
+  MultiProjectAnalysisState,
 } from "../../analysis";
 import { format } from "../../format";
 import * as project from "../../typecheck/project";
-import { readConfig } from "../kestrel-json";
+import { readConfigOrExit } from "../kestrel-json";
 
-async function initState(
+function initState(
   sendDiagnostics: (param: PublishDiagnosticsParams) => void,
-) {
-  const currentDirectory = process.cwd();
-  const config = await readConfig(currentDirectory);
-
-  const [rawProject, deps, exposedModules] =
-    await readRawProject_(currentDirectory);
-
-  const state = new AnalysisState(
-    config.name ?? "",
-    currentDirectory,
-    config.sources,
+): MultiProjectAnalysisState {
+  const state = new MultiProjectAnalysisState(
     async (results) => {
       for (const res of results) {
         const doc = state.getDocByModuleId(res.moduleId);
@@ -62,10 +53,11 @@ async function initState(
         sendDiagnostics(param);
       }
     },
-    rawProject,
-    {
-      packageDependencies: deps,
-      exposedModules,
+    async (manifestDir: string) => {
+      const [rawProject, deps, exposedModules] =
+        await readRawProject_(manifestDir);
+      const config = await readConfigOrExit(manifestDir);
+      return { rawProject, deps, exposedModules, config };
     },
   );
 
@@ -78,7 +70,7 @@ export async function lspCmd() {
     // @ts-ignore
     createConnection();
 
-  const state = await initState((params) => connection.sendDiagnostics(params));
+  const state = initState((params) => connection.sendDiagnostics(params));
 
   connection.onInitialize(() => ({
     capabilities: {
@@ -103,10 +95,13 @@ export async function lspCmd() {
   documents.listen(connection);
   connection.listen();
 
-  state.runTypecheckSync();
+  // Load project when document is opened
+  documents.onDidOpen(async (event) => {
+    await state.upsertDoc(event.document);
+  });
 
-  documents.onDidChangeContent((change) => {
-    state.upsertDoc(change.document);
+  documents.onDidChangeContent(async (change) => {
+    await state.upsertDoc(change.document);
   });
 
   connection.languages.inlayHint.on(async (ctx, tk) => {

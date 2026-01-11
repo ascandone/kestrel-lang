@@ -12,7 +12,7 @@ import {
   nestedMapEntries,
 } from "../common/defaultMap";
 import * as project from "../typecheck/project";
-import { readConfig, KestrelJson } from "./kestrel-json";
+import { readConfigOrExit, KestrelJson } from "./kestrel-json";
 
 export const EXTENSION = "kes";
 
@@ -42,25 +42,51 @@ export async function readRawProject(
   const packagesDeps: project.ProjectOptions["packageDependencies"] = new Map();
   const exposedModules: project.ProjectOptions["exposedModules"] = new Map();
 
+  const visitedPaths = new Map<string, string>(); // path -> pkgId
+
   // TODO make sure there aren't cyclic deps
-  async function helper(path: string) {
-    const config = await readConfig(path);
+  async function helper(path: string): Promise<string> {
+    const cached = visitedPaths.get(path);
+    if (cached !== undefined) {
+      return cached;
+    }
 
-    const deps = Object.keys(config.dependencies ?? {});
-    packagesDeps.set(config.name ?? "", new Set(deps));
-    exposedModules.set(config.name ?? "", new Set(config.exposedModules));
+    const config = await readConfigOrExit(path);
+    const pkgId = getPkgId(path, config.name ?? "");
+    visitedPaths.set(path, pkgId);
 
-    await readPackage(project, path, config);
+    const deps = new Set<string>();
 
+    // Process dependencies declared in config (but we need to resolve them from disk)
+    // The previous logic assumed deps match names, but now we must load them to get their IDs.
+    // We iterate over the 'deps' folder to find dependencies.
     try {
-      const deps = await readdir(paths.dependencies(path));
-      for (const dependencyName of deps) {
+      const depDirs = await readdir(paths.dependencies(path));
+      for (const dependencyName of depDirs) {
         const depPath = paths.dependency(path, dependencyName);
-        await helper(depPath);
+
+        // Only process if it is in the config dependencies?
+        // Or assume everything in deps/ is a dep?
+        // The original logic iterated over `config.dependencies` keys to init the set,
+        // then iterated disk to call helper.
+
+        // Effectively, if it is in deps folder, it is a dependency (if we follow standard layout).
+        // We verify if it's in config to be robust?
+        if (config.dependencies?.[dependencyName] !== undefined) {
+          const depId = await helper(depPath);
+          deps.add(depId);
+        }
       }
     } catch {
       // Assume /deps/ is not present otherwise
     }
+
+    packagesDeps.set(pkgId, deps);
+    exposedModules.set(pkgId, new Set(config.exposedModules));
+
+    await readPackage(project, path, pkgId, config);
+
+    return pkgId;
   }
 
   await helper(path);
@@ -68,15 +94,20 @@ export async function readRawProject(
   return [project.inner, packagesDeps, exposedModules] as const;
 }
 
+export function getPkgId(path: string, name: string): string {
+  return `${name} - ${path}`;
+}
+
 /** Read a single package and load its content into the project  */
 export async function readPackage(
   /* &mut */ project: DefaultMap<string, Map<string, RawModule>>,
 
   path: string,
+  pkgId: string,
   config?: KestrelJson,
 ): Promise<void> {
   if (config === undefined) {
-    config = await readConfig(path);
+    config = await readConfigOrExit(path);
   }
 
   for (const sourceDir of config.sources) {
@@ -101,9 +132,8 @@ export async function readPackage(
         // Assume file did not exist
       }
 
-      const package_ = config.name ?? "";
-      project.get(moduleName!).set(package_, {
-        package: package_,
+      project.get(moduleName!).set(pkgId, {
+        package: pkgId,
         path: filePath,
         content: fileBuf.toString(),
         extern,
@@ -232,7 +262,7 @@ export async function compilePath(
   }
 
   // TODO we could rease this config
-  const config = await readConfig(path);
+  const config = await readConfigOrExit(path);
 
   const entryPointModule = config.entrypoints?.[entrypoint ?? "main"];
 

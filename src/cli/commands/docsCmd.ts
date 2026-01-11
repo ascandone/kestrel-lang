@@ -3,12 +3,12 @@ import { makeProjectDoc } from "./docsCmd/documentation";
 import { check } from "../common";
 import { join } from "node:path";
 import { exit } from "process";
-import { readConfig } from "../kestrel-json";
+import { readConfigOrExit } from "../kestrel-json";
 
 const DOCS_JSON_NAME = "docs.json";
 
 async function getDocsJson(root: string) {
-  const config = await readConfig(root);
+  const config = await readConfigOrExit(root);
   if (config.version === undefined) {
     console.error("Version is required to generate docs");
     exit(1);

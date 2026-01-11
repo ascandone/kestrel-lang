@@ -1,7 +1,7 @@
 import {
   JsonPublishConfig,
   kestrelJsonPublishDecoder,
-  readConfig,
+  readConfigOrExit,
 } from "../kestrel-json";
 import { create } from "tar";
 import { join } from "node:path";
@@ -26,7 +26,7 @@ const exec = promisify(execSync);
 
 export async function publish(token: string) {
   const config = kestrelJsonPublishDecoder.decodeUnsafeThrow(
-    await readConfig(),
+    await readConfigOrExit(),
   );
 
   // TODO check semantic version diff
